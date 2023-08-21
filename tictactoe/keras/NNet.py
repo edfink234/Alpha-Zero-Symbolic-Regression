@@ -41,6 +41,7 @@ class NNetWrapper(NeuralNet):
         """
         examples: list of examples, each example is of form (board, pi, v)
         """
+        print("examples =",examples)
         input_boards, target_pis, target_vs = list(zip(*examples))
         input_boards = np.asarray(input_boards)
         target_pis = np.asarray(target_pis)
@@ -56,7 +57,6 @@ class NNetWrapper(NeuralNet):
 
         # preparing input
         board = board[np.newaxis, :, :]
-
         # run
         pi, v = self.nnet.model.predict(board, verbose=False)
 
@@ -81,6 +81,7 @@ class NNetWrapper(NeuralNet):
 
         # https://github.com/pytorch/examples/blob/master/imagenet/main.py#L98
         filepath = os.path.join(folder, filename)
+        print(filepath)
         if not os.path.exists(filepath):
             raise("No model in path '{}'".format(filepath))
         self.nnet.model.load_weights(filepath)
