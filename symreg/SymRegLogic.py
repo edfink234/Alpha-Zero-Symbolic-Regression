@@ -18,6 +18,7 @@ Based on the board for the game of Othello by Eric P. Nichols.
 from sympy import symbols, Eq, lambdify
 from sympy.parsing.sympy_parser import (parse_expr, standard_transformations, implicit_multiplication_application)
 import numpy as np
+from scipy.optimize import curve_fit
 
 # from bkcharts.attributes import color
 class Board():
@@ -29,10 +30,10 @@ class Board():
 
     def __init__(self, n=3):
         "Set up initial board configuration."
-        self.__operators = ['+', '-', '*', 'cos', 'x']
+        self.__operators = ['+', '-', '*', 'cos', 'x', 'const']
         self.init_legal = len(self.__operators)
         self.__operators_float = [sum(ord(i) for i in j) for j in self.__operators] #[43, 45, 42, 325, 120]
-        self.legal_moves_dict = {'+' : ['cos', 'x'], '-' : ['cos', 'x'], '*' : ['cos', 'x'], 'cos' : ['cos', 'x'], 'x' : ['+', '-', '*', 'cos']}
+        self.legal_moves_dict = {'+' : ['cos', 'x', 'const'], '-' : ['cos', 'x', 'const'], '*' : ['cos', 'x', 'const'], 'cos' : ['cos', 'x', 'const'], 'x' : ['+', '-', '*', 'cos', 'const'], 'const': ['+', '-', '*', 'cos', 'x']}
         self.__operators_dict = {operator:name for (operator, name) in zip(self.__operators_float, self.__operators)}
         self.__operators_inv_dict = {name:operator for (operator, name) in zip(self.__operators_float, self.__operators)}
         self.__legal_moves_dict = {self.__operators_inv_dict[key]: [self.__operators_inv_dict[i] for i in value] for (key, value) in self.legal_moves_dict.items()}
@@ -54,7 +55,7 @@ class Board():
         if 0 not in self.pieces:
             return self.__operators_float
         if not np.any(self.pieces): #All pieces are 0
-            return [1, 1, 0, 1, 1]
+            return [1, 1, 0, 1, 1, 1]
         
         curr_move = np.where(self.pieces==0)[0][0]
         
@@ -65,6 +66,7 @@ class Board():
     def has_legal_moves(self):
         return 0 in self.pieces
     
+
     def is_win(self):
         """Check whether the given player has created a complete (length self.n) and parseable expression
         """
@@ -73,41 +75,92 @@ class Board():
         else:
             
             expression_str = ' '.join([self.__operators_dict[i] for i in self.pieces])
+            num_consts = expression_str.count("const")
             x = symbols('x')
             transformations = (standard_transformations + (implicit_multiplication_application,))
-            try:
-                parsed_expr = parse_expr(expression_str, transformations=transformations)
-                model_selection = lambdify(x, parsed_expr)
-                X, y = Board.data[:, 0], Board.data[:, 1]
-                loss = np.sum((model_selection(X)-y)**2)
-                if loss < Board.best_loss:
-                    Board.best_expression = parsed_expr
-                    Board.best_loss = loss
-                    print(f"New best expression: {Board.best_expression}")
-                    print(f"New best loss: {Board.best_loss:.3f}")
-                    return True
-                return False
-            except (ValueError, SyntaxError, TypeError) as e:
-#                print(e.__class__)
-                expression_str += " x"
-                #If adding 'x' doesn't work, we strip off tokens until an expression is valid
+            X, Y = Board.data[:, 0], Board.data[:, 1]
+            
+            if num_consts:
+                y = symbols(f'y(:{num_consts})')
+                consts = [f"y{i}" for i in range(num_consts)]
+                for i in range(num_consts):
+                    expression_str = expression_str.replace("const", f"y{i}", 1)
+                
+                first = False
+                while expression_str:
+                    try:
+                        parsed_expr = parse_expr(expression_str, transformations=transformations, local_dict = {key:value for (key,value) in zip(consts, y)})
+                        break
+                    except:
+                        if not first:
+                            expression_str += " x"
+                            first = True
+                        else:
+                            expression_str = ' '.join(expression_str.split()[:-1])
+                
+                if not expression_str:
+                    return False
+                
+                model_selection = lambdify((x, *y), parsed_expr)
+                parameters, covariance = curve_fit(model_selection, X, Y, p0 = np.ones(num_consts))
+                y_pred = model_selection(X, *parameters)
+                if isinstance(y_pred, np.float64):
+                    y_pred = np.full_like(Y, fill_value = y_pred)
+                loss = np.sum((y_pred-Y)**2)
+                assert y_pred.shape == Y.shape, f"{y_pred.shape}, {Y.shape}"
+                                
+                for i in range(num_consts):
+                    expression_str = expression_str.replace(f"y{i}", f"{parameters[i]:0.3f}")
+                
+                
+            else:
+                first = False
                 while expression_str:
                     try:
                         parsed_expr = parse_expr(expression_str, transformations=transformations)
-                        model_selection = lambdify(x, parsed_expr)
-                        X, y = Board.data[:, 0], Board.data[:, 1]
-                        loss = np.sum((model_selection(X)-y)**2)
-                        if loss < Board.best_loss:
-                            Board.best_expression = parsed_expr
-                            Board.best_loss = loss
-                            print(f"New best expression: {Board.best_expression}")
-                            print(f"New best loss: {Board.best_loss:.3f}")
-                            return True
-                        return False
+                        break
                     except:
-                        expression_str = ' '.join(expression_str.split()[:-1])
-                return False
-          
+                        if not first:
+                            expression_str += " x"
+                            first = True
+                        else:
+                            expression_str = ' '.join(expression_str.split()[:-1])
+                
+                if not expression_str:
+                    return False
+                
+                model_selection = lambdify(x, parsed_expr)
+                
+                y_pred = model_selection(X)
+                if isinstance(y_pred, np.float64) or isinstance(y_pred, int):
+                    y_pred = np.full_like(Y, fill_value = y_pred)
+                loss = np.sum((y_pred-Y)**2)
+                assert y_pred.shape == Y.shape, f"{y_pred.shape}, {Y.shape}"
+            
+
+            if loss < Board.best_loss:
+                try:
+                    
+                    Board.best_expression = parse_expr(expression_str, transformations=transformations)
+                except:
+                    print("faulty expression_str =",expression_str)
+                    try:
+                        import re
+                        float_pattern = r'-?\d+\.\d+'
+                        floats_found = re.findall(float_pattern, expression_str)
+                        new_expression = re.sub(float_pattern, r'(\g<0>)', expression_str)
+                        Board.best_expression = parse_expr(new_expression, transformations=transformations)
+                        print("fixed expression_str =", Board.best_expression)
+                    except:
+                        print("faulty new_expression =", new_expression)
+                        exit()
+                    
+                Board.best_loss = loss
+                print(f"New best expression: {Board.best_expression}")
+                print(f"New best loss: {Board.best_loss:.3f}")
+                return True
+            return False
+      
                 
 
     def execute_move(self, move):
