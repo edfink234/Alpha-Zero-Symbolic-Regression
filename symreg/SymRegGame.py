@@ -29,7 +29,7 @@ class SymRegGame(Game):
 
     def getActionSize(self):
         # return number of operators
-        return len(self.b.get_legal_moves())
+        return self.b.init_legal
 
     def getNextState(self, board, action):
         # if player takes action on board, return next (board,player)
@@ -48,17 +48,18 @@ class SymRegGame(Game):
         b = Board(self.n)
         b.pieces = np.copy(board)
         legalMoves =  b.get_legal_moves()
+#        print("legalMoves =",legalMoves)
         for x, y in enumerate(legalMoves):
             valids[x]=1
-        return np.array(valids)
+        return np.array(legalMoves)#np.array(valids)
 
     def getGameEnded(self, board):
-        # return 0 if not ended, 1 if player 1 won, -1 if player 1 lost
+        # return 0 if not ended, 1 if player won, -1 if player lost
         b = Board(self.n)
         b.pieces = np.copy(board)
         if b.is_win():
             return 1
-        if 0 in b.pieces:#b.has_legal_moves():
+        if 0 in b.pieces: #b.has_legal_moves():
             return 0
         # else lost
         return -1
@@ -70,7 +71,7 @@ class SymRegGame(Game):
         return board, pi
 
     def stringRepresentation(self, board):
-        # 8x8 numpy array (canonical board)
+        # bytes representation of numpy array (canonical board)
         return board.tostring()
 
     @staticmethod

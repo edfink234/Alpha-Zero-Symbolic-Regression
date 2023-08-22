@@ -23,7 +23,6 @@ class Arena():
         human players/other baselines with each other.
         """
         self.player1 = player1
-        print("self.player1 =",self.player1)
         self.game = game
         self.display = display
 
@@ -58,7 +57,6 @@ class Arena():
             assert self.display
             print("Game over: Turn ", str(it), "Result ", str(self.game.getGameEnded(board)))
             self.display(board)
-        print(self.game.getGameEnded(board))
         return self.game.getGameEnded(board)
 
     def playGames(self, num, verbose=False):
@@ -73,25 +71,25 @@ class Arena():
         """
 
         num = int(num / 2)
-        oneWon = 0
-        twoWon = 0
+        wins = 0
+        losses = 0
         draws = 0
         for _ in tqdm(range(num), desc="Arena.playGames (1)"):
             gameResult = self.playGame(verbose=verbose)
             if gameResult == 1:
-                oneWon += 1
+                wins += 1
             elif gameResult == -1:
-                twoWon += 1
+                losses += 1
             else:
                 draws += 1
 
         for _ in tqdm(range(num), desc="Arena.playGames (2)"):
             gameResult = self.playGame(verbose=verbose)
-            if gameResult == -1:
-                oneWon += 1
-            elif gameResult == 1:
-                twoWon += 1
+            if gameResult == 1:
+                wins += 1
+            elif gameResult == -1:
+                losses += 1
             else:
                 draws += 1
 
-        return oneWon, twoWon, draws
+        return wins, losses, draws

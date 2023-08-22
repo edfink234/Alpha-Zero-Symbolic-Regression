@@ -40,7 +40,7 @@ class symregNNet():
         self.model = Model(inputs=self.input_boards, outputs=[self.pi, self.v])
         self.model.compile(loss=['categorical_crossentropy','mean_squared_error'], optimizer=Adam(args.lr))
         
-        print(self.model.summary())
+        self.model.summary()
 
 '''
 The given code defines a neural network (NNet) class called `symregNNet` designed for solving the problem of symbolic regression using TensorFlow and Keras. Symbolic regression is a task in which the goal is to find a mathematical expression that best fits a given set of data points.
