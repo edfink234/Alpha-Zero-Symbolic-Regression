@@ -18,7 +18,7 @@ class MCTS():
         self.nnet = nnet
         self.args = args
         self.Qsa = {}  # stores Q values for s,a (as defined in the paper)
-        self.Nsa = {}  # stores #times edge s,a was visited
+        self.Nsa = {}  # stores #times edge s,a was visited (s = state, a = action)
         self.Ns = {}  # stores #times board s was visited
         self.Ps = {}  # stores initial policy (returned by neural net)
 
@@ -37,8 +37,8 @@ class MCTS():
         for i in range(self.args.numMCTSSims):
             self.search(canonicalBoard)
 
-        s = self.game.stringRepresentation(canonicalBoard)
-        counts = [self.Nsa[(s, a)] if (s, a) in self.Nsa else 0 for a in range(self.game.getActionSize())]
+        s = self.game.stringRepresentation(canonicalBoard) #state
+        counts = [self.Nsa.get((s,a), 0) for a in range(self.game.getActionSize())]
 
         if temp == 0:
             bestAs = np.array(np.argwhere(counts == np.max(counts))).flatten()
@@ -82,7 +82,7 @@ class MCTS():
             # leaf node
             self.Ps[s], v = self.nnet.predict(canonicalBoard)
             valids = self.game.getValidMoves(canonicalBoard)
-            self.Ps[s] = self.Ps[s] * valids  # masking invalid moves
+            self.Ps[s] = self.Ps[s] * valids  # masking invalid moves -> This is where certain moves are made impossible! (valids is an array of 1's and 0's, so even if the NN predicts a move to be perfectly valid 
             sum_Ps_s = np.sum(self.Ps[s])
             if sum_Ps_s > 0:
                 self.Ps[s] /= sum_Ps_s  # renormalize

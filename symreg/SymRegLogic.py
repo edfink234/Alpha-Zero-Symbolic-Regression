@@ -15,7 +15,7 @@ Based on the board for the game of Othello by Eric P. Nichols.
 
 '''
 
-from sympy import symbols, Eq, lambdify
+from sympy import symbols, Eq, lambdify, latex
 from sympy.parsing.sympy_parser import (parse_expr, standard_transformations, implicit_multiplication_application)
 import numpy as np
 from scipy.optimize import curve_fit
@@ -102,7 +102,10 @@ class Board():
                     return False
                 
                 model_selection = lambdify((x, *y), parsed_expr)
-                parameters, covariance = curve_fit(model_selection, X, Y, p0 = np.ones(num_consts))
+                try:
+                    parameters, covariance = curve_fit(model_selection, X, Y, p0 = np.ones(num_consts))
+                except RuntimeError:
+                    parameters = np.random.random(num_consts)
                 y_pred = model_selection(X, *parameters)
                 if isinstance(y_pred, np.float64):
                     y_pred = np.full_like(Y, fill_value = y_pred)
@@ -157,6 +160,7 @@ class Board():
                     
                 Board.best_loss = loss
                 print(f"New best expression: {Board.best_expression}")
+                print(f"New best expression latex: {latex(Board.best_expression)}")
                 print(f"New best loss: {Board.best_loss:.3f}")
                 return True
             return False

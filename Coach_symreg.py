@@ -30,7 +30,7 @@ class Coach():
 
     def executeEpisode(self):
         """
-        This function executes one episode of self-play, starting with player 1.
+        This function executes one episode of self-play
         As the game is played, each turn is added as a training example to
         trainExamples. The game is played till the game ends. After the game
         ends, the outcome of the game is used to assign values to each example

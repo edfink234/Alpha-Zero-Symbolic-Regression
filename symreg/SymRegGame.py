@@ -34,7 +34,7 @@ class SymRegGame(Game):
     def getNextState(self, board, action):
         # if player takes action on board, return next (board,player)
         # action must be a valid move
-        if action == self.getActionSize():
+        if action == self.getActionSize(): 
             return board
         b = Board(self.n)
         b.pieces = np.copy(board)
@@ -48,7 +48,6 @@ class SymRegGame(Game):
         b = Board(self.n)
         b.pieces = np.copy(board)
         legalMoves =  b.get_legal_moves()
-#        print("legalMoves =",legalMoves)
         for x, y in enumerate(legalMoves):
             valids[x]=1
         return np.array(legalMoves)#np.array(valids)

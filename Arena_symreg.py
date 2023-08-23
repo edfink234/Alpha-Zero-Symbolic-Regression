@@ -32,7 +32,7 @@ class Arena():
 
         Returns:
             either
-                winner: player who won the game (1 if player1, -1 if player2)
+                win (1) or loss (-1)
             or
                 draw result returned from the game that is neither 1, -1, nor 0.
         """
@@ -44,7 +44,7 @@ class Arena():
             if verbose:
                 assert self.display
                 self.display(board)
-            action = players[0](self.game.getCanonicalForm(board))
+            action = players[0](self.game.getCanonicalForm(board)) #Function that returns action with maximum prob given the board
 
             valids = self.game.getValidMoves(self.game.getCanonicalForm(board))
 
@@ -61,13 +61,13 @@ class Arena():
 
     def playGames(self, num, verbose=False):
         """
-        Plays num games in which player1 starts num/2 games and player2 starts
-        num/2 games.
+        Plays num games in which player1 starts num/2 games and then player1 starts
+        another num/2 games.
 
         Returns:
-            oneWon: games won by player1
-            twoWon: games won by player2
-            draws:  games won by nobody
+            wins: games won
+            losses: games lost
+            draws:  games neither won nor lost
         """
 
         num = int(num / 2)

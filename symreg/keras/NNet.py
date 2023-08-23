@@ -58,7 +58,7 @@ class NNetWrapper(NeuralNet):
         board = board[np.newaxis, :]
 
         # run
-        pi, v = self.nnet.model.predict(board, verbose=False)
+        pi, v = self.nnet.model.predict(board, verbose=False) #pi is the NN predicted probability of selecting each possible action given the state s
 
         #print('PREDICTION TIME TAKEN : {0:03f}'.format(time.time()-start))
         return pi[0], v[0]
