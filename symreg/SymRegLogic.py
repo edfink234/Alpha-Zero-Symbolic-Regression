@@ -17,6 +17,7 @@ Based on the board for the game of Othello by Eric P. Nichols.
 
 from sympy import symbols, Eq, lambdify, latex
 from sympy.parsing.sympy_parser import (parse_expr, standard_transformations, implicit_multiplication_application)
+from sympy.utilities.lambdify import implemented_function
 import numpy as np
 from scipy.optimize import curve_fit
 import math
@@ -31,10 +32,10 @@ class Board():
 
     def __init__(self, n=3):
         "Set up initial board configuration."
-        self.__operators = ['+', '-', '*', 'cos', 'x', 'const']
+        self.__operators = ['+', '-', '*', 'cos', 'x', 'const', 'grad']
         self.init_legal = len(self.__operators)
         self.__operators_float = [sum(ord(i) for i in j) for j in self.__operators] #[43, 45, 42, 325, 120]
-        self.legal_moves_dict = {'+' : ['cos', 'x', 'const'], '-' : ['cos', 'x', 'const'], '*' : ['cos', 'x', 'const'], 'cos' : ['x', 'const'], 'x' : ['+', '-', '*', 'cos', 'const'], 'const': ['+', '-', '*', 'cos', 'x']}
+        self.legal_moves_dict = {'+' : ['cos', 'x', 'const'], '-' : ['cos', 'x', 'const'], '*' : ['cos', 'x', 'const'], 'cos' : ['x', 'const'], 'x' : ['+', '-', '*', 'cos', 'const'], 'const': ['+', '-', '*', 'cos', 'x'], 'grad': ['x']}
         self.__operators_dict = {operator:name for (operator, name) in zip(self.__operators_float, self.__operators)}
         self.__operators_inv_dict = {name:operator for (operator, name) in zip(self.__operators_float, self.__operators)}
         self.__legal_moves_dict = {self.__operators_inv_dict[key]: [self.__operators_inv_dict[i] for i in value] for (key, value) in self.legal_moves_dict.items()}
@@ -55,8 +56,8 @@ class Board():
         moves = set()  # stores the legal moves.
         if 0 not in self.pieces:
             return self.__operators_float
-        if not np.any(self.pieces): #At the beginning, all pieces are 0, so the legal moves are '+', '-', 'cos', 'x', and 'const', but not '*'
-            return [1, 1, 0, 1, 1, 1]
+        if not np.any(self.pieces): #At the beginning, all pieces are 0, so the legal moves are '+', '-', 'cos', 'x', 'const', and 'grad', but not '*'
+            return [1, 1, 0, 1, 1, 1, 1]
         
         curr_move = np.where(self.pieces==0)[0][0]
         
@@ -76,24 +77,25 @@ class Board():
         if 0 in self.pieces: #Expression list not complete
             return -1
         else:
-            
+            grad = implemented_function('grad', lambda x: np.gradient(x))
             expression_str = ' '.join([self.__operators_dict[i] for i in self.pieces])
             num_consts = expression_str.count("const")
             x = symbols('x')
             transformations = (standard_transformations + (implicit_multiplication_application,))
             X, Y = Board.data[:, 0], Board.data[:, 1]
-            print(f"X.shape = {X.shape}")
             
             if num_consts:
                 y = symbols(f'y(:{num_consts})')
                 consts = [f"y{i}" for i in range(num_consts)]
+                temp_dict = {key:value for (key,value) in zip(consts, y)}
+                temp_dict.update({"grad": grad})
                 for i in range(num_consts):
                     expression_str = expression_str.replace("const", f"y{i}", 1)
                 
                 first = False
                 while expression_str:
                     try:
-                        parsed_expr = parse_expr(expression_str, transformations=transformations, local_dict = {key:value for (key,value) in zip(consts, y)})
+                        parsed_expr = parse_expr(expression_str, transformations=transformations, local_dict = temp_dict)
                         break
                     except:
                         if not first:
@@ -124,9 +126,10 @@ class Board():
                 
             else:
                 first = False
+                temp_dict = {"grad": grad}
                 while expression_str:
                     try:
-                        parsed_expr = parse_expr(expression_str, transformations=transformations)
+                        parsed_expr = parse_expr(expression_str, transformations=transformations, local_dict = temp_dict)
                         break
                     except:
                         if not first:
@@ -149,8 +152,7 @@ class Board():
 
             if loss < Board.best_loss:
                 try:
-                    
-                    Board.best_expression = parse_expr(expression_str, transformations=transformations)
+                    Board.best_expression = parse_expr(new_expression, transformations=transformations, local_dict = temp_dict)
                 except:
                     print("faulty expression_str =",expression_str)
                     try:
@@ -159,7 +161,7 @@ class Board():
                         floats_found = re.findall(float_pattern, expression_str)
                         new_expression = re.sub(float_pattern, r'(\g<0>)', expression_str)
                         new_expression = new_expression.replace('x','(x)')
-                        Board.best_expression = parse_expr(new_expression, transformations=transformations)
+                        Board.best_expression = parse_expr(new_expression, transformations=transformations, local_dict = temp_dict)
                         print("fixed expression_str =", Board.best_expression)
                     except:
                         print("faulty new_expression_str =", new_expression)

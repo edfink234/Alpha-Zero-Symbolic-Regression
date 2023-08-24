@@ -19,9 +19,9 @@ args = dotdict({
     'numEps': 10000,              # Number of complete self-play games to simulate during a new iteration.
     'tempThreshold': 0,        
     'maxlenOfQueue': 200000,    # Number of game examples to train the neural networks.
-    'numMCTSSims': 100,          # Number of games moves for MCTS to simulate.
+    'numMCTSSims': 10000,          # Number of games moves for MCTS to simulate.
     'arenaCompare': 1,         # Number of games to play during arena play to determine if new net will be accepted.
-    'cpuct': 1000,
+    'cpuct': 1,
 
     'checkpoint': './temp/',
     'load_model': False,
@@ -49,7 +49,12 @@ def main():
 
         log.info('Loading the Coach...')
         
-        Board.data = np.loadtxt("symreg/test_data.txt")
+        X_data = (np.linspace(1,10,1000)**2).reshape((1000,1))
+        Y_data = np.gradient(X_data.flatten()).reshape((len(X_data),1))
+        
+#        Board.data = np.loadtxt("symreg/test_data.txt")
+        Board.data = np.hstack((X_data,Y_data))
+
         c = Coach(g, nnet, args) #(3.)
 
         if args.load_model:
@@ -66,17 +71,18 @@ def main():
             with open("best_expression.txt", "w") as f:
                 f.write(f"{Board.best_expression}\n")
                 f.write(f"{Board.best_loss}\n")
-                x_vals = np.linspace(Board.data[:,0][0], Board.data[:,0][-1], 1000)
+                x_vals = X_data
                 x = sp.symbols('x')
                 best_func = sp.lambdify(x, Board.best_expression)
-                y_vals = best_func(x_vals)
+                y_vals = best_func(x_vals.flatten())
+                
                 plt.plot(x_vals, y_vals, label = "$"+sp.latex(Board.best_expression)+"$")
                 plt.plot(Board.data[:,0], Board.data[:,1], label = "Original data")
                 plt.xlabel("x")
                 plt.ylabel("y")
                 plt.legend()
-                plt.title("Best Expression Alpha Zero Symbolic Regression")
-                plt.savefig("Best_Expression.png", dpi = 5*96)
+                plt.title("Best Expression Gradient Test")
+                plt.savefig("Grad_Test_Best_Expression.png", dpi = 5*96)
                 print("Saved!")
                 
                 
