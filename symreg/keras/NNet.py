@@ -23,7 +23,7 @@ Based on (copy-pasted from) the NNet by SourKream and Surag Nair.
 """
 
 args = dotdict({
-    'lr': 0.001,
+    'lr': 0.01,
     'dropout': 0.3,
     'epochs': 10,
     'batch_size': 64,

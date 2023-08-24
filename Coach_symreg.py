@@ -19,7 +19,6 @@ class Coach():
     This class executes the self-play + learning. It uses the functions defined
     in Game and NeuralNet. args are specified in main.py.
     """
-
     def __init__(self, game, nnet, args):
         self.game = game
         self.nnet = nnet
@@ -50,19 +49,18 @@ class Coach():
 
         while True:
             episodeStep += 1
-            canonicalBoard = self.game.getCanonicalForm(board)
+            canonicalBoard = board
             temp = int(episodeStep < self.args.tempThreshold)
 
             pi = self.mcts.getActionProb(canonicalBoard, temp=temp)
-            sym = self.game.getSymmetries(canonicalBoard, pi)
-            trainExamples.append([sym[0], sym[1]])
+            trainExamples.append([canonicalBoard, pi])
 
             action = np.random.choice(len(pi), p=pi)
             board = self.game.getNextState(board, action)
 
             r = self.game.getGameEnded(board)
 
-            if r != 0:
+            if r != -1:
                 for i in range(len(trainExamples)):
                     trainExamples[i].append(r)
                 return trainExamples
@@ -73,7 +71,7 @@ class Coach():
         iteration. After every iteration, it retrains neural network with
         examples in trainExamples (which has a maximum length of maxlenofQueue).
         It then pits the new neural network against the old one and accepts it
-        only if it wins >= updateThreshold fraction of games.
+        only if score >= self.args.best_score
         """
 
         for i in range(1, self.args.numIters + 1):
@@ -112,15 +110,16 @@ class Coach():
 
             log.info('PITTING AGAINST PREVIOUS VERSION')
             arena = Arena(lambda x: np.argmax(nmcts.getActionProb(x, temp=0)), self.game)
-            nwins, nlosses, draws = arena.playGames(self.args.arenaCompare)
+            score = arena.playGames(self.args.arenaCompare)
 
-            log.info('WINS: %d, LOSSES: %d ; DRAWS : %d' % (nwins, nlosses, draws))
+            log.info(f'Score / Ideal: {score} / {self.args.arenaCompare}')
             
-            if nwins == 0: #pwins + nwins == 0 or float(nwins) / (pwins + nwins) < self.args.updateThreshold:
+            if score < self.args.bestScore:
                 log.info('REJECTING NEW MODEL')
                 self.nnet.load_checkpoint(folder=self.args.checkpoint, filename='temp.pth.tar')
             else:
                 log.info('ACCEPTING NEW MODEL')
+                self.args.bestScore = score
                 self.nnet.save_checkpoint(folder=self.args.checkpoint, filename=self.getCheckpointFile(i))
                 self.nnet.save_checkpoint(folder=self.args.checkpoint, filename='best.pth.tar')
 

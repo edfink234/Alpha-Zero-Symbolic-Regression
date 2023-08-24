@@ -15,31 +15,31 @@ log = logging.getLogger(__name__)
 coloredlogs.install(level='INFO')  # Change this to DEBUG to see more info.
 
 args = dotdict({
-    'numIters': 1000,
-    'numEps': 1000,              # Number of complete self-play games to simulate during a new iteration.
-    'tempThreshold': 15,        #
-    'updateThreshold': 0.6,     # During arena playoff, new neural net will be accepted if threshold or more of games are won.
+    'numIters': 10,
+    'numEps': 10,              # Number of complete self-play games to simulate during a new iteration.
+    'tempThreshold': 0,        
     'maxlenOfQueue': 200000,    # Number of game examples to train the neural networks.
-    'numMCTSSims': 25,          # Number of games moves for MCTS to simulate.
-    'arenaCompare': 5,         # Number of games to play during arena play to determine if new net will be accepted.
+    'numMCTSSims': 10000,          # Number of games moves for MCTS to simulate.
+    'arenaCompare': 1,         # Number of games to play during arena play to determine if new net will be accepted.
     'cpuct': 1,
 
     'checkpoint': './temp/',
-    'load_model': True,
+    'load_model': False,
     'load_folder_file': ('temp/','checkpoint_0.pth.tar'),
     'load_model_file': ('temp','temp.h5'),
     'numItersForTrainExamplesHistory': 20,
+    'bestScore': 0
 
 })
 
 def main():
     try:
         log.info('Loading %s...', Game.__name__)
-        g = Game(9)
+        g = Game(9) #(1.)
         #TODO: Add a feature to make the expression size variable?
 
         log.info('Loading %s...', nn.__name__)
-        nnet = nn(g)
+        nnet = nn(g) #(2.)
 
         if args.load_model:
             log.info('Loading checkpoint "%s/%s"...', args.load_model_file[0], args.load_model_file[1])
@@ -50,7 +50,7 @@ def main():
         log.info('Loading the Coach...')
         
         Board.data = np.loadtxt("symreg/test_data.txt")
-        c = Coach(g, nnet, args)
+        c = Coach(g, nnet, args) #(3.)
 
         if args.load_model:
             log.info("Loading 'trainExamples' from file...")
@@ -59,6 +59,8 @@ def main():
         log.info('Starting the learning process 🎉')
         c.learn()
     except KeyboardInterrupt:
+        print(f"best expression = {Board.best_expression}")
+        print(f"best loss = {Board.best_loss}")
         save = input("Save best expression and loss? (y/n): ")
         if 'y' in save.lower():
             with open("best_expression.txt", "w") as f:

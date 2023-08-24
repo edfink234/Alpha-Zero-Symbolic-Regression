@@ -53,21 +53,14 @@ class SymRegGame(Game):
         return np.array(legalMoves)#np.array(valids)
 
     def getGameEnded(self, board):
-        # return 0 if not ended, 1 if player won, -1 if player lost
+        # return -1 if not ended, 0 <= result
         b = Board(self.n)
         b.pieces = np.copy(board)
-        if b.is_win():
-            return 1
+        result = b.is_win()
         if 0 in b.pieces: #b.has_legal_moves():
-            return 0
-        # else lost
-        return -1
+            return -1
+        return result
 
-    def getCanonicalForm(self, board):
-        return board
-
-    def getSymmetries(self, board, pi):
-        return board, pi
 
     def stringRepresentation(self, board):
         # bytes representation of numpy array (canonical board)

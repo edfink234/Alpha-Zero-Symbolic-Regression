@@ -19,6 +19,7 @@ from sympy import symbols, Eq, lambdify, latex
 from sympy.parsing.sympy_parser import (parse_expr, standard_transformations, implicit_multiplication_application)
 import numpy as np
 from scipy.optimize import curve_fit
+import math
 
 # from bkcharts.attributes import color
 class Board():
@@ -33,7 +34,7 @@ class Board():
         self.__operators = ['+', '-', '*', 'cos', 'x', 'const']
         self.init_legal = len(self.__operators)
         self.__operators_float = [sum(ord(i) for i in j) for j in self.__operators] #[43, 45, 42, 325, 120]
-        self.legal_moves_dict = {'+' : ['cos', 'x', 'const'], '-' : ['cos', 'x', 'const'], '*' : ['cos', 'x', 'const'], 'cos' : ['cos', 'x', 'const'], 'x' : ['+', '-', '*', 'cos', 'const'], 'const': ['+', '-', '*', 'cos', 'x']}
+        self.legal_moves_dict = {'+' : ['cos', 'x', 'const'], '-' : ['cos', 'x', 'const'], '*' : ['cos', 'x', 'const'], 'cos' : ['x', 'const'], 'x' : ['+', '-', '*', 'cos', 'const'], 'const': ['+', '-', '*', 'cos', 'x']}
         self.__operators_dict = {operator:name for (operator, name) in zip(self.__operators_float, self.__operators)}
         self.__operators_inv_dict = {name:operator for (operator, name) in zip(self.__operators_float, self.__operators)}
         self.__legal_moves_dict = {self.__operators_inv_dict[key]: [self.__operators_inv_dict[i] for i in value] for (key, value) in self.legal_moves_dict.items()}
@@ -54,12 +55,14 @@ class Board():
         moves = set()  # stores the legal moves.
         if 0 not in self.pieces:
             return self.__operators_float
-        if not np.any(self.pieces): #All pieces are 0
+        if not np.any(self.pieces): #At the beginning, all pieces are 0, so the legal moves are '+', '-', 'cos', 'x', and 'const', but not '*'
             return [1, 1, 0, 1, 1, 1]
         
         curr_move = np.where(self.pieces==0)[0][0]
         
-        legal_moves = [1 if i in self.__legal_moves_dict.get(self.pieces[curr_move-1], self.__operators_float) else 0 for i in self.__operators_float]
+        #legal_moves stores a list of 1's and 0's representing which of the moves in self.__operators_float are legal
+        #based on the last move. The last move is self.pieces[curr_move-1]
+        legal_moves = [1 if i in self.__legal_moves_dict.get(self.pieces[curr_move-1]) else 0 for i in self.__operators_float]
 
         return legal_moves
 
@@ -71,7 +74,7 @@ class Board():
         """Check whether the given player has created a complete (length self.n) and parseable expression
         """
         if 0 in self.pieces: #Expression list not complete
-            return False
+            return -1
         else:
             
             expression_str = ' '.join([self.__operators_dict[i] for i in self.pieces])
@@ -79,6 +82,7 @@ class Board():
             x = symbols('x')
             transformations = (standard_transformations + (implicit_multiplication_application,))
             X, Y = Board.data[:, 0], Board.data[:, 1]
+            print(f"X.shape = {X.shape}")
             
             if num_consts:
                 y = symbols(f'y(:{num_consts})')
@@ -99,11 +103,13 @@ class Board():
                             expression_str = ' '.join(expression_str.split()[:-1])
                 
                 if not expression_str:
-                    return False
+                    return 0
                 
                 model_selection = lambdify((x, *y), parsed_expr)
+                #try to optimize parameters y0, y1, ..., yn
                 try:
                     parameters, covariance = curve_fit(model_selection, X, Y, p0 = np.ones(num_consts))
+                #if it didn't work, set the parameters y0, y1, ..., yn to random values
                 except RuntimeError:
                     parameters = np.random.random(num_consts)
                 y_pred = model_selection(X, *parameters)
@@ -130,7 +136,7 @@ class Board():
                             expression_str = ' '.join(expression_str.split()[:-1])
                 
                 if not expression_str:
-                    return False
+                    return 0
                 
                 model_selection = lambdify(x, parsed_expr)
                 
@@ -152,18 +158,18 @@ class Board():
                         float_pattern = r'-?\d+\.\d+'
                         floats_found = re.findall(float_pattern, expression_str)
                         new_expression = re.sub(float_pattern, r'(\g<0>)', expression_str)
+                        new_expression = new_expression.replace('x','(x)')
                         Board.best_expression = parse_expr(new_expression, transformations=transformations)
                         print("fixed expression_str =", Board.best_expression)
                     except:
-                        print("faulty new_expression =", new_expression)
-                        exit()
-                    
+                        print("faulty new_expression_str =", new_expression)
+                        return np.inf
+
                 Board.best_loss = loss
                 print(f"New best expression: {Board.best_expression}")
                 print(f"New best expression latex: {latex(Board.best_expression)}")
                 print(f"New best loss: {Board.best_loss:.3f}")
-                return True
-            return False
+            return math.exp(-0.005*loss)
       
                 
 

@@ -39,14 +39,14 @@ class Arena():
         players = [self.player1]
         board = self.game.getInitBoard()
         it = 0
-        while self.game.getGameEnded(board) == 0:
+        while self.game.getGameEnded(board) == -1:
             it += 1
             if verbose:
                 assert self.display
                 self.display(board)
-            action = players[0](self.game.getCanonicalForm(board)) #Function that returns action with maximum prob given the board
+            action = players[0](board) #Function that returns action with maximum prob given the board
 
-            valids = self.game.getValidMoves(self.game.getCanonicalForm(board))
+            valids = self.game.getValidMoves(board)
 
             if valids[action] == 0:
                 log.error(f'Action {action} is not valid!')
@@ -61,35 +61,17 @@ class Arena():
 
     def playGames(self, num, verbose=False):
         """
-        Plays num games in which player1 starts num/2 games and then player1 starts
-        another num/2 games.
+        Plays num games
 
         Returns:
             wins: games won
             losses: games lost
             draws:  games neither won nor lost
         """
-
-        num = int(num / 2)
-        wins = 0
-        losses = 0
-        draws = 0
-        for _ in tqdm(range(num), desc="Arena.playGames (1)"):
+        
+        score = 0
+        for _ in tqdm(range(num), desc="Arena.playGames"):
             gameResult = self.playGame(verbose=verbose)
-            if gameResult == 1:
-                wins += 1
-            elif gameResult == -1:
-                losses += 1
-            else:
-                draws += 1
+            score += gameResult
 
-        for _ in tqdm(range(num), desc="Arena.playGames (2)"):
-            gameResult = self.playGame(verbose=verbose)
-            if gameResult == 1:
-                wins += 1
-            elif gameResult == -1:
-                losses += 1
-            else:
-                draws += 1
-
-        return wins, losses, draws
+        return score

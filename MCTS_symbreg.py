@@ -50,6 +50,7 @@ class MCTS():
         counts = [x ** (1. / temp) for x in counts]
         counts_sum = float(sum(counts))
         probs = [x / counts_sum for x in counts]
+        assert(sum(probs)==1)
         return probs
 
     def search(self, canonicalBoard):
@@ -64,19 +65,15 @@ class MCTS():
         outcome is propagated up the search path. The values of Ns, Nsa, Qsa are
         updated.
 
-        NOTE: the return values are the negative of the value of the current
-        state. This is done since v is in [-1,1] and if v is the value of a
-        state for the current player, then its value is -v for the other player.
+        NOTE: the return value is 0 <= v <= 1
 
-        Returns:
-            v: the negative of the value of the current canonicalBoard
         """
         s = self.game.stringRepresentation(canonicalBoard)
         if s not in self.Es:
             self.Es[s] = self.game.getGameEnded(canonicalBoard)
-        if self.Es[s] != 0:
+        if self.Es[s] != -1:
             # terminal node
-            return -self.Es[s]
+            return self.Es[s]
 
         if s not in self.Ps:
             # leaf node
@@ -90,14 +87,15 @@ class MCTS():
                 # if all valid moves were masked make all valid moves equally probable
 
                 # NB! All valid moves may be masked if either your NNet architecture is insufficient or you've get overfitting or something else.
-                # If you have got dozens or hundreds of these messages you should pay attention to your NNet and/or training process.   
+                # If you have got dozens or hundreds of these messages you should pay attention to your NNet and/or training process.
+                print("sum_Ps_s, self.Ps[s]", sum_Ps_s, self.Ps[s])
                 log.error("All valid moves were masked, doing a workaround.")
                 self.Ps[s] = self.Ps[s] + valids
                 self.Ps[s] /= np.sum(self.Ps[s])
 
             self.Vs[s] = valids
             self.Ns[s] = 0
-            return -v
+            return v
 
         valids = self.Vs[s]
         cur_best = -float('inf')
@@ -118,7 +116,6 @@ class MCTS():
 
         a = best_act
         next_s = self.game.getNextState(canonicalBoard, a)
-        next_s = self.game.getCanonicalForm(next_s)
 
         v = self.search(next_s)
 
@@ -131,4 +128,4 @@ class MCTS():
             self.Nsa[(s, a)] = 1
 
         self.Ns[s] += 1
-        return -v
+        return v
