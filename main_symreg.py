@@ -19,9 +19,9 @@ args = dotdict({
     'numEps': 10000,              # Number of complete self-play games to simulate during a new iteration.
     'tempThreshold': 0,        
     'maxlenOfQueue': 200000,    # Number of game examples to train the neural networks.
-    'numMCTSSims': 100,          # Number of games moves for MCTS to simulate.
+    'numMCTSSims': 1000000,          # Number of games moves for MCTS to simulate.
     'arenaCompare': 1,         # Number of games to play during arena play to determine if new net will be accepted.
-    'cpuct': 1000,
+    'cpuct': 1e3, #Controls the exploration/exploitation trade-off. TODO: Maybe set a schedule for this, i.e., so that the first N episodes have a higher value to encourage exploration and then lower this value to encourage exploitation?
 
     'checkpoint': './temp/',
     'load_model': False,
@@ -35,7 +35,7 @@ args = dotdict({
 def main():
     try:
         log.info('Loading %s...', Game.__name__)
-        g = Game(5) #(1.)
+        g = Game(10) #(1.)
         #TODO: Add a feature to make the expression size variable?
 
         log.info('Loading %s...', nn.__name__)

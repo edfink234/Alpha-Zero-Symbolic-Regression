@@ -44,21 +44,18 @@ class SymRegGame(Game):
 
     def getValidMoves(self, board):
         # return a fixed size binary vector
-        valids = [0]*self.getActionSize()
         b = Board(self.n)
         b.pieces = np.copy(board)
         legalMoves =  b.get_legal_moves()
-        for x, y in enumerate(legalMoves):
-            valids[x]=1
-        return np.array(legalMoves)#np.array(valids)
+        return np.array(legalMoves)
 
     def getGameEnded(self, board):
         # return -1 if not ended, 0 <= result
         b = Board(self.n)
         b.pieces = np.copy(board)
-        result = b.is_win()
-        if 0 in b.pieces: #b.has_legal_moves():
+        if 0 in b.pieces:
             return -1
+        result = b.is_win()
         return result
 
 
@@ -66,6 +63,7 @@ class SymRegGame(Game):
         # bytes representation of numpy array (canonical board)
         return board.tostring()
 
+    #TODO: Modify this so that it works for symbolic regression instead of tictactoe?
     @staticmethod
     def display(board):
         n = board.shape[0]

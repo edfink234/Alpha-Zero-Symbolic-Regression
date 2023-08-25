@@ -49,14 +49,12 @@ class Board():
         return self.__operators_float[index]
 
     def get_legal_moves(self):
-        """Returns all the legal moves for the given color.
-        (1 for white, -1 for black)
-        @param color not used and came from previous version.        
+        """Returns a list of 1's and 0's representing if the i'th operator in self.__operators is legal given the current state s (represented by the numpy array self.pieces)
         """
-        moves = set()  # stores the legal moves.
-        if 0 not in self.pieces:
+        if 0 not in self.pieces: #Then the state expression is complete and this function is kind of meaningless, so just return the supported operators I guess.
+            print("ok, that's wierd.")
             return self.__operators_float
-        if not np.any(self.pieces): #At the beginning, all pieces are 0, so the legal moves are '+', '-', 'cos', 'x', 'const', and 'grad', but not '*'
+        if not np.any(self.pieces): #If all pieces are 0. At the beginning, all pieces are 0 (i.e. false), so the legal moves are '+', '-', 'cos', 'x', 'const', and 'grad', but not '*'
             return [1, 1, 0, 1, 1, 1, 1]
         
         curr_move = np.where(self.pieces==0)[0][0]
@@ -67,20 +65,25 @@ class Board():
 
         return legal_moves
 
-    def has_legal_moves(self):
-        return 0 in self.pieces
-    
-
     def is_win(self):
-        """Check whether the given player has created a complete (length self.n) and parseable expression
+        """Check whether the given player has created a complete (length self.n) expression (again), and
+        checks if it can be made parseable. Returns the score of the expression, where 0 <= score <= 1
         """
         if 0 in self.pieces: #Expression list not complete
             return -1
         else:
             grad = implemented_function('grad', lambda x: np.gradient(x))
+            
+            """
+            Feel free to add more custom operators like the one above. Just make sure that you also:
+               1. add the operators to the self.__operators list
+               2. add the entry to the self.legal_moves_dict, which should contain the new operator name as key
+                  and the list of operators that can come after it as value
+            """
+            
             expression_str = ' '.join([self.__operators_dict[i] for i in self.pieces])
             num_consts = expression_str.count("const")
-            x = symbols('x')
+            x = symbols('x') #TODO: Add arbitrary amount of input terms -> multivariate! (v.s. univariate)
             transformations = (standard_transformations + (implicit_multiplication_application,))
             X, Y = Board.data[:, 0], Board.data[:, 1]
             
@@ -152,7 +155,7 @@ class Board():
 
             if loss < Board.best_loss:
                 try:
-                    Board.best_expression = parse_expr(new_expression, transformations=transformations, local_dict = temp_dict)
+                    Board.best_expression = parse_expr(expression_str, transformations=transformations, local_dict = temp_dict)
                 except:
                     print("faulty expression_str =",expression_str)
                     try:
@@ -165,7 +168,7 @@ class Board():
                         print("fixed expression_str =", Board.best_expression)
                     except:
                         print("faulty new_expression_str =", new_expression)
-                        return np.inf
+                        return 0
 
                 Board.best_loss = loss
                 print(f"New best expression: {Board.best_expression}")

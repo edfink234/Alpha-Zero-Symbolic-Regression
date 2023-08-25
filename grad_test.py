@@ -35,7 +35,7 @@ args = dotdict({
 def main():
     try:
         log.info('Loading %s...', Game.__name__)
-        g = Game(5) #(1.)
+        g = Game(10) #(1.)
         #TODO: Add a feature to make the expression size variable?
 
         log.info('Loading %s...', nn.__name__)
