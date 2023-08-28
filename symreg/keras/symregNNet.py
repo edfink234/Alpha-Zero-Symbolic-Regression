@@ -6,6 +6,7 @@ import argparse
 from tensorflow.keras.models import *
 from tensorflow.keras.layers import *
 from tensorflow.keras.optimizers import *
+from keras2tikz.model_to_tex import gen_tikz_from_model
 
 """
 NeuralNet for the game of Symbolic Regression.
@@ -39,7 +40,7 @@ class symregNNet():
 
         self.model = Model(inputs=self.input_boards, outputs=[self.pi, self.v])
         self.model.compile(loss=['categorical_crossentropy','mean_squared_error'], optimizer=Adam(args.lr))
-        
+        print(gen_tikz_from_model(self.model))
         self.model.summary()
 
 '''

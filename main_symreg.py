@@ -35,11 +35,10 @@ args = dotdict({
 def main():
     try:
         log.info('Loading %s...', Game.__name__)
-        g = Game(10) #(1.)
-        #TODO: Add a feature to make the expression size variable?
+        g = Game(3)
 
         log.info('Loading %s...', nn.__name__)
-        nnet = nn(g) #(2.)
+        nnet = nn(g)
 
         if args.load_model:
             log.info('Loading checkpoint "%s/%s"...', args.load_model_file[0], args.load_model_file[1])
@@ -50,7 +49,7 @@ def main():
         log.info('Loading the Coach...')
         
         Board.data = np.loadtxt("symreg/test_data.txt")
-        c = Coach(g, nnet, args) #(3.)
+        c = Coach(g, nnet, args) 
 
         if args.load_model:
             log.info("Loading 'trainExamples' from file...")

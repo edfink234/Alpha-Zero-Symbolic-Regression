@@ -13,7 +13,7 @@ class Arena():
     def __init__(self, player1, game, display=None):
         """
         Input:
-            player 1,2: two functions that takes board as input, return action
+            player 1: a function that takes a board as input and returns an action
             game: Game object
             display: a function that takes board as input and prints it (e.g.
                      display in othello/OthelloGame). Is necessary for verbose

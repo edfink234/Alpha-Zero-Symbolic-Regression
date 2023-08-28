@@ -1,4 +1,5 @@
 from __future__ import print_function
+import logging
 import sys
 sys.path.append('..')
 from Game import Game
@@ -14,9 +15,15 @@ Date: Jan 5, 2018.
 
 Based on the OthelloGame by Surag Nair.
 """
+
+log = logging.getLogger(__name__)
+
 class SymRegGame(Game):
     def __init__(self, n=3):
         self.n = n
+        if n < 3:
+            log.warning(f"n = {n} is not allowed since it is less than 3, setting n to 3 now.")
+            self.n = 3
         self.b = Board(self.n) #initial board
 
     def getInitBoard(self):
@@ -28,7 +35,7 @@ class SymRegGame(Game):
         return self.n
 
     def getActionSize(self):
-        # return number of operators
+        # return number of operators in action space
         return self.b.init_legal
 
     def getNextState(self, board, action):
