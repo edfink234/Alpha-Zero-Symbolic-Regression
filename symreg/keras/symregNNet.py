@@ -6,7 +6,7 @@ import argparse
 from tensorflow.keras.models import *
 from tensorflow.keras.layers import *
 from tensorflow.keras.optimizers import *
-from keras2tikz.model_to_tex import gen_tikz_from_model
+from keras2tikzClone.model_to_tex import gen_tikz_from_model
 
 """
 NeuralNet for the game of Symbolic Regression.
