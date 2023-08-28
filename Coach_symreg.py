@@ -82,7 +82,7 @@ class Coach():
                 iterationTrainExamples = deque([], maxlen=self.args.maxlenOfQueue)
 
                 for _ in tqdm(range(self.args.numEps), desc="Self Play"):
-                    self.mcts = MCTS(self.game, self.nnet, self.args)  # reset search tree
+#                    self.mcts = MCTS(self.game, self.nnet, self.args)  # reset search tree
                     iterationTrainExamples += self.executeEpisode()
 
                 # save the iteration examples to the history 

@@ -15,13 +15,13 @@ log = logging.getLogger(__name__)
 coloredlogs.install(level='INFO')  # Change this to DEBUG to see more info.
 
 args = dotdict({
-    'numIters': 10,
-    'numEps': 10000,              # Number of complete self-play games to simulate during a new iteration.
+    'numIters': 100000000,
+    'numEps': 1,              # Number of complete self-play games to simulate during a new iteration.
     'tempThreshold': 0,        
     'maxlenOfQueue': 200000,    # Number of game examples to train the neural networks.
-    'numMCTSSims': 1000000,          # Number of games moves for MCTS to simulate.
-    'arenaCompare': 1,         # Number of games to play during arena play to determine if new net will be accepted.
-    'cpuct': 1e3, #Controls the exploration/exploitation trade-off. TODO: Maybe set a schedule for this, i.e., so that the first N episodes have a higher value to encourage exploration and then lower this value to encourage exploitation?
+    'numMCTSSims': 1000,          # Number of games moves for MCTS to simulate.
+    'arenaCompare': 0,         # Number of games to play during arena play to determine if new net will be accepted.
+    'cpuct': 1, #Controls the exploration/exploitation trade-off. TODO: Maybe set a schedule for this, i.e., so that the first N episodes have a higher value to encourage exploration and then lower this value to encourage exploitation?
 
     'checkpoint': './temp/',
     'load_model': False,
@@ -35,7 +35,7 @@ args = dotdict({
 def main():
     try:
         log.info('Loading %s...', Game.__name__)
-        g = Game(3)
+        g = Game(10)
 
         log.info('Loading %s...', nn.__name__)
         nnet = nn(g)
