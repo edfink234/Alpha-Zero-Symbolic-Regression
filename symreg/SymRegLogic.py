@@ -32,10 +32,22 @@ class Board():
 
     def __init__(self, n=3):
         "Set up initial board configuration."
-        self.__operators = ['+', '-', '*', 'cos', 'x', 'const', 'grad']
-        self.init_legal = len(self.__operators)
-        self.__operators_float = [sum(ord(i) for i in j) for j in self.__operators] #[43, 45, 42, 325, 120]
-        self.legal_moves_dict = {'+' : ['cos', 'x', 'const'], '-' : ['cos', 'x', 'const'], '*' : ['cos', 'x', 'const'], 'cos' : ['x', 'const'], 'x' : ['+', '-', '*', 'cos', 'const'], 'const': ['+', '-', '*', 'cos', 'x'], 'grad': ['x']}
+        if len(Board.data[0]) == 2:
+            self.__operators = ['+', '-', '*', 'cos', 'x', 'const', 'grad']
+            self.init_legal = len(self.__operators)
+            self.__operators_float = [sum(ord(i) for i in j) for j in self.__operators] #[43, 45, 42, 325, 120]
+            self.legal_moves_dict = {'+' : ['cos', 'x', 'const'], '-' : ['cos', 'x', 'const'], '*' : ['cos', 'x', 'const'], 'cos' : ['x', 'const'], 'x' : ['+', '-', '*', 'cos', 'const'], 'const': ['+', '-', '*', 'cos', 'x'], 'grad': ['x']}
+        else:
+            self.__input_vars = [f'x{i}' for i in range(len(Board.data[0])-1)]
+            self.__multi_var_dict = {key:value for key,value in zip(self.__input_vars, [self.__input_vars + ['+', '-', '*', 'cos', 'const'] for i in self.__input_vars])}
+            self.__operators = ['+', '-', '*', 'cos'] + self.__input_vars + ['const', 'grad']
+            self.init_legal = len(self.__operators)
+            self.__operators_float = [sum(ord(i) for i in j) for j in self.__operators]
+            self.legal_moves_dict = {'+' : ['cos', 'const'], '-' : ['cos', 'const'], '*' : ['cos', 'const'], 'cos' : ['const'], 'const': ['+', '-', '*', 'cos'], 'grad': []}
+            for i in self.legal_moves_dict:
+                self.legal_moves_dict[i] += self.__input_vars
+            self.legal_moves_dict.update(self.__multi_var_dict)
+        
         self.__operators_dict = {operator:name for (operator, name) in zip(self.__operators_float, self.__operators)}
         self.__operators_inv_dict = {name:operator for (operator, name) in zip(self.__operators_float, self.__operators)}
         self.__legal_moves_dict = {self.__operators_inv_dict[key]: [self.__operators_inv_dict[i] for i in value] for (key, value) in self.legal_moves_dict.items()}
@@ -43,6 +55,7 @@ class Board():
         self.n = n
         # Create the empty expression list.
         self.pieces = np.array([0]*self.n)
+#        print(self.__operators, self.init_legal, self.__operators_float, self.legal_moves_dict, self.__operators_dict, self.__operators_inv_dict, sep = "\n")
 
     # add [][] indexer syntax to the Board
     def __getitem__(self, index): 
@@ -55,7 +68,7 @@ class Board():
             print("ok, that's wierd.")
             return self.__operators_float
         if not np.any(self.pieces): #If all pieces are 0. At the beginning, all pieces are 0 (i.e. false), so the legal moves are '+', '-', 'cos', 'x', 'const', and 'grad', but not '*'
-            return [1, 1, 0, 1, 1, 1, 1]
+            return [1, 1, 0, 1] + [1]*(len(Board.data[0])-1) + [1, 1]
         
         curr_move = np.where(self.pieces==0)[0][0]
         

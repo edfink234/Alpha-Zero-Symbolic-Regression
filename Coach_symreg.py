@@ -19,6 +19,7 @@ class Coach():
     This class executes the self-play + learning. It uses the functions defined
     in Game and NeuralNet. args are specified in main.py.
     """
+    scores = []
     def __init__(self, game, nnet, args):
         self.game = game
         self.nnet = nnet
@@ -95,7 +96,6 @@ class Coach():
             # backup history to a file
             # NB! the examples were collected using the model from the previous iteration, so (i-1)  
             self.saveTrainExamples(i - 1)
-
             # shuffle examples before training
             trainExamples = []
             for e in self.trainExamplesHistory:
@@ -106,6 +106,7 @@ class Coach():
             self.nnet.save_checkpoint(folder=self.args.checkpoint, filename='temp.pth.tar')
 
             self.nnet.train(trainExamples)
+            self.mcts.nnet = self.nnet
             nmcts = MCTS(self.game, self.nnet, self.args)
 
             log.info('PITTING AGAINST PREVIOUS VERSION')
@@ -113,6 +114,8 @@ class Coach():
             score = arena.playGames(self.args.arenaCompare)
 
             log.info(f'Score / Ideal: {score} / {self.args.arenaCompare}')
+            
+            Coach.scores.append(score)
             
             if score < self.args.bestScore:
                 log.info('REJECTING NEW MODEL')

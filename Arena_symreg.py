@@ -36,7 +36,6 @@ class Arena():
             or
                 draw result returned from the game that is neither 1, -1, nor 0.
         """
-        players = [self.player1]
         board = self.game.getInitBoard()
         it = 0
         while self.game.getGameEnded(board) == -1:
@@ -44,7 +43,7 @@ class Arena():
             if verbose:
                 assert self.display
                 self.display(board)
-            action = players[0](board) #Function that returns action with maximum prob given the board
+            action = self.player1(board) #Function that returns action with maximum prob given the board
 
             valids = self.game.getValidMoves(board)
 

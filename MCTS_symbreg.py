@@ -50,7 +50,9 @@ class MCTS():
         counts = [x ** (1. / temp) for x in counts]
         counts_sum = float(sum(counts))
         probs = [x / counts_sum for x in counts]
-        assert(sum(probs)==1)
+        if not np.isclose(sum(probs),1):
+            print("Sum probs =",sum(probs))
+            exit()
         return probs
 
     def search(self, canonicalBoard):

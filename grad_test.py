@@ -84,10 +84,6 @@ def main():
                 plt.title("Best Expression Gradient Test")
                 plt.savefig("Grad_Test_Best_Expression.png", dpi = 5*96)
                 print("Saved!")
-                
-                
-    #TODO: Plot best expression and save
-
 
 if __name__ == "__main__":
     main()

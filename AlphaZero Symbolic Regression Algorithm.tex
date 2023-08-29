@@ -655,11 +655,11 @@ N(s,a) &= \text{visit counts for action $a$ at state $s$} \\
 												\begin{enumerate}[a.)]
 													\item copy the state $s$
 													\item store the action corresponding to index $a$ in a temporary variable called ``move''
-													\item assign the first 0-element  in the current pieces of the copy of state $s$ the move ``move''
+													\item assign the first 0-element of the current pieces of the copy of state $s$ the move ``move''
 													\item return the updated pieces (i.e., the current state expression list)
 												\end{enumerate}
 											\end{brownenum}
-											\item repeat the \textcolor{magenta}{\underline{MCTS search}} routine given the ``next\_s''' state until the recursion reaches the base case where the neural network prediction of the cumulative reward $v$ is returned, and assign this to a temporary variable called $v$
+											\item repeat the \textcolor{magenta}{\underline{MCTS search}} routine given the ``next\_s''' state until the recursion reaches the base case where the cumulative reward $v$ is returned, and assign this to a temporary variable called $v$
 											\item If the current state $s$ and the corresponding index of the current best action $a$ are store in the dictionary $Q(s,a)$ (which, as a reminder, is the agent's prediction of the value of action $a$ from state $s$), then
 											\begin{itemize}
 												\item[--] 
