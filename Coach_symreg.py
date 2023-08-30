@@ -107,10 +107,10 @@ class Coach():
 
             self.nnet.train(trainExamples)
             self.mcts.nnet = self.nnet
-            nmcts = MCTS(self.game, self.nnet, self.args)
+#            nmcts = MCTS(self.game, self.nnet, self.args)
 
             log.info('PITTING AGAINST PREVIOUS VERSION')
-            arena = Arena(lambda x: np.argmax(nmcts.getActionProb(x, temp=0)), self.game)
+            arena = Arena(lambda x: np.argmax(self.mcts.getActionProb(x, temp=0)), self.game)
             score = arena.playGames(self.args.arenaCompare)
 
             log.info(f'Score / Ideal: {score} / {self.args.arenaCompare}')

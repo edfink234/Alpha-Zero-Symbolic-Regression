@@ -32,21 +32,16 @@ class Board():
 
     def __init__(self, n=3):
         "Set up initial board configuration."
-        if len(Board.data[0]) == 2:
-            self.__operators = ['+', '-', '*', 'cos', 'x', 'const', 'grad']
-            self.init_legal = len(self.__operators)
-            self.__operators_float = [sum(ord(i) for i in j) for j in self.__operators] #[43, 45, 42, 325, 120]
-            self.legal_moves_dict = {'+' : ['cos', 'x', 'const'], '-' : ['cos', 'x', 'const'], '*' : ['cos', 'x', 'const'], 'cos' : ['x', 'const'], 'x' : ['+', '-', '*', 'cos', 'const'], 'const': ['+', '-', '*', 'cos', 'x'], 'grad': ['x']}
-        else:
-            self.__input_vars = [f'x{i}' for i in range(len(Board.data[0])-1)]
-            self.__multi_var_dict = {key:value for key,value in zip(self.__input_vars, [self.__input_vars + ['+', '-', '*', 'cos', 'const'] for i in self.__input_vars])}
-            self.__operators = ['+', '-', '*', 'cos'] + self.__input_vars + ['const', 'grad']
-            self.init_legal = len(self.__operators)
-            self.__operators_float = [sum(ord(i) for i in j) for j in self.__operators]
-            self.legal_moves_dict = {'+' : ['cos', 'const'], '-' : ['cos', 'const'], '*' : ['cos', 'const'], 'cos' : ['const'], 'const': ['+', '-', '*', 'cos'], 'grad': []}
-            for i in self.legal_moves_dict:
-                self.legal_moves_dict[i] += self.__input_vars
-            self.legal_moves_dict.update(self.__multi_var_dict)
+        self.__num_features = len(Board.data[0])-1
+        self.__input_vars = [f'x{i}' for i in range(self.__num_features)]
+        self.__multi_var_dict = {key:value for key,value in zip(self.__input_vars, [self.__input_vars + ['+', '-', '*', 'cos', 'const'] for i in self.__input_vars])}
+        self.__operators = ['+', '-', '*', 'cos'] + self.__input_vars + ['const', 'grad']
+        self.init_legal = len(self.__operators)
+        self.__operators_float = [sum(ord(i) for i in j) for j in self.__operators]
+        self.legal_moves_dict = {'+' : ['cos', 'const'], '-' : ['cos', 'const'], '*' : ['cos', 'const'], 'cos' : ['const'], 'const': ['+', '-', '*', 'cos'], 'grad': []}
+        for i in self.legal_moves_dict:
+            self.legal_moves_dict[i] += self.__input_vars
+        self.legal_moves_dict.update(self.__multi_var_dict)
         
         self.__operators_dict = {operator:name for (operator, name) in zip(self.__operators_float, self.__operators)}
         self.__operators_inv_dict = {name:operator for (operator, name) in zip(self.__operators_float, self.__operators)}
@@ -58,7 +53,7 @@ class Board():
 #        print(self.__operators, self.init_legal, self.__operators_float, self.legal_moves_dict, self.__operators_dict, self.__operators_inv_dict, sep = "\n")
 
     # add [][] indexer syntax to the Board
-    def __getitem__(self, index): 
+    def __getitem__(self, index):
         return self.__operators_float[index]
 
     def get_legal_moves(self):
@@ -68,7 +63,7 @@ class Board():
             print("ok, that's wierd.")
             return self.__operators_float
         if not np.any(self.pieces): #If all pieces are 0. At the beginning, all pieces are 0 (i.e. false), so the legal moves are '+', '-', 'cos', 'x', 'const', and 'grad', but not '*'
-            return [1, 1, 0, 1] + [1]*(len(Board.data[0])-1) + [1, 1]
+            return [1, 1, 0, 1] + [1]*(self.__num_features) + [1, 1]
         
         curr_move = np.where(self.pieces==0)[0][0]
         
@@ -96,14 +91,16 @@ class Board():
             
             expression_str = ' '.join([self.__operators_dict[i] for i in self.pieces])
             num_consts = expression_str.count("const")
-            x = symbols('x') #TODO: Add arbitrary amount of input terms -> multivariate! (v.s. univariate)
+            x = symbols(f'x(:{self.__num_features})')
+            input_vars = [f"x{i}" for i in range(self.__num_features)]
+            temp_dict = {key:value for (key,value) in zip(input_vars, x)} #So sympy knows that x0, x1, ..., xN are input variables
             transformations = (standard_transformations + (implicit_multiplication_application,))
-            X, Y = Board.data[:, 0], Board.data[:, 1]
+            X, Y = Board.data[:, :self.__num_features], Board.data[:, -1]
             
-            if num_consts:
+            if num_consts: #If there are "consts" in the expression that need to be determined/optimized
                 y = symbols(f'y(:{num_consts})')
                 consts = [f"y{i}" for i in range(num_consts)]
-                temp_dict = {key:value for (key,value) in zip(consts, y)}
+                temp_dict.update({key:value for (key,value) in zip(consts, y)})
                 temp_dict.update({"grad": grad})
                 for i in range(num_consts):
                     expression_str = expression_str.replace("const", f"y{i}", 1)
@@ -115,7 +112,7 @@ class Board():
                         break
                     except:
                         if not first:
-                            expression_str += " x"
+                            expression_str += " x0"
                             first = True
                         else:
                             expression_str = ' '.join(expression_str.split()[:-1])
@@ -123,49 +120,67 @@ class Board():
                 if not expression_str:
                     return 0
                 
-                model_selection = lambdify((x, *y), parsed_expr)
+                model_selection_str = str(parsed_expr)
+                for i in range(self.__num_features):
+                    model_selection_str = model_selection_str.replace(f"x{i}", f"x[{i}]")
+                func_str = f"""
+def model_selection(x, {', '.join(consts)}):
+    from numpy import cos, gradient as grad
+    return {model_selection_str}
+                """
+                
+                exec(func_str, globals(), lcls:=locals())
+                model_selection = lcls["model_selection"]
+                
                 #try to optimize parameters y0, y1, ..., yn
                 try:
-                    parameters, covariance = curve_fit(model_selection, X, Y, p0 = np.ones(num_consts))
+                    parameters, covariance = curve_fit(model_selection, X.T, Y, p0 = np.ones(num_consts))
                 #if it didn't work, set the parameters y0, y1, ..., yn to random values
                 except RuntimeError:
                     parameters = np.random.random(num_consts)
-                y_pred = model_selection(X, *parameters)
+                y_pred = model_selection(X.T, *parameters)
+                
                 if isinstance(y_pred, np.float64):
                     y_pred = np.full_like(Y, fill_value = y_pred)
-                loss = np.sum((y_pred-Y)**2)
+                try:
+                    loss = np.sum((y_pred-Y)**2)
+                    if np.isclose(loss, 0):
+                        raise TypeError
+                except:
+                    exit()
                 assert y_pred.shape == Y.shape, f"{y_pred.shape}, {Y.shape}"
-                                
+                
                 for i in range(num_consts):
                     expression_str = expression_str.replace(f"y{i}", f"{parameters[i]:0.3f}")
                 
                 
             else:
                 first = False
-                temp_dict = {"grad": grad}
+                temp_dict.update({"grad": grad})
                 while expression_str:
                     try:
                         parsed_expr = parse_expr(expression_str, transformations=transformations, local_dict = temp_dict)
                         break
                     except:
                         if not first:
-                            expression_str += " x"
+                            expression_str += " x0"
                             first = True
                         else:
                             expression_str = ' '.join(expression_str.split()[:-1])
                 
                 if not expression_str:
                     return 0
-                
                 model_selection = lambdify(x, parsed_expr)
                 
-                y_pred = model_selection(X)
+                y_pred = model_selection(*[X[:,i] for i in range(self.__num_features)])
                 if isinstance(y_pred, np.float64) or isinstance(y_pred, int):
                     y_pred = np.full_like(Y, fill_value = y_pred)
                 loss = np.sum((y_pred-Y)**2)
                 assert y_pred.shape == Y.shape, f"{y_pred.shape}, {Y.shape}"
-            
 
+#            print(model_selection.__code__.co_varnames)
+            for i in range(self.__num_features):
+                expression_str = expression_str.replace(f"x[{i}]", f"x{i}")
             if loss < Board.best_loss:
                 try:
                     Board.best_expression = parse_expr(expression_str, transformations=transformations, local_dict = temp_dict)
@@ -176,7 +191,8 @@ class Board():
                         float_pattern = r'-?\d+\.\d+'
                         floats_found = re.findall(float_pattern, expression_str)
                         new_expression = re.sub(float_pattern, r'(\g<0>)', expression_str)
-                        new_expression = new_expression.replace('x','(x)')
+                        for i in range(self.__num_features):
+                            new_expression = new_expression.replace(f'x{i}',f'(x{i})')
                         Board.best_expression = parse_expr(new_expression, transformations=transformations, local_dict = temp_dict)
                         print("fixed expression_str =", Board.best_expression)
                     except:
@@ -192,8 +208,7 @@ class Board():
                 
 
     def execute_move(self, move):
-        """Perform the given move on the board; 
+        """Perform the given move on the board;
         color gives the color pf the piece to play (1=white,-1=black)
         """
         self.pieces[np.where(self.pieces==0)[0][0]] = move
-

@@ -23,9 +23,9 @@ Based on (copy-pasted from) the NNet by SourKream and Surag Nair.
 """
 
 args = dotdict({
-    'lr': 0.001,
+    'lr': 0.01,
     'dropout': 0.3,
-    'epochs': 10,
+    'epochs': 100,
     'batch_size': 64,
     'cuda': False,
     'num_channels': 512,
@@ -36,6 +36,7 @@ class NNetWrapper(NeuralNet):
         self.nnet = onnet(game, args)
         self.board = game.getBoardSize()
         self.action_size = game.getActionSize()
+        self.trained = False
 
     def train(self, examples):
         """
@@ -46,6 +47,9 @@ class NNetWrapper(NeuralNet):
         target_pis = np.asarray(target_pis)
         target_vs = np.asarray(target_vs)
         self.nnet.model.fit(x = input_boards, y = [target_pis, target_vs], batch_size = args.batch_size, epochs = args.epochs)
+        print(input_boards.shape, target_vs.shape)
+#        self.nnet.clf_value.fit(input_boards, target_vs)
+        self.trained = True
 
     def predict(self, board):
         """
@@ -59,6 +63,8 @@ class NNetWrapper(NeuralNet):
 
         # run
         pi, v = self.nnet.model.predict(board, verbose=False) #pi is the NN predicted probability of selecting each possible action given the state s
+#        if self.trained:
+#            v = self.nnet.clf_value.predict(board)
 
         #print('PREDICTION TIME TAKEN : {0:03f}'.format(time.time()-start))
         return pi[0], v[0]

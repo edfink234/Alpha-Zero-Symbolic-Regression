@@ -21,7 +21,7 @@ args = dotdict({
     'maxlenOfQueue': 200000,    # Number of game examples to train the neural networks.
     'numMCTSSims': 25,          # Number of games moves for MCTS to simulate.
     'arenaCompare': 1,         # Number of games to play during arena play to determine if new net will be accepted.
-    'cpuct': 10, #Controls the exploration/exploitation trade-off. TODO: Maybe set a schedule for this, i.e., so that the first N episodes have a higher value to encourage exploration and then lower this value to encourage exploitation?
+    'cpuct': 1, #Controls the exploration/exploitation trade-off. TODO: Maybe set a schedule for this, i.e., so that the first N episodes have a higher value to encourage exploration and then lower this value to encourage exploitation?
 
     'checkpoint': './temp/',
     'load_model': False,
@@ -68,7 +68,7 @@ def main():
                 f.write(f"{Board.best_expression}\n")
                 f.write(f"{Board.best_loss}\n")
                 x_vals = np.linspace(Board.data[:,0][0], Board.data[:,0][-1], 1000)
-                x = sp.symbols('x')
+                x = sp.symbols('x0')
                 best_func = sp.lambdify(x, Board.best_expression)
                 y_vals = best_func(x_vals)
                 plt.plot(x_vals, y_vals, label = "$"+sp.latex(Board.best_expression)+"$")
