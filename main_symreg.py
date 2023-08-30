@@ -9,6 +9,9 @@ from symreg.SymRegGame import SymRegGame as Game
 from symreg.SymRegLogic import Board
 from symreg.keras.NNet import NNetWrapper as nn
 from utils import *
+import warnings
+
+warnings.filterwarnings("ignore")
 
 log = logging.getLogger(__name__)
 

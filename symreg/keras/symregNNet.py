@@ -26,27 +26,32 @@ class symregNNet():
         self.action_size = game.getActionSize()
         self.args = args
 
-        # Neural Net
-        self.input_boards = Input(shape=(self.board, 1))  # s: batch_size x board x 1
+        if self.args['useNN']:
+            # Neural Net
+            self.input_boards = Input(shape=(self.board, 1))  # s: batch_size x board x 1
 
-        # Adjust the convolutional layers for 1D data
-        h_conv1 = Activation('relu')(BatchNormalization(axis=-1)(Conv1D(args.num_channels, 3, padding='same')(self.input_boards)))  # batch_size x board x num_channels
-#        h_conv2 = Activation('relu')(BatchNormalization(axis=-1)(Conv1D(args.num_channels, 3, padding='same')(h_conv1)))  # batch_size x board x num_channels
-#        h_conv3 = Activation('relu')(BatchNormalization(axis=-1)(Conv1D(args.num_channels, 3, padding='same')(h_conv2)))  # batch_size x board x num_channels
-#        h_conv4 = Activation('relu')(BatchNormalization(axis=-1)(Conv1D(args.num_channels, 3, padding='valid')(h_conv3)))  # batch_size x (board-2) x num_channels
+            # Adjust the convolutional layers for 1D data
+            h_conv1 = Activation('relu')(BatchNormalization(axis=-1)(Conv1D(args.num_channels, 3, padding='same')(self.input_boards)))  # batch_size x board x num_channels
+    #        h_conv2 = Activation('relu')(BatchNormalization(axis=-1)(Conv1D(args.num_channels, 3, padding='same')(h_conv1)))  # batch_size x board x num_channels
+    #        h_conv3 = Activation('relu')(BatchNormalization(axis=-1)(Conv1D(args.num_channels, 3, padding='same')(h_conv2)))  # batch_size x board x num_channels
+    #        h_conv4 = Activation('relu')(BatchNormalization(axis=-1)(Conv1D(args.num_channels, 3, padding='valid')(h_conv3)))  # batch_size x (board-2) x num_channels
 
-        h_conv1_flat = Flatten()(h_conv1)
-        s_fc1 = Dropout(args.dropout)(Activation('relu')(BatchNormalization(axis=1)(Dense(1024)(h_conv1_flat))))  # batch_size x 1024
-#        s_fc2 = Dropout(args.dropout)(Activation('relu')(BatchNormalization(axis=1)(Dense(512)(s_fc1))))          # batch_size x 1024
-        self.pi = Dense(self.action_size, activation='softmax', name='pi')(s_fc1)   # batch_size x self.action_size
-        self.v = Dense(1, activation='softmax', name='v')(s_fc1)                    # batch_size x 1
+            h_conv1_flat = Flatten()(h_conv1)
+            s_fc1 = Dropout(args.dropout)(Activation('relu')(BatchNormalization(axis=1)(Dense(1024)(h_conv1_flat))))  # batch_size x 1024
+    #        s_fc2 = Dropout(args.dropout)(Activation('relu')(BatchNormalization(axis=1)(Dense(512)(s_fc1))))          # batch_size x 1024
+            self.pi = Dense(self.action_size, activation='softmax', name='pi')(s_fc1)   # batch_size x self.action_size
+            self.v = Dense(1, activation='softmax', name='v')(s_fc1)                    # batch_size x 1
 
-        self.model = Model(inputs=self.input_boards, outputs=[self.pi, self.v])
-        self.model.compile(loss=['categorical_crossentropy','mean_squared_error'], optimizer=Adam(args.lr))
-        
-#        self.clf_value = make_pipeline(StandardScaler(), SVR(gamma='auto'))
-        print(gen_tikz_from_model(self.model))
-        self.model.summary()
+            self.model = Model(inputs=self.input_boards, outputs=[self.pi, self.v])
+            self.model.compile(loss=['categorical_crossentropy','mean_squared_error'], optimizer=Adam(args.lr))
+            
+            print(gen_tikz_from_model(self.model))
+            self.model.summary()
+        else:
+            self.clf_value = make_pipeline(StandardScaler(), SVR(gamma='auto', epsilon=0.1, kernel = 'rbf'))
+            self.clf_policy = []
+            for i in range(self.action_size):
+                self.clf_policy.append(make_pipeline(StandardScaler(), SVR(gamma='auto', epsilon=0.1, kernel = 'rbf')))
 
 '''
 The given code defines a neural network (NNet) class called `symregNNet` designed for solving the problem of symbolic regression using TensorFlow and Keras. Symbolic regression is a task in which the goal is to find a mathematical expression that best fits a given set of data points.

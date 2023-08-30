@@ -105,7 +105,7 @@ class Coach():
             # training new network, keeping a copy of the old one
             self.nnet.save_checkpoint(folder=self.args.checkpoint, filename='temp.pth.tar')
 
-            self.nnet.train(trainExamples)
+            self.nnet.train(trainExamples) #Machine learning model is getting trained on the saved training examples
             self.mcts.nnet = self.nnet
 #            nmcts = MCTS(self.game, self.nnet, self.args)
 

@@ -134,7 +134,7 @@ def model_selection(x, {', '.join(consts)}):
                 
                 #try to optimize parameters y0, y1, ..., yn
                 try:
-                    parameters, covariance = curve_fit(model_selection, X.T, Y, p0 = np.ones(num_consts))
+                    parameters, covariance = curve_fit(model_selection, X.T, Y, p0 = np.random.random(num_consts))
                 #if it didn't work, set the parameters y0, y1, ..., yn to random values
                 except RuntimeError:
                     parameters = np.random.random(num_consts)
