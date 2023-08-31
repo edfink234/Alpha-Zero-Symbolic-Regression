@@ -53,21 +53,21 @@ class symregNNet():
 #            self.clf_value = make_pipeline(StandardScaler(), SVR(gamma='auto', epsilon=0.1, kernel = 'rbf', degree = 3)) #Speed good, R^2 bad, Score doesn't seem to improve well
 #            self.clf_value = make_pipeline(StandardScaler(), SGDRegressor(max_iter=1000, tol=1e-3, loss = "squared_error", learning_rate = "invscaling", eta0 = 0.01)) #Speed good, R^2 ok, Score stagnant
 #            self.clf_value = make_pipeline(StandardScaler(), KNeighborsRegressor(n_neighbors=3)) #fast to train but slow to predict, very good R^2, usually very bad score though
-#            self.clf_value = make_pipeline(StandardScaler(), GaussianProcessRegressor(kernel = DotProduct() + WhiteKernel(), random_state=0)) #impractically slow, ok R^2, Score seems to improve slowly but since it's so slow it's hard to tell
+            self.clf_value = make_pipeline(StandardScaler(), GaussianProcessRegressor(kernel = DotProduct() + WhiteKernel(), random_state=0)) #impractically slow, ok R^2 that improves with increasing number of iterations, Score simprove slowly, see Model_History_Multi_Dimension_GaussianProcessRegressor.png and best_multi_dim_expression_GaussianProcessRegressor.txt
 #            self.clf_value = make_pipeline(StandardScaler(), LinearSVR(dual="auto", random_state=0, tol=1e-5, max_iter = 10000)) #Speed ok, pretty bad R^2, score doesn't seem to improve
 #            self.clf_value = make_pipeline(StandardScaler(), PLSRegression()) #Speed good, R^2 starts off ok and seems to improve, Score seems to improve
 #            self.clf_value = make_pipeline(StandardScaler(), DecisionTreeRegressor()) #Speed good, R^2 nearly perfect, Score ok but stagnant
 #            self.clf_value = make_pipeline(StandardScaler(), DecisionTreeRegressor(max_depth = 3)) #Speed good, R^2 ok but less than above, Score ok but less than above and also stagnant
-#            self.clf_value = make_pipeline(StandardScaler(), RandomForestRegressor(n_estimators = 10, max_depth = 3)) #Very very slow, R^2 ok - good and seems to improve with time, Score bad and stagnant/improves slowly and inconsistently
-#            self.clf_value = make_pipeline(StandardScaler(), AdaBoostRegressor(n_estimators = 10)) #Very very slow, R^2 ok, score bad but improves slowly
+#            self.clf_value = make_pipeline(StandardScaler(), RandomForestRegressor(n_estimators = 10, max_depth = 3)) #Very slow at first but speed seems to increase slowly with the number of iterations, R^2 ok and gets better with time, score improves slowly with time, see Model_History_Multi_Dimension_RandomForestRegressor_n_estimators_10.png and best_multi_dim_expression_RandomForestRegressor_n_estimators_10. Recovered exact expression at iteration 12.
+#            self.clf_value = make_pipeline(StandardScaler(), AdaBoostRegressor(n_estimators = 10)) #Very slow at first but speed seems to increase slowly with the number of iterations, R^2 ok and gets better with time, score improves slowly with time, see Model_History_Multi_Dimension_AdaBoostRegressor_n_estimators_10.png and Model_History_Multi_Dimension_AdaBoostRegressor_n_estimators_10.txt
 #            self.clf_value = make_pipeline(StandardScaler(), GradientBoostingRegressor(n_estimators = 10)) #Slow but not as slow as RandomForestRegressor or AdaBoostRegressor and doesn't necessarily get slower with more training data (in fact it seems to speed up), R^2 ok and gets better with time, Score ok and seems to increase over time significantly (but not gradually, rather abruptly, but stable), see Model_History_Multi_Dimension_GradientBoostingRegressor_n_estimators_10.png and best_multi_dim_expression_GradientBoostingRegressor_n_estimators_10.txt
-            self.clf_value = make_pipeline(StandardScaler(), GradientBoostingRegressor(n_estimators = 100)) #similar situation as above but slower to converge, see Model_History_Multi_Dimension_GradientBoostingRegressor_n_estimators_100.png and best_multi_dim_expression_GradientBoostingRegressor_n_estimators_100.txt
+#            self.clf_value = make_pipeline(StandardScaler(), GradientBoostingRegressor(n_estimators = 100)) #similar situation as above but slower to converge, see Model_History_Multi_Dimension_GradientBoostingRegressor_n_estimators_100.png and best_multi_dim_expression_GradientBoostingRegressor_n_estimators_100.txt
             self.clf_policy = []
             for i in range(self.action_size):
 #                self.clf_policy.append(make_pipeline(StandardScaler(), SVR(gamma='auto', epsilon=0.1, kernel = 'rbf', degree = 3)))
 #                self.clf_policy.append(make_pipeline(StandardScaler(), SGDRegressor(max_iter=1000, tol=1e-3, loss = "squared_error", learning_rate = "invscaling", eta0 = 0.01)))
 #                self.clf_policy.append(make_pipeline(StandardScaler(), KNeighborsRegressor(n_neighbors=3)))
-#                self.clf_policy.append(make_pipeline(StandardScaler(), GaussianProcessRegressor(kernel = DotProduct() + WhiteKernel(), random_state=0)))
+                self.clf_policy.append(make_pipeline(StandardScaler(), GaussianProcessRegressor(kernel = DotProduct() + WhiteKernel(), random_state=0)))
 #                self.clf_policy.append(make_pipeline(StandardScaler(), LinearSVR(dual="auto", random_state=0, tol=1e-5, max_iter = 10000)))
 #                self.clf_policy.append(make_pipeline(StandardScaler(), PLSRegression()))
 #                self.clf_policy.append(make_pipeline(StandardScaler(), DecisionTreeRegressor()))
@@ -75,5 +75,7 @@ class symregNNet():
 #                self.clf_policy.append(make_pipeline(StandardScaler(), RandomForestRegressor(n_estimators = 10, max_depth = 3)))
 #                self.clf_policy.append(make_pipeline(StandardScaler(), AdaBoostRegressor(n_estimators = 10)))
 #                self.clf_policy.append(make_pipeline(StandardScaler(), GradientBoostingRegressor(n_estimators = 10)))
-                self.clf_policy.append(make_pipeline(StandardScaler(), GradientBoostingRegressor(n_estimators = 100)))
+#                self.clf_policy.append(make_pipeline(StandardScaler(), GradientBoostingRegressor(n_estimators = 100)))
 
+#mv Model_History_Multi_Dimension.png Model_History_Multi_Dimension_GaussianProcessRegressor.png
+#mv best_multi_dim_expression.txt best_multi_dim_expression_GaussianProcessRegressor.txt
