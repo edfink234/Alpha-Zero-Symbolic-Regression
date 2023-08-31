@@ -10,7 +10,6 @@ from symreg.SymRegLogic import Board
 from symreg.keras.NNet import NNetWrapper as nn
 from utils import *
 import warnings
-
 warnings.filterwarnings("ignore")
 
 log = logging.getLogger(__name__)
@@ -30,7 +29,7 @@ args = dotdict({
     'load_model': False,
     'load_folder_file': ('temp/','checkpoint_0.pth.tar'),
     'load_model_file': ('temp','temp.h5'),
-    'numItersForTrainExamplesHistory': 20,
+    'numItersForTrainExamplesHistory': 10000,
     'bestScore': 0
 
 })

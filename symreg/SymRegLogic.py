@@ -147,7 +147,7 @@ def model_selection(x, {', '.join(consts)}):
                     if np.isclose(loss, 0):
                         raise TypeError
                 except:
-                    exit()
+                    print("Zero loss!!")
                 assert y_pred.shape == Y.shape, f"{y_pred.shape}, {Y.shape}"
                 
                 for i in range(num_consts):

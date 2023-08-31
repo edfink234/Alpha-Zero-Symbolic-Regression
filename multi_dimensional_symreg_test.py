@@ -9,6 +9,8 @@ from symreg.SymRegGame import SymRegGame as Game
 from symreg.SymRegLogic import Board
 from symreg.keras.NNet import NNetWrapper as nn
 from utils import *
+import warnings
+warnings.filterwarnings("ignore")
 
 log = logging.getLogger(__name__)
 
@@ -19,7 +21,7 @@ args = dotdict({
     'numEps': 10,              # Number of complete self-play games to simulate during a new iteration.
     'tempThreshold': 15,
     'maxlenOfQueue': 200000,    # Number of game examples to train the neural networks.
-    'numMCTSSims': 30,          # Number of games moves for MCTS to simulate.
+    'numMCTSSims': 100,          # Number of games moves for MCTS to simulate.
     'arenaCompare': 1,         # Number of games to play during arena play to determine if new net will be accepted.
     'cpuct': 1, #Controls the exploration/exploitation trade-off. TODO: Maybe set a schedule for this, i.e., so that the first N episodes have a higher value to encourage exploration and then lower this value to encourage exploitation?
 
@@ -27,7 +29,7 @@ args = dotdict({
     'load_model': False,
     'load_folder_file': ('temp/','checkpoint_0.pth.tar'),
     'load_model_file': ('temp','temp.h5'),
-    'numItersForTrainExamplesHistory': 20,
+    'numItersForTrainExamplesHistory': 10000,
     'bestScore': 0
 
 })

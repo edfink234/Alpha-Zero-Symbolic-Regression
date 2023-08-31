@@ -51,10 +51,12 @@ class NNetWrapper(NeuralNet):
             self.nnet.model.fit(x = input_boards, y = [target_pis, target_vs], batch_size = args.batch_size, epochs = args.epochs)
         else:
             self.nnet.clf_value.fit(input_boards, target_vs) #learning value function
+            print("Value R^2 score =",self.nnet.clf_value.score(input_boards, target_vs))
             assert(len(self.nnet.clf_policy) == self.action_size)
             self.nnet.clf_value.fit(input_boards, target_vs)
             for i in range(self.action_size):
                 self.nnet.clf_policy[i].fit(input_boards, target_pis[:,i])
+                print(f"Policy {i} R^2 Score =",self.nnet.clf_policy[i].score(input_boards, target_pis[:,i]))
         if not self.trained:
             self.trained = True
 

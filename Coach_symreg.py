@@ -50,11 +50,10 @@ class Coach():
 
         while True:
             episodeStep += 1
-            canonicalBoard = board
             temp = int(episodeStep < self.args.tempThreshold)
 
-            pi = self.mcts.getActionProb(canonicalBoard, temp=temp)
-            trainExamples.append([canonicalBoard, pi])
+            pi = self.mcts.getActionProb(board, temp=temp)
+            trainExamples.append([board, pi])
 
             action = np.random.choice(len(pi), p=pi)
             board = self.game.getNextState(board, action)
@@ -88,7 +87,11 @@ class Coach():
 
                 # save the iteration examples to the history 
                 self.trainExamplesHistory.append(iterationTrainExamples)
-
+#            if i == 2:
+#                for k in self.trainExamplesHistory:
+#                    print(*k, sep = "\n")
+#                    print()
+#                exit()
             if len(self.trainExamplesHistory) > self.args.numItersForTrainExamplesHistory:
                 log.warning(
                     f"Removing the oldest entry in trainExamples. len(trainExamplesHistory) = {len(self.trainExamplesHistory)}")

@@ -16,10 +16,10 @@ coloredlogs.install(level='INFO')  # Change this to DEBUG to see more info.
 
 args = dotdict({
     'numIters': 10,
-    'numEps': 10000,              # Number of complete self-play games to simulate during a new iteration.
+    'numEps': 10,              # Number of complete self-play games to simulate during a new iteration.
     'tempThreshold': 0,        
     'maxlenOfQueue': 200000,    # Number of game examples to train the neural networks.
-    'numMCTSSims': 10000,          # Number of games moves for MCTS to simulate.
+    'numMCTSSims': 30,          # Number of games moves for MCTS to simulate.
     'arenaCompare': 1,         # Number of games to play during arena play to determine if new net will be accepted.
     'cpuct': 1,
 
@@ -34,6 +34,12 @@ args = dotdict({
 
 def main():
     try:
+        log.info('Loading data...')
+                
+        X_data = (np.linspace(1,10,1000)**2).reshape((1000,1))
+        Y_data = np.gradient(X_data.flatten()).reshape((len(X_data),1))
+        Board.data = np.hstack((X_data,Y_data))
+
         log.info('Loading %s...', Game.__name__)
         g = Game(10) #(1.)
         #TODO: Add a feature to make the expression size variable?
@@ -48,12 +54,6 @@ def main():
             log.warning('Not loading a checkpoint!')
 
         log.info('Loading the Coach...')
-        
-        X_data = (np.linspace(1,10,1000)**2).reshape((1000,1))
-        Y_data = np.gradient(X_data.flatten()).reshape((len(X_data),1))
-        
-#        Board.data = np.loadtxt("symreg/test_data.txt")
-        Board.data = np.hstack((X_data,Y_data))
 
         c = Coach(g, nnet, args) #(3.)
 
@@ -72,7 +72,7 @@ def main():
                 f.write(f"{Board.best_expression}\n")
                 f.write(f"{Board.best_loss}\n")
                 x_vals = X_data
-                x = sp.symbols('x')
+                x = sp.symbols('x0')
                 best_func = sp.lambdify(x, Board.best_expression)
                 y_vals = best_func(x_vals.flatten())
                 
