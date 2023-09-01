@@ -143,7 +143,7 @@ def model_selection(x, {', '.join(consts)}):
                 if isinstance(y_pred, np.float64):
                     y_pred = np.full_like(Y, fill_value = y_pred)
                 try:
-                    loss = np.sum((y_pred-Y)**2)
+                    loss = np.sum((y_pred-Y)**2) #TODO: Change to R^2 ?
                     if np.isclose(loss, 0):
                         raise TypeError
                 except:
@@ -175,7 +175,7 @@ def model_selection(x, {', '.join(consts)}):
                 y_pred = model_selection(*[X[:,i] for i in range(self.__num_features)])
                 if isinstance(y_pred, np.float64) or isinstance(y_pred, int):
                     y_pred = np.full_like(Y, fill_value = y_pred)
-                loss = np.sum((y_pred-Y)**2)
+                loss = np.sum((y_pred-Y)**2) #TODO: Change to R^2 ?
                 assert y_pred.shape == Y.shape, f"{y_pred.shape}, {Y.shape}"
 
 #            print(model_selection.__code__.co_varnames)

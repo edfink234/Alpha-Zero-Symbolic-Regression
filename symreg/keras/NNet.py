@@ -23,7 +23,7 @@ Based on (copy-pasted from) the NNet by SourKream and Surag Nair.
 """
 
 args = dotdict({
-    'useNN' : False,
+    'useNN' : True,
     'lr': 0.01,
     'dropout': 0.3,
     'epochs': 100,

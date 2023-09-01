@@ -42,7 +42,6 @@ def main():
 
         log.info('Loading %s...', Game.__name__)
         g = Game(10) #(1.)
-        #TODO: Add a feature to make the expression size variable?
 
         log.info('Loading %s...', nn.__name__)
         nnet = nn(g) #(2.)

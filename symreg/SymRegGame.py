@@ -69,34 +69,3 @@ class SymRegGame(Game):
     def stringRepresentation(self, board):
         # bytes representation of numpy array (canonical board)
         return board.tostring()
-
-    #TODO: Modify this so that it works for symbolic regression instead of tictactoe?
-    @staticmethod
-    def display(board):
-        n = board.shape[0]
-
-        print("   ", end="")
-        for y in range(n):
-            print (y,"", end="")
-        print("")
-        print("  ", end="")
-        for _ in range(n):
-            print ("-", end="-")
-        print("--")
-        for y in range(n):
-            print(y, "|",end="")    # print the row #
-            for x in range(n):
-                piece = board[y][x]    # get the piece to print
-                if piece == -1: print("X ",end="")
-                elif piece == 1: print("O ",end="")
-                else:
-                    if x==n:
-                        print("-",end="")
-                    else:
-                        print("- ",end="")
-            print("|")
-
-        print("  ", end="")
-        for _ in range(n):
-            print ("-", end="-")
-        print("--")
