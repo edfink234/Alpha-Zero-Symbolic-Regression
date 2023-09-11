@@ -17,6 +17,7 @@ class MCTS():
         self.game = game
         self.nnet = nnet
         self.args = args
+        self.iteration_number = 0
         self.Qsa = {}  # stores Q values for s,a (as defined in the paper)
         self.Nsa = {}  # stores #times edge s,a was visited (s = state, a = action)
         self.Ns = {}  # stores #times board s was visited
@@ -54,6 +55,12 @@ class MCTS():
             print("Sum probs =",sum(probs))
             exit()
         return probs
+    
+    def cpuct(self):
+        for i in self.args.cpuct:
+            if i <= self.iteration_number:
+                return self.args.cpuct[i]
+        return list(self.args.cpuct.values())[-1]
 
     def search(self, canonicalBoard):
         """
@@ -90,8 +97,8 @@ class MCTS():
 
                 # NB! All valid moves may be masked if either your NNet architecture is insufficient or you've get overfitting or something else.
                 # If you have got dozens or hundreds of these messages you should pay attention to your NNet and/or training process.
-                print("sum_Ps_s, self.Ps[s]", sum_Ps_s, self.Ps[s])
-                log.error("All valid moves were masked, doing a workaround.")
+#                print("sum_Ps_s, self.Ps[s]", sum_Ps_s, self.Ps[s])
+#                log.error("All valid moves were masked, doing a workaround.")
                 self.Ps[s] = self.Ps[s] + valids
                 self.Ps[s] /= np.sum(self.Ps[s])
 
@@ -107,10 +114,12 @@ class MCTS():
         for a in range(self.game.getActionSize()):
             if valids[a]:
                 if (s, a) in self.Qsa:
-                    u = self.Qsa[(s, a)] + self.args.cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s]) / (
-                            1 + self.Nsa[(s, a)])
+#                    u = self.Qsa[(s, a)] + self.cpuct() * self.Ps[s][a] * math.sqrt(self.Ns[s]) / (1 + self.Nsa[(s, a)]) #AlphaGoZero formula, see page 26 of https://discovery.ucl.ac.uk/id/eprint/10045895/1/agz_unformatted_nature.pdf
+                    
+                    u = self.Qsa[(s, a)] + self.cpuct() * self.Ps[s][a] * ( (self.Ns[s])**(0.25) / math.sqrt(self.Nsa[(s, a)])) #see page 4 of https://arxiv.org/pdf/1902.05213.pdf
                 else:
-                    u = self.args.cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s] + EPS)  # Q = 0 ?
+                    u = self.cpuct() * self.Ps[s][a] * math.sqrt(self.Ns[s] + EPS)  # Q = 0 ?
+                    
 
                 if u > cur_best:
                     cur_best = u
@@ -131,3 +140,4 @@ class MCTS():
 
         self.Ns[s] += 1
         return v
+#Propose an algorithm of building symbolic expressions from a set of tokens $T$ that guarantees that the resulting expression is valid and of length N

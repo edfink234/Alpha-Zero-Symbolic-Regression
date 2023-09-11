@@ -49,10 +49,12 @@ class symregNNet():
             
             print(gen_tikz_from_model(self.model))
             self.model.summary()
+            
+            #Speed pretty slow, probably because of the size of the network, and each epoch takes longer with increasing iterations. The policy estimate did not improve overall, but the value error went from 1 (maximum possible) to 0.8, so some improvement. Score generally improved with time, see Model_History_Multi_Dimension_NN.png and best_multi_dim_expression_NN.txt
         else:
-            self.clf_value = make_pipeline(StandardScaler(), SVR(gamma='auto', epsilon=0.1, kernel = 'rbf', degree = 3)) #Speed ok but gets worse as data increases, R^2 sometimes ok sometimes bad, Score generally improves with time, see Model_History_Multi_Dimension_SVR.png and best_multi_dim_expression_SVR.txt. Found exact expression at iteration 106
+#            self.clf_value = make_pipeline(StandardScaler(), SVR(gamma='auto', epsilon=0.1, kernel = 'rbf', degree = 3)) #Speed ok but gets worse as data increases, R^2 sometimes ok sometimes bad, Score generally improves with time, see Model_History_Multi_Dimension_SVR.png and best_multi_dim_expression_SVR.txt. Found exact expression at iteration 106
 #            self.clf_value = make_pipeline(StandardScaler(), SGDRegressor(max_iter=1000, tol=1e-3, loss = "squared_error", learning_rate = "invscaling", eta0 = 0.01)) #Speed good, R^2 ok, Score improves with time, see Model_History_Multi_Dimension_SGDRegressor.png and best_multi_dim_expression_SGDRegressor.txt. Found exact expression at iteration 173
-#            self.clf_value = make_pipeline(StandardScaler(), KNeighborsRegressor(n_neighbors=3)) #fast to train but slow to predict (though speed seems to improve with time), very good R^2, score improves over time, see Model_History_Multi_Dimension_KNeighborsRegressor.png and best_multi_dim_expression_KNeighborsRegressor.txt, Recovered exact expression at iteration 55. Arena game Score 1.0/1.0 achieved at iteration 69. TODO: Can set njobs to -1 to run in parallel with maximum number of processors available, see:  https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.NearestNeighbors.html!
+            self.clf_value = make_pipeline(StandardScaler(), KNeighborsRegressor(n_neighbors=3, n_jobs = None)) #fast to train but slow to predict (though speed seems to improve with time), very good R^2, score improves over time, see Model_History_Multi_Dimension_KNeighborsRegressor.png and best_multi_dim_expression_KNeighborsRegressor.txt, Recovered exact expression at iteration 55. Arena game Score 1.0/1.0 achieved at iteration 69. TODO: Can set njobs to -1 to run in parallel with maximum number of processors available, see:  https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.NearestNeighbors.html!
 #            self.clf_value = make_pipeline(StandardScaler(), GaussianProcessRegressor(kernel = DotProduct() + WhiteKernel(), random_state=0)) #impractically slow, ok R^2 that improves with increasing number of iterations, Score simprove slowly, see Model_History_Multi_Dimension_GaussianProcessRegressor.png and best_multi_dim_expression_GaussianProcessRegressor.txt
 #            self.clf_value = make_pipeline(StandardScaler(), LinearSVR(dual="auto", random_state=0, tol=1e-5, max_iter = 10000)) #Speed ok but gets worse as data increases, bad R^2 that doesn't seem to improve (policy estimation constantly masked), score doesn't seem to improve well/fluctuates, see Model_History_Multi_Dimension_LinearSVR.png and best_multi_dim_expression_LinearSVR.txt
 #            self.clf_value = make_pipeline(StandardScaler(), PLSRegression()) #Speed good, R^2 starts off ok and seems to improve, Score seems to improve, see Model_History_Multi_Dimension_PLSRegression.png and  best_multi_dim_expression_PLSRegression.txt
@@ -64,9 +66,9 @@ class symregNNet():
 #            self.clf_value = make_pipeline(StandardScaler(), GradientBoostingRegressor(n_estimators = 100)) #similar situation as above but slower to converge, see Model_History_Multi_Dimension_GradientBoostingRegressor_n_estimators_100.png and best_multi_dim_expression_GradientBoostingRegressor_n_estimators_100.txt
             self.clf_policy = []
             for i in range(self.action_size):
-                self.clf_policy.append(make_pipeline(StandardScaler(), SVR(gamma='auto', epsilon=0.1, kernel = 'rbf', degree = 3)))
+#                self.clf_policy.append(make_pipeline(StandardScaler(), SVR(gamma='auto', epsilon=0.1, kernel = 'rbf', degree = 3)))
 #                self.clf_policy.append(make_pipeline(StandardScaler(), SGDRegressor(max_iter=1000, tol=1e-3, loss = "squared_error", learning_rate = "invscaling", eta0 = 0.01)))
-#                self.clf_policy.append(make_pipeline(StandardScaler(), KNeighborsRegressor(n_neighbors=3)))
+                self.clf_policy.append(make_pipeline(StandardScaler(), KNeighborsRegressor(n_neighbors=3, n_jobs = None)))
 #                self.clf_policy.append(make_pipeline(StandardScaler(), GaussianProcessRegressor(kernel = DotProduct() + WhiteKernel(), random_state=0)))
 #                self.clf_policy.append(make_pipeline(StandardScaler(), LinearSVR(dual="auto", random_state=0, tol=1e-5, max_iter = 10000)))
 #                self.clf_policy.append(make_pipeline(StandardScaler(), PLSRegression()))
@@ -77,5 +79,5 @@ class symregNNet():
 #                self.clf_policy.append(make_pipeline(StandardScaler(), GradientBoostingRegressor(n_estimators = 10)))
 #                self.clf_policy.append(make_pipeline(StandardScaler(), GradientBoostingRegressor(n_estimators = 100)))
 #
-#mv Model_History_Multi_Dimension.png Model_History_Multi_Dimension_SVR.png
-#mv best_multi_dim_expression.txt best_multi_dim_expression_SVR.txt
+#mv Model_History_Multi_Dimension.png Model_History_Multi_Dimension_NN.png
+#mv best_multi_dim_expression.txt best_multi_dim_expression_NN.txt

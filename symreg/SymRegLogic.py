@@ -19,8 +19,13 @@ from sympy import symbols, Eq, lambdify, latex
 from sympy.parsing.sympy_parser import (parse_expr, standard_transformations, implicit_multiplication_application)
 from sympy.utilities.lambdify import implemented_function
 import numpy as np
+from sklearn.metrics import r2_score, mean_squared_error
 from scipy.optimize import curve_fit
 import math
+
+def loss_func(y_true, y_pred):
+    score = r2_score(y_true, y_pred)
+    return r2_score if r2_score > 0 and not np.isnan(r2_score) and not np.isinf(r2_score) else 0
 
 # from bkcharts.attributes import color
 class Board():
@@ -143,7 +148,7 @@ def model_selection(x, {', '.join(consts)}):
                 if isinstance(y_pred, np.float64):
                     y_pred = np.full_like(Y, fill_value = y_pred)
                 try:
-                    loss = np.sum((y_pred-Y)**2) #TODO: Change to R^2 ?
+                    loss = mean_squared_error(y_pred, Y) #TODO: Change to R^2 ?
                     if np.isclose(loss, 0):
                         raise TypeError
                 except:
@@ -175,7 +180,7 @@ def model_selection(x, {', '.join(consts)}):
                 y_pred = model_selection(*[X[:,i] for i in range(self.__num_features)])
                 if isinstance(y_pred, np.float64) or isinstance(y_pred, int):
                     y_pred = np.full_like(Y, fill_value = y_pred)
-                loss = np.sum((y_pred-Y)**2) #TODO: Change to R^2 ?
+                loss = mean_squared_error(y_pred, Y) #TODO: Change to R^2 ?
                 assert y_pred.shape == Y.shape, f"{y_pred.shape}, {Y.shape}"
 
 #            print(model_selection.__code__.co_varnames)
@@ -203,7 +208,7 @@ def model_selection(x, {', '.join(consts)}):
                 print(f"New best expression: {Board.best_expression}")
                 print(f"New best expression latex: {latex(Board.best_expression)}")
                 print(f"New best loss: {Board.best_loss:.3f}")
-            return math.exp(-0.005*loss)
+            return r2_score(Y, y_pred) #1/(1+np.sqrt(loss)) #math.exp(-0.005*loss) 
       
                 
 

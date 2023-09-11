@@ -79,19 +79,17 @@ class Coach():
             log.info(f'Starting Iter #{i} ...')
             # examples of the iteration
             if not self.skipFirstSelfPlay or i > 1:
+                self.mcts.iteration_number = i 
                 iterationTrainExamples = deque([], maxlen=self.args.maxlenOfQueue)
 
                 for _ in tqdm(range(self.args.numEps), desc="Self Play"):
 #                    self.mcts = MCTS(self.game, self.nnet, self.args)  # reset search tree
                     iterationTrainExamples += self.executeEpisode()
 
-                # save the iteration examples to the history 
+                # save the iteration examples to the history
+                
                 self.trainExamplesHistory.append(iterationTrainExamples)
-#            if i == 2:
-#                for k in self.trainExamplesHistory:
-#                    print(*k, sep = "\n")
-#                    print()
-#                exit()
+                
             if len(self.trainExamplesHistory) > self.args.numItersForTrainExamplesHistory:
                 log.warning(
                     f"Removing the oldest entry in trainExamples. len(trainExamplesHistory) = {len(self.trainExamplesHistory)}")
@@ -107,7 +105,8 @@ class Coach():
 
             # training new network, keeping a copy of the old one
             self.nnet.save_checkpoint(folder=self.args.checkpoint, filename='temp.pth.tar')
-
+            
+            print("len(self.trainExamplesHistory) =",len(self.trainExamplesHistory))
             self.nnet.train(trainExamples) #Machine learning model is getting trained on the saved training examples
             self.mcts.nnet = self.nnet
 #            nmcts = MCTS(self.game, self.nnet, self.args)
