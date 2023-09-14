@@ -50,6 +50,7 @@ class NNetWrapper(NeuralNet):
         if args['useNN']:
             self.nnet.model.fit(x = input_boards, y = [target_pis, target_vs], batch_size = args.batch_size, epochs = args.epochs)
         else:
+            print("shape(input_boards) =",input_boards.shape)
             self.nnet.clf_value.fit(input_boards, target_vs) #learning value function
             print("Value R^2 score =",self.nnet.clf_value.score(input_boards, target_vs))
             assert(len(self.nnet.clf_policy) == self.action_size)
@@ -100,13 +101,15 @@ class NNetWrapper(NeuralNet):
         start = time.time()
 
         # preparing input
-        board = board[np.newaxis, :]
+        
+#        board = board[np.newaxis, :]
 
         # run
         if args['useNN']:
             pi, v = self.nnet.model.predict(board, verbose=False) #pi is the NN predicted probability of selecting each possible action given the state s
         elif self.trained:
-            v = self.nnet.clf_value.predict(board)
+            print("type(board) =",type(board))
+            v = self.nnet.clf_value.predict([board])
             pi = [np.empty(self.action_size)]
             for i in range(self.action_size):
                 pi[0][i] = self.nnet.clf_policy[i].predict(board)

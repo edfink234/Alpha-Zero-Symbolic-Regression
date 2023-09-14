@@ -32,7 +32,7 @@ class MCTS():
         canonicalBoard.
 
         Returns:
-            probs: a policy vector where the probability of the ith action is
+            probs: a policy vector where the probability of the ith possible action is
                    proportional to Nsa[(s,a)]**(1./temp)
         """
         for i in range(self.args.numMCTSSims):
@@ -40,8 +40,9 @@ class MCTS():
 
         s = self.game.stringRepresentation(canonicalBoard) #state
         counts = [self.Nsa.get((s,a), 0) for a in range(self.game.getActionSize())]
-
         if temp == 0:
+            if not any(counts): #if all counts are 0, then we need to prevent an invalid state!
+                counts = self.game.getValidMoves(canonicalBoard)
             bestAs = np.array(np.argwhere(counts == np.max(counts))).flatten()
             bestA = np.random.choice(bestAs)
             probs = [0] * len(counts)
@@ -50,10 +51,15 @@ class MCTS():
 
         counts = [x ** (1. / temp) for x in counts]
         counts_sum = float(sum(counts))
-        probs = [x / counts_sum for x in counts]
+        if not counts_sum: #if all counts are 0, then we need to prevent an invalid state!
+            counts = self.game.getValidMoves(canonicalBoard)
+            counts_sum = float(sum(counts))
+        probs = [x / counts_sum if counts_sum else 1/self.game.getActionSize() for x in counts]
+        
         if not np.isclose(sum(probs),1):
             print("Sum probs =",sum(probs))
-            exit()
+        
+        
         return probs
     
     def cpuct(self):
@@ -98,7 +104,6 @@ class MCTS():
                 # NB! All valid moves may be masked if either your NNet architecture is insufficient or you've get overfitting or something else.
                 # If you have got dozens or hundreds of these messages you should pay attention to your NNet and/or training process.
 #                print("sum_Ps_s, self.Ps[s]", sum_Ps_s, self.Ps[s])
-#                log.error("All valid moves were masked, doing a workaround.")
                 self.Ps[s] = self.Ps[s] + valids
                 self.Ps[s] /= np.sum(self.Ps[s])
 
@@ -109,7 +114,6 @@ class MCTS():
         valids = self.Vs[s]
         cur_best = -float('inf')
         best_act = -1
-
         # pick the action with the highest upper confidence bound
         for a in range(self.game.getActionSize()):
             if valids[a]:
@@ -124,7 +128,6 @@ class MCTS():
                 if u > cur_best:
                     cur_best = u
                     best_act = a
-
         a = best_act
         next_s = self.game.getNextState(canonicalBoard, a)
 
@@ -140,4 +143,3 @@ class MCTS():
 
         self.Ns[s] += 1
         return v
-#Propose an algorithm of building symbolic expressions from a set of tokens $T$ that guarantees that the resulting expression is valid and of length N

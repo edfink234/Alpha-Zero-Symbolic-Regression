@@ -35,6 +35,7 @@ class symregNNet():
 
         if self.args['useNN']:
             # Neural Net
+            #TODO: change this so that it works for a variable length expression!
             self.input_boards = Input(shape=(self.board, 1))  # s: batch_size x board x 1
 
             # Adjust the convolutional layers for 1D data

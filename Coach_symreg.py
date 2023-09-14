@@ -57,12 +57,17 @@ class Coach():
 
             action = np.random.choice(len(pi), p=pi)
             board = self.game.getNextState(board, action)
-
             r = self.game.getGameEnded(board)
-
             if r != -1:
+                #get length of last board
+
+                expression_length = len(trainExamples[-1][0]) #board of last "trainExample"
+
+                #append reward to each trainExample
                 for i in range(len(trainExamples)):
                     trainExamples[i].append(r)
+                    trainExamples[i][0].extend([0]*(expression_length-len(trainExamples[i][0])))
+               
                 return trainExamples
 
     def learn(self):
@@ -83,9 +88,7 @@ class Coach():
                 iterationTrainExamples = deque([], maxlen=self.args.maxlenOfQueue)
 
                 for _ in tqdm(range(self.args.numEps), desc="Self Play"):
-#                    self.mcts = MCTS(self.game, self.nnet, self.args)  # reset search tree
                     iterationTrainExamples += self.executeEpisode()
-
                 # save the iteration examples to the history
                 
                 self.trainExamplesHistory.append(iterationTrainExamples)
