@@ -49,7 +49,7 @@ class Board():
         self.__other_tokens = ["const", "stack"]
         
         self.__tokens = self.__operators + self.__input_vars + self.__other_tokens
-        self.__tokens_float = list(range(len(self.__tokens)))
+        self.__tokens_float = list(range(1,1+len(self.__tokens)))
         
         num_operators = len(self.__operators)
         num_unary_operators = len(self.__unary_operators)
@@ -87,6 +87,7 @@ class Board():
         
         elif self.pieces[-1] in self.__operators_float: #If the last move was an operator
             if Board.stack: #if stack's not empty you can choose it
+                #return [0]*len(self.__operators) + [0]*(self.__num_features) + [0, 1]
                 return [0]*len(self.__operators) + [1]*(self.__num_features) + [1, 1]
             else: #if stack's empty you can't choose it
                 return [0]*len(self.__operators) + [1]*(self.__num_features) + [1, 0]
@@ -96,6 +97,7 @@ class Board():
                 return [1]*len(self.__operators) + [0]*(self.__num_features) + [0, 0]
             elif self.pieces[-2] in self.__binary_operators_float:
                 if Board.stack: #if stack's not empty you can choose it
+                    #return [0]*len(self.__operators) + [1]*(self.__num_features) + [1, 0]
                     return [0]*len(self.__operators) + [1]*(self.__num_features) + [1, 1]
                 else: #if stack's empty you can't choose it
                     return [0]*len(self.__operators) + [1]*(self.__num_features) + [1, 0]
@@ -223,28 +225,11 @@ def model_selection(x, {', '.join(consts)}):
                 if isinstance(y_pred, np.float64) or isinstance(y_pred, int):
                     y_pred = np.full_like(Y, fill_value = y_pred)
                 loss = mean_squared_error(y_pred, Y)
-                assert y_pred.shape == Y.shape, f"{y_pred.shape}, {Y.shape}"
 
-#            print(model_selection.__code__.co_varnames)
             for i in range(self.__num_features):
                 expression_str = expression_str.replace(f"x[{i}]", f"x{i}")
             if loss < Board.best_loss:
-                try:
-                    Board.best_expression = parse_expr(expression_str, transformations=transformations, local_dict = temp_dict)
-                except:
-                    print("faulty expression_str =",expression_str)
-                    try:
-                        import re
-                        float_pattern = r'-?\d+\.\d+'
-                        floats_found = re.findall(float_pattern, expression_str)
-                        new_expression = re.sub(float_pattern, r'(\g<0>)', expression_str)
-                        for i in range(self.__num_features):
-                            new_expression = new_expression.replace(f'x{i}',f'(x{i})')
-                        Board.best_expression = parse_expr(new_expression, transformations=transformations, local_dict = temp_dict)
-                        print("fixed expression_str =", Board.best_expression)
-                    except:
-                        print("faulty new_expression_str =", new_expression)
-                        return 0
+                Board.best_expression = parse_expr(expression_str, transformations=transformations, local_dict = temp_dict)
 
                 Board.best_loss = loss
                 print(f"New best expression: {Board.best_expression}")
@@ -261,6 +246,7 @@ def model_selection(x, {', '.join(consts)}):
         self.pieces.append(move)
         
         #Then figure out if we need to update the stack
+        #Case 1: Unary
         if len(self.pieces) >= 2 and self.pieces[-2] in self.__unary_operators_float: #Then the move made was unary operand
             operand = self.__tokens_dict[self.pieces[-1]]
             if operand == "stack":
@@ -270,6 +256,7 @@ def model_selection(x, {', '.join(consts)}):
             
             Board.stack.append(f"{operand} {operator}")
         
+        #Case 2: Binary
         elif len(self.pieces) >= 3 and self.pieces[-3] in self.__binary_operators_float: #Then the move made was second binary operand
             left_operand = self.__tokens_dict[self.pieces[-1]]
             right_operand = self.__tokens_dict[self.pieces[-2]]
@@ -278,7 +265,7 @@ def model_selection(x, {', '.join(consts)}):
             if right_operand == "stack":
                 right_operand = Board.stack[-1]
             if left_operand == "stack":
-                left_operand = Board.stack[-1]
+                left_operand = Board.stack[-2]
              
             Board.stack.append(f"{left_operand} {right_operand} {operator}") 
                     
@@ -286,4 +273,6 @@ def model_selection(x, {', '.join(consts)}):
             del Board.stack[:-2] #delete all but last two expressions in stack
 
        
+        
+        
         

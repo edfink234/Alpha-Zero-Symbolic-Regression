@@ -50,7 +50,7 @@ class NNetWrapper(NeuralNet):
         if args['useNN']:
             self.nnet.model.fit(x = input_boards, y = [target_pis, target_vs], batch_size = args.batch_size, epochs = args.epochs)
         else:
-            print("shape(input_boards) =",input_boards.shape)
+            self.example_length = len(input_boards[0])
             self.nnet.clf_value.fit(input_boards, target_vs) #learning value function
             print("Value R^2 score =",self.nnet.clf_value.score(input_boards, target_vs))
             assert(len(self.nnet.clf_policy) == self.action_size)
@@ -108,11 +108,22 @@ class NNetWrapper(NeuralNet):
         if args['useNN']:
             pi, v = self.nnet.model.predict(board, verbose=False) #pi is the NN predicted probability of selecting each possible action given the state s
         elif self.trained:
-            print("type(board) =",type(board))
+#            print("BEFORE: len(board) == self.example_length is {}, len(board) = {}, self.example_length = {}".format(len(board) == self.example_length, len(board), self.example_length))
+
+            
+            board_length = len(board)
+            
+            diff = board_length - self.example_length
+            #Below, we are making board have the same length as self.example_length, i.e., the
+            #length the supervised learning models were trained on.
+            board = board[:-diff] if diff > 0 else (board + [0]*(self.example_length-len(board))) if diff < 0 else board
+            
+#            print("AFTER: len(board) == self.example_length is {}, len(board) = {}, self.example_length = {}".format(len(board) == self.example_length, len(board), self.example_length))
+
             v = self.nnet.clf_value.predict([board])
             pi = [np.empty(self.action_size)]
             for i in range(self.action_size):
-                pi[0][i] = self.nnet.clf_policy[i].predict(board)
+                pi[0][i] = self.nnet.clf_policy[i].predict([board])
         else:
             v = [np.random.random(1)]
             pi = [np.random.random(self.action_size)]

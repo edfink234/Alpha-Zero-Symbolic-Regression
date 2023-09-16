@@ -23,8 +23,7 @@ args = dotdict({
     'maxlenOfQueue': 200000,    # Number of game examples to train the neural networks.
     'numMCTSSims': 25,          # Number of games moves for MCTS to simulate.
     'arenaCompare': 1,         # Number of games to play during arena play to determine if new net will be accepted.
-    'cpuct': {50: 10, 100: 1, 150: 0.1}, #Controls the exploration/exploitation trade-off. TODO: Maybe set a schedule for this, i.e., so that the first N episodes have a higher value to encourage exploration and then lower this value to encourage exploitation?
-
+    'cpuct': {50: 10, 100: 1, 150: 0.1}, #Controls the exploration/exploitation trade-off.
     'checkpoint': './temp/',
     'load_model': False,
     'load_folder_file': ('temp/','checkpoint_0.pth.tar'),
@@ -40,7 +39,7 @@ def main():
         Board.data = np.loadtxt("symreg/test_data.txt")
         
         log.info('Loading %s...', Game.__name__)
-        g = Game(10)
+        g = Game(3)
 
         log.info('Loading %s...', nn.__name__)
         nnet = nn(g)

@@ -18,7 +18,7 @@ coloredlogs.install(level='INFO')  # Change this to DEBUG to see more info.
 
 args = dotdict({
     'numIters': 100000000,
-    'numEps': 10,              # Number of complete self-play games to simulate during a new iteration.
+    'numEps': 5000,              # Number of complete self-play games to simulate during a new iteration.
     'tempThreshold': 15,
     'maxlenOfQueue': 200000,    # Number of game examples to train the neural networks.
     'numMCTSSims': 100,          # Number of games moves for MCTS to simulate.
@@ -38,12 +38,14 @@ def main():
     try:
         log.info('Loading data...')
         X_data = 2 * np.random.randn(100, 5)
+        #Y_data =  np.cos((X_data[:, 3] + (0.121 - (X_data[:, 1] * (0.9 - X_data[:, 2])))))
         Y_data = 2.5382 * np.cos(X_data[:, 3]) + X_data[:, 0] ** 2 - 0.5 #2.5382 cos(x_3) + x_0^2 - 0.5
+        
         Y_data = Y_data.reshape(-1,1)
         Board.data = np.hstack((X_data,Y_data))
         
         log.info('Loading %s...', Game.__name__)
-        g = Game(10) #(1.)
+        g = Game(3) #(1.)
         #TODO: Add a feature to make the expression size variable?
 
         log.info('Loading %s...', nn.__name__)

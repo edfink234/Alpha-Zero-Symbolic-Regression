@@ -15,13 +15,14 @@ log = logging.getLogger(__name__)
 coloredlogs.install(level='INFO')  # Change this to DEBUG to see more info.
 
 args = dotdict({
-    'numIters': 10,
+    'numIters': 100000,
     'numEps': 10,              # Number of complete self-play games to simulate during a new iteration.
     'tempThreshold': 0,        
     'maxlenOfQueue': 200000,    # Number of game examples to train the neural networks.
     'numMCTSSims': 30,          # Number of games moves for MCTS to simulate.
     'arenaCompare': 1,         # Number of games to play during arena play to determine if new net will be accepted.
-    'cpuct': 1,
+    'cpuct': {50: 10, 100: 1, 150: 0.1}, #Controls the exploration/exploitation trade-off.
+
 
     'checkpoint': './temp/',
     'load_model': False,
@@ -41,7 +42,7 @@ def main():
         Board.data = np.hstack((X_data,Y_data))
 
         log.info('Loading %s...', Game.__name__)
-        g = Game(10) #(1.)
+        g = Game(1) #(1.)
 
         log.info('Loading %s...', nn.__name__)
         nnet = nn(g) #(2.)
