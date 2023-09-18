@@ -4,6 +4,7 @@ from collections import deque
 from numpy.random import choice
 from time import time
 from matplotlib.animation import FuncAnimation
+from symreg import *
 
 def generate_random_rpn_expression(operators, max_depth=5):
     stack = []
@@ -48,9 +49,21 @@ implot = None
 def plot_rpn_expression_tree(expression, block = False):
     global called, implot
     def is_operator(token):
-        return token in {'+', '-', '*', 'cos', 'grad'}
+        return token in {'+', '-', '*', 'cos', 'grad', 'exp'}
     def is_unary_operator(token):
-        return token in {'cos', 'grad'}
+        return token in {'cos', 'grad', 'exp'}
+    
+    #https://stackoverflow.com/a/77128902/18255427
+    def getRPNdepth(expression):
+        stack = []
+        for token in expression.split():
+            if is_unary_operator(token):  # all unary operators
+                stack[-1] += 1
+            elif is_operator(token):  # all binary operators
+                stack.append(max(stack.pop(), stack.pop()) + 1)
+            else:  # an operand (x)
+                stack.append(1)
+        return stack.pop()
 
     def build_tree(expression_tokens):
         stack = deque()
@@ -75,10 +88,9 @@ def plot_rpn_expression_tree(expression, block = False):
                 operator_node.left = left_operand
                 operator_node.right = right_operand
                 stack.append(operator_node)
-
         return stack.pop()
 
-    def plot_tree(node, graph, parent=None):
+    def plot_tree(node, graph, parent=None, depth = 0):
         if node:
             current_node = pydot.Node(str(node.unique_id), label=str(node.value))
             graph.add_node(current_node)
@@ -88,72 +100,41 @@ def plot_rpn_expression_tree(expression, block = False):
                 graph.add_edge(edge)
 
             if isinstance(node, BinaryNode):
-                plot_tree(node.left, graph, node)
-                plot_tree(node.right, graph, node)
+                plot_tree(node.left, graph, node, depth+1)
+                plot_tree(node.right, graph, node, depth+1)
             elif isinstance(node, UnaryNode):
-                plot_tree(node.child, graph, node)
+                plot_tree(node.child, graph, node, depth+1)
 
     expression_tokens = expression.split()
     expression_tree = build_tree(expression_tokens)
 
     graph = pydot.Dot(graph_type='graph')
-    plot_tree(expression_tree, graph)
-    graph.write_png('expression_tree.png')
+    depth = plot_tree(expression_tree, graph)
     
-    if called == False:
+    graph.write_png('expression_tree.png')
+    if called == False or block == True:
         implot = plt.imshow(plt.imread('expression_tree.png'))
         called = True
     else:
         implot.set_data(plt.imread('expression_tree.png'))
     plt.axis('off')
-    plt.title(expression)
+    plt.title(f"{expression}, depth = {getRPNdepth(expression)}")
     plt.show(block = block)
     plt.pause(0.01)
-#    fig, ax = plt.subplots()
-#
-#    # Load the PNG image
-#    im = plt.imread('expression_tree.png')
-#
-#    # Display the initial image
-#    implot = ax.imshow(im)
-#    ax.axis('off')
-#    ax.set_title(expression)
-#
-#    # Update function for animation
-#    def update(frame):
-#        # Load a new image for each frame (replace 'new_image.png' with your image file)
-#        new_image = plt.imread('expression_tree.png')
-#        implot.set_data(new_image)
-#
-#    # Create an animation
-#    ani = FuncAnimation(fig, update)
-#
-#    # Show the plot
-#    plt.show(block=False)
-#    plt.pause(0.1)
 
 # Example usage:
 def test_visualize():
-    rpn_expression = "x x + x *"
-    plot_rpn_expression_tree(rpn_expression)
-
-    expression_lst = '''
-    c c - grad exp
-    '''.split("\n")
-
-    # Example usage:
+#    # Example usage:
     operators = ['+', '-', '*', 'exp', 'cos', 'grad']
-    for i in expression_lst:
-        if i:
-            plot_rpn_expression_tree(generate_random_rpn_expression(operators, max_depth=3), block=True)
-            
+
     while True:
         try:
             print(expression:=generate_random_rpn_expression(operators, max_depth=3))
-            plot_rpn_expression_tree(expression, block=True)
+            plot_rpn_expression_tree("x x * c *", block=False)
             
         except KeyboardInterrupt:
             plt.close()
             exit()
 
-
+if __name__ == "__main__":
+    test_visualize()

@@ -110,7 +110,6 @@ class Board():
 
     def rpn_to_infix(self, rpn_expression):
         stack = []
-
         for token in rpn_expression.split():
             if token not in self.__operators: #other
                 stack.append(token)
