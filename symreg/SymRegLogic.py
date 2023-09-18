@@ -23,6 +23,7 @@ from sklearn.metrics import r2_score, mean_squared_error
 from sklearn.preprocessing import LabelEncoder
 from scipy.optimize import curve_fit
 import math
+from visualize_tree import *
 
 def loss_func(y_true, y_pred):
     score = r2_score(y_true, y_pred)
@@ -135,6 +136,8 @@ class Board():
             grad = implemented_function('grad', lambda x: np.gradient(x))
             
             expression_str = self.rpn_to_infix(Board.stack[-1])
+            print(Board.stack[-1])
+            plot_rpn_expression_tree(Board.stack[-1], block=False)
             
             num_consts = expression_str.count("const")
             x = symbols(f'x(:{self.__num_features})')
@@ -151,23 +154,7 @@ class Board():
                 for i in range(num_consts):
                     expression_str = expression_str.replace("const", f"y{i}", 1)
                 
-                first = False
-                while expression_str:
-                    try:
-                        parsed_expr = parse_expr(expression_str, transformations=transformations, local_dict = temp_dict)
-                        break
-                    except:
-                        print(f"Error, {expression_str} didn't parse!")
-                        exit()
-                        if not first:
-                            expression_str += " x0"
-                            first = True
-                        else:
-                            expression_str = ' '.join(expression_str.split()[:-1])
-                
-                if not expression_str:
-                    return 0
-                
+                parsed_expr = parse_expr(expression_str, transformations=transformations, local_dict = temp_dict)
                 model_selection_str = str(parsed_expr)
                 for i in range(self.__num_features):
                     model_selection_str = model_selection_str.replace(f"x{i}", f"x[{i}]")
@@ -190,13 +177,7 @@ def model_selection(x, {', '.join(consts)}):
                 
                 if isinstance(y_pred, np.float64) or isinstance(y_pred, int):
                     y_pred = np.full_like(Y, fill_value = y_pred)
-                try:
-                    loss = mean_squared_error(y_pred, Y)
-                    if np.isclose(loss, 0):
-                        raise TypeError
-                except:
-                    print("Zero loss!!")
-                    print("Expression =",model_selection_str)
+                loss = mean_squared_error(y_pred, Y)
                 assert y_pred.shape == Y.shape, f"{y_pred.shape}, {Y.shape}"
                 
                 for i in range(num_consts):
@@ -206,19 +187,7 @@ def model_selection(x, {', '.join(consts)}):
             else:
                 first = False
                 temp_dict.update({"grad": grad})
-                while expression_str:
-                    try:
-                        parsed_expr = parse_expr(expression_str, transformations=transformations, local_dict = temp_dict)
-                        break
-                    except:
-                        if not first:
-                            expression_str += " x0"
-                            first = True
-                        else:
-                            expression_str = ' '.join(expression_str.split()[:-1])
-                
-                if not expression_str:
-                    return 0
+                parsed_expr = parse_expr(expression_str, transformations=transformations, local_dict = temp_dict)
                 model_selection = lambdify(x, parsed_expr)
                 
                 y_pred = model_selection(*[X[:,i] for i in range(self.__num_features)])
@@ -265,7 +234,10 @@ def model_selection(x, {', '.join(consts)}):
             if right_operand == "stack":
                 right_operand = Board.stack[-1]
             if left_operand == "stack":
-                left_operand = Board.stack[-2]
+                if len(Board.stack) >= 2:
+                    left_operand = Board.stack[-2]
+                else:
+                    left_operand = Board.stack[-1]
              
             Board.stack.append(f"{left_operand} {right_operand} {operator}") 
                     
