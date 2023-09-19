@@ -36,7 +36,6 @@ class Board():
     best_expression = None
     data = None
     best_loss = np.inf
-    stack = []
 
     def __init__(self, n=3):
         "Set up initial board configuration."
@@ -47,7 +46,7 @@ class Board():
         self.__binary_operators = ['+', '-', '*']
         self.__operators = self.__unary_operators + self.__binary_operators
         
-        self.__other_tokens = ["const", "stack"]
+        self.__other_tokens = ["const"]
         
         self.__tokens = self.__operators + self.__input_vars + self.__other_tokens
         self.__tokens_float = list(range(1,1+len(self.__tokens)))
