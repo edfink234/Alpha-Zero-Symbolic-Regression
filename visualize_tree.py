@@ -63,7 +63,10 @@ def plot_rpn_expression_tree(expression, block = False):
                 stack.append(max(stack.pop(), stack.pop()) + 1)
             else:  # an operand (x)
                 stack.append(1)
-        return stack.pop()
+        while len(stack) > 1:
+            stack.append(max(stack.pop(), stack.pop()) + 1)
+    
+        return stack.pop()-1
 
     def build_tree(expression_tokens):
         stack = deque()
@@ -90,7 +93,7 @@ def plot_rpn_expression_tree(expression, block = False):
                 stack.append(operator_node)
         return stack.pop()
 
-    def plot_tree(node, graph, parent=None, depth = 0):
+    def plot_tree(node, graph, parent=None):
         if node:
             current_node = pydot.Node(str(node.unique_id), label=str(node.value))
             graph.add_node(current_node)
@@ -100,16 +103,16 @@ def plot_rpn_expression_tree(expression, block = False):
                 graph.add_edge(edge)
 
             if isinstance(node, BinaryNode):
-                plot_tree(node.left, graph, node, depth+1)
-                plot_tree(node.right, graph, node, depth+1)
+                plot_tree(node.left, graph, node)
+                plot_tree(node.right, graph, node)
             elif isinstance(node, UnaryNode):
-                plot_tree(node.child, graph, node, depth+1)
+                plot_tree(node.child, graph, node)
 
     expression_tokens = expression.split()
     expression_tree = build_tree(expression_tokens)
 
     graph = pydot.Dot(graph_type='graph')
-    depth = plot_tree(expression_tree, graph)
+    plot_tree(expression_tree, graph)
     
     graph.write_png('expression_tree.png')
     if called == False or block == True:
@@ -130,7 +133,7 @@ def test_visualize():
     while True:
         try:
             print(expression:=generate_random_rpn_expression(operators, max_depth=3))
-            plot_rpn_expression_tree("x x * c *", block=False)
+            plot_rpn_expression_tree(expression, block=False)
             
         except KeyboardInterrupt:
             plt.close()
