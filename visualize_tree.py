@@ -44,6 +44,11 @@ class UnaryNode(Node):
         super().__init__(value, unique_id)
         self.child = None
 
+def is_operator(token):
+    return token in {'+', '-', '*', 'cos', 'grad', 'exp'}
+def is_unary_operator(token):
+    return token in {'cos', 'grad', 'exp'}
+
 #https://stackoverflow.com/a/77128902/18255427
 def getRPNdepth(expression):
     stack = []
@@ -65,10 +70,6 @@ called = False
 implot = None
 def plot_rpn_expression_tree(expression, block = False):
     global called, implot
-    def is_operator(token):
-        return token in {'+', '-', '*', 'cos', 'grad', 'exp'}
-    def is_unary_operator(token):
-        return token in {'cos', 'grad', 'exp'}
 
     def build_tree(expression_tokens):
         stack = deque()

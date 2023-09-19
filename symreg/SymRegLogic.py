@@ -42,7 +42,7 @@ class Board():
         self.__num_features = len(Board.data[0])-1 #This assumes that the labels are just 1 column (hence the -1)
         self.__input_vars = [f'x{i}' for i in range(self.__num_features)] # (x0, x1, ..., xN)
         
-        self.__unary_operators = ['cos', 'grad']
+        self.__unary_operators = ['cos']
         self.__binary_operators = ['+', '-', '*']
         self.__operators = self.__unary_operators + self.__binary_operators
         
@@ -79,11 +79,11 @@ class Board():
         """Returns a list of 1's and 0's representing if the i'th operator in self.__operators is legal given the current state s (represented by the list self.pieces)
         """
         
-        if not self.pieces: #At the beginning, self.pieces is empty, so the only legal moves are the operators
-            return [1]*len(self.__operators) + [0]*(self.__num_features) + [0, 0]
+        if not self.pieces: #At the beginning, self.pieces is empty, so the only legal moves are the features and const
+            return [0]*len(self.__operators) + [1]*(self.__num_features) + [1]
         
-        elif self.__tokens_dict[self.pieces[-1]] == "grad":
-            return [0]*len(self.__operators) + [1]*(self.__num_features) + [0, 0]
+        
+        
         
         elif self.pieces[-1] in self.__operators_float: #If the last move was an operator
             if Board.stack: #if stack's not empty you can choose it
