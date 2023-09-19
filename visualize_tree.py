@@ -44,6 +44,23 @@ class UnaryNode(Node):
         super().__init__(value, unique_id)
         self.child = None
 
+#https://stackoverflow.com/a/77128902/18255427
+def getRPNdepth(expression):
+    stack = []
+    for token in expression.split():
+        if is_unary_operator(token):  # all unary operators
+            stack[-1] += 1
+        elif is_operator(token):  # all binary operators
+            stack.append(max(stack.pop(), stack.pop()) + 1)
+        else:  # an operand (x)
+            stack.append(1)
+    complete = True
+    while len(stack) > 1:
+        stack.append(max(stack.pop(), stack.pop()) + 1)
+        complete = False #If the stack length is greater than 1 then expression is an INCOMPLETE RPN expression
+
+    return stack.pop()-1, complete
+
 called = False
 implot = None
 def plot_rpn_expression_tree(expression, block = False):
@@ -52,21 +69,6 @@ def plot_rpn_expression_tree(expression, block = False):
         return token in {'+', '-', '*', 'cos', 'grad', 'exp'}
     def is_unary_operator(token):
         return token in {'cos', 'grad', 'exp'}
-    
-    #https://stackoverflow.com/a/77128902/18255427
-    def getRPNdepth(expression):
-        stack = []
-        for token in expression.split():
-            if is_unary_operator(token):  # all unary operators
-                stack[-1] += 1
-            elif is_operator(token):  # all binary operators
-                stack.append(max(stack.pop(), stack.pop()) + 1)
-            else:  # an operand (x)
-                stack.append(1)
-        while len(stack) > 1:
-            stack.append(max(stack.pop(), stack.pop()) + 1)
-    
-        return stack.pop()-1
 
     def build_tree(expression_tokens):
         stack = deque()
@@ -121,7 +123,7 @@ def plot_rpn_expression_tree(expression, block = False):
     else:
         implot.set_data(plt.imread('expression_tree.png'))
     plt.axis('off')
-    plt.title(f"{expression}, depth = {getRPNdepth(expression)}")
+    plt.title(f"{expression}, depth = {getRPNdepth(expression)[0]}")
     plt.show(block = block)
     plt.pause(0.01)
 

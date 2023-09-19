@@ -60,7 +60,7 @@ class Board():
         self.__input_vars_float = self.__tokens_float[num_operators:num_operators+self.__num_features]
         self.__other_tokens_float = self.__tokens_float[num_operators+self.__num_features:]
         
-        self.action_size = len(self.__tokens)  #TODO: stacks for different types?
+        self.action_size = len(self.__tokens)
                 
         self.__tokens_dict = {operator:name for (operator, name) in zip(self.__tokens_float, self.__tokens)} #Converts number to string
         self.__tokens_inv_dict = {name:operator for (operator, name) in zip(self.__tokens_float, self.__tokens)}
@@ -74,7 +74,7 @@ class Board():
     # add [][] indexer syntax to the Board
     def __getitem__(self, index):
         return self.__tokens_float[index]
-
+    
     def get_legal_moves(self):
         """Returns a list of 1's and 0's representing if the i'th operator in self.__operators is legal given the current state s (represented by the list self.pieces)
         """
