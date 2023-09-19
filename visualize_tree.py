@@ -50,9 +50,14 @@ def is_unary_operator(token):
     return token in {'cos', 'grad', 'exp'}
 
 #https://stackoverflow.com/a/77128902/18255427
+#Returns two values, depth and if the expression of complete
 def getRPNdepth(expression):
+    if not expression: #if it's empty
+        return 1, False
     stack = []
-    for token in expression.split():
+    if isinstance(expression, str):
+        expression = expression.split()
+    for token in expression:
         if is_unary_operator(token):  # all unary operators
             stack[-1] += 1
         elif is_operator(token):  # all binary operators

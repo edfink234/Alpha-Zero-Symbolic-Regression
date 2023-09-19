@@ -41,8 +41,11 @@ class SymRegGame(Game):
     def getNextState(self, board, action):
         # if player takes action on board, return next (board,player)
         # action is an index i from 0 to getActionSize-1
+        
         b = Board(self.n)
         b.pieces = board
+        if self.getGameEnded(board) != -1: #Then it ended, don't make the action
+            return (b.pieces)
         move = b[action] #move is the i'th action in the set of all possible actions (self.__tokens)
         b.execute_move(move)
         return (b.pieces)
@@ -55,11 +58,9 @@ class SymRegGame(Game):
         return legalMoves
 
     def getGameEnded(self, board):
-        # return -1 if not ended, 0 <= result
+        # return -1 if not ended, 0 <= result <= 1 (i.e., the score) if ended
         b = Board(self.n)
         b.pieces = board
-        if len(Board.stack) < self.n:
-            return -1
         result = b.complete_status()
         return result
 

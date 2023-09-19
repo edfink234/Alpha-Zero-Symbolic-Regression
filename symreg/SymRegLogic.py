@@ -67,7 +67,7 @@ class Board():
 
         assert(len(set(self.__tokens_dict)) == len(self.__tokens_dict))
         assert((self.__unary_operators_float+self.__binary_operators_float+self.__input_vars_float+self.__other_tokens_float) == self.__tokens_float)
-        self.n = n
+        self.n = n #depth of RPN tree
         # Create the empty expression list.
         self.pieces = []
 
@@ -75,38 +75,44 @@ class Board():
     def __getitem__(self, index):
         return self.__tokens_float[index]
     
+    def __num_binary_ops(self):
+        count = 0
+        for i in self.pieces:
+            if i in self.__binary_operators_float:
+                count += 1
+        return count
+    
+    def __num_unary_ops(self):
+        count = 0
+        for i in self.pieces:
+            if i in self.__unary_operators_float:
+                count += 1
+        return count
+    
+    def __num_leaves(self):
+        count = 0
+        leaves = self.__input_vars_float + self.__other_tokens_float
+        for i in self.pieces:
+            if i in leaves:
+                count += 1
+        return count
+    
     def get_legal_moves(self):
         """Returns a list of 1's and 0's representing if the i'th operator in self.__operators is legal given the current state s (represented by the list self.pieces)
         """
-        
         if not self.pieces: #At the beginning, self.pieces is empty, so the only legal moves are the features and const
             return [0]*len(self.__operators) + [1]*(self.__num_features) + [1]
         
+        num_binary, num_leaves = self.__num_binary_ops(), self.__num_leaves()
         
+        binary_allowed = 0 if num_binary == num_leaves - 1 else 1 #The number of binary operators can never exceed number of leaves - 1 in any RPN expression
         
+        unary_allowed = 1 if num_leaves >= 1 and getRPNdepth([self.__tokens_dict[i] for i in self.pieces + [self.__unary_operators_float[-1]] ])[0] <= self.n else 0
         
-        elif self.pieces[-1] in self.__operators_float: #If the last move was an operator
-            if Board.stack: #if stack's not empty you can choose it
-                #return [0]*len(self.__operators) + [0]*(self.__num_features) + [0, 1]
-                return [0]*len(self.__operators) + [1]*(self.__num_features) + [1, 1]
-            else: #if stack's empty you can't choose it
-                return [0]*len(self.__operators) + [1]*(self.__num_features) + [1, 0]
+        leaves_allowed = 1 if getRPNdepth([self.__tokens_dict[i] for i in self.pieces + [self.__input_vars_float[-1]] ])[0] <= self.n else 0
         
-        elif self.pieces[-1] in self.__input_vars_float + self.__other_tokens_float:
-            if self.pieces[-2] in self.__unary_operators_float: #Then the only legal moves are the operators
-                return [1]*len(self.__operators) + [0]*(self.__num_features) + [0, 0]
-            elif self.pieces[-2] in self.__binary_operators_float:
-                if Board.stack: #if stack's not empty you can choose it
-                    #return [0]*len(self.__operators) + [1]*(self.__num_features) + [1, 0]
-                    return [0]*len(self.__operators) + [1]*(self.__num_features) + [1, 1]
-                else: #if stack's empty you can't choose it
-                    return [0]*len(self.__operators) + [1]*(self.__num_features) + [1, 0]
-            else:
-                return [1]*len(self.__operators) + [0]*(self.__num_features) + [0, 0]
+        return ([unary_allowed]*len(self.__unary_operators) + [binary_allowed]*len(self.__binary_operators) + [leaves_allowed]*(self.__num_features) + [leaves_allowed])
         
-        else: #TODO: Delete if never happens
-            raise ValueError(f"get_legal_moves Exception! self.pieces = {self.pieces}")
-
     def rpn_to_infix(self, rpn_expression):
         stack = []
         for token in rpn_expression.split():
@@ -128,14 +134,15 @@ class Board():
         """Check whether the given player has created a complete (depth self.n) expression (again), and
         checks if it can be made parseable. Returns the score of the expression, where 0 <= score <= 1
         """
-        if len(Board.stack) < self.n: #Expression not complete
+        depth, complete = getRPNdepth(expression := [self.__tokens_dict[i] for i in self.pieces])
+        if not complete or depth < self.n: #Expression not complete
             return -1
         else:
             grad = implemented_function('grad', lambda x: np.gradient(x))
             
-            expression_str = self.rpn_to_infix(Board.stack[-1])
-            print(Board.stack[-1])
-            plot_rpn_expression_tree(Board.stack[-1], block=False)
+            expression_str = self.rpn_to_infix(expression := ' '.join(expression))
+            print(expression_str)
+            plot_rpn_expression_tree(expression, block=False)
             
             num_consts = expression_str.count("const")
             x = symbols(f'x(:{self.__num_features})')
@@ -202,6 +209,8 @@ def model_selection(x, {', '.join(consts)}):
                 print(f"New best expression: {Board.best_expression}")
                 print(f"New best expression latex: {latex(Board.best_expression)}")
                 print(f"New best loss: {Board.best_loss:.3f}")
+            
+            self.pieces.clear()
             return loss_func(Y, y_pred) #1/(1+np.sqrt(loss)) #math.exp(-0.005*loss)
       
                 
@@ -209,39 +218,8 @@ def model_selection(x, {', '.join(consts)}):
     def execute_move(self, move):
         """Perform the given move
         """
-        #First make the move
+        #make the move
         self.pieces.append(move)
-        
-        #Then figure out if we need to update the stack
-        #Case 1: Unary
-        if len(self.pieces) >= 2 and self.pieces[-2] in self.__unary_operators_float: #Then the move made was unary operand
-            operand = self.__tokens_dict[self.pieces[-1]]
-            if operand == "stack":
-                operand = Board.stack[-1]
-            operator = self.__tokens_dict[self.pieces[-2]]
-
-            
-            Board.stack.append(f"{operand} {operator}")
-        
-        #Case 2: Binary
-        elif len(self.pieces) >= 3 and self.pieces[-3] in self.__binary_operators_float: #Then the move made was second binary operand
-            left_operand = self.__tokens_dict[self.pieces[-1]]
-            right_operand = self.__tokens_dict[self.pieces[-2]]
-            operator = self.__tokens_dict[self.pieces[-3]]
-            
-            if right_operand == "stack":
-                right_operand = Board.stack[-1]
-            if left_operand == "stack":
-                if len(Board.stack) >= 2:
-                    left_operand = Board.stack[-2]
-                else:
-                    left_operand = Board.stack[-1]
-             
-            Board.stack.append(f"{left_operand} {right_operand} {operator}") 
-                    
-        if len(Board.stack) > self.n:
-            del Board.stack[:-2] #delete all but last two expressions in stack
-
        
         
         
