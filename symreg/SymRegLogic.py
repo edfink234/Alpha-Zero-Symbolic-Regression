@@ -210,7 +210,6 @@ def model_selection(x, {', '.join(consts)}):
                 print(f"New best expression latex: {latex(Board.best_expression)}")
                 print(f"New best loss: {Board.best_loss:.3f}")
             
-            self.pieces.clear()
             return loss_func(Y, y_pred) #1/(1+np.sqrt(loss)) #math.exp(-0.005*loss)
       
                 

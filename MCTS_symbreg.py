@@ -36,8 +36,9 @@ class MCTS():
                    proportional to Nsa[(s,a)]**(1./temp)
         """
         for i in range(self.args.numMCTSSims):
+            print(f"MCTS sim {i}")
             self.search(canonicalBoard)
-
+        print(f"done")
         s = self.game.stringRepresentation(canonicalBoard) #state
         counts = [self.Nsa.get((s,a), 0) for a in range(self.game.getActionSize())]
         if temp == 0:
@@ -118,7 +119,6 @@ class MCTS():
             if valids[a]:
                 if (s, a) in self.Qsa:
 #                    u = self.Qsa[(s, a)] + self.cpuct() * self.Ps[s][a] * math.sqrt(self.Ns[s]) / (1 + self.Nsa[(s, a)]) #AlphaGoZero formula, see page 26 of https://discovery.ucl.ac.uk/id/eprint/10045895/1/agz_unformatted_nature.pdf
-                    
                     u = self.Qsa[(s, a)] + self.cpuct() * self.Ps[s][a] * ( (self.Ns[s])**(0.25) / math.sqrt(self.Nsa[(s, a)])) #see page 4 of https://arxiv.org/pdf/1902.05213.pdf
                 else:
                     u = self.cpuct() * self.Ps[s][a] * math.sqrt(self.Ns[s] + EPS)  # Q = 0 ?

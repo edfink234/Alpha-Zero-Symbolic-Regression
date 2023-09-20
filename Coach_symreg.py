@@ -57,19 +57,21 @@ class Coach():
             pi = self.mcts.getActionProb(board, temp=temp)
             trainExamples.append([board, pi])
             action = np.random.choice(len(pi), p=pi)
+            print("board =",board)
             board = self.game.getNextState(board, action)
+            print("board =",board)
             r = self.game.getGameEnded(board)
             if r != -1:
-                #get length of last board
                 print("Finished!")
                 self.game.b.pieces.clear()
+                #get length of last board
                 expression_length = len(trainExamples[-1][0]) #board of last "trainExample"
-
+                print(trainExamples)
                 #append reward to each trainExample
                 for i in range(len(trainExamples)):
                     trainExamples[i].append(r)
                     trainExamples[i][0].extend([0]*(expression_length-len(trainExamples[i][0])))
-               
+                
                 return trainExamples
 
     def learn(self):

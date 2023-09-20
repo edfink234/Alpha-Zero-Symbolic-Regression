@@ -41,7 +41,7 @@ class SymRegGame(Game):
     def getNextState(self, board, action):
         # if player takes action on board, return next (board,player)
         # action is an index i from 0 to getActionSize-1
-        
+        print("getNextState board =",board)
         b = Board(self.n)
         b.pieces = board
         if self.getGameEnded(board) != -1: #Then it ended, don't make the action
