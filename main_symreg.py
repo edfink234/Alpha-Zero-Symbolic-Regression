@@ -66,6 +66,7 @@ def main():
         save = input("Save Model History, best expression and loss? (y/n): ")
         if 'y' in save.lower():
             with open("best_expression.txt", "w") as f:
+                plt.close()
                 f.write(f"{Board.best_expression}\n")
                 f.write(f"{Board.best_loss}\n")
                 x_vals = np.linspace(Board.data[:,0][0], Board.data[:,0][-1], 1000)
