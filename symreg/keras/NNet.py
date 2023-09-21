@@ -19,10 +19,10 @@ Based on (copy-pasted from) the NNet by SourKream and Surag Nair.
 """
 
 args = dotdict({
-    'useNN' : False,
+    'useNN' : True,
     'lr': 0.01,
     'dropout': 0.3,
-    'epochs': 100,
+    'epochs': 10,
     'batch_size': 64,
     'cuda': False,
     'num_channels': 512,
@@ -41,7 +41,7 @@ class NNetWrapper(NeuralNet):
         """
         input_boards, target_pis, target_vs = list(zip(*examples))
 #        print("input_boards, target_pis, target_vs =",input_boards, target_pis, target_vs, sep = "\n======\n")
-        input_boards = pad_sequences(input_boards, padding='post') #np.asarray(input_boards)
+        input_boards = pad_sequences(input_boards, padding='post', maxlen = self.board if args['useNN'] else None)
         target_pis = np.asarray(target_pis)
         target_vs = np.asarray(target_vs)
         if args['useNN']:
@@ -91,13 +91,13 @@ class NNetWrapper(NeuralNet):
             self.trained = True
 
     def predict(self, board):
-        """
-        board: np array with board
-        """
         
         # run
         if args['useNN']:
-            pi, v = self.nnet.model.predict(board, verbose=False) #pi is the NN predicted probability of selecting each possible action given the state s
+#            print(f"trying... board = {board}")
+#            print("len(pad_sequences([board], padding='post', maxlen = self.board)) =", len(pad_sequences([board], padding='post', maxlen = self.board)[0]))
+#            exit()
+            pi, v = self.nnet.model.predict(pad_sequences([board], padding='post', maxlen = self.board), verbose=False) #pi is the NN predicted probability of selecting each possible action given the state s
         elif self.trained:
 #            print("BEFORE: len(board) == self.example_length is {}, len(board) = {}, self.example_length = {}".format(len(board) == self.example_length, len(board), self.example_length))
 

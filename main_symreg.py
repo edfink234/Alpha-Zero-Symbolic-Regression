@@ -18,7 +18,7 @@ coloredlogs.install(level='INFO')  # Change this to DEBUG to see more info.
 
 args = dotdict({
     'numIters': 100000000,
-    'numEps': 1000,              # Number of complete self-play games to simulate during a new iteration.
+    'numEps': 10,              # Number of complete self-play games to simulate during a new iteration.
     'tempThreshold': 15,        
     'maxlenOfQueue': 200000,    # Number of game examples to train the neural networks.
     'numMCTSSims': 25,          # Number of games moves for MCTS to simulate.
@@ -39,7 +39,7 @@ def main():
         Board.data = np.loadtxt("symreg/test_data.txt")
         
         log.info('Loading %s...', Game.__name__)
-        g = Game(10)
+        g = Game(3)
 
         log.info('Loading %s...', nn.__name__)
         nnet = nn(g)

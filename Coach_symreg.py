@@ -55,25 +55,25 @@ class Coach():
             episodeStep += 1
             temp = int(episodeStep < self.args.tempThreshold)
             r = self.game.getGameEnded(board)
-            print("board = {}, r = {}".format(board,r))
+#            print("board = {}, r = {}".format(board,r))
             pi = self.mcts.getActionProb(board, temp=temp) #Here, self.args['numMCTSSims'] games are simulated from the state board
 #            print("board = {}, r = {}".format(board,r))
             trainExamples.append(([copy(board), copy(pi)]))
-            print("trainExamples =",trainExamples)
+#            print("trainExamples =",trainExamples)
             action = np.random.choice(len(pi), p=pi)
             board = self.game.getNextState(board, action)
-            print("board =",board)
+#            print("board =",board)
             r = self.game.getGameEnded(board)
 #            print("board = {}, r = {}".format(board,r))
             if r != -1:
-                print("Finished!")
+#                print("Finished!")
                 #get length of last board
                 expression_length = len(trainExamples[-1][0]) #board of last "trainExample"
                 #append reward to each trainExample
                 for i in range(len(trainExamples)):
                     trainExamples[i].append(r)
                     trainExamples[i][0].extend([0]*(expression_length-len(trainExamples[i][0])))
-                print("trainExamples =",trainExamples)
+#                print("trainExamples =",trainExamples)
                 return trainExamples
 
     def learn(self):
@@ -98,7 +98,7 @@ class Coach():
                 # save the iteration examples to the history
                 
                 self.trainExamplesHistory.append(iterationTrainExamples)
-                print("self.trainExamplesHistory =",self.trainExamplesHistory)
+#                print("self.trainExamplesHistory =",self.trainExamplesHistory)
                 
             if len(self.trainExamplesHistory) > self.args.numItersForTrainExamplesHistory:
                 log.warning(

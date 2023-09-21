@@ -18,12 +18,12 @@ coloredlogs.install(level='INFO')  # Change this to DEBUG to see more info.
 
 args = dotdict({
     'numIters': 100000,
-    'numEps': 10,              # Number of complete self-play games to simulate during a new iteration.
+    'numEps': 50,              # Number of complete self-play games to simulate during a new iteration.
     'tempThreshold': 15,        # This means that the temperature 'temp' will be 1 for 15 Monte-Carlo simulations and then will be 0
     'maxlenOfQueue': 200000,    # Number of game examples to train the neural networks.
     'numMCTSSims': 5,          # Number of games moves for MCTS to simulate.
     'arenaCompare': 1,         # Number of games to play during arena play to determine if new net will be accepted.
-    'cpuct': {50: 0.1, 100: 1, 150: 0.1}, #Controls the exploration/exploitation trade-off. 
+    'cpuct': {50: 1, 100: 1, 150: 0.1}, #Controls the exploration/exploitation trade-off. 
 
     'checkpoint': './temp/',
     'load_model': False,

@@ -31,8 +31,8 @@ class SymRegGame(Game):
         return self.b.pieces
         
     def getBoardSize(self):
-        # a number
-        return self.n
+        # the maximum number of elements in a tree of depth N
+        return 2*(2**self.n)-1
 
     def getActionSize(self):
         # return number of operators in action space
