@@ -101,10 +101,6 @@ class NNetWrapper(NeuralNet):
         # timing
         start = time.time()
 
-        # preparing input
-        
-#        board = board[np.newaxis, :]
-
         # run
         if args['useNN']:
             pi, v = self.nnet.model.predict(board, verbose=False) #pi is the NN predicted probability of selecting each possible action given the state s
@@ -118,8 +114,6 @@ class NNetWrapper(NeuralNet):
             #Below, we are making board have the same length as self.example_length, i.e., the
             #length the supervised learning models were trained on.
             board = board[:-diff] if diff > 0 else (board + [0]*(self.example_length-len(board))) if diff < 0 else board
-            
-#            print("AFTER: len(board) == self.example_length is {}, len(board) = {}, self.example_length = {}".format(len(board) == self.example_length, len(board), self.example_length))
 
             v = self.nnet.clf_value.predict([board])
             pi = [np.empty(self.action_size)]
@@ -129,8 +123,6 @@ class NNetWrapper(NeuralNet):
             v = [np.random.random(1)]
             pi = [np.random.random(self.action_size)]
             
-#        print("pi[0], v[0] =", type(pi[0]), type(v[0]))
-        #print('PREDICTION TIME TAKEN : {0:03f}'.format(time.time()-start))
         return pi[0], v[0]
 
     def save_checkpoint(self, folder='checkpoint', filename='checkpoint.pth.tar'):

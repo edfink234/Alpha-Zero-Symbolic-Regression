@@ -100,6 +100,7 @@ class Board():
     def get_legal_moves(self):
         """Returns a list of 1's and 0's representing if the i'th operator in self.__operators is legal given the current state s (represented by the list self.pieces)
         """
+        print("get_legal_moves self.pieces =", [self.__tokens_dict[i] for i in self.pieces])
         if not self.pieces: #At the beginning, self.pieces is empty, so the only legal moves are the features and const
             return [0]*len(self.__operators) + [1]*(self.__num_features) + [1]
         
@@ -134,6 +135,7 @@ class Board():
         """Check whether the given player has created a complete (depth self.n) expression (again), and
         checks if it can be made parseable. Returns the score of the expression, where 0 <= score <= 1
         """
+        print("self.pieces =", [self.__tokens_dict[i] for i in self.pieces])
         depth, complete = getRPNdepth(expression := [self.__tokens_dict[i] for i in self.pieces])
         if not complete or depth < self.n: #Expression not complete
             return -1
@@ -141,7 +143,7 @@ class Board():
             grad = implemented_function('grad', lambda x: np.gradient(x))
             
             expression_str = self.rpn_to_infix(expression := ' '.join(expression))
-            print(expression_str)
+#            print(expression_str)
             plot_rpn_expression_tree(expression, block=False)
             
             num_consts = expression_str.count("const")
@@ -209,7 +211,6 @@ def model_selection(x, {', '.join(consts)}):
                 print(f"New best expression: {Board.best_expression}")
                 print(f"New best expression latex: {latex(Board.best_expression)}")
                 print(f"New best loss: {Board.best_loss:.3f}")
-            
             return loss_func(Y, y_pred) #1/(1+np.sqrt(loss)) #math.exp(-0.005*loss)
       
                 

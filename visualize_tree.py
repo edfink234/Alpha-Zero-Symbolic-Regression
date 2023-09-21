@@ -53,7 +53,7 @@ def is_unary_operator(token):
 #Returns two values, depth and if the expression of complete
 def getRPNdepth(expression):
     if not expression: #if it's empty
-        return 1, False
+        return 0, False
     stack = []
     if isinstance(expression, str):
         expression = expression.split()
@@ -116,7 +116,8 @@ def plot_rpn_expression_tree(expression, block = False):
             elif isinstance(node, UnaryNode):
                 plot_tree(node.child, graph, node)
 
-    expression_tokens = expression.split()
+    
+    expression_tokens = expression.split() if isinstance(expression, str) else expression
     expression_tree = build_tree(expression_tokens)
 
     graph = pydot.Dot(graph_type='graph')

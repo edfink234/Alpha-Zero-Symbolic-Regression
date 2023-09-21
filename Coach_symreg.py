@@ -5,6 +5,7 @@ from collections import deque
 from pickle import Pickler, Unpickler
 from random import shuffle
 from sympy import latex
+from copy import copy
 
 import numpy as np
 from tqdm import tqdm
@@ -54,13 +55,15 @@ class Coach():
             episodeStep += 1
             temp = int(episodeStep < self.args.tempThreshold)
             r = self.game.getGameEnded(board)
-            pi = self.mcts.getActionProb(board, temp=temp)
+            print("board = {}, r = {}".format(board,r))
+            temp_board = copy(board) #getActionProb mutates board so that's why we pass in a copy.
+            pi = self.mcts.getActionProb(temp_board, temp=temp)
             trainExamples.append([board, pi])
             action = np.random.choice(len(pi), p=pi)
-            print("board =",board)
             board = self.game.getNextState(board, action)
             print("board =",board)
             r = self.game.getGameEnded(board)
+#            print("board = {}, r = {}".format(board,r))
             if r != -1:
                 print("Finished!")
                 self.game.b.pieces.clear()
@@ -71,7 +74,7 @@ class Coach():
                 for i in range(len(trainExamples)):
                     trainExamples[i].append(r)
                     trainExamples[i][0].extend([0]*(expression_length-len(trainExamples[i][0])))
-                
+#                print("trainExamples =",trainExamples)
                 return trainExamples
 
     def learn(self):
@@ -96,6 +99,7 @@ class Coach():
                 # save the iteration examples to the history
                 
                 self.trainExamplesHistory.append(iterationTrainExamples)
+                print("self.trainExamplesHistory =",self.trainExamplesHistory)
                 
             if len(self.trainExamplesHistory) > self.args.numItersForTrainExamplesHistory:
                 log.warning(
