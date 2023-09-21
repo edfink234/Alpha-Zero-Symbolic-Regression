@@ -1,6 +1,6 @@
 import logging
 import math
-from copy import deepcopy
+from copy import copy
 import numpy as np
 
 EPS = 1e-8
@@ -29,18 +29,18 @@ class MCTS():
     def getActionProb(self, canonicalBoard, temp=1):
         """
         This function performs numMCTSSims simulations of MCTS starting from
-        canonicalBoard.
+        canonicalBoard!
 
         Returns:
             probs: a policy vector where the probability of the ith possible action is
                    proportional to Nsa[(s,a)]**(1./temp)
         """
 #        canonicalBoard = deepcopy(board)
-        print("starting")
+#        print("starting")
         for i in range(self.args.numMCTSSims):
-            print(f"MCTS sim {i}")
-            self.search(canonicalBoard)
-        print("finished?")
+#            print(f"MCTS sim {i}, canonicalBoard = {canonicalBoard}")
+            self.search(copy(canonicalBoard)) #self.search mutates what you pass in, so we use a copy
+#        print("finished?")
         s = self.game.stringRepresentation(canonicalBoard) #state
         counts = [self.Nsa.get((s,a), 0) for a in range(self.game.getActionSize())]
         if temp == 0:
@@ -135,7 +135,7 @@ class MCTS():
             assert((y := ((x:= getRPNdepth([self.game.b._Board__tokens_dict[i] for i in canonicalBoard]))[0] <= self.game.n)) and (True if y else not x[1]))
         except AssertionError:
             print("AssertionError :",x)
-        print("before hi?")
+#        print("before hi?")
         next_s = self.game.getNextState(canonicalBoard, a)
 
         v = self.search(next_s)

@@ -100,7 +100,7 @@ class Board():
     def get_legal_moves(self):
         """Returns a list of 1's and 0's representing if the i'th operator in self.__operators is legal given the current state s (represented by the list self.pieces)
         """
-        print("get_legal_moves self.pieces =", [self.__tokens_dict[i] for i in self.pieces])
+#        print("get_legal_moves self.pieces =", [self.__tokens_dict[i] for i in self.pieces])
         if not self.pieces: #At the beginning, self.pieces is empty, so the only legal moves are the features and const
             return [0]*len(self.__operators) + [1]*(self.__num_features) + [1]
         
@@ -135,7 +135,7 @@ class Board():
         """Check whether the given player has created a complete (depth self.n) expression (again), and
         checks if it can be made parseable. Returns the score of the expression, where 0 <= score <= 1
         """
-        print("self.pieces =", [self.__tokens_dict[i] for i in self.pieces])
+#        print("self.pieces =", [self.__tokens_dict[i] for i in self.pieces])
         depth, complete = getRPNdepth(expression := [self.__tokens_dict[i] for i in self.pieces])
         if not complete or depth < self.n: #Expression not complete
             return -1

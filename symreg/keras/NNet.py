@@ -1,16 +1,12 @@
-import argparse
 import os
-import shutil
-import time
 import random
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 import numpy as np
-import math
 import sys
 sys.path.append('..')
 from utils import *
 from NeuralNet import NeuralNet
 
-import argparse
 from .symregNNet import symregNNet as onnet
 
 """
@@ -44,8 +40,8 @@ class NNetWrapper(NeuralNet):
         examples: list of examples, each example is of form (board, pi, v)
         """
         input_boards, target_pis, target_vs = list(zip(*examples))
-#        print("input_boards, target_pis, target_vs =",input_boards, target_pis, target_vs)
-        input_boards = np.asarray(input_boards)
+#        print("input_boards, target_pis, target_vs =",input_boards, target_pis, target_vs, sep = "\n======\n")
+        input_boards = pad_sequences(input_boards, padding='post') #np.asarray(input_boards)
         target_pis = np.asarray(target_pis)
         target_vs = np.asarray(target_vs)
         if args['useNN']:
@@ -98,9 +94,7 @@ class NNetWrapper(NeuralNet):
         """
         board: np array with board
         """
-        # timing
-        start = time.time()
-
+        
         # run
         if args['useNN']:
             pi, v = self.nnet.model.predict(board, verbose=False) #pi is the NN predicted probability of selecting each possible action given the state s

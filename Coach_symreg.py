@@ -50,15 +50,16 @@ class Coach():
         trainExamples = []
         board = self.game.getInitBoard()
         episodeStep = 0
-
+#        print("New iteration started")
         while True:
             episodeStep += 1
             temp = int(episodeStep < self.args.tempThreshold)
             r = self.game.getGameEnded(board)
             print("board = {}, r = {}".format(board,r))
-            temp_board = copy(board) #getActionProb mutates board so that's why we pass in a copy.
-            pi = self.mcts.getActionProb(temp_board, temp=temp)
-            trainExamples.append([board, pi])
+            pi = self.mcts.getActionProb(board, temp=temp) #Here, self.args['numMCTSSims'] games are simulated from the state board
+#            print("board = {}, r = {}".format(board,r))
+            trainExamples.append(([copy(board), copy(pi)]))
+            print("trainExamples =",trainExamples)
             action = np.random.choice(len(pi), p=pi)
             board = self.game.getNextState(board, action)
             print("board =",board)
@@ -66,15 +67,13 @@ class Coach():
 #            print("board = {}, r = {}".format(board,r))
             if r != -1:
                 print("Finished!")
-                self.game.b.pieces.clear()
                 #get length of last board
                 expression_length = len(trainExamples[-1][0]) #board of last "trainExample"
-                print(trainExamples)
                 #append reward to each trainExample
                 for i in range(len(trainExamples)):
                     trainExamples[i].append(r)
                     trainExamples[i][0].extend([0]*(expression_length-len(trainExamples[i][0])))
-#                print("trainExamples =",trainExamples)
+                print("trainExamples =",trainExamples)
                 return trainExamples
 
     def learn(self):
@@ -107,7 +106,7 @@ class Coach():
                 self.trainExamplesHistory.pop(0)
             # backup history to a file
             # NB! the examples were collected using the model from the previous iteration, so (i-1)  
-            self.saveTrainExamples(i - 1)
+#            self.saveTrainExamples(i - 1)
             # shuffle examples before training
             trainExamples = []
             for e in self.trainExamplesHistory:
