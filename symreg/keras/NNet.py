@@ -19,7 +19,7 @@ Based on (copy-pasted from) the NNet by SourKream and Surag Nair.
 """
 
 args = dotdict({
-    'useNN' : True,
+    'useNN' : False,
     'lr': 0.01,
     'dropout': 0.3,
     'epochs': 10,
@@ -49,11 +49,11 @@ class NNetWrapper(NeuralNet):
         else:
             self.example_length = len(input_boards[0])
             self.nnet.clf_value.fit(input_boards, target_vs) #learning value function
-            print("Value R^2 score =",self.nnet.clf_value.score(input_boards, target_vs))
+#            print("Value R^2 score =",self.nnet.clf_value.score(input_boards, target_vs))
             assert(len(self.nnet.clf_policy) == self.action_size)
             for i in range(self.action_size):
                 self.nnet.clf_policy[i].fit(input_boards, target_pis[:,i])
-                print(f"Policy {i} R^2 Score =",self.nnet.clf_policy[i].score(input_boards, target_pis[:,i]))
+#                print(f"Policy {i} R^2 Score =",self.nnet.clf_policy[i].score(input_boards, target_pis[:,i]))
 
 #            # Initialize the policy and value models
 #            self.nnet.clf_value.fit(input_boards, target_vs)  # Initialize the value function model

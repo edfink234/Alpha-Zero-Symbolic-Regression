@@ -133,7 +133,8 @@ class Board():
 
     def complete_status(self):
         """Check whether the given player has created a complete (depth self.n) expression (again), and
-        checks if it can be made parseable. Returns the score of the expression, where 0 <= score <= 1
+        checks if it is a complete RPN expression. Returns the score of the expression if complete, where 0 <= score <= 1
+        and -1 if not complete or if the desired depth has not been reached.
         """
 #        print("self.pieces =", [self.__tokens_dict[i] for i in self.pieces])
         depth, complete = getRPNdepth(expression := [self.__tokens_dict[i] for i in self.pieces])
