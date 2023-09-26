@@ -73,7 +73,7 @@ def getRPNdepth(expression):
 
 called = False
 implot = None
-def plot_rpn_expression_tree(expression, block = False):
+def plot_pn_expression_tree(expression, block = False):
     global called, implot
 
     def build_tree(expression_tokens):
@@ -117,7 +117,7 @@ def plot_rpn_expression_tree(expression, block = False):
                 plot_tree(node.child, graph, node)
 
     
-    expression_tokens = expression.split() if isinstance(expression, str) else expression
+    expression_tokens = expression.split()[::-1] if isinstance(expression, str) else expression[::-1]
     expression_tree = build_tree(expression_tokens)
 
     graph = pydot.Dot(graph_type='graph')
@@ -130,7 +130,7 @@ def plot_rpn_expression_tree(expression, block = False):
     else:
         implot.set_data(plt.imread('expression_tree.png'))
     plt.axis('off')
-    plt.title(f"{expression}, depth = {getRPNdepth(expression)[0]}")
+#    plt.title(f"{expression}, depth = {getRPNdepth(expression)[0]}")
     plt.show(block = block)
     plt.pause(0.01)
 
@@ -141,8 +141,8 @@ def test_visualize():
 
     while True:
         try:
-            print(expression:=generate_random_rpn_expression(operators, max_depth=3))
-            plot_rpn_expression_tree(expression, block=False)
+#            print(expression:=generate_random_rpn_expression(operators, max_depth=3))
+            plot_pn_expression_tree("- * c x * x cos x", block=False)
             
         except KeyboardInterrupt:
             plt.close()

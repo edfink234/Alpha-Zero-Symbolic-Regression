@@ -114,9 +114,9 @@ class Board():
         
         return ([unary_allowed]*len(self.__unary_operators) + [binary_allowed]*len(self.__binary_operators) + [leaves_allowed]*(self.__num_features) + [leaves_allowed])
         
-    def rpn_to_infix(self, rpn_expression):
+    def pn_to_infix(self, pn_expression):
         stack = []
-        for token in rpn_expression.split():
+        for token in rpn_expression.split()[::-1]:
             if token not in self.__operators: #other
                 stack.append(token)
             elif token in self.__unary_operators: #unary operator
@@ -126,7 +126,7 @@ class Board():
             else: #binary operator
                 right_operand = stack.pop()
                 left_operand = stack.pop()
-                result = f'({left_operand} {token} {right_operand})'
+                result = f'({right_operand} {token} {left_operand})'
                 stack.append(result)
         
         return stack[-1]
@@ -143,7 +143,7 @@ class Board():
         else:
             grad = implemented_function('grad', lambda x: np.gradient(x))
             
-            expression_str = self.rpn_to_infix(expression := ' '.join(expression))
+            expression_str = self.pn_to_infix(expression := ' '.join(expression))
 #            print(expression_str)
             plot_rpn_expression_tree(expression, block=False)
             
