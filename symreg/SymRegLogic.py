@@ -101,8 +101,8 @@ class Board():
         """Returns a list of 1's and 0's representing if the i'th operator in self.__operators is legal given the current state s (represented by the list self.pieces)
         """
 #        print("get_legal_moves self.pieces =", [self.__tokens_dict[i] for i in self.pieces])
-        if not self.pieces: #At the beginning, self.pieces is empty, so the only legal moves are the features and const
-            return [0]*len(self.__operators) + [1]*(self.__num_features) + [1]
+        if not self.pieces: #At the beginning, self.pieces is empty, so the only legal moves are the operators
+            return [1]*len(self.__operators) + [0]*(self.__num_features) + [0]
         
         num_binary, num_leaves = self.__num_binary_ops(), self.__num_leaves()
         
@@ -112,11 +112,13 @@ class Board():
         
         leaves_allowed = 1 if getRPNdepth([self.__tokens_dict[i] for i in self.pieces + [self.__input_vars_float[-1]] ])[0] <= self.n else 0
         
+        leaves_allowed =
+        
         return ([unary_allowed]*len(self.__unary_operators) + [binary_allowed]*len(self.__binary_operators) + [leaves_allowed]*(self.__num_features) + [leaves_allowed])
         
     def pn_to_infix(self, pn_expression):
         stack = []
-        for token in rpn_expression.split()[::-1]:
+        for token in pn_expression.split()[::-1]:
             if token not in self.__operators: #other
                 stack.append(token)
             elif token in self.__unary_operators: #unary operator

@@ -51,25 +51,25 @@ def is_unary_operator(token):
 
 #https://stackoverflow.com/a/77128902/18255427
 #Returns two values, depth and if the expression of complete
-def getRPNdepth(expression):
+def getPNdepth(expression):
+
     if not expression: #if it's empty
         return 0, False
-    stack = []
+
+    depth, max_depth = (0, 0)
     if isinstance(expression, str):
         expression = expression.split()
+    
     for token in expression:
-        if is_unary_operator(token):  # all unary operators
-            stack[-1] += 1
-        elif is_operator(token):  # all binary operators
-            stack.append(max(stack.pop(), stack.pop()) + 1)
-        else:  # an operand (x)
-            stack.append(1)
-    complete = True
-    while len(stack) > 1:
-        stack.append(max(stack.pop(), stack.pop()) + 1)
-        complete = False #If the stack length is greater than 1 then expression is an INCOMPLETE RPN expression
+        if is_operator(token):
+            depth += 1
+            if depth > max_depth:
+                max_depth = depth
+        else:
+            depth -= 1
+    
+    return max_depth, depth < 0
 
-    return stack.pop()-1, complete
 
 called = False
 implot = None
@@ -96,8 +96,8 @@ def plot_pn_expression_tree(expression, block = False):
                 left_operand = stack.pop()
                 unique_id += 1
                 operator_node = BinaryNode(token, unique_id)
-                operator_node.left = left_operand
-                operator_node.right = right_operand
+                operator_node.right = left_operand
+                operator_node.left = right_operand
                 stack.append(operator_node)
         return stack.pop()
 
@@ -130,7 +130,7 @@ def plot_pn_expression_tree(expression, block = False):
     else:
         implot.set_data(plt.imread('expression_tree.png'))
     plt.axis('off')
-#    plt.title(f"{expression}, depth = {getRPNdepth(expression)[0]}")
+    plt.title(f"{expression}, depth = {getPNdepth(expression)[0]}")
     plt.show(block = block)
     plt.pause(0.01)
 
@@ -141,8 +141,8 @@ def test_visualize():
 
     while True:
         try:
-#            print(expression:=generate_random_rpn_expression(operators, max_depth=3))
-            plot_pn_expression_tree("- * c x * x cos x", block=False)
+            print(expression:=generate_random_pn_expression(operators, max_depth=3))
+            plot_pn_expression_tree(expression, block=False)
             
         except KeyboardInterrupt:
             plt.close()
