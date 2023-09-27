@@ -105,15 +105,9 @@ class Board():
         
         num_binary, num_leaves = self.__num_binary_ops(), self.__num_leaves()
         
-#        binary_allowed = 0 if num_binary == num_leaves - 1 else 1 #The number of binary operators can never exceed number of leaves - 1 in any RPN expression
-        
         binary_allowed = 1 if getPNdepth([self.__tokens_dict[i] for i in self.pieces + [self.__binary_operators_float[-1]] ])[0] <= self.n else 0
         
-#        unary_allowed = 1 if num_leaves >= 1 and getRPNdepth([self.__tokens_dict[i] for i in self.pieces + [self.__unary_operators_float[-1]] ])[0] <= self.n else 0
-        
         unary_allowed = 1 if getPNdepth([self.__tokens_dict[i] for i in self.pieces + [self.__unary_operators_float[-1]] ])[0] <= self.n else 0
-        
-#        leaves_allowed = 1 if getRPNdepth([self.__tokens_dict[i] for i in self.pieces + [self.__input_vars_float[-1]] ])[0] <= self.n else 0
         
         leaves_allowed = 0 if num_leaves == num_binary + 1 or getPNdepth([self.__tokens_dict[i] for i in self.pieces + [self.__input_vars_float[-1]] ])[0] < self.n else 1 #The number of leaves can never exceed number of binary + 1 in any RPN expression
         

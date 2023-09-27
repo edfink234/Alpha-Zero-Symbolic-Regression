@@ -52,7 +52,7 @@ def is_binary_operator(token):
 def is_unary_operator(token):
     return token in {'cos', 'grad', 'exp'}
 
-#https://stackoverflow.com/a/77128902/18255427
+#https://stackoverflow.com/a/77180279/18255427
 #Returns two values, depth and if the expression of complete
 def getPNdepth(expression):
 
@@ -72,10 +72,10 @@ def getPNdepth(expression):
             stack.append(1)
         else:  # an operand (x)
             num_leaves += 1
-            if stack:
+            while stack and stack[-1] == 1:  # remove fulfilled operators
+                stack.pop()
+            if stack:  # indicate an operand is consumed
                 stack[-1] -= 1
-                if not stack[-1]:
-                    stack.pop()
         depth = max(depth, len(stack) + 1)
     
     return depth-1, num_leaves == num_binary + 1
