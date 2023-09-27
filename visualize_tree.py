@@ -136,7 +136,7 @@ def plot_pn_expression_tree(expression, block = False, save = False):
     if save:
         graph.set('label', f"{expression}, depth = {getPNdepth(expression)[0]}")
         graph.set('labelloc', 't')  # Set label location to "top"
-        graph.write_svg('expression_tree.svg')
+        graph.write_svg('expression_tree_PN.svg')
     else:
         graph.write_png('expression_tree.png')
         if called == False or block == True:
