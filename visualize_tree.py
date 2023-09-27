@@ -153,7 +153,7 @@ def plot_pn_expression_tree(expression, block = False, save = False):
 def test_visualize():
 #    # Example usage:
     operators = ['+', '-', '*', 'exp', 'cos', 'grad']
-    save = True
+    save = False
     
     if save:
         plot_pn_expression_tree("+ cos + x1 x2 + x1 x2", block=False, save = save)
@@ -162,7 +162,8 @@ def test_visualize():
         while True:
             try:
     #            print(expression:=generate_random_pn_expression(operators, max_depth=3))
-                plot_pn_expression_tree("+ cos + x1 x2 + x1 x2", block=False, save = save)
+#                plot_pn_expression_tree(' '.join(['+', 'cos', '+', 'x1', 'x2', '+', '+', 'x1', 'x2', 'cos', 'x3'], block=False, save = save)
+                plot_pn_expression_tree(' '.join(['+', 'cos', '+', 'x1', 'x2', '+', 'x1', 'x2']), block=False, save = save)
                 
             except KeyboardInterrupt:
                 plt.close()
