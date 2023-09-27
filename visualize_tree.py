@@ -5,6 +5,7 @@ from numpy.random import choice
 from time import time
 from matplotlib.animation import FuncAnimation
 from symreg import *
+from PIL import Image
 
 def generate_random_rpn_expression(operators, max_depth=5):
     stack = []
@@ -46,6 +47,8 @@ class UnaryNode(Node):
 
 def is_operator(token):
     return token in {'+', '-', '*', 'cos', 'grad', 'exp'}
+def is_binary_operator(token):
+    return token in {'+', '-', '*'}
 def is_unary_operator(token):
     return token in {'cos', 'grad', 'exp'}
 
@@ -56,24 +59,31 @@ def getPNdepth(expression):
     if not expression: #if it's empty
         return 0, False
 
-    depth, max_depth = (0, 0)
     if isinstance(expression, str):
         expression = expression.split()
     
-    for token in expression:
-        if is_operator(token):
-            depth += 1
-            if depth > max_depth:
-                max_depth = depth
-        else:
-            depth -= 1
+    stack = []
+    depth, num_binary, num_leaves = 0, 0, 0
+    for val in expression:
+        if is_binary_operator(val):  # all binary operators
+            stack.append(2)  # = number of operands
+            num_binary += 1
+        elif is_unary_operator(val):  # all unary operators
+            stack.append(1)
+        else:  # an operand (x)
+            num_leaves += 1
+            if stack:
+                stack[-1] -= 1
+                if not stack[-1]:
+                    stack.pop()
+        depth = max(depth, len(stack) + 1)
     
-    return max_depth, depth < 0
+    return depth-1, num_leaves == num_binary + 1
 
 
 called = False
 implot = None
-def plot_pn_expression_tree(expression, block = False):
+def plot_pn_expression_tree(expression, block = False, save = False):
     global called, implot
 
     def build_tree(expression_tokens):
@@ -123,30 +133,40 @@ def plot_pn_expression_tree(expression, block = False):
     graph = pydot.Dot(graph_type='graph')
     plot_tree(expression_tree, graph)
     
-    graph.write_png('expression_tree.png')
-    if called == False or block == True:
-        implot = plt.imshow(plt.imread('expression_tree.png'))
-        called = True
+    if save:
+        graph.set('label', f"{expression}, depth = {getPNdepth(expression)[0]}")
+        graph.set('labelloc', 't')  # Set label location to "top"
+        graph.write_svg('expression_tree.svg')
     else:
-        implot.set_data(plt.imread('expression_tree.png'))
-    plt.axis('off')
-    plt.title(f"{expression}, depth = {getPNdepth(expression)[0]}")
-    plt.show(block = block)
-    plt.pause(0.01)
+        graph.write_png('expression_tree.png')
+        if called == False or block == True:
+            implot = plt.imshow(plt.imread('expression_tree.png'))
+            called = True
+        else:
+            implot.set_data(plt.imread('expression_tree.png'))
+        plt.axis('off')
+        plt.title(f"{expression}, depth = {getPNdepth(expression)[0]}")
+        plt.show(block = block)
+        plt.pause(0.01)
 
 # Example usage:
 def test_visualize():
 #    # Example usage:
     operators = ['+', '-', '*', 'exp', 'cos', 'grad']
+    save = True
+    
+    if save:
+        plot_pn_expression_tree("+ cos + x1 x2 + x1 x2", block=False, save = save)
 
-    while True:
-        try:
-            print(expression:=generate_random_pn_expression(operators, max_depth=3))
-            plot_pn_expression_tree(expression, block=False)
-            
-        except KeyboardInterrupt:
-            plt.close()
-            exit()
+    else:
+        while True:
+            try:
+    #            print(expression:=generate_random_pn_expression(operators, max_depth=3))
+                plot_pn_expression_tree("+ cos + x1 x2 + x1 x2", block=False, save = save)
+                
+            except KeyboardInterrupt:
+                plt.close()
+                exit()
 
 if __name__ == "__main__":
     test_visualize()

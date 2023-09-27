@@ -100,19 +100,22 @@ class Board():
     def get_legal_moves(self):
         """Returns a list of 1's and 0's representing if the i'th operator in self.__operators is legal given the current state s (represented by the list self.pieces)
         """
-#        print("get_legal_moves self.pieces =", [self.__tokens_dict[i] for i in self.pieces])
         if not self.pieces: #At the beginning, self.pieces is empty, so the only legal moves are the operators
             return [1]*len(self.__operators) + [0]*(self.__num_features) + [0]
         
         num_binary, num_leaves = self.__num_binary_ops(), self.__num_leaves()
         
-        binary_allowed = 0 if num_binary == num_leaves - 1 else 1 #The number of binary operators can never exceed number of leaves - 1 in any RPN expression
+#        binary_allowed = 0 if num_binary == num_leaves - 1 else 1 #The number of binary operators can never exceed number of leaves - 1 in any RPN expression
         
-        unary_allowed = 1 if num_leaves >= 1 and getRPNdepth([self.__tokens_dict[i] for i in self.pieces + [self.__unary_operators_float[-1]] ])[0] <= self.n else 0
+        binary_allowed = 1 if getPNdepth([self.__tokens_dict[i] for i in self.pieces + [self.__binary_operators_float[-1]] ])[0] <= self.n else 0
         
-        leaves_allowed = 1 if getRPNdepth([self.__tokens_dict[i] for i in self.pieces + [self.__input_vars_float[-1]] ])[0] <= self.n else 0
+#        unary_allowed = 1 if num_leaves >= 1 and getRPNdepth([self.__tokens_dict[i] for i in self.pieces + [self.__unary_operators_float[-1]] ])[0] <= self.n else 0
         
-        leaves_allowed =
+        unary_allowed = 1 if getPNdepth([self.__tokens_dict[i] for i in self.pieces + [self.__unary_operators_float[-1]] ])[0] <= self.n else 0
+        
+#        leaves_allowed = 1 if getRPNdepth([self.__tokens_dict[i] for i in self.pieces + [self.__input_vars_float[-1]] ])[0] <= self.n else 0
+        
+        leaves_allowed = 0 if num_leaves == num_binary + 1 and  else 1 #The number of leaves can never exceed number of binary + 1 in any RPN expression
         
         return ([unary_allowed]*len(self.__unary_operators) + [binary_allowed]*len(self.__binary_operators) + [leaves_allowed]*(self.__num_features) + [leaves_allowed])
         
@@ -139,15 +142,16 @@ class Board():
         and -1 if not complete or if the desired depth has not been reached.
         """
 #        print("self.pieces =", [self.__tokens_dict[i] for i in self.pieces])
-        depth, complete = getRPNdepth(expression := [self.__tokens_dict[i] for i in self.pieces])
+        depth, complete = getPNdepth(expression := [self.__tokens_dict[i] for i in self.pieces])
         if not complete or depth < self.n: #Expression not complete
             return -1
         else:
             grad = implemented_function('grad', lambda x: np.gradient(x))
             
+            print(expression)
             expression_str = self.pn_to_infix(expression := ' '.join(expression))
 #            print(expression_str)
-            plot_rpn_expression_tree(expression, block=False)
+            plot_pn_expression_tree(expression, block=False)
             
             num_consts = expression_str.count("const")
             x = symbols(f'x(:{self.__num_features})')
