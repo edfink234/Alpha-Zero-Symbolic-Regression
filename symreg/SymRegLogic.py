@@ -26,8 +26,9 @@ import math
 from visualize_tree import *
 
 def loss_func(y_true, y_pred):
-    score = r2_score(y_true, y_pred)
-    return score if not np.isnan(score) and not np.isinf(score) and 0 <= score <= 1 else 0
+#    score = r2_score(y_true, y_pred)
+#    return score if not np.isnan(score) and not np.isinf(score) and 0 <= score <= 1 else 0
+    return 1/(1+mean_squared_error(y_true, y_pred))
 
 # from bkcharts.attributes import color
 class Board():
@@ -143,11 +144,11 @@ class Board():
             grad = implemented_function('grad', lambda x: np.gradient(x))
             
             expression_str = self.pn_to_infix(expression := ' '.join(expression))
-            try:
-                plot_pn_expression_tree(expression, block=False)
-            except Exception as e:
-                print(f"Expression = {expression_str}")
-                print(f"Error = {e}")
+#            try:
+#                plot_pn_expression_tree(expression, block=False)
+#            except Exception as e:
+#                print(f"Expression = {expression_str}")
+#                print(f"Error = {e}")
             
             num_consts = expression_str.count("const")
             x = symbols(f'x(:{self.__num_features})')

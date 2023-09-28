@@ -19,7 +19,7 @@ class MCTS():
         self.nnet = nnet
         self.args = args
         self.iteration_number = 0
-        self.Qsa = {}  # stores Q values for s,a (as defined in the paper)
+        self.Qsa = {}  # stores Q values, i.e., estimations of expected cumulative rewards, for s,a (as defined in the paper)
         self.Nsa = {}  # stores #times edge s,a was visited (s = state, a = action)
         self.Ns = {}  # stores #times board s was visited
         self.Ps = {}  # stores initial policy (returned by neural net)
@@ -137,7 +137,6 @@ class MCTS():
             assert((y := ((x:= getPNdepth([self.game.b._Board__tokens_dict[i] for i in canonicalBoard]))[0] <= self.game.n)) and (True if y else not x[1]))
         except AssertionError:
             print("AssertionError :",x)
-#        print("before hi?")
         next_s = self.game.getNextState(canonicalBoard, a)
 
         v = self.search(next_s)
