@@ -165,7 +165,16 @@ def test_visualize():
 #                plot_pn_expression_tree(' '.join(['+', 'cos', '+', 'x1', 'x2', '+', '+', 'x1', 'x2', 'cos', 'x3'], block=False, save = save)
 #                plot_pn_expression_tree(' '.join(['+', 'cos', '+', 'x1', 'x2', '+', 'x1', 'x2']), block=False, save = save)
 #                plot_pn_expression_tree(' '.join(['+', '*', '2.5382', 'cos', 'x3', '-', '*', 'x0', 'x0', '0.5']), block=False, save = save)
-                print(getPNdepth("+ + 2.583 cos x3 - * x0 x0 x1"))
+                print(getPNdepth("+")[0] <= 3)
+                print(getPNdepth("+ +")[0] <= 3)
+                print(getPNdepth("+ + const")[0] <= 3)
+                print(getPNdepth("+ + const cos")[0] <= 3)
+                print(getPNdepth("+ + const cos x3")[0] <= 3)
+                print(getPNdepth("+ + const cos x3 -")[0] <= 3)
+                print(getPNdepth("+ + const cos x3 - *")[0] <= 3)
+                print(getPNdepth("+ + const cos x3 - * x0")[0] <= 3)
+                print(getPNdepth("+ + const cos x3 - * x0 x0")[0] <= 3)
+                print(getPNdepth("+ + const cos x3 - * x0 x0 0.5")[0] <= 3)
                 
             except KeyboardInterrupt:
                 plt.close()
