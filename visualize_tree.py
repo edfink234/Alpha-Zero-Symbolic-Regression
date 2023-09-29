@@ -163,7 +163,9 @@ def test_visualize():
             try:
     #            print(expression:=generate_random_pn_expression(operators, max_depth=3))
 #                plot_pn_expression_tree(' '.join(['+', 'cos', '+', 'x1', 'x2', '+', '+', 'x1', 'x2', 'cos', 'x3'], block=False, save = save)
-                plot_pn_expression_tree(' '.join(['+', 'cos', '+', 'x1', 'x2', '+', 'x1', 'x2']), block=False, save = save)
+#                plot_pn_expression_tree(' '.join(['+', 'cos', '+', 'x1', 'x2', '+', 'x1', 'x2']), block=False, save = save)
+#                plot_pn_expression_tree(' '.join(['+', '*', '2.5382', 'cos', 'x3', '-', '*', 'x0', 'x0', '0.5']), block=False, save = save)
+                print(getPNdepth("+ + 2.583 cos x3 - * x0 x0 x1"))
                 
             except KeyboardInterrupt:
                 plt.close()

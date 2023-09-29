@@ -110,7 +110,7 @@ class Board():
         
         unary_allowed = 1 if getPNdepth([self.__tokens_dict[i] for i in self.pieces + [self.__unary_operators_float[-1]] ])[0] <= self.n else 0
         
-        leaves_allowed = 0 if num_leaves == num_binary + 1 or getPNdepth([self.__tokens_dict[i] for i in self.pieces + [self.__input_vars_float[-1]] ])[0] < self.n else 1 #The number of leaves can never exceed number of binary + 1 in any RPN expression
+        leaves_allowed = 0 if ((num_leaves == num_binary + 1) or (getPNdepth([self.__tokens_dict[i] for i in self.pieces + [self.__input_vars_float[-1]] ])[0] < self.n and num_leaves == num_binary)) else 1 #The number of leaves can never exceed number of binary + 1 in any RPN expression
         
         return ([unary_allowed]*len(self.__unary_operators) + [binary_allowed]*len(self.__binary_operators) + [leaves_allowed]*(self.__num_features) + [leaves_allowed])
         

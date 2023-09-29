@@ -36,12 +36,8 @@ class MCTS():
             probs: a policy vector where the probability of the ith possible action is
                    proportional to Nsa[(s,a)]**(1./temp)
         """
-#        canonicalBoard = deepcopy(board)
-#        print("starting")
         for i in range(self.args.numMCTSSims):
-#            print(f"MCTS sim {i}, canonicalBoard = {canonicalBoard}")
             self.search(copy(canonicalBoard)) #self.search mutates what you pass in, so we use a copy
-#        print("finished?")
         s = self.game.stringRepresentation(canonicalBoard) #state
         counts = [self.Nsa.get((s,a), 0) for a in range(self.game.getActionSize())]
         if temp == 0:
