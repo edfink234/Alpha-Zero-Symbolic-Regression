@@ -66,5 +66,5 @@ class SymRegGame(Game):
 
 
     def stringRepresentation(self, board):
-        # bytes representation of numpy array (canonical board)
+        # bytes representation of list (canonical board) -> Less memory :)
         return bytes(board)

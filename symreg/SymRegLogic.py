@@ -212,7 +212,8 @@ def model_selection(x, {', '.join(consts)}):
                 Board.best_expression = parse_expr(expression_str, transformations=transformations, local_dict = temp_dict)
 
                 Board.best_loss = loss
-                print(f"New best expression: {Board.best_expression}")
+                print(f"New best expression (PN): {expression}")
+                print(f"New best expression (infix): {Board.best_expression}")
                 print(f"New best expression latex: {latex(Board.best_expression)}")
                 print(f"New best loss: {Board.best_loss:.3f}")
             return loss_func(Y, y_pred) #1/(1+np.sqrt(loss)) #math.exp(-0.005*loss)

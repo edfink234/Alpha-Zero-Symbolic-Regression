@@ -26,6 +26,14 @@ class MCTS():
 
         self.Es = {}  # stores game.getGameEnded ended for board s
         self.Vs = {}  # stores game.getValidMoves for board s
+    
+    def get_max_reward(self, s, a):
+        state_action_pair = s + bytes([a])
+        max_r_val = 0
+        for s in self.Es:
+            if state_action_pair in s and 0 <= self.Es[s] <= 1 and self.Es[s] > max_r_val:
+                max_r_val = self.Es[s]
+        return max_r_val
 
     def getActionProb(self, canonicalBoard, temp=1):
         """
@@ -69,7 +77,7 @@ class MCTS():
         return list(self.args.cpuct.values())[-1]
 #        return math.exp(Board.best_loss)
 
-    def search(self, canonicalBoard):
+    def search(self, canonicalBoard: list):
         """
         This function performs one iteration of MCTS. It is recursively called
         till a leaf node is found. The action chosen at each node is one that
