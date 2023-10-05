@@ -53,7 +53,7 @@ def is_unary_operator(token):
     return token in {'cos', 'grad', 'exp'}
 
 #https://stackoverflow.com/a/77180279/18255427
-#Returns two values, depth and if the expression of complete
+#Returns two values, depth and if the expression is complete
 def getPNdepth(expression):
 
     if not expression: #if it's empty
