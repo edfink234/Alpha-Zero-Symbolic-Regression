@@ -5,7 +5,7 @@ from numpy.random import choice
 from time import time
 from matplotlib.animation import FuncAnimation
 from symreg import *
-from PIL import Image
+import os
 
 def generate_random_rpn_expression(operators, max_depth=5):
     stack = []
@@ -46,9 +46,9 @@ class UnaryNode(Node):
         self.child = None
 
 def is_operator(token):
-    return token in {'+', '-', '*', 'cos', 'grad', 'exp'}
+    return token in {'+', '-', '*', '/', '^', 'cos', 'grad', 'exp'}
 def is_binary_operator(token):
-    return token in {'+', '-', '*'}
+    return token in {'+', '-', '*', '/', '^'}
 def is_unary_operator(token):
     return token in {'cos', 'grad', 'exp'}
 
@@ -136,8 +136,8 @@ def plot_pn_expression_tree(expression, block = False, save = False):
     if save:
         graph.set('label', f"{expression}, depth = {getPNdepth(expression)[0]}")
         graph.set('labelloc', 't')  # Set label location to "top"
-        graph.write_svg('expression_tree_PN.svg')
-    else: 
+        graph.write_svg('expression_tree_PN_Hemberg2008_expr_5.svg')
+    else:
         graph.write_png('expression_tree.png')
         if called == False or block == True:
             implot = plt.imshow(plt.imread('expression_tree.png'))
@@ -153,10 +153,12 @@ def plot_pn_expression_tree(expression, block = False, save = False):
 def test_visualize():
 #    # Example usage:
     operators = ['+', '-', '*', 'exp', 'cos', 'grad']
-    save = False
+    save = True
     
     if save:
-        plot_pn_expression_tree("+ cos + x1 x2 + x1 x2", block=False, save = save)
+        plot_pn_expression_tree("- + + - + - + / * 30 ^ x 2 * - 10 x y ^ x 4 * / 4 5 ^ x 3 / ^ y 2 2 * 2 y / 8 + + 2 ^ x 2 ^ y 2 / ^ y 3 2 x", block=False, save = save)
+        os.system("rsvg-convert -f pdf -o expression_tree_PN_Hemberg2008_expr_5.pdf expression_tree_PN_Hemberg2008_expr_5.svg")
+
 
     else:
         while True:
