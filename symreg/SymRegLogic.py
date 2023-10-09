@@ -16,18 +16,14 @@ Based on the board for the game of Othello by Eric P. Nichols.
 '''
 
 from sympy import symbols, Eq, lambdify, latex
-from sympy.parsing.sympy_parser import (parse_expr, standard_transformations, implicit_multiplication_application)
+from sympy.parsing.sympy_parser import (parse_expr, standard_transformations)
 from sympy.utilities.lambdify import implemented_function
 import numpy as np
-from sklearn.metrics import r2_score, mean_squared_error
-from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import mean_squared_error
 from scipy.optimize import curve_fit
-import math
 from visualize_tree import *
 
 def loss_func(y_true, y_pred):
-#    score = r2_score(y_true, y_pred)
-#    return score if not np.isnan(score) and not np.isinf(score) and 0 <= score <= 1 else 0
     return 1/(1+mean_squared_error(y_true, y_pred))
 
 # from bkcharts.attributes import color
@@ -38,7 +34,7 @@ class Board():
     data = None
     best_loss = np.inf
 
-    def __init__(self, n=3):
+    def __init__(self, n=3, expression_type="prefix"):
         "Set up initial board configuration."
         self.__num_features = len(Board.data[0])-1 #This assumes that the labels are just 1 column (hence the -1)
         self.__input_vars = [f'x{i}' for i in range(self.__num_features)] # (x0, x1, ..., xN)
@@ -66,9 +62,8 @@ class Board():
         self.__tokens_dict = {operator:name for (operator, name) in zip(self.__tokens_float, self.__tokens)} #Converts number to string
         self.__tokens_inv_dict = {name:operator for (operator, name) in zip(self.__tokens_float, self.__tokens)}
 
-        assert(len(set(self.__tokens_dict)) == len(self.__tokens_dict))
-        assert((self.__unary_operators_float+self.__binary_operators_float+self.__input_vars_float+self.__other_tokens_float) == self.__tokens_float)
         self.n = n #depth of RPN tree
+        self.expression_type = expression_type
         # Create the empty expression list.
         self.pieces = []
 
@@ -101,17 +96,29 @@ class Board():
     def get_legal_moves(self):
         """Returns a list of 1's and 0's representing if the i'th operator in self.__operators is legal given the current state s (represented by the list self.pieces)
         """
-        if not self.pieces: #At the beginning, self.pieces is empty, so the only legal moves are the operators
-            return [1]*len(self.__operators) + [0]*(self.__num_features) + [0]
+        if self.expression_type == "prefix":
+            if not self.pieces: #At the beginning, self.pieces is empty, so the only legal moves are the operators
+                return [1]*len(self.__operators) + [0]*(self.__num_features) + [0]
+            
+            num_binary, num_leaves = self.__num_binary_ops(), self.__num_leaves()
+            
+            binary_allowed = 1 if getPNdepth([self.__tokens_dict[i] for i in self.pieces + [self.__binary_operators_float[-1]] ])[0] <= self.n else 0
+            
+            unary_allowed = 1 if getPNdepth([self.__tokens_dict[i] for i in self.pieces + [self.__unary_operators_float[-1]] ])[0] <= self.n else 0
+            
+            leaves_allowed = 0 if ((num_leaves == num_binary + 1) or (getPNdepth([self.__tokens_dict[i] for i in self.pieces + [self.__input_vars_float[-1]] ])[0] < self.n and num_leaves == num_binary)) else 1 #The number of leaves can never exceed number of binary + 1 in any RPN expression
         
-        num_binary, num_leaves = self.__num_binary_ops(), self.__num_leaves()
-        
-        binary_allowed = 1 if getPNdepth([self.__tokens_dict[i] for i in self.pieces + [self.__binary_operators_float[-1]] ])[0] <= self.n else 0
-        
-        unary_allowed = 1 if getPNdepth([self.__tokens_dict[i] for i in self.pieces + [self.__unary_operators_float[-1]] ])[0] <= self.n else 0
-        
-        leaves_allowed = 0 if ((num_leaves == num_binary + 1) or (getPNdepth([self.__tokens_dict[i] for i in self.pieces + [self.__input_vars_float[-1]] ])[0] < self.n and num_leaves == num_binary)) else 1 #The number of leaves can never exceed number of binary + 1 in any RPN expression
-        
+        else: #postfix
+            if not self.pieces: #At the beginning, self.pieces is empty, so the only legal moves are the features and const
+                return [0]*len(self.__operators) + [1]*(self.__num_features) + [1]
+            
+            num_binary, num_leaves = self.__num_binary_ops(), self.__num_leaves()
+            
+            binary_allowed = 0 if num_binary == num_leaves - 1 else 1 #The number of binary operators can never exceed number of leaves - 1 in any RPN expression
+            
+            unary_allowed = 1 if num_leaves >= 1 and getRPNdepth([self.__tokens_dict[i] for i in self.pieces + [self.__unary_operators_float[-1]] ])[0] <= self.n else 0
+            
+            leaves_allowed = 1 if getRPNdepth([self.__tokens_dict[i] for i in self.pieces + [self.__input_vars_float[-1]] ])[0] <= self.n else 0
         return ([unary_allowed]*len(self.__unary_operators) + [binary_allowed]*len(self.__binary_operators) + [leaves_allowed]*(self.__num_features) + [leaves_allowed])
         
     def pn_to_infix(self, pn_expression):
@@ -130,25 +137,39 @@ class Board():
                 stack.append(result)
         
         return stack[-1]
+    
+    def rpn_to_infix(self, rpn_expression):
+        stack = []
+        for token in rpn_expression.split():
+            if token not in self.__operators: #other
+                stack.append(token)
+            elif token in self.__unary_operators: #unary operator
+                operand = stack.pop()
+                result = f'{token}({operand})'
+                stack.append(result)
+            else: #binary operator
+                right_operand = stack.pop()
+                left_operand = stack.pop()
+                result = f'({left_operand} {token} {right_operand})'
+                stack.append(result)
+        
+        return stack[-1]
 
     def complete_status(self):
         """Check whether the given player has created a complete (depth self.n) expression (again), and
         checks if it is a complete RPN expression. Returns the score of the expression if complete, where 0 <= score <= 1
         and -1 if not complete or if the desired depth has not been reached.
         """
-#        print("self.pieces =", [self.__tokens_dict[i] for i in self.pieces])
-        depth, complete = getPNdepth(expression := [self.__tokens_dict[i] for i in self.pieces])
+        if self.expression_type == "prefix":
+            depth, complete = getPNdepth(expression := [self.__tokens_dict[i] for i in self.pieces])
+        else: #postfix
+            depth, complete = getRPNdepth(expression := [self.__tokens_dict[i] for i in self.pieces])
         if not complete or depth < self.n: #Expression not complete
             return -1
         else:
             grad = implemented_function('grad', lambda x: np.gradient(x))
             
-            expression_str = self.pn_to_infix(expression := ' '.join(expression))
-#            try:
-#                plot_pn_expression_tree(expression, block=False)
-#            except Exception as e:
-#                print(f"Expression = {expression_str}")
-#                print(f"Error = {e}")
+            expression_str = self.pn_to_infix(expression := ' '.join(expression)) if self.expression_type == "prefix" else self.rpn_to_infix(expression := ' '.join(expression))
             
             num_consts = expression_str.count("const")
             x = symbols(f'x(:{self.__num_features})')
@@ -212,13 +233,11 @@ def model_selection(x, {', '.join(consts)}):
                 Board.best_expression = parse_expr(expression_str, transformations=transformations, local_dict = temp_dict)
 
                 Board.best_loss = loss
-                print(f"New best expression (PN): {expression}")
+                print(f"New best expression ({'PN' if self.expression_type == 'prefix' else 'RPN'}): {expression}")
                 print(f"New best expression (infix): {Board.best_expression}")
                 print(f"New best expression latex: {latex(Board.best_expression)}")
                 print(f"New best loss: {Board.best_loss:.3f}")
-            return loss_func(Y, y_pred) #1/(1+np.sqrt(loss)) #math.exp(-0.005*loss)
-      
-                
+            return loss_func(Y, y_pred)
 
     def execute_move(self, move):
         """Perform the given move

@@ -137,12 +137,7 @@ class MCTS():
                     best_act = a
         
         a = best_act
-        try:
-            assert((y := ((x:= getPNdepth([self.game.b._Board__tokens_dict[i] for i in canonicalBoard]))[0] <= self.game.n)) and (True if y else not x[1]))
-        except AssertionError:
-            print("AssertionError :",x)
         next_s = self.game.getNextState(canonicalBoard, a)
-
         v = self.search(next_s)
 
         if (s, a) in self.Qsa:

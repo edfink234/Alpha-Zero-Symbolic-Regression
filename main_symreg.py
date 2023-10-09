@@ -39,7 +39,7 @@ def main():
         Board.data = np.loadtxt("symreg/test_data.txt")
         
         log.info('Loading %s...', Game.__name__)
-        g = Game(3)
+        g = Game(3, "postfix")
 
         log.info('Loading %s...', nn.__name__)
         nnet = nn(g)

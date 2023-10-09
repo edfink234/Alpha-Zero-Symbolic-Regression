@@ -42,7 +42,7 @@ def main():
         Board.data = np.hstack((X_data,Y_data))
 
         log.info('Loading %s...', Game.__name__)
-        g = Game(1) #(1.)
+        g = Game(1, "prefix") #(1.)
 
         log.info('Loading %s...', nn.__name__)
         nnet = nn(g) #(2.)
