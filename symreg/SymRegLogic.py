@@ -22,6 +22,7 @@ import numpy as np
 from sklearn.metrics import mean_squared_error
 from scipy.optimize import curve_fit
 from visualize_tree import *
+import matplotlib.pyplot as plt
 
 def loss_func(y_true, y_pred):
     return 1/(1+mean_squared_error(y_true, y_pred))
@@ -31,10 +32,12 @@ class Board():
 
     # list of all 8 directions on the board, as (x,y) offsets
     best_expression = None
+    expression_dict = {}
+    expression_dict_len = 0
     data = None
     best_loss = np.inf
 
-    def __init__(self, n=3, expression_type="prefix"):
+    def __init__(self, n=3, expression_type="prefix", visualize_exploration = True):
         "Set up initial board configuration."
         self.__num_features = len(Board.data[0])-1 #This assumes that the labels are just 1 column (hence the -1)
         self.__input_vars = [f'x{i}' for i in range(self.__num_features)] # (x0, x1, ..., xN)
@@ -66,6 +69,8 @@ class Board():
         self.expression_type = expression_type
         # Create the empty expression list.
         self.pieces = []
+        self.visualize_exploration = visualize_exploration
+            
 
     # add [][] indexer syntax to the Board
     def __getitem__(self, index):
@@ -167,6 +172,17 @@ class Board():
         if not complete or depth < self.n: #Expression not complete
             return -1
         else:
+            if self.visualize_exploration:
+                if bytes(self.pieces) not in Board.expression_dict:
+                    Board.expression_dict[bytes(self.pieces)] = 1
+                    Board.expression_dict_len += 1
+#                    print(f"Board.expression_dict_len = {Board.expression_dict_len}")
+                else:
+                    Board.expression_dict[bytes(self.pieces)] += 1
+#                plt.bar(Board.expression_dict.keys(), Board.expression_dict.values())
+#                plt.show(block=False)
+#                plt.pause(0.01)
+            
             grad = implemented_function('grad', lambda x: np.gradient(x))
             
             expression_str = self.pn_to_infix(expression := ' '.join(expression)) if self.expression_type == "prefix" else self.rpn_to_infix(expression := ' '.join(expression))

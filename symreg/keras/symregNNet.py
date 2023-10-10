@@ -35,18 +35,33 @@ class symregNNet():
 
         if self.args['useNN']:
             # Neural Net
-            #TODO: change this so that it works for a variable length expression!
-            self.input_boards = Input(shape=(self.board, 1))  # s: batch_size x board x 1
+            self.input_boards = Input(shape=(self.board, 1))# Input layer
 
-            # Adjust the convolutional layers for 1D data
-            h_conv1 = Activation('relu')(BatchNormalization(axis=-1)(Conv1D(args.num_channels, 3, padding='same')(self.input_boards)))  # batch_size x board x num_channels
+            # Convolutional layers
+            h_conv1 = Conv1D(args.num_channels, 3, padding='same', activation='relu')(self.input_boards)
+            h_conv1 = BatchNormalization(axis=-1)(h_conv1)
+
+            # Flatten the convolutional output
             h_conv1_flat = Flatten()(h_conv1)
-            s_fc1 = Dropout(args.dropout)(Activation('relu')(BatchNormalization(axis=1)(Dense(1024)(h_conv1_flat))))  # batch_size x 1024
-            self.pi = Dense(self.action_size, activation='softmax', name='pi')(s_fc1)   # batch_size x self.action_size
-            self.v = Dense(1, activation='softmax', name='v')(s_fc1)                    # batch_size x 1
 
+            # Policy head
+            s_fc1_policy = Dense(10, activation='relu')(h_conv1_flat)
+            s_fc1_policy = BatchNormalization(axis=1)(s_fc1_policy)
+            s_fc1_policy = Dropout(args.dropout)(s_fc1_policy)
+            self.pi = Dense(self.action_size, activation='softmax', name='pi')(s_fc1_policy)
+
+            # Value head
+            s_fc1_value = Dense(10, activation='relu')(h_conv1_flat)
+            s_fc1_value = BatchNormalization(axis=1)(s_fc1_value)
+            s_fc1_value = Dropout(args.dropout)(s_fc1_value)
+            self.v = Dense(1, name='v')(s_fc1_value)
+
+            # Create the model with separate policy and value branches
             self.model = Model(inputs=self.input_boards, outputs=[self.pi, self.v])
-            self.model.compile(loss=['categorical_crossentropy','mean_squared_error'], optimizer=Adam(args.lr))
+
+            # Compile the model with appropriate loss functions
+            self.model.compile(loss={'pi': 'categorical_crossentropy', 'v': 'mean_squared_error'},
+                          optimizer=Adam(args.lr))
             
             print(gen_tikz_from_model(self.model))
             self.model.summary()

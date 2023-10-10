@@ -23,7 +23,7 @@ args = dotdict({
     'maxlenOfQueue': 200000,    # Number of game examples to train the neural networks.
     'numMCTSSims': 25,          # Number of games moves for MCTS to simulate.
     'arenaCompare': 1,         # Number of games to play during arena play to determine if new net will be accepted.
-    'cpuct': {50: 1, 100: 1, 150: 1}, #Controls the exploration/exploitation trade-off.
+    'cpuct': {50: 10, 100: 10, 150: 10}, #Controls the exploration/exploitation trade-off.
 
     'checkpoint': './temp/',
     'load_model': False,
@@ -45,7 +45,7 @@ def main():
         Board.data = np.hstack((X_data,Y_data))
         
         log.info('Loading %s...', Game.__name__)
-        g = Game(3, "prefix") #(1.)
+        g = Game(3, "postfix") #(1.)
         #TODO: Add a feature to make the expression size variable?
 
         log.info('Loading %s...', nn.__name__)
@@ -81,9 +81,15 @@ def main():
             plt.xlabel("Iteration number")
             plt.ylabel("Score")
             plt.legend()
-            plt.savefig("Model_History_Multi_Dimension.png", dpi = 5*96)
+            plt.savefig("Model_History_Multi_Dimension_KNN_c_1.png", dpi = 5*96)
             plt.close()
             print("Model History Saved")
+            plt.plot(c.iteration_numbers, c.unique_expression_counts, label = "Exploration curve")
+            plt.xlabel("Iteration number")
+            plt.ylabel("Number of unique expressions visited")
+            plt.legend()
+            plt.savefig("Exploration_Curve_postfix_NN_c_1.png", dpi = 5*96)
+            plt.close()
 
 if __name__ == "__main__":
     main()

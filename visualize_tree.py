@@ -22,7 +22,7 @@ class UnaryNode(Node):
     def __init__(self, value, unique_id):
         super().__init__(value, unique_id)
         self.child = None
-
+        
 def is_operator(token):
     return token in {'+', '-', '*', '/', '^', 'cos', 'grad', 'exp'}
 def is_binary_operator(token):
@@ -32,7 +32,7 @@ def is_unary_operator(token):
 
 #https://stackoverflow.com/a/77180279/18255427
 #Returns two values, depth and if the expression is complete
-def getPNdepth(expression):
+def getPNdepth(expression: list[str]):
     if not expression: #if it's empty
         return 0, False
     if isinstance(expression, str):
@@ -213,7 +213,7 @@ def plot_rpn_expression_tree(expression, block = False, save = False):
 def test_visualize():
 #    # Example usage:
     operators = ['+', '-', '*', 'exp', 'cos', 'grad']
-    save = True
+    save = False
     
     if save:
         plot_pn_expression_tree("- + + - + - + / * 30 ^ x 2 * - 10 x y ^ x 4 * / 4 5 ^ x 3 / ^ y 2 2 * 2 y / 8 + + 2 ^ x 2 ^ y 2 / ^ y 3 2 x", block=False, save = save)
@@ -224,7 +224,7 @@ def test_visualize():
     else:
         while True:
             try:
-                plot_pn_expression_tree("+ * 2.583 cos x3 - * x0 x0 0.5", block=False, save = save)
+#                plot_pn_expression_tree("+ * 2.583 cos x3 - * x0 x0 0.5", block=False, save = save)
                 plot_rpn_expression_tree("2.583 x3 cos * x0 x0 * 0.5 - +", block=False, save = save)
 
             except KeyboardInterrupt:

@@ -30,6 +30,8 @@ class Coach():
         self.mcts = MCTS(self.game, self.nnet, self.args)
         self.trainExamplesHistory = []  # history of examples from args.numItersForTrainExamplesHistory latest iterations
         self.skipFirstSelfPlay = False  # can be overriden in loadTrainExamples()
+        self.iteration_numbers = []
+        self.unique_expression_counts = []
 
     def executeEpisode(self):
         """
@@ -80,7 +82,11 @@ class Coach():
 
         for i in range(1, self.args.numIters + 1):
             # bookkeeping
-            log.info(f'Starting Iter #{i} ...')
+#            if i == 51:
+#                raise KeyboardInterrupt
+            log.info(f'Starting Iter #{i}, # of search expressions = {Board.expression_dict_len}...')
+            self.iteration_numbers.append(i)
+            self.unique_expression_counts.append(Board.expression_dict_len)
             # examples of the iteration
             if not self.skipFirstSelfPlay or i > 1:
                 self.mcts.iteration_number = i 
