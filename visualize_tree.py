@@ -6,6 +6,8 @@ from time import time
 from matplotlib.animation import FuncAnimation
 from symreg import *
 import os
+from numba import njit, types, typed, jit
+#from typing import Tuple
 
 class Node:
     def __init__(self, value, unique_id):
@@ -22,28 +24,31 @@ class UnaryNode(Node):
     def __init__(self, value, unique_id):
         super().__init__(value, unique_id)
         self.child = None
-        
+
+@njit(types.boolean(types.unicode_type), fastmath=True)
 def is_operator(token):
     return token in {'+', '-', '*', '/', '^', 'cos', 'grad', 'exp'}
+@njit(types.boolean(types.unicode_type), fastmath=True)
 def is_binary_operator(token):
     return token in {'+', '-', '*', '/', '^'}
+@njit(types.boolean(types.unicode_type), fastmath=True)
 def is_unary_operator(token):
     return token in {'cos', 'grad', 'exp'}
+#print(f"inspect_types(is_unary_operator) = {is_unary_operator.inspect_types()}")
 
 #https://stackoverflow.com/a/77180279/18255427
 #Returns two values, depth and if the expression is complete
-def getPNdepth(expression: list[str]):
-    if not expression: #if it's empty
+@njit(types.Tuple((types.int32, types.boolean))(types.List(types.unicode_type,True)))
+def getPNdepth(expression: list[str]) -> tuple[int, bool]:
+    if not expression or expression == [" "]: #if it's empty
         return 0, False
-    if isinstance(expression, str):
-        expression = expression.split()
     stack = []
     depth, num_binary, num_leaves = 0, 0, 0
     for val in expression:
-        if is_binary_operator(val):  # all binary operators
+        if val in {'+', '-', '*', '/', '^'}:#is_binary_operator(val):  # all binary operators
             stack.append(2)  # = number of operands
             num_binary += 1
-        elif is_unary_operator(val):  # all unary operators
+        elif val in {'cos', 'grad', 'exp'}:#is_unary_operator(val):  # all unary operators
             stack.append(1)
         else:  # an operand (x)
             num_leaves += 1
@@ -54,14 +59,14 @@ def getPNdepth(expression: list[str]):
         depth = max(depth, len(stack) + 1)
     return depth-1, num_leaves == num_binary + 1
 
+#print(getPNdepth.inspect_types())
 #https://stackoverflow.com/a/77128902/18255427
 #Returns two values, depth and if the expression is complete
+@njit(types.Tuple((types.int32, types.boolean))(types.List(types.unicode_type,True)))
 def getRPNdepth(expression):
-    if not expression: #if it's empty
+    if not expression or expression == [" "]: #if it's empty
         return 0, False
     stack = []
-    if isinstance(expression, str):
-        expression = expression.split()
     for token in expression:
         if is_unary_operator(token):  # all unary operators
             stack[-1] += 1
@@ -128,7 +133,7 @@ def plot_pn_expression_tree(expression, block = False, save = False):
     plot_tree(expression_tree, graph)
     
     if save:
-        graph.set('label', f"{expression}, depth = {getPNdepth(expression)[0]}")
+        graph.set('label', f"{expression}, depth = {getPNdepth(expression.split())[0]}")
         graph.set('labelloc', 't')  # Set label location to "top"
         graph.write_svg('expression_tree_PN_Hemberg2008_expr_5.svg')
     else:
@@ -139,7 +144,7 @@ def plot_pn_expression_tree(expression, block = False, save = False):
         else:
             implot.set_data(plt.imread('expression_tree.png'))
         plt.axis('off')
-        plt.title(f"{expression}, depth = {getPNdepth(expression)[0]}")
+        plt.title(f"{expression}, depth = {getPNdepth(expression.split())[0]}")
         plt.show(block = block)
         plt.pause(0.01)
 
@@ -194,7 +199,7 @@ def plot_rpn_expression_tree(expression, block = False, save = False):
     plot_tree(expression_tree, graph)
     
     if save:
-        graph.set('label', f"{expression}, depth = {getRPNdepth(expression)[0]}")
+        graph.set('label', f"{expression}, depth = {getRPNdepth(expression.split())[0]}")
         graph.set('labelloc', 't')  # Set label location to "top"
         graph.write_svg('expression_tree_RPN_Hemberg2008_expr_5.svg')
     else:
@@ -205,7 +210,7 @@ def plot_rpn_expression_tree(expression, block = False, save = False):
         else:
             implot.set_data(plt.imread('expression_tree.png'))
         plt.axis('off')
-        plt.title(f"{expression}, depth = {getRPNdepth(expression)[0]}")
+        plt.title(f"{expression}, depth = {getRPNdepth(expression.split())[0]}")
         plt.show(block = block)
         plt.pause(0.01)
 
@@ -216,15 +221,15 @@ def test_visualize():
     save = False
     
     if save:
-        plot_pn_expression_tree("- + + - + - + / * 30 ^ x 2 * - 10 x y ^ x 4 * / 4 5 ^ x 3 / ^ y 2 2 * 2 y / 8 + + 2 ^ x 2 ^ y 2 / ^ y 3 2 x", block=False, save = save)
+        plot_pn_expression_tree("- + + - + - + / * 30 ^ x 2 * - 10 x y ^ x 4 * / 4 5 ^ x 3 / ^ y 2 2 * 2 y / 8 + + 2 ^ x 2 ^ y 2 / ^ y 3 2 x".split(), block=False, save = save)
         os.system("rsvg-convert -f pdf -o expression_tree_PN_Hemberg2008_expr_5.pdf expression_tree_PN_Hemberg2008_expr_5.svg")
-        plot_rpn_expression_tree("30 x 2 ^ * 10 x - y * / x 4 ^ + 4 5 / x 3 ^ * - y 2 ^ 2 / + 2 y * - 8 2 x 2 ^ + y 2 ^ + / + y 3 ^ 2 / + x -", block=False, save = save)
+        plot_rpn_expression_tree("30 x 2 ^ * 10 x - y * / x 4 ^ + 4 5 / x 3 ^ * - y 2 ^ 2 / + 2 y * - 8 2 x 2 ^ + y 2 ^ + / + y 3 ^ 2 / + x -".split(), block=False, save = save)
         os.system("rsvg-convert -f pdf -o expression_tree_RPN_Hemberg2008_expr_5.pdf expression_tree_RPN_Hemberg2008_expr_5.svg")
 
     else:
         while True:
             try:
-#                plot_pn_expression_tree("+ * 2.583 cos x3 - * x0 x0 0.5", block=False, save = save)
+                plot_pn_expression_tree("+ * 2.583 cos x3 - * x0 x0 0.5", block=False, save = save)
                 plot_rpn_expression_tree("2.583 x3 cos * x0 x0 * 0.5 - +", block=False, save = save)
 
             except KeyboardInterrupt:
@@ -232,4 +237,22 @@ def test_visualize():
                 exit()
 
 if __name__ == "__main__":
-    test_visualize()
+    start = time()
+    for i in range(1000000):
+        getPNdepth(['-', '+', '+', '-', '+', '-', '+', '/', '*', '30', '^', 'x', '2', '*', '-', '10', 'x', 'y', '^', 'x', '4', '*', '/', '4', '5', '^', 'x', '3', '/', '^', 'y', '2', '2', '*', '2', 'y', '/', '8', '+', '+', '2', '^', 'x', '2', '^', 'y', '2', '/', '^', 'y', '3', '2', 'x'])
+    print(f"Time taken = {time() - start}")
+#    test_visualize()
+#
+#
+#@njit(types.Tuple((types.int64, types.boolean))(types.List(types.unicode_type, True)))
+#def func(lst):
+#    return 0, False
+#    
+#This gives the error: KeyError: 'Can only index numba types with slices with no start or stop, got 0.'
+#How do I fix it?
+
+#@njit
+#def func(lst):
+#    return 0, False
+#
+#print(func.inspect_types())

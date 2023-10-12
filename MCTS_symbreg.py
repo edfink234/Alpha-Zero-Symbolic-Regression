@@ -3,7 +3,6 @@ import math
 from copy import copy
 import numpy as np
 from symreg.SymRegLogic import Board
-from visualize_tree import *
 
 EPS = 1e-8
 
@@ -128,9 +127,11 @@ class MCTS():
                 if (s, a) in self.Qsa:
 #                    u = self.Qsa[(s, a)] + self.cpuct() * self.Ps[s][a] * math.sqrt(self.Ns[s]) / (1 + self.Nsa[(s, a)]) #AlphaGoZero formula, see page 26 of https://discovery.ucl.ac.uk/id/eprint/10045895/1/agz_unformatted_nature.pdf
                     
-                    u = self.Qsa[(s, a)] + self.cpuct() * self.Ps[s][a] * ( (self.Ns[s])**(0.25) / math.sqrt(self.Nsa[(s, a)])) #see page 4 of https://arxiv.org/pdf/1902.05213.pdf
+#                    u = self.Qsa[(s, a)] + self.cpuct() * self.Ps[s][a] * ( (self.Ns[s])**(0.25) / math.sqrt(self.Nsa[(s, a)])) #see page 4 of https://arxiv.org/pdf/1902.05213.pdf
+                    u = self.Qsa[(s, a)] + self.cpuct() * ( (self.Ns[s])**(0.25) / math.sqrt(self.Nsa[(s, a)])) #see page 4 of https://arxiv.org/pdf/1902.05213.pdf
                 else:
-                    u = self.cpuct() * self.Ps[s][a] * math.sqrt(self.Ns[s] + EPS)  # Q = 0 ?
+#                    u = self.cpuct() * self.Ps[s][a] * math.sqrt(self.Ns[s] + EPS)  # Q = 0 ?
+                    u = self.cpuct() * math.sqrt(self.Ns[s] + EPS)  # Q = 0 ?
 
                 if u > cur_best:
                     cur_best = u

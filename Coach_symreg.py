@@ -82,7 +82,7 @@ class Coach():
 
         for i in range(1, self.args.numIters + 1):
             # bookkeeping
-#            if i == 51:
+#           if i == 2:
 #                raise KeyboardInterrupt
             log.info(f'Starting Iter #{i}, # of search expressions = {Board.expression_dict_len}...')
             self.iteration_numbers.append(i)

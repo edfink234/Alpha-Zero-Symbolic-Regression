@@ -166,9 +166,9 @@ class Board():
         and -1 if not complete or if the desired depth has not been reached.
         """
         if self.expression_type == "prefix":
-            depth, complete = getPNdepth(expression := [self.__tokens_dict[i] for i in self.pieces])
+            depth, complete = getPNdepth(expression := ([self.__tokens_dict[i] for i in self.pieces] if self.pieces else [" "]))
         else: #postfix
-            depth, complete = getRPNdepth(expression := [self.__tokens_dict[i] for i in self.pieces])
+            depth, complete = getRPNdepth(expression := ([self.__tokens_dict[i] for i in self.pieces] if self.pieces else [" "]))
         if not complete or depth < self.n: #Expression not complete
             return -1
         else:
@@ -179,6 +179,7 @@ class Board():
 #                    print(f"Board.expression_dict_len = {Board.expression_dict_len}")
                 else:
                     Board.expression_dict[bytes(self.pieces)] += 1
+#                plot_pn_expression_tree(expression) if self.expression_type == "prefix" else plot_rpn_expression_tree(expression)
 #                plt.bar(Board.expression_dict.keys(), Board.expression_dict.values())
 #                plt.show(block=False)
 #                plt.pause(0.01)
@@ -186,6 +187,8 @@ class Board():
             grad = implemented_function('grad', lambda x: np.gradient(x))
             
             expression_str = self.pn_to_infix(expression := ' '.join(expression)) if self.expression_type == "prefix" else self.rpn_to_infix(expression := ' '.join(expression))
+            
+            
             
             num_consts = expression_str.count("const")
             x = symbols(f'x(:{self.__num_features})')

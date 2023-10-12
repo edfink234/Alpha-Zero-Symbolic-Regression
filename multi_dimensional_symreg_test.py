@@ -9,6 +9,7 @@ from symreg.SymRegGame import SymRegGame as Game
 from symreg.SymRegLogic import Board
 from symreg.keras.NNet import NNetWrapper as nn
 from utils import *
+from time import time
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -23,7 +24,7 @@ args = dotdict({
     'maxlenOfQueue': 200000,    # Number of game examples to train the neural networks.
     'numMCTSSims': 25,          # Number of games moves for MCTS to simulate.
     'arenaCompare': 1,         # Number of games to play during arena play to determine if new net will be accepted.
-    'cpuct': {50: 10, 100: 10, 150: 10}, #Controls the exploration/exploitation trade-off.
+    'cpuct': {50: 1, 100: 1, 150: 1}, #Controls the exploration/exploitation trade-off.
 
     'checkpoint': './temp/',
     'load_model': False,
@@ -38,14 +39,13 @@ def main():
     try:
         log.info('Loading data...')
         X_data = 2 * np.random.randn(100, 5)
-        #Y_data =  np.cos((X_data[:, 3] + (0.121 - (X_data[:, 1] * (0.9 - X_data[:, 2])))))
         Y_data = 2.5382 * np.cos(X_data[:, 3]) + X_data[:, 0] ** 2 - 0.5 #2.5382 cos(x_3) + x_0^2 - 0.5
         
         Y_data = Y_data.reshape(-1,1)
         Board.data = np.hstack((X_data,Y_data))
         
         log.info('Loading %s...', Game.__name__)
-        g = Game(3, "postfix") #(1.)
+        g = Game(3, "prefix") #(1.)
         #TODO: Add a feature to make the expression size variable?
 
         log.info('Loading %s...', nn.__name__)
@@ -66,8 +66,10 @@ def main():
             c.loadTrainExamples()
 
         log.info('Starting the learning process 🎉')
+        start = time()
         c.learn()
     except KeyboardInterrupt:
+        print(f"Time taken = {time()-start}")
         print(f"best expression = {Board.best_expression}")
         print(f"best loss = {Board.best_loss}")
         save = input("Save best expression and loss? (y/n): ")
@@ -88,7 +90,7 @@ def main():
             plt.xlabel("Iteration number")
             plt.ylabel("Number of unique expressions visited")
             plt.legend()
-            plt.savefig("Exploration_Curve_postfix_NN_c_1.png", dpi = 5*96)
+            plt.savefig("Exploration_Curve_prefix_kNN_c_100_no_P.png", dpi = 5*96)
             plt.close()
 
 if __name__ == "__main__":
