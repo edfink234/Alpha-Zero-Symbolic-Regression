@@ -18,13 +18,13 @@ Based on the OthelloGame by Surag Nair.
 log = logging.getLogger(__name__)
 
 class SymRegGame(Game):
-    def __init__(self, n=3, expression_type="prefix"):
+    def __init__(self, n=3, expression_type="prefix", visualize_exploration = True):
         self.n = n
         self.expression_type = expression_type
         if n < 1:
             log.warning(f"n = {n} is not allowed since it is less than 1, setting n to 1 now.")
             self.n = 1
-        self.b = Board(self.n, self.expression_type) #initial board
+        self.b = Board(self.n, self.expression_type, visualize_exploration) #initial board
 
     def getInitBoard(self):
         # return initial board

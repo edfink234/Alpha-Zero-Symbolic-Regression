@@ -23,6 +23,7 @@ from sklearn.metrics import mean_squared_error
 from scipy.optimize import curve_fit
 from visualize_tree import *
 import matplotlib.pyplot as plt
+from numba import njit, types, typed
 
 def loss_func(y_true, y_pred):
     return 1/(1+mean_squared_error(y_true, y_pred))
@@ -172,17 +173,13 @@ class Board():
         if not complete or depth < self.n: #Expression not complete
             return -1
         else:
+            if bytes(self.pieces) not in Board.expression_dict:
+                Board.expression_dict[bytes(self.pieces)] = 1
+                Board.expression_dict_len += 1
+            else:
+                Board.expression_dict[bytes(self.pieces)] += 1
             if self.visualize_exploration:
-                if bytes(self.pieces) not in Board.expression_dict:
-                    Board.expression_dict[bytes(self.pieces)] = 1
-                    Board.expression_dict_len += 1
-#                    print(f"Board.expression_dict_len = {Board.expression_dict_len}")
-                else:
-                    Board.expression_dict[bytes(self.pieces)] += 1
-#                plot_pn_expression_tree(expression) if self.expression_type == "prefix" else plot_rpn_expression_tree(expression)
-#                plt.bar(Board.expression_dict.keys(), Board.expression_dict.values())
-#                plt.show(block=False)
-#                plt.pause(0.01)
+                plot_pn_expression_tree(expression) if self.expression_type == "prefix" else plot_rpn_expression_tree(expression)
             
             grad = implemented_function('grad', lambda x: np.gradient(x))
             

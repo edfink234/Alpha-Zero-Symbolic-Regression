@@ -45,7 +45,7 @@ def main():
         Board.data = np.hstack((X_data,Y_data))
         
         log.info('Loading %s...', Game.__name__)
-        g = Game(3, "prefix") #(1.)
+        g = Game(n = 3, expression_type = "postfix", visualize_exploration = True) #(1.)
         #TODO: Add a feature to make the expression size variable?
 
         log.info('Loading %s...', nn.__name__)
