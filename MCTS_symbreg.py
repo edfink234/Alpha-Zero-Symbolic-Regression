@@ -4,11 +4,13 @@ from copy import copy
 import numpy as np
 from symreg.SymRegLogic import Board
 from visualize_tree import *
+from time import time
 
 EPS = 1e-8
 
 log = logging.getLogger(__name__)
 
+#@ray.remote
 class MCTS():
     """
     This class handles the MCTS tree.
@@ -44,8 +46,11 @@ class MCTS():
             probs: a policy vector where the probability of the ith possible action is
                    proportional to Nsa[(s,a)]**(1./temp)
         """
+        start = time()
         for i in range(self.args.numMCTSSims):
             self.search(copy(canonicalBoard)) #self.search mutates what you pass in, so we use a copy
+        
+        Board.search_time += (time() - start)
         s = self.game.stringRepresentation(canonicalBoard) #state
         counts = [self.Nsa.get((s,a), 0) for a in range(self.game.getActionSize())]
         if temp == 0:

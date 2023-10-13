@@ -23,6 +23,7 @@ from sklearn.metrics import mean_squared_error
 from scipy.optimize import curve_fit
 from visualize_tree import *
 import matplotlib.pyplot as plt
+from copy import copy
 
 def loss_func(y_true, y_pred):
     return 1/(1+mean_squared_error(y_true, y_pred))
@@ -36,6 +37,8 @@ class Board():
     expression_dict_len = 0
     data = None
     best_loss = np.inf
+    init_expression = []
+    search_time = 0
 
     def __init__(self, n=3, expression_type="prefix", visualize_exploration = True):
         "Set up initial board configuration."
@@ -70,7 +73,6 @@ class Board():
         # Create the empty expression list.
         self.pieces = []
         self.visualize_exploration = visualize_exploration
-            
 
     # add [][] indexer syntax to the Board
     def __getitem__(self, index):
@@ -172,13 +174,15 @@ class Board():
         if not complete or depth < self.n: #Expression not complete
             return -1
         else:
-            if self.visualize_exploration:
-                if bytes(self.pieces) not in Board.expression_dict:
-                    Board.expression_dict[bytes(self.pieces)] = 1
-                    Board.expression_dict_len += 1
+            if bytes(self.pieces) not in Board.expression_dict:
+                Board.expression_dict[bytes(self.pieces)] = 1
+                Board.expression_dict_len += 1
 #                    print(f"Board.expression_dict_len = {Board.expression_dict_len}")
-                else:
-                    Board.expression_dict[bytes(self.pieces)] += 1
+            else:
+                Board.expression_dict[bytes(self.pieces)] += 1
+#                return 0
+            if self.visualize_exploration:
+                plot_pn_expression_tree(expression) if self.expression_type == "prefix" else plot_rpn_expression_tree(expression)
 #                plt.bar(Board.expression_dict.keys(), Board.expression_dict.values())
 #                plt.show(block=False)
 #                plt.pause(0.01)
@@ -217,7 +221,7 @@ def model_selection(x, {', '.join(consts)}):
                 
                 #try to optimize parameters y0, y1, ..., yn
                 try:
-                    parameters, covariance = curve_fit(model_selection, X.T, Y, p0 = np.random.random(num_consts))
+                    parameters, covariance = curve_fit(model_selection, X.T, Y, p0 = np.random.random(num_consts))#, xtol = 0.5, ftol = 0.5, gtol = 0.5)
                 #if it didn't work, set the parameters y0, y1, ..., yn to random values
                 except RuntimeError:
                     parameters = np.random.random(num_consts)

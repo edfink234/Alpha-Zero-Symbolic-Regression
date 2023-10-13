@@ -77,7 +77,7 @@ def getRPNdepth(expression):
 
 called = False
 implot = None
-def plot_pn_expression_tree(expression, block = False, save = False):
+def plot_pn_expression_tree(expression: list[str], block = False, save = False):
     global called, implot
 
     def build_tree(expression_tokens):
@@ -120,15 +120,13 @@ def plot_pn_expression_tree(expression, block = False, save = False):
             elif isinstance(node, UnaryNode):
                 plot_tree(node.child, graph, node)
 
-    
-    expression_tokens = expression.split()[::-1] if isinstance(expression, str) else expression[::-1]
-    expression_tree = build_tree(expression_tokens)
+    expression_tree = build_tree(expression[::-1])
 
     graph = pydot.Dot(graph_type='graph')
     plot_tree(expression_tree, graph)
     
     if save:
-        graph.set('label', f"{expression}, depth = {getPNdepth(expression)[0]}")
+        graph.set('label', f"{' '.join(expression)}, depth = {getPNdepth(expression)[0]}")
         graph.set('labelloc', 't')  # Set label location to "top"
         graph.write_svg('expression_tree_PN_Hemberg2008_expr_5.svg')
     else:
@@ -139,11 +137,11 @@ def plot_pn_expression_tree(expression, block = False, save = False):
         else:
             implot.set_data(plt.imread('expression_tree.png'))
         plt.axis('off')
-        plt.title(f"{expression}, depth = {getPNdepth(expression)[0]}")
+        plt.title(f"{' '.join(expression)}, depth = {getPNdepth(expression)[0]}")
         plt.show(block = block)
         plt.pause(0.01)
 
-def plot_rpn_expression_tree(expression, block = False, save = False):
+def plot_rpn_expression_tree(expression: list[str], block = False, save = False):
     global called, implot
 
     def build_tree(expression_tokens):
@@ -186,15 +184,13 @@ def plot_rpn_expression_tree(expression, block = False, save = False):
             elif isinstance(node, UnaryNode):
                 plot_tree(node.child, graph, node)
 
-    
-    expression_tokens = expression.split() if isinstance(expression, str) else expression
-    expression_tree = build_tree(expression_tokens)
+    expression_tree = build_tree(expression)
 
     graph = pydot.Dot(graph_type='graph')
     plot_tree(expression_tree, graph)
     
     if save:
-        graph.set('label', f"{expression}, depth = {getRPNdepth(expression)[0]}")
+        graph.set('label', f"{' '.join(expression)}, depth = {getRPNdepth(expression)[0]}")
         graph.set('labelloc', 't')  # Set label location to "top"
         graph.write_svg('expression_tree_RPN_Hemberg2008_expr_5.svg')
     else:
@@ -205,7 +201,7 @@ def plot_rpn_expression_tree(expression, block = False, save = False):
         else:
             implot.set_data(plt.imread('expression_tree.png'))
         plt.axis('off')
-        plt.title(f"{expression}, depth = {getRPNdepth(expression)[0]}")
+        plt.title(f"{' '.join(expression)}, depth = {getRPNdepth(expression)[0]}")
         plt.show(block = block)
         plt.pause(0.01)
 
@@ -224,8 +220,8 @@ def test_visualize():
     else:
         while True:
             try:
-#                plot_pn_expression_tree("+ * 2.583 cos x3 - * x0 x0 0.5", block=False, save = save)
-                plot_rpn_expression_tree("2.583 x3 cos * x0 x0 * 0.5 - +", block=False, save = save)
+                plot_pn_expression_tree("+ * 2.583 cos x3 - * x0 x0 0.5".split(), block=False, save = save)
+                plot_rpn_expression_tree("2.583 x3 cos * x0 x0 * 0.5 - +".split(), block=False, save = save)
 
             except KeyboardInterrupt:
                 plt.close()

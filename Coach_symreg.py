@@ -22,7 +22,7 @@ class Coach():
     This class executes the self-play + learning. It uses the functions defined
     in Game and NeuralNet. args are specified in main.py.
     """
-    scores = []
+#    scores = []
     def __init__(self, game, nnet, args):
         self.game = game
         self.nnet = nnet
@@ -32,6 +32,7 @@ class Coach():
         self.skipFirstSelfPlay = False  # can be overriden in loadTrainExamples()
         self.iteration_numbers = []
         self.unique_expression_counts = []
+        self.scores = []
 
     def executeEpisode(self):
         """
@@ -123,7 +124,7 @@ class Coach():
 
             log.info(f'Score / Ideal: {score} / {self.args.arenaCompare}')
             
-            Coach.scores.append(score)
+            self.scores.append(score)
             
             if score < self.args.bestScore:
                 log.info('REJECTING NEW MODEL')
