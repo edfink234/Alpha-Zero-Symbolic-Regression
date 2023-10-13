@@ -3,7 +3,7 @@ import coloredlogs
 import numpy as np
 import matplotlib.pyplot as plt
 import sympy as sp
-from time import time
+from time import time, sleep
 from Coach_symreg import Coach
 from symreg.SymRegGame import SymRegGame as Game
 from symreg.SymRegLogic import Board
@@ -11,7 +11,7 @@ from symreg.keras.NNet import NNetWrapper as nn
 from utils import *
 import warnings
 warnings.filterwarnings("ignore")
-from multiprocessing import Process, set_start_method
+from threading import Thread
 
 log = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ args = dotdict({
     'numEps': 50,              # Number of complete self-play games to simulate during a new iteration.
     'tempThreshold': 15,        # This means that the temperature 'temp' will be 1 for 15 Monte-Carlo simulations and then will be 0
     'maxlenOfQueue': 200000,    # Number of game examples to train the neural networks.
-    'numMCTSSims': 25,          # Number of games moves for MCTS to simulate.
+    'numMCTSSims': 10,          # Number of games moves for MCTS to simulate.
     'arenaCompare': 1,         # Number of games to play during arena play to determine if new net will be accepted.
     'cpuct': {50: 10, 100: 10, 150: 10}, #Controls the exploration/exploitation trade-off.
 
@@ -45,14 +45,13 @@ def main():
         Y_data = Y_data.reshape(-1,1)
         Board.data = np.hstack((X_data,Y_data))
         
-#        Board.init_expression = ['const', 'x3', 'cos']
+    #        Board.init_expression = ['const', 'x3', 'cos']
         log.info('Loading %s...', Game.__name__)
-        g = Game(n = 3, expression_type = "prefix", visualize_exploration = False)  #(1.)
+        
         #TODO: Add a feature to make the expression size variable?
 
         log.info('Loading %s...', nn.__name__)
-        nnet = nn(g) #(2.)
-
+        
         if args.load_model:
             log.info('Loading checkpoint "%s/%s"...', args.load_model_file[0], args.load_model_file[1])
             nnet.load_checkpoint(args.load_model_file[0], args.load_model_file[1])
@@ -60,20 +59,21 @@ def main():
             log.warning('Not loading a checkpoint!')
 
         log.info('Loading the Coach...')
-
-        c = Coach(g, nnet, args) #(3.)
-
-        if args.load_model:
-            log.info("Loading 'trainExamples' from file...")
-            c.loadTrainExamples()
         start = time()
-        log.info('Starting the learning process 🎉')
-        c.learn()
-    except KeyboardInterrupt:
+        threads = []
+        for i in range(8):
+            g = Game(n = 3, expression_type = "postfix", visualize_exploration = False)  #(1.)
+            nnet = nn(g) #(2.)
+            c = Coach(g, nnet, args) #(3.)
+            threads.append(Thread(target=c.learn))
+        for i in threads:
+            i.start()
+        
+    except (KeyboardInterrupt, SystemExit):
         print(f"best expression = {Board.best_expression}")
         print(f"best loss = {Board.best_loss}")
         print(f"Time taken = {time() - start}")
-        print(f"Search Time = {Board.search_time}")
+#        print(f"Search Time = {Board.search_time}")
         save = input("Save best expression and loss? (y/n): ")
         if 'y' in save.lower():
             with open("best_multi_dim_expression.txt", "w") as f:
@@ -94,6 +94,9 @@ def main():
             plt.legend()
             plt.savefig("Exploration_Curve_postfix_NN_c_1.png", dpi = 5*96)
             plt.close()
+    finally:
+        print(f"best expression = {Board.best_expression}")
+        print(f"best loss = {Board.best_loss}")
 
 if __name__ == "__main__":
     main()

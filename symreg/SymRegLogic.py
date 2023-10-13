@@ -24,6 +24,7 @@ from scipy.optimize import curve_fit
 from visualize_tree import *
 import matplotlib.pyplot as plt
 from copy import copy
+import threading
 
 def loss_func(y_true, y_pred):
     return 1/(1+mean_squared_error(y_true, y_pred))
@@ -175,20 +176,15 @@ class Board():
             return -1
         else:
             if bytes(self.pieces) not in Board.expression_dict:
-                Board.expression_dict[bytes(self.pieces)] = 1
-                Board.expression_dict_len += 1
-#                    print(f"Board.expression_dict_len = {Board.expression_dict_len}")
+                with threading.Lock():
+                    Board.expression_dict[bytes(self.pieces)] = 1
+                    Board.expression_dict_len += 1
             else:
-                Board.expression_dict[bytes(self.pieces)] += 1
-#                return 0
+                with threading.Lock():
+                    Board.expression_dict[bytes(self.pieces)] += 1
             if self.visualize_exploration:
                 plot_pn_expression_tree(expression) if self.expression_type == "prefix" else plot_rpn_expression_tree(expression)
-#                plt.bar(Board.expression_dict.keys(), Board.expression_dict.values())
-#                plt.show(block=False)
-#                plt.pause(0.01)
-            
-            grad = implemented_function('grad', lambda x: np.gradient(x))
-            
+                        
             expression_str = self.pn_to_infix(expression := ' '.join(expression)) if self.expression_type == "prefix" else self.rpn_to_infix(expression := ' '.join(expression))
             
             num_consts = expression_str.count("const")
@@ -202,7 +198,6 @@ class Board():
                 y = symbols(f'y(:{num_consts})')
                 consts = [f"y{i}" for i in range(num_consts)]
                 temp_dict.update({key:value for (key,value) in zip(consts, y)})
-                temp_dict.update({"grad": grad})
                 for i in range(num_consts):
                     expression_str = expression_str.replace("const", f"y{i}", 1)
                 
@@ -212,7 +207,7 @@ class Board():
                     model_selection_str = model_selection_str.replace(f"x{i}", f"x[{i}]")
                 func_str = f"""
 def model_selection(x, {', '.join(consts)}):
-    from numpy import cos, gradient as grad
+    from numpy import cos
     return {model_selection_str}
                 """
                 
@@ -238,7 +233,6 @@ def model_selection(x, {', '.join(consts)}):
                 
             else:
                 first = False
-                temp_dict.update({"grad": grad})
                 parsed_expr = parse_expr(expression_str, transformations=transformations, local_dict = temp_dict)
                 model_selection = lambdify(x, parsed_expr)
                 
@@ -250,9 +244,15 @@ def model_selection(x, {', '.join(consts)}):
             for i in range(self.__num_features):
                 expression_str = expression_str.replace(f"x[{i}]", f"x{i}")
             if loss < Board.best_loss:
-                Board.best_expression = parse_expr(expression_str, transformations=transformations, local_dict = temp_dict)
+                with threading.Lock():
+                    Board.best_expression = parse_expr(expression_str, transformations=transformations, local_dict = temp_dict)
 
-                Board.best_loss = loss
+                    Board.best_loss = loss
+                    with open("best_file.txt", "w") as f:
+                        f.write(f"New best expression ({'PN' if self.expression_type == 'prefix' else 'RPN'}): {expression}\n")
+                        f.write(f"New best expression (infix): {Board.best_expression}\n")
+                        f.write(f"New best expression latex: {latex(Board.best_expression)}\n")
+                        f.write(f"New best loss: {Board.best_loss:.3f}\n")
                 print(f"New best expression ({'PN' if self.expression_type == 'prefix' else 'RPN'}): {expression}")
                 print(f"New best expression (infix): {Board.best_expression}")
                 print(f"New best expression latex: {latex(Board.best_expression)}")

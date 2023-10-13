@@ -6,6 +6,7 @@ import sys
 sys.path.append('..')
 from utils import *
 from NeuralNet import NeuralNet
+import threading
 
 from .symregNNet import symregNNet as onnet
 
@@ -44,48 +45,14 @@ class NNetWrapper(NeuralNet):
         input_boards = pad_sequences(input_boards, padding='post', maxlen = self.board if args['useNN'] else None)
         target_pis = np.asarray(target_pis)
         target_vs = np.asarray(target_vs)
-        if args['useNN']:
-            self.nnet.model.fit(x = input_boards, y = [target_pis, target_vs], batch_size = args.batch_size, epochs = args.epochs)
-        else:
-            self.example_length = len(input_boards[0])
-            self.nnet.clf_value.fit(input_boards, target_vs) #learning value function
-#            print("Value R^2 score =",self.nnet.clf_value.score(input_boards, target_vs))
-            assert(len(self.nnet.clf_policy) == self.action_size)
-            for i in range(self.action_size):
-                self.nnet.clf_policy[i].fit(input_boards, target_pis[:,i])
-#                print(f"Policy {i} R^2 Score =",self.nnet.clf_policy[i].score(input_boards, target_pis[:,i]))
-
-#            # Initialize the policy and value models
-#            self.nnet.clf_value.fit(input_boards, target_vs)  # Initialize the value function model
-#
-#            # Get predictions from the current value model
-#            predicted_vs = self.nnet.clf_value.predict(input_boards)
-#            print("Value R^2 score =",self.nnet.clf_value.score(input_boards, target_vs))
-#
-#            # Initialize empty lists to store data for policy model updates
-#            input_boards_policy = []
-#            target_pis_policy = []
-#
-#            # Generate data for policy model updates using the value model's predictions
-#            for i in range(self.action_size):
-#                input_boards_policy.append(input_boards)
-#                target_pis_policy.append(target_pis[:, i] + predicted_vs)
-#
-#            # Update the policy models
-#            for i in range(self.action_size):
-#                self.nnet.clf_policy[i].fit(input_boards_policy[i], target_pis_policy[i])
-#                print(f"Policy {i} R^2 Score =",self.nnet.clf_policy[i].score(input_boards, target_pis_policy[i]))
-#            # Get predictions from the updated policy models
-#            predicted_pis = [self.nnet.clf_policy[i].predict(input_boards) for i in range(self.action_size)]
-#
-#            # Update the value model using the policy model's predictions
-#            self.nnet.clf_value.fit(input_boards, target_vs + sum(predicted_pis))
-        
-        #(1.087411495459077, 0.40460654772803967, 2.604881885431175, 0.4046065477280398, 2.724222366673192): mean = 1.4451457686039046, var = 1.0548884709892918
-        #(1.887357057178798, 1.7082022595628767, 1.6186210489487627, 1.087411495459078, 1.8275157108414692): mean = 1.625821514398197, var = 0.08116103427740798
-        
-        #(3.14352726376052, 2.7652405406897542, 2.4581126451405684, 2.466750465608598, 1.7737176969099686): mean = 2.521469722421882, var = 0.20250424090805136
-        #(3.114643407056879, 3.2386341425429404, 2.9983956706047525, 2.0664457931297287e-31, 3.1445277675119865): mean = 2.4992401975433114, var = 1.5674356630882627
+        with threading.Lock():
+            if args['useNN']:
+                self.nnet.model.fit(x = input_boards, y = [target_pis, target_vs], batch_size = args.batch_size, epochs = args.epochs)
+            else:
+                self.example_length = len(input_boards[0])
+                self.nnet.clf_value.fit(input_boards, target_vs) #learning value function
+                for i in range(self.action_size):
+                    self.nnet.clf_policy[i].fit(input_boards, target_pis[:,i])
             
         if not self.trained:
             self.trained = True
@@ -94,14 +61,8 @@ class NNetWrapper(NeuralNet):
         
         # run
         if args['useNN']:
-#            print(f"trying... board = {board}")
-#            print("len(pad_sequences([board], padding='post', maxlen = self.board)) =", len(pad_sequences([board], padding='post', maxlen = self.board)[0]))
-#            exit()
             pi, v = self.nnet.model.predict(pad_sequences([board], padding='post', maxlen = self.board), verbose=False) #pi is the NN predicted probability of selecting each possible action given the state s
         elif self.trained:
-#            print("BEFORE: len(board) == self.example_length is {}, len(board) = {}, self.example_length = {}".format(len(board) == self.example_length, len(board), self.example_length))
-
-            
             board_length = len(board)
             
             diff = board_length - self.example_length

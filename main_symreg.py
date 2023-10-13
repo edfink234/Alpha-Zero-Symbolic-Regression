@@ -3,7 +3,7 @@ import coloredlogs
 import numpy as np
 import matplotlib.pyplot as plt
 import sympy as sp
-
+from threading import Thread
 from Coach_symreg import Coach
 from symreg.SymRegGame import SymRegGame as Game
 from symreg.SymRegLogic import Board
@@ -52,14 +52,11 @@ def main():
 
         log.info('Loading the Coach...')
         
-        c = Coach(g, nnet, args) 
-
-        if args.load_model:
-            log.info("Loading 'trainExamples' from file...")
-            c.loadTrainExamples()
-
-        log.info('Starting the learning process 🎉')
-        c.learn()
+        for i in range(8):
+            g = Game(n = 3, expression_type = "prefix", visualize_exploration = False)  #(1.)
+            nnet = nn(g) #(2.)
+            c = Coach(g, nnet, args) #(3.)
+            Thread(target=c.learn).start()
     except KeyboardInterrupt:
         print(f"best expression = {Board.best_expression}")
         print(f"best loss = {Board.best_loss}")

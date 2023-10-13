@@ -1,0 +1,4 @@
+New best expression (PN): * const - const * x0 x0
+New best expression (infix): 0.991*x0**2 - 0.300273
+New best expression latex: 0.991 x_{0}^{2} - 0.300273
+New best loss: 2.761
