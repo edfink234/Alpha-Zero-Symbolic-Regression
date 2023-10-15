@@ -1,4 +1,4 @@
-New best expression (PN): * const - const * x0 x0
-New best expression (infix): 0.991*x0**2 - 0.300273
-New best expression latex: 0.991 x_{0}^{2} - 0.300273
-New best loss: 2.761
+New best expression (RPN): x0 x0 const x1 const * x1 x0 - + * - *
+New best expression (infix): x0*(0.953*x0 - 0.028858*x1)
+New best expression latex: x_{0} \cdot \left(0.953 x_{0} - 0.028858 x_{1}\right)
+New best loss: 3.292
