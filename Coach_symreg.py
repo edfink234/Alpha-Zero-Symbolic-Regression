@@ -118,23 +118,23 @@ class Coach():
             self.nnet.train(trainExamples) #Machine learning model is getting trained on the saved training examples
             self.mcts.nnet = self.nnet
 
-            log.info('PITTING AGAINST PREVIOUS VERSION')
-            arena = Arena(lambda x: np.argmax(self.mcts.getActionProb(x, temp=0)), self.game)
-            score = arena.playGames(self.args.arenaCompare)
-
-            log.info(f'Score / Ideal: {score} / {self.args.arenaCompare}')
-            
-            self.scores.append(score)
-            
-            if score < self.args.bestScore:
-                log.info('REJECTING NEW MODEL')
-                self.nnet.load_checkpoint(folder=self.args.checkpoint, filename='temp.pth.tar')
-            else:
-                log.info('ACCEPTING NEW MODEL')
-                self.args.bestScore = score
-                self.nnet.save_checkpoint(folder=self.args.checkpoint, filename=self.getCheckpointFile(i))
-                self.nnet.save_checkpoint(folder=self.args.checkpoint, filename='best.pth.tar')
-            
+#            log.info('PITTING AGAINST PREVIOUS VERSION')
+#            arena = Arena(lambda x: np.argmax(self.mcts.getActionProb(x, temp=0)), self.game)
+#            score = arena.playGames(self.args.arenaCompare)
+#
+#            log.info(f'Score / Ideal: {score} / {self.args.arenaCompare}')
+#            
+#            self.scores.append(score)
+#            
+#            if score < self.args.bestScore:
+#                log.info('REJECTING NEW MODEL')
+#                self.nnet.load_checkpoint(folder=self.args.checkpoint, filename='temp.pth.tar')
+#            else:
+#                log.info('ACCEPTING NEW MODEL')
+#                self.args.bestScore = score
+#                self.nnet.save_checkpoint(folder=self.args.checkpoint, filename=self.getCheckpointFile(i))
+#                self.nnet.save_checkpoint(folder=self.args.checkpoint, filename='best.pth.tar')
+#            
         print(f"Best expression: {Board.best_expression}")
         print(f"Best expression latex: {latex(Board.best_expression)}")
         print(f"Best loss: {Board.best_loss:.3f}")

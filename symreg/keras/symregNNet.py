@@ -35,28 +35,37 @@ class symregNNet():
 
         if self.args['useNN']:
             # Neural Net
-            self.input_boards = Input(shape=(self.board, 1))# Input layer
+#            self.input_boards = Input(shape=(self.board, 1))# Input layer
+#
+#            # Convolutional layers
+#            h_conv1 = Conv1D(args.num_channels, 3, padding='same', activation='relu')(self.input_boards)
+#            h_conv1 = BatchNormalization(axis=-1)(h_conv1)
+#
+#            # Flatten the convolutional output
+#            h_conv1_flat = Flatten()(h_conv1)
+#
+#            # Policy head
+#            s_fc1_policy = Dense(10, activation='relu')(h_conv1_flat)
+#            s_fc1_policy = BatchNormalization(axis=1)(s_fc1_policy)
+#            s_fc1_policy = Dropout(args.dropout)(s_fc1_policy)
+#            self.pi = Dense(self.action_size, activation='softmax', name='pi')(s_fc1_policy)
+#
+#            # Value head
+#            s_fc1_value = Dense(10, activation='relu')(h_conv1_flat)
+#            s_fc1_value = BatchNormalization(axis=1)(s_fc1_value)
+#            s_fc1_value = Dropout(args.dropout)(s_fc1_value)
+#            self.v = Dense(1, name='v')(s_fc1_value)
+#
+#            # Create the model with separate policy and value branches
+#            self.model = Model(inputs=self.input_boards, outputs=[self.pi, self.v])
+#
+            self.input_boards = Input(shape=(self.board, ))
+            dense_layer1 = Dense(50, activation='tanh')(self.input_boards)
+            dense_layer2 = Dense(50, activation='tanh')(dense_layer1)
+            self.pi = Dense(self.action_size, activation='softmax', name='pi')(dense_layer2)
+            self.v = Dense(1, name='v')(dense_layer2)
 
-            # Convolutional layers
-            h_conv1 = Conv1D(args.num_channels, 3, padding='same', activation='relu')(self.input_boards)
-            h_conv1 = BatchNormalization(axis=-1)(h_conv1)
-
-            # Flatten the convolutional output
-            h_conv1_flat = Flatten()(h_conv1)
-
-            # Policy head
-            s_fc1_policy = Dense(10, activation='relu')(h_conv1_flat)
-            s_fc1_policy = BatchNormalization(axis=1)(s_fc1_policy)
-            s_fc1_policy = Dropout(args.dropout)(s_fc1_policy)
-            self.pi = Dense(self.action_size, activation='softmax', name='pi')(s_fc1_policy)
-
-            # Value head
-            s_fc1_value = Dense(10, activation='relu')(h_conv1_flat)
-            s_fc1_value = BatchNormalization(axis=1)(s_fc1_value)
-            s_fc1_value = Dropout(args.dropout)(s_fc1_value)
-            self.v = Dense(1, name='v')(s_fc1_value)
-
-            # Create the model with separate policy and value branches
+            # Create the model
             self.model = Model(inputs=self.input_boards, outputs=[self.pi, self.v])
 
             # Compile the model with appropriate loss functions

@@ -24,6 +24,250 @@ from scipy.optimize import curve_fit
 from visualize_tree import *
 import matplotlib.pyplot as plt
 from copy import copy
+import cppyy
+
+cppyy.cppdef(
+r'''
+std::tuple<int, bool> getPNdepth(const std::vector<std::string>& expression)
+{
+    if (expression.empty() || (expression.size() == 1 && expression[0] == " "))
+    {
+        return std::make_tuple(0, false);
+    }
+
+    std::vector<int> stack;
+    int depth = 0, num_binary = 0, num_leaves = 0;
+    std::unordered_set<std::string> binary_operators = {"+", "-", "*"};
+    std::unordered_set<std::string> unary_operators = {"cos"};
+
+    for (const std::string& val : expression)
+    {
+        if (binary_operators.count(val) > 0)
+        {
+            stack.push_back(2);  // Number of operands
+            num_binary++;
+        }
+        else if (unary_operators.count(val) > 0)
+        {
+            stack.push_back(1);
+        }
+        else
+        {
+            num_leaves++;
+            while (!stack.empty() && stack.back() == 1)
+            {
+                stack.pop_back();  // Remove fulfilled operators
+            }
+            if (!stack.empty())
+            {
+                stack.back()--;  // Indicate an operand is consumed
+            }
+        }
+        depth = std::max(depth, static_cast<int>(stack.size()) + 1);
+    }
+    return std::make_tuple(depth - 1, num_leaves == num_binary + 1);
+}
+
+double loss_func(const std::vector<double>& actual, const std::vector<double>& predicted)
+{
+    if (actual.size() != predicted.size())
+    {
+        throw std::invalid_argument("Vectors must be of the same size");
+    }
+
+    double mse = 0.0;
+    for (size_t i = 0; i < actual.size(); i++) {
+        double error = actual[i] - predicted[i];
+        mse += error * error;
+    }
+
+    mse /= actual.size(); // Divide by the number of elements to get the mean
+    return mse;
+}
+struct Board
+{
+    static std::string inline best_expression = "";
+    static std::unordered_map<std::string, int> inline expression_dict = {};
+    static int inline expression_dict_len = 0;
+    static std::vector<std::vector<double>> inline data = {};
+    static double inline best_loss = INT_MAX;
+    static std::vector<std::string> inline init_expression = {};
+    static double inline search_time = 0;
+    
+    int __num_features;
+    std::vector<std::string> __input_vars;
+    std::vector<std::string> __unary_operators;
+    std::vector<std::string> __binary_operators;
+    std::vector<std::string> __operators;
+    std::vector<std::string> __other_tokens;
+    std::vector<std::string> __tokens;
+    std::vector<float> __tokens_float;
+    
+    std::vector<float> __operators_float;
+    std::vector<float> __unary_operators_float;
+    std::vector<float> __binary_operators_float;
+    std::vector<float> __input_vars_float;
+    std::vector<float> __other_tokens_float;
+    
+    int action_size;
+                
+    std::unordered_map<float, std::string> __tokens_dict; //Converts number to string
+    std::unordered_map<std::string, float> __tokens_inv_dict;
+
+    int n; //depth of RPN tree
+    std::string expression_type;
+    // Create the empty expression list.
+    std::vector<float> pieces;
+    bool visualize_exploration;
+    
+    Board(int n = 3, const std::string& expression_type = "prefix", bool visualize_exploration = true)
+    {
+        this->__num_features = Board::data[0].size() - 1;
+        this->__input_vars.reserve(this->__num_features);
+        for (auto i = 0; i < this->__num_features; i++)
+        {
+            this->__input_vars.push_back("x"+std::to_string(i));
+            // std::cout << "x"+std::to_string(i) << '\n';
+        }
+        this->__unary_operators = {"cos"};
+        this->__binary_operators = {"+", "-", "*"};
+        this->__operators = {"cos", "+", "-", "*"};
+        this->__other_tokens = {"const"};
+        this->__tokens = {"cos", "+", "-", "*"};
+        for (auto& i: this->__input_vars)
+        {
+            this->__tokens.push_back(i);
+        }
+        for (auto& i: this->__other_tokens)
+        {
+            this->__tokens.push_back(i);
+        }
+        this->action_size = this->__tokens.size();
+        this->__tokens_float.reserve(this->action_size);
+        for (int i = 1; i <= this->action_size; ++i)
+        {
+            this->__tokens_float.push_back(i);
+        }
+        int num_operators = this->__operators.size();
+        int num_unary_operators = this->__unary_operators.size();
+        for (int i = 0; i < num_operators; i++)
+        {
+            this->__operators_float.push_back(i);
+        }
+        for (int i = 0; i < num_unary_operators; i++)
+        {
+            this->__unary_operators_float.push_back(i);
+        }
+        for (int i = num_unary_operators; i < num_operators; i++)
+        {
+            this->__binary_operators_float.push_back(i);
+        }
+        int ops_plus_features = num_operators + this->__num_features;
+        for (int i = num_operators; i < ops_plus_features; i++)
+        {
+            this->__input_vars_float.push_back(i);
+        }
+        for (int i = ops_plus_features; i < this->action_size; i++)
+        {
+            this->__other_tokens_float.push_back(i);
+        }
+        for (int i = 0; i < this->action_size; i++)
+        {
+            this->__tokens_dict[this->__tokens_float[i]] = this->__tokens[i];
+            this->__tokens_inv_dict[this->__tokens[i]] = this->__tokens_float[i];
+        }
+        this->n = n;
+        this->expression_type = expression_type;
+        this->pieces = {};
+        this->visualize_exploration = visualize_exploration;
+    }
+    
+    float operator[](size_t index) const
+    {
+        if (index < this->__tokens_float.size())
+        {
+            return this->__tokens_float[index];
+        }
+        else
+        {
+            throw std::out_of_range("Index out of range");
+        }
+    }
+    
+    int __num_binary_ops()
+    {
+        int count = 0;
+        for (float token : pieces)
+        {
+            if (std::find(__binary_operators_float.begin(), __binary_operators_float.end(), token) != __binary_operators_float.end())
+            {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    int __num_unary_ops()
+    {
+        int count = 0;
+        for (float token : pieces)
+        {
+            if (std::find(__unary_operators_float.begin(), __unary_operators_float.end(), token) != __unary_operators_float.end())
+            {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    int __num_leaves()
+    {
+        int count = 0;
+        std::vector<float> leaves = __input_vars_float;
+        leaves.insert(leaves.end(), __other_tokens_float.begin(), __other_tokens_float.end());
+
+        for (float token : pieces)
+        {
+            if (std::find(leaves.begin(), leaves.end(), token) != leaves.end())
+            {
+                count++;
+            }
+        }
+        return count;
+    }
+    
+    std::vector<int> get_legal_moves()
+    {
+        std::vector<int> temp;
+        temp.reserve(this->action_size);
+        if (this->expression_type == "prefix")
+        {
+            if (this->pieces.empty())
+            {
+                temp.resize(this->__operators.size(), 1);
+                temp.resize(this->__operators.size() + this->__num_features, 0);
+                temp.push_back(0);
+                return temp;
+            }
+            int num_binary = this->__num_binary_ops();
+            int num_leaves = this->__num_leaves();
+            
+            //__tokens_dict converts float to string
+            std::vector<std::string> string_pieces;
+            string_pieces.reserve(this->pieces.size());
+            for (float i: this->pieces)
+            {
+                string_pieces.push_back(this->__tokens_dict[i]);
+            }
+            
+            
+        }
+        return temp;
+    }
+};
+''')
+
+
 
 def loss_func(y_true, y_pred):
     return 1/(1+mean_squared_error(y_true, y_pred))
