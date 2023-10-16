@@ -28,11 +28,56 @@ import cppyy
 
 cppyy.cppdef(
 r'''
-std::tuple<int, bool> getPNdepth(const std::vector<std::string>& expression)
+std::pair<int, bool> getRPNdepth(const std::vector<std::string>& expression)
+{
+    if (expression.empty())
+    {
+        return std::make_pair(0, false);
+    }
+
+    std::unordered_set<std::string> operators = {"cos", "+", "-", "*"};
+    std::unordered_set<std::string> unary_operators = {"cos"};
+    std::stack<int> stack;
+    bool complete = true;
+
+    for (const std::string& token : expression)
+    {
+        if (unary_operators.count(token) > 0)
+        {
+            stack.top() += 1;
+        }
+        else if (operators.count(token) > 0)
+        {
+            int op2 = stack.top();
+            stack.pop();
+            int op1 = stack.top();
+            stack.pop();
+            stack.push(std::max(op1, op2) + 1);
+        }
+        else
+        {
+            stack.push(1);
+        }
+    }
+
+    while (stack.size() > 1)
+    {
+        int op2 = stack.top();
+        stack.pop();
+        int op1 = stack.top();
+        stack.pop();
+        stack.push(std::max(op1, op2) + 1);
+        complete = false;
+    }
+
+    return std::make_pair(stack.top() - 1, complete);
+}
+
+std::pair<int, bool> getPNdepth(const std::vector<std::string>& expression)
 {
     if (expression.empty() || (expression.size() == 1 && expression[0] == " "))
     {
-        return std::make_tuple(0, false);
+        return std::make_pair(0, false);
     }
 
     std::vector<int> stack;
@@ -65,7 +110,7 @@ std::tuple<int, bool> getPNdepth(const std::vector<std::string>& expression)
         }
         depth = std::max(depth, static_cast<int>(stack.size()) + 1);
     }
-    return std::make_tuple(depth - 1, num_leaves == num_binary + 1);
+    return std::make_pair(depth - 1, num_leaves == num_binary + 1);
 }
 
 double loss_func(const std::vector<double>& actual, const std::vector<double>& predicted)
@@ -240,6 +285,7 @@ struct Board
     {
         std::vector<int> temp;
         temp.reserve(this->action_size);
+        int binary_allowed, unary_allowed, leaves_allowed;
         if (this->expression_type == "prefix")
         {
             if (this->pieces.empty())
@@ -252,15 +298,44 @@ struct Board
             int num_binary = this->__num_binary_ops();
             int num_leaves = this->__num_leaves();
             
-            //__tokens_dict converts float to string
+            //__tokens_dict: converts float to string
             std::vector<std::string> string_pieces;
-            string_pieces.reserve(this->pieces.size());
+            string_pieces.reserve(this->pieces.size()+1);
             for (float i: this->pieces)
             {
                 string_pieces.push_back(this->__tokens_dict[i]);
             }
+            string_pieces.push_back(__binary_operators[0]);
+            binary_allowed = (getPNdepth(string_pieces).first <= this->n) ? 1 : 0;
+            string_pieces[string_pieces.size() - 1] = __unary_operators[0];
+            unary_allowed = (getPNdepth(string_pieces).first <= this->n) ? 1 : 0;
+            string_pieces[string_pieces.size() - 1] = __input_vars[0];
+            leaves_allowed = ((num_leaves == num_binary + 1) || (getPNdepth(string_pieces).first < this->n && (num_leaves == num_binary))) ? 0 : 1;
             
-            
+        }
+        else //postfix
+        {
+            if (this->pieces.empty())
+            {
+                temp.resize(this->__operators.size(), 0);
+                temp.resize(this->__operators.size() + this->__num_features, 1);
+                temp.push_back(1);
+                return temp;
+            }
+            int num_binary = this->__num_binary_ops();
+            int num_leaves = this->__num_leaves();
+
+            binary_allowed = (num_binary == num_leaves - 1) ? 0 : 1;
+            std::vector<std::string> string_pieces;
+            string_pieces.reserve(this->pieces.size()+1);
+            for (float i: this->pieces)
+            {
+                string_pieces.push_back(this->__tokens_dict[i]);
+            }
+            string_pieces.push_back(__unary_operators[0]);
+            unary_allowed = ((num_leaves >= 1) && (getPNdepth(string_pieces).first <= this->n)) ? 1 : 0;
+            string_pieces[string_pieces.size() - 1] = __input_vars[0];
+
         }
         return temp;
     }
