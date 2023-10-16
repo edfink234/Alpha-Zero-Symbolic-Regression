@@ -49,7 +49,7 @@ class NNetWrapper(NeuralNet):
         else:
             self.example_length = len(input_boards[0])
             self.nnet.clf_value.fit(input_boards, target_vs) #learning value function
-#            print("Value R^2 score =",self.nnet.clf_value.score(input_boards, target_vs))
+            print("Value R^2 score =",self.nnet.clf_value.score(input_boards, target_vs))
             assert(len(self.nnet.clf_policy) == self.action_size)
             for i in range(self.action_size):
                 self.nnet.clf_policy[i].fit(input_boards, target_pis[:,i])
@@ -98,10 +98,7 @@ class NNetWrapper(NeuralNet):
 #            print("len(pad_sequences([board], padding='post', maxlen = self.board)) =", len(pad_sequences([board], padding='post', maxlen = self.board)[0]))
 #            exit()
             pi, v = self.nnet.model.predict(pad_sequences([board], padding='post', maxlen = self.board), verbose=False) #pi is the NN predicted probability of selecting each possible action given the state s
-        elif self.trained:
-#            print("BEFORE: len(board) == self.example_length is {}, len(board) = {}, self.example_length = {}".format(len(board) == self.example_length, len(board), self.example_length))
-
-            
+        elif self.trained:            
             board_length = len(board)
             
             diff = board_length - self.example_length

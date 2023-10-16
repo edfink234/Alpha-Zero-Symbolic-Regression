@@ -5,6 +5,7 @@ import numpy as np
 from symreg.SymRegLogic import Board
 from visualize_tree import *
 from time import time
+from random import random
 
 EPS = 1e-8
 

@@ -45,9 +45,10 @@ def main():
         Y_data = Y_data.reshape(-1,1)
         Board.data = np.hstack((X_data,Y_data))
         
-#        Board.init_expression = ['const', 'x3', 'cos']
+#        Board.init_expression = ['const', 'x3', 'cos', '*'] #postfix, GT = ['const', 'x3', 'cos', '*', 'x0', 'x0', '*', 'const', '-', '+']
+#        Board.init_expression = ['+', '*', 'const', 'cos', 'x3'] #prefix, GT = ['+', '*', 'const', 'cos', 'x3', '-', '*', 'x0', 'x0', 'const']
         log.info('Loading %s...', Game.__name__)
-        g = Game(n = 3, expression_type = "prefix", visualize_exploration = False)  #(1.)
+        g = Game(n = 3, expression_type = "postfix", visualize_exploration = False)  #(1.)
         #TODO: Add a feature to make the expression size variable?
 
         log.info('Loading %s...', nn.__name__)
