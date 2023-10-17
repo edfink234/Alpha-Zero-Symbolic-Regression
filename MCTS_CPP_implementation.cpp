@@ -207,7 +207,7 @@ double loss_func(const std::vector<double>& actual, const std::vector<double>& p
     }
 
     mse /= actual.size(); // Divide by the number of elements to get the mean
-    return mse;
+    return (1.0/(1.0+mse));
 }
 struct Board
 {
@@ -502,7 +502,7 @@ struct Board
         }
         return stack.top();
     }
-    
+    //TODO: constant optimization
     std::vector<double> prefix_expression_evaluator()
     {
         if (this->expression_type == "postfix")
@@ -558,7 +558,7 @@ struct Board
         }
         return stack.top();
     }
-    
+    //TODO: constant optimization
     std::vector<double> postfix_expression_evaluator()
     {
         if (this->expression_type == "prefix")
@@ -623,7 +623,7 @@ struct Board
     where 0 <= score <= 1 and -1 if not complete or if
     the desired depth has not been reached.
     */
-    int complete_status()
+    double complete_status()
     {
         std::vector<std::string> expression;
         expression.reserve(pieces.size());
@@ -649,8 +649,10 @@ struct Board
                 //TODO: call some plotting function
             }
             
+            return ((expression_type == "prefix") ?
+                    loss_func(prefix_expression_evaluator(),data["y"]) :
+                    loss_func(postfix_expression_evaluator(),data["y"]));
         }
-        return 0;
     }
 };
 
