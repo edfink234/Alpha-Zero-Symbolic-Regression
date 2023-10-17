@@ -24,7 +24,7 @@ class MCTS():
         self.Qsa = {}  # stores Q values, i.e., estimations of expected cumulative rewards, for s,a (as defined in the paper)
         self.Nsa = {}  # stores #times edge s,a was visited (s = state, a = action)
         self.Ns = {}  # stores #times board s was visited
-        self.Ps = {}  # stores initial policy (returned by neural net)
+#        self.Ps = {}  # stores initial policy (returned by neural net)
 
         self.Es = {}  # stores game.getGameEnded ended for board s
         self.Vs = {}  # stores game.getValidMoves for board s
@@ -102,21 +102,21 @@ class MCTS():
             # terminal node
             return self.Es[s]
 
-        if s not in self.Ps:
+        if s not in self.Vs:
             # leaf node
-            self.Ps[s], v = self.nnet.predict(canonicalBoard)
+            v = self.nnet.predict(canonicalBoard)
             valids = self.game.getValidMoves(canonicalBoard)
-            self.Ps[s] = self.Ps[s] * valids  # masking invalid moves -> This is where certain moves are made impossible! (valids is an array of 1's and 0's, so even if the NN predicts a move to be perfectly valid 
-            sum_Ps_s = np.sum(self.Ps[s])
-            if sum_Ps_s > 0:
-                self.Ps[s] /= sum_Ps_s  # renormalize
-            else:
+#            self.Ps[s] = self.Ps[s] * valids  # masking invalid moves -> This is where certain moves are made impossible! (valids is an array of 1's and 0's, so even if the NN predicts a move to be perfectly valid 
+#            sum_Ps_s = np.sum(self.Ps[s])
+#            if sum_Ps_s > 0:
+#                self.Ps[s] /= sum_Ps_s  # renormalize
+#            else:
                 # if all valid moves were masked make all valid moves equally probable
 
                 # NB! All valid moves may be masked if either your NNet architecture is insufficient or you've get overfitting or something else.
                 # If you have got dozens or hundreds of these messages you should pay attention to your NNet and/or training process.
-                self.Ps[s] = self.Ps[s] + valids
-                self.Ps[s] /= np.sum(self.Ps[s])
+#                self.Ps[s] = self.Ps[s] + valids
+#                self.Ps[s] /= np.sum(self.Ps[s])
 
             self.Vs[s] = valids
             self.Ns[s] = 0
@@ -131,9 +131,11 @@ class MCTS():
                 if (s, a) in self.Qsa:
 #                    u = self.Qsa[(s, a)] + self.cpuct() * self.Ps[s][a] * math.sqrt(self.Ns[s]) / (1 + self.Nsa[(s, a)]) #AlphaGoZero formula, see page 26 of https://discovery.ucl.ac.uk/id/eprint/10045895/1/agz_unformatted_nature.pdf
                     
-                    u = self.Qsa[(s, a)] + self.cpuct() * self.Ps[s][a] * ( (self.Ns[s])**(0.25) / math.sqrt(self.Nsa[(s, a)])) #see page 4 of https://arxiv.org/pdf/1902.05213.pdf
+#                    u = self.Qsa[(s, a)] + self.cpuct() * self.Ps[s][a] * ( (self.Ns[s])**(0.25) / math.sqrt(self.Nsa[(s, a)])) #see page 4 of https://arxiv.org/pdf/1902.05213.pdf
+                    u = self.Qsa[(s, a)] + self.cpuct() * ( (self.Ns[s])**(0.25) / math.sqrt(self.Nsa[(s, a)]))
                 else:
-                    u = self.cpuct() * self.Ps[s][a] * math.sqrt(self.Ns[s] + EPS)  # Q = 0 ?
+#                    u = self.cpuct() * self.Ps[s][a] * math.sqrt(self.Ns[s] + EPS)  # Q = 0 ?
+                    u = self.cpuct() * math.sqrt(self.Ns[s] + EPS)
 
                 if u > cur_best:
                     cur_best = u

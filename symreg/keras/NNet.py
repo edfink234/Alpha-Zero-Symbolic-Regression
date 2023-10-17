@@ -71,14 +71,14 @@ class NNetWrapper(NeuralNet):
             board = board[:-diff] if diff > 0 else (board + [0]*(self.example_length-len(board))) if diff < 0 else board
 
             v = self.nnet.clf_value.predict([board])
-            pi = [np.empty(self.action_size)]
-            for i in range(self.action_size):
-                pi[0][i] = self.nnet.clf_policy[i].predict([board])
+#            pi = [np.empty(self.action_size)]
+#            for i in range(self.action_size):
+#                pi[0][i] = self.nnet.clf_policy[i].predict([board])
         else:
             v = [np.random.random(1)]
-            pi = [np.random.random(self.action_size)]
+#            pi = [np.random.random(self.action_size)]
             
-        return pi[0], v[0]
+        return v[0]#pi[0], v[0]
 
     def save_checkpoint(self, folder='checkpoint', filename='checkpoint.pth.tar'):
         # change extension
