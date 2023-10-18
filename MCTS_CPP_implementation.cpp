@@ -6,9 +6,36 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <climits>
+#include <ctime>
+#include <cstdlib>
 #include <stack>
 #include <numeric>
 #include <cmath>
+#include <random>
+#include <chrono>
+using Clock = std::chrono::high_resolution_clock;
+
+std::vector<std::vector<double>> generateData(int numRows, int numCols, double minValue, double maxValue, double (*func)(const std::vector<double>&))
+{
+    // Initialize random number generator
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<double> distribution(minValue, maxValue);
+
+    // Create the matrix
+    std::vector<std::vector<double>> matrix(numRows, std::vector<double>(numCols));
+
+    for (int i = 0; i < numRows; i++)
+    {
+        for (int j = 0; j < numCols - 1; j++)
+        {
+            matrix[i][j] = distribution(gen);
+        }
+        matrix[i][numCols - 1] = func(matrix[i]);
+    }
+
+    return matrix;
+}
 
 class Data
 {
@@ -20,32 +47,53 @@ public:
     Data(const std::vector<std::vector<double>>& theData) : data{theData}
     {
         auto temp_sz = data[0].size() - 1;
-        for (int i = 0; i < temp_sz; i++)
+        for (size_t i = 0; i < temp_sz; i++)
         {
-            for (int j = 0; j < data.size(); j++)
+            for (size_t j = 0; j < data.size(); j++)
             {
                 features["x"+std::to_string(i)].push_back(data[j][i]);
             }
         }
         
-        for (int i = 0; i < data.size(); i++)
+        for (size_t i = 0; i < data.size(); i++)
         {
             features["y"].push_back(data[i][temp_sz]);
         }
         
     }
-    
-    std::vector<double> operator[] (int i){return data[i];}
-    std::vector<double> operator[] (const std::string& i) 
+    const std::vector<double>& operator[] (int i){return data[i];}
+    const std::vector<double>& operator[] (const std::string& i)
     {
         return features[i];
     }
     std::size_t size() {return data.size();}
+    friend std::ostream& operator<<(std::ostream& os, const Data& matrix)
+    {
+        for (const auto& row : matrix.data)
+        {
+            for (const double value : row)
+            {
+                os << value << ' ';
+            }
+            os << '\n';
+        }
+        return os;
+    }
 };
 
-std::vector<double> operator*(const std::vector<double>& v1, const std::vector<double>& v2) 
+std::ostream& operator<<(std::ostream& os, const std::vector<double>& row)
 {
-    if (v1.size() != v2.size()) 
+    for (const double value : row)
+    {
+        os << value << '\n';
+    }
+    os << '\n';
+    return os;
+}
+
+std::vector<double> operator*(const std::vector<double>& v1, const std::vector<double>& v2)
+{
+    if (v1.size() != v2.size())
     {
         throw std::runtime_error("Vector sizes do not match for element-wise multiplication.");
     }
@@ -53,7 +101,7 @@ std::vector<double> operator*(const std::vector<double>& v1, const std::vector<d
     std::vector<double> result;
     result.reserve(v1.size());
 
-    for (std::size_t i = 0; i < v1.size(); i++) 
+    for (std::size_t i = 0; i < v1.size(); i++)
     {
         result.push_back(v1[i] * v2[i]);
     }
@@ -71,7 +119,7 @@ std::vector<double> operator+(const std::vector<double>& v1, const std::vector<d
     std::vector<double> result;
     result.reserve(v1.size());
 
-    for (std::size_t i = 0; i < v1.size(); i++) 
+    for (std::size_t i = 0; i < v1.size(); i++)
     {
         result.push_back(v1[i] + v2[i]);
     }
@@ -89,7 +137,7 @@ std::vector<double> operator-(const std::vector<double>& v1, const std::vector<d
     std::vector<double> result;
     result.reserve(v1.size());
 
-    for (std::size_t i = 0; i < v1.size(); i++) 
+    for (std::size_t i = 0; i < v1.size(); i++)
     {
         result.push_back(v1[i] - v2[i]);
     }
@@ -291,11 +339,11 @@ struct Board
             this->__binary_operators_float.push_back(i);
         }
         int ops_plus_features = num_operators + this->__num_features;
-        for (int i = num_operators; i < ops_plus_features; i++)
+        for (int i = num_operators + 1; i <= ops_plus_features; i++)
         {
             this->__input_vars_float.push_back(i);
         }
-        for (int i = ops_plus_features; i < this->action_size; i++)
+        for (int i = ops_plus_features + 1; i <= this->action_size; i++)
         {
             this->__other_tokens_float.push_back(i);
         }
@@ -361,19 +409,15 @@ struct Board
         return count;
     }
     
-    std::vector<int> get_legal_moves()
+    std::vector<float> get_legal_moves()
     {
         //TODO: Reduce calls to size method -> See if multiple of the same calls can be stored in variables.
-        std::vector<int> temp;
-        temp.reserve(this->action_size);
-        int binary_allowed, unary_allowed, leaves_allowed;
+        //TODO: Probability for stupid moves should be 0 (i.e. binary_op(const, const), -(leaf,leaf), unary_op(const)
         if (this->expression_type == "prefix")
         {
-            if (this->pieces.empty())
+            if (this->pieces.empty()) //At the beginning, self.pieces is empty, so the only legal moves are the operators
             {
-                temp.resize(this->__operators.size(), 1);
-                temp.resize(this->action_size, 0);
-                return temp;
+                return this->__operators_float;
             }
             int num_binary = this->__num_binary_ops();
             int num_leaves = this->__num_leaves();
@@ -386,26 +430,47 @@ struct Board
                 string_pieces.push_back(this->__tokens_dict[i]);
             }
             string_pieces.push_back(__binary_operators[0]);
-            binary_allowed = (getPNdepth(string_pieces).first <= this->n) ? 1 : 0;
+            
+            std::vector<float> temp;
+            
+            if (getPNdepth(string_pieces).first <= this->n)
+            {
+                temp.insert(temp.end(), this->__binary_operators_float.begin(), this->__binary_operators_float.end());
+            }
             string_pieces[string_pieces.size() - 1] = __unary_operators[0];
-            unary_allowed = (getPNdepth(string_pieces).first <= this->n) ? 1 : 0;
+            if (getPNdepth(string_pieces).first <= this->n)
+            {
+                temp.insert(temp.end(), this->__unary_operators_float.begin(), this->__unary_operators_float.end());
+            }
+
             string_pieces[string_pieces.size() - 1] = __input_vars[0];
             //The number of leaves can never exceed number of binary + 1 in any RPN expression
-            leaves_allowed = ((num_leaves == num_binary + 1) || (getPNdepth(string_pieces).first < this->n && (num_leaves == num_binary))) ? 0 : 1;
-            
+            if (!((num_leaves == num_binary + 1) || (getPNdepth(string_pieces).first < this->n && (num_leaves == num_binary))))
+            {
+                temp.insert(temp.end(), this->__input_vars_float.begin(), this->__input_vars_float.end()); //leaves allowed
+                if (std::find(__unary_operators.begin(), __unary_operators.end(), string_pieces[string_pieces.size()-2]) == __unary_operators.end()) //unary_op(const) is not allowed
+                {
+                    temp.insert(temp.end(), this->__other_tokens_float.begin(), this->__other_tokens_float.end());
+                }
+            }
+            return temp;
         }
         else //postfix
         {
+            std::vector<float> temp;
             if (this->pieces.empty()) //At the beginning, self.pieces is empty, so the only legal moves are the features and const
             {
-                temp.resize(this->__operators.size(), 0);
-                temp.resize(this->action_size, 1);
+                temp.insert(temp.end(), this->__input_vars_float.begin(), this->__input_vars_float.end());
+                temp.insert(temp.end(), this->__other_tokens_float.begin(), this->__other_tokens_float.end());
                 return temp;
             }
             int num_binary = this->__num_binary_ops();
             int num_leaves = this->__num_leaves();
 
-            binary_allowed = (num_binary == num_leaves - 1) ? 0 : 1;
+            if (num_binary != num_leaves - 1)
+            {
+                temp.insert(temp.end(), this->__binary_operators_float.begin(), this->__binary_operators_float.end());
+            }
             std::vector<std::string> string_pieces;
             string_pieces.reserve(this->pieces.size()+1);
             for (float i: this->pieces)
@@ -413,18 +478,18 @@ struct Board
                 string_pieces.push_back(this->__tokens_dict[i]);
             }
             string_pieces.push_back(__unary_operators[0]);
-            unary_allowed = ((num_leaves >= 1) && (getRPNdepth(string_pieces).first <= this->n)) ? 1 : 0;
+            if ((num_leaves >= 1) && (getRPNdepth(string_pieces).first <= this->n) && (std::find(__other_tokens.begin(), __other_tokens.end(), string_pieces[string_pieces.size()-2]) == __other_tokens.end())) //unary_op(const) is not allowed
+            {
+                temp.insert(temp.end(), this->__unary_operators_float.begin(), this->__unary_operators_float.end());
+            }
             string_pieces[string_pieces.size() - 1] = __input_vars[0];
-            leaves_allowed = (getRPNdepth(string_pieces).first <= this->n) ? 1 : 0;
-
+            if (getRPNdepth(string_pieces).first <= this->n)
+            {
+                temp.insert(temp.end(), this->__input_vars_float.begin(), this->__input_vars_float.end());
+                temp.insert(temp.end(), this->__other_tokens_float.begin(), this->__other_tokens_float.end());
+            }
+            return temp;
         }
-        auto un_sz = __unary_operators.size(), bin_size = __binary_operators.size();
-
-        temp.resize(un_sz, unary_allowed);
-        temp.resize(un_sz + bin_size, binary_allowed);
-        temp.resize(this->action_size, leaves_allowed);
-
-        return temp;
     }
 
     std::string pn_to_infix()
@@ -440,12 +505,10 @@ struct Board
 
             if (std::find(__operators_float.begin(), __operators_float.end(), pieces[i]) == __operators_float.end()) // leaf
             {
-                // std::cout << "leaf " << token << '\n';
                 stack.push(token);
             }
             else if (std::find(__unary_operators_float.begin(), __unary_operators_float.end(), pieces[i]) != __unary_operators_float.end()) // Unary operator
             {
-                // std::cout << "unary op " << token << '\n';
                 std::string operand = stack.top();
                 stack.pop();
                 std::string result = token + "(" + operand + ")";
@@ -453,7 +516,6 @@ struct Board
             }
             else // binary operator
             {
-                // std::cout << "binary op " << token << '\n';
                 std::string right_operand = stack.top();
                 stack.pop();
                 std::string left_operand = stack.top();
@@ -463,6 +525,17 @@ struct Board
             }
         }
         return stack.top();
+    }
+    
+    std::string expression()
+    {
+        std::string temp;
+        size_t sz = pieces.size() - 1;
+        for (size_t i = 0; i <= sz; i++)
+        {
+            temp += ((i!=sz) ? __tokens_dict[pieces[i]] + " " : __tokens_dict[pieces[i]]);
+        }
+        return temp;
     }
 
     std::string rpn_to_infix()
@@ -654,23 +727,43 @@ struct Board
                     loss_func(postfix_expression_evaluator(),data["y"]));
         }
     }
+    const std::vector<double>& operator[] (int i){return data[i];}
+    const std::vector<double>& operator[] (const std::string& i)
+    {
+        return data[i];
+    }
+    
+    friend std::ostream& operator<<(std::ostream& os, const Board& b)
+    {
+        return (os << b.data);
+    }
 };
 
+// cos(x_3) + x_0^2 - 1
+double exampleFunc(const std::vector<double>& x)
+{
+    if (x.size() < 3)
+    {
+        throw std::runtime_error("exampleFunc requires a vector of size 3");
+    }
 
+    return cos(x[3]) + (x[0]*x[0]) - 1;
+}
 
-int main() {
-    
-    std::vector<std::vector<double>> data = {{1.1,2.2,3.3},{1.2,2.1,2.2},{3.1,4.2,5.6}};
+void Example()
+{
+    std::vector<std::vector<double>> data = generateData(10, 6, 0, 10, exampleFunc);
     
     std::vector<std::string> temp = {"cos", "-", "+", "+", "-", "+", "-", "+", "*", "*", "const", "*", "x0", "const", "*", "-", "const", "x0", "x1", "*", "x0", "const", "*", "*", "const", "const", "*", "x0", "const", "*", "*", "x1", "const", "const", "*", "const", "x1", "*", "const", "+", "+", "const", "*", "x0", "const", "*", "x1", "const", "*", "*", "x1", "const", "const", "x0"};
     std::cout << getPNdepth(temp).first << '\n';
     Board x(data, 11, "prefix");
+    std::cout << x.data << '\n' << x.data["y"] << '\n';
     std::cout << "x complete = " << x.complete_status() << '\n';
-    for (int i: x.get_legal_moves()){printf("%d ",i);}puts("");
+    for (auto i: x.get_legal_moves()){std::cout << i << ' ';}puts("");
     //{"cos" -> 1, "+" -> 1, "-" -> 1, "*" -> 1, "x0" -> 0, "x1" -> 0, "const" -> 0}
     x.pieces.push_back(x.__tokens_inv_dict["-"]);
     std::cout << "x complete = " << x.complete_status() << '\n';
-    for (int i: x.get_legal_moves()){printf("%d ",i);}puts("");
+    for (auto i: x.get_legal_moves()){std::cout << i << ' ';}puts("");
     //{"cos" -> 1, "+" -> 1, "-" -> 1, "*" -> 1, "x0" -> 1, "x1" -> 1, "const" -> 1}
     x.pieces.clear();
     for (const std::string& i: temp){ x.pieces.push_back(x.__tokens_inv_dict[i]);}
@@ -680,15 +773,16 @@ int main() {
     
     std::cout << loss_func(x.prefix_expression_evaluator(), x.data["y"]) << '\n';
     
-    Board y(data, 11, "postfix");
+    Board y(data, 3, "postfix");
+    std::cout << y << '\n' << y["y"] << '\n';
     std::cout << "y complete = " << y.complete_status() << '\n';
-    temp = {"const", "x0", "const", "*", "*", "const", "x0", "-", "x1", "*", "*", "x0", "const", "*", "+", "const", "const", "*", "x0", "const", "*", "*", "-", "x1", "const", "*", "const", "*", "+", "const", "x1", "*", "-", "const", "const", "x0", "const", "*", "+", "x1", "const", "*", "+", "*", "+", "x1", "const", "*", "const", "*", "+", "x0", "-", "cos"};
+    temp = {"const", "x3", "cos", "*", "x0", "x0", "*", "const", "-", "+"};
     std::cout << getRPNdepth(temp).first << '\n';
-    for (int i: y.get_legal_moves()){printf("%d ",i);}puts("");
+    for (auto i: y.get_legal_moves()){std::cout << i << ' ';}puts("");
     //{"cos" -> 0, "+" -> 0, "-" -> 0, "*" -> 0, "x0" -> 1, "x1" -> 1, "const" -> 1}
     y.pieces.push_back(y.__tokens_inv_dict["x0"]);
     std::cout << "y complete = " << y.complete_status() << '\n';
-    for (int i: y.get_legal_moves()){printf("%d ",i);}puts("");
+    for (auto i: y.get_legal_moves()){std::cout << i << ' ';}puts("");
     //{"cos" -> 1, "+" -> 0, "-" -> 0, "*" -> 0, "x0" -> 1, "x1" -> 1, "const" -> 1}
     y.pieces.clear();
     for (const std::string& i: temp){ y.pieces.push_back(y.__tokens_inv_dict[i]);}
@@ -697,7 +791,60 @@ int main() {
     std::cout << "y complete = " << y.complete_status() << '\n';
     
     std::cout << loss_func(y.postfix_expression_evaluator(), y.data["y"]) << '\n';
+    
+    
+}
 
+int main() {
+    
+//    Example();
+    
+    std::vector<std::vector<double>> data = generateData(10, 6, 0, 10, exampleFunc);
+    Board x(data, 3, "postfix");
+    
+    std::random_device rand_dev;
+    std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
+    double score = 0, max_score = 0;
+    std::vector<float> temp;
+    size_t temp_sz;
+    std::unordered_set<std::string> expressions;
+    std::string expression, orig_expression, best_expression;
+    
+    auto start_time = Clock::now();
+    for (int i = 0; score != 1; i++)
+    {
+        while ((score = x.complete_status()) == -1)
+        {
+            temp = std::move(x.get_legal_moves());
+            temp_sz = temp.size();
+            std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // Define the range
 
+            x.pieces.push_back(temp[distribution(generator)]);
+        }
+        
+        expression = x.rpn_to_infix();
+        
+//        std::cout << "Expression " << i << ": " << expression << '\r';
+
+        if (score > max_score)
+        {
+            max_score = score;
+            best_expression = std::move(expression);
+            orig_expression = x.expression();
+        }
+        expressions.insert(expression);
+        x.pieces.clear();
+    }
+    std::cout << "Unique expressions = " << expressions.size() << '\n';
+    std::cout << "Best score = " << max_score << '\n';
+    std::cout << "Best expression = " << best_expression << '\n';
+    std::cout << "Best expression (original format) = " << orig_expression << '\n';
+       
+    auto end_time = Clock::now();
+    std::cout << "Time difference = "
+          << std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count()/1e9 << " seconds" << '\n';
+    
+    
     return 0;
 }
+
