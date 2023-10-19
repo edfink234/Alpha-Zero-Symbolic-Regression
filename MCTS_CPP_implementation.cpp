@@ -13,17 +13,19 @@
 #include <cmath>
 #include <random>
 #include <chrono>
+#include <fstream>
+
 using Clock = std::chrono::high_resolution_clock;
 
-std::vector<std::vector<double>> generateData(int numRows, int numCols, double minValue, double maxValue, double (*func)(const std::vector<double>&))
+std::vector<std::vector<float>> generateData(int numRows, int numCols, float minValue, float maxValue, float (*func)(const std::vector<float>&))
 {
     // Initialize random number generator
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<double> distribution(minValue, maxValue);
+    std::uniform_real_distribution<float> distribution(minValue, maxValue);
 
     // Create the matrix
-    std::vector<std::vector<double>> matrix(numRows, std::vector<double>(numCols));
+    std::vector<std::vector<float>> matrix(numRows, std::vector<float>(numCols));
 
     for (int i = 0; i < numRows; i++)
     {
@@ -39,12 +41,12 @@ std::vector<std::vector<double>> generateData(int numRows, int numCols, double m
 
 class Data
 {
-    std::vector<std::vector<double>> data;
-    std::unordered_map<std::string, std::vector<double>> features;
+    std::vector<std::vector<float>> data;
+    std::unordered_map<std::string, std::vector<float>> features;
     
 public:
     
-    Data(const std::vector<std::vector<double>>& theData) : data{theData}
+    Data(const std::vector<std::vector<float>>& theData) : data{theData}
     {
         auto temp_sz = data[0].size() - 1;
         for (size_t i = 0; i < temp_sz; i++)
@@ -61,8 +63,8 @@ public:
         }
         
     }
-    const std::vector<double>& operator[] (int i){return data[i];}
-    const std::vector<double>& operator[] (const std::string& i)
+    const std::vector<float>& operator[] (int i){return data[i];}
+    const std::vector<float>& operator[] (const std::string& i)
     {
         return features[i];
     }
@@ -71,7 +73,7 @@ public:
     {
         for (const auto& row : matrix.data)
         {
-            for (const double value : row)
+            for (const float value : row)
             {
                 os << value << ' ';
             }
@@ -81,9 +83,9 @@ public:
     }
 };
 
-std::ostream& operator<<(std::ostream& os, const std::vector<double>& row)
+std::ostream& operator<<(std::ostream& os, const std::vector<float>& row)
 {
-    for (const double value : row)
+    for (const float value : row)
     {
         os << value << '\n';
     }
@@ -91,14 +93,14 @@ std::ostream& operator<<(std::ostream& os, const std::vector<double>& row)
     return os;
 }
 
-std::vector<double> operator*(const std::vector<double>& v1, const std::vector<double>& v2)
+std::vector<float> operator*(const std::vector<float>& v1, const std::vector<float>& v2)
 {
     if (v1.size() != v2.size())
     {
         throw std::runtime_error("Vector sizes do not match for element-wise multiplication.");
     }
 
-    std::vector<double> result;
+    std::vector<float> result;
     result.reserve(v1.size());
 
     for (std::size_t i = 0; i < v1.size(); i++)
@@ -109,14 +111,14 @@ std::vector<double> operator*(const std::vector<double>& v1, const std::vector<d
     return result;
 }
 
-std::vector<double> operator+(const std::vector<double>& v1, const std::vector<double>& v2)
+std::vector<float> operator+(const std::vector<float>& v1, const std::vector<float>& v2)
 {
     if (v1.size() != v2.size())
     {
         throw std::runtime_error("Vector sizes do not match for element-wise addition.");
     }
 
-    std::vector<double> result;
+    std::vector<float> result;
     result.reserve(v1.size());
 
     for (std::size_t i = 0; i < v1.size(); i++)
@@ -127,14 +129,14 @@ std::vector<double> operator+(const std::vector<double>& v1, const std::vector<d
     return result;
 }
 
-std::vector<double> operator-(const std::vector<double>& v1, const std::vector<double>& v2)
+std::vector<float> operator-(const std::vector<float>& v1, const std::vector<float>& v2)
 {
     if (v1.size() != v2.size())
     {
         throw std::runtime_error("Vector sizes do not match for element-wise subtraction.");
     }
 
-    std::vector<double> result;
+    std::vector<float> result;
     result.reserve(v1.size());
 
     for (std::size_t i = 0; i < v1.size(); i++)
@@ -145,9 +147,9 @@ std::vector<double> operator-(const std::vector<double>& v1, const std::vector<d
     return result;
 }
 
-std::vector<double> cos(const std::vector<double>& v)
+std::vector<float> cos(const std::vector<float>& v)
 {
-    std::vector<double> result;
+    std::vector<float> result;
     result.reserve(v.size());
     for (std::size_t i = 0; i < v.size(); i++)
     {
@@ -241,30 +243,36 @@ std::pair<int, bool> getPNdepth(const std::vector<std::string>& expression)
     return std::make_pair(depth - 1, num_leaves == num_binary + 1);
 }
 
-double loss_func(const std::vector<double>& actual, const std::vector<double>& predicted)
+float MSE(const std::vector<float>& actual, const std::vector<float>& predicted)
 {
     if (actual.size() != predicted.size())
     {
         throw std::invalid_argument("Vectors must be of the same size");
     }
 
-    double mse = 0.0;
-    for (size_t i = 0; i < actual.size(); i++) {
-        double error = actual[i] - predicted[i];
+    float mse = 0.0f;
+    for (size_t i = 0; i < actual.size(); i++)
+    {
+        float error = actual[i] - predicted[i];
         mse += error * error;
     }
-
-    mse /= actual.size(); // Divide by the number of elements to get the mean
-    return (1.0/(1.0+mse));
+    
+    return mse/actual.size();
 }
+
+float loss_func(const std::vector<float>& actual, const std::vector<float>& predicted)
+{
+    return (1.0f/(1.0f+MSE(actual, predicted)));
+}
+
 struct Board
 {
     static std::string inline best_expression = "";
     static std::unordered_map<std::string, int> inline expression_dict = {};
     static unsigned int inline expression_dict_len = 0;
-    static double inline best_loss = INT_MAX;
+    static float inline best_loss = INT_MAX;
     static std::vector<std::string> inline init_expression = {};
-    static double inline search_time = 0;
+    static float inline search_time = 0;
     
     int __num_features;
     size_t data_size;
@@ -294,7 +302,7 @@ struct Board
     std::vector<float> pieces;
     bool visualize_exploration;
     
-    Board(const std::vector<std::vector<double>>& theData, int n = 3, const std::string& expression_type = "prefix", bool visualize_exploration = false) : data{theData}
+    Board(const std::vector<std::vector<float>>& theData, int n = 3, const std::string& expression_type = "prefix", bool visualize_exploration = false) : data{theData}
     {
         this->__num_features = data[0].size() - 1;
         this->data_size = data.size();
@@ -412,7 +420,7 @@ struct Board
     std::vector<float> get_legal_moves()
     {
         //TODO: Reduce calls to size method -> See if multiple of the same calls can be stored in variables.
-        //TODO: Probability for stupid moves should be 0 (i.e. binary_op(const, const), -(leaf,leaf), unary_op(const)
+        //TODO: Probability for stupid moves should be 0 (i.e. binary_op(const, const), -(leaf_i, leaf_i)); this isn't GP!
         if (this->expression_type == "prefix")
         {
             if (this->pieces.empty()) //At the beginning, self.pieces is empty, so the only legal moves are the operators
@@ -448,7 +456,7 @@ struct Board
             if (!((num_leaves == num_binary + 1) || (getPNdepth(string_pieces).first < this->n && (num_leaves == num_binary))))
             {
                 temp.insert(temp.end(), this->__input_vars_float.begin(), this->__input_vars_float.end()); //leaves allowed
-                if (std::find(__unary_operators.begin(), __unary_operators.end(), string_pieces[string_pieces.size()-2]) == __unary_operators.end()) //unary_op(const) is not allowed
+                if (std::find(__unary_operators.begin(), __unary_operators.end(), string_pieces[string_pieces.size()-2]) == __unary_operators.end())
                 {
                     temp.insert(temp.end(), this->__other_tokens_float.begin(), this->__other_tokens_float.end());
                 }
@@ -576,13 +584,13 @@ struct Board
         return stack.top();
     }
     //TODO: constant optimization
-    std::vector<double> prefix_expression_evaluator()
+    std::vector<float> prefix_expression_evaluator(std::vector<float>& params)
     {
         if (this->expression_type == "postfix")
         {
             throw std::runtime_error("Can't call prefix_expression_evaluator when your expression type is postfix!");
         }
-        std::stack<std::vector<double>> stack;
+        std::stack<std::vector<float>> stack;
 
         for (int i = pieces.size() - 1; i >= 0; i--) //i has to be int because it becomes -1 at the last step
         {
@@ -592,7 +600,7 @@ struct Board
             {
                 if (token == "const")
                 {
-                    stack.push(std::vector<double>(data_size, 1));
+                    stack.push(std::vector<float>(data_size, 1));
                 }
                 else
                 {
@@ -603,16 +611,16 @@ struct Board
             {
                 if (token == "cos")
                 {
-                    std::vector<double> temp = stack.top();
+                    std::vector<float> temp = stack.top();
                     stack.pop();
                     stack.push(cos(temp));
                 }
             }
             else // binary operator
             {
-                std::vector<double> right_operand = stack.top();
+                std::vector<float> right_operand = stack.top();
                 stack.pop();
-                std::vector<double> left_operand = stack.top();
+                std::vector<float> left_operand = stack.top();
                 stack.pop();
                 
                 if (token == "+")
@@ -632,13 +640,13 @@ struct Board
         return stack.top();
     }
     //TODO: constant optimization
-    std::vector<double> postfix_expression_evaluator()
+    std::vector<float> postfix_expression_evaluator()
     {
         if (this->expression_type == "prefix")
         {
             throw std::runtime_error("Can't call postfix_expression_evaluator when your expression type is prefix!");
         }
-        std::stack<std::vector<double>> stack;
+        std::stack<std::vector<float>> stack;
 
         for (size_t i = 0; i < pieces.size(); i++)
         {
@@ -648,7 +656,7 @@ struct Board
             {
                 if (token == "const")
                 {
-                    stack.push(std::vector<double>(data_size, 1));
+                    stack.push(std::vector<float>(data_size, 1));
                 }
                 else
                 {
@@ -659,16 +667,16 @@ struct Board
             {
                 if (token == "cos")
                 {
-                    std::vector<double> temp = stack.top();
+                    std::vector<float> temp = stack.top();
                     stack.pop();
                     stack.push(cos(temp));
                 }
             }
             else // binary operator
             {
-                std::vector<double> left_operand = stack.top();
+                std::vector<float> left_operand = stack.top();
                 stack.pop();
-                std::vector<double> right_operand = stack.top();
+                std::vector<float> right_operand = stack.top();
                 stack.pop();
 
                 if (token == "+")
@@ -688,6 +696,39 @@ struct Board
         return stack.top();
     }
     
+//    void fitFunctionToData(std::vector<float>& params)
+//    {
+//
+//        // Use an optimization algorithm to minimize the least squares error (e.g., gradient descent)
+//        // You should replace this with your preferred optimization method.
+//
+//        // Example: Simple gradient descent (you might need a more advanced optimizer)
+//        float learning_rate = 0.01f;
+//        int max_iterations = 1000;
+//        size_t num_params = params.size();
+//        std::vector<float> y_pred;
+//        for (int iteration = 0; iteration < max_iterations; ++iteration)
+//        {
+//            // Calculate the gradient of the error with respect to parameters
+//            std::vector<float> gradient(num_params, 0.0f);
+//            for (const std::vector<float>& row : data)
+//            {
+//                y_pred = std::move((expression_type == "prefix") ? prefix_expression_evaluator() : postfix_expression_evaluator());
+//                
+//                gradient[i] += 2 * (y_pred - data["y"]) * row[i];
+//                
+//            }
+//
+//            // Update parameters using the gradient
+//            for (size_t i = 0; i < num_params; ++i)
+//            {
+//                best_params[i] -= learning_rate * gradient[i];
+//            }
+//        }
+//
+//        return best_params;
+//    }
+    
     /*
     Check whether the given player has created a
     complete (depth self.n) expression (again), and
@@ -696,12 +737,17 @@ struct Board
     where 0 <= score <= 1 and -1 if not complete or if
     the desired depth has not been reached.
     */
-    double complete_status()
+    float complete_status()
     {
         std::vector<std::string> expression;
         expression.reserve(pieces.size());
+        std::string temp_token;
+        unsigned short num_consts = 0;
+        
         for (float i: pieces)
         {
+            temp_token = __tokens_dict[i];
+            if (temp_token == "const"){++num_consts;}
             expression.push_back(__tokens_dict[i]);
         }
 
@@ -714,21 +760,24 @@ struct Board
         else
         {
             std::string expression_string = std::accumulate(expression.begin(), expression.end(), std::string(), [](const std::string& a, const std::string& b) { return a + (a.empty() ? "" : " ") + b; });
-//            std::cout << "Expression string = " << expression_string << '\n';
             Board::expression_dict[expression_string]++;
             Board::expression_dict_len = Board::expression_dict.size();
             if (visualize_exploration)
             {
                 //TODO: call some plotting function
             }
+            //TODO: Fit routine
+            std::vector<float> params(num_consts, 1.0f);
+            
+            
             
             return ((expression_type == "prefix") ?
-                    loss_func(prefix_expression_evaluator(),data["y"]) :
+                    loss_func(prefix_expression_evaluator(params),data["y"]) :
                     loss_func(postfix_expression_evaluator(),data["y"]));
         }
     }
-    const std::vector<double>& operator[] (int i){return data[i];}
-    const std::vector<double>& operator[] (const std::string& i)
+    const std::vector<float>& operator[] (int i){return data[i];}
+    const std::vector<float>& operator[] (const std::string& i)
     {
         return data[i];
     }
@@ -739,20 +788,20 @@ struct Board
     }
 };
 
-// cos(x_3) + x_0^2 - 1
-double exampleFunc(const std::vector<double>& x)
+// 2.5382*cos(x_3) + x_0^2 - 1
+float exampleFunc(const std::vector<float>& x)
 {
     if (x.size() < 3)
     {
         throw std::runtime_error("exampleFunc requires a vector of size 3");
     }
 
-    return cos(x[3]) + (x[0]*x[0]) - 1;
+    return cos(x[3]) + (x[0]*x[0]) - 0.5f;
 }
 
 void Example()
 {
-    std::vector<std::vector<double>> data = generateData(10, 6, 0, 10, exampleFunc);
+    std::vector<std::vector<float>> data = generateData(10, 6, 0, 10, exampleFunc);
     
     std::vector<std::string> temp = {"cos", "-", "+", "+", "-", "+", "-", "+", "*", "*", "const", "*", "x0", "const", "*", "-", "const", "x0", "x1", "*", "x0", "const", "*", "*", "const", "const", "*", "x0", "const", "*", "*", "x1", "const", "const", "*", "const", "x1", "*", "const", "+", "+", "const", "*", "x0", "const", "*", "x1", "const", "*", "*", "x1", "const", "const", "x0"};
     std::cout << getPNdepth(temp).first << '\n';
@@ -771,7 +820,8 @@ void Example()
     std::cout << x.pn_to_infix() << '\n';
     std::cout << "x complete = " << x.complete_status() << '\n';
     
-    std::cout << loss_func(x.prefix_expression_evaluator(), x.data["y"]) << '\n';
+    std::vector<float> params;
+    std::cout << loss_func(x.prefix_expression_evaluator(params), x.data["y"]) << '\n';
     
     Board y(data, 3, "postfix");
     std::cout << y << '\n' << y["y"] << '\n';
@@ -799,19 +849,18 @@ int main() {
     
 //    Example();
     
-    std::vector<std::vector<double>> data = generateData(10, 6, 0, 10, exampleFunc);
-    Board x(data, 3, "postfix");
+    std::vector<std::vector<float>> data = generateData(100, 6, 0.0f, 10.0f, exampleFunc);
+    Board x(data, 3, "prefix");
     
     std::random_device rand_dev;
     std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-    double score = 0, max_score = 0;
+    float score = 0, max_score = 0;
     std::vector<float> temp;
     size_t temp_sz;
-    std::unordered_set<std::string> expressions;
     std::string expression, orig_expression, best_expression;
-    
+    std::ofstream out("PN_expressions.txt");
     auto start_time = Clock::now();
-    for (int i = 0; score != 1; i++)
+    for (int i = 0; score <= 0.59; i++)
     {
         while ((score = x.complete_status()) == -1)
         {
@@ -822,20 +871,23 @@ int main() {
             x.pieces.push_back(temp[distribution(generator)]);
         }
         
-        expression = x.rpn_to_infix();
+        expression = x.pn_to_infix();
         
-//        std::cout << "Expression " << i << ": " << expression << '\r';
+        out << "Iteration " << i << ": Original expression = " << x.expression() << ", Infix Expression = " << expression << '\n';
 
         if (score > max_score)
         {
+            std::cout << "Best score = " << max_score << '\n';
+            std::cout << "Best expression = " << best_expression << '\n';
+            std::cout << "Best expression (original format) = " << orig_expression << '\n';
             max_score = score;
             best_expression = std::move(expression);
             orig_expression = x.expression();
         }
-        expressions.insert(expression);
         x.pieces.clear();
     }
-    std::cout << "Unique expressions = " << expressions.size() << '\n';
+    out.close();
+    std::cout << "\nUnique expressions = " << Board::expression_dict_len << '\n';
     std::cout << "Best score = " << max_score << '\n';
     std::cout << "Best expression = " << best_expression << '\n';
     std::cout << "Best expression (original format) = " << orig_expression << '\n';
