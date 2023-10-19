@@ -584,7 +584,7 @@ struct Board
         return stack.top();
     }
     //TODO: constant optimization
-    std::vector<float> prefix_expression_evaluator(std::vector<float>& params)
+    std::vector<float> prefix_expression_evaluator(const std::vector<float>& params)
     {
         if (this->expression_type == "postfix")
         {
@@ -640,7 +640,7 @@ struct Board
         return stack.top();
     }
     //TODO: constant optimization
-    std::vector<float> postfix_expression_evaluator()
+    std::vector<float> postfix_expression_evaluator(const std::vector<float>& params)
     {
         if (this->expression_type == "prefix")
         {
@@ -696,38 +696,15 @@ struct Board
         return stack.top();
     }
     
-//    void fitFunctionToData(std::vector<float>& params)
-//    {
-//
-//        // Use an optimization algorithm to minimize the least squares error (e.g., gradient descent)
-//        // You should replace this with your preferred optimization method.
-//
-//        // Example: Simple gradient descent (you might need a more advanced optimizer)
-//        float learning_rate = 0.01f;
-//        int max_iterations = 1000;
-//        size_t num_params = params.size();
-//        std::vector<float> y_pred;
-//        for (int iteration = 0; iteration < max_iterations; ++iteration)
-//        {
-//            // Calculate the gradient of the error with respect to parameters
-//            std::vector<float> gradient(num_params, 0.0f);
-//            for (const std::vector<float>& row : data)
-//            {
-//                y_pred = std::move((expression_type == "prefix") ? prefix_expression_evaluator() : postfix_expression_evaluator());
-//                
-//                gradient[i] += 2 * (y_pred - data["y"]) * row[i];
-//                
-//            }
-//
-//            // Update parameters using the gradient
-//            for (size_t i = 0; i < num_params; ++i)
-//            {
-//                best_params[i] -= learning_rate * gradient[i];
-//            }
-//        }
-//
-//        return best_params;
-//    }
+    //TODO: Use some standard library
+    float fitFunctionToData(std::vector<float>& params)
+    {
+        
+        
+        return ((expression_type == "prefix") ?
+                loss_func(prefix_expression_evaluator(params),data["y"]) :
+                loss_func(postfix_expression_evaluator(params),data["y"]));
+    }
     
     /*
     Check whether the given player has created a
@@ -766,14 +743,10 @@ struct Board
             {
                 //TODO: call some plotting function
             }
-            //TODO: Fit routine
+            
             std::vector<float> params(num_consts, 1.0f);
             
-            
-            
-            return ((expression_type == "prefix") ?
-                    loss_func(prefix_expression_evaluator(params),data["y"]) :
-                    loss_func(postfix_expression_evaluator(),data["y"]));
+            return fitFunctionToData(params);
         }
     }
     const std::vector<float>& operator[] (int i){return data[i];}
@@ -840,7 +813,7 @@ void Example()
     std::cout << y.rpn_to_infix() << '\n';
     std::cout << "y complete = " << y.complete_status() << '\n';
     
-    std::cout << loss_func(y.postfix_expression_evaluator(), y.data["y"]) << '\n';
+    std::cout << loss_func(y.postfix_expression_evaluator(params), y.data["y"]) << '\n';
     
     
 }
@@ -858,9 +831,9 @@ int main() {
     std::vector<float> temp;
     size_t temp_sz;
     std::string expression, orig_expression, best_expression;
-    std::ofstream out("PN_expressions.txt");
+    std::ofstream out(x.expression_type == "prefix" ? "PN_expressions.txt" : "RPN_expressions.txt");
     auto start_time = Clock::now();
-    for (int i = 0; score <= 0.59; i++)
+    for (int i = 0; score <= 0.8; i++)
     {
         while ((score = x.complete_status()) == -1)
         {
@@ -871,7 +844,7 @@ int main() {
             x.pieces.push_back(temp[distribution(generator)]);
         }
         
-        expression = x.pn_to_infix();
+        expression = x.expression_type == "prefix" ? x.pn_to_infix() : x.rpn_to_infix() ;
         
         out << "Iteration " << i << ": Original expression = " << x.expression() << ", Infix Expression = " << expression << '\n';
 
