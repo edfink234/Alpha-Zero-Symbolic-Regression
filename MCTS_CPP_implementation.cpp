@@ -14,6 +14,9 @@
 #include <random>
 #include <chrono>
 #include <fstream>
+#include <iomanip>
+#include <cassert>
+#include <Python.h>
 
 using Clock = std::chrono::high_resolution_clock;
 
@@ -360,6 +363,7 @@ struct Board
             this->__tokens_dict[this->__tokens_float[i]] = this->__tokens[i];
             this->__tokens_inv_dict[this->__tokens[i]] = this->__tokens_float[i];
         }
+
         this->n = n;
         this->expression_type = expression_type;
         this->pieces = {};
@@ -465,6 +469,7 @@ struct Board
         }
         else //postfix
         {
+            
             std::vector<float> temp;
             if (this->pieces.empty()) //At the beginning, self.pieces is empty, so the only legal moves are the features and const
             {
@@ -474,9 +479,10 @@ struct Board
             }
             int num_binary = this->__num_binary_ops();
             int num_leaves = this->__num_leaves();
-
-            if (num_binary != num_leaves - 1)
+            
+            if ((num_binary != num_leaves - 1))//  && ((std::find(this->__other_tokens_float.begin(), this->__other_tokens_float.end(), pieces.back()) == this->__other_tokens_float.end()) ||  (*(pieces.end()-1) != *(pieces.end()-2))))
             {
+
                 temp.insert(temp.end(), this->__binary_operators_float.begin(), this->__binary_operators_float.end());
             }
             std::vector<std::string> string_pieces;
@@ -494,6 +500,19 @@ struct Board
             if (getRPNdepth(string_pieces).first <= this->n)
             {
                 temp.insert(temp.end(), this->__input_vars_float.begin(), this->__input_vars_float.end());
+                
+//                string_pieces.back() = __other_tokens[0];
+//                string_pieces.reserve(string_pieces.size() + 3);
+//                string_pieces.push_back(__input_vars[0]);
+//                string_pieces.push_back(__binary_operators[0]);
+//                string_pieces.push_back(__binary_operators[0]);
+//                //1.94696, 15.9098, 0.0949083, 6.13413, 2.26467
+//                //9.57711, 2.6431, 4.44798, 1.03814, 1.33934
+
+//                if (getRPNdepth(string_pieces).first <= this->n) //Can only add constant if
+//                {
+//                    temp.insert(temp.end(), this->__other_tokens_float.begin(), this->__other_tokens_float.end());
+//                }
                 temp.insert(temp.end(), this->__other_tokens_float.begin(), this->__other_tokens_float.end());
             }
             return temp;
@@ -591,6 +610,7 @@ struct Board
             throw std::runtime_error("Can't call prefix_expression_evaluator when your expression type is postfix!");
         }
         std::stack<std::vector<float>> stack;
+        size_t const_count = 0;
 
         for (int i = pieces.size() - 1; i >= 0; i--) //i has to be int because it becomes -1 at the last step
         {
@@ -600,7 +620,7 @@ struct Board
             {
                 if (token == "const")
                 {
-                    stack.push(std::vector<float>(data_size, 1));
+                    stack.push(std::vector<float>(data_size, params[const_count++]));
                 }
                 else
                 {
@@ -647,6 +667,7 @@ struct Board
             throw std::runtime_error("Can't call postfix_expression_evaluator when your expression type is prefix!");
         }
         std::stack<std::vector<float>> stack;
+        size_t const_count = 0;
 
         for (size_t i = 0; i < pieces.size(); i++)
         {
@@ -656,7 +677,7 @@ struct Board
             {
                 if (token == "const")
                 {
-                    stack.push(std::vector<float>(data_size, 1));
+                    stack.push(std::vector<float>(data_size, params[const_count++]));
                 }
                 else
                 {
@@ -696,10 +717,68 @@ struct Board
         return stack.top();
     }
     
-    //TODO: Use some standard library
+//    struct Particle 
+//    {
+//        float position;
+//        float velocity;
+//        float best_position;
+//        float best_value;
+//    };
+//    
+    
+    
+    void PSO(std::vector<float>& params, unsigned short iterations = 10)
+    {
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_real_distribution<float> vel_dist(-1.0f, 1.0f), pos_dist(0.0f, 1.0f);
+        std::vector<float> particle_positions(params.size()), x(params.size());
+        std::vector<float> v(params.size());
+        float rp, rg;
+//        std::cout << std::boolalpha << (particle_positions == params) << '\n';
+
+        for (size_t i = 0; i < params.size(); i++)
+        {
+            particle_positions[i] = x[i] = pos_dist(gen);
+            v[i] = vel_dist(gen);
+        }
+        
+        
+        
+        float swarm_best_score = ((expression_type == "prefix") ? loss_func(prefix_expression_evaluator(params),data["y"]) :
+                            loss_func(postfix_expression_evaluator(params),data["y"]));
+        float curr_score = ((expression_type == "prefix") ? loss_func(prefix_expression_evaluator(particle_positions),data["y"]) :
+                            loss_func(postfix_expression_evaluator(particle_positions),data["y"]));
+        float temp;
+        
+        if (curr_score > swarm_best_score)
+        {
+            params = particle_positions;
+            swarm_best_score = curr_score;
+        }
+        
+        for (int i = 0; i < iterations; i++)
+        {
+            for (unsigned short i = 0; i < params.size(); i++)
+            {
+                rp = pos_dist(gen), rg = pos_dist(gen);
+                v[i] = 0.5f * v[i] + rp*(particle_positions[i] - x[i]) + rg*(params[i] - x[i]);
+                x[i] += v[i];
+                
+                temp = particle_positions[i];
+                particle_positions[i] = x[i];
+//                if ()
+                
+            }
+            
+        }
+        
+    }
+    
+    //TODO: Use some library
     float fitFunctionToData(std::vector<float>& params)
     {
-        
+        PSO(params);
         
         return ((expression_type == "prefix") ?
                 loss_func(prefix_expression_evaluator(params),data["y"]) :
@@ -821,9 +900,16 @@ void Example()
 int main() {
     
 //    Example();
+//    Py_Initialize();
+//    PyObject* pName = PyUnicode_DecodeFSDefault("scipy");
+//    PyObject* pModule = PyImport_Import(pName);
+//    Py_XDECREF(pName);
+//    
+//    std::cout << std::boolalpha << (pModule == NULL) << '\n';
+//    PyObject* pFunc = PyObject_GetAttrString(pModule, "optimize.curve_fit");
     
     std::vector<std::vector<float>> data = generateData(100, 6, 0.0f, 10.0f, exampleFunc);
-    Board x(data, 3, "prefix");
+    Board x(data, 3, "postfix");
     
     std::random_device rand_dev;
     std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
@@ -837,7 +923,7 @@ int main() {
     {
         while ((score = x.complete_status()) == -1)
         {
-            temp = std::move(x.get_legal_moves());
+            temp = x.get_legal_moves();
             temp_sz = temp.size();
             std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // Define the range
 
@@ -868,6 +954,8 @@ int main() {
     auto end_time = Clock::now();
     std::cout << "Time difference = "
           << std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count()/1e9 << " seconds" << '\n';
+    
+
     
     
     return 0;
