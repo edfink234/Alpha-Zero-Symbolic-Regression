@@ -793,7 +793,7 @@ float exampleFunc(const std::vector<float>& x)
         throw std::runtime_error("exampleFunc requires a vector of size 3");
     }
 
-    return cos(x[3]) + (x[0]*x[0]) - 0.5f;
+    return 2.5382*cos(x[3]) + (x[0]*x[0]) - 0.5f;
 }
 
 void RandomSearch(const std::vector<std::vector<float>>& data, int depth = 3, std::string method = "prefix", float stop = 0.8f)
@@ -849,9 +849,9 @@ int main() {
 //    std::cout << std::boolalpha << (pModule == NULL) << '\n';
 //    PyObject* pFunc = PyObject_GetAttrString(pModule, "optimize.curve_fit");
     
-    std::vector<std::vector<float>> data = generateData(100, 6, 0.0f, 10.0f, exampleFunc);
+    std::vector<std::vector<float>> data = generateData(100, 6, 0.0f, 1.0f, exampleFunc);
     auto start_time = Clock::now();
-    RandomSearch(data, 3, "prefix");
+    RandomSearch(data, 3, "postfix", 0.99f);
     
     auto end_time = Clock::now();
     std::cout << "Time difference = "
