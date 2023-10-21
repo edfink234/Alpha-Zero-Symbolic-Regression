@@ -286,6 +286,7 @@ struct Board
     std::vector<std::string> __other_tokens;
     std::vector<std::string> __tokens;
     std::vector<float> __tokens_float;
+    std::vector<float> params; //store the parameters of the expression of the current episode after it's completed
     Data data;
     
     std::vector<float> __operators_float;
@@ -423,8 +424,8 @@ struct Board
     
     std::vector<float> get_legal_moves()
     {
-        //TODO: Reduce calls to size method -> See if multiple of the same calls can be stored in variables.
-        //TODO: Probability for stupid moves should be 0 (i.e. binary_op(const, const), -(leaf_i, leaf_i)); this isn't GP!
+        //TODO: Reduce calls to size method -> see if multiple of the same calls can be stored in variables.
+        //TODO: Generated Expressions should always be irreducible, this isn't GP!
         if (this->expression_type == "prefix")
         {
             if (this->pieces.empty()) //At the beginning, self.pieces is empty, so the only legal moves are the operators
@@ -518,42 +519,8 @@ struct Board
             return temp;
         }
     }
-
-    std::string pn_to_infix()
-    {
-        if (this->expression_type == "postfix")
-        {
-            throw std::runtime_error("Can't call pn_to_infix when your expression type is postfix!");
-        }
-        std::stack<std::string> stack;
-        for (int i = pieces.size() - 1; i >= 0; i--) //i has to be int because it becomes -1 at the last step
-        {
-            std::string token = __tokens_dict[pieces[i]];
-
-            if (std::find(__operators_float.begin(), __operators_float.end(), pieces[i]) == __operators_float.end()) // leaf
-            {
-                stack.push(token);
-            }
-            else if (std::find(__unary_operators_float.begin(), __unary_operators_float.end(), pieces[i]) != __unary_operators_float.end()) // Unary operator
-            {
-                std::string operand = stack.top();
-                stack.pop();
-                std::string result = token + "(" + operand + ")";
-                stack.push(result);
-            }
-            else // binary operator
-            {
-                std::string right_operand = stack.top();
-                stack.pop();
-                std::string left_operand = stack.top();
-                stack.pop();
-                std::string result = "(" + right_operand + " " + token + " " + left_operand + ")";
-                stack.push(result);
-            }
-        }
-        return stack.top();
-    }
     
+    //Returns a string form of the expression stored in the vector<float> attribute pieces
     std::string expression()
     {
         std::string temp;
@@ -564,26 +531,24 @@ struct Board
         }
         return temp;
     }
-
-    std::string rpn_to_infix()
+    //TODO: need to have another optional argument here for the params to use here.
+    std::string _to_infix(bool show_consts = true)
     {
-        if (this->expression_type == "prefix")
-        {
-            throw std::runtime_error("Can't call rpn_to_infix when your expression type is prefix!");
-        }
         std::stack<std::string> stack;
-        for (size_t i = 0; i < pieces.size(); i++)
+        bool is_prefix = (expression_type == "prefix");
+        size_t const_counter = 0;
+        
+        for (int i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
         {
             std::string token = __tokens_dict[pieces[i]];
 
             if (std::find(__operators_float.begin(), __operators_float.end(), pieces[i]) == __operators_float.end()) // leaf
             {
-                // std::cout << "leaf " << token << '\n';
-                stack.push(token);
+//                stack.push(token);
+                stack.push(((!show_consts) || (std::find(__other_tokens.begin(), __other_tokens.end(), token) == __other_tokens.end())) ? token : std::to_string(this->params[const_counter++]));
             }
             else if (std::find(__unary_operators_float.begin(), __unary_operators_float.end(), pieces[i]) != __unary_operators_float.end()) // Unary operator
             {
-                // std::cout << "unary op " << token << '\n';
                 std::string operand = stack.top();
                 stack.pop();
                 std::string result = token + "(" + operand + ")";
@@ -591,7 +556,6 @@ struct Board
             }
             else // binary operator
             {
-                // std::cout << "binary op " << token << '\n';
                 std::string right_operand = stack.top();
                 stack.pop();
                 std::string left_operand = stack.top();
@@ -602,7 +566,7 @@ struct Board
         }
         return stack.top();
     }
-    //TODO: constant optimization
+
     std::vector<float> expression_evaluator(const std::vector<float>& params)
     {
         std::stack<std::vector<float>> stack;
@@ -657,16 +621,6 @@ struct Board
         return stack.top();
     }
     
-//    struct Particle 
-//    {
-//        float position;
-//        float velocity;
-//        float best_position;
-//        float best_value;
-//    };
-//    
-    
-    
     void PSO(std::vector<float>& params, unsigned short iterations = 10)
     {
         std::random_device rd;
@@ -675,7 +629,6 @@ struct Board
         std::vector<float> particle_positions(params.size()), x(params.size());
         std::vector<float> v(params.size());
         float rp, rg;
-//        std::cout << std::boolalpha << (particle_positions == params) << '\n';
 
         for (size_t i = 0; i < params.size(); i++)
         {
@@ -692,7 +645,6 @@ struct Board
             params = particle_positions;
             swarm_best_score = fpi;
         }
-//        printf("Starting, swarm_best_score = %f\n", swarm_best_score);
         for (int i = 0; i < iterations; i++)
         {
             for (unsigned short i = 0; i < params.size(); i++)
@@ -711,17 +663,16 @@ struct Board
                 }
                 else if (fpi > swarm_best_score)
                 {
-                    params = particle_positions;
+                    params[i] = particle_positions[i];
                     swarm_best_score = fpi;
                 }
             }
         }
-//        printf("Ending, swarm_best_score = %f\n", swarm_best_score);
-
+        //TODO: Store the parameters for a tried function in an std::unordered_map<std::string, std::vector<float> so they can be used as seeds for the next time the same function is generated
     }
     
-    //TODO: Use some library
-    float fitFunctionToData(std::vector<float>& params)
+    //TODO: Add other methods besides PSO (e.g. Eigen, calling scipy from the Python-C API, etc.)
+    float fitFunctionToData()
     {
         if (!params.empty())
             PSO(params);
@@ -762,15 +713,15 @@ struct Board
         {
             std::string expression_string = std::accumulate(expression.begin(), expression.end(), std::string(), [](const std::string& a, const std::string& b) { return a + (a.empty() ? "" : " ") + b; });
             Board::expression_dict[expression_string]++;
-            Board::expression_dict_len = Board::expression_dict.size();
+            Board::expression_dict_len = Board::expression_dict.size(); //TODO: Replace value with std::vector<float> of best params so far
             if (visualize_exploration)
             {
-                //TODO: call some plotting function
+                //TODO: call some plotting function, e.g. ROOT CERN plotting API, Matplotlib from the Python-C API, Plotly if we want a web application for this, etc. The plotting function could also have the fitted constants (rounded of course), but then this if statement would need to be moved down to below the fitFunctionToData call in this `complete_status` method.
             }
             
-            std::vector<float> params(num_consts, 1.0f);
+            this->params.resize(num_consts, 1.0f);
             
-            return fitFunctionToData(params);
+            return fitFunctionToData();
         }
     }
     const std::vector<float>& operator[] (int i){return data[i];}
@@ -802,29 +753,30 @@ void RandomSearch(const std::vector<std::vector<float>>& data, int depth = 3, st
     std::random_device rand_dev;
     std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
     float score = 0, max_score = 0;
-    std::vector<float> temp;
+    std::vector<float> temp_legal_moves, params, best_params;
     size_t temp_sz;
     std::string expression, orig_expression, best_expression;
     std::ofstream out(x.expression_type == "prefix" ? "PN_expressions.txt" : "RPN_expressions.txt");
+    
     for (int i = 0; score <= stop; i++)
     {
         while ((score = x.complete_status()) == -1)
         {
-            temp = x.get_legal_moves();
-            temp_sz = temp.size();
-            std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // Define the range
+            temp_legal_moves = x.get_legal_moves(); //the legal moves
+            temp_sz = temp_legal_moves.size(); //the number of legal moves
+            std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
 
-            x.pieces.push_back(temp[distribution(generator)]);
+            x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
         }
         
-        expression = x.expression_type == "prefix" ? x.pn_to_infix() : x.rpn_to_infix() ;
+        expression = x._to_infix();
         
         out << "Iteration " << i << ": Original expression = " << x.expression() << ", Infix Expression = " << expression << '\n';
 
         if (score > max_score)
         {
             std::cout << "Best score = " << max_score << '\n';
-            std::cout << "Best expression = " << best_expression << '\n';
+            std::cout << "Best expression = " << best_expression << '\n'; //TODO: Substitude optimized constants into this string!
             std::cout << "Best expression (original format) = " << orig_expression << '\n';
             max_score = score;
             best_expression = std::move(expression);
@@ -840,18 +792,18 @@ void RandomSearch(const std::vector<std::vector<float>>& data, int depth = 3, st
 }
 
 int main() {
-    
-//    Py_Initialize();
-//    PyObject* pName = PyUnicode_DecodeFSDefault("scipy");
-//    PyObject* pModule = PyImport_Import(pName);
-//    Py_XDECREF(pName);
-//    
-//    std::cout << std::boolalpha << (pModule == NULL) << '\n';
-//    PyObject* pFunc = PyObject_GetAttrString(pModule, "optimize.curve_fit");
-    
+    /*
+    //This comment block is testing the Python-C API
+    Py_Initialize();
+    PyObject* pName = PyUnicode_DecodeFSDefault("scipy");
+    PyObject* pModule = PyImport_Import(pName);
+    Py_XDECREF(pName);
+    std::cout << std::boolalpha << (pModule == NULL) << '\n';
+    PyObject* pFunc = PyObject_GetAttrString(pModule, "optimize.curve_fit");
+    */
     std::vector<std::vector<float>> data = generateData(100, 6, 0.0f, 1.0f, exampleFunc);
     auto start_time = Clock::now();
-    RandomSearch(data, 3, "postfix", 0.99f);
+    RandomSearch(data, 3, "postfix", 0.999f);
     
     auto end_time = Clock::now();
     std::cout << "Time difference = "
