@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <unordered_set>
 #include <unordered_map>
-#include <climits>
+#include <float.h>
 #include <ctime>
 #include <cstdlib>
 #include <stack>
@@ -20,12 +20,12 @@
 
 using Clock = std::chrono::high_resolution_clock;
 
-std::vector<std::vector<float>> generateData(int numRows, int numCols, float minValue, float maxValue, float (*func)(const std::vector<float>&))
+std::vector<std::vector<float>> generateData(int numRows, int numCols, float (*func)(const std::vector<float>&))
 {
     // Initialize random number generator
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> distribution(minValue, maxValue);
+    std::normal_distribution<float> distribution;
 
     // Create the matrix
     std::vector<std::vector<float>> matrix(numRows, std::vector<float>(numCols));
@@ -88,11 +88,12 @@ public:
 
 std::ostream& operator<<(std::ostream& os, const std::vector<float>& row)
 {
+    os << '{';
     for (const float value : row)
     {
-        os << value << '\n';
+        os << value << ", ";
     }
-    os << '\n';
+    os << "}";
     return os;
 }
 
@@ -271,11 +272,10 @@ float loss_func(const std::vector<float>& actual, const std::vector<float>& pred
 struct Board
 {
     static std::string inline best_expression = "";
-    static std::unordered_map<std::string, int> inline expression_dict = {};
-    static unsigned int inline expression_dict_len = 0;
-    static float inline best_loss = INT_MAX;
+    static std::unordered_map<std::string, std::pair<std::vector<float>, int>> inline expression_dict = {};
+    static float inline best_loss = FLT_MAX;
     static std::vector<std::string> inline init_expression = {};
-    static float inline search_time = 0;
+    static float inline fit_time = 0;
     
     int __num_features;
     size_t data_size;
@@ -286,7 +286,7 @@ struct Board
     std::vector<std::string> __other_tokens;
     std::vector<std::string> __tokens;
     std::vector<float> __tokens_float;
-    std::vector<float> params; //store the parameters of the expression of the current episode after it's completed
+    std::vector<float>* params; //store the parameters of the expression of the current episode after it's completed
     Data data;
     
     std::vector<float> __operators_float;
@@ -295,7 +295,12 @@ struct Board
     std::vector<float> __input_vars_float;
     std::vector<float> __other_tokens_float;
     
+    std::random_device rd;
+    std::mt19937 gen;
+    std::uniform_real_distribution<float> vel_dist, pos_dist;
+    
     int action_size;
+    std::string fit_method;
                 
     std::unordered_map<float, std::string> __tokens_dict; //Converts number to string
     std::unordered_map<std::string, float> __tokens_inv_dict; //Converts string to number
@@ -306,7 +311,7 @@ struct Board
     std::vector<float> pieces;
     bool visualize_exploration;
     
-    Board(const std::vector<std::vector<float>>& theData, int n = 3, const std::string& expression_type = "prefix", bool visualize_exploration = false) : data{theData}
+    Board(const std::vector<std::vector<float>>& theData, int n = 3, const std::string& expression_type = "prefix", bool visualize_exploration = false, std::string fitMethod = "PSO") : data{theData}, gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, fit_method{fitMethod}
     {
         this->__num_features = data[0].size() - 1;
         this->data_size = data.size();
@@ -537,6 +542,7 @@ struct Board
         std::stack<std::string> stack;
         bool is_prefix = (expression_type == "prefix");
         size_t const_counter = 0;
+        std::string result;
         
         for (int i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
         {
@@ -544,14 +550,13 @@ struct Board
 
             if (std::find(__operators_float.begin(), __operators_float.end(), pieces[i]) == __operators_float.end()) // leaf
             {
-//                stack.push(token);
-                stack.push(((!show_consts) || (std::find(__other_tokens.begin(), __other_tokens.end(), token) == __other_tokens.end())) ? token : std::to_string(this->params[const_counter++]));
+                stack.push(((!show_consts) || (std::find(__other_tokens.begin(), __other_tokens.end(), token) == __other_tokens.end())) ? token : std::to_string((*params)[const_counter++]));
             }
             else if (std::find(__unary_operators_float.begin(), __unary_operators_float.end(), pieces[i]) != __unary_operators_float.end()) // Unary operator
             {
                 std::string operand = stack.top();
                 stack.pop();
-                std::string result = token + "(" + operand + ")";
+                result = token + "(" + operand + ")";
                 stack.push(result);
             }
             else // binary operator
@@ -560,7 +565,14 @@ struct Board
                 stack.pop();
                 std::string left_operand = stack.top();
                 stack.pop();
-                std::string result = "(" + left_operand + " " + token + " " + right_operand + ")";
+                if (expression_type == "prefix")
+                {
+                    result = "(" + right_operand + " " + token + " " + left_operand + ")";
+                }
+                else
+                {
+                    result = "(" + left_operand + " " + token + " " + right_operand + ")";
+                }
                 stack.push(result);
             }
         }
@@ -606,78 +618,88 @@ struct Board
 
                 if (token == "+")
                 {
-                    stack.push(right_operand + left_operand);
+                    stack.push(((expression_type == "prefix") ? (right_operand + left_operand) : (left_operand + right_operand)));
                 }
                 else if (token == "-")
                 {
-                    stack.push(right_operand - left_operand);
+                    stack.push(((expression_type == "prefix") ? (right_operand - left_operand) : (left_operand - right_operand)));
                 }
                 else if (token == "*")
                 {
-                    stack.push(right_operand * left_operand);
+                    stack.push(((expression_type == "prefix") ? (right_operand * left_operand) : (left_operand * right_operand)));
                 }
             }
         }
         return stack.top();
     }
     
-    void PSO(std::vector<float>& params, unsigned short iterations = 10)
+    void PSO(std::vector<float>* params, unsigned short iterations = 1)
     {
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_real_distribution<float> vel_dist(-1.0f, 1.0f), pos_dist(0.0f, 1.0f);
-        std::vector<float> particle_positions(params.size()), x(params.size());
-        std::vector<float> v(params.size());
+        auto start_time = Clock::now();
+        std::vector<float> particle_positions(params->size()), x(params->size());
+        std::vector<float> v(params->size());
         float rp, rg;
 
-        for (size_t i = 0; i < params.size(); i++)
+        for (size_t i = 0; i < params->size(); i++)
         {
             particle_positions[i] = x[i] = pos_dist(gen);
             v[i] = vel_dist(gen);
         }
 
-        float swarm_best_score = loss_func(expression_evaluator(params),data["y"]);
+        float swarm_best_score = loss_func(expression_evaluator(*params),data["y"]);
         float fpi = loss_func(expression_evaluator(particle_positions),data["y"]);
         float temp, fxi;
         
         if (fpi > swarm_best_score)
         {
-            params = particle_positions;
+            *params = particle_positions;
             swarm_best_score = fpi;
         }
-        for (int i = 0; i < iterations; i++)
+        for (int j = 0; j < iterations; j++)
         {
-            for (unsigned short i = 0; i < params.size(); i++)
+            for (unsigned short i = 0; i < params->size(); i++)
             {
                 rp = pos_dist(gen), rg = pos_dist(gen);
-                v[i] = 0.99f * v[i] + rp*(particle_positions[i] - x[i]) + rg*(params[i] - x[i]);
+                v[i] = 0.99f * v[i] + rp*(particle_positions[i] - x[i]) + rg*((*params)[i] - x[i]);
                 x[i] += v[i];
                 
-                fpi = loss_func(expression_evaluator(particle_positions),data["y"]);
-                temp = particle_positions[i];
-                particle_positions[i] = x[i];
-                fxi = loss_func(expression_evaluator(particle_positions),data["y"]);
-                if (fxi < fpi) //if the updated vector is worse, then reset particle_positions[i]
+                fpi = loss_func(expression_evaluator(particle_positions),data["y"]); //current score
+                temp = particle_positions[i]; //save old position of particle i
+                particle_positions[i] = x[i]; //update old position to new position
+                fxi = loss_func(expression_evaluator(particle_positions),data["y"]); //calculate the score with the new position
+                if (fxi < fpi) //if the new vector is worse:
                 {
-                    particle_positions[i] = temp;
+                    particle_positions[i] = temp; //reset particle_positions[i]
                 }
                 else if (fpi > swarm_best_score)
                 {
-                    params[i] = particle_positions[i];
+//                    printf("Iteration %d: Changing param %d from %f to %f. Score from %f to %f\n", j, i, (*params)[i], particle_positions[i], swarm_best_score, fpi);
+                    (*params)[i] = particle_positions[i];
                     swarm_best_score = fpi;
                 }
             }
         }
-        //TODO: Store the parameters for a tried function in an std::unordered_map<std::string, std::vector<float> so they can be used as seeds for the next time the same function is generated
+//        std::cout << "params after = " << *params << '\n';
+        
+        Board::fit_time += (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9);
     }
     
     //TODO: Add other methods besides PSO (e.g. Eigen, calling scipy from the Python-C API, etc.)
-    float fitFunctionToData()
+    float fitFunctionToData(std::string method = "PSO")
     {
-        if (!params.empty())
-            PSO(params);
+        if (!params->empty())
+        {
+            if (method == "PSO")
+            {
+                PSO(params);
+            }
+            else if (method == "L-BFGS")
+            {
+
+            }
+        }
         
-        return loss_func(expression_evaluator(params),data["y"]);
+        return loss_func(expression_evaluator(*params),data["y"]);
                 
     }
     
@@ -712,16 +734,19 @@ struct Board
         else
         {
             std::string expression_string = std::accumulate(expression.begin(), expression.end(), std::string(), [](const std::string& a, const std::string& b) { return a + (a.empty() ? "" : " ") + b; });
-            Board::expression_dict[expression_string]++;
-            Board::expression_dict_len = Board::expression_dict.size(); //TODO: Replace value with std::vector<float> of best params so far
+            Board::expression_dict[expression_string].second++;
             if (visualize_exploration)
             {
                 //TODO: call some plotting function, e.g. ROOT CERN plotting API, Matplotlib from the Python-C API, Plotly if we want a web application for this, etc. The plotting function could also have the fitted constants (rounded of course), but then this if statement would need to be moved down to below the fitFunctionToData call in this `complete_status` method.
             }
             
-            this->params.resize(num_consts, 1.0f);
-            
-            return fitFunctionToData();
+            this->params = &Board::expression_dict[expression_string].first;
+            if (this->params->empty())
+            {
+                this->params->resize(num_consts, 1.0f);
+            }
+
+            return fitFunctionToData(this->fit_method);
         }
     }
     const std::vector<float>& operator[] (int i){return data[i];}
@@ -737,6 +762,8 @@ struct Board
 };
 
 // 2.5382*cos(x_3) + x_0^2 - 1
+// postfix = "const x3 cos * x0 x0 * const - +"
+// prefix = "+ * const cos x3 - * x0 x0 const"
 float exampleFunc(const std::vector<float>& x)
 {
     if (x.size() < 3)
@@ -749,16 +776,17 @@ float exampleFunc(const std::vector<float>& x)
 
 void RandomSearch(const std::vector<std::vector<float>>& data, int depth = 3, std::string method = "prefix", float stop = 0.8f)
 {
-    Board x(data, depth, method);
+    Board x(data, depth, method, false, "PSO");
+    std::cout << x.data << '\n';
     std::random_device rand_dev;
     std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
     float score = 0, max_score = 0;
     std::vector<float> temp_legal_moves, params, best_params;
     size_t temp_sz;
     std::string expression, orig_expression, best_expression;
-    std::ofstream out(x.expression_type == "prefix" ? "PN_expressions.txt" : "RPN_expressions.txt");
-    
-    for (int i = 0; score <= stop; i++)
+//    std::ofstream out(x.expression_type == "prefix" ? "PN_expressions.txt" : "RPN_expressions.txt");
+    std::cout << "stop = " << stop << '\n';
+    for (int i = 0; score < stop; i++)
     {
         while ((score = x.complete_status()) == -1)
         {
@@ -771,12 +799,12 @@ void RandomSearch(const std::vector<std::vector<float>>& data, int depth = 3, st
         
         expression = x._to_infix();
         
-        out << "Iteration " << i << ": Original expression = " << x.expression() << ", Infix Expression = " << expression << '\n';
+//        out << "Iteration " << i << ": Original expression = " << x.expression() << ", Infix Expression = " << expression << '\n';
 
         if (score > max_score)
         {
             std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-            std::cout << "Best expression = " << best_expression << '\n'; //TODO: Substitude optimized constants into this string!
+            std::cout << "Best expression = " << best_expression << '\n';
             std::cout << "Best expression (original format) = " << orig_expression << '\n';
             max_score = score;
             best_expression = std::move(expression);
@@ -784,26 +812,46 @@ void RandomSearch(const std::vector<std::vector<float>>& data, int depth = 3, st
         }
         x.pieces.clear();
     }
-    out.close();
-    std::cout << "\nUnique expressions = " << Board::expression_dict_len << '\n';
+//    out.close();
+    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
     std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
     std::cout << "Best expression = " << best_expression << '\n';
     std::cout << "Best expression (original format) = " << orig_expression << '\n';
 }
 
+PyObject* convertVectorToPythonList(const std::vector<float>& inputVector)
+{
+    PyObject* pyList = PyTuple_New(inputVector.size());
+
+    for (size_t i = 0; i < inputVector.size(); ++i) 
+    {
+        PyObject* pyFloat = PyFloat_FromDouble(static_cast<double>(inputVector[i]));
+        PyTuple_SetItem(pyList, i, pyFloat);
+    }
+
+    return pyList;
+}
+
 int main() {
-    /*
+    
     //This comment block is testing the Python-C API
-    Py_Initialize();
-    PyObject* pName = PyUnicode_DecodeFSDefault("scipy");
-    PyObject* pModule = PyImport_Import(pName);
-    Py_XDECREF(pName);
-    std::cout << std::boolalpha << (pModule == NULL) << '\n';
-    PyObject* pFunc = PyObject_GetAttrString(pModule, "optimize.curve_fit");
-    */
-    std::vector<std::vector<float>> data = generateData(100, 6, 0.0f, 2.0f, exampleFunc);
+//    Py_Initialize();
+//    PyObject* pName = PyUnicode_DecodeFSDefault("scipy");
+//    PyObject* pModule = PyImport_Import(pName);
+//    Py_XDECREF(pName);
+//    std::cout << std::boolalpha << (pModule == NULL) << '\n';
+//    PyObject* pFunc = PyObject_GetAttrString(pModule, "optimize.curve_fit");
+////    PyObject* pArgs = Py_BuildValue("ff", 1.0f, 1.0f);
+//    std::vector<float> myVector = {1.0f, 2.0f, 3.0f};
+//    PyObject* pArgs = convertVectorToPythonList(myVector);
+//    PyObject* pStr = PyObject_Str(pArgs);
+//    const char* cstr = PyUnicode_AsUTF8(pStr);
+//    puts(cstr);
+//    exit(1);
+    std::vector<std::vector<float>> data = generateData(100, 6, exampleFunc);
     auto start_time = Clock::now();
-    RandomSearch(data, 3, "postfix", 0.99f);
+    RandomSearch(data, 3, "postfix", 0.6f);
     
     auto end_time = Clock::now();
     std::cout << "Time difference = "
@@ -811,4 +859,3 @@ int main() {
 
     return 0;
 }
-

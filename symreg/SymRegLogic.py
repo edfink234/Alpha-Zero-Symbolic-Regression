@@ -221,10 +221,14 @@ def model_selection(x, {', '.join(consts)}):
                 
                 #try to optimize parameters y0, y1, ..., yn
                 try:
+                    start = time()
                     parameters, covariance = curve_fit(model_selection, X.T, Y, p0 = np.random.random(num_consts))#, xtol = 0.5, ftol = 0.5, gtol = 0.5)
+                    
                 #if it didn't work, set the parameters y0, y1, ..., yn to random values
                 except RuntimeError:
                     parameters = np.random.random(num_consts)
+                finally:
+                    Board.search_time += (time() - start)
                 y_pred = model_selection(X.T, *parameters)
                 
                 if isinstance(y_pred, np.float64) or isinstance(y_pred, int):
