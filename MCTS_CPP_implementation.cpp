@@ -17,6 +17,8 @@
 #include <iomanip>
 #include <cassert>
 #include <Python.h>
+#include <Eigen/Core>
+#include <LBFGS.h>
 
 using Clock = std::chrono::high_resolution_clock;
 
@@ -300,6 +302,7 @@ struct Board
     std::uniform_real_distribution<float> vel_dist, pos_dist;
     
     int action_size;
+    int num_fit_iter;
     std::string fit_method;
                 
     std::unordered_map<float, std::string> __tokens_dict; //Converts number to string
@@ -311,7 +314,7 @@ struct Board
     std::vector<float> pieces;
     bool visualize_exploration;
     
-    Board(const std::vector<std::vector<float>>& theData, int n = 3, const std::string& expression_type = "prefix", bool visualize_exploration = false, std::string fitMethod = "PSO") : data{theData}, gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, fit_method{fitMethod}
+    Board(const std::vector<std::vector<float>>& theData, int n = 3, const std::string& expression_type = "prefix", bool visualize_exploration = false, std::string fitMethod = "PSO", int numFitIter = 1) : data{theData}, gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, fit_method{fitMethod}, num_fit_iter{numFitIter}
     {
         this->__num_features = data[0].size() - 1;
         this->data_size = data.size();
@@ -633,7 +636,7 @@ struct Board
         return stack.top();
     }
     
-    void PSO(std::vector<float>* params, unsigned short iterations = 1)
+    void PSO(std::vector<float>* params)
     {
         auto start_time = Clock::now();
         std::vector<float> particle_positions(params->size()), x(params->size());
@@ -655,7 +658,7 @@ struct Board
             *params = particle_positions;
             swarm_best_score = fpi;
         }
-        for (int j = 0; j < iterations; j++)
+        for (int j = 0; j < this->num_fit_iter; j++)
         {
             for (unsigned short i = 0; i < params->size(); i++)
             {
@@ -684,6 +687,48 @@ struct Board
         Board::fit_time += (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9);
     }
     
+    float operator()(const Eigen::VectorXf& x, Eigen::VectorXf& grad)
+    {
+        *params = std::vector<float>(x.begin(), x.end());
+        std::vector<float> baseline = expression_evaluator(*params);
+        
+        float mse = MSE(baseline, data["y"]);
+        for (int i = 0; i < x.size(); i++)
+        {
+            (*params)[i] += 0.00001f;
+            grad[i] = (MSE(expression_evaluator(*params), data["y"]) - mse) / 0.00001f ;
+            
+//            printf("grad[%d] = %f\n",i,grad[i]);
+            (*params)[i] -= 0.00001f;
+        }
+        
+        return mse;
+    }
+    
+    void LBFGS(std::vector<float>* params)
+    {
+        auto start_time = Clock::now();
+        LBFGSpp::LBFGSParam<float> param;
+        param.epsilon = 1e-6;
+        param.max_iterations = this->num_fit_iter;
+        LBFGSpp::LBFGSSolver<float> solver(param);
+        float fx;
+        Eigen::VectorXf eigenVec = Eigen::Map<Eigen::VectorXf>(params->data(), params->size());
+        float mse = MSE(expression_evaluator(*params), data["y"]);
+        try
+        {
+            solver.minimize((*this), eigenVec, fx);
+        } 
+        catch (std::runtime_error& e){}
+        
+        if (fx < mse)
+        {
+//            printf("mse = %f -> fx = %f\n", mse, fx);
+            *params = std::vector<float>(eigenVec.begin(), eigenVec.end());
+        }
+        Board::fit_time += (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9);
+    }
+    
     //TODO: Add other methods besides PSO (e.g. Eigen, calling scipy from the Python-C API, etc.)
     float fitFunctionToData(std::string method = "PSO")
     {
@@ -693,14 +738,13 @@ struct Board
             {
                 PSO(params);
             }
-            else if (method == "L-BFGS")
+            else if (method == "LBFGS")
             {
-
+                LBFGS(params);
             }
         }
         
         return loss_func(expression_evaluator(*params),data["y"]);
-                
     }
     
     /*
@@ -761,7 +805,7 @@ struct Board
     }
 };
 
-// 2.5382*cos(x_3) + x_0^2 - 1
+// 2.5382*cos(x_3) + x_0^2 - 0.5
 // postfix = "const x3 cos * x0 x0 * const - +"
 // prefix = "+ * const cos x3 - * x0 x0 const"
 float exampleFunc(const std::vector<float>& x)
@@ -774,9 +818,10 @@ float exampleFunc(const std::vector<float>& x)
     return 2.5382*cos(x[3]) + (x[0]*x[0]) - 0.5f;
 }
 
-void RandomSearch(const std::vector<std::vector<float>>& data, int depth = 3, std::string method = "prefix", float stop = 0.8f)
+void RandomSearch(const std::vector<std::vector<float>>& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "PSO", int num_fit_iter = 1)
 {
-    Board x(data, depth, method, false, "PSO");
+    Board x(data, depth, expression_type, false, method, num_fit_iter);
+    std::cout << x.fit_method << '\n';
     std::cout << x.data << '\n';
     std::random_device rand_dev;
     std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
@@ -851,7 +896,7 @@ int main() {
 //    exit(1);
     std::vector<std::vector<float>> data = generateData(100, 6, exampleFunc);
     auto start_time = Clock::now();
-    RandomSearch(data, 3, "postfix", 0.6f);
+    RandomSearch(data, 3, "postfix", 0.8f, "PSO", 1);
     
     auto end_time = Clock::now();
     std::cout << "Time difference = "
