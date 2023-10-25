@@ -19,6 +19,7 @@
 #include <cassert>
 #include <Python.h>
 #include <Eigen/Core>
+#include <Eigen/Dense>
 #include <LBFGS.h>
 #include <tensorflow/core/framework/op.h>
 #include <tensorflow/core/framework/op_kernel.h>
@@ -26,7 +27,7 @@
 
 using Clock = std::chrono::high_resolution_clock;
 
-std::vector<std::vector<float>> generateData(int numRows, int numCols, float (*func)(const std::vector<float>&))
+Eigen::MatrixXf generateData(int numRows, int numCols, float (*func)(const Eigen::VectorXf&))
 {
     // Initialize random number generator
     std::random_device rd;
@@ -34,15 +35,21 @@ std::vector<std::vector<float>> generateData(int numRows, int numCols, float (*f
     std::normal_distribution<float> distribution;
 
     // Create the matrix
-    std::vector<std::vector<float>> matrix(numRows, std::vector<float>(numCols));
+    Eigen::MatrixXf matrix(numRows, numCols);
 
     for (int i = 0; i < numRows; i++)
     {
         for (int j = 0; j < numCols - 1; j++)
         {
-            matrix[i][j] = distribution(gen);
+            matrix(i, j) = distribution(gen);
         }
-        matrix[i][numCols - 1] = func(matrix[i]);
+
+        Eigen::VectorXf rowVector(numCols - 1);
+        for (int j = 0; j < numCols - 1; j++)
+        {
+            rowVector(j) = matrix(i, j);
+        }
+        matrix(i, numCols - 1) = func(rowVector);
     }
 
     return matrix;
@@ -50,123 +57,51 @@ std::vector<std::vector<float>> generateData(int numRows, int numCols, float (*f
 
 class Data
 {
-    std::vector<std::vector<float>> data;
-    std::unordered_map<std::string, std::vector<float>> features;
+    Eigen::MatrixXf data;
+    std::unordered_map<std::string, Eigen::VectorXf> features;
+    std::vector<Eigen::VectorXf> rows;
+    const long num_columns, num_rows;
     
 public:
     
-    Data(const std::vector<std::vector<float>>& theData) : data{theData}
+    Data(const Eigen::MatrixXf& theData) : data{theData}, num_columns{data.cols()}, num_rows{data.rows()}
     {
-        auto temp_sz = data[0].size() - 1;
-        for (size_t i = 0; i < temp_sz; i++) //for each column
+//        auto num_columns = data.cols(); //number of columns - 1
+//        auto num_rows = data.rows();
+        
+        for (size_t i = 0; i < num_columns - 1; i++) //for each column
         {
-            for (size_t j = 0; j < data.size(); j++) //for each row
+            features["x"+std::to_string(i)] = Eigen::VectorXf(num_rows);
+            for (size_t j = 0; j < num_rows; j++)
             {
-                features["x"+std::to_string(i)].push_back(data[j][i]);
+                features["x"+std::to_string(i)](j) = data(j,i);
             }
         }
         
-        for (size_t i = 0; i < data.size(); i++)
+        features["y"] = Eigen::VectorXf(num_rows);
+        rows.resize(num_rows);
+        
+        for (size_t i = 0; i < num_rows; i++)
         {
-            features["y"].push_back(data[i][temp_sz]);
+            features["y"](i) = data(i,num_columns - 1);
+            rows[i] = data.row(i);
         }
         
     }
-    const std::vector<float>& operator[] (int i){return data[i];}
-    const std::vector<float>& operator[] (const std::string& i)
+    const Eigen::VectorXf& operator[] (int i){return rows[i];}
+    const Eigen::VectorXf& operator[] (const std::string& i)
     {
         return features[i];
     }
-    std::size_t size() {return data.size();}
+    const long numRows() {return num_rows;}
+    const long numCols() {return num_columns;}
+
     friend std::ostream& operator<<(std::ostream& os, const Data& matrix)
     {
-        for (const auto& row : matrix.data)
-        {
-            for (const float value : row)
-            {
-                os << value << ' ';
-            }
-            os << '\n';
-        }
-        return os;
+        return (os << matrix.data);
     }
+
 };
-
-std::ostream& operator<<(std::ostream& os, const std::vector<float>& row)
-{
-    os << '{';
-    for (const float value : row)
-    {
-        os << value << ", ";
-    }
-    os << "}";
-    return os;
-}
-
-std::vector<float> operator*(const std::vector<float>& v1, const std::vector<float>& v2)
-{
-    if (v1.size() != v2.size())
-    {
-        throw std::runtime_error("Vector sizes do not match for element-wise multiplication.");
-    }
-
-    std::vector<float> result;
-    result.reserve(v1.size());
-
-    for (std::size_t i = 0; i < v1.size(); i++)
-    {
-        result.push_back(v1[i] * v2[i]);
-    }
-
-    return result;
-}
-
-std::vector<float> operator+(const std::vector<float>& v1, const std::vector<float>& v2)
-{
-    if (v1.size() != v2.size())
-    {
-        throw std::runtime_error("Vector sizes do not match for element-wise addition.");
-    }
-
-    std::vector<float> result;
-    result.reserve(v1.size());
-
-    for (std::size_t i = 0; i < v1.size(); i++)
-    {
-        result.push_back(v1[i] + v2[i]);
-    }
-
-    return result;
-}
-
-std::vector<float> operator-(const std::vector<float>& v1, const std::vector<float>& v2)
-{
-    if (v1.size() != v2.size())
-    {
-        throw std::runtime_error("Vector sizes do not match for element-wise subtraction.");
-    }
-
-    std::vector<float> result;
-    result.reserve(v1.size());
-
-    for (std::size_t i = 0; i < v1.size(); i++)
-    {
-        result.push_back(v1[i] - v2[i]);
-    }
-
-    return result;
-}
-
-std::vector<float> cos(const std::vector<float>& v)
-{
-    std::vector<float> result;
-    result.reserve(v.size());
-    for (std::size_t i = 0; i < v.size(); i++)
-    {
-        result.push_back(cos(v[i]));
-    }
-    return result;
-}
 
 std::pair<int, bool> getRPNdepth(const std::vector<std::string>& expression)
 {
@@ -188,9 +123,9 @@ std::pair<int, bool> getRPNdepth(const std::vector<std::string>& expression)
         }
         else if (operators.count(token) > 0)
         {
-            int op2 = stack.top();
+            int op2 = std::move(stack.top());
             stack.pop();
-            int op1 = stack.top();
+            int op1 = std::move(stack.top());
             stack.pop();
             stack.push(std::max(op1, op2) + 1);
         }
@@ -202,9 +137,9 @@ std::pair<int, bool> getRPNdepth(const std::vector<std::string>& expression)
 
     while (stack.size() > 1)
     {
-        int op2 = stack.top();
+        int op2 = std::move(stack.top());
         stack.pop();
-        int op1 = stack.top();
+        int op1 = std::move(stack.top());
         stack.pop();
         stack.push(std::max(op1, op2) + 1);
         complete = false;
@@ -253,24 +188,17 @@ std::pair<int, bool> getPNdepth(const std::vector<std::string>& expression)
     return std::make_pair(depth - 1, num_leaves == num_binary + 1);
 }
 
-float MSE(const std::vector<float>& actual, const std::vector<float>& predicted)
+float MSE(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
 {
     if (actual.size() != predicted.size())
     {
         throw std::invalid_argument("Vectors must be of the same size");
     }
-
-    float mse = 0.0f;
-    for (size_t i = 0; i < actual.size(); i++)
-    {
-        float error = actual[i] - predicted[i];
-        mse += error * error;
-    }
-    
-    return mse/actual.size();
+        
+    return (actual - predicted).squaredNorm() / actual.size();
 }
 
-float loss_func(const std::vector<float>& actual, const std::vector<float>& predicted)
+float loss_func(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
 {
     return (1.0f/(1.0f+MSE(actual, predicted)));
 }
@@ -283,8 +211,10 @@ struct Board
     static std::vector<std::string> inline init_expression = {};
     static float inline fit_time = 0;
     
+    static constexpr float K = 0.0884956f;
+    static constexpr float phi_1 = 2.8f;
+    static constexpr float phi_2 = 1.3f;
     int __num_features;
-    size_t data_size;
     std::vector<std::string> __input_vars;
     std::vector<std::string> __unary_operators;
     std::vector<std::string> __binary_operators;
@@ -318,10 +248,9 @@ struct Board
     std::vector<float> pieces;
     bool visualize_exploration;
     
-    Board(const std::vector<std::vector<float>>& theData, int n = 3, const std::string& expression_type = "prefix", bool visualize_exploration = false, std::string fitMethod = "PSO", int numFitIter = 1) : data{theData}, gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, fit_method{fitMethod}, num_fit_iter{numFitIter}
+    Board(const Eigen::MatrixXf& theData, int n = 3, const std::string& expression_type = "prefix", bool visualize_exploration = false, std::string fitMethod = "PSO", int numFitIter = 1) : data{theData}, gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, fit_method{fitMethod}, num_fit_iter{numFitIter}
     {
         this->__num_features = data[0].size() - 1;
-        this->data_size = data.size();
         this->__input_vars.reserve(this->__num_features);
         for (auto i = 0; i < this->__num_features; i++)
         {
@@ -561,16 +490,16 @@ struct Board
             }
             else if (std::find(__unary_operators_float.begin(), __unary_operators_float.end(), pieces[i]) != __unary_operators_float.end()) // Unary operator
             {
-                std::string operand = stack.top();
+                std::string operand = std::move(stack.top());
                 stack.pop();
                 result = token + "(" + operand + ")";
                 stack.push(result);
             }
             else // binary operator
             {
-                std::string right_operand = stack.top();
+                std::string right_operand = std::move(stack.top());
                 stack.pop();
-                std::string left_operand = stack.top();
+                std::string left_operand = std::move(stack.top());
                 stack.pop();
                 if (expression_type == "prefix")
                 {
@@ -583,12 +512,12 @@ struct Board
                 stack.push(result);
             }
         }
-        return stack.top();
+        return std::move(stack.top());
     }
 
-    std::vector<float> expression_evaluator(const std::vector<float>& params)
+    Eigen::VectorXf expression_evaluator(const std::vector<float>& params)
     {
-        std::stack<std::vector<float>> stack;
+        std::stack<Eigen::VectorXf> stack;
         size_t const_count = 0;
         bool is_prefix = (expression_type == "prefix");
         
@@ -600,7 +529,7 @@ struct Board
             {
                 if (token == "const")
                 {
-                    stack.push(std::vector<float>(data_size, params[const_count++]));
+                    stack.push(Eigen::VectorXf::Ones(data.numRows())*params[const_count++]);
                 }
                 else
                 {
@@ -611,33 +540,33 @@ struct Board
             {
                 if (token == "cos")
                 {
-                    std::vector<float> temp = stack.top();
+                    Eigen::VectorXf temp = std::move(stack.top());
                     stack.pop();
-                    stack.push(cos(temp));
+                    stack.push(temp.array().cos());
                 }
             }
             else // binary operator
             {
-                std::vector<float> left_operand = stack.top();
+                Eigen::VectorXf left_operand = std::move(stack.top());
                 stack.pop();
-                std::vector<float> right_operand = stack.top();
+                Eigen::VectorXf right_operand = std::move(stack.top());
                 stack.pop();
 
                 if (token == "+")
                 {
-                    stack.push(((expression_type == "prefix") ? (right_operand + left_operand) : (left_operand + right_operand)));
+                    stack.push(((expression_type == "prefix") ? (right_operand.array() + left_operand.array()) : (left_operand.array() + right_operand.array())));
                 }
                 else if (token == "-")
                 {
-                    stack.push(((expression_type == "prefix") ? (right_operand - left_operand) : (left_operand - right_operand)));
+                    stack.push(((expression_type == "prefix") ? (right_operand.array() - left_operand.array()) : (left_operand.array() - right_operand.array())));
                 }
                 else if (token == "*")
                 {
-                    stack.push(((expression_type == "prefix") ? (right_operand * left_operand) : (left_operand * right_operand)));
+                    stack.push(((expression_type == "prefix") ? (right_operand.array() * left_operand.array()) : (left_operand.array() * right_operand.array())));
                 }
             }
         }
-        return stack.top();
+        return std::move(stack.top());
     }
     
     void PSO(std::vector<float>* params)
@@ -667,7 +596,7 @@ struct Board
             for (unsigned short i = 0; i < params->size(); i++)
             {
                 rp = pos_dist(gen), rg = pos_dist(gen);
-                v[i] = 0.99f * v[i] + rp*(particle_positions[i] - x[i]) + rg*((*params)[i] - x[i]);
+                v[i] = K*(v[i] + phi_1*rp*(particle_positions[i] - x[i]) + phi_2*rg*((*params)[i] - x[i]));
                 x[i] += v[i];
                 
                 fpi = loss_func(expression_evaluator(particle_positions),data["y"]); //current score
@@ -694,7 +623,7 @@ struct Board
     float operator()(const Eigen::VectorXf& x, Eigen::VectorXf& grad)
     {
         *params = std::vector<float>(x.begin(), x.end());
-        std::vector<float> baseline = expression_evaluator(*params);
+        Eigen::VectorXf baseline = expression_evaluator(*params);
         
         float mse = MSE(baseline, data["y"]), temp;
         for (int i = 0; i < x.size(); i++)
@@ -805,8 +734,8 @@ struct Board
             return fitFunctionToData(this->fit_method);
         }
     }
-    const std::vector<float>& operator[] (int i){return data[i];}
-    const std::vector<float>& operator[] (const std::string& i)
+    const Eigen::VectorXf& operator[] (int i){return data[i];}
+    const Eigen::VectorXf& operator[] (const std::string& i)
     {
         return data[i];
     }
@@ -820,19 +749,16 @@ struct Board
 // 2.5382*cos(x_3) + x_0^2 - 0.5
 // postfix = "const x3 cos * x0 x0 * const - +"
 // prefix = "+ * const cos x3 - * x0 x0 const"
-float exampleFunc(const std::vector<float>& x)
+float exampleFunc(const Eigen::VectorXf& x)
 {
-    if (x.size() < 3)
-    {
-        throw std::runtime_error("exampleFunc requires a vector of size 3");
-    }
-
     return 2.5382*cos(x[3]) + (x[0]*x[0]) - 0.5f;
 }
 
-void RandomSearch(const std::vector<std::vector<float>>& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "PSO", int num_fit_iter = 1)
+void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "PSO", int num_fit_iter = 1)
 {
     Board x(data, depth, expression_type, false, method, num_fit_iter);
+    std::cout << x["y"] << '\n';
+    
     std::cout << x.fit_method << '\n';
     std::cout << x.data << '\n';
     std::random_device rand_dev;
@@ -841,25 +767,29 @@ void RandomSearch(const std::vector<std::vector<float>>& data, int depth = 3, st
     std::vector<float> temp_legal_moves, params, best_params;
     size_t temp_sz;
     std::string expression, orig_expression, best_expression;
+    
 //    std::ofstream out(x.expression_type == "prefix" ? "PN_expressions.txt" : "RPN_expressions.txt");
     std::cout << "stop = " << stop << '\n';
-    for (int i = 0; score < stop; i++)
+//    exit(1);
+    for (int i = 0; (score < stop || Board::expression_dict.size() > 2000000); i++)
     {
         while ((score = x.complete_status()) == -1)
         {
             temp_legal_moves = x.get_legal_moves(); //the legal moves
             temp_sz = temp_legal_moves.size(); //the number of legal moves
-            std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
+            std::uniform_int_distribution<int> distribution(0, temp_sz - 1);
+ // A random integer generator which generates an index corresponding to an allowed move
 
             x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
         }
         
-        expression = x._to_infix();
+        
         
 //        out << "Iteration " << i << ": Original expression = " << x.expression() << ", Infix Expression = " << expression << '\n';
 
         if (score > max_score)
         {
+            expression = x._to_infix();
             std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
             std::cout << "Best expression = " << best_expression << '\n';
             std::cout << "Best expression (original format) = " << orig_expression << '\n';
@@ -906,10 +836,11 @@ int main() {
 //    const char* cstr = PyUnicode_AsUTF8(pStr);
 //    puts(cstr);
 //    exit(1);
-    std::vector<std::vector<float>> data = generateData(100, 6, exampleFunc);
+    Eigen::MatrixXf data = generateData(100, 6, exampleFunc);
+    std::cout << data << "\n\n";
     auto start_time = Clock::now();
-    RandomSearch(data, 3, "postfix", 0.8f, "PSO", 1);
-    
+    RandomSearch(data, 3, "postfix", 1.0f, "PSO", 1);
+//
     auto end_time = Clock::now();
     std::cout << "Time difference = "
           << std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count()/1e9 << " seconds" << '\n';
