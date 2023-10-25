@@ -24,6 +24,7 @@
 #include <tensorflow/core/framework/op.h>
 #include <tensorflow/core/framework/op_kernel.h>
 #include <unsupported/Eigen/CXX11/Tensor>
+#include <unsupported/Eigen/LevenbergMarquardt>
 
 using Clock = std::chrono::high_resolution_clock;
 
@@ -206,7 +207,7 @@ float loss_func(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
 struct Board
 {
     static std::string inline best_expression = "";
-    static std::unordered_map<std::string, std::pair<std::vector<float>, int>> inline expression_dict = {};
+    static std::unordered_map<std::string, std::pair<Eigen::VectorXf, int>> inline expression_dict = {};
     static float inline best_loss = FLT_MAX;
     static std::vector<std::string> inline init_expression = {};
     static float inline fit_time = 0;
@@ -222,7 +223,7 @@ struct Board
     std::vector<std::string> __other_tokens;
     std::vector<std::string> __tokens;
     std::vector<float> __tokens_float;
-    std::vector<float>* params; //store the parameters of the expression of the current episode after it's completed
+    Eigen::VectorXf* params; //store the parameters of the expression of the current episode after it's completed
     Data data;
     
     std::vector<float> __operators_float;
@@ -486,7 +487,7 @@ struct Board
 
             if (std::find(__operators_float.begin(), __operators_float.end(), pieces[i]) == __operators_float.end()) // leaf
             {
-                stack.push(((!show_consts) || (std::find(__other_tokens.begin(), __other_tokens.end(), token) == __other_tokens.end())) ? token : std::to_string((*params)[const_counter++]));
+                stack.push(((!show_consts) || (std::find(__other_tokens.begin(), __other_tokens.end(), token) == __other_tokens.end())) ? token : std::to_string((*params)(const_counter++)));
             }
             else if (std::find(__unary_operators_float.begin(), __unary_operators_float.end(), pieces[i]) != __unary_operators_float.end()) // Unary operator
             {
@@ -515,7 +516,7 @@ struct Board
         return std::move(stack.top());
     }
 
-    Eigen::VectorXf expression_evaluator(const std::vector<float>& params)
+    Eigen::VectorXf expression_evaluator(const Eigen::VectorXf& params)
     {
         std::stack<Eigen::VectorXf> stack;
         size_t const_count = 0;
@@ -529,7 +530,7 @@ struct Board
             {
                 if (token == "const")
                 {
-                    stack.push(Eigen::VectorXf::Ones(data.numRows())*params[const_count++]);
+                    stack.push(Eigen::VectorXf::Ones(data.numRows())*params(const_count++));
                 }
                 else
                 {
@@ -569,17 +570,17 @@ struct Board
         return std::move(stack.top());
     }
     
-    void PSO(std::vector<float>* params)
+    void PSO(Eigen::VectorXf* params)
     {
         auto start_time = Clock::now();
-        std::vector<float> particle_positions(params->size()), x(params->size());
-        std::vector<float> v(params->size());
+        Eigen::VectorXf particle_positions(params->size()), x(params->size());
+        Eigen::VectorXf v(params->size());
         float rp, rg;
 
         for (size_t i = 0; i < params->size(); i++)
         {
-            particle_positions[i] = x[i] = pos_dist(gen);
-            v[i] = vel_dist(gen);
+            particle_positions(i) = x(i) = pos_dist(gen);
+            v(i) = vel_dist(gen);
         }
 
         float swarm_best_score = loss_func(expression_evaluator(*params),data["y"]);
@@ -596,21 +597,21 @@ struct Board
             for (unsigned short i = 0; i < params->size(); i++)
             {
                 rp = pos_dist(gen), rg = pos_dist(gen);
-                v[i] = K*(v[i] + phi_1*rp*(particle_positions[i] - x[i]) + phi_2*rg*((*params)[i] - x[i]));
-                x[i] += v[i];
+                v(i) = K*(v(i) + phi_1*rp*(particle_positions(i) - x(i)) + phi_2*rg*((*params)(i) - x(i)));
+                x(i) += v(i);
                 
                 fpi = loss_func(expression_evaluator(particle_positions),data["y"]); //current score
-                temp = particle_positions[i]; //save old position of particle i
-                particle_positions[i] = x[i]; //update old position to new position
+                temp = particle_positions(i); //save old position of particle i
+                particle_positions(i) = x(i); //update old position to new position
                 fxi = loss_func(expression_evaluator(particle_positions),data["y"]); //calculate the score with the new position
                 if (fxi < fpi) //if the new vector is worse:
                 {
-                    particle_positions[i] = temp; //reset particle_positions[i]
+                    particle_positions(i) = temp; //reset particle_positions[i]
                 }
                 else if (fpi > swarm_best_score)
                 {
 //                    printf("Iteration %d: Changing param %d from %f to %f. Score from %f to %f\n", j, i, (*params)[i], particle_positions[i], swarm_best_score, fpi);
-                    (*params)[i] = particle_positions[i];
+                    (*params)(i) = particle_positions(i);
                     swarm_best_score = fpi;
                 }
             }
@@ -622,17 +623,17 @@ struct Board
     
     float operator()(const Eigen::VectorXf& x, Eigen::VectorXf& grad)
     {
-        *params = std::vector<float>(x.begin(), x.end());
+        *params = x;
         Eigen::VectorXf baseline = expression_evaluator(*params);
         
         float mse = MSE(baseline, data["y"]), temp;
         for (int i = 0; i < x.size(); i++)
         {
-            (*params)[i] += 0.00001f;
-            grad[i] = (MSE(expression_evaluator(*params), data["y"]) - mse) / 0.00001f ;
+            (*params)(i) += 0.00001f;
+            grad(i) = (MSE(expression_evaluator(*params), data["y"]) - mse) / 0.00001f ;
             
 //            printf("grad[%d] = %f\n",i,grad[i]);
-            (*params)[i] -= 0.00001f;
+            (*params)(i) -= 0.00001f;
             
 //            (*params)[i] -= 0.00001f;
 //            temp = MSE(expression_evaluator(*params), data["y"]);
@@ -646,7 +647,7 @@ struct Board
         return mse;
     }
     
-    void LBFGS(std::vector<float>* params)
+    void LBFGS(Eigen::VectorXf* params)
     {
         auto start_time = Clock::now();
         LBFGSpp::LBFGSParam<float> param;
@@ -654,7 +655,7 @@ struct Board
         param.max_iterations = this->num_fit_iter;
         LBFGSpp::LBFGSSolver<float> solver(param);
         float fx;
-        Eigen::VectorXf eigenVec = Eigen::Map<Eigen::VectorXf>(params->data(), params->size());
+        Eigen::VectorXf eigenVec = *params;
         float mse = MSE(expression_evaluator(*params), data["y"]);
         try
         {
@@ -665,15 +666,15 @@ struct Board
         if (fx < mse)
         {
 //            printf("mse = %f -> fx = %f\n", mse, fx);
-            *params = std::vector<float>(eigenVec.begin(), eigenVec.end());
+            *params = eigenVec;
         }
         Board::fit_time += (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9);
     }
     
-    //TODO: Add other methods besides PSO (e.g. Eigen, calling scipy from the Python-C API, etc.)
+    //TODO: Add other methods besides PSO (e.g. Eigen::LevenbergMarquardt, calling scipy from the Python-C API, etc.)
     float fitFunctionToData(std::string method = "PSO")
     {
-        if (!params->empty())
+        if (!(params->size()))
         {
             if (method == "PSO")
             {
@@ -726,7 +727,7 @@ struct Board
             }
             
             this->params = &Board::expression_dict[expression_string].first;
-            if (this->params->empty())
+            if (!(this->params->size()))
             {
                 this->params->resize(num_consts, 1.0f);
             }
@@ -764,14 +765,14 @@ void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expres
     std::random_device rand_dev;
     std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
     float score = 0, max_score = 0;
-    std::vector<float> temp_legal_moves, params, best_params;
+    std::vector<float> temp_legal_moves;
     size_t temp_sz;
     std::string expression, orig_expression, best_expression;
     
 //    std::ofstream out(x.expression_type == "prefix" ? "PN_expressions.txt" : "RPN_expressions.txt");
     std::cout << "stop = " << stop << '\n';
 //    exit(1);
-    for (int i = 0; (score < stop || Board::expression_dict.size() > 2000000); i++)
+    for (int i = 0; (score < stop && Board::expression_dict.size() <= 2000000); i++)
     {
         while ((score = x.complete_status()) == -1)
         {

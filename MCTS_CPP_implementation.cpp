@@ -843,7 +843,7 @@ void RandomSearch(const std::vector<std::vector<float>>& data, int depth = 3, st
     std::string expression, orig_expression, best_expression;
 //    std::ofstream out(x.expression_type == "prefix" ? "PN_expressions.txt" : "RPN_expressions.txt");
     std::cout << "stop = " << stop << '\n';
-    for (int i = 0; score < stop; i++)
+    for (int i = 0; (score < stop && Board::expression_dict.size() <= 2000000); i++)
     {
         while ((score = x.complete_status()) == -1)
         {
@@ -854,12 +854,11 @@ void RandomSearch(const std::vector<std::vector<float>>& data, int depth = 3, st
             x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
         }
         
-        expression = x._to_infix();
-        
 //        out << "Iteration " << i << ": Original expression = " << x.expression() << ", Infix Expression = " << expression << '\n';
 
         if (score > max_score)
         {
+            expression = x._to_infix();
             std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
             std::cout << "Best expression = " << best_expression << '\n';
             std::cout << "Best expression (original format) = " << orig_expression << '\n';
@@ -908,7 +907,7 @@ int main() {
 //    exit(1);
     std::vector<std::vector<float>> data = generateData(100, 6, exampleFunc);
     auto start_time = Clock::now();
-    RandomSearch(data, 3, "postfix", 0.8f, "PSO", 1);
+    RandomSearch(data, 3, "postfix", 1.0f, "LBFGS", 1);
     
     auto end_time = Clock::now();
     std::cout << "Time difference = "
