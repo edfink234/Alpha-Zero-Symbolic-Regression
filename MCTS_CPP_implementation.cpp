@@ -625,15 +625,15 @@ struct Board
 
                 if (token == "+")
                 {
-                    stack.push(((expression_type == "prefix") ? (right_operand + left_operand) : (left_operand + right_operand)));
+                    stack.push(((expression_type == "postfix") ? (right_operand.array() + left_operand.array()) : (left_operand.array() + right_operand.array())));
                 }
                 else if (token == "-")
                 {
-                    stack.push(((expression_type == "prefix") ? (right_operand - left_operand) : (left_operand - right_operand)));
+                    stack.push(((expression_type == "postfix") ? (right_operand.array() - left_operand.array()) : (left_operand.array() - right_operand.array())));
                 }
                 else if (token == "*")
                 {
-                    stack.push(((expression_type == "prefix") ? (right_operand * left_operand) : (left_operand * right_operand)));
+                    stack.push(((expression_type == "postfix") ? (right_operand.array() * left_operand.array()) : (left_operand.array() * right_operand.array())));
                 }
             }
         }
@@ -859,12 +859,12 @@ void RandomSearch(const std::vector<std::vector<float>>& data, int depth = 3, st
         if (score > max_score)
         {
             expression = x._to_infix();
-            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-            std::cout << "Best expression = " << best_expression << '\n';
-            std::cout << "Best expression (original format) = " << orig_expression << '\n';
-            max_score = score;
-            best_expression = std::move(expression);
             orig_expression = x.expression();
+            max_score = score;
+            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+            std::cout << "Best expression = " << expression << '\n';
+            std::cout << "Best expression (original format) = " << orig_expression << '\n';
+            best_expression = std::move(expression);
         }
         x.pieces.clear();
     }
@@ -907,7 +907,7 @@ int main() {
 //    exit(1);
     std::vector<std::vector<float>> data = generateData(100, 6, exampleFunc);
     auto start_time = Clock::now();
-    RandomSearch(data, 3, "postfix", 1.0f, "LBFGS", 1);
+    RandomSearch(data, 3, "postfix", 1.0f, "PSO", 10);
     
     auto end_time = Clock::now();
     std::cout << "Time difference = "

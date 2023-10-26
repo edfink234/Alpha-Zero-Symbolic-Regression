@@ -467,13 +467,29 @@ struct Board
     {
         std::string temp;
         size_t sz = pieces.size() - 1;
+        int const_index = ((expression_type == "postfix") ? 0 : params->size()-1);
         for (size_t i = 0; i <= sz; i++)
         {
-            temp += ((i!=sz) ? __tokens_dict[pieces[i]] + " " : __tokens_dict[pieces[i]]);
+            if (std::find(__other_tokens_float.begin(), __other_tokens_float.end(), pieces[i]) != __other_tokens_float.end())
+            {
+                temp += ((i!=sz) ? std::to_string((*params)(const_index)) + " " : std::to_string((*params)(const_index)));
+                if (expression_type == "postfix")
+                {
+                    const_index++;
+                }
+                else
+                {
+                    const_index--;
+                }
+            }
+            else
+            {
+                temp += ((i!=sz) ? __tokens_dict[pieces[i]] + " " : __tokens_dict[pieces[i]]);
+            }
         }
         return temp;
     }
-    //TODO: need to have another optional argument here for the params to use here.
+    
     std::string _to_infix(bool show_consts = true)
     {
         std::stack<std::string> stack;
@@ -521,7 +537,6 @@ struct Board
         std::stack<Eigen::VectorXf> stack;
         size_t const_count = 0;
         bool is_prefix = (expression_type == "prefix");
-        
         for (int i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
         {
             std::string token = __tokens_dict[pieces[i]];
@@ -555,22 +570,22 @@ struct Board
 
                 if (token == "+")
                 {
-                    stack.push(((expression_type == "prefix") ? (right_operand.array() + left_operand.array()) : (left_operand.array() + right_operand.array())));
+                    stack.push(((expression_type == "postfix") ? (right_operand.array() + left_operand.array()) : (left_operand.array() + right_operand.array())));
                 }
                 else if (token == "-")
                 {
-                    stack.push(((expression_type == "prefix") ? (right_operand.array() - left_operand.array()) : (left_operand.array() - right_operand.array())));
+                    stack.push(((expression_type == "postfix") ? (right_operand.array() - left_operand.array()) : (left_operand.array() - right_operand.array())));
                 }
                 else if (token == "*")
                 {
-                    stack.push(((expression_type == "prefix") ? (right_operand.array() * left_operand.array()) : (left_operand.array() * right_operand.array())));
+                    stack.push(((expression_type == "postfix") ? (right_operand.array() * left_operand.array()) : (left_operand.array() * right_operand.array())));
                 }
             }
         }
         return std::move(stack.top());
     }
     
-    void PSO(Eigen::VectorXf* params)
+    void PSO()
     {
         auto start_time = Clock::now();
         Eigen::VectorXf particle_positions(params->size()), x(params->size());
@@ -616,38 +631,34 @@ struct Board
                 }
             }
         }
-//        std::cout << "params after = " << *params << '\n';
         
         Board::fit_time += (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9);
     }
     
-    float operator()(const Eigen::VectorXf& x, Eigen::VectorXf& grad)
+    float operator()(Eigen::VectorXf& x, Eigen::VectorXf& grad)
     {
-        *params = x;
-        Eigen::VectorXf baseline = expression_evaluator(*params);
-        
-        float mse = MSE(baseline, data["y"]), temp;
+        float mse = MSE(expression_evaluator(x), data["y"]), low_b, temp;
         for (int i = 0; i < x.size(); i++)
         {
-            (*params)(i) += 0.00001f;
-            grad(i) = (MSE(expression_evaluator(*params), data["y"]) - mse) / 0.00001f ;
-            
-//            printf("grad[%d] = %f\n",i,grad[i]);
-            (*params)(i) -= 0.00001f;
-            
-//            (*params)[i] -= 0.00001f;
-//            temp = MSE(expression_evaluator(*params), data["y"]);
-//            (*params)[i] += 0.00002f;
-//            grad[i] = (MSE(expression_evaluator(*params), data["y"]) - temp) / 0.00002f ;
-//
-//            //            printf("grad[%d] = %f\n",i,grad[i]);
-//            (*params)[i] -= 0.00001f;
+//            x(i) += 0.00001f;
+//            grad(i) = (MSE(expression_evaluator(x), data["y"]) - mse) / 0.00001f ;
+//            
+////            printf("grad[%d] = %f\n",i,grad[i]);
+//            x(i) -= 0.00001f;
+            temp = x(i);
+            x(i) -= 0.00001f;
+            low_b = MSE(expression_evaluator(x), data["y"]);
+            x(i) += 0.00002f;
+            grad(i) = (MSE(expression_evaluator(x), data["y"]) - low_b) / 0.00002f ;
+
+            //            printf("grad[%d] = %f\n",i,grad[i]);
+            x(i) = temp;
         }
         
         return mse;
     }
     
-    void LBFGS(Eigen::VectorXf* params)
+    void LBFGS()
     {
         auto start_time = Clock::now();
         LBFGSpp::LBFGSParam<float> param;
@@ -655,6 +666,7 @@ struct Board
         param.max_iterations = this->num_fit_iter;
         LBFGSpp::LBFGSSolver<float> solver(param);
         float fx;
+        
         Eigen::VectorXf eigenVec = *params;
         float mse = MSE(expression_evaluator(*params), data["y"]);
         try
@@ -663,6 +675,7 @@ struct Board
         } 
         catch (std::runtime_error& e){}
         
+//        printf("mse = %f -> fx = %f\n", mse, fx);
         if (fx < mse)
         {
 //            printf("mse = %f -> fx = %f\n", mse, fx);
@@ -674,15 +687,15 @@ struct Board
     //TODO: Add other methods besides PSO (e.g. Eigen::LevenbergMarquardt, calling scipy from the Python-C API, etc.)
     float fitFunctionToData(std::string method = "PSO")
     {
-        if (!(params->size()))
+        if (params->size())
         {
             if (method == "PSO")
             {
-                PSO(params);
+                PSO();
             }
             else if (method == "LBFGS")
             {
-                LBFGS(params);
+                LBFGS();
             }
         }
         
@@ -729,7 +742,8 @@ struct Board
             this->params = &Board::expression_dict[expression_string].first;
             if (!(this->params->size()))
             {
-                this->params->resize(num_consts, 1.0f);
+                this->params->resize(num_consts);
+                this->params->setOnes();
             }
 
             return fitFunctionToData(this->fit_method);
@@ -758,6 +772,7 @@ float exampleFunc(const Eigen::VectorXf& x)
 void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "PSO", int num_fit_iter = 1)
 {
     Board x(data, depth, expression_type, false, method, num_fit_iter);
+
     std::cout << x["y"] << '\n';
     
     std::cout << x.fit_method << '\n';
@@ -771,8 +786,7 @@ void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expres
     
 //    std::ofstream out(x.expression_type == "prefix" ? "PN_expressions.txt" : "RPN_expressions.txt");
     std::cout << "stop = " << stop << '\n';
-//    exit(1);
-    for (int i = 0; (score < stop && Board::expression_dict.size() <= 2000000); i++)
+    for (int i = 0; (score < stop /*&& Board::expression_dict.size() <= FLT_MAX*/); i++)
     {
         while ((score = x.complete_status()) == -1)
         {
@@ -783,20 +797,19 @@ void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expres
 
             x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
         }
-        
-        
-        
+
 //        out << "Iteration " << i << ": Original expression = " << x.expression() << ", Infix Expression = " << expression << '\n';
 
         if (score > max_score)
         {
-            expression = x._to_infix();
-            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-            std::cout << "Best expression = " << best_expression << '\n';
-            std::cout << "Best expression (original format) = " << orig_expression << '\n';
-            max_score = score;
-            best_expression = std::move(expression);
+            expression = x._to_infix();//((score > 0.99f) ? x._to_infix(true, true) : x._to_infix());
             orig_expression = x.expression();
+            max_score = score;
+            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+            std::cout << "Best expression = " << expression << '\n';
+            std::cout << "Best expression (original format) = " << orig_expression << '\n';
+            best_expression = std::move(expression);
+            
         }
         x.pieces.clear();
     }
@@ -840,7 +853,7 @@ int main() {
     Eigen::MatrixXf data = generateData(100, 6, exampleFunc);
     std::cout << data << "\n\n";
     auto start_time = Clock::now();
-    RandomSearch(data, 3, "postfix", 1.0f, "PSO", 1);
+    RandomSearch(data, 3, "postfix", 1.0f, "LBFGS", 10);
 //
     auto end_time = Clock::now();
     std::cout << "Time difference = "
@@ -848,3 +861,24 @@ int main() {
 
     return 0;
 }
+
+
+//cos1
+//
+//+2
+//
+//-3
+//
+//*4
+//
+//x05
+//
+//x16
+//
+//x27
+//
+//x38
+//
+//x49
+//
+//const10
