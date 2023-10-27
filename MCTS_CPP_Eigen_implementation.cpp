@@ -4,6 +4,7 @@
 #include <string>
 #include <utility>
 #include <algorithm>
+#include <future>         // std::async, std::future
 #include <unordered_set>
 #include <unordered_map>
 #include <float.h>
@@ -21,8 +22,6 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <LBFGS.h>
-#include <tensorflow/core/framework/op.h>
-#include <tensorflow/core/framework/op_kernel.h>
 #include <unsupported/Eigen/CXX11/Tensor>
 #include <unsupported/Eigen/LevenbergMarquardt>
 
@@ -366,7 +365,6 @@ struct Board
     
     std::vector<float> get_legal_moves()
     {
-        //TODO: Reduce calls to size method -> see if multiple of the same calls can be stored in variables.
         //TODO: Generated Expressions should always be irreducible, this isn't GP!
         if (this->expression_type == "prefix")
         {
@@ -585,6 +583,66 @@ struct Board
         return std::move(stack.top());
     }
     
+    void AsyncPSO()
+    {
+        auto start_time = Clock::now();
+        Eigen::VectorXf particle_positions(params->size()), x(params->size());
+        Eigen::VectorXf v(params->size());
+        float rp, rg;
+
+        for (size_t i = 0; i < params->size(); i++)
+        {
+            particle_positions(i) = x(i) = pos_dist(gen);
+            v(i) = vel_dist(gen);
+        }
+
+        float swarm_best_score = loss_func(expression_evaluator(*params),data["y"]);
+        float fpi = loss_func(expression_evaluator(particle_positions),data["y"]);
+        float temp, fxi;
+        
+        if (fpi > swarm_best_score)
+        {
+            *params = particle_positions;
+            swarm_best_score = fpi;
+        }
+        
+        auto UpdateParticle = [&](int i)
+        {
+            for (int j = 0; j < this->num_fit_iter; j++)
+            {
+                rp = pos_dist(gen), rg = pos_dist(gen);
+                v(i) = K*(v(i) + phi_1*rp*(particle_positions(i) - x(i)) + phi_2*rg*((*params)(i) - x(i)));
+                x(i) += v(i);
+                
+                fpi = loss_func(expression_evaluator(particle_positions),data["y"]); //current score
+                temp = particle_positions(i); //save old position of particle i
+                particle_positions(i) = x(i); //update old position to new position
+                fxi = loss_func(expression_evaluator(particle_positions),data["y"]); //calculate the score with the new position
+                if (fxi < fpi) //if the new vector is worse:
+                {
+                    particle_positions(i) = temp; //reset particle_positions[i]
+                }
+                else if (fpi > swarm_best_score)
+                {
+                    (*params)(i) = particle_positions(i);
+                    swarm_best_score = fpi;
+                }
+            }
+        };
+        
+        std::vector<std::future<void>> particles;
+        particles.reserve(params->size());
+        for (int i = 0; i < params->size(); i++)
+        {
+            particles.push_back(std::async(std::launch::async | std::launch::deferred, UpdateParticle, i));
+        }
+        for (auto& i: particles)
+        {
+            i.get();
+        }
+        Board::fit_time += (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9);
+    }
+    
     void PSO()
     {
         auto start_time = Clock::now();
@@ -609,7 +667,7 @@ struct Board
         }
         for (int j = 0; j < this->num_fit_iter; j++)
         {
-            for (unsigned short i = 0; i < params->size(); i++)
+            for (unsigned short i = 0; i < params->size(); i++) //number of particles
             {
                 rp = pos_dist(gen), rg = pos_dist(gen);
                 v(i) = K*(v(i) + phi_1*rp*(particle_positions(i) - x(i)) + phi_2*rg*((*params)(i) - x(i)));
@@ -693,6 +751,10 @@ struct Board
             {
                 PSO();
             }
+            else if (method == "AsyncPSO")
+            {
+                AsyncPSO();
+            }
             else if (method == "LBFGS")
             {
                 LBFGS();
@@ -769,14 +831,19 @@ float exampleFunc(const Eigen::VectorXf& x)
     return 2.5382*cos(x[3]) + (x[0]*x[0]) - 0.5f;
 }
 
+void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "PSO", int num_fit_iter = 1)
+{
+    Board x(data, depth, expression_type, false, method, num_fit_iter);
+    
+}
+
 void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "PSO", int num_fit_iter = 1)
 {
     Board x(data, depth, expression_type, false, method, num_fit_iter);
 
-    std::cout << x["y"] << '\n';
-    
-    std::cout << x.fit_method << '\n';
-    std::cout << x.data << '\n';
+//    std::cout << x["y"] << '\n';
+//    std::cout << x.fit_method << '\n';
+//    std::cout << x.data << '\n';
     std::random_device rand_dev;
     std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
     float score = 0, max_score = 0;
@@ -785,8 +852,8 @@ void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expres
     std::string expression, orig_expression, best_expression;
     
 //    std::ofstream out(x.expression_type == "prefix" ? "PN_expressions.txt" : "RPN_expressions.txt");
-    std::cout << "stop = " << stop << '\n';
-    for (int i = 0; (score < stop /*&& Board::expression_dict.size() <= FLT_MAX*/); i++)
+//    std::cout << "stop = " << stop << '\n';
+    for (int i = 0; (score < stop/* && Board::expression_dict.size() <= 2000000*/); i++)
     {
         while ((score = x.complete_status()) == -1)
         {
@@ -851,9 +918,9 @@ int main() {
 //    puts(cstr);
 //    exit(1);
     Eigen::MatrixXf data = generateData(100, 6, exampleFunc);
-    std::cout << data << "\n\n";
+//    std::cout << data << "\n\n";
     auto start_time = Clock::now();
-    RandomSearch(data, 3, "postfix", 1.0f, "LBFGS", 10);
+    RandomSearch(data, 3, "postfix", 1.0f, "LBFGS", 1);
 //
     auto end_time = Clock::now();
     std::cout << "Time difference = "
@@ -862,23 +929,3 @@ int main() {
     return 0;
 }
 
-
-//cos1
-//
-//+2
-//
-//-3
-//
-//*4
-//
-//x05
-//
-//x16
-//
-//x27
-//
-//x38
-//
-//x49
-//
-//const10
