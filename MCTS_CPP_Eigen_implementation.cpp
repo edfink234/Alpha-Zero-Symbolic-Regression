@@ -704,18 +704,11 @@ struct Board
         float mse = MSE(expression_evaluator(x), data["y"]), low_b, temp;
         for (int i = 0; i < x.size(); i++)
         {
-//            x(i) += 0.00001f;
-//            grad(i) = (MSE(expression_evaluator(x), data["y"]) - mse) / 0.00001f ;
-//            
-////            printf("grad[%d] = %f\n",i,grad[i]);
-//            x(i) -= 0.00001f;
             temp = x(i);
             x(i) -= 0.00001f;
             low_b = MSE(expression_evaluator(x), data["y"]);
             x(i) += 0.00002f;
             grad(i) = (MSE(expression_evaluator(x), data["y"]) - low_b) / 0.00002f ;
-
-            //            printf("grad[%d] = %f\n",i,grad[i]);
             x(i) = temp;
         }
         
@@ -854,6 +847,7 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
     moveTracker.reserve(x.reserve_amount);
     temp_legal_moves.reserve(x.reserve_amount);
     state.reserve(2*x.reserve_amount);
+    double str_convert_time = 0;
     
     auto getString = [](const std::vector<float>& pieces)
     {
@@ -884,7 +878,9 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
         while ((score = x.complete_status()) == -1)
         {
             temp_legal_moves = x.get_legal_moves();
+            auto start_time = Clock::now();
             state = std::move(getString(x.pieces)); //get string of current pieces
+            str_convert_time += std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9;
             UCT = 0.0f;
             UCT_best = -FLT_MAX;
             best_act = -1.0f;
@@ -925,6 +921,8 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
             std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
             std::cout << "Best expression = " << expression << '\n';
             std::cout << "Best expression (original format) = " << orig_expression << '\n';
+            std::cout << "str_convert_time (s) = " << str_convert_time << '\n';
+            std::cout << "Board::fit_time (s) = " << Board::fit_time << '\n';
             best_expression = std::move(expression);
         }
         x.pieces.clear();
@@ -1015,7 +1013,7 @@ int main() {
     Eigen::MatrixXf data = generateData(100, 6, exampleFunc);
 //    std::cout << data << "\n\n";
     auto start_time = Clock::now();
-    MCTS(data, 4, "prefix", 1.0f, "LBFGS", 5);
+    MCTS(data, 4, "postfix", 1.0f, "LBFGS", 5);
 //
     auto end_time = Clock::now();
     std::cout << "Time difference = "
