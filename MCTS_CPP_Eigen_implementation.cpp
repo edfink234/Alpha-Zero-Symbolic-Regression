@@ -1,3 +1,4 @@
+//TODO: Explore pybind11: https://pybind11.readthedocs.io/en/stable/basics.html
 #include <vector>
 #include <array>
 #include <iostream>
@@ -18,6 +19,7 @@
 #include <fstream>
 #include <iomanip>
 #include <cassert>
+#include <pybind11/pybind11.h>
 #include <Python.h>
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -236,6 +238,7 @@ struct Board
     std::uniform_real_distribution<float> vel_dist, pos_dist;
     
     int action_size;
+    size_t reserve_amount;
     int num_fit_iter;
     std::string fit_method;
                 
@@ -309,6 +312,8 @@ struct Board
         this->n = n;
         this->expression_type = expression_type;
         this->pieces = {};
+        this->reserve_amount = 2*pow(2,this->n)-1;
+        
         this->visualize_exploration = visualize_exploration;
     }
     
@@ -464,6 +469,7 @@ struct Board
     std::string expression()
     {
         std::string temp;
+        temp.reserve(2*pieces.size());
         size_t sz = pieces.size() - 1;
         int const_index = ((expression_type == "postfix") ? 0 : params->size()-1);
         for (size_t i = 0; i <= sz; i++)
@@ -828,12 +834,102 @@ struct Board
 // prefix = "+ * const cos x3 - * x0 x0 const"
 float exampleFunc(const Eigen::VectorXf& x)
 {
-    return 2.5382*cos(x[3]) + (x[0]*x[0]) - 0.5f;
+//    return 2.5382*cos(x[3]) + (x[0]*x[0]) - 0.5f;
+    return 5*cos(x[1]+x[3])+x[4];
 }
 
 void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "PSO", int num_fit_iter = 1)
 {
     Board x(data, depth, expression_type, false, method, num_fit_iter);
+    std::cout << x.data << '\n';
+    
+    float score = 0, max_score = 0, check_point_score = 0, UCT, best_act, UCT_best;
+    std::vector<float> temp_legal_moves;
+    std::unordered_map<std::string, std::unordered_map<float, float>> Qsa, Nsa;
+    std::string state;
+    std::string expression, orig_expression, best_expression;
+    std::unordered_map<std::string, float> Ns;
+    float c = 1.4; //"controls the balance between exploration and exploitation", see equation 2 here: https://web.engr.oregonstate.edu/~afern/classes/cs533/notes/uct.pdf
+    std::vector<std::pair<std::string, float>> moveTracker;
+    moveTracker.reserve(x.reserve_amount);
+    temp_legal_moves.reserve(x.reserve_amount);
+    state.reserve(2*x.reserve_amount);
+    
+    auto getString = [](const std::vector<float>& pieces)
+    {
+        return std::accumulate(pieces.begin(), pieces.end(), std::string(), [](const std::string& a, float b) { return a + (a.empty() ? "" : " ") + std::to_string(b); });
+    };
+    
+    for (int i = 0; (score < stop/* && Board::expression_dict.size() <= 2000000*/); i++)
+    {
+        if (i && (i%50000 == 0))
+        {
+            std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+            std::cout << "check_point_score = " << check_point_score
+            << ", max_score = " << max_score << ", c = " << c << '\n';
+            if (check_point_score == max_score)
+            {
+                std::cout << "c: " << c << " -> ";
+                c += 1.4;
+                std::cout << c << '\n';
+            }
+            else
+            {
+                std::cout << "c: " << c << " -> ";
+                c = 1.4; //if new best found, reset c and try to exploit the new best
+                std::cout << c << '\n';
+            }
+            check_point_score = max_score;
+        }
+        while ((score = x.complete_status()) == -1)
+        {
+            temp_legal_moves = x.get_legal_moves();
+            state = std::move(getString(x.pieces)); //get string of current pieces
+            UCT = 0.0f;
+            UCT_best = -FLT_MAX;
+            best_act = -1.0f;
+            
+            for (auto& a : temp_legal_moves)
+            {
+                if (Nsa[state].count(a))
+                {
+                    UCT = Qsa[state][a] + c*sqrt(log(Ns[state])/Nsa[state][a]);
+                }
+                else
+                {
+                    UCT = FLT_MAX; //highest -> explore it
+                }
+                if (UCT > UCT_best)
+                {
+                    best_act = a;
+                    UCT_best = UCT;
+                }
+            }
+            
+            x.pieces.push_back(best_act);
+            moveTracker.push_back(make_pair(state, best_act));
+            Ns[state]++;
+            Nsa[state][best_act]++;
+        }
+        //backprop reward `score`
+        for (auto& state_action: moveTracker)
+        {
+            Qsa[state_action.first][state_action.second] = std::max(Qsa[state_action.first][state_action.second], score);
+        }
+        
+        if (score > max_score)
+        {
+            expression = x._to_infix();
+            orig_expression = x.expression();
+            max_score = score;
+            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+            std::cout << "Best expression = " << expression << '\n';
+            std::cout << "Best expression (original format) = " << orig_expression << '\n';
+            best_expression = std::move(expression);
+        }
+        x.pieces.clear();
+        moveTracker.clear();
+    }
     
 }
 
@@ -876,7 +972,6 @@ void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expres
             std::cout << "Best expression = " << expression << '\n';
             std::cout << "Best expression (original format) = " << orig_expression << '\n';
             best_expression = std::move(expression);
-            
         }
         x.pieces.clear();
     }
@@ -920,7 +1015,7 @@ int main() {
     Eigen::MatrixXf data = generateData(100, 6, exampleFunc);
 //    std::cout << data << "\n\n";
     auto start_time = Clock::now();
-    RandomSearch(data, 3, "postfix", 1.0f, "LBFGS", 1);
+    MCTS(data, 4, "prefix", 1.0f, "LBFGS", 5);
 //
     auto end_time = Clock::now();
     std::cout << "Time difference = "
