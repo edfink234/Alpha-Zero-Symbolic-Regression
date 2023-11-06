@@ -24,11 +24,46 @@ class UnaryNode(Node):
         self.child = None
         
 def is_operator(token):
-    return token in {'+', '-', '*', '/', '^', 'cos', 'grad', 'exp'}
+    return token in {'+', '-', '*', '/', '^', 'cos', 'grad', 'exp', '-sin'}
 def is_binary_operator(token):
     return token in {'+', '-', '*', '/', '^'}
 def is_unary_operator(token):
-    return token in {'cos', 'grad', 'exp'}
+    return token in {'cos', 'grad', 'exp', '-sin'}
+
+
+def rpn_to_infix(rpn_expression):
+    stack = []
+    for token in rpn_expression.split():
+        if not is_operator(token): #other
+            stack.append(token)
+        elif is_unary_operator(token): #unary operator
+            operand = stack.pop()
+            result = f'{token}({operand})'
+            stack.append(result)
+        else: #binary operator
+            right_operand = stack.pop()
+            left_operand = stack.pop()
+            result = f'({left_operand} {token} {right_operand})'
+            stack.append(result)
+    
+    return stack[-1]
+
+def pn_to_infix(pn_expression):
+    stack = []
+    for token in pn_expression.split()[::-1]:
+        if not is_operator(token): #other
+            stack.append(token)
+        elif is_unary_operator(token): #unary operator
+            operand = stack.pop()
+            result = f'{token}({operand})'
+            stack.append(result)
+        else: #binary operator
+            right_operand = stack.pop()
+            left_operand = stack.pop()
+            result = f'({right_operand} {token} {left_operand})'
+            stack.append(result)
+    
+    return stack[-1]
 
 #https://stackoverflow.com/a/77180279/18255427
 #Returns two values, depth and if the expression is complete
@@ -208,7 +243,6 @@ def plot_rpn_expression_tree(expression: list[str], block = False, save = False)
 # Example usage:
 def test_visualize():
 #    # Example usage:
-    operators = ['+', '-', '*', 'exp', 'cos', 'grad']
     save = False
     
     if save:
@@ -218,10 +252,17 @@ def test_visualize():
         os.system("rsvg-convert -f pdf -o expression_tree_RPN_Hemberg2008_expr_5.pdf expression_tree_RPN_Hemberg2008_expr_5.svg")
 
     else:
+#        print(rpn_to_infix("x x cos *"))
+#        print(rpn_to_infix("0.336364 x1 x4 - * x3 + x4 x4 x4 x2 - + - * -sin 1 x1 x4 - * 0.336364 0 0 - * + 0 + x4 x4 x4 x2 - + - * 0.336364 x1 x4 - * x3 + 0 0 0 0 - + - * + *"))
+        print(rpn_to_infix("y y y * * cos y +"))
+        print(rpn_to_infix("y y y * * -sin y y 1 * 1 y * + * 1 y y * * + * 1 +"))
+#        os.system(f"maxima -r \"diff({pn_to_infix('+ 1.1 * * 0.5 x0 + x0 x0')}, x0); quit();\"")
+#        os.system()
         while True:
             try:
-                plot_pn_expression_tree("+ 1.016527 * * 0.492414 x0 + x0 x0".split(), block=False, save = save)
-#                plot_rpn_expression_tree("5.172647 x1 x3 + cos * x4 +".split(), block=False, save = save)
+#                plot_pn_expression_tree("cos + 1.1 * * 0.5 x0 + x0 x0".split(), block=False, save = save)
+                
+                plot_rpn_expression_tree("x x + x x + + x x + x x + + +".split(), block=False, save = save)
 
             except KeyboardInterrupt:
                 plt.close()

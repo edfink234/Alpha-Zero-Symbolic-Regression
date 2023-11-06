@@ -26,6 +26,7 @@
 #include <LBFGS.h>
 #include <unsupported/Eigen/CXX11/Tensor>
 #include <unsupported/Eigen/LevenbergMarquardt>
+#include <unsupported/Eigen/AutoDiff>
 
 using Clock = std::chrono::high_resolution_clock;
 
@@ -200,6 +201,16 @@ float MSE(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
     return (actual - predicted).squaredNorm() / actual.size();
 }
 
+Eigen::AutoDiffScalar<Eigen::VectorXf> MSE(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>& predicted, const Eigen::VectorXf& actual)
+{
+    if (actual.size() != predicted.size())
+    {
+        throw std::invalid_argument("Vectors must be of the same size");
+    }
+        
+    return (actual - predicted).squaredNorm() / actual.size();
+}
+
 float loss_func(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
 {
     return (1.0f/(1.0f+MSE(actual, predicted)));
@@ -241,6 +252,7 @@ struct Board
     size_t reserve_amount;
     int num_fit_iter;
     std::string fit_method;
+    std::string fit_grad_method;
                 
     std::unordered_map<float, std::string> __tokens_dict; //Converts number to string
     std::unordered_map<std::string, float> __tokens_inv_dict; //Converts string to number
@@ -251,7 +263,7 @@ struct Board
     std::vector<float> pieces;
     bool visualize_exploration;
     
-    Board(const Eigen::MatrixXf& theData, int n = 3, const std::string& expression_type = "prefix", bool visualize_exploration = false, std::string fitMethod = "PSO", int numFitIter = 1) : data{theData}, gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, fit_method{fitMethod}, num_fit_iter{numFitIter}
+    Board(const Eigen::MatrixXf& theData, int n = 3, const std::string& expression_type = "prefix", bool visualize_exploration = false, std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical") : data{theData}, gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, fit_method{fitMethod}, num_fit_iter{numFitIter}, fit_grad_method{fitGradMethod}
     {
         this->__num_features = data[0].size() - 1;
         this->__input_vars.reserve(this->__num_features);
@@ -313,7 +325,6 @@ struct Board
         this->expression_type = expression_type;
         this->pieces = {};
         this->reserve_amount = 2*pow(2,this->n)-1;
-        
         this->visualize_exploration = visualize_exploration;
     }
     
@@ -465,7 +476,7 @@ struct Board
         }
     }
     
-    //Returns a string form of the expression stored in the vector<float> attribute pieces
+    //Returns the `expression_type` string form of the expression stored in the vector<float> attribute pieces
     std::string expression()
     {
         std::string temp;
@@ -570,6 +581,61 @@ struct Board
                 Eigen::VectorXf left_operand = std::move(stack.top());
                 stack.pop();
                 Eigen::VectorXf right_operand = std::move(stack.top());
+                stack.pop();
+
+                if (token == "+")
+                {
+                    stack.push(((expression_type == "postfix") ? (right_operand.array() + left_operand.array()) : (left_operand.array() + right_operand.array())));
+                }
+                else if (token == "-")
+                {
+                    stack.push(((expression_type == "postfix") ? (right_operand.array() - left_operand.array()) : (left_operand.array() - right_operand.array())));
+                }
+                else if (token == "*")
+                {
+                    stack.push(((expression_type == "postfix") ? (right_operand.array() * left_operand.array()) : (left_operand.array() * right_operand.array())));
+                }
+            }
+        }
+        return std::move(stack.top());
+    }
+    
+    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> expression_evaluator(std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& parameters)
+    {
+        std::stack<Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>> stack;
+        size_t const_count = 0;
+        bool is_prefix = (expression_type == "prefix");
+        for (int i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
+        {
+            std::string token = __tokens_dict[pieces[i]];
+
+            if (std::find(__operators_float.begin(), __operators_float.end(), pieces[i]) == __operators_float.end()) // leaf
+            {
+                if (token == "const")
+                {
+//                    std::cout << "\nparam[" << const_count << "] = " << params[const_count].value() << '\n';
+                    stack.push(Eigen::VectorXf::Ones(data.numRows()) * (parameters[const_count++]));
+                    
+                }
+                else
+                {
+                    stack.push(this->data[token]);
+                }
+            }
+            else if (std::find(__unary_operators_float.begin(), __unary_operators_float.end(), pieces[i]) != __unary_operators_float.end()) // Unary operator
+            {
+                if (token == "cos")
+                {
+                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = std::move(stack.top());
+                    stack.pop();
+                    stack.push(temp.array().cos());
+                }
+            }
+            else // binary operator
+            {
+                Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> left_operand = std::move(stack.top());
+                stack.pop();
+                Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> right_operand = std::move(stack.top());
                 stack.pop();
 
                 if (token == "+")
@@ -699,19 +765,53 @@ struct Board
         Board::fit_time += (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9);
     }
     
+    Eigen::AutoDiffScalar<Eigen::VectorXf> grad_func(std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& inputs)
+    {
+        return MSE(expression_evaluator(inputs), data["y"]);
+    }
+    
+    /*
+     x: parameter vector: (x_0, x_1, ..., x_{x.size()-1})
+     g: gradient evaluated at x: (g_0(x_0), g_1(x_1), ..., g_{g.size()-1}(x_{x.size()-1}))
+     */
     float operator()(Eigen::VectorXf& x, Eigen::VectorXf& grad)
     {
-        float mse = MSE(expression_evaluator(x), data["y"]), low_b, temp;
-        for (int i = 0; i < x.size(); i++)
+        float mse = MSE(expression_evaluator(x), data["y"]);
+        if (this->fit_grad_method == "naive_numerical")
         {
-            temp = x(i);
-            x(i) -= 0.00001f;
-            low_b = MSE(expression_evaluator(x), data["y"]);
-            x(i) += 0.00002f;
-            grad(i) = (MSE(expression_evaluator(x), data["y"]) - low_b) / 0.00002f ;
-            x(i) = temp;
+            float low_b, temp;
+            for (int i = 0; i < x.size(); i++)
+            {
+                temp = x(i);
+                x(i) -= 0.00001f;
+                low_b = MSE(expression_evaluator(x), data["y"]);
+                x(i) += 0.00002f;
+                grad(i) = (MSE(expression_evaluator(x), data["y"]) - low_b) / 0.00002f ;
+                x(i) = temp;
+            }
         }
-        
+        else if (this->fit_grad_method == "autodiff")
+        {
+            size_t sz = x.size();
+            std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>> inputs(sz);
+            Eigen::AutoDiffScalar<Eigen::VectorXf> gA;
+            inputs.reserve(sz);
+            for (size_t i = 0; i < sz; i++)
+            {
+                inputs[i].value() = x(i);
+                inputs[i].derivatives() = Eigen::VectorXf::Unit(sz, i);
+//                printf("inputs[%lu].derivatives() = ",i); std::cout << inputs[i].derivatives() << '\n';
+            }
+            gA = grad_func(inputs);
+//            std::cout << "grad.size() = " << grad.size() << '\n';
+//            for (size_t i = 0; i < sz; i++)
+//            {
+//                grad(i) = gA.derivatives()[i];
+//            }
+            grad = gA.derivatives();
+//            std::cout << "grad_func output = " <<  gA.value() << '\n';
+//            std::cout << "grad_func derivatives =" << (gA.derivatives()) << '\n';
+        }
         return mse;
     }
     
@@ -831,9 +931,9 @@ float exampleFunc(const Eigen::VectorXf& x)
     return 5*cos(x[1]+x[3])+x[4];
 }
 
-void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "PSO", int num_fit_iter = 1)
+void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "PSO", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
 {
-    Board x(data, depth, expression_type, false, method, num_fit_iter);
+    Board x(data, depth, expression_type, false, method, num_fit_iter, fit_grad_method);
     std::cout << x.data << '\n';
     
     float score = 0, max_score = 0, check_point_score = 0, UCT, best_act, UCT_best;
@@ -931,9 +1031,9 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
     
 }
 
-void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "PSO", int num_fit_iter = 1)
+void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "PSO", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
 {
-    Board x(data, depth, expression_type, false, method, num_fit_iter);
+    Board x(data, depth, expression_type, false, method, num_fit_iter, fit_grad_method);
 
 //    std::cout << x["y"] << '\n';
 //    std::cout << x.fit_method << '\n';
@@ -1013,7 +1113,7 @@ int main() {
     Eigen::MatrixXf data = generateData(100, 6, exampleFunc);
 //    std::cout << data << "\n\n";
     auto start_time = Clock::now();
-    MCTS(data, 4, "postfix", 1.0f, "LBFGS", 5);
+    MCTS(data, 4, "postfix", 1.0f, "LBFGS", 5, "autodiff");
 //
     auto end_time = Clock::now();
     std::cout << "Time difference = "
