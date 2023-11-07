@@ -18,6 +18,7 @@
 #include <chrono>
 #include <fstream>
 #include <iomanip>
+#include <limits>
 #include <cassert>
 #include <pybind11/pybind11.h>
 #include <Python.h>
@@ -253,6 +254,7 @@ struct Board
     int num_fit_iter;
     std::string fit_method;
     std::string fit_grad_method;
+    float inc = std::sqrt(2.0f*std::numeric_limits<float>::epsilon());
                 
     std::unordered_map<float, std::string> __tokens_dict; //Converts number to string
     std::unordered_map<std::string, float> __tokens_inv_dict; //Converts string to number
@@ -614,7 +616,7 @@ struct Board
                 if (token == "const")
                 {
 //                    std::cout << "\nparam[" << const_count << "] = " << params[const_count].value() << '\n';
-                    stack.push(Eigen::VectorXf::Ones(data.numRows()) * (parameters[const_count++]));
+                    stack.push(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>::Constant(data.numRows(), parameters[const_count++]));
                     
                 }
                 else
@@ -779,38 +781,30 @@ struct Board
         float mse = MSE(expression_evaluator(x), data["y"]);
         if (this->fit_grad_method == "naive_numerical")
         {
-            float low_b, temp;
-            for (int i = 0; i < x.size(); i++)
+            float low_b, temp, fac;
+            for (int i = 0; i < x.size(); i++) //finite differences wrt x evaluated at the current values x(i)
             {
+                //https://stackoverflow.com/a/38855586/18255427
                 temp = x(i);
                 x(i) -= 0.00001f;
                 low_b = MSE(expression_evaluator(x), data["y"]);
-                x(i) += 0.00002f;
+                x(i) = temp + 0.00001f;
                 grad(i) = (MSE(expression_evaluator(x), data["y"]) - low_b) / 0.00002f ;
                 x(i) = temp;
             }
         }
+        //TODO: Need a separate implementation of this whole script that uses AutoDiffScalar-friendly objects instead of Eigen::VectorXf
         else if (this->fit_grad_method == "autodiff")
         {
             size_t sz = x.size();
             std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>> inputs(sz);
-            Eigen::AutoDiffScalar<Eigen::VectorXf> gA;
             inputs.reserve(sz);
             for (size_t i = 0; i < sz; i++)
             {
                 inputs[i].value() = x(i);
                 inputs[i].derivatives() = Eigen::VectorXf::Unit(sz, i);
-//                printf("inputs[%lu].derivatives() = ",i); std::cout << inputs[i].derivatives() << '\n';
             }
-            gA = grad_func(inputs);
-//            std::cout << "grad.size() = " << grad.size() << '\n';
-//            for (size_t i = 0; i < sz; i++)
-//            {
-//                grad(i) = gA.derivatives()[i];
-//            }
-            grad = gA.derivatives();
-//            std::cout << "grad_func output = " <<  gA.value() << '\n';
-//            std::cout << "grad_func derivatives =" << (gA.derivatives()) << '\n';
+            grad = grad_func(inputs).derivatives();
         }
         return mse;
     }
@@ -821,7 +815,8 @@ struct Board
         LBFGSpp::LBFGSParam<float> param;
         param.epsilon = 1e-6;
         param.max_iterations = this->num_fit_iter;
-        LBFGSpp::LBFGSSolver<float> solver(param);
+        //https://lbfgspp.statr.me/doc/LineSearchBacktracking_8h_source.html
+        LBFGSpp::LBFGSSolver<float, LBFGSpp::LineSearchBacktracking> solver(param); //LineSearchBacktracking, LineSearchBracketing, LineSearchMoreThuente, LineSearchNocedalWright
         float fx;
         
         Eigen::VectorXf eigenVec = *params;
@@ -829,7 +824,7 @@ struct Board
         try
         {
             solver.minimize((*this), eigenVec, fx);
-        } 
+        }
         catch (std::runtime_error& e){}
         
 //        printf("mse = %f -> fx = %f\n", mse, fx);
@@ -1085,7 +1080,7 @@ PyObject* convertVectorToPythonList(const std::vector<float>& inputVector)
 {
     PyObject* pyList = PyTuple_New(inputVector.size());
 
-    for (size_t i = 0; i < inputVector.size(); ++i) 
+    for (size_t i = 0; i < inputVector.size(); ++i)
     {
         PyObject* pyFloat = PyFloat_FromDouble(static_cast<double>(inputVector[i]));
         PyTuple_SetItem(pyList, i, pyFloat);
@@ -1113,7 +1108,7 @@ int main() {
     Eigen::MatrixXf data = generateData(100, 6, exampleFunc);
 //    std::cout << data << "\n\n";
     auto start_time = Clock::now();
-    MCTS(data, 4, "postfix", 1.0f, "LBFGS", 5, "autodiff");
+    MCTS(data, 4, "postfix", 1.0f, "LBFGS", 5, "naive_numerical");
 //
     auto end_time = Clock::now();
     std::cout << "Time difference = "
@@ -1121,4 +1116,3 @@ int main() {
 
     return 0;
 }
-
