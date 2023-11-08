@@ -25,8 +25,9 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <LBFGS.h>
+#include <LBFGSB.h>
 #include <unsupported/Eigen/CXX11/Tensor>
-#include <unsupported/Eigen/LevenbergMarquardt>
+#include <unsupported/Eigen/NonLinearOptimization>
 #include <unsupported/Eigen/AutoDiff>
 
 using Clock = std::chrono::high_resolution_clock;
@@ -778,35 +779,43 @@ struct Board
      */
     float operator()(Eigen::VectorXf& x, Eigen::VectorXf& grad)
     {
-        float mse = MSE(expression_evaluator(x), data["y"]);
-        if (this->fit_grad_method == "naive_numerical")
+        if (this->fit_method == "LBFGS" || this->fit_method == "LBFGSB")
         {
-            float low_b, temp, fac;
-            for (int i = 0; i < x.size(); i++) //finite differences wrt x evaluated at the current values x(i)
+            float mse = MSE(expression_evaluator(x), data["y"]);
+            if (this->fit_grad_method == "naive_numerical")
             {
-                //https://stackoverflow.com/a/38855586/18255427
-                temp = x(i);
-                x(i) -= 0.00001f;
-                low_b = MSE(expression_evaluator(x), data["y"]);
-                x(i) = temp + 0.00001f;
-                grad(i) = (MSE(expression_evaluator(x), data["y"]) - low_b) / 0.00002f ;
-                x(i) = temp;
+                float low_b, temp, fac;
+                for (int i = 0; i < x.size(); i++) //finite differences wrt x evaluated at the current values x(i)
+                {
+                    //https://stackoverflow.com/a/38855586/18255427
+                    temp = x(i);
+                    x(i) -= 0.00001f;
+                    low_b = MSE(expression_evaluator(x), data["y"]);
+                    x(i) = temp + 0.00001f;
+                    grad(i) = (MSE(expression_evaluator(x), data["y"]) - low_b) / 0.00002f ;
+                    x(i) = temp;
+                }
             }
+
+            else if (this->fit_grad_method == "autodiff")
+            {
+                size_t sz = x.size();
+                std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>> inputs(sz);
+                inputs.reserve(sz);
+                for (size_t i = 0; i < sz; i++)
+                {
+                    inputs[i].value() = x(i);
+                    inputs[i].derivatives() = Eigen::VectorXf::Unit(sz, i);
+                }
+                grad = grad_func(inputs).derivatives();
+            }
+            return mse;
         }
-        //TODO: Need a separate implementation of this whole script that uses AutoDiffScalar-friendly objects instead of Eigen::VectorXf
-        else if (this->fit_grad_method == "autodiff")
+        else if (this->fit_method == "LevenbergMarquardt")
         {
-            size_t sz = x.size();
-            std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>> inputs(sz);
-            inputs.reserve(sz);
-            for (size_t i = 0; i < sz; i++)
-            {
-                inputs[i].value() = x(i);
-                inputs[i].derivatives() = Eigen::VectorXf::Unit(sz, i);
-            }
-            grad = grad_func(inputs).derivatives();
+            grad = (this->expression_evaluator(x) - this->data["y"]);
         }
-        return mse;
+        return 0.f;
     }
     
     void LBFGS()
@@ -816,7 +825,7 @@ struct Board
         param.epsilon = 1e-6;
         param.max_iterations = this->num_fit_iter;
         //https://lbfgspp.statr.me/doc/LineSearchBacktracking_8h_source.html
-        LBFGSpp::LBFGSSolver<float, LBFGSpp::LineSearchBacktracking> solver(param); //LineSearchBacktracking, LineSearchBracketing, LineSearchMoreThuente, LineSearchNocedalWright
+        LBFGSpp::LBFGSSolver<float, LBFGSpp::LineSearchMoreThuente> solver(param); //LineSearchBacktracking, LineSearchBracketing, LineSearchMoreThuente, LineSearchNocedalWright
         float fx;
         
         Eigen::VectorXf eigenVec = *params;
@@ -836,22 +845,108 @@ struct Board
         Board::fit_time += (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9);
     }
     
-    //TODO: Add other methods besides PSO (e.g. Eigen::LevenbergMarquardt, calling scipy from the Python-C API, etc.)
-    float fitFunctionToData(std::string method = "PSO")
+    void LBFGSB()
+    {
+        auto start_time = Clock::now();
+        LBFGSpp::LBFGSBParam<float> param;
+        param.epsilon = 1e-6;
+        param.max_iterations = this->num_fit_iter;
+        //https://lbfgspp.statr.me/doc/LineSearchBacktracking_8h_source.html
+        LBFGSpp::LBFGSBSolver<float> solver(param); //LineSearchBacktracking, LineSearchBracketing, LineSearchMoreThuente, LineSearchNocedalWright
+        float fx;
+        
+        Eigen::VectorXf eigenVec = *params;
+        float mse = MSE(expression_evaluator(*params), data["y"]);
+        try
+        {
+            solver.minimize((*this), eigenVec, fx, Eigen::VectorXf::Constant(eigenVec.size(), -std::numeric_limits<float>::infinity()), Eigen::VectorXf::Constant(eigenVec.size(), std::numeric_limits<float>::infinity()));
+//            solver.minimize((*this), eigenVec, fx, Eigen::VectorXf::Constant(eigenVec.size(), -10.f), Eigen::VectorXf::Constant(eigenVec.size(), 10.f));
+        }
+        catch (std::runtime_error& e){}
+        
+//        printf("mse = %f -> fx = %f\n", mse, fx);
+        if (fx < mse)
+        {
+//            printf("mse = %f -> fx = %f\n", mse, fx);
+            *params = eigenVec;
+        }
+        Board::fit_time += (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9);
+    }
+    
+    int values()
+    {
+        return data.numRows();
+    }
+    
+    int df(Eigen::VectorXf &x, Eigen::MatrixXf &fjac)
+    {
+        float epsilon;
+        epsilon = 1e-5f;
+
+        for (int i = 0; i < x.size(); i++)
+        {
+            Eigen::VectorXf xPlus(x);
+            xPlus(i) += epsilon;
+            Eigen::VectorXf xMinus(x);
+            xMinus(i) -= epsilon;
+
+            Eigen::VectorXf fvecPlus(values());
+            operator()(xPlus, fvecPlus);
+
+            Eigen::VectorXf fvecMinus(values());
+            operator()(xMinus, fvecMinus);
+
+            Eigen::VectorXf fvecDiff(values());
+            fvecDiff = (fvecPlus - fvecMinus) / (2.0f * epsilon);
+
+            fjac.block(0, i, values(), 1) = fvecDiff;
+        }
+        return 0;
+    }
+    
+    void LevenbergMarquardt()
+    {
+        auto start_time = Clock::now();
+        Eigen::LevenbergMarquardt<decltype(*this), float> lm(*this);
+        Eigen::VectorXf eigenVec = *params;
+        lm.parameters.maxfev = this->num_fit_iter;
+//        std::cout << "ftol (Cost function change) = " << lm.parameters.ftol << '\n';
+//        std::cout << "xtol (Parameters change) = " << lm.parameters.xtol << '\n';
+
+        lm.minimize(eigenVec);
+        if (MSE(expression_evaluator(eigenVec), data["y"]) < MSE(expression_evaluator(*params), data["y"]))
+        {
+            *params = eigenVec;
+        }
+        
+//        std::cout << "Iterations = " << lm.nfev << '\n';
+        Board::fit_time += (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9);
+    }
+    
+    //TODO: Add other methods besides PSO (e.g. calling scipy from the Python-C API, etc.)
+    float fitFunctionToData()
     {
         if (params->size())
         {
-            if (method == "PSO")
+            if (this->fit_method == "PSO")
             {
                 PSO();
             }
-            else if (method == "AsyncPSO")
+            else if (this->fit_method == "AsyncPSO")
             {
                 AsyncPSO();
             }
-            else if (method == "LBFGS")
+            else if (this->fit_method == "LBFGS")
             {
                 LBFGS();
+            }
+            else if (this->fit_method == "LBFGSB")
+            {
+                LBFGSB();
+            }
+            else if (this->fit_method == "LevenbergMarquardt")
+            {
+                LevenbergMarquardt();
             }
         }
         
@@ -902,7 +997,7 @@ struct Board
                 this->params->setOnes();
             }
 
-            return fitFunctionToData(this->fit_method);
+            return fitFunctionToData();
         }
     }
     const Eigen::VectorXf& operator[] (int i){return data[i];}
@@ -922,8 +1017,8 @@ struct Board
 // prefix = "+ * const cos x3 - * x0 x0 const"
 float exampleFunc(const Eigen::VectorXf& x)
 {
-//    return 2.5382*cos(x[3]) + (x[0]*x[0]) - 0.5f;
-    return 5*cos(x[1]+x[3])+x[4];
+    return 2.5382*cos(x[3]) + (x[0]*x[0]) - 0.5f;
+//    return 5*cos(x[1]+x[3])+x[4];
 }
 
 void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "PSO", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
@@ -944,9 +1039,10 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
     state.reserve(2*x.reserve_amount);
     double str_convert_time = 0;
     
-    auto getString = [](const std::vector<float>& pieces)
+    auto getString  = [&]()
     {
-        return std::accumulate(pieces.begin(), pieces.end(), std::string(), [](const std::string& a, float b) { return a + (a.empty() ? "" : " ") + std::to_string(b); });
+        if (!x.pieces.empty())
+            state += std::to_string(x.pieces[x.pieces.size()-1]);
     };
     
     for (int i = 0; (score < stop/* && Board::expression_dict.size() <= 2000000*/); i++)
@@ -970,11 +1066,12 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
             }
             check_point_score = max_score;
         }
+        state.clear();
         while ((score = x.complete_status()) == -1)
         {
             temp_legal_moves = x.get_legal_moves();
             auto start_time = Clock::now();
-            state = std::move(getString(x.pieces)); //get string of current pieces
+            getString();
             str_convert_time += std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9;
             UCT = 0.0f;
             UCT_best = -FLT_MAX;
@@ -1108,7 +1205,7 @@ int main() {
     Eigen::MatrixXf data = generateData(100, 6, exampleFunc);
 //    std::cout << data << "\n\n";
     auto start_time = Clock::now();
-    MCTS(data, 4, "postfix", 1.0f, "LBFGS", 5, "naive_numerical");
+    MCTS(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
 //
     auto end_time = Clock::now();
     std::cout << "Time difference = "
