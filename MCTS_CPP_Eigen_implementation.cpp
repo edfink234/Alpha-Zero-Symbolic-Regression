@@ -880,26 +880,30 @@ struct Board
     
     int df(Eigen::VectorXf &x, Eigen::MatrixXf &fjac)
     {
-        float epsilon;
+        float epsilon, temp;
         epsilon = 1e-5f;
 
         for (int i = 0; i < x.size(); i++)
         {
-            Eigen::VectorXf xPlus(x);
-            xPlus(i) += epsilon;
-            Eigen::VectorXf xMinus(x);
-            xMinus(i) -= epsilon;
-
+//            Eigen::VectorXf xPlus(x);
+//            xPlus(i) += epsilon;
+//           
+//            Eigen::VectorXf xMinus(x);
+//            xMinus(i) -= epsilon;
+//            x(i) -= epsilon;
+            temp = x(i);
+            
+            x(i) = temp + epsilon;
             Eigen::VectorXf fvecPlus(values());
-            operator()(xPlus, fvecPlus);
+            operator()(x, fvecPlus);
 
+            x(i) = temp - epsilon;
             Eigen::VectorXf fvecMinus(values());
-            operator()(xMinus, fvecMinus);
+            operator()(x, fvecMinus);
 
-            Eigen::VectorXf fvecDiff(values());
-            fvecDiff = (fvecPlus - fvecMinus) / (2.0f * epsilon);
-
-            fjac.block(0, i, values(), 1) = fvecDiff;
+            fjac.block(0, i, values(), 1) = std::move((fvecPlus - fvecMinus) / (2.0f * epsilon));
+            
+            x(i) = temp;
         }
         return 0;
     }
@@ -916,7 +920,7 @@ struct Board
         lm.minimize(eigenVec);
         if (MSE(expression_evaluator(eigenVec), data["y"]) < MSE(expression_evaluator(*params), data["y"]))
         {
-            *params = eigenVec;
+            *params = std::move(eigenVec);
         }
         
 //        std::cout << "Iterations = " << lm.nfev << '\n';
@@ -1042,7 +1046,7 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
     auto getString  = [&]()
     {
         if (!x.pieces.empty())
-            state += std::to_string(x.pieces[x.pieces.size()-1]);
+            state += std::to_string(x.pieces[x.pieces.size()-1]) + " ";
     };
     
     for (int i = 0; (score < stop/* && Board::expression_dict.size() <= 2000000*/); i++)
