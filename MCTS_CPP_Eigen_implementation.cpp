@@ -1025,7 +1025,70 @@ float exampleFunc(const Eigen::VectorXf& x)
 //    return 5*cos(x[1]+x[3])+x[4];
 }
 
-void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "PSO", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
+void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
+{
+    Board x(data, depth, expression_type, false, method, num_fit_iter, fit_grad_method);
+    
+    std::random_device rand_dev;
+    std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
+    float score = 0, max_score = 0;
+    std::vector<float> temp_legal_moves;
+    size_t temp_sz;
+    std::string expression, orig_expression, best_expression;
+    
+    //Step 1: Generate a random expression
+
+    while ((score = x.complete_status()) == -1)
+    {
+        temp_legal_moves = x.get_legal_moves(); //the legal moves
+        temp_sz = temp_legal_moves.size(); //the number of legal moves
+        std::uniform_int_distribution<int> distribution(0, temp_sz - 1);
+// A random integer generator which generates an index corresponding to an allowed move
+        x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
+    }
+    
+    if (score > max_score)
+    {
+        expression = x._to_infix();//((score > 0.99f) ? x._to_infix(true, true) : x._to_infix());
+        orig_expression = x.expression();
+        max_score = score;
+        std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+        std::cout << "Best expression = " << expression << '\n';
+        std::cout << "Best expression (original format) = " << orig_expression << '\n';
+        best_expression = std::move(expression);
+    }
+    
+    auto trueMod = [](int N, int M)
+    {
+        return ((N % M) + M) % M;
+    };
+    
+    auto FixExpression = [&]()
+    {
+        
+    };
+    
+    Eigen::VectorXf particle_positions(x.pieces.size()), X(x.pieces.size()), v(x.pieces.size());
+    float rp, rg, new_pos;
+    
+    for (size_t i = 0; i < x.pieces.size(); i++)
+    {
+        particle_positions(i) = X(i) = x.pos_dist(x.gen);
+        v(i) = x.vel_dist(x.gen);
+    }
+    
+    for (size_t i = 0; i < x.pieces.size(); i++)
+    {
+        rp = x.pos_dist(x.gen), rg = x.pos_dist(x.gen);
+        v(i) = x.K*(v(i) + x.phi_1*rp*(particle_positions(i) - X(i)) + x.phi_2*rg*(x.pieces[i] - X(i)));
+        new_pos = trueMod(std::round(x.pieces[i]+v(i)), x.action_size)+1;
+        std::cout << v(i) << ' ' << x.pieces[i] << ' ' << new_pos << '\n';
+        
+    }
+    
+}
+
+void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
 {
     Board x(data, depth, expression_type, false, method, num_fit_iter, fit_grad_method);
     std::cout << x.data << '\n';
@@ -1127,7 +1190,7 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
     
 }
 
-void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "PSO", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
+void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
 {
     Board x(data, depth, expression_type, false, method, num_fit_iter, fit_grad_method);
 
@@ -1209,8 +1272,9 @@ int main() {
     Eigen::MatrixXf data = generateData(100, 6, exampleFunc);
 //    std::cout << data << "\n\n";
     auto start_time = Clock::now();
-    MCTS(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
-//
+//    MCTS(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
+//    RandomSearch(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
+    PSO(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
     auto end_time = Clock::now();
     std::cout << "Time difference = "
           << std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count()/1e9 << " seconds" << '\n';
