@@ -19,6 +19,7 @@
 #include <fstream>
 #include <iomanip>
 #include <limits>
+#include <cfloat>
 #include <cassert>
 #include <pybind11/pybind11.h>
 #include <Python.h>
@@ -329,6 +330,7 @@ struct Board
         this->pieces = {};
         this->reserve_amount = 2*pow(2,this->n)-1;
         this->visualize_exploration = visualize_exploration;
+        this->pieces.reserve(reserve_amount);
     }
     
     float operator[](size_t index) const
@@ -384,7 +386,6 @@ struct Board
     
     std::vector<float> get_legal_moves()
     {
-        //TODO: Generated Expressions should always be irreducible, this isn't GP!
         if (this->expression_type == "prefix")
         {
             if (this->pieces.empty()) //At the beginning, self.pieces is empty, so the only legal moves are the operators
@@ -460,19 +461,6 @@ struct Board
             if (getRPNdepth(string_pieces).first <= this->n)
             {
                 temp.insert(temp.end(), this->__input_vars_float.begin(), this->__input_vars_float.end());
-                
-//                string_pieces.back() = __other_tokens[0];
-//                string_pieces.reserve(string_pieces.size() + 3);
-//                string_pieces.push_back(__input_vars[0]);
-//                string_pieces.push_back(__binary_operators[0]);
-//                string_pieces.push_back(__binary_operators[0]);
-//                //1.94696, 15.9098, 0.0949083, 6.13413, 2.26467
-//                //9.57711, 2.6431, 4.44798, 1.03814, 1.33934
-
-//                if (getRPNdepth(string_pieces).first <= this->n) //Can only add constant if
-//                {
-//                    temp.insert(temp.end(), this->__other_tokens_float.begin(), this->__other_tokens_float.end());
-//                }
                 temp.insert(temp.end(), this->__other_tokens_float.begin(), this->__other_tokens_float.end());
             }
             return temp;
@@ -1036,54 +1024,85 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
     size_t temp_sz;
     std::string expression, orig_expression, best_expression;
     
-    //Step 1: Generate a random expression
-
-    while ((score = x.complete_status()) == -1)
-    {
-        temp_legal_moves = x.get_legal_moves(); //the legal moves
-        temp_sz = temp_legal_moves.size(); //the number of legal moves
-        std::uniform_int_distribution<int> distribution(0, temp_sz - 1);
-// A random integer generator which generates an index corresponding to an allowed move
-        x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
-    }
-    
-    if (score > max_score)
-    {
-        expression = x._to_infix();//((score > 0.99f) ? x._to_infix(true, true) : x._to_infix());
-        orig_expression = x.expression();
-        max_score = score;
-        std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-        std::cout << "Best expression = " << expression << '\n';
-        std::cout << "Best expression (original format) = " << orig_expression << '\n';
-        best_expression = std::move(expression);
-    }
-    
     auto trueMod = [](int N, int M)
     {
         return ((N % M) + M) % M;
     };
     
-    auto FixExpression = [&]()
-    {
+    /*
+     For this setup, we don't know a-priori the number of particles, so we generate them and their corresponding velocities as needed
+     */
+    std::vector<float> particle_positions, best_positions, v, curr_positions;
+    particle_positions.reserve(x.reserve_amount); //stores record of all current particle position indices
+    best_positions.reserve(x.reserve_amount); //indices corresponding to best pieces
+    curr_positions.reserve(x.reserve_amount); //indices corresponding to x.pieces
+    v.reserve(x.reserve_amount); //stores record of all current particle velocities
+    float rp, rg, new_pos, new_v, noise;
         
-    };
+    /*
+     Idea: In this implementation of PSO,
+     
+     The traditional PSO initializes the particle positions to be between 0 and 1. However, for my application,
+     the particle positions are
+     */
     
-    Eigen::VectorXf particle_positions(x.pieces.size()), X(x.pieces.size()), v(x.pieces.size());
-    float rp, rg, new_pos;
-    
-    for (size_t i = 0; i < x.pieces.size(); i++)
+    for (int iter = 0; (score < stop/* && Board::expression_dict.size() <= 2000000*/); iter++)
     {
-        particle_positions(i) = X(i) = x.pos_dist(x.gen);
-        v(i) = x.vel_dist(x.gen);
-    }
-    
-    for (size_t i = 0; i < x.pieces.size(); i++)
-    {
-        rp = x.pos_dist(x.gen), rg = x.pos_dist(x.gen);
-        v(i) = x.K*(v(i) + x.phi_1*rp*(particle_positions(i) - X(i)) + x.phi_2*rg*(x.pieces[i] - X(i)));
-        new_pos = trueMod(std::round(x.pieces[i]+v(i)), x.action_size)+1;
-        std::cout << v(i) << ' ' << x.pieces[i] << ' ' << new_pos << '\n';
+        if (iter && (iter%50000 == 0))
+        {
+            std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+        }
         
+        for (int i = 0; (score = x.complete_status()) == -1; i++)
+        {
+            rp = x.pos_dist(generator), rg = x.pos_dist(generator);
+            temp_legal_moves = x.get_legal_moves(); //the legal moves
+            temp_sz = temp_legal_moves.size(); //the number of legal moves
+
+            if (i == particle_positions.size()) //Then we need to create a new particle with some initial velocity
+            {
+                particle_positions.push_back(x.pos_dist(generator));
+                v.push_back(x.vel_dist(generator));
+            }
+            
+            particle_positions[i] = trueMod(std::round(particle_positions[i]), temp_sz);
+            x.pieces.push_back(temp_legal_moves[particle_positions[i]]); //x.pieces holds the pieces corresponding to the indices
+            curr_positions.push_back(particle_positions[i]);
+            if (i == best_positions.size())
+            {
+                best_positions.push_back(x.pos_dist(generator));
+                best_positions[i] = trueMod(std::round(best_positions[i]), temp_sz);
+            }
+
+            new_v = (0.9*v[i] + x.phi_2*rp*(best_positions[i] - particle_positions[i]) + x.vel_dist(generator)); //TODO: Add second term to the formula and experiment with noise term (x.vel_dist(generator)) to see if "adaptive scaling" similar to what we did with the c-parameter in MCTS improves things
+            if (new_v < 0)
+            {
+                v[i] = std::max(new_v, -FLT_MAX);
+            }
+            else
+            {
+                v[i] = std::min(new_v, FLT_MAX);
+            }
+
+            particle_positions[i] += v[i];
+        }
+        
+        if (score > max_score)
+        {
+            for (int idx = 0; idx < curr_positions.size(); idx++)
+            {
+                best_positions[idx] = curr_positions[idx];
+            }
+            expression = x._to_infix();
+            orig_expression = x.expression();
+            max_score = score;
+            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+            std::cout << "Best expression = " << expression << '\n';
+            std::cout << "Best expression (original format) = " << orig_expression << '\n';
+            best_expression = std::move(expression);
+        }
+        x.pieces.clear();
+        curr_positions.clear();
     }
     
 }
@@ -1222,7 +1241,7 @@ void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expres
 
         if (score > max_score)
         {
-            expression = x._to_infix();//((score > 0.99f) ? x._to_infix(true, true) : x._to_infix());
+            expression = x._to_infix();
             orig_expression = x.expression();
             max_score = score;
             std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
@@ -1274,7 +1293,7 @@ int main() {
     auto start_time = Clock::now();
 //    MCTS(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
 //    RandomSearch(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
-    PSO(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
+    PSO(data, 3, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
     auto end_time = Clock::now();
     std::cout << "Time difference = "
           << std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count()/1e9 << " seconds" << '\n';
