@@ -1019,7 +1019,7 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
     
     std::random_device rand_dev;
     std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-    float score = 0, max_score = 0;
+    float score = 0, max_score = 0, check_point_score = 0;
     std::vector<float> temp_legal_moves;
     size_t temp_sz;
     std::string expression, orig_expression, best_expression;
@@ -1037,8 +1037,11 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
     best_positions.reserve(x.reserve_amount); //indices corresponding to best pieces
     curr_positions.reserve(x.reserve_amount); //indices corresponding to x.pieces
     v.reserve(x.reserve_amount); //stores record of all current particle velocities
-    float rp, rg, new_pos, new_v, noise;
-        
+    float rp, rg, new_pos, new_v, noise, c = x.vel_dist(generator);
+    std::unordered_map<float, std::unordered_map<int, int>> Nsa;
+    std::unordered_map<float, std::unordered_map<int, float>> Psa;
+    std::unordered_map<int, float> p_i_vals, p_i;
+    
     /*
      Idea: In this implementation of PSO,
      
@@ -1051,15 +1054,30 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
         if (iter && (iter%50000 == 0))
         {
             std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+            std::cout << "check_point_score = " << check_point_score
+            << ", max_score = " << max_score << ", c = " << c << '\n';
+            if (check_point_score == max_score)
+            {
+                std::cout << "c: " << c << " -> ";
+                c += x.vel_dist(generator);
+                std::cout << c << '\n';
+            }
+            else
+            {
+                std::cout << "c: " << c << " -> ";
+                c = x.vel_dist(generator); //if new best found, reset c and try to exploit the new best
+                std::cout << c << '\n';
+            }
+            check_point_score = max_score;
         }
         
-        for (int i = 0; (score = x.complete_status()) == -1; i++)
+        for (int i = 0; (score = x.complete_status()) == -1; i++) //i is the index of the token
         {
             rp = x.pos_dist(generator), rg = x.pos_dist(generator);
             temp_legal_moves = x.get_legal_moves(); //the legal moves
             temp_sz = temp_legal_moves.size(); //the number of legal moves
 
-            if (i == particle_positions.size()) //Then we need to create a new particle with some initial velocity
+            if (i == particle_positions.size()) //Then we need to create a new particle with some initial position and velocity
             {
                 particle_positions.push_back(x.pos_dist(generator));
                 v.push_back(x.vel_dist(generator));
@@ -1074,7 +1092,7 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
                 best_positions[i] = trueMod(std::round(best_positions[i]), temp_sz);
             }
 
-            new_v = (0.9*v[i] + x.phi_2*rp*(best_positions[i] - particle_positions[i]) + x.vel_dist(generator)); //TODO: Add second term to the formula and experiment with noise term (x.vel_dist(generator)) to see if "adaptive scaling" similar to what we did with the c-parameter in MCTS improves things
+            new_v = (0.721*v[i] + x.phi_1*rg*(best_positions[i] - particle_positions[i]) + x.phi_2*rp*(p_i[i] - particle_positions[i]) + c); 
             if (new_v < 0)
             {
                 v[i] = std::max(new_v, -FLT_MAX);
@@ -1085,6 +1103,18 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
             }
 
             particle_positions[i] += v[i];
+            Nsa[curr_positions[i]][i]++;
+        }
+        
+        for (int i = 0; i < curr_positions.size(); i++)
+        {
+            Psa[curr_positions[i]][i] = (Psa[curr_positions[i]][i]+score)/Nsa[curr_positions[i]][i];
+            if (Psa[curr_positions[i]][i] > p_i_vals[i])
+            {
+                p_i[i] = curr_positions[i];
+            }
+            p_i_vals[i] = std::max(p_i_vals[i], Psa[curr_positions[i]][i]);
+            
         }
         
         if (score > max_score)
@@ -1293,7 +1323,7 @@ int main() {
     auto start_time = Clock::now();
 //    MCTS(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
 //    RandomSearch(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
-    PSO(data, 3, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
+    PSO(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
     auto end_time = Clock::now();
     std::cout << "Time difference = "
           << std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count()/1e9 << " seconds" << '\n';
