@@ -1013,6 +1013,62 @@ float exampleFunc(const Eigen::VectorXf& x)
 //    return 5*cos(x[1]+x[3])+x[4];
 }
 
+void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
+{
+    Board x(data, depth, expression_type, false, method, num_fit_iter, fit_grad_method);
+    std::random_device rand_dev;
+    std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
+    float score = 0.0f, max_score = 0.0f, mut_prob = 0.8f, cross_prob = 0.2f;
+    constexpr int init_population = 2000;
+    std::vector<std::pair<std::vector<float>, float>> individuals;
+    individuals.reserve(init_population);
+    std::vector<float> temp_legal_moves;
+    size_t temp_sz;
+    std::string expression, orig_expression, best_expression;
+    
+    //Step 1, generate init_population expressions
+    for (int i = 0; i < init_population; i++)
+    {
+        while ((score = x.complete_status()) == -1)
+        {
+            temp_legal_moves = x.get_legal_moves(); //the legal moves
+            temp_sz = temp_legal_moves.size(); //the number of legal moves
+            std::uniform_int_distribution<int> distribution(0, temp_sz - 1);
+ // A random integer generator which generates an index corresponding to an allowed move
+
+            x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
+        }
+
+        if (score > max_score)
+        {
+            expression = x._to_infix();
+            orig_expression = x.expression();
+            max_score = score;
+            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+            std::cout << "Best expression = " << expression << '\n';
+            std::cout << "Best expression (original format) = " << orig_expression << '\n';
+            best_expression = std::move(expression);
+        }
+        
+        individuals.push_back(std::make_pair(x.pieces, score));
+        x.pieces.clear();
+    }
+    
+    auto NodeMutation = [&](std::vector<float>& individual)
+    {
+        std::uniform_int_distribution<> distrib(0, individual.size() - 1);
+        float node = individual[distrib(generator)];
+        
+    };
+    
+    for (int ngen = 0; score < stop; ngen++)
+    {
+        
+        //
+    }
+
+}
+
 void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
 {
     Board x(data, depth, expression_type, false, method, num_fit_iter, fit_grad_method);
@@ -1037,7 +1093,7 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
     best_positions.reserve(x.reserve_amount); //indices corresponding to best pieces
     curr_positions.reserve(x.reserve_amount); //indices corresponding to x.pieces
     v.reserve(x.reserve_amount); //stores record of all current particle velocities
-    float rp, rg, new_pos, new_v, noise, c = x.vel_dist(generator);
+    float rp, rg, new_pos, new_v, noise, c = 0.0f;
     std::unordered_map<float, std::unordered_map<int, int>> Nsa;
     std::unordered_map<float, std::unordered_map<int, float>> Psa;
     std::unordered_map<int, float> p_i_vals, p_i;
@@ -1065,7 +1121,7 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
             else
             {
                 std::cout << "c: " << c << " -> ";
-                c = x.vel_dist(generator); //if new best found, reset c and try to exploit the new best
+                c = 0.0f; //if new best found, reset c and try to exploit the new best
                 std::cout << c << '\n';
             }
             check_point_score = max_score;
@@ -1092,16 +1148,8 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
                 best_positions[i] = trueMod(std::round(best_positions[i]), temp_sz);
             }
 
-            new_v = (0.721*v[i] + x.phi_1*rg*(best_positions[i] - particle_positions[i]) + x.phi_2*rp*(p_i[i] - particle_positions[i]) + c); 
-            if (new_v < 0)
-            {
-                v[i] = std::max(new_v, -FLT_MAX);
-            }
-            else
-            {
-                v[i] = std::min(new_v, FLT_MAX);
-            }
-
+            new_v = (0.721*v[i] + x.phi_1*rg*(best_positions[i] - particle_positions[i]) + x.phi_2*rp*(p_i[i] - particle_positions[i]) + c);
+            v[i] = copysign(std::min(new_v, FLT_MAX), new_v);
             particle_positions[i] += v[i];
             Nsa[curr_positions[i]][i]++;
         }
@@ -1140,20 +1188,19 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
 void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
 {
     Board x(data, depth, expression_type, false, method, num_fit_iter, fit_grad_method);
-    std::cout << x.data << '\n';
     
-    float score = 0, max_score = 0, check_point_score = 0, UCT, best_act, UCT_best;
+    float score = 0.0f, max_score = 0.0f, check_point_score = 0.0f, UCT, best_act, UCT_best;
     std::vector<float> temp_legal_moves;
     std::unordered_map<std::string, std::unordered_map<float, float>> Qsa, Nsa;
     std::string state;
     std::string expression, orig_expression, best_expression;
     std::unordered_map<std::string, float> Ns;
-    float c = 1.4; //"controls the balance between exploration and exploitation", see equation 2 here: https://web.engr.oregonstate.edu/~afern/classes/cs533/notes/uct.pdf
+    float c = 1.4f; //"controls the balance between exploration and exploitation", see equation 2 here: https://web.engr.oregonstate.edu/~afern/classes/cs533/notes/uct.pdf
     std::vector<std::pair<std::string, float>> moveTracker;
     moveTracker.reserve(x.reserve_amount);
     temp_legal_moves.reserve(x.reserve_amount);
     state.reserve(2*x.reserve_amount);
-    double str_convert_time = 0;
+    double str_convert_time = 0.0;
     
     auto getString  = [&]()
     {
