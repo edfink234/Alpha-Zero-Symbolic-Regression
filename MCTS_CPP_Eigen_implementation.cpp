@@ -1,4 +1,4 @@
-//TODO: Explore pybind11: https://pybind11.readthedocs.io/en/stable/basics.html
+//TODO: Explore nanobind
 #include <vector>
 #include <array>
 #include <iostream>
@@ -66,34 +66,39 @@ class Data
     Eigen::MatrixXf data;
     std::unordered_map<std::string, Eigen::VectorXf> features;
     std::vector<Eigen::VectorXf> rows;
-    const long num_columns, num_rows;
+    long num_columns, num_rows;
     
 public:
     
-    Data(const Eigen::MatrixXf& theData) : data{theData}, num_columns{data.cols()}, num_rows{data.rows()}
+    Data() = default; //so we can have a static Data attribute
+    
+    // Assignment operator
+    Data& operator=(const Eigen::MatrixXf& theData)
     {
-//        auto num_columns = data.cols(); //number of columns - 1
-//        auto num_rows = data.rows();
-        
-        for (size_t i = 0; i < num_columns - 1; i++) //for each column
+        this->data = theData;
+        this->num_columns = data.cols();
+        this->num_rows = data.rows();
+        for (size_t i = 0; i < this->num_columns - 1; i++) //for each column
         {
-            features["x"+std::to_string(i)] = Eigen::VectorXf(num_rows);
-            for (size_t j = 0; j < num_rows; j++)
+            this->features["x"+std::to_string(i)] = Eigen::VectorXf(this->num_rows);
+            for (size_t j = 0; j < this->num_rows; j++)
             {
-                features["x"+std::to_string(i)](j) = data(j,i);
+                this->features["x"+std::to_string(i)](j) = this->data(j,i);
             }
         }
         
-        features["y"] = Eigen::VectorXf(num_rows);
-        rows.resize(num_rows);
+        this->features["y"] = Eigen::VectorXf(this->num_rows);
+        this->rows.resize(this->num_rows);
         
         for (size_t i = 0; i < num_rows; i++)
         {
-            features["y"](i) = data(i,num_columns - 1);
-            rows[i] = data.row(i);
+            this->features["y"](i) = this->data(i, this->num_columns - 1);
+            this->rows[i] = data.row(i);
         }
         
+        return *this;
     }
+    
     const Eigen::VectorXf& operator[] (int i){return rows[i];}
     const Eigen::VectorXf& operator[] (const std::string& i)
     {
@@ -224,105 +229,107 @@ struct Board
     static std::string inline best_expression = "";
     static std::unordered_map<std::string, std::pair<Eigen::VectorXf, int>> inline expression_dict = {};
     static float inline best_loss = FLT_MAX;
-    static std::vector<std::string> inline init_expression = {};
     static float inline fit_time = 0;
     
     static constexpr float K = 0.0884956f;
     static constexpr float phi_1 = 2.8f;
     static constexpr float phi_2 = 1.3f;
-    int __num_features;
-    std::vector<std::string> __input_vars;
-    std::vector<std::string> __unary_operators;
-    std::vector<std::string> __binary_operators;
-    std::vector<std::string> __operators;
-    std::vector<std::string> __other_tokens;
-    std::vector<std::string> __tokens;
-    std::vector<float> __tokens_float;
+    static int inline __num_features;
+    static std::vector<std::string> inline __input_vars;
+    static std::vector<std::string> inline __unary_operators;
+    static std::vector<std::string> inline __binary_operators;
+    static std::vector<std::string> inline __operators;
+    static std::vector<std::string> inline __other_tokens;
+    static std::vector<std::string> inline __tokens;
+    static std::vector<float> inline __tokens_float;
     Eigen::VectorXf* params; //store the parameters of the expression of the current episode after it's completed
-    Data data;
+    static Data inline data;
     
-    std::vector<float> __operators_float;
-    std::vector<float> __unary_operators_float;
-    std::vector<float> __binary_operators_float;
-    std::vector<float> __input_vars_float;
-    std::vector<float> __other_tokens_float;
+    static std::vector<float> inline __operators_float;
+    static std::vector<float> inline __unary_operators_float;
+    static std::vector<float> inline __binary_operators_float;
+    static std::vector<float> inline __input_vars_float;
+    static std::vector<float> inline __other_tokens_float;
     
     std::random_device rd;
     std::mt19937 gen;
     std::uniform_real_distribution<float> vel_dist, pos_dist;
     
-    int action_size;
+    static int inline action_size;
     size_t reserve_amount;
     int num_fit_iter;
     std::string fit_method;
     std::string fit_grad_method;
-    float inc = std::sqrt(2.0f*std::numeric_limits<float>::epsilon());
                 
-    std::unordered_map<float, std::string> __tokens_dict; //Converts number to string
-    std::unordered_map<std::string, float> __tokens_inv_dict; //Converts string to number
+    static std::unordered_map<float, std::string> inline __tokens_dict; //Converts number to string
+    static std::unordered_map<std::string, float> inline __tokens_inv_dict; //Converts string to number
 
-    int n; //depth of RPN tree
+    int n; //depth of RPN tree, TODO: change to short
     std::string expression_type;
     // Create the empty expression list.
     std::vector<float> pieces;
-    bool visualize_exploration;
+    bool visualize_exploration, is_primary;
     
-    Board(const Eigen::MatrixXf& theData, int n = 3, const std::string& expression_type = "prefix", bool visualize_exploration = false, std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical") : data{theData}, gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, fit_method{fitMethod}, num_fit_iter{numFitIter}, fit_grad_method{fitGradMethod}
+    Board(bool primary = true, int n = 3, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false) : is_primary{primary}, gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, fit_method{fitMethod}, num_fit_iter{numFitIter}, fit_grad_method{fitGradMethod}
     {
-        this->__num_features = data[0].size() - 1;
-        this->__input_vars.reserve(this->__num_features);
-        for (auto i = 0; i < this->__num_features; i++)
+        if (is_primary)
         {
-            this->__input_vars.push_back("x"+std::to_string(i));
-        }
-        this->__unary_operators = {"cos"};
-        this->__binary_operators = {"+", "-", "*"};
-        this->__operators = {"cos", "+", "-", "*"};
-        this->__other_tokens = {"const"};
-        this->__tokens = {"cos", "+", "-", "*"};
-        for (auto& i: this->__input_vars)
-        {
-            this->__tokens.push_back(i);
-        }
-        for (auto& i: this->__other_tokens)
-        {
-            this->__tokens.push_back(i);
-        }
-
-        this->action_size = this->__tokens.size();
-        this->__tokens_float.reserve(this->action_size);
-        for (int i = 1; i <= this->action_size; ++i)
-        {
-            this->__tokens_float.push_back(i);
-        }
-
-        int num_operators = this->__operators.size();
-        int num_unary_operators = this->__unary_operators.size();
-        for (int i = 1; i <= num_operators; i++)
-        {
-            this->__operators_float.push_back(i);
-        }
-        for (int i = 1; i <= num_unary_operators; i++)
-        {
-            this->__unary_operators_float.push_back(i);
-        }
-        for (int i = num_unary_operators + 1; i <= num_operators; i++)
-        {
-            this->__binary_operators_float.push_back(i);
-        }
-        int ops_plus_features = num_operators + this->__num_features;
-        for (int i = num_operators + 1; i <= ops_plus_features; i++)
-        {
-            this->__input_vars_float.push_back(i);
-        }
-        for (int i = ops_plus_features + 1; i <= this->action_size; i++)
-        {
-            this->__other_tokens_float.push_back(i);
-        }
-        for (int i = 0; i < this->action_size; i++)
-        {
-            this->__tokens_dict[this->__tokens_float[i]] = this->__tokens[i];
-            this->__tokens_inv_dict[this->__tokens[i]] = this->__tokens_float[i];
+            Board::data = theData;
+            Board::__num_features = data[0].size() - 1;
+            
+            Board::__input_vars.reserve(Board::__num_features);
+            for (auto i = 0; i < Board::__num_features; i++)
+            {
+                Board::__input_vars.push_back("x"+std::to_string(i));
+            }
+            Board::__unary_operators = {"cos"};
+            Board::__binary_operators = {"+", "-", "*"};
+            Board::__operators = {"cos", "+", "-", "*"};
+            Board::__other_tokens = {"const"};
+            Board::__tokens = {"cos", "+", "-", "*"};
+            
+            for (auto& i: this->Board::__input_vars)
+            {
+                Board::__tokens.push_back(i);
+            }
+            for (auto& i: Board::__other_tokens)
+            {
+                Board::__tokens.push_back(i);
+            }
+            Board::action_size = Board::__tokens.size();
+            Board::__tokens_float.reserve(Board::action_size);
+            for (int i = 1; i <= Board::action_size; ++i)
+            {
+                Board::__tokens_float.push_back(i);
+            }
+            int num_operators = Board::__operators.size();
+            for (int i = 1; i <= num_operators; i++)
+            {
+                Board::__operators_float.push_back(i);
+            }
+            int num_unary_operators = Board::__unary_operators.size();
+            for (int i = 1; i <= num_unary_operators; i++)
+            {
+                Board::__unary_operators_float.push_back(i);
+            }
+            for (int i = num_unary_operators + 1; i <= num_operators; i++)
+            {
+                Board::__binary_operators_float.push_back(i);
+            }
+            int ops_plus_features = num_operators + Board::__num_features;
+            for (int i = num_operators + 1; i <= ops_plus_features; i++)
+            {
+                Board::__input_vars_float.push_back(i);
+            }
+            for (int i = ops_plus_features + 1; i <= Board::action_size; i++)
+            {
+                Board::__other_tokens_float.push_back(i);
+            }
+            for (int i = 0; i < Board::action_size; i++)
+            {
+                Board::__tokens_dict[Board::__tokens_float[i]] = Board::__tokens[i];
+                Board::__tokens_inv_dict[Board::__tokens[i]] = Board::__tokens_float[i];
+            }
         }
 
         this->n = n;
@@ -335,9 +342,9 @@ struct Board
     
     float operator[](size_t index) const
     {
-        if (index < this->__tokens_float.size())
+        if (index < Board::__tokens_float.size())
         {
-            return this->__tokens_float[index];
+            return Board::__tokens_float[index];
         }
         throw std::out_of_range("Index out of range");
     }
@@ -347,7 +354,7 @@ struct Board
         int count = 0;
         for (float token : pieces)
         {
-            if (std::find(__binary_operators_float.begin(), __binary_operators_float.end(), token) != __binary_operators_float.end())
+            if (std::find(Board::__binary_operators_float.begin(), Board::__binary_operators_float.end(), token) != Board::__binary_operators_float.end())
             {
                 count++;
             }
@@ -360,7 +367,7 @@ struct Board
         int count = 0;
         for (float token : pieces)
         {
-            if (std::find(__unary_operators_float.begin(), __unary_operators_float.end(), token) != __unary_operators_float.end())
+            if (std::find(Board::__unary_operators_float.begin(), Board::__unary_operators_float.end(), token) != Board::__unary_operators_float.end())
             {
                 count++;
             }
@@ -371,8 +378,8 @@ struct Board
     int __num_leaves()
     {
         int count = 0;
-        std::vector<float> leaves = __input_vars_float;
-        leaves.insert(leaves.end(), __other_tokens_float.begin(), __other_tokens_float.end());
+        std::vector<float> leaves = Board::__input_vars_float;
+        leaves.insert(leaves.end(), Board::__other_tokens_float.begin(), Board::__other_tokens_float.end());
 
         for (float token : pieces)
         {
@@ -390,7 +397,7 @@ struct Board
         {
             if (this->pieces.empty()) //At the beginning, self.pieces is empty, so the only legal moves are the operators
             {
-                return this->__operators_float;
+                return Board::__operators_float;
             }
             int num_binary = this->__num_binary_ops();
             int num_leaves = this->__num_leaves();
@@ -400,30 +407,30 @@ struct Board
             string_pieces.reserve(this->pieces.size()+1);
             for (float i: this->pieces)
             {
-                string_pieces.push_back(this->__tokens_dict[i]);
+                string_pieces.push_back(Board::__tokens_dict[i]);
             }
-            string_pieces.push_back(__binary_operators[0]);
+            string_pieces.push_back(Board::__binary_operators[0]);
             
             std::vector<float> temp;
             
             if (getPNdepth(string_pieces).first <= this->n)
             {
-                temp.insert(temp.end(), this->__binary_operators_float.begin(), this->__binary_operators_float.end());
+                temp.insert(temp.end(), Board::__binary_operators_float.begin(), Board::__binary_operators_float.end());
             }
-            string_pieces[string_pieces.size() - 1] = __unary_operators[0];
+            string_pieces[string_pieces.size() - 1] = Board::__unary_operators[0];
             if (getPNdepth(string_pieces).first <= this->n)
             {
-                temp.insert(temp.end(), this->__unary_operators_float.begin(), this->__unary_operators_float.end());
+                temp.insert(temp.end(), Board::__unary_operators_float.begin(), Board::__unary_operators_float.end());
             }
 
-            string_pieces[string_pieces.size() - 1] = __input_vars[0];
+            string_pieces[string_pieces.size() - 1] = Board::__input_vars[0];
             //The number of leaves can never exceed number of binary + 1 in any RPN expression
             if (!((num_leaves == num_binary + 1) || (getPNdepth(string_pieces).first < this->n && (num_leaves == num_binary))))
             {
-                temp.insert(temp.end(), this->__input_vars_float.begin(), this->__input_vars_float.end()); //leaves allowed
-                if (std::find(__unary_operators.begin(), __unary_operators.end(), string_pieces[string_pieces.size()-2]) == __unary_operators.end())
+                temp.insert(temp.end(), Board::__input_vars_float.begin(), Board::__input_vars_float.end()); //leaves allowed
+                if (std::find(Board::__unary_operators.begin(), Board::__unary_operators.end(), string_pieces[string_pieces.size()-2]) == Board::__unary_operators.end())
                 {
-                    temp.insert(temp.end(), this->__other_tokens_float.begin(), this->__other_tokens_float.end());
+                    temp.insert(temp.end(), Board::__other_tokens_float.begin(), Board::__other_tokens_float.end());
                 }
             }
             return temp;
@@ -434,34 +441,34 @@ struct Board
             std::vector<float> temp;
             if (this->pieces.empty()) //At the beginning, self.pieces is empty, so the only legal moves are the features and const
             {
-                temp.insert(temp.end(), this->__input_vars_float.begin(), this->__input_vars_float.end());
-                temp.insert(temp.end(), this->__other_tokens_float.begin(), this->__other_tokens_float.end());
+                temp.insert(temp.end(), Board::__input_vars_float.begin(), Board::__input_vars_float.end());
+                temp.insert(temp.end(), Board::__other_tokens_float.begin(), Board::__other_tokens_float.end());
                 return temp;
             }
             int num_binary = this->__num_binary_ops();
             int num_leaves = this->__num_leaves();
             
-            if ((num_binary != num_leaves - 1))//  && ((std::find(this->__other_tokens_float.begin(), this->__other_tokens_float.end(), pieces.back()) == this->__other_tokens_float.end()) ||  (*(pieces.end()-1) != *(pieces.end()-2))))
+            if ((num_binary != num_leaves - 1))//  && ((std::find(Board::__other_tokens_float.begin(), Board::__other_tokens_float.end(), pieces.back()) == Board::__other_tokens_float.end()) ||  (*(pieces.end()-1) != *(pieces.end()-2))))
             {
 
-                temp.insert(temp.end(), this->__binary_operators_float.begin(), this->__binary_operators_float.end());
+                temp.insert(temp.end(), Board::__binary_operators_float.begin(), Board::__binary_operators_float.end());
             }
             std::vector<std::string> string_pieces;
             string_pieces.reserve(this->pieces.size()+1);
             for (float i: this->pieces)
             {
-                string_pieces.push_back(this->__tokens_dict[i]);
+                string_pieces.push_back(Board::__tokens_dict[i]);
             }
-            string_pieces.push_back(__unary_operators[0]);
-            if ((num_leaves >= 1) && (getRPNdepth(string_pieces).first <= this->n) && (std::find(__other_tokens.begin(), __other_tokens.end(), string_pieces[string_pieces.size()-2]) == __other_tokens.end())) //unary_op(const) is not allowed
+            string_pieces.push_back(Board::__unary_operators[0]);
+            if ((num_leaves >= 1) && (getRPNdepth(string_pieces).first <= this->n) && (std::find(Board::__other_tokens.begin(), Board::__other_tokens.end(), string_pieces[string_pieces.size()-2]) == Board::__other_tokens.end())) //unary_op(const) is not allowed
             {
-                temp.insert(temp.end(), this->__unary_operators_float.begin(), this->__unary_operators_float.end());
+                temp.insert(temp.end(), Board::__unary_operators_float.begin(), Board::__unary_operators_float.end());
             }
-            string_pieces[string_pieces.size() - 1] = __input_vars[0];
+            string_pieces[string_pieces.size() - 1] = Board::__input_vars[0];
             if (getRPNdepth(string_pieces).first <= this->n)
             {
-                temp.insert(temp.end(), this->__input_vars_float.begin(), this->__input_vars_float.end());
-                temp.insert(temp.end(), this->__other_tokens_float.begin(), this->__other_tokens_float.end());
+                temp.insert(temp.end(), Board::__input_vars_float.begin(), Board::__input_vars_float.end());
+                temp.insert(temp.end(), Board::__other_tokens_float.begin(), Board::__other_tokens_float.end());
             }
             return temp;
         }
@@ -476,7 +483,7 @@ struct Board
         int const_index = ((expression_type == "postfix") ? 0 : params->size()-1);
         for (size_t i = 0; i <= sz; i++)
         {
-            if (std::find(__other_tokens_float.begin(), __other_tokens_float.end(), pieces[i]) != __other_tokens_float.end())
+            if (std::find(Board::__other_tokens_float.begin(), Board::__other_tokens_float.end(), pieces[i]) != Board::__other_tokens_float.end())
             {
                 temp += ((i!=sz) ? std::to_string((*params)(const_index)) + " " : std::to_string((*params)(const_index)));
                 if (expression_type == "postfix")
@@ -490,7 +497,7 @@ struct Board
             }
             else
             {
-                temp += ((i!=sz) ? __tokens_dict[pieces[i]] + " " : __tokens_dict[pieces[i]]);
+                temp += ((i!=sz) ? Board::__tokens_dict[pieces[i]] + " " : Board::__tokens_dict[pieces[i]]);
             }
         }
         return temp;
@@ -505,13 +512,13 @@ struct Board
         
         for (int i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
         {
-            std::string token = __tokens_dict[pieces[i]];
+            std::string token = Board::__tokens_dict[pieces[i]];
 
-            if (std::find(__operators_float.begin(), __operators_float.end(), pieces[i]) == __operators_float.end()) // leaf
+            if (std::find(Board::__operators_float.begin(), Board::__operators_float.end(), pieces[i]) == Board::__operators_float.end()) // leaf
             {
-                stack.push(((!show_consts) || (std::find(__other_tokens.begin(), __other_tokens.end(), token) == __other_tokens.end())) ? token : std::to_string((*params)(const_counter++)));
+                stack.push(((!show_consts) || (std::find(Board::__other_tokens.begin(), Board::__other_tokens.end(), token) == Board::__other_tokens.end())) ? token : std::to_string((*params)(const_counter++)));
             }
-            else if (std::find(__unary_operators_float.begin(), __unary_operators_float.end(), pieces[i]) != __unary_operators_float.end()) // Unary operator
+            else if (std::find(Board::__unary_operators_float.begin(), Board::__unary_operators_float.end(), pieces[i]) != Board::__unary_operators_float.end()) // Unary operator
             {
                 std::string operand = std::move(stack.top());
                 stack.pop();
@@ -545,9 +552,9 @@ struct Board
         bool is_prefix = (expression_type == "prefix");
         for (int i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
         {
-            std::string token = __tokens_dict[pieces[i]];
+            std::string token = Board::__tokens_dict[pieces[i]];
 
-            if (std::find(__operators_float.begin(), __operators_float.end(), pieces[i]) == __operators_float.end()) // leaf
+            if (std::find(Board::__operators_float.begin(), Board::__operators_float.end(), pieces[i]) == Board::__operators_float.end()) // leaf
             {
                 if (token == "const")
                 {
@@ -555,10 +562,10 @@ struct Board
                 }
                 else
                 {
-                    stack.push(this->data[token]);
+                    stack.push(Board::data[token]);
                 }
             }
-            else if (std::find(__unary_operators_float.begin(), __unary_operators_float.end(), pieces[i]) != __unary_operators_float.end()) // Unary operator
+            else if (std::find(Board::__unary_operators_float.begin(), Board::__unary_operators_float.end(), pieces[i]) != Board::__unary_operators_float.end()) // Unary operator
             {
                 if (token == "cos")
                 {
@@ -598,9 +605,9 @@ struct Board
         bool is_prefix = (expression_type == "prefix");
         for (int i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
         {
-            std::string token = __tokens_dict[pieces[i]];
+            std::string token = Board::__tokens_dict[pieces[i]];
 
-            if (std::find(__operators_float.begin(), __operators_float.end(), pieces[i]) == __operators_float.end()) // leaf
+            if (std::find(Board::__operators_float.begin(), Board::__operators_float.end(), pieces[i]) == Board::__operators_float.end()) // leaf
             {
                 if (token == "const")
                 {
@@ -610,10 +617,10 @@ struct Board
                 }
                 else
                 {
-                    stack.push(this->data[token]);
+                    stack.push(Board::data[token]);
                 }
             }
-            else if (std::find(__unary_operators_float.begin(), __unary_operators_float.end(), pieces[i]) != __unary_operators_float.end()) // Unary operator
+            else if (std::find(Board::__unary_operators_float.begin(), Board::__unary_operators_float.end(), pieces[i]) != Board::__unary_operators_float.end()) // Unary operator
             {
                 if (token == "cos")
                 {
@@ -801,7 +808,7 @@ struct Board
         }
         else if (this->fit_method == "LevenbergMarquardt")
         {
-            grad = (this->expression_evaluator(x) - this->data["y"]);
+            grad = (this->expression_evaluator(x) - Board::data["y"]);
         }
         return 0.f;
     }
@@ -915,7 +922,6 @@ struct Board
         Board::fit_time += (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9);
     }
     
-    //TODO: Add other methods besides PSO (e.g. calling scipy from the Python-C API, etc.)
     float fitFunctionToData()
     {
         if (params->size())
@@ -962,9 +968,9 @@ struct Board
         
         for (float i: pieces)
         {
-            temp_token = __tokens_dict[i];
+            temp_token = Board::__tokens_dict[i];
             if (temp_token == "const"){++num_consts;}
-            expression.push_back(__tokens_dict[i]);
+            expression.push_back(Board::__tokens_dict[i]);
         }
 
         auto [depth, complete] =  ((expression_type == "prefix") ? getPNdepth(expression) : getRPNdepth(expression)); //structured binding :)
@@ -975,21 +981,27 @@ struct Board
         }
         else
         {
-            std::string expression_string = std::accumulate(expression.begin(), expression.end(), std::string(), [](const std::string& a, const std::string& b) { return a + (a.empty() ? "" : " ") + b; });
-            Board::expression_dict[expression_string].second++;
+            std::string expression_string = std::accumulate(expression.begin(), expression.end(), std::string(), [](const std::string& a, const std::string& b) { return a + (a.empty() ? "" : " ") + b; }); //TODO: Change this to something more efficient
+            
             if (visualize_exploration)
             {
                 //TODO: call some plotting function, e.g. ROOT CERN plotting API, Matplotlib from the Python-C API, Plotly if we want a web application for this, etc. The plotting function could also have the fitted constants (rounded of course), but then this if statement would need to be moved down to below the fitFunctionToData call in this `complete_status` method.
             }
             
-            this->params = &Board::expression_dict[expression_string].first;
-            if (!(this->params->size()))
+            if (is_primary)
             {
-                this->params->resize(num_consts);
-                this->params->setOnes();
-            }
+                Board::expression_dict[expression_string].second++;
+                
+                this->params = &Board::expression_dict[expression_string].first;
+                if (!(this->params->size()))
+                {
+                    this->params->resize(num_consts);
+                    this->params->setOnes();
+                }
 
-            return fitFunctionToData();
+                return fitFunctionToData();
+            }
+            return 0.0f;
         }
     }
     const Eigen::VectorXf& operator[] (int i){return data[i];}
@@ -1004,6 +1016,8 @@ struct Board
     }
 };
 
+//Data Board::data;
+
 // 2.5382*cos(x_3) + x_0^2 - 0.5
 // postfix = "const x3 cos * x0 x0 * const - +"
 // prefix = "+ * const cos x3 - * x0 x0 const"
@@ -1015,14 +1029,18 @@ float exampleFunc(const Eigen::VectorXf& x)
 
 void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
 {
-    Board x(data, depth, expression_type, false, method, num_fit_iter, fit_grad_method);
+    Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false);
+    Board secondary_one(false, 0, expression_type), secondary_two(false, 0, expression_type); //For crossover and mutations
     std::random_device rand_dev;
     std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-    float score = 0.0f, max_score = 0.0f, mut_prob = 0.8f, cross_prob = 0.2f;
+    float score = 0.0f, max_score = 0.0f, mut_prob = 0.8f, cross_prob = 0.2f, rand_mut_cross;
     constexpr int init_population = 2000;
     std::vector<std::pair<std::vector<float>, float>> individuals;
     individuals.reserve(init_population);
     std::vector<float> temp_legal_moves;
+    std::uniform_int_distribution<int> rand_depth_dist(0, x.n - 1), selector_dist(0, init_population - 1);
+    int rand_depth;
+    std::uniform_real_distribution<float> rand_mut_cross_dist(0.0f, 1.0f);
     size_t temp_sz;
     std::string expression, orig_expression, best_expression;
     
@@ -1038,7 +1056,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
 
             x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
         }
-
+        
         if (score > max_score)
         {
             expression = x._to_infix();
@@ -1049,29 +1067,85 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
             std::cout << "Best expression (original format) = " << orig_expression << '\n';
             best_expression = std::move(expression);
         }
-        
+
         individuals.push_back(std::make_pair(x.pieces, score));
         x.pieces.clear();
     }
     
-    auto NodeMutation = [&](std::vector<float>& individual)
+    auto Mutation = [&](int n)
     {
-        std::uniform_int_distribution<> distrib(0, individual.size() - 1);
-        float node = individual[distrib(generator)];
+        secondary_one.n = n;
         
+        while (secondary_one.complete_status() == -1)
+        {
+            
+        }
+        
+        //Step 1: Generate a random depth-n sub-expression called `mut_sub_expr` of type
+        //std::vector<float>
+        //...
+        
+        //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
+        //in `individual` and store them in an std::vector<std::pair<int, int>> called `sub_exprs`.
+        //...
+        
+        //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `mut_ind`
+        //...
+        
+        //Step 4: Substitute sub_exprs[mut_ind] in individual with mut_sub_expr
+        //...
+        
+    };
+    
+    auto Crossover = [&](int n)
+    {
+        secondary_one.n = n;
+        secondary_two.n = n;
+        
+        
+        
+        //Step 1: Identify the starting and stopping index pairs of all depth-n sub-expressions
+        //in `individual_1` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_1`.
+        //...
+        
+        //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
+        //in `individual_2` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_2`.
+        //...
+        
+        //Step 3: Generate a random uniform int from 0 to sub_exprs_1.size() - 1 called `mut_ind_1`
+        //...
+        
+        //Step 4: Generate a random uniform int from 0 to sub_exprs_2.size() - 1 called `mut_ind_2`
+        //...
+        
+        //Step 5: Swap sub_exprs_1[mut_ind_1] in individual_1 with sub_exprs_2[mut_ind_2] in individual_2
+        //...
     };
     
     for (int ngen = 0; score < stop; ngen++)
     {
+        //Produce N additional individuals through crossover and mutation
         
-        //
+        //Step 1: Generate a random number between 0 and 1 called `rand_mut_cross`
+        rand_mut_cross = rand_mut_cross_dist(generator);
+        
+        //Step 2: Generate a random uniform int from 0 to x.n - 1 called `rand_depth`
+        rand_depth = rand_depth_dist(generator);
+              
+        //Step 3:
+        
+        //Step 4: Select mutation if 0 <= rand_mut_cross <= mut_prob, else select crossover
+        
+        //Step 5: Call functions
+        
+        
     }
 
 }
 
 void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
 {
-    Board x(data, depth, expression_type, false, method, num_fit_iter, fit_grad_method);
+    Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false);
     
     std::random_device rand_dev;
     std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
@@ -1187,8 +1261,7 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
 
 void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
 {
-    Board x(data, depth, expression_type, false, method, num_fit_iter, fit_grad_method);
-    
+    Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false);
     float score = 0.0f, max_score = 0.0f, check_point_score = 0.0f, UCT, best_act, UCT_best;
     std::vector<float> temp_legal_moves;
     std::unordered_map<std::string, std::unordered_map<float, float>> Qsa, Nsa;
@@ -1288,11 +1361,10 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
 
 void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
 {
-    Board x(data, depth, expression_type, false, method, num_fit_iter, fit_grad_method);
-
-//    std::cout << x["y"] << '\n';
-//    std::cout << x.fit_method << '\n';
-//    std::cout << x.data << '\n';
+    Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false);
+    std::cout << Board::data["y"] << '\n';
+    std::cout << x.fit_method << '\n';
+    std::cout << Board::data << '\n';
     std::random_device rand_dev;
     std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
     float score = 0, max_score = 0;
@@ -1368,9 +1440,10 @@ int main() {
     Eigen::MatrixXf data = generateData(100, 6, exampleFunc);
 //    std::cout << data << "\n\n";
     auto start_time = Clock::now();
-//    MCTS(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
+//    MCTS(data, 4, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
+//    PSO(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
 //    RandomSearch(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
-    PSO(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
+    GP(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
     auto end_time = Clock::now();
     std::cout << "Time difference = "
           << std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count()/1e9 << " seconds" << '\n';

@@ -254,15 +254,15 @@ def test_visualize():
     else:
 #        print(rpn_to_infix("x x cos *"))
 #        print(rpn_to_infix("0.336364 x1 x4 - * x3 + x4 x4 x4 x2 - + - * -sin 1 x1 x4 - * 0.336364 0 0 - * + 0 + x4 x4 x4 x2 - + - * 0.336364 x1 x4 - * x3 + 0 0 0 0 - + - * + *"))
-        print(rpn_to_infix("y y y * * cos y +"))
-        print(rpn_to_infix("y y y * * -sin y y 1 * 1 y * + * 1 y y * * + * 1 +"))
+#        print(rpn_to_infix("y y x * * cos y +"))
+#        print(rpn_to_infix("y y y * * -sin y y 1 * 1 y * + * 1 y y * * + * 1 +"))
 #        os.system(f"maxima -r \"diff({pn_to_infix('+ 1.1 * * 0.5 x0 + x0 x0')}, x0); quit();\"")
 #        os.system()
         while True:
             try:
 #                plot_pn_expression_tree("cos + 1.1 * * 0.5 x0 + x0 x0".split(), block=False, save = save)
-                
-                plot_rpn_expression_tree("x x + x x + + x x + x x + + +".split(), block=False, save = save)
+                plot_rpn_expression_tree("x0 x0 + x0 0.5 * * 1.1 +".split(), block=False, save = save)
+#                plot_rpn_expression_tree("y y x * * cos y +".split(), block=False, save = save)
 
             except KeyboardInterrupt:
                 plt.close()
