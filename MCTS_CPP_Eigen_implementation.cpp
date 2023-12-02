@@ -21,6 +21,7 @@
 #include <limits>
 #include <cfloat>
 #include <cassert>
+#include <span>
 #include <pybind11/pybind11.h>
 #include <Python.h>
 #include <Eigen/Core>
@@ -113,91 +114,6 @@ public:
     }
 
 };
-
-std::pair<int, bool> getRPNdepth(const std::vector<std::string>& expression)
-{
-    if (expression.empty())
-    {
-        return std::make_pair(0, false);
-    }
-
-    std::unordered_set<std::string> operators = {"cos", "+", "-", "*"};
-    std::unordered_set<std::string> unary_operators = {"cos"};
-    std::stack<int> stack;
-    bool complete = true;
-
-    for (const std::string& token : expression)
-    {
-        if (unary_operators.count(token) > 0)
-        {
-            stack.top() += 1;
-        }
-        else if (operators.count(token) > 0)
-        {
-            int op2 = std::move(stack.top());
-            stack.pop();
-            int op1 = std::move(stack.top());
-            stack.pop();
-            stack.push(std::max(op1, op2) + 1);
-        }
-        else
-        {
-            stack.push(1);
-        }
-    }
-
-    while (stack.size() > 1)
-    {
-        int op2 = std::move(stack.top());
-        stack.pop();
-        int op1 = std::move(stack.top());
-        stack.pop();
-        stack.push(std::max(op1, op2) + 1);
-        complete = false;
-    }
-
-    return std::make_pair(stack.top() - 1, complete);
-}
-
-std::pair<int, bool> getPNdepth(const std::vector<std::string>& expression)
-{
-    if (expression.empty() || (expression.size() == 1 && expression[0] == " "))
-    {
-        return std::make_pair(0, false);
-    }
-
-    std::vector<int> stack;
-    int depth = 0, num_binary = 0, num_leaves = 0;
-    std::unordered_set<std::string> binary_operators = {"+", "-", "*"};
-    std::unordered_set<std::string> unary_operators = {"cos"};
-
-    for (const std::string& val : expression)
-    {
-        if (binary_operators.count(val) > 0)
-        {
-            stack.push_back(2);  // Number of operands
-            num_binary++;
-        }
-        else if (unary_operators.count(val) > 0)
-        {
-            stack.push_back(1);
-        }
-        else
-        {
-            num_leaves++;
-            while (!stack.empty() && stack.back() == 1)
-            {
-                stack.pop_back();  // Remove fulfilled operators
-            }
-            if (!stack.empty())
-            {
-                stack.back()--;  // Indicate an operand is consumed
-            }
-        }
-        depth = std::max(depth, static_cast<int>(stack.size()) + 1);
-    }
-    return std::make_pair(depth - 1, num_leaves == num_binary + 1);
-}
 
 float MSE(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
 {
@@ -378,18 +294,127 @@ struct Board
     int __num_leaves()
     {
         int count = 0;
-        std::vector<float> leaves = Board::__input_vars_float;
-        leaves.insert(leaves.end(), Board::__other_tokens_float.begin(), Board::__other_tokens_float.end());
 
         for (float token : pieces)
         {
-            if (std::find(leaves.begin(), leaves.end(), token) != leaves.end())
+            if (!is_unary(token) && !is_binary(token))
             {
                 count++;
             }
         }
         return count;
     }
+    
+    int __num_consts()
+    {
+        int count = 0;
+
+        for (float token : pieces)
+        {
+            if (__tokens_dict[token] == "const")
+            {
+                count++;
+            }
+        }
+        return count;
+    }
+    
+    bool is_unary(float token)
+    {
+        return (std::find(__unary_operators_float.begin(), __unary_operators_float.end(), token) != __unary_operators_float.end());
+    }
+
+    bool is_binary(float token)
+    {
+        return (std::find(__binary_operators_float.begin(), __binary_operators_float.end(), token) != __binary_operators_float.end());
+    }
+    
+    bool is_operator(float token)
+    {
+        return (is_binary(token) || is_unary(token));
+    }
+        
+    std::pair<int, bool> getPNdepth(const std::vector<float>& expression)
+    {
+        if (expression.empty())
+        {
+            return std::make_pair(0, false);
+        }
+
+        std::vector<int> stack;
+        int depth = 0, num_binary = 0, num_leaves = 0;
+        
+        for (float val : expression)
+        {
+            if (is_binary(val))
+            {
+                stack.push_back(2);  // Number of operands
+                num_binary++;
+            }
+            else if (is_unary(val))
+            {
+                stack.push_back(1);
+            }
+            else
+            {
+                num_leaves++;
+                while (!stack.empty() && stack.back() == 1)
+                {
+                    stack.pop_back();  // Remove fulfilled operators
+                }
+                if (!stack.empty())
+                {
+                    stack.back()--;  // Indicate an operand is consumed
+                }
+            }
+            depth = std::max(depth, static_cast<int>(stack.size()) + 1);
+        }
+        return std::make_pair(depth - 1, num_leaves == num_binary + 1);
+    }
+    
+    std::pair<int, bool> getRPNdepth(const std::vector<float>& expression)
+    {
+        if (expression.empty())
+        {
+            return std::make_pair(0, false);
+        }
+
+        std::stack<int> stack;
+        bool complete = true;
+
+        for (float token : expression)
+        {
+            if (is_unary(token))
+            {
+                stack.top() += 1;
+            }
+            else if (is_operator(token))
+            {
+                int op2 = std::move(stack.top());
+                stack.pop();
+                int op1 = std::move(stack.top());
+                stack.pop();
+                stack.push(std::max(op1, op2) + 1);
+            }
+            else
+            {
+                stack.push(1);
+            }
+        }
+
+        while (stack.size() > 1)
+        {
+            int op2 = std::move(stack.top());
+            stack.pop();
+            int op1 = std::move(stack.top());
+            stack.pop();
+            stack.push(std::max(op1, op2) + 1);
+            complete = false;
+        }
+
+        return std::make_pair(stack.top() - 1, complete);
+    }
+
     
     std::vector<float> get_legal_moves()
     {
@@ -403,32 +428,28 @@ struct Board
             int num_leaves = this->__num_leaves();
             
             //__tokens_dict: converts float to string
-            std::vector<std::string> string_pieces;
-            string_pieces.reserve(this->pieces.size()+1);
-            for (float i: this->pieces)
-            {
-                string_pieces.push_back(Board::__tokens_dict[i]);
-            }
-            string_pieces.push_back(Board::__binary_operators[0]);
+            std::vector<float> _pieces(pieces);
+            
+            _pieces.push_back(Board::__binary_operators_float[0]);
             
             std::vector<float> temp;
             
-            if (getPNdepth(string_pieces).first <= this->n)
+            if (getPNdepth(_pieces).first <= this->n)
             {
                 temp.insert(temp.end(), Board::__binary_operators_float.begin(), Board::__binary_operators_float.end());
             }
-            string_pieces[string_pieces.size() - 1] = Board::__unary_operators[0];
-            if (getPNdepth(string_pieces).first <= this->n)
+            _pieces[_pieces.size() - 1] = Board::__unary_operators_float[0];
+            if (getPNdepth(_pieces).first <= this->n)
             {
                 temp.insert(temp.end(), Board::__unary_operators_float.begin(), Board::__unary_operators_float.end());
             }
 
-            string_pieces[string_pieces.size() - 1] = Board::__input_vars[0];
+            _pieces[_pieces.size() - 1] = Board::__input_vars_float[0];
             //The number of leaves can never exceed number of binary + 1 in any RPN expression
-            if (!((num_leaves == num_binary + 1) || (getPNdepth(string_pieces).first < this->n && (num_leaves == num_binary))))
+            if (!((num_leaves == num_binary + 1) || (getPNdepth(_pieces).first < this->n && (num_leaves == num_binary))))
             {
                 temp.insert(temp.end(), Board::__input_vars_float.begin(), Board::__input_vars_float.end()); //leaves allowed
-                if (std::find(Board::__unary_operators.begin(), Board::__unary_operators.end(), string_pieces[string_pieces.size()-2]) == Board::__unary_operators.end())
+                if (std::find(Board::__unary_operators_float.begin(), Board::__unary_operators_float.end(), _pieces[_pieces.size()-2]) == Board::__unary_operators_float.end())
                 {
                     temp.insert(temp.end(), Board::__other_tokens_float.begin(), Board::__other_tokens_float.end());
                 }
@@ -453,19 +474,15 @@ struct Board
 
                 temp.insert(temp.end(), Board::__binary_operators_float.begin(), Board::__binary_operators_float.end());
             }
-            std::vector<std::string> string_pieces;
-            string_pieces.reserve(this->pieces.size()+1);
-            for (float i: this->pieces)
-            {
-                string_pieces.push_back(Board::__tokens_dict[i]);
-            }
-            string_pieces.push_back(Board::__unary_operators[0]);
-            if ((num_leaves >= 1) && (getRPNdepth(string_pieces).first <= this->n) && (std::find(Board::__other_tokens.begin(), Board::__other_tokens.end(), string_pieces[string_pieces.size()-2]) == Board::__other_tokens.end())) //unary_op(const) is not allowed
+            std::vector<float> _pieces(pieces);
+
+            _pieces.push_back(Board::__unary_operators_float[0]);
+            if ((num_leaves >= 1) && (getRPNdepth(_pieces).first <= this->n) && (std::find(Board::__other_tokens_float.begin(), Board::__other_tokens_float.end(), _pieces[_pieces.size()-2]) == Board::__other_tokens_float.end())) //unary_op(const) is not allowed
             {
                 temp.insert(temp.end(), Board::__unary_operators_float.begin(), Board::__unary_operators_float.end());
             }
-            string_pieces[string_pieces.size() - 1] = Board::__input_vars[0];
-            if (getRPNdepth(string_pieces).first <= this->n)
+            _pieces[_pieces.size() - 1] = Board::__input_vars_float[0];
+            if (getRPNdepth(_pieces).first <= this->n)
             {
                 temp.insert(temp.end(), Board::__input_vars_float.begin(), Board::__input_vars_float.end());
                 temp.insert(temp.end(), Board::__other_tokens_float.begin(), Board::__other_tokens_float.end());
@@ -961,19 +978,7 @@ struct Board
     */
     float complete_status()
     {
-        std::vector<std::string> expression;
-        expression.reserve(pieces.size());
-        std::string temp_token;
-        unsigned short num_consts = 0;
-        
-        for (float i: pieces)
-        {
-            temp_token = Board::__tokens_dict[i];
-            if (temp_token == "const"){++num_consts;}
-            expression.push_back(Board::__tokens_dict[i]);
-        }
-
-        auto [depth, complete] =  ((expression_type == "prefix") ? getPNdepth(expression) : getRPNdepth(expression)); //structured binding :)
+        auto [depth, complete] =  ((expression_type == "prefix") ? getPNdepth(pieces) : getRPNdepth(pieces)); //structured binding :)
 
         if (!complete || depth < this->n) //Expression not complete
         {
@@ -981,7 +986,10 @@ struct Board
         }
         else
         {
-            std::string expression_string = std::accumulate(expression.begin(), expression.end(), std::string(), [](const std::string& a, const std::string& b) { return a + (a.empty() ? "" : " ") + b; }); //TODO: Change this to something more efficient
+            std::string expression_string;
+            expression_string.reserve(8*pieces.size());
+            
+            for (float i: pieces){expression_string += std::to_string(i)+" ";}
             
             if (visualize_exploration)
             {
@@ -995,7 +1003,7 @@ struct Board
                 this->params = &Board::expression_dict[expression_string].first;
                 if (!(this->params->size()))
                 {
-                    this->params->resize(num_consts);
+                    this->params->resize(__num_consts());
                     this->params->setOnes();
                 }
 
@@ -1013,6 +1021,67 @@ struct Board
     friend std::ostream& operator<<(std::ostream& os, const Board& b)
     {
         return (os << b.data);
+    }
+    
+    //Function to compute the LGB or RGB, from https://www.jstor.org/stable/43998756
+    //(top of pg. 165)
+    void GB(int z, int& ind)
+    {
+        do
+        {
+            ind = ((expression_type == "prefix") ? ind+1 : ind-1);
+            if (is_unary(this->pieces[ind]))
+            {
+                GB(1, ind);
+            }
+            else if (is_binary(this->pieces[ind]))
+            {
+                GB(2, ind);
+            }
+            --z;
+        } while (z);
+    }
+    
+    //Computes the grasp of an arbitrary element pieces[i],
+    //from https://www.jstor.org/stable/43998756 (bottom of pg. 165)
+    int GR(int i)
+    {
+        int start = i;
+        int& ptr_lgb = start;
+        if (is_unary(this->pieces[i]))
+        {
+            GB(1, ptr_lgb);
+        }
+        else if (is_binary(this->pieces[i]))
+        {
+            GB(2, ptr_lgb);
+        }
+        return ((expression_type == "prefix") ? ( ptr_lgb - i) : (i - ptr_lgb));
+    }
+    
+    void get_indices(std::vector<std::pair<int, int>>& sub_exprs, std::pair<std::vector<float>, float>& individual)
+    {
+        int temp;
+        for (size_t k = 0; k < individual.first.size(); k++)
+        {
+            temp = k;
+            if (is_unary(individual.first[k]))
+            {
+                int& ptr_GB = temp;
+                GB(1, ptr_GB);
+                sub_exprs.push_back(std::make_pair( ((k < ptr_GB) ? k: ptr_GB), ((k > ptr_GB) ? k: ptr_GB)));
+            }
+            else if (is_binary(individual.first[k]))
+            {
+                int& ptr_GB = temp;
+                GB(2, ptr_GB);
+                sub_exprs.push_back(std::make_pair( ((k < ptr_GB) ? k: ptr_GB), ((k > ptr_GB) ? k: ptr_GB)));
+            }
+            else
+            {
+                sub_exprs.push_back(std::make_pair(k, k));
+            }
+        }
     }
 };
 
@@ -1036,10 +1105,12 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
     float score = 0.0f, max_score = 0.0f, mut_prob = 0.8f, cross_prob = 0.2f, rand_mut_cross;
     constexpr int init_population = 2000;
     std::vector<std::pair<std::vector<float>, float>> individuals;
-    individuals.reserve(init_population);
+    std::pair<std::vector<float>, float> individual_1, individual_2;
+    std::vector<std::pair<int, int>> sub_exprs_1, sub_exprs_2;
+    individuals.reserve(2*init_population);
     std::vector<float> temp_legal_moves;
     std::uniform_int_distribution<int> rand_depth_dist(0, x.n - 1), selector_dist(0, init_population - 1);
-    int rand_depth;
+    int rand_depth, rand_individual_idx_1, rand_individual_idx_2;
     std::uniform_real_distribution<float> rand_mut_cross_dist(0.0f, 1.0f);
     size_t temp_sz;
     std::string expression, orig_expression, best_expression;
@@ -1074,20 +1145,23 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
     
     auto Mutation = [&](int n)
     {
-        secondary_one.n = n;
         
+        //Step 1: Generate a random depth-n sub-expression `secondary_one.pieces`
+        secondary_one.pieces.clear();
+        sub_exprs_1.clear();
+        secondary_one.n = n;
         while (secondary_one.complete_status() == -1)
         {
-            
+            temp_legal_moves = secondary_one.get_legal_moves();
+            std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
+            secondary_one.pieces.push_back(temp_legal_moves[distribution(generator)]);
         }
         
-        //Step 1: Generate a random depth-n sub-expression called `mut_sub_expr` of type
-        //std::vector<float>
-        //...
-        
         //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
-        //in `individual` and store them in an std::vector<std::pair<int, int>> called `sub_exprs`.
-        //...
+        //in `individual` and store them in an std::vector<std::pair<int, int>>
+        //called `sub_exprs_1`.
+        individual_1 = individuals[selector_dist(generator)];
+        secondary_one.get_indices(sub_exprs_1, individual_1);
         
         //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `mut_ind`
         //...
@@ -1099,18 +1173,42 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
     
     auto Crossover = [&](int n)
     {
+        secondary_one.pieces.clear();
+        secondary_two.pieces.clear();
         secondary_one.n = n;
         secondary_two.n = n;
         
+        while (secondary_one.complete_status() == -1)
+        {
+            temp_legal_moves = secondary_one.get_legal_moves();
+            std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
+            secondary_one.pieces.push_back(temp_legal_moves[distribution(generator)]);
+        }
         
+        while (secondary_two.complete_status() == -1)
+        {
+            temp_legal_moves = secondary_two.get_legal_moves();
+            std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
+            secondary_two.pieces.push_back(temp_legal_moves[distribution(generator)]);
+        }
         
+        rand_individual_idx_1 = selector_dist(generator);
+        individual_1 = individuals[rand_individual_idx_1];
+        
+        do {
+            rand_individual_idx_2 = selector_dist(generator);
+        } while (rand_individual_idx_2 == rand_individual_idx_1);
+        individual_2 = individuals[rand_individual_idx_2];
+    
         //Step 1: Identify the starting and stopping index pairs of all depth-n sub-expressions
         //in `individual_1` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_1`.
         //...
+        secondary_one.get_indices(sub_exprs_1, individual_1);
         
         //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
         //in `individual_2` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_2`.
         //...
+        secondary_two.get_indices(sub_exprs_2, individual_2);
         
         //Step 3: Generate a random uniform int from 0 to sub_exprs_1.size() - 1 called `mut_ind_1`
         //...
@@ -1440,10 +1538,10 @@ int main() {
     Eigen::MatrixXf data = generateData(100, 6, exampleFunc);
 //    std::cout << data << "\n\n";
     auto start_time = Clock::now();
-//    MCTS(data, 4, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
-//    PSO(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
+//    MCTS(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
+    PSO(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
 //    RandomSearch(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
-    GP(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
+//    GP(data, 3, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
     auto end_time = Clock::now();
     std::cout << "Time difference = "
           << std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count()/1e9 << " seconds" << '\n';
