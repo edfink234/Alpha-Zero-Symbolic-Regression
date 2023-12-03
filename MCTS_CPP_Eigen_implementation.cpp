@@ -333,25 +333,31 @@ struct Board
     {
         return (is_binary(token) || is_unary(token));
     }
-        
-    std::pair<int, bool> getPNdepth(const std::vector<float>& expression)
+    
+    //returns a pair containing the depth of the sub-expression from start to stop, and whether or not it's complete
+    std::pair<int, bool> getPNdepth(const std::vector<float>& expression, size_t start = 0, size_t stop = 0)
     {
         if (expression.empty())
         {
             return std::make_pair(0, false);
         }
+        
+        if (stop == 0)
+        {
+            stop = expression.size();
+        }
 
         std::vector<int> stack;
         int depth = 0, num_binary = 0, num_leaves = 0;
         
-        for (float val : expression)
+        for (size_t i = start; i < stop; i++)
         {
-            if (is_binary(val))
+            if (is_binary(expression[i]))
             {
                 stack.push_back(2);  // Number of operands
                 num_binary++;
             }
-            else if (is_unary(val))
+            else if (is_unary(expression[i]))
             {
                 stack.push_back(1);
             }
@@ -372,23 +378,29 @@ struct Board
         return std::make_pair(depth - 1, num_leaves == num_binary + 1);
     }
     
-    std::pair<int, bool> getRPNdepth(const std::vector<float>& expression)
+    //returns a pair containing the depth of the sub-expression from start to stop, and whether or not it's complete
+    std::pair<int, bool> getRPNdepth(const std::vector<float>& expression, size_t start = 0, size_t stop = 0)
     {
         if (expression.empty())
         {
             return std::make_pair(0, false);
         }
+        
+        if (stop == 0)
+        {
+            stop = expression.size();
+        }
 
         std::stack<int> stack;
         bool complete = true;
 
-        for (float token : expression)
+        for (size_t i = start; i < stop; i++)
         {
-            if (is_unary(token))
+            if (is_unary(expression[i]))
             {
                 stack.top() += 1;
             }
-            else if (is_operator(token))
+            else if (is_operator(expression[i]))
             {
                 int op2 = std::move(stack.top());
                 stack.pop();
@@ -1059,27 +1071,37 @@ struct Board
         return ((expression_type == "prefix") ? ( ptr_lgb - i) : (i - ptr_lgb));
     }
     
+    //Adds pairs containing the starting and stopping indices for each
+    //depth-n sub-expression in the expression individual.first
     void get_indices(std::vector<std::pair<int, int>>& sub_exprs, std::pair<std::vector<float>, float>& individual)
     {
         int temp;
         for (size_t k = 0; k < individual.first.size(); k++)
         {
-            temp = k;
+            temp = k; //we don't want to change k
+            int& ptr_GB = temp;
+            
             if (is_unary(individual.first[k]))
             {
-                int& ptr_GB = temp;
                 GB(1, ptr_GB);
-                sub_exprs.push_back(std::make_pair( ((k < ptr_GB) ? k: ptr_GB), ((k > ptr_GB) ? k: ptr_GB)));
+                
             }
             else if (is_binary(individual.first[k]))
             {
-                int& ptr_GB = temp;
                 GB(2, ptr_GB);
-                sub_exprs.push_back(std::make_pair( ((k < ptr_GB) ? k: ptr_GB), ((k > ptr_GB) ? k: ptr_GB)));
             }
-            else
+            else if (this->n == 0) //depth-0 sub-trees are leaf-nodes
             {
                 sub_exprs.push_back(std::make_pair(k, k));
+                continue;
+            }
+            
+            auto [start, stop] = std::make_pair( ((k < ptr_GB) ? k: ptr_GB), ((k > ptr_GB) ? k: ptr_GB));
+            auto [depth, complete] =  ((expression_type == "prefix") ? getPNdepth(individual.first, start, stop+1) : getRPNdepth(individual.first, start, stop+1));
+            
+            if (complete && (depth == this->n))
+            {
+                sub_exprs.push_back(std::make_pair(start, stop));
             }
         }
     }
@@ -1145,7 +1167,6 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
     
     auto Mutation = [&](int n)
     {
-        
         //Step 1: Generate a random depth-n sub-expression `secondary_one.pieces`
         secondary_one.pieces.clear();
         sub_exprs_1.clear();
@@ -1158,23 +1179,37 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         }
         
         //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
-        //in `individual` and store them in an std::vector<std::pair<int, int>>
+        //in `individual_1` and store them in an std::vector<std::pair<int, int>>
         //called `sub_exprs_1`.
-        individual_1 = individuals[selector_dist(generator)];
+        individual_1 = individuals[selector_dist(generator)]; //A randomly selected individual to be mutated
         secondary_one.get_indices(sub_exprs_1, individual_1);
         
         //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `mut_ind`
-        //...
+        std::cout << "sub_exprs_1.size() = " << sub_exprs_1.size() << '\n' << "n = " << n << '\n';
+        std::uniform_int_distribution<int> distribution(0, sub_exprs_1.size() - 1);
+        int mut_ind = distribution(generator);
         
-        //Step 4: Substitute sub_exprs[mut_ind] in individual with mut_sub_expr
-        //...
+        //Step 4: Substitute sub_exprs_1[mut_ind] in individual_1 with secondary_one.pieces
         
+//        auto start = individual_1.first.begin() + sub_exprs_1[mut_ind].first;
+//        auto end = std::min(individual_1.first.begin() + sub_exprs_1[mut_ind].second, individual_1.first.end());
+//        individual_1.first.erase(start, end);
+//        individual_1.first.insert(start, secondary_one.pieces.begin(), secondary_one.pieces.end());
+        
+        //Step 5: Evaluate the new mutated `individual_1` and update score if needed
+//        x.pieces = individual_1.first;
+//        float complete = x.complete_status();
+//        std::cout << complete << '\n';
+        
+        exit(1);
     };
     
     auto Crossover = [&](int n)
     {
         secondary_one.pieces.clear();
         secondary_two.pieces.clear();
+        sub_exprs_1.clear();
+        sub_exprs_2.clear();
         secondary_one.n = n;
         secondary_two.n = n;
         
@@ -1229,10 +1264,12 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         
         //Step 2: Generate a random uniform int from 0 to x.n - 1 called `rand_depth`
         rand_depth = rand_depth_dist(generator);
-              
-        //Step 3:
         
         //Step 4: Select mutation if 0 <= rand_mut_cross <= mut_prob, else select crossover
+        if (rand_mut_cross <= mut_prob)
+        {
+            Mutation(rand_depth);
+        }
         
         //Step 5: Call functions
         
@@ -1539,9 +1576,9 @@ int main() {
 //    std::cout << data << "\n\n";
     auto start_time = Clock::now();
 //    MCTS(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
-    PSO(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
+//    PSO(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
 //    RandomSearch(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
-//    GP(data, 3, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
+    GP(data, 3, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
     auto end_time = Clock::now();
     std::cout << "Time difference = "
           << std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count()/1e9 << " seconds" << '\n';
