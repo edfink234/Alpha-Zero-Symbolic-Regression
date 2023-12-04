@@ -182,7 +182,7 @@ def plot_rpn_expression_tree(expression: list[str], block = False, save = False)
     def build_tree(expression_tokens):
         stack = deque()
         unique_id = 0
-
+    
         for token in expression_tokens:
             if not is_operator(token):
                 unique_id += 1
@@ -261,8 +261,8 @@ def test_visualize():
         while True:
             try:
 #                plot_pn_expression_tree("cos + 1.1 * * 0.5 x0 + x0 x0".split(), block=False, save = save)
-                plot_rpn_expression_tree("x0 x0 + x0 0.5 * * 1.1 +".split(), block=False, save = save)
-#                plot_rpn_expression_tree("y y x * * cos y +".split(), block=False, save = save)
+#                plot_pn_expression_tree("* - x4 x1 * x0 * x4 x1".split(), block=False, save = save)
+                plot_rpn_expression_tree("x4 x3 - const x4 x4 * + * +".split(), block=False, save = save)
 
             except KeyboardInterrupt:
                 plt.close()

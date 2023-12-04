@@ -1037,18 +1037,18 @@ struct Board
     
     //Function to compute the LGB or RGB, from https://www.jstor.org/stable/43998756
     //(top of pg. 165)
-    void GB(int z, int& ind)
+    void GB(size_t z, size_t& ind, const std::vector<float>& individual)
     {
         do
         {
             ind = ((expression_type == "prefix") ? ind+1 : ind-1);
-            if (is_unary(this->pieces[ind]))
+            if (is_unary(individual[ind]))
             {
-                GB(1, ind);
+                GB(1, ind, individual);
             }
-            else if (is_binary(this->pieces[ind]))
+            else if (is_binary(individual[ind]))
             {
-                GB(2, ind);
+                GB(2, ind, individual);
             }
             --z;
         } while (z);
@@ -1056,39 +1056,42 @@ struct Board
     
     //Computes the grasp of an arbitrary element pieces[i],
     //from https://www.jstor.org/stable/43998756 (bottom of pg. 165)
-    int GR(int i)
+    int GR(size_t i, const std::vector<float>& individual)
     {
-        int start = i;
-        int& ptr_lgb = start;
-        if (is_unary(this->pieces[i]))
+        size_t start = i;
+        size_t& ptr_lgb = start;
+        if (is_unary(individual[i]))
         {
-            GB(1, ptr_lgb);
+            GB(1, ptr_lgb, individual);
         }
-        else if (is_binary(this->pieces[i]))
+        else if (is_binary(individual[i]))
         {
-            GB(2, ptr_lgb);
+            GB(2, ptr_lgb, individual);
         }
         return ((expression_type == "prefix") ? ( ptr_lgb - i) : (i - ptr_lgb));
     }
     
     //Adds pairs containing the starting and stopping indices for each
     //depth-n sub-expression in the expression individual.first
-    void get_indices(std::vector<std::pair<int, int>>& sub_exprs, std::pair<std::vector<float>, float>& individual)
+    void get_indices(std::vector<std::pair<int, int>>& sub_exprs, const std::pair<std::vector<float>, float>& individual)
     {
-        int temp;
+        size_t temp;
         for (size_t k = 0; k < individual.first.size(); k++)
         {
             temp = k; //we don't want to change k
-            int& ptr_GB = temp;
+            size_t& ptr_GB = temp;
             
             if (is_unary(individual.first[k]))
             {
-                GB(1, ptr_GB);
-                
+                GB(1, ptr_GB, individual.first);
+//                std::cout << k << ' ' << ptr_GB << ' ' << Board::__tokens_dict[individual.first[k]]
+//                << ' ' << Board::__tokens_dict[individual.first[ptr_GB]] << '\n';
             }
             else if (is_binary(individual.first[k]))
             {
-                GB(2, ptr_GB);
+                GB(2, ptr_GB, individual.first);
+//                std::cout << k << ' ' << ptr_GB << ' ' << Board::__tokens_dict[individual.first[k]]
+//                << ' ' << Board::__tokens_dict[individual.first[ptr_GB]] << '\n';
             }
             else if (this->n == 0) //depth-0 sub-trees are leaf-nodes
             {
@@ -1096,7 +1099,8 @@ struct Board
                 continue;
             }
             
-            auto [start, stop] = std::make_pair( ((k < ptr_GB) ? k: ptr_GB), ((k > ptr_GB) ? k: ptr_GB));
+            auto [start, stop] = std::make_pair( std::min(k, ptr_GB), std::max(k, ptr_GB));
+//            std::cout << "start, stop = " << start << " , " << stop << '\n';
             auto [depth, complete] =  ((expression_type == "prefix") ? getPNdepth(individual.first, start, stop+1) : getRPNdepth(individual.first, start, stop+1));
             
             if (complete && (depth == this->n))
@@ -1182,26 +1186,38 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         //in `individual_1` and store them in an std::vector<std::pair<int, int>>
         //called `sub_exprs_1`.
         individual_1 = individuals[selector_dist(generator)]; //A randomly selected individual to be mutated
+//        for (float i: individual_1.first){std::cout << Board::__tokens_dict[i] << ' ';}puts("");
         secondary_one.get_indices(sub_exprs_1, individual_1);
         
         //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `mut_ind`
-        std::cout << "sub_exprs_1.size() = " << sub_exprs_1.size() << '\n' << "n = " << n << '\n';
+//        std::cout << "sub_exprs_1.size() = " << sub_exprs_1.size() << '\n' << "n = " << n << '\n';
         std::uniform_int_distribution<int> distribution(0, sub_exprs_1.size() - 1);
         int mut_ind = distribution(generator);
         
         //Step 4: Substitute sub_exprs_1[mut_ind] in individual_1 with secondary_one.pieces
         
-//        auto start = individual_1.first.begin() + sub_exprs_1[mut_ind].first;
-//        auto end = std::min(individual_1.first.begin() + sub_exprs_1[mut_ind].second, individual_1.first.end());
-//        individual_1.first.erase(start, end);
-//        individual_1.first.insert(start, secondary_one.pieces.begin(), secondary_one.pieces.end());
+        auto start = individual_1.first.begin() + sub_exprs_1[mut_ind].first;
+        auto end = std::min(individual_1.first.begin() + sub_exprs_1[mut_ind].second, individual_1.first.end());
+        individual_1.first.erase(start, end+1);
+        individual_1.first.insert(start, secondary_one.pieces.begin(), secondary_one.pieces.end());
         
         //Step 5: Evaluate the new mutated `individual_1` and update score if needed
-//        x.pieces = individual_1.first;
-//        float complete = x.complete_status();
-//        std::cout << complete << '\n';
+        x.pieces = individual_1.first;
+//        for (float i: x.pieces) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
+        float score = x.complete_status();
+        if (score > max_score)
+        {
+            expression = x._to_infix();
+            orig_expression = x.expression();
+            max_score = score;
+            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+            std::cout << "Best expression = " << expression << '\n';
+            std::cout << "Best expression (original format) = " << orig_expression << '\n';
+            
+            best_expression = std::move(expression);
+        }
         
-        exit(1);
+//        exit(1);
     };
     
     auto Crossover = [&](int n)
@@ -1271,11 +1287,13 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
             Mutation(rand_depth);
         }
         
+        if (ngen && (ngen%50000 == 0))
+        {
+            std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+        }
         //Step 5: Call functions
         
-        
     }
-
 }
 
 void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
@@ -1311,7 +1329,9 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
      Idea: In this implementation of PSO,
      
      The traditional PSO initializes the particle positions to be between 0 and 1. However, for my application,
-     the particle positions are
+     the particle positions are discrete values and any of the integer encodings of the possible tokens. The 
+     velocities are continuous valued and perturb the postions which are subsequently constrained by rounding to
+     the nearest whole number then taking the modulo w.r.t. the # of allowed legal moves.
      */
     
     for (int iter = 0; (score < stop/* && Board::expression_dict.size() <= 2000000*/); iter++)
@@ -1578,7 +1598,7 @@ int main() {
 //    MCTS(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
 //    PSO(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
 //    RandomSearch(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
-    GP(data, 3, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
+    GP(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
     auto end_time = Clock::now();
     std::cout << "Time difference = "
           << std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count()/1e9 << " seconds" << '\n';
