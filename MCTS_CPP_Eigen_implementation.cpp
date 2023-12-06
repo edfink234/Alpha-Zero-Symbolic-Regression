@@ -1119,11 +1119,11 @@ struct Board
 // prefix = "+ * const cos x3 - * x0 x0 const"
 float exampleFunc(const Eigen::VectorXf& x)
 {
-//    return 2.5382*cos(x[3]) + (x[0]*x[0]) - 0.5f;
-    return 5*cos(x[1]+x[3])+x[4];
+    return 2.5382*cos(x[3]) + (x[0]*x[0]) - 0.5f;
+//    return 5*cos(x[1]+x[3])+x[4];
 }
 
-void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
+void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
 {
     Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false);
     Board secondary_one(false, 0, expression_type), secondary_two(false, 0, expression_type); //For crossover and mutations
@@ -1142,6 +1142,20 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
     size_t temp_sz;
     std::string expression, orig_expression, best_expression;
     
+    auto updateScore = [&]()
+    {
+        if (score > max_score)
+        {
+            expression = x._to_infix();
+            orig_expression = x.expression();
+            max_score = score;
+            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+            std::cout << "Best expression = " << expression << '\n';
+            std::cout << "Best expression (original format) = " << orig_expression << '\n';
+            best_expression = std::move(expression);
+        }
+    };
+    
     //Step 1, generate init_population expressions
     for (int i = 0; i < init_population; i++)
     {
@@ -1155,16 +1169,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
             x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
         }
         
-        if (score > max_score)
-        {
-            expression = x._to_infix();
-            orig_expression = x.expression();
-            max_score = score;
-            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-            std::cout << "Best expression = " << expression << '\n';
-            std::cout << "Best expression (original format) = " << orig_expression << '\n';
-            best_expression = std::move(expression);
-        }
+        updateScore();
 
         individuals.push_back(std::make_pair(x.pieces, score));
         x.pieces.clear();
@@ -1204,19 +1209,9 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         
         //Step 5: Evaluate the new mutated `x.pieces` and update score if needed
 //        for (float i: x.pieces) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
-        float score = x.complete_status();
-        if (score > max_score)
-        {
-            expression = x._to_infix();
-            orig_expression = x.expression();
-            max_score = score;
-            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-            std::cout << "Best expression = " << expression << '\n';
-            std::cout << "Best expression (original format) = " << orig_expression << '\n';
-            
-            best_expression = std::move(expression);
-        }
-        
+        score = x.complete_status();
+        updateScore();
+        individuals.push_back(std::make_pair(x.pieces, score));
 //        exit(1);
     };
     
@@ -1270,11 +1265,27 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         auto end_2 = std::min(individual_2.first.begin() + sub_exprs_2[mut_ind_2].second, individual_2.first.end());
         
 //        insert the range start_2, end_2+1 into individual_1 and the range start_1, end_1+1 into individual_2.
-        std::vector<float> temp_1(start_1, end_1+1), temp_2(start_2, end_2+1);
-        individual_1.first.erase(start_1, end_1+1);
-        individual_2.first.erase(start_2, end_2+1);
-        individual_1.first.insert(start_1, temp_2.begin(), temp_2.end());
-        individual_2.first.insert(start_2, temp_1.begin(), temp_1.end());
+        
+        if ((end_1 - start_1) < (end_2 - start_2))
+        {
+            std::swap_ranges(start_1, end_1+1, start_2);
+            //Insert remaining part of sub_individual_2.first into individual_1.first
+            individual_1.first.insert(end_1+1, start_2 + (end_1+1-start_1), end_2+1);
+            //Remove the remaining part of sub_individual_2.first from individual_2.first
+            individual_2.first.erase(start_2 + (end_1+1-start_1), end_2+1);
+        }
+        else if ((end_2 - start_2) < (end_1 - start_1))
+        {
+            std::swap_ranges(start_2, end_2+1, start_1);
+            //Insert remaining part of sub_individual_1.first into individual_2.first
+            individual_2.first.insert(end_2+1, start_1 + (end_2+1-start_2), end_1+1);
+            //Remove the remaining part of sub_individual_1.first from individual_1.first
+            individual_1.first.erase(start_1 + (end_2+1-start_2), end_1+1);
+        }
+        else
+        {
+            std::swap_ranges(start_1, end_1+1, start_2);
+        }
 
 //        puts("individual_1.first after");
 //        for (float i: individual_1.first) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
@@ -1283,17 +1294,9 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         
         x.pieces = individual_1.first;
         score = x.complete_status();
-        if (score > max_score)
-        {
-            expression = x._to_infix();
-            orig_expression = x.expression();
-            max_score = score;
-            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-            std::cout << "Best expression = " << expression << '\n';
-            std::cout << "Best expression (original format) = " << orig_expression << '\n';
-            
-            best_expression = std::move(expression);
-        }
+        updateScore();
+        
+        individuals.push_back(std::make_pair(x.pieces, score));
         
         x.pieces = individual_2.first;
         score = x.complete_status();
@@ -1308,33 +1311,267 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
             
             best_expression = std::move(expression);
         }
+        
+        individuals.push_back(std::make_pair(x.pieces, score));
     };
     
-    for (int ngen = 0; score < stop; ngen++)
+    for (int ngen = 0; max_score < stop; ngen++)
     {
-        //Produce N additional individuals through crossover and mutation
-        
-        //Step 1: Generate a random number between 0 and 1 called `rand_mut_cross`
-        rand_mut_cross = rand_mut_cross_dist(generator);
-        
-        //Step 2: Generate a random uniform int from 0 to x.n - 1 called `rand_depth`
-        rand_depth = rand_depth_dist(generator);
-        
-        //Step 4: Call Mutation function if 0 <= rand_mut_cross <= mut_prob, else select Crossover
-        if (rand_mut_cross <= mut_prob)
-        {
-            Mutation(rand_depth);
-        }
-        else
-        {
-            Crossover(rand_depth);
-        }
-        
-        if (ngen && (ngen%50000 == 0))
+        if (ngen && (ngen%5 == 0))
         {
             std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
         }
+        //Produce N additional individuals through crossover and mutation
+        for (int n = 0; n < init_population; n++)
+        {
+            //Step 1: Generate a random number between 0 and 1 called `rand_mut_cross`
+            rand_mut_cross = rand_mut_cross_dist(generator);
+            
+            //Step 2: Generate a random uniform int from 0 to x.n - 1 called `rand_depth`
+            rand_depth = rand_depth_dist(generator);
+            
+            //Step 4: Call Mutation function if 0 <= rand_mut_cross <= mut_prob, else select Crossover
+            if (rand_mut_cross <= mut_prob)
+            {
+                Mutation(rand_depth);
+            }
+            else
+            {
+                Crossover(rand_depth);
+            }
+        }
+        std::sort(individuals.begin(), individuals.end(),
+        [](std::pair<std::vector<float>, float>& individual_1, std::pair<std::vector<float>, float>& individual_2)
+        {
+            return individual_1.second > individual_2.second;
+        });
+        individuals.resize(init_population);
+    }
+}
+
+void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
+{
+    Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false);
+    Board secondary_one(false, 0, expression_type), secondary_two(false, 0, expression_type); //For crossover and mutations
+    std::random_device rand_dev;
+    std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
+    float score = 0.0f, max_score = 0.0f, mut_prob = 0.8f, cross_prob = 0.2f, rand_mut_cross;
+    constexpr int init_population = 2000;
+    std::vector<std::pair<std::vector<float>, float>> individuals;
+    std::pair<std::vector<float>, float> individual_1, individual_2;
+    std::vector<std::pair<int, int>> sub_exprs_1, sub_exprs_2;
+    individuals.reserve(2*init_population);
+    std::vector<float> temp_legal_moves;
+    std::uniform_int_distribution<int> rand_depth_dist(0, x.n - 1), selector_dist(0, init_population - 1);
+    int rand_depth, rand_individual_idx_1, rand_individual_idx_2;
+    std::uniform_real_distribution<float> rand_mut_cross_dist(0.0f, 1.0f);
+    size_t temp_sz;
+    std::string expression, orig_expression, best_expression;
+    
+    auto updateScore = [&]()
+    {
+        if (score > max_score)
+        {
+            expression = x._to_infix();
+            orig_expression = x.expression();
+            max_score = score;
+            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+            std::cout << "Best expression = " << expression << '\n';
+            std::cout << "Best expression (original format) = " << orig_expression << '\n';
+            best_expression = std::move(expression);
+        }
+    };
+    
+    //Step 1, generate init_population expressions
+    for (int i = 0; i < init_population; i++)
+    {
+        while ((score = x.complete_status()) == -1)
+        {
+            temp_legal_moves = x.get_legal_moves(); //the legal moves
+            temp_sz = temp_legal_moves.size(); //the number of legal moves
+            std::uniform_int_distribution<int> distribution(0, temp_sz - 1);
+ // A random integer generator which generates an index corresponding to an allowed move
+
+            x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
+        }
         
+        updateScore();
+
+        individuals.push_back(std::make_pair(x.pieces, score));
+        x.pieces.clear();
+    }
+    
+    auto Mutation = [&](int n)
+    {
+        //Step 1: Generate a random depth-n sub-expression `secondary_one.pieces`
+        secondary_one.pieces.clear();
+        sub_exprs_1.clear();
+        secondary_one.n = n;
+        while (secondary_one.complete_status() == -1)
+        {
+            temp_legal_moves = secondary_one.get_legal_moves();
+            std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
+            secondary_one.pieces.push_back(temp_legal_moves[distribution(generator)]);
+        }
+        
+        //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
+        //in `x.pieces` and store them in an std::vector<std::pair<int, int>>
+        //called `sub_exprs_1`.
+        x.pieces = individuals[selector_dist(generator)].first; //A randomly selected individual to be mutated
+//        for (float i: x.pieces){std::cout << Board::__tokens_dict[i] << ' ';}puts("");
+        secondary_one.get_indices(sub_exprs_1, x.pieces);
+        
+        //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `mut_ind`
+//        std::cout << "sub_exprs_1.size() = " << sub_exprs_1.size() << '\n' << "n = " << n << '\n';
+        std::uniform_int_distribution<int> distribution(0, sub_exprs_1.size() - 1);
+        int mut_ind = distribution(generator);
+        
+        //Step 4: Substitute sub_exprs_1[mut_ind] in x.pieces with secondary_one.pieces
+        
+        auto start = x.pieces.begin() + sub_exprs_1[mut_ind].first;
+        auto end = std::min(x.pieces.begin() + sub_exprs_1[mut_ind].second, x.pieces.end());
+        x.pieces.erase(start, end+1);
+        x.pieces.insert(start, secondary_one.pieces.begin(), secondary_one.pieces.end());
+        
+        //Step 5: Evaluate the new mutated `x.pieces` and update score if needed
+//        for (float i: x.pieces) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
+        score = x.complete_status();
+        updateScore();
+        individuals.push_back(std::make_pair(x.pieces, score));
+//        exit(1);
+    };
+    
+    auto Crossover = [&](int n)
+    {
+        sub_exprs_1.clear();
+        sub_exprs_2.clear();
+        secondary_one.n = n;
+        secondary_two.n = n;
+        
+        rand_individual_idx_1 = selector_dist(generator);
+        individual_1 = individuals[rand_individual_idx_1];
+        
+        do {
+            rand_individual_idx_2 = selector_dist(generator);
+        } while (rand_individual_idx_2 == rand_individual_idx_1);
+        individual_2 = individuals[rand_individual_idx_2];
+    
+        //Step 1: Identify the starting and stopping index pairs of all depth-n sub-expressions
+        //in `individual_1` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_1`.
+        //...
+        secondary_one.get_indices(sub_exprs_1, individual_1.first);
+        
+        //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
+        //in `individual_2` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_2`.
+        //...
+        secondary_two.get_indices(sub_exprs_2, individual_2.first);
+        
+        //Step 3: Generate a random uniform int from 0 to sub_exprs_1.size() - 1 called `mut_ind_1`
+        //...
+        std::uniform_int_distribution<int> distribution_1(0, sub_exprs_1.size() - 1);
+        int mut_ind_1 = distribution_1(generator);
+        
+        //Step 4: Generate a random uniform int from 0 to sub_exprs_2.size() - 1 called `mut_ind_2`
+        //...
+        std::uniform_int_distribution<int> distribution_2(0, sub_exprs_2.size() - 1);
+        int mut_ind_2 = distribution_2(generator);
+        
+        //Step 5: Swap sub_exprs_1[mut_ind_1] in individual_1.first with sub_exprs_2[mut_ind_2] in individual_2.first
+        //...
+        
+//        puts("individual_1.first before");
+//        for (float i: individual_1.first) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
+//        puts("individual_2.first before");
+//        for (float i: individual_2.first) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
+        
+        auto start_1 = individual_1.first.begin() + sub_exprs_1[mut_ind_1].first;
+        auto end_1 = std::min(individual_1.first.begin() + sub_exprs_1[mut_ind_1].second, individual_1.first.end());
+        
+        auto start_2 = individual_2.first.begin() + sub_exprs_2[mut_ind_2].first;
+        auto end_2 = std::min(individual_2.first.begin() + sub_exprs_2[mut_ind_2].second, individual_2.first.end());
+        
+//        insert the range start_2, end_2+1 into individual_1 and the range start_1, end_1+1 into individual_2.
+        
+        if ((end_1 - start_1) < (end_2 - start_2))
+        {
+            std::swap_ranges(start_1, end_1+1, start_2);
+            //Insert remaining part of sub_individual_2.first into individual_1.first
+            individual_1.first.insert(end_1+1, start_2 + (end_1+1-start_1), end_2+1);
+            //Remove the remaining part of sub_individual_2.first from individual_2.first
+            individual_2.first.erase(start_2 + (end_1+1-start_1), end_2+1);
+        }
+        else if ((end_2 - start_2) < (end_1 - start_1))
+        {
+            std::swap_ranges(start_2, end_2+1, start_1);
+            //Insert remaining part of sub_individual_1.first into individual_2.first
+            individual_2.first.insert(end_2+1, start_1 + (end_2+1-start_2), end_1+1);
+            //Remove the remaining part of sub_individual_1.first from individual_1.first
+            individual_1.first.erase(start_1 + (end_2+1-start_2), end_1+1);
+        }
+        else
+        {
+            std::swap_ranges(start_1, end_1+1, start_2);
+        }
+
+//        puts("individual_1.first after");
+//        for (float i: individual_1.first) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
+//        puts("individual_2.first after");
+//        for (float i: individual_2.first) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
+        
+        x.pieces = individual_1.first;
+        score = x.complete_status();
+        updateScore();
+        
+        individuals.push_back(std::make_pair(x.pieces, score));
+        
+        x.pieces = individual_2.first;
+        score = x.complete_status();
+        if (score > max_score)
+        {
+            expression = x._to_infix();
+            orig_expression = x.expression();
+            max_score = score;
+            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+            std::cout << "Best expression = " << expression << '\n';
+            std::cout << "Best expression (original format) = " << orig_expression << '\n';
+            
+            best_expression = std::move(expression);
+        }
+        
+        individuals.push_back(std::make_pair(x.pieces, score));
+    };
+    
+    for (int ngen = 0; max_score < stop; ngen++)
+    {
+        if (ngen && (ngen%5 == 0))
+        {
+            std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+        }
+        //Produce N additional individuals through crossover and mutation
+        for (int n = 0; n < init_population; n++)
+        {
+            //Step 1: Generate a random number between 0 and 1 called `rand_mut_cross`
+            rand_mut_cross = rand_mut_cross_dist(generator);
+            
+            //Step 2: Generate a random uniform int from 0 to x.n - 1 called `rand_depth`
+            rand_depth = rand_depth_dist(generator);
+            
+            //Step 4: Call Mutation function if 0 <= rand_mut_cross <= mut_prob, else select Crossover
+            if (rand_mut_cross <= mut_prob)
+            {
+                Mutation(rand_depth);
+            }
+            else
+            {
+                Crossover(rand_depth);
+            }
+        }
+        std::sort(individuals.begin(), individuals.end(), 
+        [](std::pair<std::vector<float>, float>& individual_1, std::pair<std::vector<float>, float>& individual_2)
+        {
+            return individual_1.second > individual_2.second;
+        });
+        individuals.resize(init_population);
     }
 }
 
@@ -1640,7 +1877,7 @@ int main() {
 //    MCTS(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
 //    PSO(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
 //    RandomSearch(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
-    GP(data, 4, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
+    GP(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
     auto end_time = Clock::now();
     std::cout << "Time difference = "
           << std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count()/1e9 << " seconds" << '\n';
