@@ -1126,17 +1126,15 @@ float exampleFunc(const Eigen::VectorXf& x)
 void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
 {
     Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false);
-    Board secondary_one(false, 0, expression_type), secondary_two(false, 0, expression_type); //For crossover and mutations
+    Board secondary(false, 0, expression_type); //For perturbations
     std::random_device rand_dev;
     std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-    float score = 0.0f, max_score = 0.0f, mut_prob = 0.8f, cross_prob = 0.2f, rand_mut_cross;
-    constexpr int init_population = 2000;
-    std::vector<std::pair<std::vector<float>, float>> individuals;
-    std::pair<std::vector<float>, float> individual_1, individual_2;
-    std::vector<std::pair<int, int>> sub_exprs_1, sub_exprs_2;
-    individuals.reserve(2*init_population);
+    float score = 0.0f, max_score = 0.0f;
+    
+    std::pair<std::vector<float>, float> candidate;
+    std::vector<std::pair<int, int>> sub_exprs;
     std::vector<float> temp_legal_moves;
-    std::uniform_int_distribution<int> rand_depth_dist(0, x.n - 1), selector_dist(0, init_population - 1);
+    std::uniform_int_distribution<int> rand_depth_dist(0, x.n - 1);
     int rand_depth, rand_individual_idx_1, rand_individual_idx_2;
     std::uniform_real_distribution<float> rand_mut_cross_dist(0.0f, 1.0f);
     size_t temp_sz;
@@ -1156,196 +1154,67 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
         }
     };
     
-    //Step 1, generate init_population expressions
-    for (int i = 0; i < init_population; i++)
+    //Step 1, generate a random expression
+
+    while ((score = x.complete_status()) == -1)
     {
-        while ((score = x.complete_status()) == -1)
-        {
-            temp_legal_moves = x.get_legal_moves(); //the legal moves
-            temp_sz = temp_legal_moves.size(); //the number of legal moves
-            std::uniform_int_distribution<int> distribution(0, temp_sz - 1);
- // A random integer generator which generates an index corresponding to an allowed move
+        temp_legal_moves = x.get_legal_moves(); //the legal moves
+        temp_sz = temp_legal_moves.size(); //the number of legal moves
+        std::uniform_int_distribution<int> distribution(0, temp_sz - 1);
+// A random integer generator which generates an index corresponding to an allowed move
 
-            x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
-        }
-        
-        updateScore();
-
-        individuals.push_back(std::make_pair(x.pieces, score));
-        x.pieces.clear();
+        x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
     }
     
-    auto Mutation = [&](int n)
+    updateScore();
+
+    x.pieces.clear();
+
+    
+    auto Perturbation = [&](int n)
     {
         //Step 1: Generate a random depth-n sub-expression `secondary_one.pieces`
-        secondary_one.pieces.clear();
-        sub_exprs_1.clear();
-        secondary_one.n = n;
-        while (secondary_one.complete_status() == -1)
+        secondary.pieces.clear();
+        sub_exprs.clear();
+        secondary.n = n;
+        while (secondary.complete_status() == -1)
         {
-            temp_legal_moves = secondary_one.get_legal_moves();
+            temp_legal_moves = secondary.get_legal_moves();
             std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
-            secondary_one.pieces.push_back(temp_legal_moves[distribution(generator)]);
+            secondary.pieces.push_back(temp_legal_moves[distribution(generator)]);
         }
         
         //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
-        //in `x.pieces` and store them in an std::vector<std::pair<int, int>>
-        //called `sub_exprs_1`.
-        x.pieces = individuals[selector_dist(generator)].first; //A randomly selected individual to be mutated
-//        for (float i: x.pieces){std::cout << Board::__tokens_dict[i] << ' ';}puts("");
-        secondary_one.get_indices(sub_exprs_1, x.pieces);
+        //in `candidate.first` and store them in an std::vector<std::pair<int, int>>
+        //called `sub_exprs`.
+        candidate.first = x.pieces;
+        secondary.get_indices(sub_exprs, candidate.first);
         
         //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `mut_ind`
-//        std::cout << "sub_exprs_1.size() = " << sub_exprs_1.size() << '\n' << "n = " << n << '\n';
-        std::uniform_int_distribution<int> distribution(0, sub_exprs_1.size() - 1);
-        int mut_ind = distribution(generator);
+
+        std::uniform_int_distribution<int> distribution(0, sub_exprs.size() - 1);
+        int pert_ind = distribution(generator);
         
         //Step 4: Substitute sub_exprs_1[mut_ind] in x.pieces with secondary_one.pieces
         
-        auto start = x.pieces.begin() + sub_exprs_1[mut_ind].first;
-        auto end = std::min(x.pieces.begin() + sub_exprs_1[mut_ind].second, x.pieces.end());
-        x.pieces.erase(start, end+1);
-        x.pieces.insert(start, secondary_one.pieces.begin(), secondary_one.pieces.end());
+        auto start = candidate.first.begin() + sub_exprs[pert_ind].first;
+        auto end = std::min(candidate.first.begin() + sub_exprs[pert_ind].second, candidate.first.end());
+        candidate.first.erase(start, end+1);
+        candidate.first.insert(start, secondary.pieces.begin(), secondary.pieces.end()); //could be a move operation: secondary.pieces doesn't need to be in a defined state after this.
         
         //Step 5: Evaluate the new mutated `x.pieces` and update score if needed
-//        for (float i: x.pieces) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
         score = x.complete_status();
         updateScore();
-        individuals.push_back(std::make_pair(x.pieces, score));
-//        exit(1);
+//        individuals.push_back(std::make_pair(x.pieces, score));
     };
     
-    auto Crossover = [&](int n)
+    for (int i = 0; max_score < stop; i++)
     {
-        sub_exprs_1.clear();
-        sub_exprs_2.clear();
-        secondary_one.n = n;
-        secondary_two.n = n;
-        
-        rand_individual_idx_1 = selector_dist(generator);
-        individual_1 = individuals[rand_individual_idx_1];
-        
-        do {
-            rand_individual_idx_2 = selector_dist(generator);
-        } while (rand_individual_idx_2 == rand_individual_idx_1);
-        individual_2 = individuals[rand_individual_idx_2];
-    
-        //Step 1: Identify the starting and stopping index pairs of all depth-n sub-expressions
-        //in `individual_1` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_1`.
-        //...
-        secondary_one.get_indices(sub_exprs_1, individual_1.first);
-        
-        //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
-        //in `individual_2` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_2`.
-        //...
-        secondary_two.get_indices(sub_exprs_2, individual_2.first);
-        
-        //Step 3: Generate a random uniform int from 0 to sub_exprs_1.size() - 1 called `mut_ind_1`
-        //...
-        std::uniform_int_distribution<int> distribution_1(0, sub_exprs_1.size() - 1);
-        int mut_ind_1 = distribution_1(generator);
-        
-        //Step 4: Generate a random uniform int from 0 to sub_exprs_2.size() - 1 called `mut_ind_2`
-        //...
-        std::uniform_int_distribution<int> distribution_2(0, sub_exprs_2.size() - 1);
-        int mut_ind_2 = distribution_2(generator);
-        
-        //Step 5: Swap sub_exprs_1[mut_ind_1] in individual_1.first with sub_exprs_2[mut_ind_2] in individual_2.first
-        //...
-        
-//        puts("individual_1.first before");
-//        for (float i: individual_1.first) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
-//        puts("individual_2.first before");
-//        for (float i: individual_2.first) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
-        
-        auto start_1 = individual_1.first.begin() + sub_exprs_1[mut_ind_1].first;
-        auto end_1 = std::min(individual_1.first.begin() + sub_exprs_1[mut_ind_1].second, individual_1.first.end());
-        
-        auto start_2 = individual_2.first.begin() + sub_exprs_2[mut_ind_2].first;
-        auto end_2 = std::min(individual_2.first.begin() + sub_exprs_2[mut_ind_2].second, individual_2.first.end());
-        
-//        insert the range start_2, end_2+1 into individual_1 and the range start_1, end_1+1 into individual_2.
-        
-        if ((end_1 - start_1) < (end_2 - start_2))
-        {
-            std::swap_ranges(start_1, end_1+1, start_2);
-            //Insert remaining part of sub_individual_2.first into individual_1.first
-            individual_1.first.insert(end_1+1, start_2 + (end_1+1-start_1), end_2+1);
-            //Remove the remaining part of sub_individual_2.first from individual_2.first
-            individual_2.first.erase(start_2 + (end_1+1-start_1), end_2+1);
-        }
-        else if ((end_2 - start_2) < (end_1 - start_1))
-        {
-            std::swap_ranges(start_2, end_2+1, start_1);
-            //Insert remaining part of sub_individual_1.first into individual_2.first
-            individual_2.first.insert(end_2+1, start_1 + (end_2+1-start_2), end_1+1);
-            //Remove the remaining part of sub_individual_1.first from individual_1.first
-            individual_1.first.erase(start_1 + (end_2+1-start_2), end_1+1);
-        }
-        else
-        {
-            std::swap_ranges(start_1, end_1+1, start_2);
-        }
-
-//        puts("individual_1.first after");
-//        for (float i: individual_1.first) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
-//        puts("individual_2.first after");
-//        for (float i: individual_2.first) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
-        
-        x.pieces = individual_1.first;
-        score = x.complete_status();
-        updateScore();
-        
-        individuals.push_back(std::make_pair(x.pieces, score));
-        
-        x.pieces = individual_2.first;
-        score = x.complete_status();
-        if (score > max_score)
-        {
-            expression = x._to_infix();
-            orig_expression = x.expression();
-            max_score = score;
-            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-            std::cout << "Best expression = " << expression << '\n';
-            std::cout << "Best expression (original format) = " << orig_expression << '\n';
-            
-            best_expression = std::move(expression);
-        }
-        
-        individuals.push_back(std::make_pair(x.pieces, score));
-    };
-    
-    for (int ngen = 0; max_score < stop; ngen++)
-    {
-        if (ngen && (ngen%5 == 0))
+        if (i && (i%50000 == 0))
         {
             std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
         }
-        //Produce N additional individuals through crossover and mutation
-        for (int n = 0; n < init_population; n++)
-        {
-            //Step 1: Generate a random number between 0 and 1 called `rand_mut_cross`
-            rand_mut_cross = rand_mut_cross_dist(generator);
-            
-            //Step 2: Generate a random uniform int from 0 to x.n - 1 called `rand_depth`
-            rand_depth = rand_depth_dist(generator);
-            
-            //Step 4: Call Mutation function if 0 <= rand_mut_cross <= mut_prob, else select Crossover
-            if (rand_mut_cross <= mut_prob)
-            {
-                Mutation(rand_depth);
-            }
-            else
-            {
-                Crossover(rand_depth);
-            }
-        }
-        std::sort(individuals.begin(), individuals.end(),
-        [](std::pair<std::vector<float>, float>& individual_1, std::pair<std::vector<float>, float>& individual_2)
-        {
-            return individual_1.second > individual_2.second;
-        });
-        individuals.resize(init_population);
+        
     }
 }
 
@@ -1389,9 +1258,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         {
             temp_legal_moves = x.get_legal_moves(); //the legal moves
             temp_sz = temp_legal_moves.size(); //the number of legal moves
-            std::uniform_int_distribution<int> distribution(0, temp_sz - 1);
- // A random integer generator which generates an index corresponding to an allowed move
-
+            std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
             x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
         }
         
@@ -1418,11 +1285,9 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         //in `x.pieces` and store them in an std::vector<std::pair<int, int>>
         //called `sub_exprs_1`.
         x.pieces = individuals[selector_dist(generator)].first; //A randomly selected individual to be mutated
-//        for (float i: x.pieces){std::cout << Board::__tokens_dict[i] << ' ';}puts("");
         secondary_one.get_indices(sub_exprs_1, x.pieces);
         
         //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `mut_ind`
-//        std::cout << "sub_exprs_1.size() = " << sub_exprs_1.size() << '\n' << "n = " << n << '\n';
         std::uniform_int_distribution<int> distribution(0, sub_exprs_1.size() - 1);
         int mut_ind = distribution(generator);
         
@@ -1434,11 +1299,9 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         x.pieces.insert(start, secondary_one.pieces.begin(), secondary_one.pieces.end());
         
         //Step 5: Evaluate the new mutated `x.pieces` and update score if needed
-//        for (float i: x.pieces) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
         score = x.complete_status();
         updateScore();
         individuals.push_back(std::make_pair(x.pieces, score));
-//        exit(1);
     };
     
     auto Crossover = [&](int n)
@@ -1458,32 +1321,21 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
     
         //Step 1: Identify the starting and stopping index pairs of all depth-n sub-expressions
         //in `individual_1` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_1`.
-        //...
         secondary_one.get_indices(sub_exprs_1, individual_1.first);
         
         //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
         //in `individual_2` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_2`.
-        //...
         secondary_two.get_indices(sub_exprs_2, individual_2.first);
         
         //Step 3: Generate a random uniform int from 0 to sub_exprs_1.size() - 1 called `mut_ind_1`
-        //...
         std::uniform_int_distribution<int> distribution_1(0, sub_exprs_1.size() - 1);
         int mut_ind_1 = distribution_1(generator);
         
         //Step 4: Generate a random uniform int from 0 to sub_exprs_2.size() - 1 called `mut_ind_2`
-        //...
         std::uniform_int_distribution<int> distribution_2(0, sub_exprs_2.size() - 1);
         int mut_ind_2 = distribution_2(generator);
         
         //Step 5: Swap sub_exprs_1[mut_ind_1] in individual_1.first with sub_exprs_2[mut_ind_2] in individual_2.first
-        //...
-        
-//        puts("individual_1.first before");
-//        for (float i: individual_1.first) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
-//        puts("individual_2.first before");
-//        for (float i: individual_2.first) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
-        
         auto start_1 = individual_1.first.begin() + sub_exprs_1[mut_ind_1].first;
         auto end_1 = std::min(individual_1.first.begin() + sub_exprs_1[mut_ind_1].second, individual_1.first.end());
         
@@ -1513,11 +1365,6 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
             std::swap_ranges(start_1, end_1+1, start_2);
         }
 
-//        puts("individual_1.first after");
-//        for (float i: individual_1.first) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
-//        puts("individual_2.first after");
-//        for (float i: individual_2.first) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
-        
         x.pieces = individual_1.first;
         score = x.complete_status();
         updateScore();
