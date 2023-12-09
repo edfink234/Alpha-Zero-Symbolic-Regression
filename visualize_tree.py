@@ -261,8 +261,8 @@ def test_visualize():
         while True:
             try:
 #                plot_pn_expression_tree("cos + 1.1 * * 0.5 x0 + x0 x0".split(), block=False, save = save)
-                plot_pn_expression_tree("+ * x2 x0 + - x4 x2 + const x4".split(), block=False, save = save)
-#                plot_rpn_expression_tree("x3 x2 x4 x1 + + -".split(), block=False, save = save)
+#                plot_pn_expression_tree("x0 x0 * -0.500000 + -2.538200 x3 cos * -".split(), block=False, save = save)
+                plot_pn_expression_tree("* cos x3 + 2.075270 * x0 x0".split(), block=False, save = save)
 
             except KeyboardInterrupt:
                 plt.close()

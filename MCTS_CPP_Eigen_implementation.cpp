@@ -140,7 +140,6 @@ float loss_func(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
     return (1.0f/(1.0f+MSE(actual, predicted)));
 }
 
-//Big TODO: Change pieces from float to short
 struct Board
 {
     static std::string inline best_expression = "";
@@ -181,7 +180,7 @@ struct Board
     static std::unordered_map<float, std::string> inline __tokens_dict; //Converts number to string
     static std::unordered_map<std::string, float> inline __tokens_inv_dict; //Converts string to number
 
-    int n; //depth of RPN tree, TODO: change to short
+    int n; //depth of RPN/PN tree
     std::string expression_type;
     // Create the empty expression list.
     std::vector<float> pieces;
@@ -342,6 +341,10 @@ struct Board
         {
             return std::make_pair(0, false);
         }
+//        else if (this->n == 0 && (expression.size() == 1) && (!is_operator(expression[0])))
+//        {
+//            return std::make_pair(0, true);
+//        }
         
         if (stop == 0)
         {
@@ -435,43 +438,52 @@ struct Board
         {
             if (this->pieces.empty()) //At the beginning, self.pieces is empty, so the only legal moves are the operators
             {
-                return Board::__operators_float;
+                if (this->n != 0)
+                {
+                    return Board::__operators_float;
+                }
+                else
+                {
+                    std::vector<float> temp;
+                    temp.reserve(Board::__input_vars_float.size() + Board::__other_tokens_float.size());
+                    temp.insert(temp.end(), Board::__input_vars_float.begin(), Board::__input_vars_float.end());
+                    temp.insert(temp.end(), Board::__other_tokens_float.begin(), Board::__other_tokens_float.end());
+                    return temp;
+                }
             }
             int num_binary = this->__num_binary_ops();
             int num_leaves = this->__num_leaves();
-            
-            //__tokens_dict: converts float to string
-            std::vector<float> _pieces(pieces);
-            
-            _pieces.push_back(Board::__binary_operators_float[0]);
+                        
+            pieces.push_back(Board::__binary_operators_float[0]);
             
             std::vector<float> temp;
+            temp.reserve(Board::action_size);
             
-            if (getPNdepth(_pieces).first <= this->n)
+            if (getPNdepth(pieces).first <= this->n)
             {
                 temp.insert(temp.end(), Board::__binary_operators_float.begin(), Board::__binary_operators_float.end());
             }
-            _pieces[_pieces.size() - 1] = Board::__unary_operators_float[0];
-            if (getPNdepth(_pieces).first <= this->n)
+            pieces[pieces.size() - 1] = Board::__unary_operators_float[0];
+            if (getPNdepth(pieces).first <= this->n)
             {
                 temp.insert(temp.end(), Board::__unary_operators_float.begin(), Board::__unary_operators_float.end());
             }
 
-            _pieces[_pieces.size() - 1] = Board::__input_vars_float[0];
+            pieces[pieces.size() - 1] = Board::__input_vars_float[0];
             //The number of leaves can never exceed number of binary + 1 in any RPN expression
-            if (!((num_leaves == num_binary + 1) || (getPNdepth(_pieces).first < this->n && (num_leaves == num_binary))))
+            if (!((num_leaves == num_binary + 1) || (getPNdepth(pieces).first < this->n && (num_leaves == num_binary))))
             {
                 temp.insert(temp.end(), Board::__input_vars_float.begin(), Board::__input_vars_float.end()); //leaves allowed
-                if (std::find(Board::__unary_operators_float.begin(), Board::__unary_operators_float.end(), _pieces[_pieces.size()-2]) == Board::__unary_operators_float.end())
+                if (std::find(Board::__unary_operators_float.begin(), Board::__unary_operators_float.end(), pieces[pieces.size()-2]) == Board::__unary_operators_float.end())
                 {
                     temp.insert(temp.end(), Board::__other_tokens_float.begin(), Board::__other_tokens_float.end());
                 }
             }
+            pieces.pop_back();
             return temp;
         }
         else //postfix
         {
-            
             std::vector<float> temp;
             if (this->pieces.empty()) //At the beginning, self.pieces is empty, so the only legal moves are the features and const
             {
@@ -484,22 +496,21 @@ struct Board
             
             if ((num_binary != num_leaves - 1))//  && ((std::find(Board::__other_tokens_float.begin(), Board::__other_tokens_float.end(), pieces.back()) == Board::__other_tokens_float.end()) ||  (*(pieces.end()-1) != *(pieces.end()-2))))
             {
-
                 temp.insert(temp.end(), Board::__binary_operators_float.begin(), Board::__binary_operators_float.end());
             }
-            std::vector<float> _pieces(pieces);
 
-            _pieces.push_back(Board::__unary_operators_float[0]);
-            if ((num_leaves >= 1) && (getRPNdepth(_pieces).first <= this->n) && (std::find(Board::__other_tokens_float.begin(), Board::__other_tokens_float.end(), _pieces[_pieces.size()-2]) == Board::__other_tokens_float.end())) //unary_op(const) is not allowed
+            pieces.push_back(Board::__unary_operators_float[0]);
+            if ((num_leaves >= 1) && (getRPNdepth(pieces).first <= this->n) && (std::find(Board::__other_tokens_float.begin(), Board::__other_tokens_float.end(), pieces[pieces.size()-2]) == Board::__other_tokens_float.end())) //unary_op(const) is not allowed
             {
                 temp.insert(temp.end(), Board::__unary_operators_float.begin(), Board::__unary_operators_float.end());
             }
-            _pieces[_pieces.size() - 1] = Board::__input_vars_float[0];
-            if (getRPNdepth(_pieces).first <= this->n)
+            pieces[pieces.size() - 1] = Board::__input_vars_float[0];
+            if (getRPNdepth(pieces).first <= this->n)
             {
                 temp.insert(temp.end(), Board::__input_vars_float.begin(), Board::__input_vars_float.end());
                 temp.insert(temp.end(), Board::__other_tokens_float.begin(), Board::__other_tokens_float.end());
             }
+            pieces.pop_back();
             return temp;
         }
     }
@@ -1123,27 +1134,39 @@ float exampleFunc(const Eigen::VectorXf& x)
 //    return 5*cos(x[1]+x[3])+x[4];
 }
 
+//https://dl.acm.org/doi/pdf/10.1145/3449639.3459345?casa_token=Np-_TMqxeJEAAAAA:8u-d6UyINV6Ex02kG9LthsQHAXMh2oxx3M4FG8ioP0hGgstIW45X8b709XOuaif5D_DVOm_FwFo
+//https://core.ac.uk/download/pdf/6651886.pdf
 void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
 {
     Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false);
     Board secondary(false, 0, expression_type); //For perturbations
     std::random_device rand_dev;
     std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-    float score = 0.0f, max_score = 0.0f;
+    float score = 0.0f, max_score = 0.0f, check_point_score = 0.0f;
     
-    std::pair<std::vector<float>, float> candidate;
+    std::vector<float> current;
     std::vector<std::pair<int, int>> sub_exprs;
     std::vector<float> temp_legal_moves;
-    std::uniform_int_distribution<int> rand_depth_dist(0, x.n - 1);
-    int rand_depth, rand_individual_idx_1, rand_individual_idx_2;
-    std::uniform_real_distribution<float> rand_mut_cross_dist(0.0f, 1.0f);
+    std::uniform_int_distribution<int> rand_depth_dist(0, x.n);
     size_t temp_sz;
     std::string expression, orig_expression, best_expression;
+    constexpr float T_max = 0.1f;
+    constexpr float T_min = 0.012f;
+    constexpr float ratio = T_min/T_max;
+    float T = T_max;
     
-    auto updateScore = [&]()
+    auto P = [&](float delta)
     {
-        if (score > max_score)
+        return exp(delta/T);
+    };
+    
+    auto updateScore = [&](float r = 1.0f)
+    {
+//        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
+//        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
+        if ((score > max_score) || (x.pos_dist(generator) < P(score-max_score)))
         {
+            current = x.pieces; //update current expression
             expression = x._to_infix();
             orig_expression = x.expression();
             max_score = score;
@@ -1152,26 +1175,26 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
             std::cout << "Best expression (original format) = " << orig_expression << '\n';
             best_expression = std::move(expression);
         }
+        else
+        {
+            x.pieces = current; //reset perturbed state to current state
+        }
+        T = r*T;
     };
-    
-    //Step 1, generate a random expression
 
+    //Step 1: generate a random expression
     while ((score = x.complete_status()) == -1)
     {
         temp_legal_moves = x.get_legal_moves(); //the legal moves
         temp_sz = temp_legal_moves.size(); //the number of legal moves
-        std::uniform_int_distribution<int> distribution(0, temp_sz - 1);
-// A random integer generator which generates an index corresponding to an allowed move
-
+        std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
         x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
+        current.push_back(x.pieces.back());
     }
     
     updateScore();
-
-    x.pieces.clear();
-
     
-    auto Perturbation = [&](int n)
+    auto Perturbation = [&](int n, int i)
     {
         //Step 1: Generate a random depth-n sub-expression `secondary_one.pieces`
         secondary.pieces.clear();
@@ -1184,28 +1207,34 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
             secondary.pieces.push_back(temp_legal_moves[distribution(generator)]);
         }
         
-        //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
-        //in `candidate.first` and store them in an std::vector<std::pair<int, int>>
-        //called `sub_exprs`.
-        candidate.first = x.pieces;
-        secondary.get_indices(sub_exprs, candidate.first);
-        
-        //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `mut_ind`
+        if (n == x.n)
+        {
+            std::swap(secondary.pieces, x.pieces);
+        }
+        else 
+        {
+            //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
+            //in `x.pieces` and store them in an std::vector<std::pair<int, int>>
+            //called `sub_exprs`.
+            secondary.get_indices(sub_exprs, x.pieces);
+            
+            //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `pert_ind`
 
-        std::uniform_int_distribution<int> distribution(0, sub_exprs.size() - 1);
-        int pert_ind = distribution(generator);
-        
-        //Step 4: Substitute sub_exprs_1[mut_ind] in x.pieces with secondary_one.pieces
-        
-        auto start = candidate.first.begin() + sub_exprs[pert_ind].first;
-        auto end = std::min(candidate.first.begin() + sub_exprs[pert_ind].second, candidate.first.end());
-        candidate.first.erase(start, end+1);
-        candidate.first.insert(start, secondary.pieces.begin(), secondary.pieces.end()); //could be a move operation: secondary.pieces doesn't need to be in a defined state after this.
+            std::uniform_int_distribution<int> distribution(0, sub_exprs.size() - 1);
+            int pert_ind = distribution(generator);
+            
+            //Step 4: Substitute sub_exprs_1[pert_ind] in x.pieces with secondary_one.pieces
+            
+            auto start = x.pieces.begin() + sub_exprs[pert_ind].first;
+            auto end = std::min(x.pieces.begin() + sub_exprs[pert_ind].second, x.pieces.end());
+            x.pieces.erase(start, end+1);
+            x.pieces.insert(start, secondary.pieces.begin(), secondary.pieces.end()); //could be a move operation: secondary.pieces doesn't need to be in a defined state after this.
+        }
         
         //Step 5: Evaluate the new mutated `x.pieces` and update score if needed
         score = x.complete_status();
-        updateScore();
-//        individuals.push_back(std::make_pair(x.pieces, score));
+        updateScore(pow(ratio, 1.0f/(i+1)));
+        
     };
     
     for (int i = 0; max_score < stop; i++)
@@ -1213,18 +1242,29 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
         if (i && (i%50000 == 0))
         {
             std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+            if (check_point_score == max_score)
+            {
+                T = std::min(T*10.0f, T_max);
+            }
+            else
+            {
+                T = std::max(T/10.0f, T_min);
+            }
+            check_point_score = max_score;
         }
-        
+        Perturbation(rand_depth_dist(generator), i);
     }
+    std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
 }
 
+//https://arxiv.org/abs/2310.06609
 void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
 {
     Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false);
     Board secondary_one(false, 0, expression_type), secondary_two(false, 0, expression_type); //For crossover and mutations
     std::random_device rand_dev;
     std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-    float score = 0.0f, max_score = 0.0f, mut_prob = 0.8f, cross_prob = 0.2f, rand_mut_cross;
+    float score = 0.0f, max_score = 0.0f, mut_prob = 1.0f, cross_prob = 0.0f, rand_mut_cross;
     constexpr int init_population = 2000;
     std::vector<std::pair<std::vector<float>, float>> individuals;
     std::pair<std::vector<float>, float> individual_1, individual_2;
@@ -1239,6 +1279,8 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
     
     auto updateScore = [&]()
     {
+//        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
+//        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
         if (score > max_score)
         {
             expression = x._to_infix();
@@ -1281,6 +1323,8 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
             secondary_one.pieces.push_back(temp_legal_moves[distribution(generator)]);
         }
         
+//        assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).first == secondary_one.n);
+        
         //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
         //in `x.pieces` and store them in an std::vector<std::pair<int, int>>
         //called `sub_exprs_1`.
@@ -1294,7 +1338,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         //Step 4: Substitute sub_exprs_1[mut_ind] in x.pieces with secondary_one.pieces
         
         auto start = x.pieces.begin() + sub_exprs_1[mut_ind].first;
-        auto end = std::min(x.pieces.begin() + sub_exprs_1[mut_ind].second, x.pieces.end());
+        auto end = std::min(x.pieces.begin() + sub_exprs_1[mut_ind].second, x.pieces.end()-1);
         x.pieces.erase(start, end+1);
         x.pieces.insert(start, secondary_one.pieces.begin(), secondary_one.pieces.end());
         
@@ -1373,17 +1417,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         
         x.pieces = individual_2.first;
         score = x.complete_status();
-        if (score > max_score)
-        {
-            expression = x._to_infix();
-            orig_expression = x.expression();
-            max_score = score;
-            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-            std::cout << "Best expression = " << expression << '\n';
-            std::cout << "Best expression (original format) = " << orig_expression << '\n';
-            
-            best_expression = std::move(expression);
-        }
+        updateScore();
         
         individuals.push_back(std::make_pair(x.pieces, score));
     };
@@ -1454,9 +1488,9 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
     /*
      Idea: In this implementation of PSO,
      
-     The traditional PSO initializes the particle positions to be between 0 and 1. However, for my application,
-     the particle positions are discrete values and any of the integer encodings of the possible tokens. The 
-     velocities are continuous valued and perturb the postions which are subsequently constrained by rounding to
+     The traditional PSO initializes the particle positions to be between 0 and 1. However, in this application,
+     the particle positions are discrete values and any of the legal integer tokens (moves). The
+     velocities are continuous-valued and perturb the postions, which are subsequently constrained by rounding to
      the nearest whole number then taking the modulo w.r.t. the # of allowed legal moves.
      */
     
@@ -1502,7 +1536,8 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
                 best_positions.push_back(x.pos_dist(generator));
                 best_positions[i] = trueMod(std::round(best_positions[i]), temp_sz);
             }
-
+            //https://hal.science/hal-00764996
+            //https://www.researchgate.net/publication/216300408_An_off-the-shelf_PSO
             new_v = (0.721*v[i] + x.phi_1*rg*(best_positions[i] - particle_positions[i]) + x.phi_2*rp*(p_i[i] - particle_positions[i]) + c);
             v[i] = copysign(std::min(new_v, FLT_MAX), new_v);
             particle_positions[i] += v[i];
@@ -1540,6 +1575,7 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
     
 }
 
+//https://arxiv.org/abs/2205.13134
 void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
 {
     Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false);
@@ -1723,8 +1759,9 @@ int main() {
     auto start_time = Clock::now();
 //    MCTS(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
 //    PSO(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
-//    RandomSearch(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
-    GP(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
+//    RandomSearch(data, 3, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
+//    GP(data, 3, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
+    SimulatedAnnealing(data, 3, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
     auto end_time = Clock::now();
     std::cout << "Time difference = "
           << std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count()/1e9 << " seconds" << '\n';
