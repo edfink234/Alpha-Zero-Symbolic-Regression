@@ -24,11 +24,11 @@ class UnaryNode(Node):
         self.child = None
         
 def is_operator(token):
-    return token in {'+', '-', '*', '/', '^', 'cos', 'grad', 'exp', '-sin'}
+    return token in {'+', '-', '*', '/', '^', 'cos', 'grad', 'exp', '-sin', 'sin'}
 def is_binary_operator(token):
     return token in {'+', '-', '*', '/', '^'}
 def is_unary_operator(token):
-    return token in {'cos', 'grad', 'exp', '-sin'}
+    return token in {'cos', 'grad', 'exp', '-sin', 'sin'}
 
 
 def rpn_to_infix(rpn_expression):
@@ -252,7 +252,7 @@ def test_visualize():
         os.system("rsvg-convert -f pdf -o expression_tree_RPN_Hemberg2008_expr_5.pdf expression_tree_RPN_Hemberg2008_expr_5.svg")
 
     else:
-#        print(rpn_to_infix("x x cos *"))
+        print(pn_to_infix("+ sin sin x1 x"))
 #        print(rpn_to_infix("0.336364 x1 x4 - * x3 + x4 x4 x4 x2 - + - * -sin 1 x1 x4 - * 0.336364 0 0 - * + 0 + x4 x4 x4 x2 - + - * 0.336364 x1 x4 - * x3 + 0 0 0 0 - + - * + *"))
 #        print(rpn_to_infix("y y x * * cos y +"))
 #        print(rpn_to_infix("y y y * * -sin y y 1 * 1 y * + * 1 y y * * + * 1 +"))
@@ -261,8 +261,8 @@ def test_visualize():
         while True:
             try:
 #                plot_pn_expression_tree("cos + 1.1 * * 0.5 x0 + x0 x0".split(), block=False, save = save)
-#                plot_pn_expression_tree("x0 x0 * -0.500000 + -2.538200 x3 cos * -".split(), block=False, save = save)
-                plot_pn_expression_tree("* cos x3 + 2.075270 * x0 x0".split(), block=False, save = save)
+                plot_rpn_expression_tree(" x0 x0 * -1.500000 1.000000 + + 2.538200 x3 cos * +".split(), block=False, save = save)
+#                plot_pn_expression_tree("+ * + 1.000016 1.538184 cos x3 * - x0 0.707107 + x0 0.707107".split(), block=False, save = save)
 
             except KeyboardInterrupt:
                 plt.close()

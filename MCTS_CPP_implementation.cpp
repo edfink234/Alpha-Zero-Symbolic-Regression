@@ -436,8 +436,6 @@ struct Board
     
     std::vector<float> get_legal_moves()
     {
-        //TODO: Reduce calls to size method -> see if multiple of the same calls can be stored in variables.
-        //TODO: Generated Expressions should always be irreducible, this isn't GP!
         if (this->expression_type == "prefix")
         {
             if (this->pieces.empty()) //At the beginning, self.pieces is empty, so the only legal moves are the operators

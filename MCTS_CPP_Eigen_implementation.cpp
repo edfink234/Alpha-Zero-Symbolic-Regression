@@ -335,16 +335,13 @@ struct Board
     }
     
     //returns a pair containing the depth of the sub-expression from start to stop, and whether or not it's complete
-    std::pair<int, bool> getPNdepth(const std::vector<float>& expression, size_t start = 0, size_t stop = 0)
+    //TODO: There should be an option to cache the std::vector<int> stack for subsequent usage
+    std::pair<int, bool> getPNdepth(const std::vector<float>& expression, size_t start = 0, size_t stop = 0, bool cache = false)
     {
         if (expression.empty())
         {
             return std::make_pair(0, false);
         }
-//        else if (this->n == 0 && (expression.size() == 1) && (!is_operator(expression[0])))
-//        {
-//            return std::make_pair(0, true);
-//        }
         
         if (stop == 0)
         {
@@ -383,7 +380,7 @@ struct Board
     }
     
     //returns a pair containing the depth of the sub-expression from start to stop, and whether or not it's complete
-    std::pair<int, bool> getRPNdepth(const std::vector<float>& expression, size_t start = 0, size_t stop = 0)
+    std::pair<int, bool> getRPNdepth(const std::vector<float>& expression, size_t start = 0, size_t stop = 0, bool cache = false)
     {
         if (expression.empty())
         {
@@ -395,54 +392,53 @@ struct Board
             stop = expression.size();
         }
 
-        std::stack<int> stack;
+        std::vector<int> stack;
         bool complete = true;
 
         for (size_t i = start; i < stop; i++)
         {
             if (is_unary(expression[i]))
             {
-                stack.top() += 1;
+                stack.back() += 1;
             }
             else if (is_operator(expression[i]))
             {
-                int op2 = std::move(stack.top());
-                stack.pop();
-                int op1 = std::move(stack.top());
-                stack.pop();
-                stack.push(std::max(op1, op2) + 1);
+                int op2 = std::move(stack.back());
+                stack.pop_back();
+                int op1 = std::move(stack.back());
+                stack.pop_back();
+                stack.push_back(std::max(op1, op2) + 1);
             }
             else
             {
-                stack.push(1);
+                stack.push_back(1);
             }
         }
 
         while (stack.size() > 1)
         {
-            int op2 = std::move(stack.top());
-            stack.pop();
-            int op1 = std::move(stack.top());
-            stack.pop();
-            stack.push(std::max(op1, op2) + 1);
+            int op2 = std::move(stack.back());
+            stack.pop_back();
+            int op1 = std::move(stack.back());
+            stack.pop_back();
+            stack.push_back(std::max(op1, op2) + 1);
             complete = false;
         }
 
-        return std::make_pair(stack.top() - 1, complete);
+        return std::make_pair(stack.back() - 1, complete);
     }
-
     
     std::vector<float> get_legal_moves()
     {
         if (this->expression_type == "prefix")
         {
-            if (this->pieces.empty()) //At the beginning, self.pieces is empty, so the only legal moves are the operators
+            if (this->pieces.empty()) //At the beginning, self.pieces is empty, so the only legal moves are the operators...
             {
-                if (this->n != 0)
+                if (this->n != 0) // if the depth is not 0
                 {
                     return Board::__operators_float;
                 }
-                else
+                else // else it's the leaves
                 {
                     std::vector<float> temp;
                     temp.reserve(Board::__input_vars_float.size() + Board::__other_tokens_float.size());
@@ -1761,7 +1757,7 @@ int main() {
 //    PSO(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
 //    RandomSearch(data, 3, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
 //    GP(data, 3, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
-    SimulatedAnnealing(data, 3, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
+    SimulatedAnnealing(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
     auto end_time = Clock::now();
     std::cout << "Time difference = "
           << std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count()/1e9 << " seconds" << '\n';
