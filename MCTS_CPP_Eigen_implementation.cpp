@@ -176,9 +176,12 @@ struct Board
     int num_fit_iter;
     std::string fit_method;
     std::string fit_grad_method;
-                
+    bool reset, cache;
+    std::vector<int> stack;
+    int depth = 0, num_binary = 0, num_leaves = 0, idx = 0;
     static std::unordered_map<float, std::string> inline __tokens_dict; //Converts number to string
     static std::unordered_map<std::string, float> inline __tokens_inv_dict; //Converts string to number
+    static std::unordered_map<bool, std::unordered_map<bool, std::unordered_map<bool, std::vector<float>>>> inline una_bin_leaf_legal_moves_dict;
 
     int n; //depth of RPN/PN tree
     std::string expression_type;
@@ -186,8 +189,13 @@ struct Board
     std::vector<float> pieces;
     bool visualize_exploration, is_primary;
     
-    Board(bool primary = true, int n = 3, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false) : is_primary{primary}, gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, fit_method{fitMethod}, num_fit_iter{numFitIter}, fit_grad_method{fitGradMethod}
+    Board(bool primary = true, int n = 3, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false) : is_primary{primary}, gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, fit_method{fitMethod}, num_fit_iter{numFitIter}, fit_grad_method{fitGradMethod}, reset{false}
     {
+        if (n > 30)
+        {
+            throw(std::runtime_error("Complexity cannot be larger than 30, sorry!"));
+        }
+        
         if (is_primary)
         {
             Board::data = theData;
@@ -200,9 +208,16 @@ struct Board
             }
             Board::__unary_operators = {"cos"};
             Board::__binary_operators = {"+", "-", "*"};
-            Board::__operators = {"cos", "+", "-", "*"};
+            for (std::string& i: Board::__unary_operators)
+            {
+                Board::__operators.push_back(i);
+            }
+            for (std::string& i: Board::__binary_operators)
+            {
+                Board::__operators.push_back(i);
+            }
             Board::__other_tokens = {"const"};
-            Board::__tokens = {"cos", "+", "-", "*"};
+            Board::__tokens = Board::__operators;
             
             for (auto& i: this->Board::__input_vars)
             {
@@ -246,14 +261,35 @@ struct Board
                 Board::__tokens_dict[Board::__tokens_float[i]] = Board::__tokens[i];
                 Board::__tokens_inv_dict[Board::__tokens[i]] = Board::__tokens_float[i];
             }
+            
+            Board::una_bin_leaf_legal_moves_dict[true][true][true] = Board::__tokens_float;
+            Board::una_bin_leaf_legal_moves_dict[true][true][false] = Board::__operators_float;
+            Board::una_bin_leaf_legal_moves_dict[true][false][true] = Board::__unary_operators_float; //1
+            Board::una_bin_leaf_legal_moves_dict[true][false][false] = Board::__unary_operators_float;
+            Board::una_bin_leaf_legal_moves_dict[false][true][true] = Board::__binary_operators_float; //2
+            Board::una_bin_leaf_legal_moves_dict[false][true][false] = Board::__binary_operators_float;
+            
+            for (float i: Board::__input_vars_float)
+            {
+                Board::una_bin_leaf_legal_moves_dict[true][false][true].push_back(i); //1
+                Board::una_bin_leaf_legal_moves_dict[false][true][true].push_back(i); //2
+                Board::una_bin_leaf_legal_moves_dict[false][false][true].push_back(i); //3
+            }
+            for (float i: Board::__other_tokens_float)
+            {
+                Board::una_bin_leaf_legal_moves_dict[true][false][true].push_back(i); //1
+                Board::una_bin_leaf_legal_moves_dict[false][true][true].push_back(i); //2
+                Board::una_bin_leaf_legal_moves_dict[false][false][true].push_back(i); //3
+            }
         }
-
+        
         this->n = n;
         this->expression_type = expression_type;
         this->pieces = {};
         this->reserve_amount = 2*pow(2,this->n)-1;
         this->visualize_exploration = visualize_exploration;
         this->pieces.reserve(reserve_amount);
+        this->cache = cache;
     }
     
     float operator[](size_t index) const
@@ -335,8 +371,10 @@ struct Board
     }
     
     //returns a pair containing the depth of the sub-expression from start to stop, and whether or not it's complete
-    //TODO: There should be an option to cache the std::vector<int> stack for subsequent usage
-    std::pair<int, bool> getPNdepth(const std::vector<float>& expression, size_t start = 0, size_t stop = 0, bool cache = false)
+    /*
+     TODO: There should be an option to cache the std::vector<int> stack for subsequent usage
+     */
+    std::pair<int, bool> getPNdepth(const std::vector<float>& expression, size_t start = 0, size_t stop = 0, bool cache = false, bool modify = false, bool binary = false, bool unary = false, bool leaf = false)
     {
         if (expression.empty())
         {
@@ -348,35 +386,88 @@ struct Board
             stop = expression.size();
         }
 
-        std::vector<int> stack;
-        int depth = 0, num_binary = 0, num_leaves = 0;
-        
-        for (size_t i = start; i < stop; i++)
+        if (!cache)
         {
-            if (is_binary(expression[i]))
+            this->stack.clear();
+            this->depth = 0, this->num_binary = 0, this->num_leaves = 0, this->idx = 0;
+            for (size_t i = start; i < stop; i++)
             {
-                stack.push_back(2);  // Number of operands
-                num_binary++;
-            }
-            else if (is_unary(expression[i]))
-            {
-                stack.push_back(1);
-            }
-            else
-            {
-                num_leaves++;
-                while (!stack.empty() && stack.back() == 1)
+                if (is_binary(expression[i]))
                 {
-                    stack.pop_back();  // Remove fulfilled operators
+                    this->stack.push_back(2);  // Number of operands
+                    this->num_binary++;
                 }
-                if (!stack.empty())
+                else if (is_unary(expression[i]))
                 {
-                    stack.back()--;  // Indicate an operand is consumed
+                    this->stack.push_back(1);
                 }
+                else
+                {
+                    this->num_leaves++;
+                    while (!this->stack.empty() && this->stack.back() == 1) //so the this->stack will shrink one by one from the back until it's empty and/or the last element is NOT 1
+                    {
+                        this->stack.pop_back();  // Remove fulfilled operators
+                    }
+                    if (!this->stack.empty())
+                    {
+                        this->stack.back()--;  // Indicate an operand is consumed
+                    }
+                }
+                this->depth = std::max(this->depth, static_cast<int>(this->stack.size()) + 1);
             }
-            depth = std::max(depth, static_cast<int>(stack.size()) + 1);
         }
-        return std::make_pair(depth - 1, num_leaves == num_binary + 1);
+        else
+        {
+            if (not modify) //get_legal_moves()
+            {
+                if (binary) //Gives the this->depth and completeness of the current PN expression + a binary operator
+                {
+                    return std::make_pair(std::max(this->depth, static_cast<int>(this->stack.size()) + 2) - 1, this->num_leaves == this->num_binary + 2);
+                }
+                else if (unary) //Gives the this->depth and completeness of the current PN expression + a unary operator
+                {
+                    return std::make_pair(std::max(this->depth, static_cast<int>(this->stack.size()) + 2) - 1, this->num_leaves == this->num_binary + 1);
+                }
+                else if (leaf) //Gives the this->depth and completeness of the current PN expression + a leaf node
+                {
+                    auto last_filled_op_it = std::find_if(this->stack.rbegin(), this->stack.rend(), [](int i){return i != 1;}); //Find the first element from the back that's not 1
+                    return std::make_pair(std::max(this->depth, static_cast<int>(this->stack.rend() - last_filled_op_it) /* this->stack.size() */ + 1) - 1, this->num_leaves == this->num_binary);
+                }
+            }
+            else //modify -> complete_status()
+            {
+                if (this->reset)
+                {
+                    this->stack.clear();
+                    this->depth = 0, this->num_binary = 0, this->num_leaves = 0, this->idx = 0;
+                    this->reset = false;
+                }
+                if (is_binary(expression[this->idx]))
+                {
+                    this->stack.push_back(2);  // Number of operands
+                    this->num_binary++;
+                }
+                else if (is_unary(expression[this->idx]))
+                {
+                    this->stack.push_back(1);
+                }
+                else
+                {
+                    this->num_leaves++;
+                    while (!this->stack.empty() && this->stack.back() == 1) //so the this->stack will shrink one-by-one from the back until it's empty and/or the last element is NOT 1
+                    {
+                        this->stack.pop_back();  // Remove fulfilled operators
+                    }
+                    if (!this->stack.empty())
+                    {
+                        this->stack.back()--;  // Indicate an operand is consumed
+                    }
+                }
+                this->depth = std::max(this->depth, static_cast<int>(this->stack.size()) + 1);
+                this->idx++;
+            }
+        }
+        return std::make_pair(this->depth - 1, this->num_leaves == this->num_binary + 1);
     }
     
     //returns a pair containing the depth of the sub-expression from start to stop, and whether or not it's complete
@@ -392,7 +483,11 @@ struct Board
             stop = expression.size();
         }
 
-        std::vector<int> stack;
+        static std::vector<int> stack;
+        if (!cache)
+        {
+            stack.clear();
+        }
         bool complete = true;
 
         for (size_t i = start; i < stop; i++)
@@ -430,6 +525,7 @@ struct Board
     
     std::vector<float> get_legal_moves()
     {
+        //TODO: Fix bug -> need to add operators before determining if the condition is true or not?
         if (this->expression_type == "prefix")
         {
             if (this->pieces.empty()) //At the beginning, self.pieces is empty, so the only legal moves are the operators...
@@ -440,75 +536,54 @@ struct Board
                 }
                 else // else it's the leaves
                 {
-                    std::vector<float> temp;
-                    temp.reserve(Board::__input_vars_float.size() + Board::__other_tokens_float.size());
-                    temp.insert(temp.end(), Board::__input_vars_float.begin(), Board::__input_vars_float.end());
-                    temp.insert(temp.end(), Board::__other_tokens_float.begin(), Board::__other_tokens_float.end());
-                    return temp;
+                    return Board::una_bin_leaf_legal_moves_dict[false][false][true];
                 }
             }
             int num_binary = this->__num_binary_ops();
             int num_leaves = this->__num_leaves();
-                        
-            pieces.push_back(Board::__binary_operators_float[0]);
             
-            std::vector<float> temp;
-            temp.reserve(Board::action_size);
+            if (this->cache)
+            {
+                return Board::una_bin_leaf_legal_moves_dict[(getPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, false /*binary*/, true /*unary*/, false /*leaf*/).first <= this->n)][(getPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, true /*binary*/, false /*unary*/, false /*leaf*/).first <= this->n)][(!((num_leaves == num_binary + 1) || (getPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, false /*binary*/, false /*unary*/, true /*leaf*/).first < this->n && (num_leaves == num_binary))))];
+            }
             
-            if (getPNdepth(pieces).first <= this->n)
+            else
             {
-                temp.insert(temp.end(), Board::__binary_operators_float.begin(), Board::__binary_operators_float.end());
+                bool una_allowed = false, bin_allowed = false, leaf_allowed = false;
+                
+                pieces.push_back(Board::__binary_operators_float[0]);
+                bin_allowed = (getPNdepth(pieces).first <= this->n);
+                pieces[pieces.size() - 1] = Board::__unary_operators_float[0];
+                una_allowed = (getPNdepth(pieces).first <= this->n);
+                pieces[pieces.size() - 1] = Board::__input_vars_float[0];
+                leaf_allowed = (!((num_leaves == num_binary + 1) || (getPNdepth(pieces).first < this->n && (num_leaves == num_binary))));
+                pieces.pop_back();
+                
+                return Board::una_bin_leaf_legal_moves_dict[una_allowed][bin_allowed][leaf_allowed];
             }
-            pieces[pieces.size() - 1] = Board::__unary_operators_float[0];
-            if (getPNdepth(pieces).first <= this->n)
-            {
-                temp.insert(temp.end(), Board::__unary_operators_float.begin(), Board::__unary_operators_float.end());
-            }
-
-            pieces[pieces.size() - 1] = Board::__input_vars_float[0];
-            //The number of leaves can never exceed number of binary + 1 in any RPN expression
-            if (!((num_leaves == num_binary + 1) || (getPNdepth(pieces).first < this->n && (num_leaves == num_binary))))
-            {
-                temp.insert(temp.end(), Board::__input_vars_float.begin(), Board::__input_vars_float.end()); //leaves allowed
-                if (std::find(Board::__unary_operators_float.begin(), Board::__unary_operators_float.end(), pieces[pieces.size()-2]) == Board::__unary_operators_float.end())
-                {
-                    temp.insert(temp.end(), Board::__other_tokens_float.begin(), Board::__other_tokens_float.end());
-                }
-            }
-            pieces.pop_back();
-            return temp;
         }
+
         else //postfix
         {
-            std::vector<float> temp;
             if (this->pieces.empty()) //At the beginning, self.pieces is empty, so the only legal moves are the features and const
             {
-                temp.insert(temp.end(), Board::__input_vars_float.begin(), Board::__input_vars_float.end());
-                temp.insert(temp.end(), Board::__other_tokens_float.begin(), Board::__other_tokens_float.end());
-                return temp;
+                return Board::una_bin_leaf_legal_moves_dict[false][false][true];
             }
             int num_binary = this->__num_binary_ops();
             int num_leaves = this->__num_leaves();
+                 
+            bool una_allowed = false, bin_allowed = (num_binary != num_leaves - 1), leaf_allowed = false;
             
-            if ((num_binary != num_leaves - 1))//  && ((std::find(Board::__other_tokens_float.begin(), Board::__other_tokens_float.end(), pieces.back()) == Board::__other_tokens_float.end()) ||  (*(pieces.end()-1) != *(pieces.end()-2))))
-            {
-                temp.insert(temp.end(), Board::__binary_operators_float.begin(), Board::__binary_operators_float.end());
-            }
-
             pieces.push_back(Board::__unary_operators_float[0]);
-            if ((num_leaves >= 1) && (getRPNdepth(pieces).first <= this->n) && (std::find(Board::__other_tokens_float.begin(), Board::__other_tokens_float.end(), pieces[pieces.size()-2]) == Board::__other_tokens_float.end())) //unary_op(const) is not allowed
-            {
-                temp.insert(temp.end(), Board::__unary_operators_float.begin(), Board::__unary_operators_float.end());
-            }
+            una_allowed = ((num_leaves >= 1) && (getRPNdepth(pieces).first <= this->n));
+            
             pieces[pieces.size() - 1] = Board::__input_vars_float[0];
-            if (getRPNdepth(pieces).first <= this->n)
-            {
-                temp.insert(temp.end(), Board::__input_vars_float.begin(), Board::__input_vars_float.end());
-                temp.insert(temp.end(), Board::__other_tokens_float.begin(), Board::__other_tokens_float.end());
-            }
+            leaf_allowed = (getRPNdepth(pieces).first <= this->n);
+
             pieces.pop_back();
-            return temp;
+            return Board::una_bin_leaf_legal_moves_dict[una_allowed][bin_allowed][leaf_allowed];
         }
+
     }
     
     //Returns the `expression_type` string form of the expression stored in the vector<float> attribute pieces
@@ -991,26 +1066,21 @@ struct Board
     /*
     Check whether the given player has created a
     complete (depth self.n) expression (again), and
-    checks if it is a complete RPN expression.
+    checks if it is a complete PN/RPN expression.
     Returns the score of the expression if complete,
     where 0 <= score <= 1 and -1 if not complete or if
     the desired depth has not been reached.
     */
-    float complete_status()
+    float complete_status(bool cache = true)
     {
-        auto [depth, complete] =  ((expression_type == "prefix") ? getPNdepth(pieces) : getRPNdepth(pieces)); //structured binding :)
-
+        auto [depth, complete] =  ((expression_type == "prefix") ? getPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/) : getRPNdepth(pieces)); //structured binding :)
         if (!complete || depth < this->n) //Expression not complete
         {
             return -1;
         }
         else
         {
-            std::string expression_string;
-            expression_string.reserve(8*pieces.size());
-            
-            for (float i: pieces){expression_string += std::to_string(i)+" ";}
-            
+            this->reset = true;
             if (visualize_exploration)
             {
                 //TODO: call some plotting function, e.g. ROOT CERN plotting API, Matplotlib from the Python-C API, Plotly if we want a web application for this, etc. The plotting function could also have the fitted constants (rounded of course), but then this if statement would need to be moved down to below the fitFunctionToData call in this `complete_status` method.
@@ -1018,6 +1088,9 @@ struct Board
             
             if (is_primary)
             {
+                std::string expression_string;
+                expression_string.reserve(8*pieces.size());
+                for (float i: pieces){expression_string += std::to_string(i)+" ";}
                 Board::expression_dict[expression_string].second++;
                 
                 this->params = &Board::expression_dict[expression_string].first;
@@ -1109,7 +1182,7 @@ struct Board
             
             auto [start, stop] = std::make_pair( std::min(k, ptr_GB), std::max(k, ptr_GB));
 //            std::cout << "start, stop = " << start << " , " << stop << '\n';
-            auto [depth, complete] =  ((expression_type == "prefix") ? getPNdepth(individual, start, stop+1) : getRPNdepth(individual, start, stop+1));
+            auto [depth, complete] =  ((expression_type == "prefix") ? getPNdepth(individual, start, stop+1, false /*cache*/) : getRPNdepth(individual, start, stop+1));
             
             if (complete && (depth == this->n))
             {
@@ -1132,9 +1205,9 @@ float exampleFunc(const Eigen::VectorXf& x)
 
 //https://dl.acm.org/doi/pdf/10.1145/3449639.3459345?casa_token=Np-_TMqxeJEAAAAA:8u-d6UyINV6Ex02kG9LthsQHAXMh2oxx3M4FG8ioP0hGgstIW45X8b709XOuaif5D_DVOm_FwFo
 //https://core.ac.uk/download/pdf/6651886.pdf
-void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
+void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true)
 {
-    Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false);
+    Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
     Board secondary(false, 0, expression_type); //For perturbations
     std::random_device rand_dev;
     std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
@@ -1158,8 +1231,8 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
     
     auto updateScore = [&](float r = 1.0f)
     {
-//        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
-//        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
+        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
+        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
         if ((score > max_score) || (x.pos_dist(generator) < P(score-max_score)))
         {
             current = x.pieces; //update current expression
@@ -1228,7 +1301,7 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
         }
         
         //Step 5: Evaluate the new mutated `x.pieces` and update score if needed
-        score = x.complete_status();
+        score = x.complete_status(false);
         updateScore(pow(ratio, 1.0f/(i+1)));
         
     };
@@ -1254,13 +1327,13 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
 }
 
 //https://arxiv.org/abs/2310.06609
-void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
+void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true)
 {
-    Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false);
+    Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
     Board secondary_one(false, 0, expression_type), secondary_two(false, 0, expression_type); //For crossover and mutations
     std::random_device rand_dev;
     std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-    float score = 0.0f, max_score = 0.0f, mut_prob = 1.0f, cross_prob = 0.0f, rand_mut_cross;
+    float score = 0.0f, max_score = 0.0f, mut_prob = 0.2f, cross_prob = 0.8f, rand_mut_cross;
     constexpr int init_population = 2000;
     std::vector<std::pair<std::vector<float>, float>> individuals;
     std::pair<std::vector<float>, float> individual_1, individual_2;
@@ -1275,8 +1348,8 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
     
     auto updateScore = [&]()
     {
-//        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
-//        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
+        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
+        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
         if (score > max_score)
         {
             expression = x._to_infix();
@@ -1301,7 +1374,6 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         }
         
         updateScore();
-
         individuals.push_back(std::make_pair(x.pieces, score));
         x.pieces.clear();
     }
@@ -1319,7 +1391,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
             secondary_one.pieces.push_back(temp_legal_moves[distribution(generator)]);
         }
         
-//        assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).first == secondary_one.n);
+        assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).first == secondary_one.n);
         
         //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
         //in `x.pieces` and store them in an std::vector<std::pair<int, int>>
@@ -1339,7 +1411,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         x.pieces.insert(start, secondary_one.pieces.begin(), secondary_one.pieces.end());
         
         //Step 5: Evaluate the new mutated `x.pieces` and update score if needed
-        score = x.complete_status();
+        score = x.complete_status(false);
         updateScore();
         individuals.push_back(std::make_pair(x.pieces, score));
     };
@@ -1406,13 +1478,13 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         }
 
         x.pieces = individual_1.first;
-        score = x.complete_status();
+        score = x.complete_status(false);
         updateScore();
         
         individuals.push_back(std::make_pair(x.pieces, score));
         
         x.pieces = individual_2.first;
-        score = x.complete_status();
+        score = x.complete_status(false);
         updateScore();
         
         individuals.push_back(std::make_pair(x.pieces, score));
@@ -1452,9 +1524,9 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
     }
 }
 
-void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
+void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true)
 {
-    Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false);
+    Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
     
     std::random_device rand_dev;
     std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
@@ -1477,6 +1549,7 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
     curr_positions.reserve(x.reserve_amount); //indices corresponding to x.pieces
     v.reserve(x.reserve_amount); //stores record of all current particle velocities
     float rp, rg, new_pos, new_v, noise, c = 0.0f;
+    int c_count = 0;
     std::unordered_map<float, std::unordered_map<int, int>> Nsa;
     std::unordered_map<float, std::unordered_map<int, float>> Psa;
     std::unordered_map<int, float> p_i_vals, p_i;
@@ -1499,14 +1572,17 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
             << ", max_score = " << max_score << ", c = " << c << '\n';
             if (check_point_score == max_score)
             {
+                c_count++;
+                std::uniform_real_distribution<float> temp(-c_count, c_count);
                 std::cout << "c: " << c << " -> ";
-                c += x.vel_dist(generator);
+                c = temp(generator);
                 std::cout << c << '\n';
             }
             else
             {
                 std::cout << "c: " << c << " -> ";
                 c = 0.0f; //if new best found, reset c and try to exploit the new best
+                c_count = 0;
                 std::cout << c << '\n';
             }
             check_point_score = max_score;
@@ -1572,9 +1648,9 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
 }
 
 //https://arxiv.org/abs/2205.13134
-void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
+void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true)
 {
-    Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false);
+    Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
     float score = 0.0f, max_score = 0.0f, check_point_score = 0.0f, UCT, best_act, UCT_best;
     std::vector<float> temp_legal_moves;
     std::unordered_map<std::string, std::unordered_map<float, float>> Qsa, Nsa;
@@ -1672,9 +1748,9 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
     
 }
 
-void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical")
+void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true)
 {
-    Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false);
+    Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
     std::cout << Board::data["y"] << '\n';
     std::cout << x.fit_method << '\n';
     std::cout << Board::data << '\n';
@@ -1687,28 +1763,34 @@ void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expres
     
 //    std::ofstream out(x.expression_type == "prefix" ? "PN_expressions.txt" : "RPN_expressions.txt");
 //    std::cout << "stop = " << stop << '\n';
-    for (int i = 0; (score < stop/* && Board::expression_dict.size() <= 2000000*/); i++)
+    for (int i = 0; (/*score < stop && */Board::expression_dict.size() <= 100000); i++)
     {
+//        std::cout << "iter " << i << '\n';
         while ((score = x.complete_status()) == -1)
         {
             temp_legal_moves = x.get_legal_moves(); //the legal moves
+//            std::cout << "temp_legal_moves.size() = " << temp_legal_moves.size() << '\n';
+//            printf("temp_legal_moves: ");
+//            for (float i : temp_legal_moves) { std::cout << Board::__tokens_dict[i] << ' '; }puts("");
             temp_sz = temp_legal_moves.size(); //the number of legal moves
             std::uniform_int_distribution<int> distribution(0, temp_sz - 1);
  // A random integer generator which generates an index corresponding to an allowed move
 
             x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
+
         }
 
 //        out << "Iteration " << i << ": Original expression = " << x.expression() << ", Infix Expression = " << expression << '\n';
-
         if (score > max_score)
         {
+            
             expression = x._to_infix();
             orig_expression = x.expression();
             max_score = score;
             std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
             std::cout << "Best expression = " << expression << '\n';
             std::cout << "Best expression (original format) = " << orig_expression << '\n';
+            std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
             best_expression = std::move(expression);
         }
         x.pieces.clear();
@@ -1753,11 +1835,11 @@ int main() {
     Eigen::MatrixXf data = generateData(100, 6, exampleFunc);
 //    std::cout << data << "\n\n";
     auto start_time = Clock::now();
-//    MCTS(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
-//    PSO(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
-//    RandomSearch(data, 3, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
-//    GP(data, 3, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
-    SimulatedAnnealing(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
+//    MCTS(data, 3, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
+//    PSO(data, 3, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
+//    RandomSearch(data, 15, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", false /*cache*/);
+    GP(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
+//    SimulatedAnnealing(data, 3, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", false /*cache*/);
     auto end_time = Clock::now();
     std::cout << "Time difference = "
           << std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count()/1e9 << " seconds" << '\n';
@@ -1765,7 +1847,7 @@ int main() {
     return 0;
 }
 
-
+//git push --set-upstream origin prefix_and_postfix_cpp_implementation
 
 
 
