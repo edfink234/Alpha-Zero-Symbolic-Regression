@@ -176,7 +176,7 @@ struct Board
     int num_fit_iter;
     std::string fit_method;
     std::string fit_grad_method;
-    bool reset, cache;
+    bool cache;
     std::vector<int> stack;
     int depth = 0, num_binary = 0, num_leaves = 0, idx = 0;
     static std::unordered_map<float, std::string> inline __tokens_dict; //Converts number to string
@@ -189,7 +189,7 @@ struct Board
     std::vector<float> pieces;
     bool visualize_exploration, is_primary;
     
-    Board(bool primary = true, int n = 3, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false) : is_primary{primary}, gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, fit_method{fitMethod}, num_fit_iter{numFitIter}, fit_grad_method{fitGradMethod}, reset{false}
+    Board(bool primary = true, int n = 3, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false) : is_primary{primary}, gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, fit_method{fitMethod}, num_fit_iter{numFitIter}, fit_grad_method{fitGradMethod}
     {
         if (n > 30)
         {
@@ -436,12 +436,6 @@ struct Board
             }
             else //modify -> complete_status()
             {
-                if (this->reset)
-                {
-                    this->stack.clear();
-                    this->depth = 0, this->num_binary = 0, this->num_leaves = 0, this->idx = 0;
-                    this->reset = false;
-                }
                 if (is_binary(expression[this->idx]))
                 {
                     this->stack.push_back(2);  // Number of operands
@@ -1073,6 +1067,11 @@ struct Board
     */
     float complete_status(bool cache = true)
     {
+        if (this->pieces.empty())
+        {
+            this->stack.clear();
+            depth = 0, num_binary = 0, num_leaves = 0, idx = 0;
+        }
         auto [depth, complete] =  ((expression_type == "prefix") ? getPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/) : getRPNdepth(pieces)); //structured binding :)
         if (!complete || depth < this->n) //Expression not complete
         {
@@ -1080,7 +1079,6 @@ struct Board
         }
         else
         {
-            this->reset = true;
             if (visualize_exploration)
             {
                 //TODO: call some plotting function, e.g. ROOT CERN plotting API, Matplotlib from the Python-C API, Plotly if we want a web application for this, etc. The plotting function could also have the fitted constants (rounded of course), but then this if statement would need to be moved down to below the fitFunctionToData call in this `complete_status` method.
@@ -1208,7 +1206,7 @@ float exampleFunc(const Eigen::VectorXf& x)
 void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true)
 {
     Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
-    Board secondary(false, 0, expression_type); //For perturbations
+    Board secondary(false, 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache); //For perturbations
     std::random_device rand_dev;
     std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
     float score = 0.0f, max_score = 0.0f, check_point_score = 0.0f;
@@ -1276,6 +1274,9 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
             secondary.pieces.push_back(temp_legal_moves[distribution(generator)]);
         }
         
+        assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces) : secondary.getRPNdepth(secondary.pieces)).first == secondary.n);
+        assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces) : secondary.getRPNdepth(secondary.pieces)).second);
+        
         if (n == x.n)
         {
             std::swap(secondary.pieces, x.pieces);
@@ -1330,10 +1331,10 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
 void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true)
 {
     Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
-    Board secondary_one(false, 0, expression_type), secondary_two(false, 0, expression_type); //For crossover and mutations
+    Board secondary_one(false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache), secondary_two(false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache); //For crossover and mutations
     std::random_device rand_dev;
     std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-    float score = 0.0f, max_score = 0.0f, mut_prob = 0.2f, cross_prob = 0.8f, rand_mut_cross;
+    float score = 0.0f, max_score = 0.0f, mut_prob = 0.8f, cross_prob = 0.2f, rand_mut_cross;
     constexpr int init_population = 2000;
     std::vector<std::pair<std::vector<float>, float>> individuals;
     std::pair<std::vector<float>, float> individual_1, individual_2;
@@ -1392,6 +1393,8 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         }
         
         assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).first == secondary_one.n);
+        assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).second);
+
         
         //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
         //in `x.pieces` and store them in an std::vector<std::pair<int, int>>
@@ -1837,9 +1840,9 @@ int main() {
     auto start_time = Clock::now();
 //    MCTS(data, 3, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
 //    PSO(data, 3, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
-//    RandomSearch(data, 15, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", false /*cache*/);
-    GP(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
-//    SimulatedAnnealing(data, 3, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", false /*cache*/);
+    RandomSearch(data, 15, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
+//    GP(data, 3, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
+//    SimulatedAnnealing(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
     auto end_time = Clock::now();
     std::cout << "Time difference = "
           << std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count()/1e9 << " seconds" << '\n';
