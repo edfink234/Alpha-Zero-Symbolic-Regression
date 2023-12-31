@@ -389,7 +389,7 @@ struct Board
         if (!cache)
         {
             this->stack.clear();
-            this->depth = 0, this->num_binary = 0, this->num_leaves = 0, this->idx = 0;
+            this->depth = 0, this->num_binary = 0, this->num_leaves = 0;
             for (size_t i = start; i < stop; i++)
             {
                 if (is_binary(expression[i]))
@@ -465,7 +465,7 @@ struct Board
     }
     
     //returns a pair containing the depth of the sub-expression from start to stop, and whether or not it's complete
-    std::pair<int, bool> getRPNdepth(const std::vector<float>& expression, size_t start = 0, size_t stop = 0, bool cache = false)
+    std::pair<int, bool> getRPNdepth(const std::vector<float>& expression, size_t start = 0, size_t stop = 0, bool cache = false, bool modify = false, bool unary = false, bool leaf = false)
     {
         if (expression.empty())
         {
@@ -477,44 +477,145 @@ struct Board
             stop = expression.size();
         }
 
-        static std::vector<int> stack;
         if (!cache)
         {
-            stack.clear();
+            this->stack.clear();
+            bool complete = true;
+            
+            for (size_t i = start; i < stop; i++)
+            {
+                if (is_unary(expression[i]))
+                {
+                    this->stack.back() += 1;
+                }
+                else if (is_binary(expression[i]))
+                {
+                    int op2 = this->stack.back();
+                    this->stack.pop_back();
+                    int op1 = this->stack.back();
+                    this->stack.pop_back();
+                    this->stack.push_back(std::max(op1, op2) + 1);
+                }
+                else //leaf
+                {
+                    this->stack.push_back(1);
+                }
+            }
+            
+            while (this->stack.size() > 1)
+            {
+                int op2 = this->stack.back();
+                this->stack.pop_back();
+                int op1 = this->stack.back();
+                this->stack.pop_back();
+                this->stack.push_back(std::max(op1, op2) + 1);
+                complete = false;
+            }
+            
+            /*
+             e.g., assume this->stack = {1, 2, 3, 4, 5}, then:
+             {1, 2, 3, 4, 5}
+             {1, 2, 3, 6}
+             {1, 2, 7}
+             {1, 8}
+             {9}
+             */
+            
+            return std::make_pair(this->stack.back() - 1, complete);
         }
-        bool complete = true;
-
-        for (size_t i = start; i < stop; i++)
+        else
         {
-            if (is_unary(expression[i]))
+            if (not modify)  //get_legal_moves()
             {
-                stack.back() += 1;
+                if (unary) //Gives the this->depth and completeness of the current RPN expression + a unary operator
+                {
+                    if (this->stack.size() == 1)
+                    {
+                        return std::make_pair(this->stack.back(), true);
+                    }
+                    else
+                    {
+                        int curr_max = std::max(this->stack.back()+1, *(this->stack.end()-2))+1;
+                        for (int i = this->stack.size() - 2; i >= 1; i--)
+                        {
+                            curr_max = std::max(curr_max, this->stack[i-1])+1;
+                        }
+                        
+                        /*
+                         e.g., assume this->stack = {1, 2, 3, 4, 5}, then:
+                         curr_max = max(5, 4)+1 = 6;
+                         curr_max = max(6, 3)+1 = 7;
+                         curr_max = max(7, 2)+1 = 8;
+                         curr_max = max(8, 1)+1 = 9;
+                         */
+                        
+                        return std::make_pair(curr_max - 1, false);
+                    }
+                }
+                else if (leaf) //Gives the this->depth and completeness of the current RPN expression + a leaf node
+                {
+                    if (this->stack.empty())
+                    {
+                        return std::make_pair(0, true);
+                    }
+                    else
+                    {
+                        int curr_max = std::max(this->stack.back(), 1)+1;
+                        for (int i = this->stack.size() - 1; i >= 1; i--)
+                        {
+                            curr_max = std::max(curr_max, this->stack[i-1])+1;
+                        }
+                        /*
+                         e.g., assume this->stack = {1, 2, 3, 4, 5}, then:
+                         curr_max = max(5, 4)+1 = 6;
+                         curr_max = max(6, 3)+1 = 7;
+                         curr_max = max(7, 2)+1 = 8;
+                         curr_max = max(8, 1)+1 = 9;
+                         */
+                        
+                        return std::make_pair(curr_max - 1, false);
+                    }
+                }
             }
-            else if (is_operator(expression[i]))
+            else //modify -> complete_status()
             {
-                int op2 = std::move(stack.back());
-                stack.pop_back();
-                int op1 = std::move(stack.back());
-                stack.pop_back();
-                stack.push_back(std::max(op1, op2) + 1);
+                if (is_binary(expression[this->idx]))
+                {
+                    int op2 = this->stack.back();
+                    this->stack.pop_back();
+                    int op1 = this->stack.back();
+                    this->stack.pop_back();
+                    this->stack.push_back(std::max(op1, op2) + 1);
+                }
+                else if (is_unary(expression[this->idx]))
+                {
+                    this->stack.back() += 1;
+                }
+                else //leaf
+                {
+                    this->stack.push_back(1);
+                }
+                
+                if (this->stack.size() == 1)
+                {
+                    this->idx++;
+                    return std::make_pair(this->stack.back() - 1, true);
+                }
+                
+                else
+                {
+                    int curr_max = std::max(this->stack.back(), *(this->stack.end()-2))+1;
+                    for (int i = this->stack.size() - 2; i >= 1; i--)
+                    {
+                        curr_max = std::max(curr_max, this->stack[i-1])+1;
+                    }
+                    this->idx++;
+                    return std::make_pair(curr_max - 1, false);
+                }
             }
-            else
-            {
-                stack.push_back(1);
-            }
+            
+            return std::make_pair(this->stack.back() - 1, true);
         }
-
-        while (stack.size() > 1)
-        {
-            int op2 = std::move(stack.back());
-            stack.pop_back();
-            int op1 = std::move(stack.back());
-            stack.pop_back();
-            stack.push_back(std::max(op1, op2) + 1);
-            complete = false;
-        }
-
-        return std::make_pair(stack.back() - 1, complete);
     }
     
     std::vector<float> get_legal_moves()
@@ -566,16 +667,24 @@ struct Board
             int num_binary = this->__num_binary_ops();
             int num_leaves = this->__num_leaves();
                  
-            bool una_allowed = false, bin_allowed = (num_binary != num_leaves - 1), leaf_allowed = false;
+            if (this->cache)
+            {
+                return Board::una_bin_leaf_legal_moves_dict[((num_leaves >= 1) && (getRPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, true /*unary*/, false /*leaf*/).first <= this->n))][(num_binary != num_leaves - 1)][(getRPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, false /*unary*/, true /*leaf*/).first <= this->n)];
+            }
             
-            pieces.push_back(Board::__unary_operators_float[0]);
-            una_allowed = ((num_leaves >= 1) && (getRPNdepth(pieces).first <= this->n));
-            
-            pieces[pieces.size() - 1] = Board::__input_vars_float[0];
-            leaf_allowed = (getRPNdepth(pieces).first <= this->n);
+            else
+            {
+                bool una_allowed = false, bin_allowed = (num_binary != num_leaves - 1), leaf_allowed = false;
+                
+                pieces.push_back(Board::__unary_operators_float[0]);
+                una_allowed = ((num_leaves >= 1) && (getRPNdepth(pieces).first <= this->n));
+                
+                pieces[pieces.size() - 1] = Board::__input_vars_float[0];
+                leaf_allowed = (getRPNdepth(pieces).first <= this->n);
 
-            pieces.pop_back();
-            return Board::una_bin_leaf_legal_moves_dict[una_allowed][bin_allowed][leaf_allowed];
+                pieces.pop_back();
+                return Board::una_bin_leaf_legal_moves_dict[una_allowed][bin_allowed][leaf_allowed];
+            }
         }
 
     }
@@ -1070,9 +1179,13 @@ struct Board
         if (this->pieces.empty())
         {
             this->stack.clear();
-            depth = 0, num_binary = 0, num_leaves = 0, idx = 0;
+            this->idx = 0;
+            if (this->expression_type == "prefix")
+            {
+                this->depth = 0, this->num_binary = 0, this->num_leaves = 0;
+            }
         }
-        auto [depth, complete] =  ((expression_type == "prefix") ? getPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/) : getRPNdepth(pieces)); //structured binding :)
+        auto [depth, complete] =  ((this->expression_type == "prefix") ? getPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/) : getRPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/)); //structured binding :)
         if (!complete || depth < this->n) //Expression not complete
         {
             return -1;
@@ -1647,7 +1760,6 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
         x.pieces.clear();
         curr_positions.clear();
     }
-    
 }
 
 //https://arxiv.org/abs/2205.13134
@@ -1748,7 +1860,6 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
         x.pieces.clear();
         moveTracker.clear();
     }
-    
 }
 
 void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true)
@@ -1838,10 +1949,10 @@ int main() {
     Eigen::MatrixXf data = generateData(100, 6, exampleFunc);
 //    std::cout << data << "\n\n";
     auto start_time = Clock::now();
-//    MCTS(data, 3, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
-//    PSO(data, 3, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical");
-    RandomSearch(data, 15, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
-//    GP(data, 3, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
+    RandomSearch(data, 29, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", false /*cache*/);
+//    MCTS(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true);
+//    PSO(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true);
+//    GP(data, 29, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
 //    SimulatedAnnealing(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
     auto end_time = Clock::now();
     std::cout << "Time difference = "
