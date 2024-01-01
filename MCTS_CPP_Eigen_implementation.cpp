@@ -1949,7 +1949,7 @@ int main() {
     Eigen::MatrixXf data = generateData(100, 6, exampleFunc);
 //    std::cout << data << "\n\n";
     auto start_time = Clock::now();
-    RandomSearch(data, 29, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", false /*cache*/);
+    RandomSearch(data, 10, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
 //    MCTS(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true);
 //    PSO(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true);
 //    GP(data, 29, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
