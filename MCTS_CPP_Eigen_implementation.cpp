@@ -372,7 +372,7 @@ struct Board
     
     /*
      Returns a pair containing the depth of the sub-expression from start to stop, and whether or not it's complete
-     Algorithm adopted from here: https://stackoverflow.com/a/77128902
+     Algorithm adopted from here: https://stackoverflow.com/a/77180279
      */
     std::pair<int, bool> getPNdepth(const std::vector<float>& expression, size_t start = 0, size_t stop = 0, bool cache = false, bool modify = false, bool binary = false, bool unary = false, bool leaf = false)
     {
