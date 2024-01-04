@@ -599,9 +599,9 @@ struct Board
                     this->stack.push_back(1);
                 }
                 
+                this->idx++;
                 if (this->stack.size() == 1)
                 {
-                    this->idx++;
                     return std::make_pair(this->stack.back() - 1, true);
                 }
                 
@@ -612,7 +612,6 @@ struct Board
                     {
                         curr_max = std::max(curr_max, this->stack[i-1])+1;
                     }
-                    this->idx++;
                     return std::make_pair(curr_max - 1, false);
                 }
             }
@@ -1952,10 +1951,10 @@ int main() {
     Eigen::MatrixXf data = generateData(100, 6, exampleFunc);
 //    std::cout << data << "\n\n";
     auto start_time = Clock::now();
-    RandomSearch(data, 10, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
+//    RandomSearch(data, 10, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
 //    MCTS(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true);
 //    PSO(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true);
-//    GP(data, 29, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
+    GP(data, 29, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
 //    SimulatedAnnealing(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
     auto end_time = Clock::now();
     std::cout << "Time difference = "
