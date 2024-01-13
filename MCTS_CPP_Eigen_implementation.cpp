@@ -1349,13 +1349,16 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
         if ((score > max_score) || (x.pos_dist(generator) < P(score-max_score)))
         {
             current = x.pieces; //update current expression
-            expression = x._to_infix();
-            orig_expression = x.expression();
-            max_score = score;
-            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-            std::cout << "Best expression = " << expression << '\n';
-            std::cout << "Best expression (original format) = " << orig_expression << '\n';
-            best_expression = std::move(expression);
+            if (score > max_score)
+            {
+                expression = x._to_infix();
+                orig_expression = x.expression();
+                max_score = score;
+                std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+                std::cout << "Best expression = " << expression << '\n';
+                std::cout << "Best expression (original format) = " << orig_expression << '\n';
+                best_expression = std::move(expression);
+            }
         }
         else
         {
@@ -1376,6 +1379,7 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
     
     updateScore();
     
+    //Another way to do this might be clustering...
     auto Perturbation = [&](int n, int i)
     {
         //Step 1: Generate a random depth-n sub-expression `secondary_one.pieces`
@@ -1419,7 +1423,6 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
         //Step 5: Evaluate the new mutated `x.pieces` and update score if needed
         score = x.complete_status(false);
         updateScore(pow(ratio, 1.0f/(i+1)));
-        
     };
     
     for (int i = 0; max_score < stop; i++)
@@ -1550,11 +1553,11 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         individual_2 = individuals[rand_individual_idx_2];
     
         //Step 1: Identify the starting and stopping index pairs of all depth-n sub-expressions
-        //in `individual_1` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_1`.
+        //in `individual_1.first` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_1`.
         secondary_one.get_indices(sub_exprs_1, individual_1.first);
         
         //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
-        //in `individual_2` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_2`.
+        //in `individual_2.first` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_2`.
         secondary_two.get_indices(sub_exprs_2, individual_2.first);
         
         //Step 3: Generate a random uniform int from 0 to sub_exprs_1.size() - 1 called `mut_ind_1`
@@ -1673,12 +1676,13 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
     std::unordered_map<int, float> p_i_vals, p_i;
     
     /*
-     Idea: In this implementation of PSO,
+     In this implementation of PSO:
      
-     The traditional PSO initializes the particle positions to be between 0 and 1. However, in this application,
-     the particle positions are discrete values and any of the legal integer tokens (moves). The
-     velocities are continuous-valued and perturb the postions, which are subsequently constrained by rounding to
-     the nearest whole number then taking the modulo w.r.t. the # of allowed legal moves.
+         The traditional PSO initializes the particle positions to be between 0 and 1. However, in this application,
+         the particle positions are discrete values and any of the legal integer tokens (moves). The
+         velocities are continuous-valued and perturb the postions, which are subsequently constrained by rounding to
+         the nearest whole number then taking the modulo w.r.t. the # of allowed legal moves.
+     
      */
     
     for (int iter = 0; (score < stop/* && Board::expression_dict.size() <= 2000000*/); iter++)
@@ -1774,7 +1778,7 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
     std::string state;
     std::string expression, orig_expression, best_expression;
     std::unordered_map<std::string, float> Ns;
-    float c = 1.4f; //"controls the balance between exploration and exploitation", see equation 2 here: https://web.engr.oregonstate.edu/~afern/classes/cs533/notes/uct.pdf
+    float c = 1.4f; //"controls the balance between exploration and exploitation", see equation 2 here: https://web.engr.oregonstate.edu/~afern/classes/cs533/notes/uct.pdf, top of page 8 here: https://arxiv.org/pdf/1402.6028.pdf, first formula in section 4. Experiments here: https://cesa-bianchi.di.unimi.it/Pubblicazioni/ml-02.pdf
     std::vector<std::pair<std::string, float>> moveTracker;
     moveTracker.reserve(x.reserve_amount);
     temp_legal_moves.reserve(x.reserve_amount);
@@ -1891,7 +1895,6 @@ void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expres
             temp_sz = temp_legal_moves.size(); //the number of legal moves
             std::uniform_int_distribution<int> distribution(0, temp_sz - 1);
  // A random integer generator which generates an index corresponding to an allowed move
-
             x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
 
         }
@@ -1899,7 +1902,6 @@ void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expres
 //        out << "Iteration " << i << ": Original expression = " << x.expression() << ", Infix Expression = " << expression << '\n';
         if (score > max_score)
         {
-            
             expression = x._to_infix();
             orig_expression = x.expression();
             max_score = score;
@@ -1954,8 +1956,8 @@ int main() {
 //    RandomSearch(data, 10, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
 //    MCTS(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true);
 //    PSO(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true);
-    GP(data, 29, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
-//    SimulatedAnnealing(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
+//    GP(data, 29, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
+    SimulatedAnnealing(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
     auto end_time = Clock::now();
     std::cout << "Time difference = "
           << std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count()/1e9 << " seconds" << '\n';
