@@ -1,3 +1,4 @@
+#A script for visualizing prefix and postfix expression trees
 import matplotlib.pyplot as plt
 import pydot
 from collections import deque
@@ -236,7 +237,6 @@ def plot_rpn_expression_tree(expression: list[str], block = False, save = False)
         else:
             implot.set_data(plt.imread('expression_tree.png'))
         plt.axis('off')
-#        print(f"depth = {getRPNdepth(expression)}")
         plt.title(f"{' '.join(expression)}, depth = {getRPNdepth(expression)[0]}")
         plt.show(block = block)
         plt.pause(0.01)
@@ -254,16 +254,11 @@ def test_visualize():
 
     else:
         print(pn_to_infix("+ sin sin x1 x"))
-#        print(rpn_to_infix("0.336364 x1 x4 - * x3 + x4 x4 x4 x2 - + - * -sin 1 x1 x4 - * 0.336364 0 0 - * + 0 + x4 x4 x4 x2 - + - * 0.336364 x1 x4 - * x3 + 0 0 0 0 - + - * + *"))
 #        print(rpn_to_infix("y y x * * cos y +"))
-#        print(rpn_to_infix("y y y * * -sin y y 1 * 1 y * + * 1 y y * * + * 1 +"))
-#        os.system(f"maxima -r \"diff({pn_to_infix('+ 1.1 * * 0.5 x0 + x0 x0')}, x0); quit();\"")
-#        os.system()
         while True:
             try:
 #                plot_pn_expression_tree("+ cos cos x0 * 1.031240 + 0.008202 * 1.919085 - cos x3 - cos x0 cos cos * x0 + x3 x3".split(), block=False, save = save)
                 plot_rpn_expression_tree("x3 cos 0.427738 * 4.779139 x1 - 0.390789 x0 0.637794 x2 * - + 0.598703 x2 cos 1.463665 cos x2 + 1.063828 x3 + x0 0.031570 x0 + 1.493230 - * * + - * * + *".split(), block=False, save = save)
-#                plot_pn_expression_tree("+ * + 1.000016 1.538184 cos x3 * - x0 0.707107 + x0 0.707107".split(), block=False, save = save)
 
             except KeyboardInterrupt:
                 plt.close()

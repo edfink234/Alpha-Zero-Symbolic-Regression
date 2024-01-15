@@ -22,8 +22,8 @@
 #include <cfloat>
 #include <cassert>
 #include <span>
-#include <pybind11/pybind11.h>
-#include <Python.h>
+//#include <pybind11/pybind11.h>
+//#include <Python.h>
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <LBFGS.h>
@@ -1921,18 +1921,18 @@ void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expres
     std::cout << "Best expression (original format) = " << orig_expression << '\n';
 }
 
-PyObject* convertVectorToPythonList(const std::vector<float>& inputVector)
-{
-    PyObject* pyList = PyTuple_New(inputVector.size());
-
-    for (size_t i = 0; i < inputVector.size(); ++i)
-    {
-        PyObject* pyFloat = PyFloat_FromDouble(static_cast<double>(inputVector[i]));
-        PyTuple_SetItem(pyList, i, pyFloat);
-    }
-
-    return pyList;
-}
+//PyObject* convertVectorToPythonList(const std::vector<float>& inputVector)
+//{
+//    PyObject* pyList = PyTuple_New(inputVector.size());
+//
+//    for (size_t i = 0; i < inputVector.size(); ++i)
+//    {
+//        PyObject* pyFloat = PyFloat_FromDouble(static_cast<double>(inputVector[i]));
+//        PyTuple_SetItem(pyList, i, pyFloat);
+//    }
+//
+//    return pyList;
+//}
 
 int main() {
     
