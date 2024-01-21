@@ -209,7 +209,7 @@ struct Board
                 Board::__input_vars.push_back("x"+std::to_string(i));
             }
             Board::__unary_operators = {"cos"};
-            Board::__binary_operators = {"+", "-", "*"};
+            Board::__binary_operators = {"+", "-", "*"/*, "/", "^"*/};
             for (std::string& i: Board::__unary_operators)
             {
                 Board::__operators.push_back(i);
