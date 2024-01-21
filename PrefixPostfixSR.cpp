@@ -36,12 +36,12 @@ constexpr bool TEST = true;
 
 using Clock = std::chrono::high_resolution_clock;
 
-Eigen::MatrixXf generateData(int numRows, int numCols, float (*func)(const Eigen::VectorXf&))
+Eigen::MatrixXf generateData(int numRows, int numCols, float (*func)(const Eigen::VectorXf&), float min = -3.0f, float max = 3.0f)
 {
     // Initialize random number generator
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::normal_distribution<float> distribution;
+    std::uniform_real_distribution<float> distribution(min, max);
 
     // Create the matrix
     Eigen::MatrixXf matrix(numRows, numCols);
@@ -208,8 +208,8 @@ struct Board
             {
                 Board::__input_vars.push_back("x"+std::to_string(i));
             }
-            Board::__unary_operators = {"cos"};
-            Board::__binary_operators = {"+", "-", "*"/*, "/", "^"*/};
+//            Board::__unary_operators = {"cos"};
+            Board::__binary_operators = {"+", "-", "*", "/", "^"};
             for (std::string& i: Board::__unary_operators)
             {
                 Board::__operators.push_back(i);
@@ -1323,13 +1323,33 @@ struct Board
 // prefix = "+ * const cos x3 - * x0 x0 const"
 float exampleFunc(const Eigen::VectorXf& x)
 {
-    return 2.5382*cos(x[3]) + (x[0]*x[0]) - 0.5f;
-//    return 5*cos(x[1]+x[3])+x[4];
+    return 2.5382f*cos(x[3]) + (x[0]*x[0]) - 0.5f;
+//    return 5.0f*cos(x[1]+x[3])+x[4];
 }
 
 float Hemberg_1(const Eigen::VectorXf& x)
 {
-    return 8.0 / (2 + x[0]*x[0] + x[1]*x[1]);
+    return 8.0f / (2.0f + x[0]*x[0] + x[1]*x[1]);
+}
+
+float Hemberg_2(const Eigen::VectorXf& x)
+{
+    return x[0]*x[0]*x[0]*(x[0]-1.0f) + x[1]*(x[1]/2.0f - 1.0f);
+}
+
+float Hemberg_3(const Eigen::VectorXf& x)
+{
+    return x[0]*x[0]*x[0]/5.0f + x[1]*x[1]*x[1]/2.0f - x[1] - x[0];
+}
+
+float Hemberg_4(const Eigen::VectorXf& x)
+{
+    return (30.0f*x[0]*x[0])/((10.0f-x[0])*x[1]*x[1]) + x[0]*x[0]*x[0]*x[0] - x[0]*x[0]*x[0] + x[1]*x[1]/2.0f - x[1] + (8.0f / (2.0f + x[0]*x[0] + x[1]*x[1])) + x[0];
+}
+
+float Hemberg_5(const Eigen::VectorXf& x)
+{
+    return (30.0f*x[0]*x[0])/((10.0f-x[0])*x[1]*x[1]) + x[0]*x[0]*x[0]*x[0] - (4.0f*x[0]*x[0]*x[0])/5.0f + x[1]*x[1]/2.0f - 2.0f*x[1] + (8.0f / (2.0f + x[0]*x[0] + x[1]*x[1])) + (x[1]*x[1]*x[1])/2.0f - x[0];
 }
 
 //https://dl.acm.org/doi/pdf/10.1145/3449639.3459345?casa_token=Np-_TMqxeJEAAAAA:8u-d6UyINV6Ex02kG9LthsQHAXMh2oxx3M4FG8ioP0hGgstIW45X8b709XOuaif5D_DVOm_FwFo
@@ -1971,14 +1991,14 @@ int main() {
 //    const char* cstr = PyUnicode_AsUTF8(pStr);
 //    puts(cstr);
 //    exit(1);
-    Eigen::MatrixXf data = generateData(100, 6, exampleFunc);
+    Eigen::MatrixXf data = generateData(20, 3, Hemberg_5, -3.0f, 3.0f);
 //    std::cout << data << "\n\n";
     auto start_time = Clock::now();
 //    RandomSearch(data, 10, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
-//    MCTS(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true);
+    MCTS(data, 10, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
 //    PSO(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true);
-//    GP(data, 29, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
-    SimulatedAnnealing(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
+//    GP(data, 10, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
+//    SimulatedAnnealing(data, 10, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
     auto end_time = Clock::now();
     std::cout << "Time difference = "
           << std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count()/1e9 << " seconds" << '\n';
