@@ -32,6 +32,8 @@
 #include <unsupported/Eigen/NonLinearOptimization>
 #include <unsupported/Eigen/AutoDiff>
 
+constexpr bool TEST = true;
+
 using Clock = std::chrono::high_resolution_clock;
 
 Eigen::MatrixXf generateData(int numRows, int numCols, float (*func)(const Eigen::VectorXf&))
@@ -810,6 +812,15 @@ struct Board
                 {
                     stack.push(((expression_type == "postfix") ? (right_operand.array() * left_operand.array()) : (left_operand.array() * right_operand.array())));
                 }
+                else if (token == "/")
+                {
+                    stack.push(((expression_type == "postfix") ? (right_operand.array() / left_operand.array()) : (left_operand.array() / right_operand.array())));
+                }
+                else if (token == "^")
+                {
+                    stack.push(((expression_type == "postfix") ? left_operand.array().pow(right_operand.array()) : right_operand.array().pow(left_operand.array())));
+
+                }
             }
         }
         return std::move(stack.top());
@@ -1316,9 +1327,14 @@ float exampleFunc(const Eigen::VectorXf& x)
 //    return 5*cos(x[1]+x[3])+x[4];
 }
 
+float Hemberg_1(const Eigen::VectorXf& x)
+{
+    return 8.0 / (2 + x[0]*x[0] + x[1]*x[1]);
+}
+
 //https://dl.acm.org/doi/pdf/10.1145/3449639.3459345?casa_token=Np-_TMqxeJEAAAAA:8u-d6UyINV6Ex02kG9LthsQHAXMh2oxx3M4FG8ioP0hGgstIW45X8b709XOuaif5D_DVOm_FwFo
 //https://core.ac.uk/download/pdf/6651886.pdf
-void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true)
+void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/)
 {
     Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
     Board secondary(false, 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache); //For perturbations
@@ -1336,6 +1352,7 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
     constexpr float T_min = 0.012f;
     constexpr float ratio = T_min/T_max;
     float T = T_max;
+    auto start_time = Clock::now();
     
     auto P = [&](float delta)
     {
@@ -1425,7 +1442,7 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
         updateScore(pow(ratio, 1.0f/(i+1)));
     };
     
-    for (int i = 0; max_score < stop; i++)
+    for (int i = 0; (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9 < time/*max_score < stop*/); i++)
     {
         if (i && (i%50000 == 0))
         {
@@ -1446,7 +1463,7 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
 }
 
 //https://arxiv.org/abs/2310.06609
-void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true)
+void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/)
 {
     Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
     Board secondary_one(false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache), secondary_two(false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache); //For crossover and mutations
@@ -1464,6 +1481,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
     std::uniform_real_distribution<float> rand_mut_cross_dist(0.0f, 1.0f);
     size_t temp_sz;
     std::string expression, orig_expression, best_expression;
+    auto start_time = Clock::now();
     
     auto updateScore = [&]()
     {
@@ -1611,7 +1629,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         individuals.push_back(std::make_pair(x.pieces, score));
     };
     
-    for (int ngen = 0; max_score < stop; ngen++)
+    for (int ngen = 0; (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9 < time/*max_score < stop*/); ngen++)
     {
         if (ngen && (ngen%5 == 0))
         {
@@ -1645,7 +1663,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
     }
 }
 
-void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true)
+void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/)
 {
     Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
     
@@ -1655,6 +1673,7 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
     std::vector<float> temp_legal_moves;
     size_t temp_sz;
     std::string expression, orig_expression, best_expression;
+    auto start_time = Clock::now();
     
     auto trueMod = [](int N, int M)
     {
@@ -1685,7 +1704,7 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
      
      */
     
-    for (int iter = 0; (score < stop/* && Board::expression_dict.size() <= 2000000*/); iter++)
+    for (int iter = 0; (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9 < time/*score < stop && Board::expression_dict.size() <= 100000*/); iter++)
     {
         if (iter && (iter%50000 == 0))
         {
@@ -1769,7 +1788,7 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
 }
 
 //https://arxiv.org/abs/2205.13134
-void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true)
+void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/)
 {
     Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
     float score = 0.0f, max_score = 0.0f, check_point_score = 0.0f, UCT, best_act, UCT_best;
@@ -1784,6 +1803,7 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
     temp_legal_moves.reserve(x.reserve_amount);
     state.reserve(2*x.reserve_amount);
     double str_convert_time = 0.0;
+    auto start_time = Clock::now();
     
     auto getString  = [&]()
     {
@@ -1791,7 +1811,7 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
             state += std::to_string(x.pieces[x.pieces.size()-1]) + " ";
     };
     
-    for (int i = 0; (score < stop/* && Board::expression_dict.size() <= 2000000*/); i++)
+    for (int i = 0; (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9 < time/*score < stop && Board::expression_dict.size() <= 100000*/); i++)
     {
         if (i && (i%50000 == 0))
         {
@@ -1868,7 +1888,7 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
     }
 }
 
-void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true)
+void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/)
 {
     Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
     std::cout << Board::data["y"] << '\n';
@@ -1880,45 +1900,46 @@ void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expres
     std::vector<float> temp_legal_moves;
     size_t temp_sz;
     std::string expression, orig_expression, best_expression;
+    auto start_time = Clock::now();
     
-//    std::ofstream out(x.expression_type == "prefix" ? "PN_expressions.txt" : "RPN_expressions.txt");
-//    std::cout << "stop = " << stop << '\n';
-    for (int i = 0; (/*score < stop && */Board::expression_dict.size() <= 100000); i++)
+    for (int i = 0; (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9 < time/*score < stop && Board::expression_dict.size() <= 100000*/); i++)
     {
-//        std::cout << "iter " << i << '\n';
         while ((score = x.complete_status()) == -1)
         {
             temp_legal_moves = x.get_legal_moves(); //the legal moves
-//            std::cout << "temp_legal_moves.size() = " << temp_legal_moves.size() << '\n';
-//            printf("temp_legal_moves: ");
-//            for (float i : temp_legal_moves) { std::cout << Board::__tokens_dict[i] << ' '; }puts("");
             temp_sz = temp_legal_moves.size(); //the number of legal moves
-            std::uniform_int_distribution<int> distribution(0, temp_sz - 1);
- // A random integer generator which generates an index corresponding to an allowed move
+            std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
             x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
-
         }
 
-//        out << "Iteration " << i << ": Original expression = " << x.expression() << ", Infix Expression = " << expression << '\n';
         if (score > max_score)
         {
             expression = x._to_infix();
             orig_expression = x.expression();
             max_score = score;
-            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-            std::cout << "Best expression = " << expression << '\n';
-            std::cout << "Best expression (original format) = " << orig_expression << '\n';
-            std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+            if (::TEST)
+            {
+                
+            }
+            else
+            {
+                std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+                std::cout << "Best expression = " << expression << '\n';
+                std::cout << "Best expression (original format) = " << orig_expression << '\n';
+                std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+            }
             best_expression = std::move(expression);
         }
         x.pieces.clear();
     }
-//    out.close();
-    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
-    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-    std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-    std::cout << "Best expression = " << best_expression << '\n';
-    std::cout << "Best expression (original format) = " << orig_expression << '\n';
+    if (!::TEST)
+    {
+        std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+        std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
+        std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+        std::cout << "Best expression = " << best_expression << '\n';
+        std::cout << "Best expression (original format) = " << orig_expression << '\n';
+    }
 }
 
 //PyObject* convertVectorToPythonList(const std::vector<float>& inputVector)

@@ -5,7 +5,6 @@ from collections import deque
 from numpy.random import choice
 from time import time
 from matplotlib.animation import FuncAnimation
-from symreg import *
 import os
 
 class Node:
@@ -34,7 +33,9 @@ def is_unary_operator(token):
 
 def rpn_to_infix(rpn_expression):
     stack = []
-    for token in rpn_expression.split():
+    if isinstance(rpn_expression, str):
+        rpn_expression = rpn_expression.split()
+    for token in rpn_expression:
         if not is_operator(token): #other
             stack.append(token)
         elif is_unary_operator(token): #unary operator
@@ -51,7 +52,9 @@ def rpn_to_infix(rpn_expression):
 
 def pn_to_infix(pn_expression):
     stack = []
-    for token in pn_expression.split()[::-1]:
+    if isinstance(pn_expression, str):
+        pn_expression = pn_expression.split()
+    for token in pn_expression[::-1]:
         if not is_operator(token): #other
             stack.append(token)
         elif is_unary_operator(token): #unary operator
@@ -177,7 +180,7 @@ def plot_pn_expression_tree(expression: list[str], block = False, save = False):
         plt.show(block = block)
         plt.pause(0.01)
 
-def plot_rpn_expression_tree(expression: list[str], block = False, save = False):
+def plot_rpn_expression_tree(expression: list[str], block = False, save = False, filename = "", title = ""):
     global called, implot
 
     def build_tree(expression_tokens):
@@ -220,15 +223,17 @@ def plot_rpn_expression_tree(expression: list[str], block = False, save = False)
             elif isinstance(node, UnaryNode):
                 plot_tree(node.child, graph, node)
 
+    if isinstance(expression, str):
+        expression = expression.split()
     expression_tree = build_tree(expression)
 
     graph = pydot.Dot(graph_type='graph')
     plot_tree(expression_tree, graph)
     
     if save:
-        graph.set('label', f"{' '.join(expression)}, depth = {getRPNdepth(expression)[0]}")
+        graph.set('label', title)
         graph.set('labelloc', 't')  # Set label location to "top"
-        graph.write_svg('expression_tree_RPN_Hemberg2008_expr_5.svg')
+        graph.write_svg(filename)
     else:
         graph.write_png('expression_tree.png')
         if called == False or block == True:
@@ -244,16 +249,46 @@ def plot_rpn_expression_tree(expression: list[str], block = False, save = False)
 # Example usage:
 def test_visualize():
 #    # Example usage:
-    save = False
+    save = True
     
     if save:
-        plot_pn_expression_tree("- + + - + - + / * 30 ^ x 2 * - 10 x y ^ x 4 * / 4 5 ^ x 3 / ^ y 2 2 * 2 y / 8 + + 2 ^ x 2 ^ y 2 / ^ y 3 2 x", block=False, save = save)
-        os.system("rsvg-convert -f pdf -o expression_tree_PN_Hemberg2008_expr_5.pdf expression_tree_PN_Hemberg2008_expr_5.svg")
-        plot_rpn_expression_tree("30 x 2 ^ * 10 x - y * / x 4 ^ + 4 5 / x 3 ^ * - y 2 ^ 2 / + 2 y * - 8 2 x 2 ^ + y 2 ^ + / + y 3 ^ 2 / + x -", block=False, save = save)
-        os.system("rsvg-convert -f pdf -o expression_tree_RPN_Hemberg2008_expr_5.pdf expression_tree_RPN_Hemberg2008_expr_5.svg")
+#        plot_pn_expression_tree("- + + - + - + / * 30 ^ x 2 * - 10 x y ^ x 4 * / 4 5 ^ x 3 / ^ y 2 2 * 2 y / 8 + + 2 ^ x 2 ^ y 2 / ^ y 3 2 x", block=False, save = save)
+#        os.system("rsvg-convert -f pdf -o expression_tree_PN_Hemberg2008_expr_5.pdf expression_tree_PN_Hemberg2008_expr_5.svg")
+        
+        plot_rpn_expression_tree("8 2 x 2 ^ + y 2 ^ + /", block=False, save = save, filename = "Hemberg2008Expressions/expression_tree_Hemberg2008_expr_1.svg", title = r"(8 / ((2 + (x ^ 2)) + (y ^ 2)))")
+        os.system("rsvg-convert -f pdf -o Hemberg2008Expressions/expression_tree_Hemberg2008_expr_1.pdf Hemberg2008Expressions/expression_tree_Hemberg2008_expr_1.svg")
+        plot_rpn_expression_tree("x 3 ^ x 1 + * y y 2 / 1 - * +", block=False, save = save, filename = "Hemberg2008Expressions/expression_tree_Hemberg2008_expr_2.svg", title = r"(((x ^ 3) * (x + 1)) + (y * ((y / 2) - 1)))")
+        os.system("rsvg-convert -f pdf -o Hemberg2008Expressions/expression_tree_Hemberg2008_expr_2.pdf Hemberg2008Expressions/expression_tree_Hemberg2008_expr_2.svg")
+        plot_rpn_expression_tree("x 3 ^ 5 / y 3 ^ 2 / + y - x -", block=False, save = save, filename = "Hemberg2008Expressions/expression_tree_Hemberg2008_expr_3.svg", title = r"(((((x ^ 3) / 5) + ((y ^ 3) / 2)) - y) - x)")
+        os.system("rsvg-convert -f pdf -o Hemberg2008Expressions/expression_tree_Hemberg2008_expr_3.pdf Hemberg2008Expressions/expression_tree_Hemberg2008_expr_3.svg")
+        plot_rpn_expression_tree("30 x 2 ^ * 10 x - y * / x 4 ^ + x 3 ^ - y 2 ^ 2 / + y - 8 2 x 2 ^ + y 2 ^ + / + x +", block=False, save = save, filename = "Hemberg2008Expressions/expression_tree_Hemberg2008_expr_4.svg", title = r"((((((((30 * (x ^ 2)) / ((10 - x) * y)) + (x ^ 4)) - (x ^ 3)) + ((y ^ 2) / 2)) - y) + (8 / ((2 + (x ^ 2)) + (y ^ 2)))) + x)")
+        os.system("rsvg-convert -f pdf -o Hemberg2008Expressions/expression_tree_Hemberg2008_expr_4.pdf Hemberg2008Expressions/expression_tree_Hemberg2008_expr_4.svg")
+        plot_rpn_expression_tree("30 x 2 ^ * 10 x - y * / x 4 ^ + 4 5 / x 3 ^ * - y 2 ^ 2 / + 2 y * - 8 2 x 2 ^ + y 2 ^ + / + y 3 ^ 2 / + x -", block=False, save = save, filename = "Hemberg2008Expressions/expression_tree_Hemberg2008_expr_5.svg", title = r"(((((((((30 * (x ^ 2)) / ((10 - x) * y)) + (x ^ 4)) - ((4 / 5) * (x ^ 3))) + ((y ^ 2) / 2)) - (2 * y)) + (8 / ((2 + (x ^ 2)) + (y ^ 2)))) + ((y ^ 3) / 2)) - x)")
+        os.system("rsvg-convert -f pdf -o Hemberg2008Expressions/expression_tree_Hemberg2008_expr_5.pdf Hemberg2008Expressions/expression_tree_Hemberg2008_expr_5.svg")
+        
+        rpn_1 = rpn_to_infix(r_1:="8 2 x 2 ^ + y 2 ^ + /")
+        rpn_2 = rpn_to_infix(r_2:="x 3 ^ x 1 + * y y 2 / 1 - * +")
+        rpn_3 = rpn_to_infix(r_3:="x 3 ^ 5 / y 3 ^ 2 / + y - x -")
+        rpn_4 = rpn_to_infix(r_4:="30 x 2 ^ * 10 x - y * / x 4 ^ + x 3 ^ - y 2 ^ 2 / + y - 8 2 x 2 ^ + y 2 ^ + / + x +")
+        rpn_5 = rpn_to_infix(r_5:="30 x 2 ^ * 10 x - y * / x 4 ^ + 4 5 / x 3 ^ * - y 2 ^ 2 / + 2 y * - 8 2 x 2 ^ + y 2 ^ + / + y 3 ^ 2 / + x -")
+        
+        pn_1 = pn_to_infix(p_1:="/ 8 + + 2 ^ x 2 ^ y 2")
+        pn_2 = pn_to_infix(p_2:="+ * ^ x 3 + x 1 * y - / y 2 1")
+        pn_3 = pn_to_infix(p_3:=" - - + / ^ x 3 5 / ^ y 3 2 y x")
+        pn_4 = pn_to_infix(p_4:="+ + - + - + / * 30 ^ x 2 * - 10 x y ^ x 4 ^ x 3 / ^ y 2 2 y / 8 + + 2 ^ x 2 ^ y 2 x")
+        pn_5 = pn_to_infix(p_5:="- + + - + - + / * 30 ^ x 2 * - 10 x y ^ x 4 * / 4 5 ^ x 3 / ^ y 2 2 * 2 y / 8 + + 2 ^ x 2 ^ y 2 / ^ y 3 2 x")
+        
+        print(rpn_1==pn_1, rpn_2==pn_2, rpn_3==pn_3, rpn_4==pn_4, rpn_5==pn_5, sep='\n')
+        
+        
+        print(rpn_1, rpn_2, rpn_3, rpn_4, rpn_5, '\n', sep='\n')
+        print(r_1, r_2, r_3, r_4, r_5, '\n', p_1, p_2, p_3, p_4, p_5, sep='\n')
+        
+        
+        
 
     else:
-        print(pn_to_infix("+ sin sin x1 x"))
+        print(pn_to_infix(" - - + / ^ x 3 5 / ^ y 3 2 y x".split()))
 #        print(rpn_to_infix("y y x * * cos y +"))
         while True:
             try:
