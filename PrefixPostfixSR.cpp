@@ -32,9 +32,15 @@
 #include <unsupported/Eigen/NonLinearOptimization>
 #include <unsupported/Eigen/AutoDiff>
 
-constexpr bool TEST = true;
+constexpr bool TEST = false;
 
 using Clock = std::chrono::high_resolution_clock;
+
+//Returns the number of seconds since `start_time`
+double timeElapsedSince(auto start_time)
+{
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9;
+}
 
 Eigen::MatrixXf generateData(int numRows, int numCols, float (*func)(const Eigen::VectorXf&), float min = -3.0f, float max = 3.0f)
 {
@@ -938,7 +944,7 @@ struct Board
         {
             i.get();
         }
-        Board::fit_time += (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9);
+        Board::fit_time += (timeElapsedSince(start_time));
     }
     
     void PSO()
@@ -988,7 +994,7 @@ struct Board
             }
         }
         
-        Board::fit_time += (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9);
+        Board::fit_time += (timeElapsedSince(start_time));
     }
     
     Eigen::AutoDiffScalar<Eigen::VectorXf> grad_func(std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& inputs)
@@ -1065,7 +1071,7 @@ struct Board
 //            printf("mse = %f -> fx = %f\n", mse, fx);
             *params = eigenVec;
         }
-        Board::fit_time += (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9);
+        Board::fit_time += (timeElapsedSince(start_time));
     }
     
     void LBFGSB()
@@ -1093,7 +1099,7 @@ struct Board
 //            printf("mse = %f -> fx = %f\n", mse, fx);
             *params = eigenVec;
         }
-        Board::fit_time += (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9);
+        Board::fit_time += (timeElapsedSince(start_time));
     }
     
     int values()
@@ -1147,7 +1153,7 @@ struct Board
         }
         
 //        std::cout << "Iterations = " << lm.nfev << '\n';
-        Board::fit_time += (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9);
+        Board::fit_time += (timeElapsedSince(start_time));
     }
     
     float fitFunctionToData()
@@ -1462,7 +1468,7 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
         updateScore(pow(ratio, 1.0f/(i+1)));
     };
     
-    for (int i = 0; (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9 < time/*max_score < stop*/); i++)
+    for (int i = 0; (timeElapsedSince(start_time) < time/*max_score < stop*/); i++)
     {
         if (i && (i%50000 == 0))
         {
@@ -1649,7 +1655,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         individuals.push_back(std::make_pair(x.pieces, score));
     };
     
-    for (int ngen = 0; (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9 < time/*max_score < stop*/); ngen++)
+    for (int ngen = 0; (timeElapsedSince(start_time) < time/*max_score < stop*/); ngen++)
     {
         if (ngen && (ngen%5 == 0))
         {
@@ -1724,7 +1730,7 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
      
      */
     
-    for (int iter = 0; (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9 < time/*score < stop && Board::expression_dict.size() <= 100000*/); iter++)
+    for (int iter = 0; (timeElapsedSince(start_time) < time/*score < stop && Board::expression_dict.size() <= 100000*/); iter++)
     {
         if (iter && (iter%50000 == 0))
         {
@@ -1831,7 +1837,7 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
             state += std::to_string(x.pieces[x.pieces.size()-1]) + " ";
     };
     
-    for (int i = 0; (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9 < time/*score < stop && Board::expression_dict.size() <= 100000*/); i++)
+    for (int i = 0; (timeElapsedSince(start_time) < time/*score < stop && Board::expression_dict.size() <= 100000*/); i++)
     {
         if (i && (i%50000 == 0))
         {
@@ -1858,7 +1864,7 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
             temp_legal_moves = x.get_legal_moves();
             auto start_time = Clock::now();
             getString();
-            str_convert_time += std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9;
+            str_convert_time += timeElapsedSince(start_time);
             UCT = 0.0f;
             UCT_best = -FLT_MAX;
             best_act = -1.0f;
@@ -1908,7 +1914,7 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
     }
 }
 
-void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/)
+void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120.0 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "")
 {
     Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
     std::cout << Board::data["y"] << '\n';
@@ -1921,8 +1927,9 @@ void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expres
     size_t temp_sz;
     std::string expression, orig_expression, best_expression;
     auto start_time = Clock::now();
+    double timeElapsed;
     
-    for (int i = 0; (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9 < time/*score < stop && Board::expression_dict.size() <= 100000*/); i++)
+    for (int i = 0; ((timeElapsed=timeElapsedSince(start_time)) < time/*score < stop && Board::expression_dict.size() <= 100000*/); i++)
     {
         while ((score = x.complete_status()) == -1)
         {
@@ -1951,6 +1958,7 @@ void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expres
             best_expression = std::move(expression);
         }
         x.pieces.clear();
+        
     }
     if (!::TEST)
     {
@@ -1975,6 +1983,108 @@ void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expres
 //    return pyList;
 //}
 
+void HembergBenchmarks(int numIntervals, double time)
+{
+    std::array<std::string, 50> filenames;
+    constexpr std::array<const char*, 10> algorithms = {"PreRandomSearch", "PostRandomSearch", "PreMCTS", "PostMCTS", "PreParticleSwarm", "PostParticleSwarm", "PreGP", "PostGP", "PreSimulatedAnnealing", "PostPreSimulatedAnnealing"};
+    for (int i = 1; i <= 5; i++)
+    {
+        for (int j = 0; j < 10; j++)
+        {
+            filenames[(i-1)*10+j] = "Hemberg_" + std::to_string(i) + algorithms[j] + ".txt";
+            std::cout << filenames[(i-1)*10+j] << '\n';
+        }
+    }
+    
+    /*
+     Hemberg_1PreRandomSearch.txt
+     Hemberg_1PostRandomSearch.txt
+     Hemberg_1PreMCTS.txt
+     Hemberg_1PostMCTS.txt
+     Hemberg_1PreParticleSwarm.txt
+     Hemberg_1PostParticleSwarm.txt
+     Hemberg_1PreGP.txt
+     Hemberg_1PostGP.txt
+     Hemberg_1PreSimulatedAnnealing.txt
+     Hemberg_1PostPreSimulatedAnnealing.txt
+     Hemberg_2PreRandomSearch.txt
+     Hemberg_2PostRandomSearch.txt
+     Hemberg_2PreMCTS.txt
+     Hemberg_2PostMCTS.txt
+     Hemberg_2PreParticleSwarm.txt
+     Hemberg_2PostParticleSwarm.txt
+     Hemberg_2PreGP.txt
+     Hemberg_2PostGP.txt
+     Hemberg_2PreSimulatedAnnealing.txt
+     Hemberg_2PostPreSimulatedAnnealing.txt
+     Hemberg_3PreRandomSearch.txt
+     Hemberg_3PostRandomSearch.txt
+     Hemberg_3PreMCTS.txt
+     Hemberg_3PostMCTS.txt
+     Hemberg_3PreParticleSwarm.txt
+     Hemberg_3PostParticleSwarm.txt
+     Hemberg_3PreGP.txt
+     Hemberg_3PostGP.txt
+     Hemberg_3PreSimulatedAnnealing.txt
+     Hemberg_3PostPreSimulatedAnnealing.txt
+     Hemberg_4PreRandomSearch.txt
+     Hemberg_4PostRandomSearch.txt
+     Hemberg_4PreMCTS.txt
+     Hemberg_4PostMCTS.txt
+     Hemberg_4PreParticleSwarm.txt
+     Hemberg_4PostParticleSwarm.txt
+     Hemberg_4PreGP.txt
+     Hemberg_4PostGP.txt
+     Hemberg_4PreSimulatedAnnealing.txt
+     Hemberg_4PostPreSimulatedAnnealing.txt
+     Hemberg_5PreRandomSearch.txt
+     Hemberg_5PostRandomSearch.txt
+     Hemberg_5PreMCTS.txt
+     Hemberg_5PostMCTS.txt
+     Hemberg_5PreParticleSwarm.txt
+     Hemberg_5PostParticleSwarm.txt
+     Hemberg_5PreGP.txt
+     Hemberg_5PostGP.txt
+     Hemberg_5PreSimulatedAnnealing.txt
+     Hemberg_5PostPreSimulatedAnnealing.txt
+     */
+    
+    //Scores
+    std::unordered_map<int, std::vector<float>>
+    prefix_random_search_hemberg1, postfix_random_search_hemberg1,
+    prefix_random_search_hemberg2, postfix_random_search_hemberg2,
+    prefix_random_search_hemberg3, postfix_random_search_hemberg3,
+    prefix_random_search_hemberg4, postfix_random_search_hemberg4,
+    prefix_random_search_hemberg5, postfix_random_search_hemberg5,
+    
+    prefix_mcts_hemberg1, postfix_mcts_hemberg1,
+    prefix_mcts_hemberg2, postfix_mcts_hemberg2,
+    prefix_mcts_hemberg3, postfix_mcts_hemberg3,
+    prefix_mcts_hemberg4, postfix_mcts_hemberg4,
+    prefix_mcts_hemberg5, postfix_mcts_hemberg5,
+    
+    prefix_pso_hemberg1, postfix_pso_hemberg1,
+    prefix_pso_hemberg2, postfix_pso_hemberg2,
+    prefix_pso_hemberg3, postfix_pso_hemberg3,
+    prefix_pso_hemberg4, postfix_pso_hemberg4,
+    prefix_pso_hemberg5, postfix_pso_hemberg5,
+    
+    prefix_gp_hemberg1, postfix_gp_hemberg1,
+    prefix_gp_hemberg2, postfix_gp_hemberg2,
+    prefix_gp_hemberg3, postfix_gp_hemberg3,
+    prefix_gp_hemberg4, postfix_gp_hemberg4,
+    prefix_gp_hemberg5, postfix_gp_hemberg5,
+    
+    prefix_simulated_annealing_hemberg1, postfix_simulated_annealing_hemberg1,
+    prefix_simulated_annealing_hemberg2, postfix_simulated_annealing_hemberg2,
+    prefix_simulated_annealing_hemberg3, postfix_simulated_annealing_hemberg3,
+    prefix_simulated_annealing_hemberg4, postfix_simulated_annealing_hemberg4,
+    prefix_simulated_annealing_hemberg5, postfix_simulated_annealing_hemberg5;
+    
+    RandomSearch(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 120.0, 20, "file.txt");
+
+}
+
 int main() {
     
     //This comment block is testing the Python-C API
@@ -1995,10 +2105,11 @@ int main() {
 //    std::cout << data << "\n\n";
     auto start_time = Clock::now();
 //    RandomSearch(data, 10, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
-    MCTS(data, 10, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
+//    RandomSearch(data, 10, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
 //    PSO(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true);
 //    GP(data, 10, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
 //    SimulatedAnnealing(data, 10, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
+    HembergBenchmarks(20, 120.0);
     auto end_time = Clock::now();
     std::cout << "Time difference = "
           << std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count()/1e9 << " seconds" << '\n';

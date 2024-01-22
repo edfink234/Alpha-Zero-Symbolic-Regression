@@ -249,7 +249,7 @@ def plot_rpn_expression_tree(expression: list[str], block = False, save = False,
 # Example usage:
 def test_visualize():
 #    # Example usage:
-    save = True
+    save = False
     
     if save:
 #        plot_pn_expression_tree("- + + - + - + / * 30 ^ x 2 * - 10 x y ^ x 4 * / 4 5 ^ x 3 / ^ y 2 2 * 2 y / 8 + + 2 ^ x 2 ^ y 2 / ^ y 3 2 x", block=False, save = save)
@@ -293,7 +293,9 @@ def test_visualize():
         while True:
             try:
 #                plot_pn_expression_tree("+ cos cos x0 * 1.031240 + 0.008202 * 1.919085 - cos x3 - cos x0 cos cos * x0 + x3 x3".split(), block=False, save = save)
-                plot_rpn_expression_tree("x3 cos 0.427738 * 4.779139 x1 - 0.390789 x0 0.637794 x2 * - + 0.598703 x2 cos 1.463665 cos x2 + 1.063828 x3 + x0 0.031570 x0 + 1.493230 - * * + - * * + *".split(), block=False, save = save)
+#                plot_rpn_expression_tree("x3 cos 0.427738 * 4.779139 x1 - 0.390789 x0 0.637794 x2 * - + 0.598703 x2 cos 1.463665 cos x2 + 1.063828 x3 + x0 0.031570 x0 + 1.493230 - * * + - * * + *".split(), block=False, save = save)
+                plot_rpn_expression_tree("x0 x1 / x1 / x0 * 3.135411 * x0 + x0 + x0 + x0 + x0 + x0 +".split(), block=False, save = save)
+
 
             except KeyboardInterrupt:
                 plt.close()
