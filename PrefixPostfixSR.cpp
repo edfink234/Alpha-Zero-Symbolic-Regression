@@ -8,6 +8,7 @@
 #include <future>         // std::async, std::future
 #include <unordered_set>
 #include <unordered_map>
+#include <map>
 #include <float.h>
 #include <ctime>
 #include <cstdlib>
@@ -31,8 +32,6 @@
 #include <unsupported/Eigen/CXX11/Tensor>
 #include <unsupported/Eigen/NonLinearOptimization>
 #include <unsupported/Eigen/AutoDiff>
-
-constexpr bool TEST = false;
 
 using Clock = std::chrono::high_resolution_clock;
 
@@ -69,6 +68,11 @@ Eigen::MatrixXf generateData(int numRows, int numCols, float (*func)(const Eigen
 
     return matrix;
 }
+
+int trueMod(int N, int M)
+{
+    return ((N % M) + M) % M;
+};
 
 class Data
 {
@@ -208,7 +212,7 @@ struct Board
         {
             Board::data = theData;
             Board::__num_features = data[0].size() - 1;
-            
+            Board::__input_vars.clear();
             Board::__input_vars.reserve(Board::__num_features);
             for (auto i = 0; i < Board::__num_features; i++)
             {
@@ -216,6 +220,7 @@ struct Board
             }
 //            Board::__unary_operators = {"cos"};
             Board::__binary_operators = {"+", "-", "*", "/", "^"};
+            Board::__operators.clear();
             for (std::string& i: Board::__unary_operators)
             {
                 Board::__operators.push_back(i);
@@ -236,30 +241,36 @@ struct Board
                 Board::__tokens.push_back(i);
             }
             Board::action_size = Board::__tokens.size();
+            Board::__tokens_float.clear();
             Board::__tokens_float.reserve(Board::action_size);
             for (int i = 1; i <= Board::action_size; ++i)
             {
                 Board::__tokens_float.push_back(i);
             }
             int num_operators = Board::__operators.size();
+            Board::__operators_float.clear();
             for (int i = 1; i <= num_operators; i++)
             {
                 Board::__operators_float.push_back(i);
             }
             int num_unary_operators = Board::__unary_operators.size();
+            Board::__unary_operators_float.clear();
             for (int i = 1; i <= num_unary_operators; i++)
             {
                 Board::__unary_operators_float.push_back(i);
             }
+            Board::__binary_operators_float.clear();
             for (int i = num_unary_operators + 1; i <= num_operators; i++)
             {
                 Board::__binary_operators_float.push_back(i);
             }
             int ops_plus_features = num_operators + Board::__num_features;
+            Board::__input_vars_float.clear();
             for (int i = num_operators + 1; i <= ops_plus_features; i++)
             {
                 Board::__input_vars_float.push_back(i);
             }
+            Board::__other_tokens_float.clear();
             for (int i = ops_plus_features + 1; i <= Board::action_size; i++)
             {
                 Board::__other_tokens_float.push_back(i);
@@ -1689,23 +1700,20 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
     }
 }
 
-void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/)
+void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/)
 {
-    Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
-    
     std::random_device rand_dev;
     std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
+    std::unordered_map<int, std::vector<double>> scores; //unordered_map to store the scores
+    
+//    for (int run = 1; run <= num_runs; run++)
+    Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
     float score = 0, max_score = 0, check_point_score = 0;
     std::vector<float> temp_legal_moves;
     size_t temp_sz;
     std::string expression, orig_expression, best_expression;
+    double timeElapsed;
     auto start_time = Clock::now();
-    
-    auto trueMod = [](int N, int M)
-    {
-        return ((N % M) + M) % M;
-    };
-    
     /*
      For this setup, we don't know a-priori the number of particles, so we generate them and their corresponding velocities as needed
      */
@@ -1730,27 +1738,28 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
      
      */
     
-    for (int iter = 0; (timeElapsedSince(start_time) < time/*score < stop && Board::expression_dict.size() <= 100000*/); iter++)
+    for (int iter = 0; ((timeElapsed=timeElapsedSince(start_time)) < time/*score < stop && Board::expression_dict.size() <= 100000*/); iter++)
     {
+        std::cout << timeElapsed << '\n';
         if (iter && (iter%50000 == 0))
         {
-            std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
-            std::cout << "check_point_score = " << check_point_score
-            << ", max_score = " << max_score << ", c = " << c << '\n';
+//            std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+//            std::cout << "check_point_score = " << check_point_score
+//            << ", max_score = " << max_score << ", c = " << c << '\n';
             if (check_point_score == max_score)
             {
                 c_count++;
                 std::uniform_real_distribution<float> temp(-c_count, c_count);
-                std::cout << "c: " << c << " -> ";
+//                std::cout << "c: " << c << " -> ";
                 c = temp(generator);
-                std::cout << c << '\n';
+//                std::cout << c << '\n';
             }
             else
             {
-                std::cout << "c: " << c << " -> ";
+//                std::cout << "c: " << c << " -> ";
                 c = 0.0f; //if new best found, reset c and try to exploit the new best
                 c_count = 0;
-                std::cout << c << '\n';
+//                std::cout << c << '\n';
             }
             check_point_score = max_score;
         }
@@ -1814,160 +1823,207 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
 }
 
 //https://arxiv.org/abs/2205.13134
-void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/)
+void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/)
 {
-    Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
-    float score = 0.0f, max_score = 0.0f, check_point_score = 0.0f, UCT, best_act, UCT_best;
-    std::vector<float> temp_legal_moves;
-    std::unordered_map<std::string, std::unordered_map<float, float>> Qsa, Nsa;
-    std::string state;
-    std::string expression, orig_expression, best_expression;
-    std::unordered_map<std::string, float> Ns;
-    float c = 1.4f; //"controls the balance between exploration and exploitation", see equation 2 here: https://web.engr.oregonstate.edu/~afern/classes/cs533/notes/uct.pdf, top of page 8 here: https://arxiv.org/pdf/1402.6028.pdf, first formula in section 4. Experiments here: https://cesa-bianchi.di.unimi.it/Pubblicazioni/ml-02.pdf
-    std::vector<std::pair<std::string, float>> moveTracker;
-    moveTracker.reserve(x.reserve_amount);
-    temp_legal_moves.reserve(x.reserve_amount);
-    state.reserve(2*x.reserve_amount);
-    double str_convert_time = 0.0;
-    auto start_time = Clock::now();
+    std::map<int, std::vector<double>> scores; //unordered_map to store the scores
+    size_t measure_period = static_cast<size_t>(time/interval);
     
-    auto getString  = [&]()
+    for (int run = 1; run <= num_runs; run++)
     {
-        if (!x.pieces.empty())
-            state += std::to_string(x.pieces[x.pieces.size()-1]) + " ";
-    };
-    
-    for (int i = 0; (timeElapsedSince(start_time) < time/*score < stop && Board::expression_dict.size() <= 100000*/); i++)
-    {
-        if (i && (i%50000 == 0))
+        Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
+        float score = 0.0f, max_score = 0.0f, check_point_score = 0.0f, UCT, best_act, UCT_best;
+        std::vector<float> temp_legal_moves;
+        std::vector<std::pair<int, double>> temp_scores;
+        std::unordered_map<std::string, std::unordered_map<float, float>> Qsa, Nsa;
+        std::string state;
+        std::string expression, orig_expression, best_expression;
+        std::unordered_map<std::string, float> Ns;
+        float c = 1.4f; //"controls the balance between exploration and exploitation", see equation 2 here: https://web.engr.oregonstate.edu/~afern/classes/cs533/notes/uct.pdf, top of page 8 here: https://arxiv.org/pdf/1402.6028.pdf, first formula in section 4. Experiments here: https://cesa-bianchi.di.unimi.it/Pubblicazioni/ml-02.pdf
+        std::vector<std::pair<std::string, float>> moveTracker;
+        moveTracker.reserve(x.reserve_amount);
+        temp_legal_moves.reserve(x.reserve_amount);
+        state.reserve(2*x.reserve_amount);
+        double str_convert_time = 0.0;
+        size_t idx;
+        double timeElapsed;
+        auto getString  = [&]()
         {
-            std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
-            std::cout << "check_point_score = " << check_point_score
-            << ", max_score = " << max_score << ", c = " << c << '\n';
-            if (check_point_score == max_score)
+            if (!x.pieces.empty())
             {
-                std::cout << "c: " << c << " -> ";
-                c += 1.4;
-                std::cout << c << '\n';
+                state += std::to_string(x.pieces[x.pieces.size()-1]) + " ";
             }
-            else
-            {
-                std::cout << "c: " << c << " -> ";
-                c = 1.4; //if new best found, reset c and try to exploit the new best
-                std::cout << c << '\n';
-            }
-            check_point_score = max_score;
-        }
-        state.clear();
-        while ((score = x.complete_status()) == -1)
+        };
+        auto start_time = Clock::now();
+        
+        for (int i = 0; ((timeElapsed=timeElapsedSince(start_time)) < time/*score < stop && Board::expression_dict.size() <= 100000*/); i++)
         {
-            temp_legal_moves = x.get_legal_moves();
-            auto start_time = Clock::now();
-            getString();
-            str_convert_time += timeElapsedSince(start_time);
-            UCT = 0.0f;
-            UCT_best = -FLT_MAX;
-            best_act = -1.0f;
-            
-            for (auto& a : temp_legal_moves)
+            if (i && (i%50000 == 0))
             {
-                if (Nsa[state].count(a))
+//                std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+//                std::cout << "check_point_score = " << check_point_score
+//                << ", max_score = " << max_score << ", c = " << c << '\n';
+                if (check_point_score == max_score)
                 {
-                    UCT = Qsa[state][a] + c*sqrt(log(Ns[state])/Nsa[state][a]);
+//                    std::cout << "c: " << c << " -> ";
+                    c += 1.4;
+//                    std::cout << c << '\n';
                 }
                 else
                 {
-                    UCT = FLT_MAX; //highest -> explore it
+//                    std::cout << "c: " << c << " -> ";
+                    c = 1.4; //if new best found, reset c and try to exploit the new best
+//                    std::cout << c << '\n';
                 }
-                if (UCT > UCT_best)
+                check_point_score = max_score;
+            }
+            state.clear();
+            while ((score = x.complete_status()) == -1)
+            {
+                temp_legal_moves = x.get_legal_moves();
+                auto start_time = Clock::now();
+                getString();
+                str_convert_time += timeElapsedSince(start_time);
+                UCT = 0.0f;
+                UCT_best = -FLT_MAX;
+                best_act = -1.0f;
+                
+                for (auto& a : temp_legal_moves)
                 {
-                    best_act = a;
-                    UCT_best = UCT;
+                    if (Nsa[state].count(a))
+                    {
+                        UCT = Qsa[state][a] + c*sqrt(log(Ns[state])/Nsa[state][a]);
+                    }
+                    else
+                    {
+                        UCT = FLT_MAX; //highest -> explore it
+                    }
+                    if (UCT > UCT_best)
+                    {
+                        best_act = a;
+                        UCT_best = UCT;
+                    }
                 }
+                
+                x.pieces.push_back(best_act);
+                moveTracker.push_back(make_pair(state, best_act));
+                Ns[state]++;
+                Nsa[state][best_act]++;
+            }
+            //backprop reward `score`
+            for (auto& state_action: moveTracker)
+            {
+                Qsa[state_action.first][state_action.second] = std::max(Qsa[state_action.first][state_action.second], score);
             }
             
-            x.pieces.push_back(best_act);
-            moveTracker.push_back(make_pair(state, best_act));
-            Ns[state]++;
-            Nsa[state][best_act]++;
+            if (score > max_score)
+            {
+                max_score = score;
+//                expression = x._to_infix();
+//                orig_expression = x.expression();
+//                std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+//                std::cout << "Best expression = " << expression << '\n';
+//                std::cout << "Best expression (original format) = " << orig_expression << '\n';
+//                std::cout << "str_convert_time (s) = " << str_convert_time << '\n';
+//                std::cout << "Board::fit_time (s) = " << Board::fit_time << '\n';
+//                best_expression = std::move(expression);
+            }
+            x.pieces.clear();
+            moveTracker.clear();
+            if (((idx = static_cast<size_t>(timeElapsed)) % measure_period) == 0 && idx / measure_period > temp_scores.size())
+            {
+                temp_scores.push_back(std::make_pair(idx, max_score));
+            }
         }
-        //backprop reward `score`
-        for (auto& state_action: moveTracker)
+        idx = static_cast<size_t>(timeElapsed);
+        temp_scores.push_back(std::make_pair(idx, max_score));
+        for (auto& i: temp_scores)
         {
-            Qsa[state_action.first][state_action.second] = std::max(Qsa[state_action.first][state_action.second], score);
+            scores[i.first].push_back(i.second);
         }
-        
-        if (score > max_score)
-        {
-            expression = x._to_infix();
-            orig_expression = x.expression();
-            max_score = score;
-            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-            std::cout << "Best expression = " << expression << '\n';
-            std::cout << "Best expression (original format) = " << orig_expression << '\n';
-            std::cout << "str_convert_time (s) = " << str_convert_time << '\n';
-            std::cout << "Board::fit_time (s) = " << Board::fit_time << '\n';
-            best_expression = std::move(expression);
-        }
-        x.pieces.clear();
-        moveTracker.clear();
     }
+    std::ofstream out(filename);
+    for (auto& i: scores)
+    {
+        out << i.first << ',';
+        for (auto& j: i.second)
+        {
+            out << j << ((&j == &i.second.back()) ? '\n' : ',');
+        }
+    }
+    out.close();
 }
 
-void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120.0 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "")
+void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120.0 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/)
 {
-    Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
-    std::cout << Board::data["y"] << '\n';
-    std::cout << x.fit_method << '\n';
-    std::cout << Board::data << '\n';
     std::random_device rand_dev;
     std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-    float score = 0, max_score = 0;
-    std::vector<float> temp_legal_moves;
-    size_t temp_sz;
-    std::string expression, orig_expression, best_expression;
-    auto start_time = Clock::now();
-    double timeElapsed;
+    std::map<int, std::vector<double>> scores; //unordered_map to store the scores
+    size_t measure_period = static_cast<size_t>(time/interval);
     
-    for (int i = 0; ((timeElapsed=timeElapsedSince(start_time)) < time/*score < stop && Board::expression_dict.size() <= 100000*/); i++)
+    //    std::cout << Board::data["y"] << '\n';
+    //    std::cout << x.fit_method << '\n';
+    //    std::cout << Board::data << '\n';
+    
+    for (int run = 1; run <= num_runs; run++)
     {
-        while ((score = x.complete_status()) == -1)
-        {
-            temp_legal_moves = x.get_legal_moves(); //the legal moves
-            temp_sz = temp_legal_moves.size(); //the number of legal moves
-            std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
-            x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
-        }
-
-        if (score > max_score)
-        {
-            expression = x._to_infix();
-            orig_expression = x.expression();
-            max_score = score;
-            if (::TEST)
-            {
-                
-            }
-            else
-            {
-                std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-                std::cout << "Best expression = " << expression << '\n';
-                std::cout << "Best expression (original format) = " << orig_expression << '\n';
-                std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
-            }
-            best_expression = std::move(expression);
-        }
-        x.pieces.clear();
+        Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
+        float score = 0, max_score = 0;
+        std::vector<float> temp_legal_moves;
+        std::vector<std::pair<int, double>> temp_scores;
         
+        size_t temp_sz, idx;
+    //    std::string expression, orig_expression, best_expression;
+        double timeElapsed;
+        auto start_time = Clock::now();
+
+        for (int i = 0; ((timeElapsed=timeElapsedSince(start_time)) < time/*score < stop && Board::expression_dict.size() <= 100000*/); i++)
+        {
+            while ((score = x.complete_status()) == -1)
+            {
+                temp_legal_moves = x.get_legal_moves(); //the legal moves
+                temp_sz = temp_legal_moves.size(); //the number of legal moves
+                std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
+                x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
+            }
+            if (score > max_score)
+            {
+                max_score = score;
+    //            expression = x._to_infix();
+    //            orig_expression = x.expression();
+    //            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+    //            std::cout << "Best expression = " << expression << '\n';
+    //            std::cout << "Best expression (original format) = " << orig_expression << '\n';
+    //            std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+    //            best_expression = std::move(expression);
+            }
+            x.pieces.clear();
+            if (((idx = static_cast<size_t>(timeElapsed)) % measure_period) == 0 && idx / measure_period > temp_scores.size())
+            {
+                temp_scores.push_back(std::make_pair(idx, max_score));
+            }
+        }
+        idx = static_cast<size_t>(timeElapsed);
+        temp_scores.push_back(std::make_pair(idx, max_score));
+        for (auto& i: temp_scores)
+        {
+            scores[i.first].push_back(i.second);
+        }
     }
-    if (!::TEST)
+    std::ofstream out(filename);
+    for (auto& i: scores)
     {
-        std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
-        std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-        std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-        std::cout << "Best expression = " << best_expression << '\n';
-        std::cout << "Best expression (original format) = " << orig_expression << '\n';
+        out << i.first << ',';
+        for (auto& j: i.second)
+        {
+            out << j << ((&j == &i.second.back()) ? '\n' : ',');
+        }
     }
+    out.close();
+//    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+//    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
+//    std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+//    std::cout << "Best expression = " << best_expression << '\n';
+//    std::cout << "Best expression (original format) = " << orig_expression << '\n';
 }
 
 //PyObject* convertVectorToPythonList(const std::vector<float>& inputVector)
@@ -1983,105 +2039,71 @@ void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expres
 //    return pyList;
 //}
 
-void HembergBenchmarks(int numIntervals, double time)
+void HembergBenchmarks(int numIntervals, double time, int numRuns)
 {
-    std::array<std::string, 50> filenames;
-    constexpr std::array<const char*, 10> algorithms = {"PreRandomSearch", "PostRandomSearch", "PreMCTS", "PostMCTS", "PreParticleSwarm", "PostParticleSwarm", "PreGP", "PostGP", "PreSimulatedAnnealing", "PostPreSimulatedAnnealing"};
-    for (int i = 1; i <= 5; i++)
-    {
-        for (int j = 0; j < 10; j++)
-        {
-            filenames[(i-1)*10+j] = "Hemberg_" + std::to_string(i) + algorithms[j] + ".txt";
-            std::cout << filenames[(i-1)*10+j] << '\n';
-        }
-    }
-    
-    /*
-     Hemberg_1PreRandomSearch.txt
-     Hemberg_1PostRandomSearch.txt
-     Hemberg_1PreMCTS.txt
-     Hemberg_1PostMCTS.txt
-     Hemberg_1PreParticleSwarm.txt
-     Hemberg_1PostParticleSwarm.txt
-     Hemberg_1PreGP.txt
-     Hemberg_1PostGP.txt
-     Hemberg_1PreSimulatedAnnealing.txt
-     Hemberg_1PostPreSimulatedAnnealing.txt
-     Hemberg_2PreRandomSearch.txt
-     Hemberg_2PostRandomSearch.txt
-     Hemberg_2PreMCTS.txt
-     Hemberg_2PostMCTS.txt
-     Hemberg_2PreParticleSwarm.txt
-     Hemberg_2PostParticleSwarm.txt
-     Hemberg_2PreGP.txt
-     Hemberg_2PostGP.txt
-     Hemberg_2PreSimulatedAnnealing.txt
-     Hemberg_2PostPreSimulatedAnnealing.txt
-     Hemberg_3PreRandomSearch.txt
-     Hemberg_3PostRandomSearch.txt
-     Hemberg_3PreMCTS.txt
-     Hemberg_3PostMCTS.txt
-     Hemberg_3PreParticleSwarm.txt
-     Hemberg_3PostParticleSwarm.txt
-     Hemberg_3PreGP.txt
-     Hemberg_3PostGP.txt
-     Hemberg_3PreSimulatedAnnealing.txt
-     Hemberg_3PostPreSimulatedAnnealing.txt
-     Hemberg_4PreRandomSearch.txt
-     Hemberg_4PostRandomSearch.txt
-     Hemberg_4PreMCTS.txt
-     Hemberg_4PostMCTS.txt
-     Hemberg_4PreParticleSwarm.txt
-     Hemberg_4PostParticleSwarm.txt
-     Hemberg_4PreGP.txt
-     Hemberg_4PostGP.txt
-     Hemberg_4PreSimulatedAnnealing.txt
-     Hemberg_4PostPreSimulatedAnnealing.txt
-     Hemberg_5PreRandomSearch.txt
-     Hemberg_5PostRandomSearch.txt
-     Hemberg_5PreMCTS.txt
-     Hemberg_5PostMCTS.txt
-     Hemberg_5PreParticleSwarm.txt
-     Hemberg_5PostParticleSwarm.txt
-     Hemberg_5PreGP.txt
-     Hemberg_5PostGP.txt
-     Hemberg_5PreSimulatedAnnealing.txt
-     Hemberg_5PostPreSimulatedAnnealing.txt
-     */
+//    std::array<std::string, 50> filenames;
+//    constexpr std::array<const char*, 10> algorithms = {"PreRandomSearch", "PostRandomSearch", "PreMCTS", "PostMCTS", "PreParticleSwarm", "PostParticleSwarm", "PreGP", "PostGP", "PreSimulatedAnnealing", "PostPreSimulatedAnnealing"};
+//    for (int i = 1; i <= 5; i++)
+//    {
+//        for (int j = 0; j < 10; j++)
+//        {
+//            filenames[(i-1)*10+j] = "Hemberg_" + std::to_string(i) + algorithms[j] + ".txt";
+//            std::cout << filenames[(i-1)*10+j] << '\n';
+//        }
+//    }
     
     //Scores
-    std::unordered_map<int, std::vector<float>>
-    prefix_random_search_hemberg1, postfix_random_search_hemberg1,
-    prefix_random_search_hemberg2, postfix_random_search_hemberg2,
-    prefix_random_search_hemberg3, postfix_random_search_hemberg3,
-    prefix_random_search_hemberg4, postfix_random_search_hemberg4,
-    prefix_random_search_hemberg5, postfix_random_search_hemberg5,
+//    std::unordered_map<int, std::vector<double>> hemberg_benchmark_scores;
+//    prefix_random_search_hemberg1, postfix_random_search_hemberg1,
+//    prefix_random_search_hemberg2, postfix_random_search_hemberg2,
+//    prefix_random_search_hemberg3, postfix_random_search_hemberg3,
+//    prefix_random_search_hemberg4, postfix_random_search_hemberg4,
+//    prefix_random_search_hemberg5, postfix_random_search_hemberg5,
+//    
+//    prefix_mcts_hemberg1, postfix_mcts_hemberg1,
+//    prefix_mcts_hemberg2, postfix_mcts_hemberg2,
+//    prefix_mcts_hemberg3, postfix_mcts_hemberg3,
+//    prefix_mcts_hemberg4, postfix_mcts_hemberg4,
+//    prefix_mcts_hemberg5, postfix_mcts_hemberg5,
+//    
+//    prefix_pso_hemberg1, postfix_pso_hemberg1,
+//    prefix_pso_hemberg2, postfix_pso_hemberg2,
+//    prefix_pso_hemberg3, postfix_pso_hemberg3,
+//    prefix_pso_hemberg4, postfix_pso_hemberg4,
+//    prefix_pso_hemberg5, postfix_pso_hemberg5,
+//    
+//    prefix_gp_hemberg1, postfix_gp_hemberg1,
+//    prefix_gp_hemberg2, postfix_gp_hemberg2,
+//    prefix_gp_hemberg3, postfix_gp_hemberg3,
+//    prefix_gp_hemberg4, postfix_gp_hemberg4,
+//    prefix_gp_hemberg5, postfix_gp_hemberg5,
+//    
+//    prefix_simulated_annealing_hemberg1, postfix_simulated_annealing_hemberg1,
+//    prefix_simulated_annealing_hemberg2, postfix_simulated_annealing_hemberg2,
+//    prefix_simulated_annealing_hemberg3, postfix_simulated_annealing_hemberg3,
+//    prefix_simulated_annealing_hemberg4, postfix_simulated_annealing_hemberg4,
+//    prefix_simulated_annealing_hemberg5, postfix_simulated_annealing_hemberg5;
     
-    prefix_mcts_hemberg1, postfix_mcts_hemberg1,
-    prefix_mcts_hemberg2, postfix_mcts_hemberg2,
-    prefix_mcts_hemberg3, postfix_mcts_hemberg3,
-    prefix_mcts_hemberg4, postfix_mcts_hemberg4,
-    prefix_mcts_hemberg5, postfix_mcts_hemberg5,
-    
-    prefix_pso_hemberg1, postfix_pso_hemberg1,
-    prefix_pso_hemberg2, postfix_pso_hemberg2,
-    prefix_pso_hemberg3, postfix_pso_hemberg3,
-    prefix_pso_hemberg4, postfix_pso_hemberg4,
-    prefix_pso_hemberg5, postfix_pso_hemberg5,
-    
-    prefix_gp_hemberg1, postfix_gp_hemberg1,
-    prefix_gp_hemberg2, postfix_gp_hemberg2,
-    prefix_gp_hemberg3, postfix_gp_hemberg3,
-    prefix_gp_hemberg4, postfix_gp_hemberg4,
-    prefix_gp_hemberg5, postfix_gp_hemberg5,
-    
-    prefix_simulated_annealing_hemberg1, postfix_simulated_annealing_hemberg1,
-    prefix_simulated_annealing_hemberg2, postfix_simulated_annealing_hemberg2,
-    prefix_simulated_annealing_hemberg3, postfix_simulated_annealing_hemberg3,
-    prefix_simulated_annealing_hemberg4, postfix_simulated_annealing_hemberg4,
-    prefix_simulated_annealing_hemberg5, postfix_simulated_annealing_hemberg5;
-    
-    RandomSearch(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 120.0, 20, "file.txt");
+    RandomSearch(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PostRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PreRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PostRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PreRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PostRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PreRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PostRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PreRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PostRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PostMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PreMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PostMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PreMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PostMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PreMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PostMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PreMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PostMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
 
 }
 
@@ -2101,18 +2123,15 @@ int main() {
 //    const char* cstr = PyUnicode_AsUTF8(pStr);
 //    puts(cstr);
 //    exit(1);
-    Eigen::MatrixXf data = generateData(20, 3, Hemberg_5, -3.0f, 3.0f);
+//    Eigen::MatrixXf data = generateData(20, 3, Hemberg_5, -3.0f, 3.0f);
 //    std::cout << data << "\n\n";
-    auto start_time = Clock::now();
+//    auto start_time = Clock::now();
 //    RandomSearch(data, 10, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
 //    RandomSearch(data, 10, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
 //    PSO(data, 3, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true);
 //    GP(data, 10, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
 //    SimulatedAnnealing(data, 10, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/);
-    HembergBenchmarks(20, 120.0);
-    auto end_time = Clock::now();
-    std::cout << "Time difference = "
-          << std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count()/1e9 << " seconds" << '\n';
+    HembergBenchmarks(20 /*numIntervals*/, 120 /*time*/, 50 /*numRuns*/);
 
     return 0;
 }
