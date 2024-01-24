@@ -213,6 +213,7 @@ struct Board
             Board::data = theData;
             Board::__num_features = data[0].size() - 1;
             Board::__input_vars.clear();
+            Board::expression_dict.clear();
             Board::__input_vars.reserve(Board::__num_features);
             for (auto i = 0; i < Board::__num_features; i++)
             {
@@ -1371,455 +1372,540 @@ float Hemberg_5(const Eigen::VectorXf& x)
 
 //https://dl.acm.org/doi/pdf/10.1145/3449639.3459345?casa_token=Np-_TMqxeJEAAAAA:8u-d6UyINV6Ex02kG9LthsQHAXMh2oxx3M4FG8ioP0hGgstIW45X8b709XOuaif5D_DVOm_FwFo
 //https://core.ac.uk/download/pdf/6651886.pdf
-void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/)
+void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/)
 {
-    Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
-    Board secondary(false, 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache); //For perturbations
     std::random_device rand_dev;
     std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-    float score = 0.0f, max_score = 0.0f, check_point_score = 0.0f;
+    std::map<int, std::vector<double>> scores; //unordered_map to store the scores
+    size_t measure_period = static_cast<size_t>(time/interval);
     
-    std::vector<float> current;
-    std::vector<std::pair<int, int>> sub_exprs;
-    std::vector<float> temp_legal_moves;
-    std::uniform_int_distribution<int> rand_depth_dist(0, x.n);
-    size_t temp_sz;
-    std::string expression, orig_expression, best_expression;
-    constexpr float T_max = 0.1f;
-    constexpr float T_min = 0.012f;
-    constexpr float ratio = T_min/T_max;
-    float T = T_max;
-    auto start_time = Clock::now();
-    
-    auto P = [&](float delta)
+    for (int run = 1; run <= num_runs; run++)
     {
-        return exp(delta/T);
-    };
-    
-    auto updateScore = [&](float r = 1.0f)
-    {
-        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
-        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
-        if ((score > max_score) || (x.pos_dist(generator) < P(score-max_score)))
+        Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
+        Board secondary(false, 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache); //For perturbations
+        float score = 0.0f, max_score = 0.0f, check_point_score = 0.0f;
+        
+        std::vector<float> current;
+        std::vector<std::pair<int, int>> sub_exprs;
+        std::vector<float> temp_legal_moves;
+        std::vector<std::pair<int, double>> temp_scores;
+        std::uniform_int_distribution<int> rand_depth_dist(0, x.n);
+        size_t temp_sz, idx;
+//        std::string expression, orig_expression, best_expression;
+        constexpr float T_max = 0.1f;
+        constexpr float T_min = 0.012f;
+        constexpr float ratio = T_min/T_max;
+        float T = T_max;
+        
+        auto P = [&](float delta)
         {
-            current = x.pieces; //update current expression
-            if (score > max_score)
+            return exp(delta/T);
+        };
+        
+        auto updateScore = [&](float r = 1.0f)
+        {
+            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
+            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
+            if ((score > max_score) || (x.pos_dist(generator) < P(score-max_score)))
             {
-                expression = x._to_infix();
-                orig_expression = x.expression();
-                max_score = score;
-                std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-                std::cout << "Best expression = " << expression << '\n';
-                std::cout << "Best expression (original format) = " << orig_expression << '\n';
-                best_expression = std::move(expression);
-            }
-        }
-        else
-        {
-            x.pieces = current; //reset perturbed state to current state
-        }
-        T = r*T;
-    };
-
-    //Step 1: generate a random expression
-    while ((score = x.complete_status()) == -1)
-    {
-        temp_legal_moves = x.get_legal_moves(); //the legal moves
-        temp_sz = temp_legal_moves.size(); //the number of legal moves
-        std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
-        x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
-        current.push_back(x.pieces.back());
-    }
-    
-    updateScore();
-    
-    //Another way to do this might be clustering...
-    auto Perturbation = [&](int n, int i)
-    {
-        //Step 1: Generate a random depth-n sub-expression `secondary_one.pieces`
-        secondary.pieces.clear();
-        sub_exprs.clear();
-        secondary.n = n;
-        while (secondary.complete_status() == -1)
-        {
-            temp_legal_moves = secondary.get_legal_moves();
-            std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
-            secondary.pieces.push_back(temp_legal_moves[distribution(generator)]);
-        }
-        
-        assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces) : secondary.getRPNdepth(secondary.pieces)).first == secondary.n);
-        assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces) : secondary.getRPNdepth(secondary.pieces)).second);
-        
-        if (n == x.n)
-        {
-            std::swap(secondary.pieces, x.pieces);
-        }
-        else 
-        {
-            //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
-            //in `x.pieces` and store them in an std::vector<std::pair<int, int>>
-            //called `sub_exprs`.
-            secondary.get_indices(sub_exprs, x.pieces);
-            
-            //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `pert_ind`
-
-            std::uniform_int_distribution<int> distribution(0, sub_exprs.size() - 1);
-            int pert_ind = distribution(generator);
-            
-            //Step 4: Substitute sub_exprs_1[pert_ind] in x.pieces with secondary_one.pieces
-            
-            auto start = x.pieces.begin() + sub_exprs[pert_ind].first;
-            auto end = std::min(x.pieces.begin() + sub_exprs[pert_ind].second, x.pieces.end());
-            x.pieces.erase(start, end+1);
-            x.pieces.insert(start, secondary.pieces.begin(), secondary.pieces.end()); //could be a move operation: secondary.pieces doesn't need to be in a defined state after this.
-        }
-        
-        //Step 5: Evaluate the new mutated `x.pieces` and update score if needed
-        score = x.complete_status(false);
-        updateScore(pow(ratio, 1.0f/(i+1)));
-    };
-    
-    for (int i = 0; (timeElapsedSince(start_time) < time/*max_score < stop*/); i++)
-    {
-        if (i && (i%50000 == 0))
-        {
-            std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
-            if (check_point_score == max_score)
-            {
-                T = std::min(T*10.0f, T_max);
+                current = x.pieces; //update current expression
+                if (score > max_score)
+                {
+//                    expression = x._to_infix();
+//                    orig_expression = x.expression();
+                    max_score = score;
+//                    std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+//                    std::cout << "Best expression = " << expression << '\n';
+//                    std::cout << "Best expression (original format) = " << orig_expression << '\n';
+//                    best_expression = std::move(expression);
+                }
             }
             else
             {
-                T = std::max(T/10.0f, T_min);
+                x.pieces = current; //reset perturbed state to current state
             }
-            check_point_score = max_score;
-        }
-        Perturbation(rand_depth_dist(generator), i);
-    }
-    std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
-}
-
-//https://arxiv.org/abs/2310.06609
-void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/)
-{
-    Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
-    Board secondary_one(false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache), secondary_two(false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache); //For crossover and mutations
-    std::random_device rand_dev;
-    std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-    float score = 0.0f, max_score = 0.0f, mut_prob = 0.8f, cross_prob = 0.2f, rand_mut_cross;
-    constexpr int init_population = 2000;
-    std::vector<std::pair<std::vector<float>, float>> individuals;
-    std::pair<std::vector<float>, float> individual_1, individual_2;
-    std::vector<std::pair<int, int>> sub_exprs_1, sub_exprs_2;
-    individuals.reserve(2*init_population);
-    std::vector<float> temp_legal_moves;
-    std::uniform_int_distribution<int> rand_depth_dist(0, x.n - 1), selector_dist(0, init_population - 1);
-    int rand_depth, rand_individual_idx_1, rand_individual_idx_2;
-    std::uniform_real_distribution<float> rand_mut_cross_dist(0.0f, 1.0f);
-    size_t temp_sz;
-    std::string expression, orig_expression, best_expression;
-    auto start_time = Clock::now();
-    
-    auto updateScore = [&]()
-    {
-        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
-        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
-        if (score > max_score)
+            T = r*T;
+        };
+        
+        //Another way to do this might be clustering...
+        auto Perturbation = [&](int n, int i)
         {
-            expression = x._to_infix();
-            orig_expression = x.expression();
-            max_score = score;
-            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-            std::cout << "Best expression = " << expression << '\n';
-            std::cout << "Best expression (original format) = " << orig_expression << '\n';
-            best_expression = std::move(expression);
-        }
-    };
-    
-    //Step 1, generate init_population expressions
-    for (int i = 0; i < init_population; i++)
-    {
+            //Step 1: Generate a random depth-n sub-expression `secondary_one.pieces`
+            secondary.pieces.clear();
+            sub_exprs.clear();
+            secondary.n = n;
+            while (secondary.complete_status() == -1)
+            {
+                temp_legal_moves = secondary.get_legal_moves();
+                std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
+                secondary.pieces.push_back(temp_legal_moves[distribution(generator)]);
+            }
+            
+            assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces) : secondary.getRPNdepth(secondary.pieces)).first == secondary.n);
+            assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces) : secondary.getRPNdepth(secondary.pieces)).second);
+            
+            if (n == x.n)
+            {
+                std::swap(secondary.pieces, x.pieces);
+            }
+            else
+            {
+                //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
+                //in `x.pieces` and store them in an std::vector<std::pair<int, int>>
+                //called `sub_exprs`.
+                secondary.get_indices(sub_exprs, x.pieces);
+                
+                //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `pert_ind`
+
+                std::uniform_int_distribution<int> distribution(0, sub_exprs.size() - 1);
+                int pert_ind = distribution(generator);
+                
+                //Step 4: Substitute sub_exprs_1[pert_ind] in x.pieces with secondary_one.pieces
+                
+                auto start = x.pieces.begin() + sub_exprs[pert_ind].first;
+                auto end = std::min(x.pieces.begin() + sub_exprs[pert_ind].second, x.pieces.end());
+                x.pieces.erase(start, end+1);
+                x.pieces.insert(start, secondary.pieces.begin(), secondary.pieces.end()); //could be a move operation: secondary.pieces doesn't need to be in a defined state after this.
+            }
+            
+            //Step 5: Evaluate the new mutated `x.pieces` and update score if needed
+            score = x.complete_status(false);
+            updateScore(pow(ratio, 1.0f/(i+1)));
+        };
+
+        //Step 1: generate a random expression
         while ((score = x.complete_status()) == -1)
         {
             temp_legal_moves = x.get_legal_moves(); //the legal moves
             temp_sz = temp_legal_moves.size(); //the number of legal moves
             std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
             x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
+            current.push_back(x.pieces.back());
         }
-        
         updateScore();
-        individuals.push_back(std::make_pair(x.pieces, score));
-        x.pieces.clear();
-    }
-    
-    auto Mutation = [&](int n)
-    {
-        //Step 1: Generate a random depth-n sub-expression `secondary_one.pieces`
-        secondary_one.pieces.clear();
-        sub_exprs_1.clear();
-        secondary_one.n = n;
-        while (secondary_one.complete_status() == -1)
-        {
-            temp_legal_moves = secondary_one.get_legal_moves();
-            std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
-            secondary_one.pieces.push_back(temp_legal_moves[distribution(generator)]);
-        }
-        
-        assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).first == secondary_one.n);
-        assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).second);
 
+        double timeElapsed;
+        auto start_time = Clock::now();
         
-        //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
-        //in `x.pieces` and store them in an std::vector<std::pair<int, int>>
-        //called `sub_exprs_1`.
-        x.pieces = individuals[selector_dist(generator)].first; //A randomly selected individual to be mutated
-        secondary_one.get_indices(sub_exprs_1, x.pieces);
-        
-        //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `mut_ind`
-        std::uniform_int_distribution<int> distribution(0, sub_exprs_1.size() - 1);
-        int mut_ind = distribution(generator);
-        
-        //Step 4: Substitute sub_exprs_1[mut_ind] in x.pieces with secondary_one.pieces
-        
-        auto start = x.pieces.begin() + sub_exprs_1[mut_ind].first;
-        auto end = std::min(x.pieces.begin() + sub_exprs_1[mut_ind].second, x.pieces.end()-1);
-        x.pieces.erase(start, end+1);
-        x.pieces.insert(start, secondary_one.pieces.begin(), secondary_one.pieces.end());
-        
-        //Step 5: Evaluate the new mutated `x.pieces` and update score if needed
-        score = x.complete_status(false);
-        updateScore();
-        individuals.push_back(std::make_pair(x.pieces, score));
-    };
-    
-    auto Crossover = [&](int n)
-    {
-        sub_exprs_1.clear();
-        sub_exprs_2.clear();
-        secondary_one.n = n;
-        secondary_two.n = n;
-        
-        rand_individual_idx_1 = selector_dist(generator);
-        individual_1 = individuals[rand_individual_idx_1];
-        
-        do {
-            rand_individual_idx_2 = selector_dist(generator);
-        } while (rand_individual_idx_2 == rand_individual_idx_1);
-        individual_2 = individuals[rand_individual_idx_2];
-    
-        //Step 1: Identify the starting and stopping index pairs of all depth-n sub-expressions
-        //in `individual_1.first` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_1`.
-        secondary_one.get_indices(sub_exprs_1, individual_1.first);
-        
-        //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
-        //in `individual_2.first` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_2`.
-        secondary_two.get_indices(sub_exprs_2, individual_2.first);
-        
-        //Step 3: Generate a random uniform int from 0 to sub_exprs_1.size() - 1 called `mut_ind_1`
-        std::uniform_int_distribution<int> distribution_1(0, sub_exprs_1.size() - 1);
-        int mut_ind_1 = distribution_1(generator);
-        
-        //Step 4: Generate a random uniform int from 0 to sub_exprs_2.size() - 1 called `mut_ind_2`
-        std::uniform_int_distribution<int> distribution_2(0, sub_exprs_2.size() - 1);
-        int mut_ind_2 = distribution_2(generator);
-        
-        //Step 5: Swap sub_exprs_1[mut_ind_1] in individual_1.first with sub_exprs_2[mut_ind_2] in individual_2.first
-        auto start_1 = individual_1.first.begin() + sub_exprs_1[mut_ind_1].first;
-        auto end_1 = std::min(individual_1.first.begin() + sub_exprs_1[mut_ind_1].second, individual_1.first.end());
-        
-        auto start_2 = individual_2.first.begin() + sub_exprs_2[mut_ind_2].first;
-        auto end_2 = std::min(individual_2.first.begin() + sub_exprs_2[mut_ind_2].second, individual_2.first.end());
-        
-//        insert the range start_2, end_2+1 into individual_1 and the range start_1, end_1+1 into individual_2.
-        
-        if ((end_1 - start_1) < (end_2 - start_2))
+        for (int i = 0; (timeElapsedSince(start_time) < time/*max_score < stop*/); i++)
         {
-            std::swap_ranges(start_1, end_1+1, start_2);
-            //Insert remaining part of sub_individual_2.first into individual_1.first
-            individual_1.first.insert(end_1+1, start_2 + (end_1+1-start_1), end_2+1);
-            //Remove the remaining part of sub_individual_2.first from individual_2.first
-            individual_2.first.erase(start_2 + (end_1+1-start_1), end_2+1);
-        }
-        else if ((end_2 - start_2) < (end_1 - start_1))
-        {
-            std::swap_ranges(start_2, end_2+1, start_1);
-            //Insert remaining part of sub_individual_1.first into individual_2.first
-            individual_2.first.insert(end_2+1, start_1 + (end_2+1-start_2), end_1+1);
-            //Remove the remaining part of sub_individual_1.first from individual_1.first
-            individual_1.first.erase(start_1 + (end_2+1-start_2), end_1+1);
-        }
-        else
-        {
-            std::swap_ranges(start_1, end_1+1, start_2);
-        }
-
-        x.pieces = individual_1.first;
-        score = x.complete_status(false);
-        updateScore();
-        
-        individuals.push_back(std::make_pair(x.pieces, score));
-        
-        x.pieces = individual_2.first;
-        score = x.complete_status(false);
-        updateScore();
-        
-        individuals.push_back(std::make_pair(x.pieces, score));
-    };
-    
-    for (int ngen = 0; (timeElapsedSince(start_time) < time/*max_score < stop*/); ngen++)
-    {
-        if (ngen && (ngen%5 == 0))
-        {
-            std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
-        }
-        //Produce N additional individuals through crossover and mutation
-        for (int n = 0; n < init_population; n++)
-        {
-            //Step 1: Generate a random number between 0 and 1 called `rand_mut_cross`
-            rand_mut_cross = rand_mut_cross_dist(generator);
-            
-            //Step 2: Generate a random uniform int from 0 to x.n - 1 called `rand_depth`
-            rand_depth = rand_depth_dist(generator);
-            
-            //Step 4: Call Mutation function if 0 <= rand_mut_cross <= mut_prob, else select Crossover
-            if (rand_mut_cross <= mut_prob)
+            if (i && (i%50000 == 0))
             {
-                Mutation(rand_depth);
+//                std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+                if (check_point_score == max_score)
+                {
+                    T = std::min(T*10.0f, T_max);
+                }
+                else
+                {
+                    T = std::max(T/10.0f, T_min);
+                }
+                check_point_score = max_score;
+            }
+            Perturbation(rand_depth_dist(generator), i);
+            if (((idx = static_cast<size_t>(timeElapsed)) % measure_period) == 0 && idx / measure_period > temp_scores.size())
+            {
+                temp_scores.push_back(std::make_pair(idx, max_score));
+            }
+        }
+        idx = static_cast<size_t>(timeElapsed);
+        temp_scores.push_back(std::make_pair(idx, max_score));
+        for (auto& i: temp_scores)
+        {
+            scores[i.first].push_back(i.second);
+        }
+//        std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+    }
+    std::ofstream out(filename);
+    for (auto& i: scores)
+    {
+        out << i.first << ',';
+        for (auto& j: i.second)
+        {
+            out << j << ((&j == &i.second.back()) ? '\n' : ',');
+        }
+    }
+    out.close();
+}
+
+//https://arxiv.org/abs/2310.06609
+void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/)
+{
+    std::random_device rand_dev;
+    std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
+    std::map<int, std::vector<double>> scores; //unordered_map to store the scores
+    size_t measure_period = static_cast<size_t>(time/interval);
+    
+    for (int run = 1; run <= num_runs; run++)
+    {
+        Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
+        Board secondary_one(false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache), secondary_two(false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache); //For crossover and mutations
+        float score = 0.0f, max_score = 0.0f, mut_prob = 0.8f, cross_prob = 0.2f, rand_mut_cross;
+        constexpr int init_population = 2000;
+        std::vector<std::pair<std::vector<float>, float>> individuals;
+        std::pair<std::vector<float>, float> individual_1, individual_2;
+        std::vector<std::pair<int, int>> sub_exprs_1, sub_exprs_2;
+        individuals.reserve(2*init_population);
+        std::vector<float> temp_legal_moves;
+        std::vector<std::pair<int, double>> temp_scores;
+        std::uniform_int_distribution<int> rand_depth_dist(0, x.n - 1), selector_dist(0, init_population - 1);
+        int rand_depth, rand_individual_idx_1, rand_individual_idx_2;
+        std::uniform_real_distribution<float> rand_mut_cross_dist(0.0f, 1.0f);
+        size_t temp_sz, idx;
+    //    std::string expression, orig_expression, best_expression;
+        double timeElapsed;
+        
+        auto updateScore = [&]()
+        {
+    //        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
+    //        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
+            if (score > max_score)
+            {
+    //            expression = x._to_infix();
+    //            orig_expression = x.expression();
+                max_score = score;
+    //            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+    //            std::cout << "Best expression = " << expression << '\n';
+    //            std::cout << "Best expression (original format) = " << orig_expression << '\n';
+    //            best_expression = std::move(expression);
+            }
+        };
+        
+        //Step 1, generate init_population expressions
+        for (int i = 0; i < init_population; i++)
+        {
+            while ((score = x.complete_status()) == -1)
+            {
+                temp_legal_moves = x.get_legal_moves(); //the legal moves
+                temp_sz = temp_legal_moves.size(); //the number of legal moves
+                std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
+                x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
+            }
+            
+            updateScore();
+            individuals.push_back(std::make_pair(x.pieces, score));
+            x.pieces.clear();
+        }
+        
+        auto Mutation = [&](int n)
+        {
+            //Step 1: Generate a random depth-n sub-expression `secondary_one.pieces`
+            secondary_one.pieces.clear();
+            sub_exprs_1.clear();
+            secondary_one.n = n;
+            while (secondary_one.complete_status() == -1)
+            {
+                temp_legal_moves = secondary_one.get_legal_moves();
+                std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
+                secondary_one.pieces.push_back(temp_legal_moves[distribution(generator)]);
+            }
+            
+            assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).first == secondary_one.n);
+            assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).second);
+
+            
+            //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
+            //in `x.pieces` and store them in an std::vector<std::pair<int, int>>
+            //called `sub_exprs_1`.
+            x.pieces = individuals[selector_dist(generator)].first; //A randomly selected individual to be mutated
+            secondary_one.get_indices(sub_exprs_1, x.pieces);
+            
+            //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `mut_ind`
+            std::uniform_int_distribution<int> distribution(0, sub_exprs_1.size() - 1);
+            int mut_ind = distribution(generator);
+            
+            //Step 4: Substitute sub_exprs_1[mut_ind] in x.pieces with secondary_one.pieces
+            
+            auto start = x.pieces.begin() + sub_exprs_1[mut_ind].first;
+            auto end = std::min(x.pieces.begin() + sub_exprs_1[mut_ind].second, x.pieces.end()-1);
+            x.pieces.erase(start, end+1);
+            x.pieces.insert(start, secondary_one.pieces.begin(), secondary_one.pieces.end());
+            
+            //Step 5: Evaluate the new mutated `x.pieces` and update score if needed
+            score = x.complete_status(false);
+            updateScore();
+            individuals.push_back(std::make_pair(x.pieces, score));
+        };
+        
+        auto Crossover = [&](int n)
+        {
+            sub_exprs_1.clear();
+            sub_exprs_2.clear();
+            secondary_one.n = n;
+            secondary_two.n = n;
+            
+            rand_individual_idx_1 = selector_dist(generator);
+            individual_1 = individuals[rand_individual_idx_1];
+            
+            do {
+                rand_individual_idx_2 = selector_dist(generator);
+            } while (rand_individual_idx_2 == rand_individual_idx_1);
+            individual_2 = individuals[rand_individual_idx_2];
+        
+            //Step 1: Identify the starting and stopping index pairs of all depth-n sub-expressions
+            //in `individual_1.first` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_1`.
+            secondary_one.get_indices(sub_exprs_1, individual_1.first);
+            
+            //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
+            //in `individual_2.first` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_2`.
+            secondary_two.get_indices(sub_exprs_2, individual_2.first);
+            
+            //Step 3: Generate a random uniform int from 0 to sub_exprs_1.size() - 1 called `mut_ind_1`
+            std::uniform_int_distribution<int> distribution_1(0, sub_exprs_1.size() - 1);
+            int mut_ind_1 = distribution_1(generator);
+            
+            //Step 4: Generate a random uniform int from 0 to sub_exprs_2.size() - 1 called `mut_ind_2`
+            std::uniform_int_distribution<int> distribution_2(0, sub_exprs_2.size() - 1);
+            int mut_ind_2 = distribution_2(generator);
+            
+            //Step 5: Swap sub_exprs_1[mut_ind_1] in individual_1.first with sub_exprs_2[mut_ind_2] in individual_2.first
+            auto start_1 = individual_1.first.begin() + sub_exprs_1[mut_ind_1].first;
+            auto end_1 = std::min(individual_1.first.begin() + sub_exprs_1[mut_ind_1].second, individual_1.first.end());
+            
+            auto start_2 = individual_2.first.begin() + sub_exprs_2[mut_ind_2].first;
+            auto end_2 = std::min(individual_2.first.begin() + sub_exprs_2[mut_ind_2].second, individual_2.first.end());
+            
+    //        insert the range start_2, end_2+1 into individual_1 and the range start_1, end_1+1 into individual_2.
+            
+            if ((end_1 - start_1) < (end_2 - start_2))
+            {
+                std::swap_ranges(start_1, end_1+1, start_2);
+                //Insert remaining part of sub_individual_2.first into individual_1.first
+                individual_1.first.insert(end_1+1, start_2 + (end_1+1-start_1), end_2+1);
+                //Remove the remaining part of sub_individual_2.first from individual_2.first
+                individual_2.first.erase(start_2 + (end_1+1-start_1), end_2+1);
+            }
+            else if ((end_2 - start_2) < (end_1 - start_1))
+            {
+                std::swap_ranges(start_2, end_2+1, start_1);
+                //Insert remaining part of sub_individual_1.first into individual_2.first
+                individual_2.first.insert(end_2+1, start_1 + (end_2+1-start_2), end_1+1);
+                //Remove the remaining part of sub_individual_1.first from individual_1.first
+                individual_1.first.erase(start_1 + (end_2+1-start_2), end_1+1);
             }
             else
             {
-                Crossover(rand_depth);
+                std::swap_ranges(start_1, end_1+1, start_2);
+            }
+
+            x.pieces = individual_1.first;
+            score = x.complete_status(false);
+            updateScore();
+            
+            individuals.push_back(std::make_pair(x.pieces, score));
+            
+            x.pieces = individual_2.first;
+            score = x.complete_status(false);
+            updateScore();
+            
+            individuals.push_back(std::make_pair(x.pieces, score));
+        };
+        auto start_time = Clock::now();
+        
+        for (int ngen = 0; (timeElapsedSince(start_time) < time/*max_score < stop*/); ngen++)
+        {
+//            if (ngen && (ngen%5 == 0))
+//            {
+//                std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+//            }
+            //Produce N additional individuals through crossover and mutation
+            for (int n = 0; n < init_population; n++)
+            {
+                //Step 1: Generate a random number between 0 and 1 called `rand_mut_cross`
+                rand_mut_cross = rand_mut_cross_dist(generator);
+                
+                //Step 2: Generate a random uniform int from 0 to x.n - 1 called `rand_depth`
+                rand_depth = rand_depth_dist(generator);
+                
+                //Step 4: Call Mutation function if 0 <= rand_mut_cross <= mut_prob, else select Crossover
+                if (rand_mut_cross <= mut_prob)
+                {
+                    Mutation(rand_depth);
+                }
+                else
+                {
+                    Crossover(rand_depth);
+                }
+                
+                if (((idx = static_cast<size_t>(timeElapsed)) % measure_period) == 0 && idx / measure_period > temp_scores.size())
+                {
+                    temp_scores.push_back(std::make_pair(idx, max_score));
+                }
+            }
+            std::sort(individuals.begin(), individuals.end(),
+            [](std::pair<std::vector<float>, float>& individual_1, std::pair<std::vector<float>, float>& individual_2)
+            {
+                return individual_1.second > individual_2.second;
+            });
+            individuals.resize(init_population);
+            
+            if (((idx = static_cast<size_t>(timeElapsed)) % measure_period) == 0 && idx / measure_period > temp_scores.size())
+            {
+                temp_scores.push_back(std::make_pair(idx, max_score));
             }
         }
-        std::sort(individuals.begin(), individuals.end(), 
-        [](std::pair<std::vector<float>, float>& individual_1, std::pair<std::vector<float>, float>& individual_2)
+        idx = static_cast<size_t>(timeElapsed);
+        temp_scores.push_back(std::make_pair(idx, max_score));
+        for (auto& i: temp_scores)
         {
-            return individual_1.second > individual_2.second;
-        });
-        individuals.resize(init_population);
+            scores[i.first].push_back(i.second);
+        }
     }
+    std::ofstream out(filename);
+    for (auto& i: scores)
+    {
+        out << i.first << ',';
+        for (auto& j: i.second)
+        {
+            out << j << ((&j == &i.second.back()) ? '\n' : ',');
+        }
+    }
+    out.close();
 }
 
 void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", float stop = 0.8f, std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/)
 {
     std::random_device rand_dev;
     std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-    std::unordered_map<int, std::vector<double>> scores; //unordered_map to store the scores
+    std::map<int, std::vector<double>> scores; //map to store the scores
+    size_t measure_period = static_cast<size_t>(time/interval);
     
-//    for (int run = 1; run <= num_runs; run++)
-    Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
-    float score = 0, max_score = 0, check_point_score = 0;
-    std::vector<float> temp_legal_moves;
-    size_t temp_sz;
-    std::string expression, orig_expression, best_expression;
-    double timeElapsed;
-    auto start_time = Clock::now();
-    /*
-     For this setup, we don't know a-priori the number of particles, so we generate them and their corresponding velocities as needed
-     */
-    std::vector<float> particle_positions, best_positions, v, curr_positions;
-    particle_positions.reserve(x.reserve_amount); //stores record of all current particle position indices
-    best_positions.reserve(x.reserve_amount); //indices corresponding to best pieces
-    curr_positions.reserve(x.reserve_amount); //indices corresponding to x.pieces
-    v.reserve(x.reserve_amount); //stores record of all current particle velocities
-    float rp, rg, new_pos, new_v, noise, c = 0.0f;
-    int c_count = 0;
-    std::unordered_map<float, std::unordered_map<int, int>> Nsa;
-    std::unordered_map<float, std::unordered_map<int, float>> Psa;
-    std::unordered_map<int, float> p_i_vals, p_i;
-    
-    /*
-     In this implementation of PSO:
-     
-         The traditional PSO initializes the particle positions to be between 0 and 1. However, in this application,
-         the particle positions are discrete values and any of the legal integer tokens (moves). The
-         velocities are continuous-valued and perturb the postions, which are subsequently constrained by rounding to
-         the nearest whole number then taking the modulo w.r.t. the # of allowed legal moves.
-     
-     */
-    
-    for (int iter = 0; ((timeElapsed=timeElapsedSince(start_time)) < time/*score < stop && Board::expression_dict.size() <= 100000*/); iter++)
+    for (int run = 1; run <= num_runs; run++)
     {
-        std::cout << timeElapsed << '\n';
-        if (iter && (iter%50000 == 0))
-        {
-//            std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
-//            std::cout << "check_point_score = " << check_point_score
-//            << ", max_score = " << max_score << ", c = " << c << '\n';
-            if (check_point_score == max_score)
-            {
-                c_count++;
-                std::uniform_real_distribution<float> temp(-c_count, c_count);
-//                std::cout << "c: " << c << " -> ";
-                c = temp(generator);
-//                std::cout << c << '\n';
-            }
-            else
-            {
-//                std::cout << "c: " << c << " -> ";
-                c = 0.0f; //if new best found, reset c and try to exploit the new best
-                c_count = 0;
-//                std::cout << c << '\n';
-            }
-            check_point_score = max_score;
-        }
+        Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
+        float score = 0, max_score = 0, check_point_score = 0;
+        std::vector<float> temp_legal_moves;
+        std::vector<std::pair<int, double>> temp_scores;
+        size_t temp_sz, idx;
+    //    std::string expression, orig_expression, best_expression;
+        double timeElapsed;
+        auto start_time = Clock::now();
+        /*
+         For this setup, we don't know a-priori the number of particles, so we generate them and their corresponding velocities as needed
+         */
+        std::vector<float> particle_positions, best_positions, v, curr_positions;
+        particle_positions.reserve(x.reserve_amount); //stores record of all current particle position indices
+        best_positions.reserve(x.reserve_amount); //indices corresponding to best pieces
+        curr_positions.reserve(x.reserve_amount); //indices corresponding to x.pieces
+        v.reserve(x.reserve_amount); //stores record of all current particle velocities
+        float rp, rg, new_pos, new_v, noise, c = 0.0f;
+        int c_count = 0;
+        std::unordered_map<float, std::unordered_map<int, int>> Nsa;
+        std::unordered_map<float, std::unordered_map<int, float>> Psa;
+        std::unordered_map<int, float> p_i_vals, p_i;
         
-        for (int i = 0; (score = x.complete_status()) == -1; i++) //i is the index of the token
+        /*
+         In this implementation of PSO:
+         
+             The traditional PSO initializes the particle positions to be between 0 and 1. However, in this application,
+             the particle positions are discrete values and any of the legal integer tokens (moves). The
+             velocities are continuous-valued and perturb the postions, which are subsequently constrained by rounding to
+             the nearest whole number then taking the modulo w.r.t. the # of allowed legal moves.
+         
+         */
+        
+        for (int iter = 0; ((timeElapsed=timeElapsedSince(start_time)) < time/*score < stop && Board::expression_dict.size() <= 100000*/); iter++)
         {
-            rp = x.pos_dist(generator), rg = x.pos_dist(generator);
-            temp_legal_moves = x.get_legal_moves(); //the legal moves
-            temp_sz = temp_legal_moves.size(); //the number of legal moves
+            if (iter && (iter%50000 == 0))
+            {
+    //            std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+    //            std::cout << "check_point_score = " << check_point_score
+    //            << ", max_score = " << max_score << ", c = " << c << '\n';
+                if (check_point_score == max_score)
+                {
+                    c_count++;
+                    std::uniform_real_distribution<float> temp(-c_count, c_count);
+    //                std::cout << "c: " << c << " -> ";
+                    c = temp(generator);
+    //                std::cout << c << '\n';
+                }
+                else
+                {
+    //                std::cout << "c: " << c << " -> ";
+                    c = 0.0f; //if new best found, reset c and try to exploit the new best
+                    c_count = 0;
+    //                std::cout << c << '\n';
+                }
+                check_point_score = max_score;
+            }
+            
+            for (int i = 0; (score = x.complete_status()) == -1; i++) //i is the index of the token
+            {
+                rp = x.pos_dist(generator), rg = x.pos_dist(generator);
+                temp_legal_moves = x.get_legal_moves(); //the legal moves
+                temp_sz = temp_legal_moves.size(); //the number of legal moves
 
-            if (i == particle_positions.size()) //Then we need to create a new particle with some initial position and velocity
-            {
-                particle_positions.push_back(x.pos_dist(generator));
-                v.push_back(x.vel_dist(generator));
+                if (i == particle_positions.size()) //Then we need to create a new particle with some initial position and velocity
+                {
+                    particle_positions.push_back(x.pos_dist(generator));
+                    v.push_back(x.vel_dist(generator));
+                }
+                
+                particle_positions[i] = trueMod(std::round(particle_positions[i]), temp_sz);
+                x.pieces.push_back(temp_legal_moves[particle_positions[i]]); //x.pieces holds the pieces corresponding to the indices
+                curr_positions.push_back(particle_positions[i]);
+                if (i == best_positions.size())
+                {
+                    best_positions.push_back(x.pos_dist(generator));
+                    best_positions[i] = trueMod(std::round(best_positions[i]), temp_sz);
+                }
+                //https://hal.science/hal-00764996
+                //https://www.researchgate.net/publication/216300408_An_off-the-shelf_PSO
+                new_v = (0.721*v[i] + x.phi_1*rg*(best_positions[i] - particle_positions[i]) + x.phi_2*rp*(p_i[i] - particle_positions[i]) + c);
+                v[i] = copysign(std::min(new_v, FLT_MAX), new_v);
+                particle_positions[i] += v[i];
+                Nsa[curr_positions[i]][i]++;
             }
             
-            particle_positions[i] = trueMod(std::round(particle_positions[i]), temp_sz);
-            x.pieces.push_back(temp_legal_moves[particle_positions[i]]); //x.pieces holds the pieces corresponding to the indices
-            curr_positions.push_back(particle_positions[i]);
-            if (i == best_positions.size())
+            for (int i = 0; i < curr_positions.size(); i++)
             {
-                best_positions.push_back(x.pos_dist(generator));
-                best_positions[i] = trueMod(std::round(best_positions[i]), temp_sz);
+                Psa[curr_positions[i]][i] = (Psa[curr_positions[i]][i]+score)/Nsa[curr_positions[i]][i];
+                if (Psa[curr_positions[i]][i] > p_i_vals[i])
+                {
+                    p_i[i] = curr_positions[i];
+                }
+                p_i_vals[i] = std::max(p_i_vals[i], Psa[curr_positions[i]][i]);
+                
             }
-            //https://hal.science/hal-00764996
-            //https://www.researchgate.net/publication/216300408_An_off-the-shelf_PSO
-            new_v = (0.721*v[i] + x.phi_1*rg*(best_positions[i] - particle_positions[i]) + x.phi_2*rp*(p_i[i] - particle_positions[i]) + c);
-            v[i] = copysign(std::min(new_v, FLT_MAX), new_v);
-            particle_positions[i] += v[i];
-            Nsa[curr_positions[i]][i]++;
-        }
-        
-        for (int i = 0; i < curr_positions.size(); i++)
-        {
-            Psa[curr_positions[i]][i] = (Psa[curr_positions[i]][i]+score)/Nsa[curr_positions[i]][i];
-            if (Psa[curr_positions[i]][i] > p_i_vals[i])
-            {
-                p_i[i] = curr_positions[i];
-            }
-            p_i_vals[i] = std::max(p_i_vals[i], Psa[curr_positions[i]][i]);
             
-        }
-        
-        if (score > max_score)
-        {
-            for (int idx = 0; idx < curr_positions.size(); idx++)
+            if (score > max_score)
             {
-                best_positions[idx] = curr_positions[idx];
+                for (int idx = 0; idx < curr_positions.size(); idx++)
+                {
+                    best_positions[idx] = curr_positions[idx];
+                }
+    //            expression = x._to_infix();
+    //            orig_expression = x.expression();
+                max_score = score;
+    //            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+    //            std::cout << "Best expression = " << expression << '\n';
+    //            std::cout << "Best expression (original format) = " << orig_expression << '\n';
+    //            best_expression = std::move(expression);
             }
-            expression = x._to_infix();
-            orig_expression = x.expression();
-            max_score = score;
-            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-            std::cout << "Best expression = " << expression << '\n';
-            std::cout << "Best expression (original format) = " << orig_expression << '\n';
-            best_expression = std::move(expression);
+            x.pieces.clear();
+            curr_positions.clear();
+            if (((idx = static_cast<size_t>(timeElapsed)) % measure_period) == 0 && idx / measure_period > temp_scores.size())
+            {
+                temp_scores.push_back(std::make_pair(idx, max_score));
+            }
         }
-        x.pieces.clear();
-        curr_positions.clear();
+        idx = static_cast<size_t>(timeElapsed);
+        temp_scores.push_back(std::make_pair(idx, max_score));
+        for (auto& i: temp_scores)
+        {
+            scores[i.first].push_back(i.second);
+        }
     }
+    std::ofstream out(filename);
+    for (auto& i: scores)
+    {
+        out << i.first << ',';
+        for (auto& j: i.second)
+        {
+            out << j << ((&j == &i.second.back()) ? '\n' : ',');
+        }
+    }
+    out.close();
 }
 
 //https://arxiv.org/abs/2205.13134
@@ -2052,43 +2138,11 @@ void HembergBenchmarks(int numIntervals, double time, int numRuns)
 //        }
 //    }
     
-    //Scores
-//    std::unordered_map<int, std::vector<double>> hemberg_benchmark_scores;
-//    prefix_random_search_hemberg1, postfix_random_search_hemberg1,
-//    prefix_random_search_hemberg2, postfix_random_search_hemberg2,
-//    prefix_random_search_hemberg3, postfix_random_search_hemberg3,
-//    prefix_random_search_hemberg4, postfix_random_search_hemberg4,
-//    prefix_random_search_hemberg5, postfix_random_search_hemberg5,
-//    
-//    prefix_mcts_hemberg1, postfix_mcts_hemberg1,
-//    prefix_mcts_hemberg2, postfix_mcts_hemberg2,
-//    prefix_mcts_hemberg3, postfix_mcts_hemberg3,
-//    prefix_mcts_hemberg4, postfix_mcts_hemberg4,
-//    prefix_mcts_hemberg5, postfix_mcts_hemberg5,
-//    
-//    prefix_pso_hemberg1, postfix_pso_hemberg1,
-//    prefix_pso_hemberg2, postfix_pso_hemberg2,
-//    prefix_pso_hemberg3, postfix_pso_hemberg3,
-//    prefix_pso_hemberg4, postfix_pso_hemberg4,
-//    prefix_pso_hemberg5, postfix_pso_hemberg5,
-//    
-//    prefix_gp_hemberg1, postfix_gp_hemberg1,
-//    prefix_gp_hemberg2, postfix_gp_hemberg2,
-//    prefix_gp_hemberg3, postfix_gp_hemberg3,
-//    prefix_gp_hemberg4, postfix_gp_hemberg4,
-//    prefix_gp_hemberg5, postfix_gp_hemberg5,
-//    
-//    prefix_simulated_annealing_hemberg1, postfix_simulated_annealing_hemberg1,
-//    prefix_simulated_annealing_hemberg2, postfix_simulated_annealing_hemberg2,
-//    prefix_simulated_annealing_hemberg3, postfix_simulated_annealing_hemberg3,
-//    prefix_simulated_annealing_hemberg4, postfix_simulated_annealing_hemberg4,
-//    prefix_simulated_annealing_hemberg5, postfix_simulated_annealing_hemberg5;
-    
-    RandomSearch(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PostRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PreRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PostRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PreRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+//    RandomSearch(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+//    RandomSearch(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PostRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+//    RandomSearch(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PreRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+//    RandomSearch(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PostRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+//    RandomSearch(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PreRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
     RandomSearch(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PostRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
     RandomSearch(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PreRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
     RandomSearch(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PostRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
@@ -2104,7 +2158,36 @@ void HembergBenchmarks(int numIntervals, double time, int numRuns)
     MCTS(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PostMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
     MCTS(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PreMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
     MCTS(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PostMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-
+    PSO(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PrePSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PostPSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PrePSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PostPSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PrePSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PostPSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PrePSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PostPSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PrePSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PostPSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PostGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PreGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PostGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PreGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PostGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PreGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PostGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PreGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PostGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PostSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PreSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PostSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PreSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PostSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PreSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PostSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PreSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PostSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
 }
 
 int main() {
