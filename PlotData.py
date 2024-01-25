@@ -39,7 +39,7 @@ def process_files(files):
         plot_results(time_values, avg_max_scores, std_devs, file_path)
         
 # Specify the path to your CSV file
-files = 'Hemberg_1PreRandomSearch.txt', 'Hemberg_1PostRandomSearch.txt', 'Hemberg_2PreRandomSearch.txt', 'Hemberg_2PostRandomSearch.txt', 'Hemberg_3PreRandomSearch.txt'
+files = 'Hemberg_1PreRandomSearch.txt', 'Hemberg_1PostRandomSearch.txt', 'Hemberg_2PreRandomSearch.txt', 'Hemberg_2PostRandomSearch.txt', 'Hemberg_3PreRandomSearch.txt', 'Hemberg_3PostRandomSearch.txt', 'Hemberg_4PreRandomSearch.txt', 'Hemberg_4PostRandomSearch.txt', 'Hemberg_5PreRandomSearch.txt', 'Hemberg_5PostRandomSearch.txt', 'Hemberg_1PreMCTS.txt', 'Hemberg_1PostMCTS.txt', 'Hemberg_2PreMCTS.txt', 'Hemberg_2PostMCTS.txt', 'Hemberg_3PreMCTS.txt', 'Hemberg_3PostMCTS.txt'
 process_files(files)
 
 

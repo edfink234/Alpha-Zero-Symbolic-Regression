@@ -810,6 +810,48 @@ struct Board
                     stack.pop();
                     stack.push(temp.array().cos());
                 }
+                else if (token == "exp")
+                {
+                    Eigen::VectorXf temp = std::move(stack.top());
+                    stack.pop();
+                    stack.push(temp.array().exp());
+                }
+                else if (token == "sqrt")
+                {
+                    Eigen::VectorXf temp = std::move(stack.top());
+                    stack.pop();
+                    stack.push(temp.array().sqrt());
+                }
+                else if (token == "sin")
+                {
+                    Eigen::VectorXf temp = std::move(stack.top());
+                    stack.pop();
+                    stack.push(temp.array().sin());
+                }
+                else if (token == "asin")
+                {
+                    Eigen::VectorXf temp = std::move(stack.top());
+                    stack.pop();
+                    stack.push(temp.array().asin());
+                }
+                else if (token == "log")
+                {
+                    Eigen::VectorXf temp = std::move(stack.top());
+                    stack.pop();
+                    stack.push(temp.array().log());
+                }
+                else if (token == "tanh")
+                {
+                    Eigen::VectorXf temp = std::move(stack.top());
+                    stack.pop();
+                    stack.push(temp.array().tanh());
+                }
+                else if (token == "acos")
+                {
+                    Eigen::VectorXf temp = std::move(stack.top());
+                    stack.pop();
+                    stack.push(temp.array().acos());
+                }
             }
             else // binary operator
             {

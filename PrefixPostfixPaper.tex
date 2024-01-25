@@ -161,7 +161,7 @@ Figure \ref{fig:pub_freqs_pre_post_acyc_graph} shows a histogram of publication 
 \begin{figure}
     \centering
     \includegraphics[width=\linewidth]{pub_freqs.pdf}
-    \caption{Number of mentions of prefix, postfix, and acyclic graph in publications pertaining to symbolic regression. The python module scholarly was used to generate this histogram \cite{cholewiak2021scholarly}. The search queries utilized were ``postfix notation'' AND ``symbolic regression'', ``prefix notation'' AND ``symbolic regression'', ``acyclic graph'' AND ``symbolic regression'', ``reverse polish notation'' AND ``symbolic regression'', ``polish notation'' AND ``symbolic regression'', and ``acyclic-graph'' AND ``symbolic regression''. The script to reproduce this plot is here.} %TODO: Include href of script and add to repo
+    \caption{Number of mentions of prefix, postfix, and acyclic graph in publications pertaining to symbolic regression. The python module scholarly was used to generate this histogram \cite{cholewiak2021scholarly}. The search queries utilized were ``postfix notation'' AND ``symbolic regression'', ``prefix notation'' AND ``symbolic regression'', ``acyclic graph'' AND ``symbolic regression'', ``reverse polish notation'' AND ``symbolic regression'', ``polish notation'' AND ``symbolic regression'', and ``acyclic-graph'' AND ``symbolic regression''. The script to reproduce this plot is \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/2999916868007841f05c272498edef3aa2dcb494/Figure_1/notations_pubs_counter.py}{here}.} 
     \label{fig:pub_freqs_pre_post_acyc_graph}
 \end{figure}
 
@@ -293,9 +293,6 @@ We say any token in the set of all considered leaf nodes is valid if adding a le
 
 \subsection{Conclusion}
 What can be seen from sections \ref{subsec:prefix_grammar} and \ref{subsec:postfix_grammar} is that the grammar for building postfix expressions is less complicated than the grammar for building prefix expressions. The main reason for this difference is that, in prefix notation, one must ensure the expression does not complete until it reaches the desired depth $N$. On the other hand, postfix notation imparts the ability to add nodes to an RPN expression \emph{indefinitely} without change of method; this is not the case for prefix notation. \par Determining the minimum depth and completeness of a prefix or postfix expression list of tokens can be done via a stack-based approach as shown in algorithms \ref{alg:getPNdepth} and \ref{alg:getRPNdepth}.
-
-%TODO: Add the description of the parameters in the algorithm like how the PySR paper does it: open PhD_Papers/PySR_Paper.pdf
-
 
 \begin{algorithm}
 \scriptsize
@@ -520,7 +517,7 @@ where $N_{\mathrm{dat}}$ is the number of data points, $\hat{Y}$ are the predict
 Monte Carlo Tree Search (MCTS) has garnered widespread adaptation in game-playing and reinforcement-learning applications \cite{Silver2016} \cite{Swiechowski2023}. MCTS utilizes a combination of random exploration and greedy decision-making to navigate large state spaces by informatively expanding and selecting branches \cite{Swiechowski2023}. This simulative process allows MCTS to gather statistics about the performance of different actions and gradually refine its search policy \cite{Swiechowski2023}.
 
 In symbolic regression, Monte Carlo Tree Search has been employed within a single-agent environment as far back as \cite{CazenaveMCTS}. In recent years, MCTS has been employed with Neural networks as estimators for the policy and value functions. For example, \cite{Lu2021} uses Actor-Critic neural netwroks for policy and value estimation, respectively. Similarly,  \cite{10.5555/3618408.3619047} leverages a single neural network to output both a mutation policy and value approximation induced by MCTS. In this paper, we use a non-neural network approach for simplicity, very similar to the one detailed in \cite{sun2023symbolic}.  Our approach is as follows:
-\par As in section \ref{subsec:RandomSearch}, an iteration starts with obtaining the set of legal tokens given the current expression list, which in MCTS represents the current state $s$. For each possible action from state $s$, we choose the best action $a$ as the first one that has 0 visit counts, i.e., $N(s,a) = 0$. If no such action from the set of legal tokens from state $s$ exists, then the best action from state $s$ is chosen using the Upper-Confidence Tree (UCT) formula \cite{sun2023symbolic}:
+\par As in section \ref{subsec:RandomSearch}, an iteration starts with obtaining the set of legal tokens given the current expression list, which in MCTS represents the current state $s$. For each possible action from state $s$, we choose the best action $a$ as the first one that has 0 visit counts, i.e., $N(s,a) = 0$ \footnote{Note that this means that this MCTS variant is completely deterministic, i.e., it will produce the same results every time. Nevertheless, one could easily change this condition to choosing a \emph{random} action (as opposed to the first encountered action) from state $s$ that has not been visited before. }. If no such action from the set of legal tokens from state $s$ exists, then the best action from state $s$ is chosen using the Upper-Confidence Tree (UCT) formula \cite{sun2023symbolic}:
 \begin{equation}
 \mathrm{UCT} = Q(s,a) + c\sqrt{\frac{\ln{[N(s)]}}{N(s,a)}}, \label{eq:UCT_formula}
 \end{equation}
@@ -563,8 +560,8 @@ Simulated Annealing is a metaheuristic search strategy inspired by the metallurg
 where $\Delta$ is the score of the perturbed expression minus the maximum score achieved thus far. We bound the temperature parameter $T$ to be between $T_{\mathrm{min}} = 0.012$ and $T_{\mathrm{max}} = 0.1$, and we set the initial temperature $T_{\mathrm{init}} = T_{\mathrm{max}}$. We use the same temperature update rule as in \cite{10.1145/3449639.3459345}, namely, $T \gets rT$, where $r \equiv \left(T_{\mathrm{min}}/T_{\mathrm{max}}\right)^{1/(i+1)}$ where $i$ is the iteration number. Lastly, to escape local minima, we use a simple update rule similar to the previous sections, namely, after $N_{\mathrm{iter}}$ iterations, if the best score has not improved, we update the temperature as $T \gets \min{\left(10\cdot T, T_{\mathrm{max}}\right)}$, else, we update the temperature as $T \gets \max{\left(T/10, T_{\mathrm{min}}\right)}$.
 
 \section{Results}\label{sec:Results}
-In this section, we benchmark the algorithms defined in section \ref{sec:SymbolicRegressionAlgorithms} with the grammars defined in section \ref{sec:Background}. First, in section \ref{subsec:SimulatedAnnealing}, we perform benchmarks for the expressions considered in \cite{hemberg2008pre}. Then, in section \ref{subsec:FeynmanBenchmarks}, we consider perform benchmarks using some of the equations defined in \cite{udrescu2020ai} with varying complexity/depth of expression trees.
-\par For each configuration, i.e., Prefix Random Search, Prefix Monte Carlo Tree Search, Prefix Particle Swarm Optimization, Prefix Genetic Programming,  Prefix Simulated Annealing, Postfix Random Search, Postfix Monte Carlo Tree Search, Postfix Particle Swarm Optimization, Postfix Genetic Programming, and Postfix Simulated Annealing, we perform 50 runs of 2 minutes each for each benchmark expression considered in this section.
+In this section, we benchmark the algorithms defined in section \ref{sec:SymbolicRegressionAlgorithms} with the grammars defined in section \ref{sec:Background}. First, in section \ref{subsec:SimulatedAnnealing}, we perform benchmarks for the expressions considered in \cite{hemberg2008pre}. Then, in section \ref{subsec:FeynmanBenchmarks}, we consider perform benchmarks using some of the equations considered in \cite{udrescu2020ai} with varying complexity/depth of expression trees.
+\par For each configuration, i.e., Prefix Random Search, Prefix Monte Carlo Tree Search, Prefix Particle Swarm Optimization, Prefix Genetic Programming,  Prefix Simulated Annealing, Postfix Random Search, Postfix Monte Carlo Tree Search, Postfix Particle Swarm Optimization, Postfix Genetic Programming, and Postfix Simulated Annealing, we perform 50 runs of 2 minutes each for each benchmark expression considered in this section; this approach is similar to how the SR algorithms in \cite{defranca2023interpretable} are given a pre-specified time budget and how \cite{manti2023discovering} plots the mean and variance of the best-achieved fitness over time.
 \subsection{Hemberg Benchmarks} \label{subsec:HembergBenchmarks}
 In this section, we benchmark the 5 equations tested in \cite{hemberg2008pre} using the Random Search \ref{subsec:RandomSearch}, Monte Carlo Tree Search \ref{subsec:MonteCarlo TreeSearch}, Particle Swarm Optimization \ref{subsec:ParticleSwarmOptimization}, Genetic Programming \ref{subsec:GeneticProgramming}, and Simulated Annealing \ref{subsec:SimulatedAnnealing} algorithms with the prefix grammar \ref{subsec:prefix_grammar} vs the postfix grammar \ref{subsec:postfix_grammar}. For completeness, the expressions are tabulated in Table \ref{tab:Hemberg2008PreIP_results}.
 \par Similar to the original paper \cite{hemberg2008pre}, we set the range of the two input variables $x$ and $y$ to $[-3,3]$ and sample 20 equally spaced points from the benchmark expressions.  The considered operators and operands are $+$, $-$, $\cdot$, $/$, \specialcaret , and $\mathrm{const}$, $x$, $y$, respectively. 
@@ -589,7 +586,7 @@ $x^3/5 + y^3/2 - y - x$ & Figure \ref{fig:expression_tree_Hemberg2008_expr_3} & 
 
 \subsection{Feynman Benchmarks} \label{subsec:FeynmanBenchmarks}
 
-%https://space.mit.edu/home/tegmark/aifeynman.html
+%open https://space.mit.edu/home/tegmark/aifeynman.html
 %open /Users/edwardfinkelstein/Downloads/FeynmanEquations.numbers /Users/edwardfinkelstein/Downloads/BonusEquations.csv
 
 \newpage
@@ -613,7 +610,7 @@ ProductVersion:		14.2.1
 BuildVersion:		23C71
 \end{verbatim}
 \section{Expression Trees for Considered Benchmarks} %Make this a website instead
-This section shows the expression trees and prefix/postfix representations of the benchmarks considered in section \ref{sec:Results}
+This section shows the expression trees and prefix/postfix representations of the benchmarks considered in section \ref{sec:Results}. The script to generate the expression trees is here. %TODO: Include href of code.
 
 \begin{figure}
     \centering
