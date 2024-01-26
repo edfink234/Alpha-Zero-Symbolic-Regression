@@ -39,7 +39,7 @@ def process_files(files):
         plot_results(time_values, avg_max_scores, std_devs, file_path)
         
 # Specify the path to your CSV file
-files = 'Hemberg_1PreRandomSearch.txt', 'Hemberg_1PostRandomSearch.txt', 'Hemberg_2PreRandomSearch.txt', 'Hemberg_2PostRandomSearch.txt', 'Hemberg_3PreRandomSearch.txt', 'Hemberg_3PostRandomSearch.txt', 'Hemberg_4PreRandomSearch.txt', 'Hemberg_4PostRandomSearch.txt', 'Hemberg_5PreRandomSearch.txt', 'Hemberg_5PostRandomSearch.txt', 'Hemberg_1PreMCTS.txt', 'Hemberg_1PostMCTS.txt', 'Hemberg_2PreMCTS.txt', 'Hemberg_2PostMCTS.txt', 'Hemberg_3PreMCTS.txt', 'Hemberg_3PostMCTS.txt'
+files = 'Hemberg_1PreRandomSearch.txt', 'Hemberg_1PostRandomSearch.txt', 'Hemberg_2PreRandomSearch.txt', 'Hemberg_2PostRandomSearch.txt', 'Hemberg_3PreRandomSearch.txt', 'Hemberg_3PostRandomSearch.txt', 'Hemberg_4PreRandomSearch.txt', 'Hemberg_4PostRandomSearch.txt', 'Hemberg_5PreRandomSearch.txt', 'Hemberg_5PostRandomSearch.txt', 'Hemberg_1PreMCTS.txt', 'Hemberg_1PostMCTS.txt', 'Hemberg_2PreMCTS.txt', 'Hemberg_2PostMCTS.txt', 'Hemberg_3PreMCTS.txt', 'Hemberg_3PostMCTS.txt', 'Hemberg_4PreMCTS.txt', 'Hemberg_4PostMCTS.txt', 'Hemberg_5PreMCTS.txt', 'Hemberg_5PostMCTS.txt', 'Hemberg_1PrePSO.txt', 'Hemberg_1PostPSO.txt', 'Hemberg_2PrePSO.txt', 'Hemberg_2PostPSO.txt', 'Hemberg_3PrePSO.txt', 'Hemberg_3PostPSO.txt', 'Hemberg_4PrePSO.txt', 'Hemberg_4PostPSO.txt', 'Hemberg_5PrePSO.txt', 'Hemberg_5PostPSO.txt', 'Hemberg_1PreGP.txt', 'Hemberg_1PostGP.txt', 'Hemberg_2PreGP.txt', 'Hemberg_2PostGP.txt', 'Hemberg_3PreGP.txt', 'Hemberg_3PostGP.txt'
 process_files(files)
 
 
