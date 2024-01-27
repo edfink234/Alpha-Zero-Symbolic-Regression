@@ -24,11 +24,11 @@ class UnaryNode(Node):
         self.child = None
         
 def is_operator(token):
-    return token in {'+', '-', '*', '/', '^', 'cos', 'grad', 'exp', '-sin', 'sin'}
+    return token in {"cos", "exp", "sqrt", "sin", "asin", "arcsin", "log", "tanh", "acos", "arccos", "~", "+", "-", "*", "/", "^", "ln"}
 def is_binary_operator(token):
     return token in {'+', '-', '*', '/', '^'}
 def is_unary_operator(token):
-    return token in {'cos', 'grad', 'exp', '-sin', 'sin'}
+    return token in {"cos", "exp", "sqrt", "sin", "asin", "arcsin", "log", "tanh", "acos", "arccos", "~", "ln"}
 
 
 def rpn_to_infix(rpn_expression):
@@ -279,8 +279,6 @@ def test_visualize():
         pn_5 = pn_to_infix(p_5:="- + + - + - + / * 30 ^ x 2 * - 10 x y ^ x 4 * / 4 5 ^ x 3 / ^ y 2 2 * 2 y / 8 + + 2 ^ x 2 ^ y 2 / ^ y 3 2 x")
         
         print(rpn_1==pn_1, rpn_2==pn_2, rpn_3==pn_3, rpn_4==pn_4, rpn_5==pn_5, sep='\n')
-        
-        
         print(rpn_1, rpn_2, rpn_3, rpn_4, rpn_5, '\n', sep='\n')
         print(r_1, r_2, r_3, r_4, r_5, '\n', p_1, p_2, p_3, p_4, p_5, sep='\n')
         
@@ -288,15 +286,13 @@ def test_visualize():
         
 
     else:
-        print(pn_to_infix(" - - + / ^ x 3 5 / ^ y 3 2 y x".split()))
+#        print(pn_to_infix(" - - + / ^ x 3 5 / ^ y 3 2 y x".split()))
 #        print(rpn_to_infix("y y x * * cos y +"))
         while True:
             try:
 #                plot_pn_expression_tree("+ cos cos x0 * 1.031240 + 0.008202 * 1.919085 - cos x3 - cos x0 cos cos * x0 + x3 x3".split(), block=False, save = save)
 #                plot_rpn_expression_tree("x3 cos 0.427738 * 4.779139 x1 - 0.390789 x0 0.637794 x2 * - + 0.598703 x2 cos 1.463665 cos x2 + 1.063828 x3 + x0 0.031570 x0 + 1.493230 - * * + - * * + *".split(), block=False, save = save)
-                plot_rpn_expression_tree("x 2 x * + cos 8 9 cos * / ".split(), block=False, save = save)
-
-
+                plot_rpn_expression_tree("theta 2 ^ 2 / ~ exp 2 pi *  sqrt /".split(), block=False, save = save)
             except KeyboardInterrupt:
                 plt.close()
                 exit()

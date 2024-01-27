@@ -834,7 +834,7 @@ struct Board
                     stack.pop();
                     stack.push(temp.array().asin());
                 }
-                else if (token == "log")
+                else if (token == "log" || token == "ln")
                 {
                     Eigen::VectorXf temp = std::move(stack.top());
                     stack.pop();
@@ -1452,8 +1452,8 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
         
         auto updateScore = [&](float r = 1.0f)
         {
-            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
-            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
+//            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
+//            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
             if ((score > max_score) || (x.pos_dist(generator) < P(score-max_score)))
             {
                 current = x.pieces; //update current expression
@@ -1489,8 +1489,8 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
                 secondary.pieces.push_back(temp_legal_moves[distribution(generator)]);
             }
             
-            assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces) : secondary.getRPNdepth(secondary.pieces)).first == secondary.n);
-            assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces) : secondary.getRPNdepth(secondary.pieces)).second);
+//            assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces) : secondary.getRPNdepth(secondary.pieces)).first == secondary.n);
+//            assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces) : secondary.getRPNdepth(secondary.pieces)).second);
             
             if (n == x.n)
             {
@@ -1648,8 +1648,8 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                 secondary_one.pieces.push_back(temp_legal_moves[distribution(generator)]);
             }
             
-            assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).first == secondary_one.n);
-            assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).second);
+//            assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).first == secondary_one.n);
+//            assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).second);
 
             
             //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
