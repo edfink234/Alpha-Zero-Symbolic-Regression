@@ -116,6 +116,7 @@ def inToPost(input, end):
     return string
 
 FeynmanEquations = pd.read_csv("FeynmanEquationsAll.csv")
+print(FeynmanEquations.columns)
 Formulae = FeynmanEquations['Formula']
 Parsed_Postfix_Formulae = []
 Expression_Depths = []
@@ -143,6 +144,20 @@ FeynmanEquations["PostfixFormula"] = Parsed_Postfix_Formulae
 FeynmanEquations["ExpressionDepth"] = Expression_Depths
 print(f"Depths of expressions = {set(FeynmanEquations['ExpressionDepth'])}")
 
+depth = 4
+#equn_nums = FeynmanEquations.loc[FeynmanEquations['ExpressionDepth']==depth]["Eqn. No."].index
+#print(equn_nums)
+#
+#for i in equn_nums:
+#    os.system(rf"open -a Google\ Chrome AIFeynmanTrees/Formula{i+1}.pdf")
+
+for depth in set(FeynmanEquations['ExpressionDepth']) - ({1, 2, 3, 4, 5, 6, 7, 8} - {depth}):
+    print(FeynmanEquations.loc[FeynmanEquations['ExpressionDepth']==depth].sort_values(by="# variables", ascending = False)[["Eqn. No.", "# variables", "PostfixFormula", "ExpressionDepth"]])
+    
+    print()
+
+
+
 if not os.path.isdir("AIFeynmanTrees"):
     os.mkdir("AIFeynmanTrees")
 
@@ -155,6 +170,8 @@ if not os.path.isdir("AIFeynmanTrees"):
 #plot_rpn_expression_tree(expression = FeynmanEquations["PostfixFormula"][N], save = True, filename = f"AIFeynmanTrees/Formula{N+1}.svg", title = f"{FeynmanEquations['Formula'][N]}, depth = {FeynmanEquations['ExpressionDepth'][N]}")
 #os.system(f"rsvg-convert -f pdf -o AIFeynmanTrees/Formula{N+1}.pdf AIFeynmanTrees/Formula{N+1}.svg")
 
-FeynmanEquations = FeynmanEquations.sort_values(by="ExpressionDepth")
+print(FeynmanEquations["PostfixFormula"][4])
+
+#FeynmanEquations = FeynmanEquations.sort_values(by="ExpressionDepth")
 
 #os.system(f"rm AIFeynmanTrees/*svg")
