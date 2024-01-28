@@ -561,33 +561,50 @@ where $\Delta$ is the score of the perturbed expression minus the maximum score 
 
 \section{Results}\label{sec:Results}
 In this section, we benchmark the algorithms defined in section \ref{sec:SymbolicRegressionAlgorithms} with the grammars defined in section \ref{sec:Background}. First, in section \ref{subsec:SimulatedAnnealing}, we perform benchmarks for the expressions considered in \cite{hemberg2008pre}. Then, in section \ref{subsec:FeynmanBenchmarks}, we consider perform benchmarks using some of the equations considered in \cite{udrescu2020ai} with varying complexity/depth of expression trees.
-\par For each configuration, i.e., Prefix Random Search, Prefix Monte Carlo Tree Search, Prefix Particle Swarm Optimization, Prefix Genetic Programming,  Prefix Simulated Annealing, Postfix Random Search, Postfix Monte Carlo Tree Search, Postfix Particle Swarm Optimization, Postfix Genetic Programming, and Postfix Simulated Annealing, we perform 50 runs of 2 minutes each for each benchmark expression considered in this section; this approach is similar to how the SR algorithms in \cite{defranca2023interpretable} are given a pre-specified time budget and how \cite{manti2023discovering} plots the mean and variance of the best-achieved fitness over time.
+\par For each configuration, i.e., Prefix Random Search, Prefix Monte Carlo Tree Search, Prefix Particle Swarm Optimization, Prefix Genetic Programming,  Prefix Simulated Annealing, Postfix Random Search, Postfix Monte Carlo Tree Search, Postfix Particle Swarm Optimization, Postfix Genetic Programming, and Postfix Simulated Annealing, we perform 50 runs of 2 minutes each for each benchmark expression considered in this section, where the MSE is sampled every 6 seconds for each run \footnote{Disclaimer: This does not imply that each sampled time point (i.e., 6 seconds, 12 seconds, $\ldots$ , 120 seconds) has 50 measurements. The number of measurements is in practice $\leq$ the number of runs, 50, and depends on the duration of computations at different points in the algorithm.}. This approach is similar to how the SR algorithms in \cite{defranca2023interpretable} are given a pre-specified time budget and how \cite{manti2023discovering} plots the mean and variance of the best-achieved fitnesses over time. 
 \subsection{Hemberg Benchmarks} \label{subsec:HembergBenchmarks}
 In this section, we benchmark the 5 equations tested in \cite{hemberg2008pre} using the Random Search \ref{subsec:RandomSearch}, Monte Carlo Tree Search \ref{subsec:MonteCarlo TreeSearch}, Particle Swarm Optimization \ref{subsec:ParticleSwarmOptimization}, Genetic Programming \ref{subsec:GeneticProgramming}, and Simulated Annealing \ref{subsec:SimulatedAnnealing} algorithms with the prefix grammar \ref{subsec:prefix_grammar} vs the postfix grammar \ref{subsec:postfix_grammar}. For completeness, the expressions are tabulated in Table \ref{tab:Hemberg2008PreIP_results}.
-\par Similar to the original paper \cite{hemberg2008pre}, we set the range of the two input variables $x$ and $y$ to $[-3,3]$ and sample 20 equally spaced points from the benchmark expressions.  The considered operators and operands are $+$, $-$, $\cdot$, $/$, \specialcaret , and $\mathrm{const}$, $x$, $y$, respectively. 
-
-
+\par As in the original paper \cite{hemberg2008pre}, we set the range of the two input variables $x$ and $y$ to $[-3,3]$ and sample 20 randomly sampled points from the benchmark expressions.  The considered operators and operands are $+$, $-$, $\cdot$, $/$, \specialcaret , and $\mathrm{const}$, $x$, $y$, respectively. 
+\par The results are plotted in Figures for benchmarks 1 to 5, respectively. %TODO: Include five figures of 5 subfigures: each subfigure is a plot of prefix and postfix for a particular benchmark and algorithm.
 
 
 \begin{table}[]
     \centering
-    \begin{tabular}{|l|l|l|}
+    \begin{tabular}{|l|l|l|l|l|}
 \hline 
-Expression & Expression Tree & Depth $N$ \\ \hline 
-    $8/(2+x^2+y^2)$ & Figure \ref{fig:expression_tree_Hemberg2008_expr_1} & 4  \\[0.2cm]
-    $x^3\cdot(x-1) + y\cdot(y/2-1)$ & Figure \ref{fig:expression_tree_Hemberg2008_expr_2} & 4 \\[0.2cm]
-$x^3/5 + y^3/2 - y - x$ & Figure \ref{fig:expression_tree_Hemberg2008_expr_3} & 5 \\[0.2cm]
-    $\frac{30\cdot x^2}{(10-x)\cdot y^2}+x^4 - x^3 + \frac{y^2}{2} - y + \frac{8}{2+x^2+y^2} + x$ & Figure \ref{fig:expression_tree_Hemberg2008_expr_4} & 9 \\[0.2cm]
-    $\frac{30\cdot x^2}{(10-x)\cdot y^2}+x^4 - \frac{4}{5}x^3 + \frac{y^2}{2} - 2y + \frac{8}{2+x^2+y^2} + \frac{y^3}{2} - x$ & Figure \ref{fig:expression_tree_Hemberg2008_expr_5} & 10 \\[0.2cm] \hline
+\# & Expression & Expression Tree & Depth $N$ & \# of Inputs \\ \hline 
+ 1 &   $8/(2+x^2+y^2)$ & Figure \ref{fig:expression_tree_Hemberg2008_expr_1} & 4 & 2  \\[0.2cm]
+ 2 &    $x^3\cdot(x-1) + y\cdot(y/2-1)$ & Figure \ref{fig:expression_tree_Hemberg2008_expr_2} & 4 & 2 \\[0.2cm]
+ 3 & $x^3/5 + y^3/2 - y - x$ & Figure \ref{fig:expression_tree_Hemberg2008_expr_3} & 5 & 2 \\[0.2cm]
+  4 &   $\frac{30\cdot x^2}{(10-x)\cdot y^2}+x^4 - x^3 + \frac{y^2}{2} - y + \frac{8}{2+x^2+y^2} + x$ & Figure \ref{fig:expression_tree_Hemberg2008_expr_4} & 9 & 2 \\[0.2cm]
+  5 &   $\frac{30\cdot x^2}{(10-x)\cdot y^2}+x^4 - \frac{4}{5}x^3 + \frac{y^2}{2} - 2y + \frac{8}{2+x^2+y^2} + \frac{y^3}{2} - x$ & Figure \ref{fig:expression_tree_Hemberg2008_expr_5} & 10 & 2 \\[0.2cm] \hline
 \end{tabular}
     \caption{Expressions considered in \cite{hemberg2008pre} and depth of expression trees.}
     \label{tab:Hemberg2008PreIP_results}
 \end{table}
 
 \subsection{Feynman Benchmarks} \label{subsec:FeynmanBenchmarks}
+In this section, we consider 5 of the equations from the \href{https://space.mit.edu/home/tegmark/aifeynman.html}{Feynman Symbolic Regression Database} with increasing expression-tree depths\footnote{For a glossary of the ``Feynman Symbolic Regression Database'' Expression Trees, see here.} %TODO: Include link w/ expression trees
+, tabulated in Table \ref{tab:AI_Feynman_Benchmark_Equations}. As in \cite{udrescu2020ai}, we randomly sample $10^5$ data points from the benchmark expressions with the range ofthe input variables set to $[1, 5]$. The considered operators are $\sin$, $\sqrt{\phantom{1}}$, $\cos$, $+$, $-$, $\cdot$, $/$, and \specialcaret, and the considered operands are $\mathrm{const}$ and the input variables.
+\par The results are plotted in Figures for benchmarks 1 to 5, respectively. %TODO: Include five figures of 5 subfigures: each subfigure is a plot of prefix and postfix for a particular benchmark and algorithm.
+
+\begin{table}[]
+    \centering
+    \begin{tabular}{|l|l|l|l|l|}
+\hline 
+\# & Expression & Expression Tree & Depth $N$ & \# of Inputs \\ \hline 
+  1 &  $x = \frac{q\cdot E_f}{m\cdot \left(\omega_0^2 - \omega^2\right)}$ & Figure \ref{fig:expression_tree_AIFeynman_expr_1} & 4 & 5  \\[0.2cm]
+   2 & $F = \frac{G\cdot m_1 \cdot m_2}{\left(x_2 - x_1\right)^2 + \left(y_2 - y_1\right)^2 +\left(z_2 - z_1\right)^2}$ & Figure \ref{fig:expression_tree_AIFeynman_expr_2} & 5 & 9 \\[0.2cm]
+ 3 & $A = \left(\frac{Z_1 \cdot Z_2 \cdot \alpha \cdot \hbar \cdot c}{4\cdot E_n \cdot \sin^2\left(\theta/2\right)}\right)^2$ & Figure \ref{fig:expression_tree_AIFeynman_expr_3} & 6 & 7 \\[0.2cm]
+ 4 &   $f = \frac{\mathrm{mom}\cdot H}{k_b \cdot T} + \frac{\mathrm{mom}\cdot \alpha}{\epsilon \cdot c^2 \cdot k_b \cdot T} \cdot M$ & Figure \ref{fig:expression_tree_AIFeynman_expr_4} & 7 & 8 \\[0.2cm]
+ 5 &   $k = \frac{m \cdot k_G}{L^2}\cdot \left(1+\sqrt{\left(1+\frac{2 \cdot E_n \cdot L^2}{m\cdot k_G^2}\right)}\cdot \cos\left(\theta_1-\theta_2\right)\right)$ & Figure \ref{fig:expression_tree_AIFeynman_expr_5} & 8 & 6 \\[0.2cm] \hline
+\end{tabular}
+    \caption{Expressions from \cite{udrescu2020ai} considered in section \ref{subsec:FeynmanBenchmarks}.}
+    \label{tab:AI_Feynman_Benchmark_Equations}
+\end{table}
 
 %open https://space.mit.edu/home/tegmark/aifeynman.html
-%open /Users/edwardfinkelstein/Downloads/FeynmanEquations.numbers /Users/edwardfinkelstein/Downloads/BonusEquations.csv
+%open /Users/edwardfinkelstein/Downloads/FeynmanEquations.csv /Users/edwardfinkelstein/Downloads/BonusEquations.csv
 
 \newpage
 
@@ -610,26 +627,27 @@ ProductVersion:		14.2.1
 BuildVersion:		23C71
 \end{verbatim}
 \section{Expression Trees for Considered Benchmarks} %Make this a website instead
-This section shows the expression trees and prefix/postfix representations of the benchmarks considered in section \ref{sec:Results}. The script to generate the expression trees is here. %TODO: Include href of code.
+This section shows the expression trees and prefix/postfix representations of the benchmarks considered in section \ref{sec:Results}. The scripts to generate the expression trees for the Hemberg and Feynman benchmarks are \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/b57363c6bf1b79cda6e220ebec7c05387e2db971/visualize_tree.py}{here} and \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/b57363c6bf1b79cda6e220ebec7c05387e2db971/AIFeynman.py}{here}, respectively. %TODO: Include href of code.
 
+%%%Hemberg%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{figure}
     \centering
     \includegraphics[width=\linewidth]{expression_tree_Hemberg2008_expr_1.pdf}
-    \caption{Expression tree for expression 1 in Table \ref{tab:Hemberg2008PreIP_results}. The prefix form of the expression is \texttt{/ 8 + + 2 \^\ x 2 \^\ y 2} and the postfix form of the expression is \texttt{/ 8 + + 2 \^\ x 2 \^\ y 2}. }
+    \caption{Expression tree for expression 1 in Table \ref{tab:Hemberg2008PreIP_results}. The prefix form of the expression is \texttt{/ 8 + + 2 \^\ x 2 \^\ y 2} and the postfix form of the expression is \texttt{8 2 x 2 \^\ + y 2 \^\ + /}. }
     \label{fig:expression_tree_Hemberg2008_expr_1}
 \end{figure}
 
 \begin{figure}
     \centering
     \includegraphics[width=\linewidth]{expression_tree_Hemberg2008_expr_2.pdf}
-    \caption{Expression tree for expression 2 in Table \ref{tab:Hemberg2008PreIP_results}. The prefix form of the expression is \texttt{x 3 \^\ x 1 + * y y 2 / 1 - * +} and the postfix form of the expression is \texttt{x 3 \^\ 5 / y 3 \^\ 2 / + y - x -}. } 
+    \caption{Expression tree for expression 2 in Table \ref{tab:Hemberg2008PreIP_results}. The prefix form of the expression is \texttt{+ * \^\ x 3 + x 1 * y - / y 2 1} and the postfix form of the expression is \texttt{x 3 \^\ x 1 + * y y 2 / 1 - * +}. } 
     \label{fig:expression_tree_Hemberg2008_expr_2}
 \end{figure}
 
 \begin{figure}
     \centering
     \includegraphics[width=\linewidth]{expression_tree_Hemberg2008_expr_3.pdf}
-    \caption{Expression tree for expression 3 in Table \ref{tab:Hemberg2008PreIP_results}. The prefix form of the expression is \texttt{ - - + / \^\ x 3 5 / \^\ y 3 2 y x} and the postfix form of the expression is \texttt{x 3 \^\ 5 / y 3 \^\ 2 / + y - x -}. } 
+    \caption{Expression tree for expression 3 in Table \ref{tab:Hemberg2008PreIP_results}. The prefix form of the expression is \texttt{- - + / \^\ x 3 5 / \^\ y 3 2 y x} and the postfix form of the expression is \texttt{x 3 \^\ 5 / y 3 \^\ 2 / + y - x -}. } 
     \label{fig:expression_tree_Hemberg2008_expr_3}
 \end{figure}
 
@@ -646,6 +664,45 @@ This section shows the expression trees and prefix/postfix representations of th
     \caption{Expression tree for expression 5 in Table \ref{tab:Hemberg2008PreIP_results}. The prefix form of the expression is \texttt{- + + - + - + / * 30 \^\ x 2 * - 10 x y \^\ x 4 * / 4 5 \^\ x 3 / \^\ y 2 2 * 2 y / 8 + + 2 \^\ x 2 \^\ y 2 / \^\ y 3 2 x} and the postfix form of the expression is \texttt{30 x 2 \^\ * 10 x - y * / x 4 \^\ + 4 5 / x 3 \^\ * - y 2 \^\ 2 / + 2 y * - 8 2 x 2 \^\ + y 2 \^\ + / + y 3 \^\ 2 / + x -}. } 
     \label{fig:expression_tree_Hemberg2008_expr_5}
 \end{figure}
+
+%%%Feynman%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{expression_tree_AIFeynman_expr_1.pdf}
+    \caption{Expression tree for expression 1 in Table \ref{tab:AI_Feynman_Benchmark_Equations}. The prefix form of the expression is \texttt{} and the postfix form of the expression is \texttt{q Ef * m omega\_0 2 \^\ omega 2 \^\ - *  /}. }
+    \label{fig:expression_tree_AIFeynman_expr_1}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{expression_tree_AIFeynman_expr_2.pdf}
+    \caption{Expression tree for expression 2 in Table \ref{tab:AI_Feynman_Benchmark_Equations}. The prefix form of the expression is \texttt{} and the postfix form of the expression is \texttt{G m1 * m2 * x2 x1 - 2 \^\ y2 y1 - 2 \^\ + z2 z1 - 2 \^\ +  /}. } 
+    \label{fig:expression_tree_AIFeynman_expr_2}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{expression_tree_AIFeynman_expr_3.pdf}
+    \caption{Expression tree for expression 3 in Table \ref{tab:AI_Feynman_Benchmark_Equations}. The prefix form of the expression is \texttt{} and the postfix form of the expression is \texttt{Z\_1 Z\_2 * alpha * hbar * c * 4 E\_n * theta 2 / sin 2 \^\ * / 2 \^\ }. } 
+    \label{fig:expression_tree_AIFeynman_expr_3}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{expression_tree_AIFeynman_expr_4.pdf}
+    \caption{Expression tree for expression 4 in Table \ref{tab:AI_Feynman_Benchmark_Equations}.  The prefix form of the expression is \texttt{} and the postfix form of the expression is \texttt{mom H * kb T * / mom alpha * epsilon c 2 \^\ * kb * T * / M * +}. } 
+    \label{fig:expression_tree_AIFeynman_expr_4}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{expression_tree_AIFeynman_expr_5.pdf}
+    \caption{Expression tree for expression 5 in Table \ref{tab:AI_Feynman_Benchmark_Equations}. The prefix form of the expression is \texttt{} and the postfix form of the expression is \texttt{m k\_G * L 2 \^\ / 1 1 2 E\_n * L 2 \^\ * m k\_G 2 \^\ * / + sqrt theta1 theta2 - cos * +  *}. } 
+    \label{fig:expression_tree_AIFeynman_expr_5}
+\end{figure}
+
+
+
 
 
 \end{document}
