@@ -584,7 +584,7 @@ In this section, we benchmark the 5 equations tested in \cite{hemberg2008pre} us
 \end{table}
 
 \subsection{Feynman Benchmarks} \label{subsec:FeynmanBenchmarks}
-In this section, we consider 5 of the equations from the \href{https://space.mit.edu/home/tegmark/aifeynman.html}{Feynman Symbolic Regression Database} with increasing expression-tree depths\footnote{For a glossary of the ``Feynman Symbolic Regression Database'' Expression Trees, see here.} %TODO: Include link w/ expression trees
+In this section, we consider 5 of the equations from the \href{https://space.mit.edu/home/tegmark/aifeynman.html}{Feynman Symbolic Regression Database} with increasing expression-tree depths\footnote{For a glossary of the ``Feynman Symbolic Regression Database'' Expression Trees, see \href{https://edfink234.github.io/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees}{here}.} %TODO: Include link w/ expression trees
 , tabulated in Table \ref{tab:AI_Feynman_Benchmark_Equations}. As in \cite{udrescu2020ai}, we randomly sample $10^5$ data points from the benchmark expressions with the range ofthe input variables set to $[1, 5]$. The considered operators are $\sin$, $\sqrt{\phantom{1}}$, $\cos$, $+$, $-$, $\cdot$, $/$, and \specialcaret, and the considered operands are $\mathrm{const}$ and the input variables.
 \par The results are plotted in Figures for benchmarks 1 to 5, respectively. %TODO: Include five figures of 5 subfigures: each subfigure is a plot of prefix and postfix for a particular benchmark and algorithm.
 
@@ -669,35 +669,35 @@ This section shows the expression trees and prefix/postfix representations of th
 \begin{figure}
     \centering
     \includegraphics[width=\linewidth]{expression_tree_AIFeynman_expr_1.pdf}
-    \caption{Expression tree for expression 1 in Table \ref{tab:AI_Feynman_Benchmark_Equations}. The prefix form of the expression is \texttt{} and the postfix form of the expression is \texttt{q Ef * m omega\_0 2 \^\ omega 2 \^\ - *  /}. }
+    \caption{Expression tree for expression 1 in Table \ref{tab:AI_Feynman_Benchmark_Equations}. The prefix form of the expression is \texttt{/ * q Ef * m - \^\ omega\_0 2 \^\ omega 2} and the postfix form of the expression is \texttt{q Ef * m omega\_0 2 \^\ omega 2 \^\ - *  /}. }
     \label{fig:expression_tree_AIFeynman_expr_1}
 \end{figure}
 
 \begin{figure}
     \centering
     \includegraphics[width=\linewidth]{expression_tree_AIFeynman_expr_2.pdf}
-    \caption{Expression tree for expression 2 in Table \ref{tab:AI_Feynman_Benchmark_Equations}. The prefix form of the expression is \texttt{} and the postfix form of the expression is \texttt{G m1 * m2 * x2 x1 - 2 \^\ y2 y1 - 2 \^\ + z2 z1 - 2 \^\ +  /}. } 
+    \caption{Expression tree for expression 2 in Table \ref{tab:AI_Feynman_Benchmark_Equations}. The prefix form of the expression is \texttt{/ * * G m1 m2 + + \^\ - x2 x1 2 \^\ - y2 y1 2 \^\ - z2 z1 2} and the postfix form of the expression is \texttt{G m1 * m2 * x2 x1 - 2 \^\ y2 y1 - 2 \^\ + z2 z1 - 2 \^\ +  /}. } 
     \label{fig:expression_tree_AIFeynman_expr_2}
 \end{figure}
 
 \begin{figure}
     \centering
     \includegraphics[width=\linewidth]{expression_tree_AIFeynman_expr_3.pdf}
-    \caption{Expression tree for expression 3 in Table \ref{tab:AI_Feynman_Benchmark_Equations}. The prefix form of the expression is \texttt{} and the postfix form of the expression is \texttt{Z\_1 Z\_2 * alpha * hbar * c * 4 E\_n * theta 2 / sin 2 \^\ * / 2 \^\ }. } 
+    \caption{Expression tree for expression 3 in Table \ref{tab:AI_Feynman_Benchmark_Equations}. The prefix form of the expression is \texttt{\^\ / * * * * Z\_1 Z\_2 alpha hbar c * * 4 E\_n \^\ sin / theta 2 2 2} and the postfix form of the expression is \texttt{Z\_1 Z\_2 * alpha * hbar * c * 4 E\_n * theta 2 / sin 2 \^\ * / 2 \^\ }. } 
     \label{fig:expression_tree_AIFeynman_expr_3}
 \end{figure}
 
 \begin{figure}
     \centering
     \includegraphics[width=\linewidth]{expression_tree_AIFeynman_expr_4.pdf}
-    \caption{Expression tree for expression 4 in Table \ref{tab:AI_Feynman_Benchmark_Equations}.  The prefix form of the expression is \texttt{} and the postfix form of the expression is \texttt{mom H * kb T * / mom alpha * epsilon c 2 \^\ * kb * T * / M * +}. } 
+    \caption{Expression tree for expression 4 in Table \ref{tab:AI_Feynman_Benchmark_Equations}.  The prefix form of the expression is \texttt{+ / * mom H * kb T * / * mom alpha * * * epsilon \^\ c 2 kb T M} and the postfix form of the expression is \texttt{mom H * kb T * / mom alpha * epsilon c 2 \^\ * kb * T * / M * +}. } 
     \label{fig:expression_tree_AIFeynman_expr_4}
 \end{figure}
 
 \begin{figure}
     \centering
     \includegraphics[width=\linewidth]{expression_tree_AIFeynman_expr_5.pdf}
-    \caption{Expression tree for expression 5 in Table \ref{tab:AI_Feynman_Benchmark_Equations}. The prefix form of the expression is \texttt{} and the postfix form of the expression is \texttt{m k\_G * L 2 \^\ / 1 1 2 E\_n * L 2 \^\ * m k\_G 2 \^\ * / + sqrt theta1 theta2 - cos * +  *}. } 
+    \caption{Expression tree for expression 5 in Table \ref{tab:AI_Feynman_Benchmark_Equations}. The prefix form of the expression is \texttt{* / * m k\_G \^\ L 2 + 1 * sqrt + 1 / * * 2 E\_n \^\ L 2 * m \^\ k\_G 2 cos - theta1 theta2} and the postfix form of the expression is \texttt{m k\_G * L 2 \^\ / 1 1 2 E\_n * L 2 \^\ * m k\_G 2 \^\ * / + sqrt theta1 theta2 - cos * +  *}. } 
     \label{fig:expression_tree_AIFeynman_expr_5}
 \end{figure}
 

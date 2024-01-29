@@ -49,6 +49,25 @@ def rpn_to_infix(rpn_expression):
             stack.append(result)
     
     return stack[-1]
+    
+def rpn_to_pre(rpn_expression):
+    stack = []
+    if isinstance(rpn_expression, str):
+        rpn_expression = rpn_expression.split()
+    for token in rpn_expression:
+        if not is_operator(token): #other
+            stack.append(token)
+        elif is_unary_operator(token): #unary operator
+            operand = stack.pop()
+            result = f'{token} {operand}'
+            stack.append(result)
+        else: #binary operator
+            right_operand = stack.pop()
+            left_operand = stack.pop()
+            result = f'{token} {left_operand} {right_operand}'
+            stack.append(result)
+    
+    return stack[-1]
 
 def pn_to_infix(pn_expression):
     stack = []
@@ -292,7 +311,8 @@ def test_visualize():
             try:
 #                plot_pn_expression_tree("+ cos cos x0 * 1.031240 + 0.008202 * 1.919085 - cos x3 - cos x0 cos cos * x0 + x3 x3".split(), block=False, save = save)
 #                plot_rpn_expression_tree("x3 cos 0.427738 * 4.779139 x1 - 0.390789 x0 0.637794 x2 * - + 0.598703 x2 cos 1.463665 cos x2 + 1.063828 x3 + x0 0.031570 x0 + 1.493230 - * * + - * * + *".split(), block=False, save = save)
-                plot_rpn_expression_tree("q Ef * m omega_0 2 ^ omega 2 ^ - *  /".split(), block=False, save = save)
+#                plot_rpn_expression_tree("q Ef * m omega_0 2 ^ omega 2 ^ - *  /".split(), block=False, save = save)
+                plot_pn_expression_tree("* / * m k_G ^ L 2 + 1 * sqrt + 1 / * * 2 E_n ^ L 2 * m ^ k_G 2 cos - theta1 theta2".split(), block=False, save = save)
             except KeyboardInterrupt:
                 plt.close()
                 exit()
