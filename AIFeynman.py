@@ -167,7 +167,7 @@ if not os.path.isdir("AIFeynmanTrees"):
 
 for i, [Formula, PostfixFormula, ExpressionDepth] in enumerate(FeynmanEquations[["Formula", "PostfixFormula", "ExpressionDepth"]].values):
     plot_rpn_expression_tree(expression = PostfixFormula, save = True, filename = f"AIFeynmanTrees/Formula{i+1}.svg", title = f"{Formula}, depth = {ExpressionDepth}")
-#    os.system(f"rsvg-convert -f pdf -o AIFeynmanTrees/Formula{i+1}.pdf AIFeynmanTrees/Formula{i+1}.svg")
+    os.system(f"rsvg-convert -f pdf -o AIFeynmanTrees/Formula{i+1}.pdf AIFeynmanTrees/Formula{i+1}.svg")
 
 N = 101
 #

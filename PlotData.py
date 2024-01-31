@@ -75,7 +75,7 @@ def PaperPlots(files):
 AIFeynman_Files = 'Feynman_1PreRandomSearch.txt', 'Feynman_1PostRandomSearch.txt', 'Feynman_2PreRandomSearch.txt', 'Feynman_2PostRandomSearch.txt', 'Feynman_3PreRandomSearch.txt', 'Feynman_3PostRandomSearch.txt', 'Feynman_4PreRandomSearch.txt', 'Feynman_4PostRandomSearch.txt', 'Feynman_5PreRandomSearch.txt', 'Feynman_5PostRandomSearch.txt', 'Feynman_1PreMCTS.txt', 'Feynman_1PostMCTS.txt', 'Feynman_2PreMCTS.txt', 'Feynman_2PostMCTS.txt', 'Feynman_3PreMCTS.txt', 'Feynman_3PostMCTS.txt', 'Feynman_4PreMCTS.txt', 'Feynman_4PostMCTS.txt', 'Feynman_5PreMCTS.txt', 'Feynman_5PostMCTS.txt', 'Feynman_1PrePSO.txt', 'Feynman_1PostPSO.txt', 'Feynman_2PrePSO.txt', 'Feynman_2PostPSO.txt', 'Feynman_3PrePSO.txt', 'Feynman_3PostPSO.txt', 'Feynman_4PrePSO.txt', 'Feynman_4PostPSO.txt', 'Feynman_5PrePSO.txt', 'Feynman_5PostPSO.txt', 'Feynman_1PreGP.txt', 'Feynman_1PostGP.txt', 'Feynman_2PreGP.txt', 'Feynman_2PostGP.txt','Feynman_3PreGP.txt', 'Feynman_3PostGP.txt', 'Feynman_4PreGP.txt', 'Feynman_4PostGP.txt', 'Feynman_5PreGP.txt', 'Feynman_5PostGP.txt', 'Feynman_1PreSimulatedAnnealing.txt', 'Feynman_1PostSimulatedAnnealing.txt', 'Feynman_2PreSimulatedAnnealing.txt', 'Feynman_2PostSimulatedAnnealing.txt', 'Feynman_3PreSimulatedAnnealing.txt', 'Feynman_3PostSimulatedAnnealing.txt', 'Feynman_4PreSimulatedAnnealing.txt', 'Feynman_4PostSimulatedAnnealing.txt', 'Feynman_5PreSimulatedAnnealing.txt', 'Feynman_5PostSimulatedAnnealing.txt'
 
 #process_files(Hemberg_Files)
-process_files(AIFeynman_Files[:26])
+process_files(AIFeynman_Files[:34])
 #PaperPlots(Hemberg_Files)
 
 
