@@ -1,4 +1,5 @@
 from scholarly import scholarly
+import os
 
 # Function to search Google Scholar and count publications over time
 def count_publications(queries):
@@ -41,28 +42,28 @@ acyclic_graph_queries = ('"acyclic graph" AND "symbolic regression"', '"acyclic-
 import matplotlib.pyplot as plt
 
 # Read integers from the file
-file_path = 'prefix_pub_years.txt'  # Replace with your file path
+file_path = 'prefix_pub_years.txt'
 with open(file_path, 'r') as file:
     integers_prefix = [int(line.strip()) for line in file.readlines()]
-file_path = 'postfix_pub_years.txt'  # Replace with your file path
+file_path = 'postfix_pub_years.txt'
 with open(file_path, 'r') as file:
     integers_postfix = [int(line.strip()) for line in file.readlines()]
-file_path = 'acyclic_graph_pub_years.txt'  # Replace with your file path
+file_path = 'acyclic_graph_pub_years.txt'
 with open(file_path, 'r') as file:
     integers_acyclic_graph = [int(line.strip()) for line in file.readlines()]
 
 # Plot histogram
-plt.hist(integers_acyclic_graph, bins=10, color='green', edgecolor='black', label = "acyclic-graph")
-plt.hist(integers_prefix, bins=10, color='skyblue', edgecolor='black', label = "prefix")  # Adjust the number of bins as needed
-plt.hist(integers_postfix, bins=10, color='orange', edgecolor='black', label = "postfix")  # Adjust the number of bins as needed
-  # Adjust the number of bins as needed
+plt.hist(integers_acyclic_graph, bins=10, color='green', edgecolor='black', label = "acyclic-graph", alpha = 0.7)   # Adjust the number of bins as needed
+plt.hist(integers_prefix, bins=10, color='skyblue', edgecolor='black', label = "prefix", alpha = 0.7)  # Adjust the number of bins as needed
+plt.hist(integers_postfix, bins=10, color='orange', edgecolor='black', label = "postfix", alpha = 0.7)  # Adjust the number of bins as needed
 plt.xlabel('Year')
 plt.ylabel('Frequency')
 plt.title('# of Publication Mentions')
 plt.grid(True)
 plt.legend()
 plt.savefig("pub_freqs.svg")
-
+os.system(f"rsvg-convert -f pdf -o pub_freqs.pdf pub_freqs.svg")
+os.system(f"rm pub_freqs.svg")
 
 
 
