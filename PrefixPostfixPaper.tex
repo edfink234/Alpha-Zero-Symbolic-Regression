@@ -71,19 +71,7 @@
 \end{indented}
 
 \begin{abstract}
-This document describes the  preparation of an article using \LaTeXe\ and 
-\verb"iopart.cls" (the IOP Publishing \LaTeXe\ preprint class file).
-This class file is designed to help 
-authors produce preprints in a form suitable for submission to any of the
-journals listed in table~\ref{jlab1} on the next page.  You are not obliged to use this class file---we accept
-submissions using all common \LaTeX\ class and style files.  The \verb"iopart.cls"
-class file is supplied merely as a convenience for those authors who find it useful.
-This document gives both general advice that applies whatever class file you use, and specific advice
-that applies if you choose to use \verb"iopart.cls".
-
-We also accept submissions in Word format.  See elsewhere on this site for guidelines on Word submissions.
-
-If you have any queries about this document or any aspect of preparing your article for submission please contact us at the e-mail address given above.
+We develop faultless, fixed-depth, string-based, prefix and postfix symbolic regression grammars, capable of producing \emph{any} expression consisting of a set of operands, unary operators and/or binary operators. Using these grammars, we outline simplified forms of 5 popular heuristic search strategies, namely, Brute Force Search,  Monte Carlo Tree Search, Particle Swarm Optimization, Genetic Programming, and Simulated Annealing. For each algorithm, we compare the relative performance of prefix vs postfix for 10 different ground-truth expressions, implemented within the same C++/Eigen symbolic regression framework. 
 \end{abstract}
 
 %
@@ -161,7 +149,7 @@ Figure \ref{fig:pub_freqs_pre_post_acyc_graph} shows a histogram of publication 
 \begin{figure}
     \centering
     \includegraphics[width=\linewidth]{pub_freqs.pdf}
-    \caption{Number of mentions of prefix, postfix, and acyclic graph in publications pertaining to symbolic regression. The python module scholarly was used to generate this histogram \cite{cholewiak2021scholarly}. The search queries utilized were ``postfix notation'' AND ``symbolic regression'', ``prefix notation'' AND ``symbolic regression'', ``acyclic graph'' AND ``symbolic regression'', ``reverse polish notation'' AND ``symbolic regression'', ``polish notation'' AND ``symbolic regression'', and ``acyclic-graph'' AND ``symbolic regression''. The script to reproduce this plot is \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/2999916868007841f05c272498edef3aa2dcb494/Figure_1/notations_pubs_counter.py}{here}.} 
+    \caption{Number of mentions of prefix, postfix, and acyclic graph in publications pertaining to symbolic regression. The python module scholarly was used to generate this histogram \cite{cholewiak2021scholarly}. The search queries utilized were ``postfix notation'' AND ``symbolic regression'', ``prefix notation'' AND ``symbolic regression'', ``acyclic graph'' AND ``symbolic regression'', ``reverse polish notation'' AND ``symbolic regression'', ``polish notation'' AND ``symbolic regression'', and ``acyclic-graph'' AND ``symbolic regression''. The script to reproduce this plot is \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/d5ebdf90c0915cd5769b29bf679709dbd4a618c7/Figure_1/notations_pubs_counter.py}{here}.} 
     \label{fig:pub_freqs_pre_post_acyc_graph}
 \end{figure}
 
@@ -560,13 +548,12 @@ Simulated Annealing is a metaheuristic search strategy inspired by the metallurg
 where $\Delta$ is the score of the perturbed expression minus the maximum score achieved thus far. We bound the temperature parameter $T$ to be between $T_{\mathrm{min}} = 0.012$ and $T_{\mathrm{max}} = 0.1$, and we set the initial temperature $T_{\mathrm{init}} = T_{\mathrm{max}}$. We use the same temperature update rule as in \cite{10.1145/3449639.3459345}, namely, $T \gets rT$, where $r \equiv \left(T_{\mathrm{min}}/T_{\mathrm{max}}\right)^{1/(i+1)}$ where $i$ is the iteration number. Lastly, to escape local minima, we use a simple update rule similar to the previous sections, namely, after $N_{\mathrm{iter}}$ iterations, if the best score has not improved, we update the temperature as $T \gets \min{\left(10\cdot T, T_{\mathrm{max}}\right)}$, else, we update the temperature as $T \gets \max{\left(T/10, T_{\mathrm{min}}\right)}$.
 
 \section{Results}\label{sec:Results}
-In this section, we benchmark the algorithms defined in section \ref{sec:SymbolicRegressionAlgorithms} with the grammars defined in section \ref{sec:Background}. First, in section \ref{subsec:SimulatedAnnealing}, we perform benchmarks for the expressions considered in \cite{hemberg2008pre}. Then, in section \ref{subsec:FeynmanBenchmarks}, we consider perform benchmarks using some of the equations considered in \cite{udrescu2020ai} with varying complexity/depth of expression trees.
-\par For each configuration, i.e., Prefix Random Search, Prefix Monte Carlo Tree Search, Prefix Particle Swarm Optimization, Prefix Genetic Programming,  Prefix Simulated Annealing, Postfix Random Search, Postfix Monte Carlo Tree Search, Postfix Particle Swarm Optimization, Postfix Genetic Programming, and Postfix Simulated Annealing, we perform 50 runs of 2 minutes each for each benchmark expression considered in this section, where the MSE is sampled every 6 seconds for each run \footnote{Disclaimer: This does not imply that each sampled time point (i.e., 6 seconds, 12 seconds, $\ldots$ , 120 seconds) has 50 measurements. The number of measurements is in practice $\leq$ the number of runs, 50, and depends on the duration of computations at different points in the algorithm.}. This approach is similar to how the SR algorithms in \cite{defranca2023interpretable} are given a pre-specified time budget and how \cite{manti2023discovering} plots the mean and variance of the best-achieved fitnesses over time. 
-\subsection{Hemberg Benchmarks} \label{subsec:HembergBenchmarks}
-In this section, we benchmark the 5 equations tested in \cite{hemberg2008pre} using the Random Search \ref{subsec:RandomSearch}, Monte Carlo Tree Search \ref{subsec:MonteCarlo TreeSearch}, Particle Swarm Optimization \ref{subsec:ParticleSwarmOptimization}, Genetic Programming \ref{subsec:GeneticProgramming}, and Simulated Annealing \ref{subsec:SimulatedAnnealing} algorithms with the prefix grammar \ref{subsec:prefix_grammar} vs the postfix grammar \ref{subsec:postfix_grammar}. For completeness, the expressions are tabulated in Table \ref{tab:Hemberg2008PreIP_results}.
-\par As in the original paper \cite{hemberg2008pre}, we set the range of the two input variables $x$ and $y$ to $[-3,3]$ and sample 20 randomly sampled points from the benchmark expressions.  The considered operators and operands are $+$, $-$, $\cdot$, $/$, \specialcaret , and $\mathrm{const}$, $x$, $y$, respectively. 
-\par The results are plotted in Figures for benchmarks 1 to 5, respectively. %TODO: Include five figures of 5 subfigures: each subfigure is a plot of prefix and postfix for a particular benchmark and algorithm.
+In this section, we benchmark the algorithms defined in section \ref{sec:SymbolicRegressionAlgorithms} employing the grammars defined in section \ref{sec:Background} using the caching approaches for computing the expression depth and completeness tabuled in algorithms \ref{alg:getPNdepth_cache} and \ref{alg:getRPNdepth_cache}. First, in section \ref{subsec:SimulatedAnnealing}, we perform benchmarks for the expressions considered in \cite{hemberg2008pre}. Then, in section \ref{subsec:FeynmanBenchmarks}, we consider some of the equations considered in \cite{udrescu2020ai} with varying complexity/depth of expression trees.
+\par For each configuration, i.e., Prefix Random Search, Prefix Monte Carlo Tree Search, Prefix Particle Swarm Optimization, Prefix Genetic Programming,  Prefix Simulated Annealing, Postfix Random Search, Postfix Monte Carlo Tree Search, Postfix Particle Swarm Optimization, Postfix Genetic Programming, and Postfix Simulated Annealing, we perform 50 runs of 2 minutes each for each benchmark expression considered in this section, where the MSE is sampled every 6 seconds for each run \footnote{Disclaimer: This does not imply that each sampled time point (i.e., 6 seconds, 12 seconds, $\ldots$ , 120 seconds) has 50 measurements. The number of measurements is in practice $\leq$ the number of runs, 50, and depends on the duration of computations at different points in the algorithm. Thus, the MSE curves that follow are not all consistently decreasing due to the lack of data recorded at certain points in the algorithm(s) stemming from the non-uniformity of their computational expenditure over time.}. This approach is similar to how the SR algorithms in \cite{defranca2023interpretable} are given a pre-specified time budget and how \cite{manti2023discovering} plots the mean and variance of the best-achieved fitnesses over time. 
 
+\subsection{Hemberg Benchmarks} \label{subsec:HembergBenchmarks}
+In this section, we benchmark the 5 equations tested in \cite{hemberg2008pre} using the Random Search \ref{subsec:RandomSearch}, Monte Carlo Tree Search \ref{subsec:MonteCarlo TreeSearch}, Particle Swarm Optimization \ref{subsec:ParticleSwarmOptimization}, Genetic Programming \ref{subsec:GeneticProgramming}, and Simulated Annealing \ref{subsec:SimulatedAnnealing} algorithms with the prefix grammar \ref{subsec:prefix_grammar} vs the postfix grammar \ref{subsec:postfix_grammar}. For completeness, the expressions are tabulated in Table \ref{tab:Hemberg2008PreIP_results} as well as the depth $N$ of their expression trees that we run the benchmarks with\footnote{In other words, we fix the hyper-parameter $N$ before running a particular benchmark.}.
+\par As in the original paper \cite{hemberg2008pre}, we set the range of the two input variables $x$ and $y$ to $[-3,3]$ and sample 20 randomly sampled points from the benchmark expressions.  The considered operators and operands are $+$, $-$, $\cdot$, $/$, \specialcaret , and $\mathrm{const}$, $x$, $y$, respectively
 
 \begin{table}[]
     \centering
@@ -583,10 +570,216 @@ In this section, we benchmark the 5 equations tested in \cite{hemberg2008pre} us
     \label{tab:Hemberg2008PreIP_results}
 \end{table}
 
+\par The results are plotted in Figures \ref{fig:Hemberg_1_Benchmarks} - \ref{fig:Hemberg_5_Benchmarks} for benchmarks 1 - 5, respectively. For Random Search, postfix did $\sim$ worse than prefix on the first three Hemberg benchmarks and better on the last two Hemberg benchmarks. For MCTS, postfix did worse than prefix on the first Hemberg benchmark and better on the last four Hemberg benchmarks. For PSO, postfix did roughly the same as prefix but exhibited significantly quicker relative convergence on the last two Hemberg benchmarks. For the GP approach, postfix did roughly the same as prefix on the first three Hemberg benchmarks, and significantly better on the last two Hemberg benchmarks, agreeing with the results obtained in the original paper \cite{hemberg2008pre}. Lastly, for Simulated Annealing, postfix did $\sim$ worse on the second and third Hemberg benchmarks and roughly the same on the first, fourth, and fifth benchmarks. 
+
+\begin{figure}
+    \centering
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_1RandomSearch.pdf}
+        \caption{Random Search Hemberg 1}
+        \label{subfig:hemberg_1_RS}
+    \end{subfigure}
+    % \hfill
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_1MCTS.pdf}
+        \caption{MCTS Hemberg 1}
+        \label{subfig:hemberg_1_MCTS}
+    \end{subfigure}
+    
+    \vspace{0.5cm}
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_1PSO.pdf}
+        \caption{PSO Hemberg 1}
+        \label{subfig:hemberg_1_PSO}
+    \end{subfigure}
+    % \hfill
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_1GP.pdf}
+        \caption{GP Hemberg 1}
+        \label{subfig:hemberg_1_GP}
+    \end{subfigure}
+    
+    \vspace{0.5cm}
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_1SimulatedAnnealing.pdf}
+        \caption{Simulated Annealing Hemberg 1}
+        \label{subfig:hemberg_1_SA}
+    \end{subfigure}
+    
+    \caption{Hemberg Benchmark Equation 1 (from Table \ref{tab:Hemberg2008PreIP_results}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using Prefix and Postfix expression representations.}
+    \label{fig:Hemberg_1_Benchmarks}
+\end{figure}
+
+\begin{figure}
+    \centering
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_2RandomSearch.pdf}
+        \caption{Random Search Hemberg 2}
+        \label{subfig:hemberg_2_RS}
+    \end{subfigure}
+    % \hfill
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_2MCTS.pdf}
+        \caption{MCTS Hemberg 2}
+        \label{subfig:hemberg_2_MCTS}
+    \end{subfigure}
+    
+    \vspace{0.5cm}
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_2PSO.pdf}
+        \caption{PSO Hemberg 2}
+        \label{subfig:hemberg_2_PSO}
+    \end{subfigure}
+    % \hfill
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_2GP.pdf}
+        \caption{GP Hemberg 2}
+        \label{subfig:hemberg_2_GP}
+    \end{subfigure}
+    
+    \vspace{0.5cm}
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_2SimulatedAnnealing.pdf}
+        \caption{Simulated Annealing Hemberg 2}
+        \label{subfig:hemberg_2_SA}
+    \end{subfigure}
+    
+    \caption{Hemberg Benchmark Equation 2 (from Table \ref{tab:Hemberg2008PreIP_results}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
+    \label{fig:Hemberg_2_Benchmarks}
+\end{figure}
+
+\begin{figure}
+    \centering
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_3RandomSearch.pdf}
+        \caption{Random Search Hemberg 3}
+        \label{subfig:hemberg_3_RS}
+    \end{subfigure}
+    % \hfill
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_3MCTS.pdf}
+        \caption{MCTS Hemberg 3}
+        \label{subfig:hemberg_3_MCTS}
+    \end{subfigure}
+    
+    \vspace{0.5cm}
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_3PSO.pdf}
+        \caption{PSO Hemberg 3}
+        \label{subfig:hemberg_3_PSO}
+    \end{subfigure}
+    % \hfill
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_3GP.pdf}
+        \caption{GP Hemberg 3}
+        \label{subfig:hemberg_3_GP}
+    \end{subfigure}
+    
+    \vspace{0.5cm}
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_3SimulatedAnnealing.pdf}
+        \caption{Simulated Annealing Hemberg 3}
+        \label{subfig:hemberg_3_SA}
+    \end{subfigure}
+    
+    \caption{Hemberg Benchmark Equation 3 (from Table \ref{tab:Hemberg2008PreIP_results}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
+    \label{fig:Hemberg_3_Benchmarks}
+\end{figure}
+
+\begin{figure}
+    \centering
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_4RandomSearch.pdf}
+        \caption{Random Search Hemberg 4}
+        \label{subfig:hemberg_4_RS}
+    \end{subfigure}
+    % \hfill
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_4MCTS.pdf}
+        \caption{MCTS Hemberg 4}
+        \label{subfig:hemberg_4_MCTS}
+    \end{subfigure}
+    
+    \vspace{0.5cm}
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_4PSO.pdf}
+        \caption{PSO Hemberg 4}
+        \label{subfig:hemberg_4_PSO}
+    \end{subfigure}
+    % \hfill
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_4GP.pdf}
+        \caption{GP Hemberg 4}
+        \label{subfig:hemberg_4_GP}
+    \end{subfigure}
+    
+    \vspace{0.5cm}
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_4SimulatedAnnealing.pdf}
+        \caption{Simulated Annealing Hemberg 4}
+        \label{subfig:hemberg_4_SA}
+    \end{subfigure}
+    
+    \caption{Hemberg Benchmark Equation 4 (from Table \ref{tab:Hemberg2008PreIP_results}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
+    \label{fig:Hemberg_4_Benchmarks}
+\end{figure}
+
+\begin{figure}
+    \centering
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_5RandomSearch.pdf}
+        \caption{Random Search Hemberg 5}
+        \label{subfig:hemberg_5_RS}
+    \end{subfigure}
+    % \hfill
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_5MCTS.pdf}
+        \caption{MCTS Hemberg 5}
+        \label{subfig:hemberg_5_MCTS}
+    \end{subfigure}
+    
+    \vspace{0.5cm}
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_5PSO.pdf}
+        \caption{PSO Hemberg 5}
+        \label{subfig:hemberg_5_PSO}
+    \end{subfigure}
+    % \hfill
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_5GP.pdf}
+        \caption{GP Hemberg 5}
+        \label{subfig:hemberg_5_GP}
+    \end{subfigure}
+    
+    \vspace{0.5cm}
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_5SimulatedAnnealing.pdf}
+        \caption{Simulated Annealing Hemberg 5}
+        \label{subfig:hemberg_5_SA}
+    \end{subfigure}
+    
+    \caption{Hemberg Benchmark Equation 5 (from Table \ref{tab:Hemberg2008PreIP_results}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
+    \label{fig:Hemberg_5_Benchmarks}
+\end{figure}
+
 \subsection{Feynman Benchmarks} \label{subsec:FeynmanBenchmarks}
-In this section, we consider 5 of the equations from the \href{https://space.mit.edu/home/tegmark/aifeynman.html}{Feynman Symbolic Regression Database} with increasing expression-tree depths\footnote{For a glossary of the ``Feynman Symbolic Regression Database'' Expression Trees, see \href{https://edfink234.github.io/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees}{here}.} %TODO: Include link w/ expression trees
-, tabulated in Table \ref{tab:AI_Feynman_Benchmark_Equations}. As in \cite{udrescu2020ai}, we randomly sample $10^5$ data points from the benchmark expressions with the range ofthe input variables set to $[1, 5]$. The considered operators are $\sin$, $\sqrt{\phantom{1}}$, $\cos$, $+$, $-$, $\cdot$, $/$, and \specialcaret, and the considered operands are $\mathrm{const}$ and the input variables.
-\par The results are plotted in Figures for benchmarks 1 to 5, respectively. %TODO: Include five figures of 5 subfigures: each subfigure is a plot of prefix and postfix for a particular benchmark and algorithm.
+In this section, we consider 5 of the equations from the \href{https://space.mit.edu/home/tegmark/aifeynman.html}{Feynman Symbolic Regression Database} with increasing expression-tree depths\footnote{For a glossary of the ``Feynman Symbolic Regression Database'' Expression Trees, see \href{https://edfink234.github.io/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees}{here}.} 
+, tabulated in Table \ref{tab:AI_Feynman_Benchmark_Equations} along with the depth $N$ of their expression trees that we run the benchmarks with. As in \cite{udrescu2020ai}, we randomly sample $10^5$ data points from the benchmark expressions with the range ofthe input variables set to $[1, 5]$. The considered operators are $\sin$, $\sqrt{\phantom{1}}$, $\cos$, $+$, $-$, $\cdot$, $/$, and \specialcaret, and the considered operands are $\mathrm{const}$ and the input variables. 
 
 \begin{table}[]
     \centering
@@ -603,8 +796,13 @@ In this section, we consider 5 of the equations from the \href{https://space.mit
     \label{tab:AI_Feynman_Benchmark_Equations}
 \end{table}
 
+\par The results are plotted in Figures for benchmarks 1 to 5, respectively. %TODO: Include five figures of 5 subfigures: each subfigure is a plot of prefix and postfix for a particular benchmark and algorithm. 
+
 %open https://space.mit.edu/home/tegmark/aifeynman.html
 %open /Users/edwardfinkelstein/Downloads/FeynmanEquations.csv /Users/edwardfinkelstein/Downloads/BonusEquations.csv
+
+\section{Analysis of Results}
+
 
 \newpage
 
@@ -627,7 +825,7 @@ ProductVersion:		14.2.1
 BuildVersion:		23C71
 \end{verbatim}
 \section{Expression Trees for Considered Benchmarks} %Make this a website instead
-This section shows the expression trees and prefix/postfix representations of the benchmarks considered in section \ref{sec:Results}. The scripts to generate the expression trees for the Hemberg and Feynman benchmarks are \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/b57363c6bf1b79cda6e220ebec7c05387e2db971/visualize_tree.py}{here} and \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/b57363c6bf1b79cda6e220ebec7c05387e2db971/AIFeynman.py}{here}, respectively. %TODO: Include href of code.
+This section shows the expression trees and prefix/postfix representations of the benchmarks considered in section \ref{sec:Results}. The scripts to generate the expression trees for the Hemberg and Feynman benchmarks are \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/b57363c6bf1b79cda6e220ebec7c05387e2db971/visualize_tree.py}{here} and \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/b57363c6bf1b79cda6e220ebec7c05387e2db971/AIFeynman.py}{here}, respectively. 
 
 %%%Hemberg%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{figure}
