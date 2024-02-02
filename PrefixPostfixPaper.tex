@@ -71,7 +71,7 @@
 \end{indented}
 
 \begin{abstract}
-We develop faultless, fixed-depth, string-based, prefix and postfix symbolic regression grammars, capable of producing \emph{any} expression consisting of a set of operands, unary operators and/or binary operators. Using these grammars, we outline simplified forms of 5 popular heuristic search strategies, namely, Brute Force Search,  Monte Carlo Tree Search, Particle Swarm Optimization, Genetic Programming, and Simulated Annealing. For each algorithm, we compare the relative performance of prefix vs postfix for 10 different ground-truth expressions, implemented within the same C++/Eigen symbolic regression framework. 
+We develop faultless, fixed-depth, string-based, prefix and postfix symbolic regression grammars, capable of producing \emph{any} expression from a set of operands, unary operators and/or binary operators. Using these grammars, we outline simplified forms of 5 popular heuristic search strategies, namely, Brute Force Search,  Monte Carlo Tree Search, Particle Swarm Optimization, Genetic Programming, and Simulated Annealing. For each algorithm, we compare the relative performance of prefix vs postfix for 10 different ground-truth expressions implemented entirely within a common C++/Eigen symbolic regression framework. 
 \end{abstract}
 
 %
@@ -367,7 +367,7 @@ In this section, the fixed-depth implementations of the algorithms we consider i
 
 \subsection{Random Search}\label{subsec:RandomSearch}
 
-Random Search is the brute-force approach to symbolic regression.  As a search strategy, brute force has gained increasing attention in recent years \cite{Heule2017TheSO}. For symbolic regression, exhaustive search can rival genetic programming when used with a sufficienctly restrictive grammar \cite{Kammerer2020}.
+Random Search is the brute-force approach to symbolic regression.  As a search strategy, brute force has gained increasing attention in recent years \cite{Heule2017TheSO}. For symbolic regression, exhaustive search can rival genetic programming when used with a sufficienctly restrictive grammar \cite{Kammerer2020} and/or sophisticated search strategy \cite{udrescu2020ai}.
 Our random-search approach is as follows:
 \par First, one starts with an empty expression list. Then, while the current expression list is incomplete with depth less than $N$, a random token from the set of legal tokens is appended to the current expression list. When the expression list is complete and has depth $N$, 5 iterations of Levenberg-Marquadt are performed to optimize all of the constant tokens (if any) in the expression. Finally, the parameter values are cached for future use as initial seeds in case the depth-$N$ expression is encountered again during the search. If the expression was not encountered before, all of the constant parameters to be optimized are initially set to 1. After constant optimization, the score of the expression is computed as:
 
@@ -548,7 +548,8 @@ Simulated Annealing is a metaheuristic search strategy inspired by the metallurg
 where $\Delta$ is the score of the perturbed expression minus the maximum score achieved thus far. We bound the temperature parameter $T$ to be between $T_{\mathrm{min}} = 0.012$ and $T_{\mathrm{max}} = 0.1$, and we set the initial temperature $T_{\mathrm{init}} = T_{\mathrm{max}}$. We use the same temperature update rule as in \cite{10.1145/3449639.3459345}, namely, $T \gets rT$, where $r \equiv \left(T_{\mathrm{min}}/T_{\mathrm{max}}\right)^{1/(i+1)}$ where $i$ is the iteration number. Lastly, to escape local minima, we use a simple update rule similar to the previous sections, namely, after $N_{\mathrm{iter}}$ iterations, if the best score has not improved, we update the temperature as $T \gets \min{\left(10\cdot T, T_{\mathrm{max}}\right)}$, else, we update the temperature as $T \gets \max{\left(T/10, T_{\mathrm{min}}\right)}$.
 
 \section{Results}\label{sec:Results}
-In this section, we benchmark the algorithms defined in section \ref{sec:SymbolicRegressionAlgorithms} employing the grammars defined in section \ref{sec:Background} using the caching approaches for computing the expression depth and completeness tabuled in algorithms \ref{alg:getPNdepth_cache} and \ref{alg:getRPNdepth_cache}. First, in section \ref{subsec:SimulatedAnnealing}, we perform benchmarks for the expressions considered in \cite{hemberg2008pre}. Then, in section \ref{subsec:FeynmanBenchmarks}, we consider some of the equations considered in \cite{udrescu2020ai} with varying complexity/depth of expression trees.
+In this section, we benchmark the algorithms defined in section \ref{sec:SymbolicRegressionAlgorithms} employing the grammars defined in section \ref{sec:Background} using the caching approaches (algorithms \ref{alg:getPNdepth_cache} and \ref{alg:getRPNdepth_cache}) for computing expression depth and completeness. We set the hyperparameter $N_{\mathrm{iter}}$ to 50,000 for all benchmarks\footnote{obtained after some tuning}.
+\par First, in section \ref{subsec:SimulatedAnnealing}, we perform benchmarks for the expressions considered in \cite{hemberg2008pre}. Then, in section \ref{subsec:FeynmanBenchmarks}, we consider some of the equations considered in \cite{udrescu2020ai} with varying complexity/depth of expression trees.
 \par For each configuration, i.e., Prefix Random Search, Prefix Monte Carlo Tree Search, Prefix Particle Swarm Optimization, Prefix Genetic Programming,  Prefix Simulated Annealing, Postfix Random Search, Postfix Monte Carlo Tree Search, Postfix Particle Swarm Optimization, Postfix Genetic Programming, and Postfix Simulated Annealing, we perform 50 runs of 2 minutes each for each benchmark expression considered in this section, where the MSE is sampled every 6 seconds for each run \footnote{Disclaimer: This does not imply that each sampled time point (i.e., 6 seconds, 12 seconds, $\ldots$ , 120 seconds) has 50 measurements. The number of measurements is in practice $\leq$ the number of runs, 50, and depends on the duration of computations at different points in the algorithm. Thus, the MSE curves that follow are not all consistently decreasing due to the lack of data recorded at certain points in the algorithm(s) stemming from the non-uniformity of their computational expenditure over time.}. This approach is similar to how the SR algorithms in \cite{defranca2023interpretable} are given a pre-specified time budget and how \cite{manti2023discovering} plots the mean and variance of the best-achieved fitnesses over time. 
 
 \subsection{Hemberg Benchmarks} \label{subsec:HembergBenchmarks}
@@ -796,13 +797,222 @@ In this section, we consider 5 of the equations from the \href{https://space.mit
     \label{tab:AI_Feynman_Benchmark_Equations}
 \end{table}
 
-\par The results are plotted in Figures for benchmarks 1 to 5, respectively. %TODO: Include five figures of 5 subfigures: each subfigure is a plot of prefix and postfix for a particular benchmark and algorithm. 
+\par The results are plotted in Figures \ref{fig:AIFeynman_1_Benchmarks} - \ref{fig:AIFeynman_5_Benchmarks} for benchmarks 1 to 5, respectively. For Random Search, postfix did $\sim$ the same on the first, fourth, and fifth Feynman benchmarks, better on the second benchmark, and worse on the third benchmark. For MCTS, postfix did worse than prefix on the first, second, fourth, and fifth Feynman benchmarks and better on the third Feynman benchmark. For PSO, postfix did worse on the first and third Feynman benchmarks, better on the second Feynman benchmark, and roughly the same as prefix on the last two benchmarks. For the GP approach, postfix did better on the first two Feynman benchmarks, worse on the third Feynman Benchmark, and roughly the same as prefix on the last two benchmarks. Lastly, for Simulated Annealing, postfix did $\sim$ the same on the first benchmark and the last two Feynman benchmarks and worse on the second and third Feynman benchmarks.
+
+%TODO: Write formulae in captions of result figures 
+\begin{figure}
+    \centering
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_1RandomSearch.pdf}
+        \caption{Random Search Feynman 1}
+        \label{subfig:feynman_1_RS}
+    \end{subfigure}
+    % \hfill
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_1MCTS.pdf}
+        \caption{MCTS Feynman 1}
+        \label{subfig:feynman_1_MCTS}
+    \end{subfigure}
+    
+    \vspace{0.5cm}
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_1PSO.pdf}
+        \caption{PSO Feynman 1}
+        \label{subfig:feynman_1_PSO}
+    \end{subfigure}
+    % \hfill
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_1GP.pdf}
+        \caption{GP Feynman 1}
+        \label{subfig:feynman_1_GP}
+    \end{subfigure}
+    
+    \vspace{0.5cm}
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_1SimulatedAnnealing.pdf}
+        \caption{Simulated Annealing Feynman 1}
+        \label{subfig:feynman_1_SA}
+    \end{subfigure}
+    
+    \caption{Feynman Benchmark Equation 1 (from Table \ref{tab:AI_Feynman_Benchmark_Equations}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using Prefix and Postfix expression representations.}
+    \label{fig:AIFeynman_1_Benchmarks}
+\end{figure}
+
+\begin{figure}
+    \centering
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_2RandomSearch.pdf}
+        \caption{Random Search Feynman 2}
+        \label{subfig:feynman_2_RS}
+    \end{subfigure}
+    % \hfill
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_2MCTS.pdf}
+        \caption{MCTS Feynman 2}
+        \label{subfig:feynman_2_MCTS}
+    \end{subfigure}
+    
+    \vspace{0.5cm}
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_2PSO.pdf}
+        \caption{PSO Feynman 2}
+        \label{subfig:feynman_2_PSO}
+    \end{subfigure}
+    % \hfill
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_2GP.pdf}
+        \caption{GP Feynman 2}
+        \label{subfig:feynman_2_GP}
+    \end{subfigure}
+    
+    \vspace{0.5cm}
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_2SimulatedAnnealing.pdf}
+        \caption{Simulated Annealing Feynman 2}
+        \label{subfig:feynman_2_SA}
+    \end{subfigure}
+    
+    \caption{Feynman Benchmark Equation 2 (from Table \ref{tab:AI_Feynman_Benchmark_Equations}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
+    \label{fig:AIFeynman_2_Benchmarks}
+\end{figure}
+
+\begin{figure}
+    \centering
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_3RandomSearch.pdf}
+        \caption{Random Search Feynman 3}
+        \label{subfig:feynman_3_RS}
+    \end{subfigure}
+    % \hfill
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_3MCTS.pdf}
+        \caption{MCTS Feynman 3}
+        \label{subfig:feynman_3_MCTS}
+    \end{subfigure}
+    
+    \vspace{0.5cm}
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_3PSO.pdf}
+        \caption{PSO Feynman 3}
+        \label{subfig:feynman_3_PSO}
+    \end{subfigure}
+    % \hfill
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_3GP.pdf}
+        \caption{GP Feynman 3}
+        \label{subfig:feynman_3_GP}
+    \end{subfigure}
+    
+    \vspace{0.5cm}
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_3SimulatedAnnealing.pdf}
+        \caption{Simulated Annealing Feynman 3}
+        \label{subfig:feynman_3_SA}
+    \end{subfigure}
+    
+    \caption{Feynman Benchmark Equation 3 (from Table \ref{tab:AI_Feynman_Benchmark_Equations}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
+    \label{fig:AIFeynman_3_Benchmarks}
+\end{figure}
+
+\begin{figure}
+    \centering
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_4RandomSearch.pdf}
+        \caption{Random Search Feynman 4}
+        \label{subfig:feynman_4_RS}
+    \end{subfigure}
+    % \hfill
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_4MCTS.pdf}
+        \caption{MCTS Feynman 4}
+        \label{subfig:feynman_4_MCTS}
+    \end{subfigure}
+    
+    \vspace{0.5cm}
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_4PSO.pdf}
+        \caption{PSO Feynman 4}
+        \label{subfig:feynman_4_PSO}
+    \end{subfigure}
+    % \hfill
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_4GP.pdf}
+        \caption{GP Feynman 4}
+        \label{subfig:feynman_4_GP}
+    \end{subfigure}
+    
+    \vspace{0.5cm}
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_4SimulatedAnnealing.pdf}
+        \caption{Simulated Annealing Feynman 4}
+        \label{subfig:feynman_4_SA}
+    \end{subfigure}
+    
+    \caption{Feynman Benchmark Equation 4 (from Table \ref{tab:AI_Feynman_Benchmark_Equations}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
+    \label{fig:AIFeynman_4_Benchmarks}
+\end{figure}
+
+\begin{figure}
+    \centering
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_5RandomSearch.pdf}
+        \caption{Random Search Feynman 5}
+        \label{subfig:feynman_5_RS}
+    \end{subfigure}
+    % \hfill
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_5MCTS.pdf}
+        \caption{MCTS Feynman 5}
+        \label{subfig:feynman_5_MCTS}
+    \end{subfigure}
+    
+    \vspace{0.5cm}
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_5PSO.pdf}
+        \caption{PSO Feynman 5}
+        \label{subfig:feynman_5_PSO}
+    \end{subfigure}
+    % \hfill
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_5GP.pdf}
+        \caption{GP Feynman 5}
+        \label{subfig:feynman_5_GP}
+    \end{subfigure}
+    
+    \vspace{0.5cm}
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_5SimulatedAnnealing.pdf}
+        \caption{Simulated Annealing Feynman 5}
+        \label{subfig:feynman_5_SA}
+    \end{subfigure}
+    
+    \caption{Feynman Benchmark Equation 5 (from Table \ref{tab:AI_Feynman_Benchmark_Equations}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
+    \label{fig:AIFeynman_5_Benchmarks}
+\end{figure}
 
 %open https://space.mit.edu/home/tegmark/aifeynman.html
 %open /Users/edwardfinkelstein/Downloads/FeynmanEquations.csv /Users/edwardfinkelstein/Downloads/BonusEquations.csv
 
 \section{Analysis of Results}
 
+\section{Conclusion and Outlook}
+In this work, we have developed string-based grammars for generating symbolic expressions from a set of operands and unary+binary operators. These grammars elicit faultless prefix and postfix expressions corresponding to the entire space of strictly fixed-depth trees. 
+\par We have outlined five straightforward symbolic regression algorithms using these grammars. These algorithms were tested on benchmark expressions from \cite{hemberg2008pre} and \cite{udrescu2020ai} within a common C++/Eigen SR framework.
 
 \newpage
 
@@ -813,7 +1023,7 @@ In this section, we consider 5 of the equations from the \href{https://space.mit
 
 \appendix
 \section{Hardware Specifications}
-The benchmarks were run on a MacBook Pro with an M1 Core with $\sim$ 16 GB of usable RAM, namely, \texttt{sysctl -a | grep hw.memsize} gives: 
+The benchmarks were run on a MacBook Pro with an M1 Core and $\sim$ 16 GB of usable RAM, namely, \texttt{sysctl -a | grep hw.memsize} gives: 
 \begin{verbatim}
 hw.memsize: 17179869184
 hw.memsize_usable: 16383606784
