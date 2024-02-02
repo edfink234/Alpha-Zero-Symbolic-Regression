@@ -54,8 +54,9 @@ def PaperPlots(files):
         ax.plot(time_values, avg_max_scores, marker='o', color = "black", label = "prefix")
         ax.ticklabel_format(useOffset=False, style='plain')
         plt.fill_between(time_values, avg_max_scores - std_devs, avg_max_scores + std_devs, alpha = 0.5)
-
+        
         time_values, avg_max_scores, std_devs, file_path = process_csv(files[i+1])
+
         ax.plot(time_values, avg_max_scores, marker='o', color = "red", label = "postfix")
         ax.ticklabel_format(useOffset=False, style='plain')
         plt.fill_between(time_values, avg_max_scores - std_devs, avg_max_scores + std_devs, alpha = 0.5)
@@ -72,10 +73,19 @@ def PaperPlots(files):
         os.system(f"rsvg-convert -f pdf -o {file_path}.pdf {file_path}.svg")
         os.system(f"rm {file_path}.svg")
 
-AIFeynman_Files = 'Feynman_1PreRandomSearch.txt', 'Feynman_1PostRandomSearch.txt', 'Feynman_2PreRandomSearch.txt', 'Feynman_2PostRandomSearch.txt', 'Feynman_3PreRandomSearch.txt', 'Feynman_3PostRandomSearch.txt', 'Feynman_4PreRandomSearch.txt', 'Feynman_4PostRandomSearch.txt', 'Feynman_5PreRandomSearch.txt', 'Feynman_5PostRandomSearch.txt', 'Feynman_1PreMCTS.txt', 'Feynman_1PostMCTS.txt', 'Feynman_2PreMCTS.txt', 'Feynman_2PostMCTS.txt', 'Feynman_3PreMCTS.txt', 'Feynman_3PostMCTS.txt', 'Feynman_4PreMCTS.txt', 'Feynman_4PostMCTS.txt', 'Feynman_5PreMCTS.txt', 'Feynman_5PostMCTS.txt', 'Feynman_1PrePSO.txt', 'Feynman_1PostPSO.txt', 'Feynman_2PrePSO.txt', 'Feynman_2PostPSO.txt', 'Feynman_3PrePSO.txt', 'Feynman_3PostPSO.txt', 'Feynman_4PrePSO.txt', 'Feynman_4PostPSO.txt', 'Feynman_5PrePSO.txt', 'Feynman_5PostPSO.txt', 'Feynman_1PreGP.txt', 'Feynman_1PostGP.txt', 'Feynman_2PreGP.txt', 'Feynman_2PostGP.txt','Feynman_3PreGP.txt', 'Feynman_3PostGP.txt', 'Feynman_4PreGP.txt', 'Feynman_4PostGP.txt', 'Feynman_5PreGP.txt', 'Feynman_5PostGP.txt', 'Feynman_1PreSimulatedAnnealing.txt', 'Feynman_1PostSimulatedAnnealing.txt', 'Feynman_2PreSimulatedAnnealing.txt', 'Feynman_2PostSimulatedAnnealing.txt', 'Feynman_3PreSimulatedAnnealing.txt', 'Feynman_3PostSimulatedAnnealing.txt', 'Feynman_4PreSimulatedAnnealing.txt', 'Feynman_4PostSimulatedAnnealing.txt', 'Feynman_5PreSimulatedAnnealing.txt', 'Feynman_5PostSimulatedAnnealing.txt'
+AIFeynman_Files = 'AIFeynman_Benchmarks/Feynman_1PreRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_1PostRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_2PreRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_2PostRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_3PreRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_3PostRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_4PreRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_4PostRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_5PreRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_5PostRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_1PreMCTS.txt', 'AIFeynman_Benchmarks/Feynman_1PostMCTS.txt', 'AIFeynman_Benchmarks/Feynman_2PreMCTS.txt', 'AIFeynman_Benchmarks/Feynman_2PostMCTS.txt', 'AIFeynman_Benchmarks/Feynman_3PreMCTS.txt', 'AIFeynman_Benchmarks/Feynman_3PostMCTS.txt', 'AIFeynman_Benchmarks/Feynman_4PreMCTS.txt', 'AIFeynman_Benchmarks/Feynman_4PostMCTS.txt', 'AIFeynman_Benchmarks/Feynman_5PreMCTS.txt', 'AIFeynman_Benchmarks/Feynman_5PostMCTS.txt', 'AIFeynman_Benchmarks/Feynman_1PrePSO.txt', 'AIFeynman_Benchmarks/Feynman_1PostPSO.txt', 'AIFeynman_Benchmarks/Feynman_2PrePSO.txt', 'AIFeynman_Benchmarks/Feynman_2PostPSO.txt', 'AIFeynman_Benchmarks/Feynman_3PrePSO.txt', 'AIFeynman_Benchmarks/Feynman_3PostPSO.txt', 'AIFeynman_Benchmarks/Feynman_4PrePSO.txt', 'AIFeynman_Benchmarks/Feynman_4PostPSO.txt', 'AIFeynman_Benchmarks/Feynman_5PrePSO.txt', 'AIFeynman_Benchmarks/Feynman_5PostPSO.txt', 'AIFeynman_Benchmarks/Feynman_1PreGP.txt', 'AIFeynman_Benchmarks/Feynman_1PostGP.txt', 'AIFeynman_Benchmarks/Feynman_2PreGP.txt', 'AIFeynman_Benchmarks/Feynman_2PostGP.txt','AIFeynman_Benchmarks/Feynman_3PreGP.txt', 'AIFeynman_Benchmarks/Feynman_3PostGP.txt', 'AIFeynman_Benchmarks/Feynman_4PreGP.txt', 'AIFeynman_Benchmarks/Feynman_4PostGP.txt', 'AIFeynman_Benchmarks/Feynman_5PreGP.txt', 'AIFeynman_Benchmarks/Feynman_5PostGP.txt', 'AIFeynman_Benchmarks/Feynman_1PreSimulatedAnnealing.txt', 'AIFeynman_Benchmarks/Feynman_1PostSimulatedAnnealing.txt', 'AIFeynman_Benchmarks/Feynman_2PreSimulatedAnnealing.txt', 'AIFeynman_Benchmarks/Feynman_2PostSimulatedAnnealing.txt', 'AIFeynman_Benchmarks/Feynman_3PreSimulatedAnnealing.txt', 'AIFeynman_Benchmarks/Feynman_3PostSimulatedAnnealing.txt', 'AIFeynman_Benchmarks/Feynman_4PreSimulatedAnnealing.txt', 'AIFeynman_Benchmarks/Feynman_4PostSimulatedAnnealing.txt', 'AIFeynman_Benchmarks/Feynman_5PreSimulatedAnnealing.txt', 'AIFeynman_Benchmarks/Feynman_5PostSimulatedAnnealing.txt'
+
+misc_files = 'Hemberg_Benchmarks/Hemberg_3PostPSO.txt', 'Hemberg_Benchmarks/Hemberg_5PrePSO.txt', 'Hemberg_Benchmarks/Hemberg_2PreGP.txt', #'Hemberg_Benchmarks/Hemberg_3PostSimulatedAnnealing.txt'
 
 #process_files(Hemberg_Files)
-process_files(AIFeynman_Files[:46])
-#PaperPlots(Hemberg_Files)
+process_files(misc_files)
+
+#process_files(AIFeynman_Files[7:8])
+#process_files(AIFeynman_Files[30:34])
+#process_files(AIFeynman_Files[49:])
+
+PaperPlots(Hemberg_Files)
+#PaperPlots(AIFeynman_Files[46:])
+
 
 
