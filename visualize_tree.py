@@ -268,21 +268,21 @@ def plot_rpn_expression_tree(expression: list[str], block = False, save = False,
 # Example usage:
 def test_visualize():
 #    # Example usage:
-    save = False
+    save = True
     
     if save:
 #        plot_pn_expression_tree("- + + - + - + / * 30 ^ x 2 * - 10 x y ^ x 4 * / 4 5 ^ x 3 / ^ y 2 2 * 2 y / 8 + + 2 ^ x 2 ^ y 2 / ^ y 3 2 x", block=False, save = save)
 #        os.system("rsvg-convert -f pdf -o expression_tree_PN_Hemberg2008_expr_5.pdf expression_tree_PN_Hemberg2008_expr_5.svg")
         
-        plot_rpn_expression_tree("8 2 x 2 ^ + y 2 ^ + /", block=False, save = save, filename = "Hemberg2008Expressions/expression_tree_Hemberg2008_expr_1.svg", title = r"(8 / ((2 + (x ^ 2)) + (y ^ 2)))")
+        plot_rpn_expression_tree("8 2 x 2 ^ + y 2 ^ + /", block=False, save = save, filename = "Hemberg2008Expressions/expression_tree_Hemberg2008_expr_1.svg", title = r"(8 / ((2 + (x ^ 2)) + (y ^ 2))), depth = 4")
         os.system("rsvg-convert -f pdf -o Hemberg2008Expressions/expression_tree_Hemberg2008_expr_1.pdf Hemberg2008Expressions/expression_tree_Hemberg2008_expr_1.svg")
-        plot_rpn_expression_tree("x 3 ^ x 1 + * y y 2 / 1 - * +", block=False, save = save, filename = "Hemberg2008Expressions/expression_tree_Hemberg2008_expr_2.svg", title = r"(((x ^ 3) * (x + 1)) + (y * ((y / 2) - 1)))")
+        plot_rpn_expression_tree("x 3 ^ x 1 + * y y 2 / 1 - * +", block=False, save = save, filename = "Hemberg2008Expressions/expression_tree_Hemberg2008_expr_2.svg", title = r"(((x ^ 3) * (x + 1)) + (y * ((y / 2) - 1))), depth = 4")
         os.system("rsvg-convert -f pdf -o Hemberg2008Expressions/expression_tree_Hemberg2008_expr_2.pdf Hemberg2008Expressions/expression_tree_Hemberg2008_expr_2.svg")
-        plot_rpn_expression_tree("x 3 ^ 5 / y 3 ^ 2 / + y - x -", block=False, save = save, filename = "Hemberg2008Expressions/expression_tree_Hemberg2008_expr_3.svg", title = r"(((((x ^ 3) / 5) + ((y ^ 3) / 2)) - y) - x)")
+        plot_rpn_expression_tree("x 3 ^ 5 / y 3 ^ 2 / + y - x -", block=False, save = save, filename = "Hemberg2008Expressions/expression_tree_Hemberg2008_expr_3.svg", title = r"(((((x ^ 3) / 5) + ((y ^ 3) / 2)) - y) - x), depth = 5")
         os.system("rsvg-convert -f pdf -o Hemberg2008Expressions/expression_tree_Hemberg2008_expr_3.pdf Hemberg2008Expressions/expression_tree_Hemberg2008_expr_3.svg")
-        plot_rpn_expression_tree("30 x 2 ^ * 10 x - y * / x 4 ^ + x 3 ^ - y 2 ^ 2 / + y - 8 2 x 2 ^ + y 2 ^ + / + x +", block=False, save = save, filename = "Hemberg2008Expressions/expression_tree_Hemberg2008_expr_4.svg", title = r"((((((((30 * (x ^ 2)) / ((10 - x) * y)) + (x ^ 4)) - (x ^ 3)) + ((y ^ 2) / 2)) - y) + (8 / ((2 + (x ^ 2)) + (y ^ 2)))) + x)")
+        plot_rpn_expression_tree("30 x 2 ^ * 10 x - y * / x 4 ^ + x 3 ^ - y 2 ^ 2 / + y - 8 2 x 2 ^ + y 2 ^ + / + x +", block=False, save = save, filename = "Hemberg2008Expressions/expression_tree_Hemberg2008_expr_4.svg", title = r"((((((((30 * (x ^ 2)) / ((10 - x) * y)) + (x ^ 4)) - (x ^ 3)) + ((y ^ 2) / 2)) - y) + (8 / ((2 + (x ^ 2)) + (y ^ 2)))) + x), depth = 9")
         os.system("rsvg-convert -f pdf -o Hemberg2008Expressions/expression_tree_Hemberg2008_expr_4.pdf Hemberg2008Expressions/expression_tree_Hemberg2008_expr_4.svg")
-        plot_rpn_expression_tree("30 x 2 ^ * 10 x - y * / x 4 ^ + 4 5 / x 3 ^ * - y 2 ^ 2 / + 2 y * - 8 2 x 2 ^ + y 2 ^ + / + y 3 ^ 2 / + x -", block=False, save = save, filename = "Hemberg2008Expressions/expression_tree_Hemberg2008_expr_5.svg", title = r"(((((((((30 * (x ^ 2)) / ((10 - x) * y)) + (x ^ 4)) - ((4 / 5) * (x ^ 3))) + ((y ^ 2) / 2)) - (2 * y)) + (8 / ((2 + (x ^ 2)) + (y ^ 2)))) + ((y ^ 3) / 2)) - x)")
+        plot_rpn_expression_tree("30 x 2 ^ * 10 x - y * / x 4 ^ + 4 5 / x 3 ^ * - y 2 ^ 2 / + 2 y * - 8 2 x 2 ^ + y 2 ^ + / + y 3 ^ 2 / + x -", block=False, save = save, filename = "Hemberg2008Expressions/expression_tree_Hemberg2008_expr_5.svg", title = r"(((((((((30 * (x ^ 2)) / ((10 - x) * y)) + (x ^ 4)) - ((4 / 5) * (x ^ 3))) + ((y ^ 2) / 2)) - (2 * y)) + (8 / ((2 + (x ^ 2)) + (y ^ 2)))) + ((y ^ 3) / 2)) - x), depth = 10")
         os.system("rsvg-convert -f pdf -o Hemberg2008Expressions/expression_tree_Hemberg2008_expr_5.pdf Hemberg2008Expressions/expression_tree_Hemberg2008_expr_5.svg")
         
         rpn_1 = rpn_to_infix(r_1:="8 2 x 2 ^ + y 2 ^ + /")

@@ -548,9 +548,10 @@ Simulated Annealing is a metaheuristic search strategy inspired by the metallurg
 where $\Delta$ is the score of the perturbed expression minus the maximum score achieved thus far. We bound the temperature parameter $T$ to be between $T_{\mathrm{min}} = 0.012$ and $T_{\mathrm{max}} = 0.1$, and we set the initial temperature $T_{\mathrm{init}} = T_{\mathrm{max}}$. We use the same temperature update rule as in \cite{10.1145/3449639.3459345}, namely, $T \gets rT$, where $r \equiv \left(T_{\mathrm{min}}/T_{\mathrm{max}}\right)^{1/(i+1)}$ where $i$ is the iteration number. Lastly, to escape local minima, we use a simple update rule similar to the previous sections, namely, after $N_{\mathrm{iter}}$ iterations, if the best score has not improved, we update the temperature as $T \gets \min{\left(10\cdot T, T_{\mathrm{max}}\right)}$, else, we update the temperature as $T \gets \max{\left(T/10, T_{\mathrm{min}}\right)}$.
 
 \section{Results}\label{sec:Results}
-In this section, we benchmark the algorithms defined in section \ref{sec:SymbolicRegressionAlgorithms} employing the grammars defined in section \ref{sec:Background} using the caching approaches (algorithms \ref{alg:getPNdepth_cache} and \ref{alg:getRPNdepth_cache}) for computing expression depth and completeness. We set the hyperparameter $N_{\mathrm{iter}}$ to 50,000 for all benchmarks\footnote{obtained after some tuning}.
+In this section\footnote{The benchmarks results in this section can be reproduced by running the script \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/dce0e2ddd1a172598dcae31b738900ce9e6403e9/PrefixPostfixSR.cpp}{here} using the compilation directive given in the \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/dce0e2ddd1a172598dcae31b738900ce9e6403e9/README.md}{README.md file}}, we benchmark the algorithms defined in section \ref{sec:SymbolicRegressionAlgorithms} employing the grammars defined in section \ref{sec:Background} using the caching approaches (algorithms \ref{alg:getPNdepth_cache} and \ref{alg:getRPNdepth_cache}) for computing expression depth and completeness. We set the hyperparameter $N_{\mathrm{iter}}$ to 50,000 for all benchmarks\footnote{Obtained after significant tuning}.
 \par First, in section \ref{subsec:SimulatedAnnealing}, we perform benchmarks for the expressions considered in \cite{hemberg2008pre}. Then, in section \ref{subsec:FeynmanBenchmarks}, we consider some of the equations considered in \cite{udrescu2020ai} with varying complexity/depth of expression trees.
-\par For each configuration, i.e., Prefix Random Search, Prefix Monte Carlo Tree Search, Prefix Particle Swarm Optimization, Prefix Genetic Programming,  Prefix Simulated Annealing, Postfix Random Search, Postfix Monte Carlo Tree Search, Postfix Particle Swarm Optimization, Postfix Genetic Programming, and Postfix Simulated Annealing, we perform 50 runs of 2 minutes each for each benchmark expression considered in this section, where the MSE is sampled every 6 seconds for each run \footnote{Disclaimer: This does not imply that each sampled time point (i.e., 6 seconds, 12 seconds, $\ldots$ , 120 seconds) has 50 measurements. The number of measurements is in practice $\leq$ the number of runs, 50, and depends on the duration of computations at different points in the algorithm. Thus, the MSE curves that follow are not all consistently decreasing due to the lack of data recorded at certain points in the algorithm(s) stemming from the non-uniformity of their computational expenditure over time.}. This approach is similar to how the SR algorithms in \cite{defranca2023interpretable} are given a pre-specified time budget and how \cite{manti2023discovering} plots the mean and variance of the best-achieved fitnesses over time. 
+\par For each configuration, i.e., Prefix Random Search, Prefix Monte Carlo Tree Search, Prefix Particle Swarm Optimization, Prefix Genetic Programming,  Prefix Simulated Annealing, Postfix Random Search, Postfix Monte Carlo Tree Search, Postfix Particle Swarm Optimization, Postfix Genetic Programming, and Postfix Simulated Annealing, we perform 50 runs of 2 minutes each for each benchmark expression considered in this section, where the MSE is sampled every 6 seconds for each run.  
+This approach is similar to how the SR algorithms in \cite{defranca2023interpretable} are given a pre-specified time budget and how \cite{manti2023discovering} plots the mean and variance of the best-achieved fitnesses over time. 
 
 \subsection{Hemberg Benchmarks} \label{subsec:HembergBenchmarks}
 In this section, we benchmark the 5 equations tested in \cite{hemberg2008pre} using the Random Search \ref{subsec:RandomSearch}, Monte Carlo Tree Search \ref{subsec:MonteCarlo TreeSearch}, Particle Swarm Optimization \ref{subsec:ParticleSwarmOptimization}, Genetic Programming \ref{subsec:GeneticProgramming}, and Simulated Annealing \ref{subsec:SimulatedAnnealing} algorithms with the prefix grammar \ref{subsec:prefix_grammar} vs the postfix grammar \ref{subsec:postfix_grammar}. For completeness, the expressions are tabulated in Table \ref{tab:Hemberg2008PreIP_results} as well as the depth $N$ of their expression trees that we run the benchmarks with\footnote{In other words, we fix the hyper-parameter $N$ before running a particular benchmark.}.
@@ -558,20 +559,21 @@ In this section, we benchmark the 5 equations tested in \cite{hemberg2008pre} us
 
 \begin{table}[]
     \centering
-    \begin{tabular}{|l|l|l|l|l|}
+    \scalebox{0.9}{
+    \begin{tabular}{|l|l|l|l|l|l|}
 \hline 
-\# & Expression & Expression Tree & Depth $N$ & \# of Inputs \\ \hline 
- 1 &   $8/(2+x^2+y^2)$ & Figure \ref{fig:expression_tree_Hemberg2008_expr_1} & 4 & 2  \\[0.2cm]
- 2 &    $x^3\cdot(x-1) + y\cdot(y/2-1)$ & Figure \ref{fig:expression_tree_Hemberg2008_expr_2} & 4 & 2 \\[0.2cm]
- 3 & $x^3/5 + y^3/2 - y - x$ & Figure \ref{fig:expression_tree_Hemberg2008_expr_3} & 5 & 2 \\[0.2cm]
-  4 &   $\frac{30\cdot x^2}{(10-x)\cdot y^2}+x^4 - x^3 + \frac{y^2}{2} - y + \frac{8}{2+x^2+y^2} + x$ & Figure \ref{fig:expression_tree_Hemberg2008_expr_4} & 9 & 2 \\[0.2cm]
-  5 &   $\frac{30\cdot x^2}{(10-x)\cdot y^2}+x^4 - \frac{4}{5}x^3 + \frac{y^2}{2} - 2y + \frac{8}{2+x^2+y^2} + \frac{y^3}{2} - x$ & Figure \ref{fig:expression_tree_Hemberg2008_expr_5} & 10 & 2 \\[0.2cm] \hline
-\end{tabular}
-    \caption{Expressions considered in \cite{hemberg2008pre} and depth of expression trees.}
+\# & Expression & Expression Tree & Depth $N$ & \# of Inputs & Result Plot \\ \hline 
+ 1 &   $8/(2+x^2+y^2)$ & Figure \ref{fig:expression_tree_Hemberg2008_expr_1} & 4 & 2 & Figure \ref{fig:Hemberg_1_Benchmarks} \\[0.2cm]
+ 2 &    $x^3\cdot(x-1) + y\cdot(y/2-1)$ & Figure \ref{fig:expression_tree_Hemberg2008_expr_2} & 4 & 2  & Figure \ref{fig:Hemberg_2_Benchmarks} \\[0.2cm]
+ 3 & $x^3/5 + y^3/2 - y - x$ & Figure \ref{fig:expression_tree_Hemberg2008_expr_3} & 5 & 2  & Figure \ref{fig:Hemberg_3_Benchmarks} \\[0.2cm]
+  4 &   $\frac{30\cdot x^2}{(10-x)\cdot y^2}+x^4 - x^3 + \frac{y^2}{2} - y + \frac{8}{2+x^2+y^2} + x$ & Figure \ref{fig:expression_tree_Hemberg2008_expr_4} & 9 & 2  & Figure \ref{fig:Hemberg_4_Benchmarks} \\[0.2cm]
+  5 &   $\frac{30\cdot x^2}{(10-x)\cdot y^2}+x^4 - \frac{4}{5}x^3 + \frac{y^2}{2} - 2y + \frac{8}{2+x^2+y^2} + \frac{y^3}{2} - x$ & Figure \ref{fig:expression_tree_Hemberg2008_expr_5} & 10 & 2 & Figure \ref{fig:Hemberg_5_Benchmarks} \\[0.2cm] \hline
+\end{tabular}}
+    \caption{Expressions from \cite{hemberg2008pre} considered in section \ref{subsec:HembergBenchmarks}.}
     \label{tab:Hemberg2008PreIP_results}
 \end{table}
 
-\par The results are plotted in Figures \ref{fig:Hemberg_1_Benchmarks} - \ref{fig:Hemberg_5_Benchmarks} for benchmarks 1 - 5, respectively. For Random Search, postfix did $\sim$ worse than prefix on the first three Hemberg benchmarks and better on the last two Hemberg benchmarks. For MCTS, postfix did worse than prefix on the first Hemberg benchmark and better on the last four Hemberg benchmarks. For PSO, postfix did roughly the same as prefix but exhibited significantly quicker relative convergence on the last two Hemberg benchmarks. For the GP approach, postfix did roughly the same as prefix on the first three Hemberg benchmarks, and significantly better on the last two Hemberg benchmarks, agreeing with the results obtained in the original paper \cite{hemberg2008pre}. Lastly, for Simulated Annealing, postfix did $\sim$ worse on the second and third Hemberg benchmarks and roughly the same on the first, fourth, and fifth benchmarks. 
+\par The results are plotted in Figures \ref{fig:Hemberg_1_Benchmarks} - \ref{fig:Hemberg_5_Benchmarks} for benchmarks 1 - 5, respectively. For Random Search, postfix did $\sim$ worse\footnote{by worse, we mean that the average score for postfix after 2 minutes was worse than prefix given the standard deviations, i.e., $\mu_\mathrm{score}^\mathrm{postfix} + 1\cdot \sigma_\mathrm{score}^\mathrm{postfix} \leq \mu_\mathrm{score}^\mathrm{prefix} - 1\cdot \sigma_\mathrm{score}^\mathrm{prefix}$} than prefix on the first three Hemberg benchmarks and better on the last two Hemberg benchmarks. For MCTS, postfix did worse than prefix on the first Hemberg benchmark and better on the last four Hemberg benchmarks. For PSO, postfix did roughly the same as prefix but exhibited significantly quicker relative convergence on the last two Hemberg benchmarks. For the GP approach, postfix did roughly the same as prefix on the first three Hemberg benchmarks, and significantly better on the last two Hemberg benchmarks, agreeing with the results obtained in the original paper \cite{hemberg2008pre}. Lastly, for Simulated Annealing, postfix did $\sim$ worse on the second Hemberg benchmark and roughly the same on the first, third, fourth, and fifth benchmarks. 
 
 \begin{figure}
     \centering
@@ -784,22 +786,22 @@ In this section, we consider 5 of the equations from the \href{https://space.mit
 
 \begin{table}[]
     \centering
-    \begin{tabular}{|l|l|l|l|l|}
+    \scalebox{0.9}{
+    \begin{tabular}{|l|l|l|l|l|l|}
 \hline 
-\# & Expression & Expression Tree & Depth $N$ & \# of Inputs \\ \hline 
-  1 &  $x = \frac{q\cdot E_f}{m\cdot \left(\omega_0^2 - \omega^2\right)}$ & Figure \ref{fig:expression_tree_AIFeynman_expr_1} & 4 & 5  \\[0.2cm]
-   2 & $F = \frac{G\cdot m_1 \cdot m_2}{\left(x_2 - x_1\right)^2 + \left(y_2 - y_1\right)^2 +\left(z_2 - z_1\right)^2}$ & Figure \ref{fig:expression_tree_AIFeynman_expr_2} & 5 & 9 \\[0.2cm]
- 3 & $A = \left(\frac{Z_1 \cdot Z_2 \cdot \alpha \cdot \hbar \cdot c}{4\cdot E_n \cdot \sin^2\left(\theta/2\right)}\right)^2$ & Figure \ref{fig:expression_tree_AIFeynman_expr_3} & 6 & 7 \\[0.2cm]
- 4 &   $f = \frac{\mathrm{mom}\cdot H}{k_b \cdot T} + \frac{\mathrm{mom}\cdot \alpha}{\epsilon \cdot c^2 \cdot k_b \cdot T} \cdot M$ & Figure \ref{fig:expression_tree_AIFeynman_expr_4} & 7 & 8 \\[0.2cm]
- 5 &   $k = \frac{m \cdot k_G}{L^2}\cdot \left(1+\sqrt{\left(1+\frac{2 \cdot E_n \cdot L^2}{m\cdot k_G^2}\right)}\cdot \cos\left(\theta_1-\theta_2\right)\right)$ & Figure \ref{fig:expression_tree_AIFeynman_expr_5} & 8 & 6 \\[0.2cm] \hline
-\end{tabular}
+\# & Expression & Expression Tree & Depth $N$ & \# of Inputs & Result Plot \\ \hline 
+  1 &  $x = \frac{q\cdot E_f}{m\cdot \left(\omega_0^2 - \omega^2\right)}$ & Figure \ref{fig:expression_tree_AIFeynman_expr_1} & 4 & 5 & Figure \ref{fig:AIFeynman_1_Benchmarks} \\[0.2cm]
+   2 & $F = \frac{G\cdot m_1 \cdot m_2}{\left(x_2 - x_1\right)^2 + \left(y_2 - y_1\right)^2 +\left(z_2 - z_1\right)^2}$ & Figure \ref{fig:expression_tree_AIFeynman_expr_2} & 5 & 9 & Figure \ref{fig:AIFeynman_2_Benchmarks} \\[0.2cm]
+ 3 & $A = \left(\frac{Z_1 \cdot Z_2 \cdot \alpha \cdot \hbar \cdot c}{4\cdot E_n \cdot \sin^2\left(\theta/2\right)}\right)^2$ & Figure \ref{fig:expression_tree_AIFeynman_expr_3} & 6 & 7 & Figure \ref{fig:AIFeynman_3_Benchmarks} \\[0.2cm]
+ 4 &   $f = \frac{\mathrm{mom}\cdot H}{k_b \cdot T} + \frac{\mathrm{mom}\cdot \alpha}{\epsilon \cdot c^2 \cdot k_b \cdot T} \cdot M$ & Figure \ref{fig:expression_tree_AIFeynman_expr_4} & 7 & 8 & Figure \ref{fig:AIFeynman_4_Benchmarks} \\[0.2cm]
+ 5 &   $k = \frac{m \cdot k_G}{L^2}\cdot \left(1+\sqrt{\left(1+\frac{2 \cdot E_n \cdot L^2}{m\cdot k_G^2}\right)}\cdot \cos\left(\theta_1-\theta_2\right)\right)$ & Figure \ref{fig:expression_tree_AIFeynman_expr_5} & 8 & 6 & Figure \ref{fig:AIFeynman_5_Benchmarks} \\[0.2cm] \hline
+\end{tabular}}
     \caption{Expressions from \cite{udrescu2020ai} considered in section \ref{subsec:FeynmanBenchmarks}.}
     \label{tab:AI_Feynman_Benchmark_Equations}
 \end{table}
 
 \par The results are plotted in Figures \ref{fig:AIFeynman_1_Benchmarks} - \ref{fig:AIFeynman_5_Benchmarks} for benchmarks 1 to 5, respectively. For Random Search, postfix did $\sim$ the same on the first, fourth, and fifth Feynman benchmarks, better on the second benchmark, and worse on the third benchmark. For MCTS, postfix did worse than prefix on the first, second, fourth, and fifth Feynman benchmarks and better on the third Feynman benchmark. For PSO, postfix did worse on the first and third Feynman benchmarks, better on the second Feynman benchmark, and roughly the same as prefix on the last two benchmarks. For the GP approach, postfix did better on the first two Feynman benchmarks, worse on the third Feynman Benchmark, and roughly the same as prefix on the last two benchmarks. Lastly, for Simulated Annealing, postfix did $\sim$ the same on the first benchmark and the last two Feynman benchmarks and worse on the second and third Feynman benchmarks.
 
-%TODO: Write formulae in captions of result figures 
 \begin{figure}
     \centering
     
@@ -1008,10 +1010,19 @@ In this section, we consider 5 of the equations from the \href{https://space.mit
 %open https://space.mit.edu/home/tegmark/aifeynman.html
 %open /Users/edwardfinkelstein/Downloads/FeynmanEquations.csv /Users/edwardfinkelstein/Downloads/BonusEquations.csv
 
-\section{Analysis of Results}
+\section{Remarks}
+Generally, we can observe from Figures \ref{fig:Hemberg_1_Benchmarks} - \ref{fig:AIFeynman_5_Benchmarks} that the performance of prefix vs postfix varies significantly. We assume in our formulation that the performance advantage of prefix vs postfix is related to the symbolic regression algorithm utilized, the depth of the ground-truth expression tree, the number of input variables of the ground-truth expression, and the shape of the tree such as the average number of nodes per expression-tree layer. With these assumptions, we construct a decision tree to better understand when a performance advantage will ensue from prefix, postfix, or neither, shown in Figure \ref{fig:PrefixPostfixDecisionTree}. 
+\par What we find is that postfix notation tends to outperform prefix when the average number of nodes per layer of the ground-truth symbolic expression is larger; this insight makes some intuitive sense given that postfix strings denote expression trees starting from the leaves, which likely biases them towards fatter expression trees. For thinner expression trees, prefix tends to perform better when the SR algorithm is Random Search or MCTS or when the arity of the ground-truth expression is larger. 
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{PrefixPostfixDecisionTree.pdf}
+    \caption{} 
+    \label{fig:PrefixPostfixDecisionTree}
+\end{figure}
 
 \section{Conclusion and Outlook}
-In this work, we have developed string-based grammars for generating symbolic expressions from a set of operands and unary+binary operators. These grammars elicit faultless prefix and postfix expressions corresponding to the entire space of strictly fixed-depth trees. 
+In this work, we have developed string-based grammars for generating symbolic expressions from a set of operands and unary+binary operators. These grammars elicit faultless prefix and postfix expressions corresponding to the entire space of strictly fixed-depth expression trees. 
 \par We have outlined five straightforward symbolic regression algorithms using these grammars. These algorithms were tested on benchmark expressions from \cite{hemberg2008pre} and \cite{udrescu2020ai} within a common C++/Eigen SR framework.
 
 \newpage

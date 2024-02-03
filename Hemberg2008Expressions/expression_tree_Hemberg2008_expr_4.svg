@@ -9,7 +9,7 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 712.5)">
 <title>G</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-712.5 850,-712.5 850,4 -4,4"/>
-<text text-anchor="middle" x="423" y="-691.2" font-family="Times,serif" font-size="14.00">((((((((30 * (x ^ 2)) / ((10 &#45; x) * y)) + (x ^ 4)) &#45; (x ^ 3)) + ((y ^ 2) / 2)) &#45; y) + (8 / ((2 + (x ^ 2)) + (y ^ 2)))) + x)</text>
+<text text-anchor="middle" x="423" y="-691.2" font-family="Times,serif" font-size="14.00">((((((((30 * (x ^ 2)) / ((10 &#45; x) * y)) + (x ^ 4)) &#45; (x ^ 3)) + ((y ^ 2) / 2)) &#45; y) + (8 / ((2 + (x ^ 2)) + (y ^ 2)))) + x), depth = 9</text>
 <!-- 41 -->
 <g id="node1" class="node">
 <title>41</title>
