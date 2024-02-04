@@ -2034,8 +2034,8 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
 //                    std::cout << "c: " << c << " -> ";
                     c = 1.4; //if new best found, reset c and try to exploit the new best
 //                    std::cout << c << '\n';
+                    check_point_score = max_score;
                 }
-                check_point_score = max_score;
             }
             state.clear();
             while ((score = x.complete_status()) == -1)
@@ -2056,7 +2056,8 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
                     }
                     else
                     {
-                        UCT = FLT_MAX; //highest -> explore it
+                        best_act = a; //not explored -> explore it
+                        break;
                     }
                     if (UCT > UCT_best)
                     {
