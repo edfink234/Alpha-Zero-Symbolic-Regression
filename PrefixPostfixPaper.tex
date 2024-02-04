@@ -71,7 +71,7 @@
 \end{indented}
 
 \begin{abstract}
-We develop faultless, fixed-depth, string-based, prefix and postfix symbolic regression grammars, capable of producing \emph{any} expression from a set of operands, unary operators and/or binary operators. Using these grammars, we outline simplified forms of 5 popular heuristic search strategies, namely, Brute Force Search,  Monte Carlo Tree Search, Particle Swarm Optimization, Genetic Programming, and Simulated Annealing. For each algorithm, we compare the relative performance of prefix vs postfix for 10 different ground-truth expressions implemented entirely within a common C++/Eigen symbolic regression framework. 
+We develop faultless, fixed-depth, string-based, prefix and postfix symbolic regression grammars, capable of producing \emph{any} expression from a set of operands, unary operators and/or binary operators. Using these grammars, we outline simplified forms of 5 popular heuristic search strategies, namely, Brute Force Search,  Monte Carlo Tree Search, Particle Swarm Optimization, Genetic Programming, and Simulated Annealing. For each algorithm, we compare the relative performance of prefix vs postfix for 10 different ground-truth expressions implemented entirely within a common C++/Eigen symbolic regression framework. We find that postfix tends to outperform prefix when the ground-truth expression tree has a larger average number of nodes per layer, and vice versa for prefix when the ground-truth expression tree is relatively thin.
 \end{abstract}
 
 %
@@ -99,7 +99,8 @@ Symbolic regression (SR) typically denotes the process of finding a symbolic mod
 \item[--] Binary operators: Usually any operator that takes 2 real arguments as input and outputs a real number, such as $+$, $-$, $*$, $\div$, etc.
 \end{itemize}
 \subsection{Symbolic Regression Algorithms}
-To the best of our knowledge, the only paper that studies the effect of prefix vs postfix expression representations on symbolic regression convergence is \cite{hemberg2008pre}.  In \cite{hemberg2008pre}, the authors compare prefix, infix, and postfix notation-based grammars on 5 bivariate symbolic regression benchmarks and found a greater relative performance of the postfix grammar that increased with complexity of ground-truth expressions. 
+\textbf{Pre}fix (also known as polish notation) expressions are written with the operators coming \emph{before} the operators, for example, \texttt{+ 1 2} represents the sum of 1 and 2. \textbf{Post}fix (also known as reverse-polish notation) expressions, on the other hand, have the operators coming \emph{after} the operands, for example, \texttt{1 2 +} represents the sum of 1 and 2. These two methods of representing expressions are advantagous because they remove the need for parantheses and operator precedence rules characteristic of infix notation, where the operators are placed \emph{in between} the operands. In symbolic regression, representing expressions as prefix and/or postfix strings can result in faster evaluation of candidate expressions with less memory required compared to infix due to the requirement of parantheses to specify the order of evaluation. An interesting question then arises: \emph{In symbolic regression, which performs better, prefix or postfix?}
+\par To the best of our knowledge, the only paper that studies the effect of prefix vs postfix expression representations on symbolic regression convergence is \cite{hemberg2008pre}.  In \cite{hemberg2008pre}, the authors compare prefix, infix, and postfix notation-based grammars on 5 bivariate symbolic regression benchmarks and found a greater relative performance of the postfix grammar that increased with complexity of ground-truth expressions. 
 However, this performance difference was mostly due to the smaller percentage of invalid individuals generated with the postfix grammar compared to the prefix grammar.  
 Furthermore, we note 2 main limitations of this result for its applicability to modern prefix/postfix-based Symbolic Regression software which motivate this paper:
 \begin{enumerate}
@@ -107,7 +108,7 @@ Furthermore, we note 2 main limitations of this result for its applicability to 
 \item The study only considers genetic algorithm for symbolic regression and does not explore other symbolic regression algorithms/search strategies. 
 \end{enumerate}
 In this paper, we document faultless grammars for generating fixed-depth prefix and postfix expressions. Additionally we analyse and compare the performance of various algorithms on standard symbolic regression benchmarks when using these grammars, namely, Random Search (as a baseline), Monte Carlo Tree Search (MCTS), Particle Swarm Optimization (PSO), Genetic Programming (GP), and Simualted Annealing (SA). 
-\par Other papers such as \cite{lacava2021contemporary}, \cite{10.1145/3205455.3205539}, and \cite{Zegklitz2021} have documented comprehensive comparisons of different symbolic regression methods. However, such comparisons are almost always within the context of different frameworks, which can potentially obscure an otherwise very good algorithm by differences in implementation efficiency/speed. Therefore, we implement all the algorithms and grammars in one common framework, namely, a C++ framework utilizing the Eigen template library  \cite{eigenweb} for fast matrix computations and non-linear constant optimization, \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/tree/prefix_and_postfix_cpp_implementation}{here}.
+\par Other papers such as \cite{lacava2021contemporary}, \cite{10.1145/3205455.3205539}, and \cite{Zegklitz2021} have documented comprehensive comparisons of different symbolic regression methods. However, such comparisons are almost always within the context of different frameworks, which can potentially obscure otherwise very good algorithms by differences in implementation efficiency/speed. Therefore, we implement all the algorithms and grammars in one common framework, namely, a C++ framework utilizing the Eigen template library  \cite{eigenweb} for fast matrix computations and non-linear constant optimization, \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/tree/prefix_and_postfix_cpp_implementation}{here}.
 
  
 
@@ -159,7 +160,7 @@ In this paper, we restrict the analysis to prefix and postfix notations, as thes
 
 
 \subsection{Prefix and Postfix}
-Using prefix notation for symbolic regression entails building an expression starting from a root node, i.e., an operator. Postfix notation, on the other hand, begins building the expression from leaf nodes. Figure \ref{fig:prefix_vs_postfix} illustrates the difference.
+Using prefix notation for symbolic regression entails building an expression starting from a root node, i.e., an operator. Postfix notation, on the other hand, begins building an expression from leaf nodes. Figure \ref{fig:prefix_vs_postfix} illustrates the difference.
 
 
 \begin{figure}
@@ -235,13 +236,13 @@ Using prefix notation for symbolic regression entails building an expression sta
         \end{tikzpicture}
         \caption{postfix (after)}
     \end{subfigure}
-    \caption{Adding a node (right) to a postfix expression tree (left, node \textcolor{red}{\textbf{9}}). As one can see, even though the expression on the left is complete, the tree can grow using the same method. This is not the case for the prefix representation. For example, to continue the expression tree in Figure \ref{subfig:prefix_tree_example}, one would have to add nodes going up from the root.}
+    \caption{Adding a node to a postfix expression tree from left (node \textcolor{red}{\textbf{8}}) to right (node \textcolor{red}{\textbf{9}}). As one can see, even though the expression on the left is complete, the tree can grow using the same method. This is not the case for the prefix representation. For example, to continue the expression tree in Figure \ref{subfig:prefix_tree_example}, one would have to add nodes going up from the root.}
     \label{fig:postfix_add_1}
 \end{figure}
 
 \subsection{Building Fixed-Depth Expressions}
 Building fixed-depth expressions using either prefix or postfix notation requires determining the set of legal nodes at each step. 
-\par Each step corresponds to adding a ``token'' to the current expression list. The set of nodes that can be selected at a given step is defined such that any possible \emph{valid} expression can eventually be generated with depth $N$ (an input parameter). The tokens are selected and appended to an expression list in the left-to-right order that they appear in the prefix or postfix notations; see e.g. the titles of Figures \ref{subfig:prefix_tree_example} and \ref{subfig:postfix_tree_example}, respectively. 
+\par Each step corresponds to adding a ``token'' to the current expression list. The set of nodes that can be selected at a given step is defined such that any possible \emph{valid} expression can eventually be generated with depth $N$ (an input parameter). The tokens are selected and appended to an expression list in the left-to-right order that they would appear in prefix or postfix notation; see e.g. the titles of Figures \ref{subfig:prefix_tree_example} and \ref{subfig:postfix_tree_example}, respectively. 
 \par The set of legal tokens at each step is determined by the following formula \ref{eq:Generic_Policy_Mask}
 
 \begin{equation}
@@ -1017,13 +1018,16 @@ Generally, we can observe from Figures \ref{fig:Hemberg_1_Benchmarks} - \ref{fig
 \begin{figure}
     \centering
     \includegraphics[width=\linewidth]{PrefixPostfixDecisionTree.pdf}
-    \caption{} 
+    \caption{Decision Tree for determining how postfix will perform relative to prefix. The impurity measure utilized is entropy. The algorithms are enumerated from 1 to 5 using the mapping \texttt{\{1: `Random Search', 2: `MCTS', 3: `PSO', 4: `GP', 5: `Simulated Annealing'\}}. This decision tree yields 70 \% accuracy when classifying the data obtained in section \ref{sec:Results}. The code to reproduce the figure can be found \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/ec9a0c72188606b3a03b9651b794a2f01f351854/PrefixPostfixDecisionTree.py}{here}. } 
     \label{fig:PrefixPostfixDecisionTree}
 \end{figure}
 
 \section{Conclusion and Outlook}
 In this work, we have developed string-based grammars for generating symbolic expressions from a set of operands and unary+binary operators. These grammars elicit faultless prefix and postfix expressions corresponding to the entire space of strictly fixed-depth expression trees. 
-\par We have outlined five straightforward symbolic regression algorithms using these grammars. These algorithms were tested on benchmark expressions from \cite{hemberg2008pre} and \cite{udrescu2020ai} within a common C++/Eigen SR framework.
+\par We have outlined five straightforward symbolic regression algorithms using these grammars. These algorithms were tested on benchmark expressions from \cite{hemberg2008pre} and \cite{udrescu2020ai} within a common C++/Eigen SR framework. The results suggest that postfix has greater aptitude for discovering ground truth expressions with a larger number of nodes per layer of expression tree, and vice versa for prefix notation. Practically, this insight is only useful if the expression tree is known a-priori; thus, a future study could explore how machine learning can predict the optimal expression representation conditioned on the data and other ingredients known beforehand. Naturally, a theoretical analysis and/or more benchmarking would be needed to substantiate the empircal findings of this paper. 
+\par 
+\par With respect to the fixed-depth symbolic regression grammars developed herein, a promising extension would be to explore how existing SR frameworks such as PySR can be improved by including a fixed-depth option. This feature would allow the user with an idea about the desired complexity to focus the available computational resources on searching the space of fixed-depth expressions rather than the much larger space of expressions with depth $\leq$ max-depth. On the other hand, it remains to be seen which state-of-the-art SR frameworks would most readily support such a feature.
+
 
 \newpage
 

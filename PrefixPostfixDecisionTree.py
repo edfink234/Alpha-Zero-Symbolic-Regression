@@ -70,7 +70,7 @@ X = df.drop('Label', axis=1)
 y = df['Label']
 
 # Creating and training the Decision Tree model
-model = DecisionTreeClassifier(max_depth = 4, criterion = "entropy", ccp_alpha = 0.09, random_state = 3)
+model = DecisionTreeClassifier(max_depth = 4, criterion = "entropy", ccp_alpha = 0.09)
 model.fit(X, y)
 
 # Visualizing the decision tree
