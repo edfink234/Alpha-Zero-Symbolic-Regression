@@ -1,0 +1,710 @@
+
+@inproceedings{hemberg2008pre,
+  title={Pre-, in-and postfix grammars for symbolic regression in grammatical evolution},
+  author={Hemberg, Erik and McPhee, Nicholas and O’Neill, Michael and Brabazon, Anthony},
+  booktitle={IEEE Workshop and Summer School on Evolutionary Computing},
+  volume={2008},
+  pages={18--22},
+  year={2008}
+}
+
+ @MISC{eigenweb,
+  author = {Ga\"{e}l Guennebaud and Beno\^{i}t Jacob and others},
+  title = {Eigen v3},
+  howpublished = {http://eigen.tuxfamily.org},
+  year = {2010}
+ }
+
+@misc{defranca2023interpretable,
+      title={Interpretable Symbolic Regression for Data Science: Analysis of the 2022 Competition}, 
+      author={F. O. de Franca and M. Virgolin and M. Kommenda and M. S. Majumder and M. Cranmer and G. Espada and L. Ingelse and A. Fonseca and M. Landajuela and B. Petersen and R. Glatt and N. Mundhenk and C. S. Lee and J. D. Hochhalter and D. L. Randall and P. Kamienny and H. Zhang and G. Dick and A. Simon and B. Burlacu and Jaan Kasak and Meera Machado and Casper Wilstrup and W. G. La Cava},
+      year={2023},
+      eprint={2304.01117},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
+
+
+
+@inproceedings{10.1145/3520304.3534031,
+author = {Randall, David L. and Townsend, Tyler S. and Hochhalter, Jacob D. and Bomarito, Geoffrey F.},
+title = {Bingo: A Customizable Framework for Symbolic Regression with Genetic Programming},
+year = {2022},
+isbn = {9781450392686},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3520304.3534031},
+doi = {10.1145/3520304.3534031},
+abstract = {In this paper, we introduce Bingo, a flexible and customizable yet performant Python framework for symbolic regression with genetic programming. Bingo maintains a modular code structure for simple abstraction and easily swappable components. Fitness functions, selection methods, and constant optimization methods allow for easy problem-specific customization. Bingo also maintains several features for increased efficiency such as parallelism, equation simplification, and a C++ backend. We compare Bingo's performance to other genetic programming for symbolic regression (GPSR) methods to show that it is both competitive and flexible.},
+booktitle = {Proceedings of the Genetic and Evolutionary Computation Conference Companion},
+pages = {2282–2288},
+numpages = {7},
+keywords = {symbolic regression, genetic programming, genetic programming for symbolic regression},
+location = {Boston, Massachusetts},
+series = {GECCO '22}
+}
+
+@misc{kamienny2022endtoend,
+      title={End-to-end symbolic regression with transformers}, 
+      author={Pierre-Alexandre Kamienny and Stéphane d'Ascoli and Guillaume Lample and François Charton},
+      year={2022},
+      eprint={2204.10532},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
+
+@article{zhang2022ps,
+    title={PS-Tree: A piecewise symbolic regression tree},
+    author={Zhang, Hengzhe and Zhou, Aimin and Qian, Hong and Zhang, Hu},
+    journal={Swarm and Evolutionary Computation},
+    volume={71},
+    pages={101061},
+    year={2022},
+    publisher={Elsevier}
+}
+
+@article{Brolos2021AnAT,
+  title={An Approach to Symbolic Regression Using Feyn},
+  author={Kevin Ren'e Brolos and Meera Machado and Chris Cave and Jaan Kasak and Valdemar Stentoft-Hansen and Victor Galindo Batanero and T. Jelen and Casper Wilstrup},
+  journal={ArXiv},
+  year={2021},
+  volume={abs/2104.05417},
+  url={https://api.semanticscholar.org/CorpusID:233209946}
+}
+
+@inproceedings{10.1145/3512290.3528757,
+author = {He, Baihe and Lu, Qiang and Yang, Qingyun and Luo, Jake and Wang, Zhiguang},
+title = {Taylor Genetic Programming for Symbolic Regression},
+year = {2022},
+isbn = {9781450392372},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3512290.3528757},
+doi = {10.1145/3512290.3528757},
+abstract = {Genetic programming (GP) is a commonly used approach to solve symbolic regression (SR) problems. Compared with the machine learning or deep learning methods that depend on the pre-defined model and the training dataset for solving SR problems, GP is more focused on finding the solution in a search space. Although GP has good performance on large-scale benchmarks, it randomly transforms individuals to search results without taking advantage of the characteristics of the dataset. So, the search process of GP is usually slow, and the final results could be unstable. To guide GP by these characteristics, we propose a new method for SR, called Taylor genetic programming (TaylorGP)1. TaylorGP leverages a Taylor polynomial to approximate the symbolic equation that fits the dataset. It also utilizes the Taylor polynomial to extract the features of the symbolic equation: low order polynomial discrimination, variable separability, boundary, monotonic, and parity. GP is enhanced by these Taylor polynomial techniques. Experiments are conducted on three kinds of benchmarks: classical SR, machine learning, and physics. The experimental results show that TaylorGP not only has higher accuracy than the nine baseline methods, but also is faster in finding stable results.},
+booktitle = {Proceedings of the Genetic and Evolutionary Computation Conference},
+pages = {946–954},
+numpages = {9},
+keywords = {Taylor polynomials, symbolic regression, genetic programming},
+location = {Boston, Massachusetts},
+series = {GECCO '22}
+}
+
+
+@InProceedings{pmlr-v80-sahoo18a,
+  title = 	 {Learning Equations for Extrapolation and Control},
+  author =       {Sahoo, Subham and Lampert, Christoph and Martius, Georg},
+  booktitle = 	 {Proceedings of the 35th International Conference on Machine Learning},
+  pages = 	 {4442--4450},
+  year = 	 {2018},
+  editor = 	 {Dy, Jennifer and Krause, Andreas},
+  volume = 	 {80},
+  series = 	 {Proceedings of Machine Learning Research},
+  month = 	 {10--15 Jul},
+  publisher =    {PMLR},
+  pdf = 	 {http://proceedings.mlr.press/v80/sahoo18a/sahoo18a.pdf},
+  url = 	 {https://proceedings.mlr.press/v80/sahoo18a.html},
+  abstract = 	 {We present an approach to identify concise equations from data using a shallow neural network approach. In contrast to ordinary black-box regression, this approach allows understanding functional relations and generalizing them from observed data to unseen parts of the parameter space. We show how to extend the class of learnable equations for a recently proposed equation learning network to include divisions, and we improve the learning and model selection strategy to be useful for challenging real-world data. For systems governed by analytical expressions, our method can in many cases identify the true underlying equation and extrapolate to unseen domains. We demonstrate its effectiveness by experiments on a cart-pendulum system, where only 2 random rollouts are required to learn the forward dynamics and successfully achieve the swing-up task.}
+}
+
+@inproceedings{10.1145/3564719.3568697,
+author = {Espada, Guilherme and Ingelse, Leon and Canelas, Paulo and Barbosa, Pedro and Fonseca, Alcides},
+title = {Data Types as a More Ergonomic Frontend for Grammar-Guided Genetic Programming},
+year = {2022},
+isbn = {9781450399203},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3564719.3568697},
+doi = {10.1145/3564719.3568697},
+abstract = {Genetic Programming (GP) is an heuristic method that can be applied to many Machine Learning, Optimization and Engineering problems. In particular, it has been widely used in Software Engineering for Test-case generation, Program Synthesis and Improvement of Software (GI).  
+
+Grammar-Guided Genetic Programming (GGGP) approaches allow the user to refine the domain of valid program solutions. Backus Normal Form is the most popular interface for describing Context-Free Grammars (CFG) for GGGP. BNF and its derivatives have the disadvantage of interleaving the grammar language and the target language of the program.  
+
+We propose to embed the grammar as an internal Domain-Specific Language in the host language of the framework. This approach has the same expressive power as BNF and EBNF while using the host language type-system to take advantage of all the existing tooling: linters, formatters, type-checkers, autocomplete, and legacy code support. These tools have a practical utility in designing software in general, and GP systems in particular.  
+
+We also present Meta-Handlers, user-defined overrides of the tree-generation system. This technique extends our object-oriented encoding with more practicability and expressive power than existing CFG approaches, achieving the same expressive power of Attribute Grammars, but without the grammar vs target language duality.  
+
+Furthermore, we evidence that this approach is feasible, showing an example Python implementation as proof. We also compare our approach against textual BNF-representations w.r.t. expressive power and ergonomics. These advantages do not come at the cost of performance, as shown by our empirical evaluation on 5 benchmarks of our example implementation against PonyGE2. We conclude that our approach has better ergonomics with the same expressive power and performance of textual BNF-based grammar encodings.},
+booktitle = {Proceedings of the 21st ACM SIGPLAN International Conference on Generative Programming: Concepts and Experiences},
+pages = {86–94},
+numpages = {9},
+keywords = {Grammar-guided Genetic Programming, Genetic Programming Framework, Strongly-Typed Genetic Programming},
+location = {Auckland, New Zealand},
+series = {GPCE 2022}
+}
+
+@inproceedings{10.1145/3377929.3398099,
+    author = {Burlacu, Bogdan and Kronberger, Gabriel and Kommenda, Michael},
+    title = {Operon C++: An Efficient Genetic Programming Framework for Symbolic Regression},
+    year = {2020},
+    isbn = {9781450371278},
+    publisher = {Association for Computing Machinery},
+    address = {New York, NY, USA},
+    url = {https://doi.org/10.1145/3377929.3398099},
+    doi = {10.1145/3377929.3398099},
+    booktitle = {Proceedings of the 2020 Genetic and Evolutionary Computation Conference Companion},
+    pages = {1562–1570},
+    numpages = {9},
+    keywords = {symbolic regression, genetic programming, C++},
+    location = {Canc\'{u}n, Mexico},
+    series = {GECCO '20}
+}
+
+@misc{cranmer2023interpretable,
+      title={Interpretable Machine Learning for Science with PySR and SymbolicRegression.jl}, 
+      author={Miles Cranmer},
+      year={2023},
+      eprint={2305.01582},
+      archivePrefix={arXiv},
+      primaryClass={astro-ph.IM}
+}
+
+@inproceedings{NEURIPS2022_dbca58f3,
+ author = {Landajuela, Mikel and Lee, Chak Shing and Yang, Jiachen and Glatt, Ruben and Santiago, Claudio P and Aravena, Ignacio and Mundhenk, Terrell and Mulcahy, Garrett and Petersen, Brenden K},
+ booktitle = {Advances in Neural Information Processing Systems},
+ editor = {S. Koyejo and S. Mohamed and A. Agarwal and D. Belgrave and K. Cho and A. Oh},
+ pages = {33985--33998},
+ publisher = {Curran Associates, Inc.},
+ title = {A Unified Framework for Deep Symbolic Regression},
+ url = {https://proceedings.neurips.cc/paper\_files/paper/2022/file/dbca58f35bddc6e4003b2dd80e42f838-Paper-Conference.pdf},
+ volume = {35},
+ year = {2022}
+}
+
+@inproceedings{10.1145/3377930.3390237,
+author = {Dick, Grant and Owen, Caitlin A. and Whigham, Peter A.},
+title = {Feature Standardisation and Coefficient Optimisation for Effective Symbolic Regression},
+year = {2020},
+isbn = {9781450371285},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3377930.3390237},
+doi = {10.1145/3377930.3390237},
+abstract = {Symbolic regression is a common application of genetic programming where model structure and corresponding parameters are evolved in unison. In the majority of work exploring symbolic regression, features are used directly without acknowledgement of their relative scale or unit. This paper extends recent work on the importance of standardisation of features when conducting symbolic regression. Specifically, z-score standardisation of input features is applied to both inputs and response to ensure that evolution explores a model space with zero mean and unit variance. This paper demonstrates that standardisation allows a simpler function set to be used without increasing bias. Additionally, it is demonstrated that standardisation can significantly improve the performance of coefficient optimisation through gradient descent to produce accurate models. Through analysis of several benchmark data sets, we demonstrate that feature standardisation enables simple but effective approaches that are comparable in performance to the state-of-the-art in symbolic regression.},
+booktitle = {Proceedings of the 2020 Genetic and Evolutionary Computation Conference},
+pages = {306–314},
+numpages = {9},
+keywords = {feature standardisation, genetic programming, gradient descent, symbolic regression},
+location = {Canc\'{u}n, Mexico},
+series = {GECCO '20}
+}
+
+@article{DEAP_JMLR2012, 
+    author    = " F\'elix-Antoine Fortin and Fran\c{c}ois-Michel {De Rainville} and Marc-Andr\'e Gardner and Marc Parizeau and Christian Gagn\'e ",
+    title     = { {DEAP}: Evolutionary Algorithms Made Easy },
+    pages    = { 2171--2175 },
+    volume    = { 13 },
+    month     = { jul },
+    year      = { 2012 },
+    journal   = { Journal of Machine Learning Research }
+}
+
+@misc{izzo2016differentiable,
+      title={Differentiable Genetic Programming}, 
+      author={Dario Izzo and Francesco Biscani and Alessio Mereta},
+      year={2016},
+      eprint={1611.04766},
+      archivePrefix={arXiv},
+      primaryClass={cs.NE}
+}
+
+@incollection{Miller2011,
+author="Miller, Julian F.",
+editor="Miller, Julian F.",
+title="Cartesian Genetic Programming",
+bookTitle="Cartesian Genetic Programming",
+year="2011",
+publisher="Springer Berlin Heidelberg",
+address="Berlin, Heidelberg",
+pages="17--34",
+abstract="In this chapter, we describe the original and most widely known form of Cartesian genetic programming (CGP). CGP encodes computational structures, which we call `programs' in the form of directed acyclic graphs. We refer to this as `classic' CGP. However these program may be computer programs, circuits, rules, or other specialized computational entities.",
+isbn="978-3-642-17310-3",
+doi="10.1007/978-3-642-17310-3\_2",
+url="https://doi.org/10.1007/978-3-642-17310-3\_2"
+}
+
+@misc{cholewiak2021scholarly,
+  author  = {Cholewiak, Steven A. and Ipeirotis, Panos and Silva, Victor and Kannawadi, Arun},
+  title   = {{SCHOLARLY: Simple access to Google Scholar authors and citation using Python}},
+  year    = {2021},
+  doi     = {10.5281/zenodo.5764801},
+  license = {Unlicense},
+  url = {https://github.com/scholarly-python-package/scholarly},
+  version = {1.5.1}
+}
+
+@article{doi:10.1137/0916069,
+author = {Byrd, Richard H. and Lu, Peihuang and Nocedal, Jorge and Zhu, Ciyou},
+title = {A Limited Memory Algorithm for Bound Constrained Optimization},
+journal = {SIAM Journal on Scientific Computing},
+volume = {16},
+number = {5},
+pages = {1190-1208},
+year = {1995},
+doi = {10.1137/0916069},
+
+URL = { 
+    
+        https://doi.org/10.1137/0916069
+    
+    
+
+},
+eprint = { 
+    
+        https://doi.org/10.1137/0916069
+    
+    
+
+}
+,
+    abstract = { An algorithm for solving large nonlinear optimization problems with simple bounds is described. It is based on the gradient projection method and uses a limited memory BFGS matrix to approximate the Hessian of the objective function. It is shown how to take advantage of the form of the limited memory approximation to implement the algorithm efficiently. The results of numerical tests on a set of large problems are reported. }
+}
+
+@article{doi:10.1137/0111030,
+author = {Marquardt, Donald W.},
+title = {An Algorithm for Least-Squares Estimation of Nonlinear Parameters},
+journal = {Journal of the Society for Industrial and Applied Mathematics},
+volume = {11},
+number = {2},
+pages = {431-441},
+year = {1963},
+doi = {10.1137/0111030},
+
+URL = { 
+    
+        https://doi.org/10.1137/0111030
+    
+    
+
+},
+eprint = { 
+    
+        https://doi.org/10.1137/0111030
+    
+    
+
+}
+
+}
+
+@article{83b09f23-b20e-3617-8f72-24765b713f7b,
+ ISSN = {0033569X, 15524485},
+ URL = {http://www.jstor.org/stable/43633451},
+ author = {KENNETH LEVENBERG},
+ journal = {Quarterly of Applied Mathematics},
+ number = {2},
+ pages = {164--168},
+ publisher = {Brown University},
+ title = {A METHOD FOR THE SOLUTION OF CERTAIN NON-LINEAR PROBLEMS IN LEAST SQUARES},
+ urldate = {2023-12-17},
+ volume = {2},
+ year = {1944}
+}
+
+@MISC {77180279, 
+    TITLE = {Height of Polish Notation Tree (prefix) with Binary and Unary Nodes}, 
+    AUTHOR = {\href{https://stackoverflow.com/users/5459839}{\texttt{trincot}}, Timo Koornstra}, 
+    HOWPUBLISHED = {Stack Overflow}, 
+    NOTE = {\href{https://stackoverflow.com/a/77180279}{URL} (version: 2023-09-27 at 13:36)}, 
+    EPRINT =   {https://stackoverflow.com/a/77180279}, 
+    URL =      {https://stackoverflow.com/a/77180279} 
+}
+
+@MISC {77128902, 
+    TITLE = {Height of RPN Tree with Binary and Unary Nodes}, 
+    AUTHOR = {\href{https://stackoverflow.com/users/5459839}{\texttt{trincot}}, Timo Koornstra}, 
+    HOWPUBLISHED = {Stack Overflow}, 
+    NOTE = {\href{https://stackoverflow.com/a/77128902}{URL} (version: 2023-09-18 at 18:36)}, 
+    EPRINT =   {https://stackoverflow.com/a/77128902}, 
+    URL =      {https://stackoverflow.com/a/77128902} 
+}
+
+@misc{lacava2021contemporary,
+      title={Contemporary Symbolic Regression Methods and their Relative Performance}, 
+      author={William La Cava and Patryk Orzechowski and Bogdan Burlacu and Fabrício Olivetti de França and Marco Virgolin and Ying Jin and Michael Kommenda and Jason H. Moore},
+      year={2021},
+      eprint={2107.14351},
+      archivePrefix={arXiv},
+      primaryClass={cs.NE}
+}
+
+@inproceedings{10.1145/3205455.3205539,
+author = {Orzechowski, Patryk and La Cava, William and Moore, Jason H.},
+title = {Where Are We Now? A Large Benchmark Study of Recent Symbolic Regression Methods},
+year = {2018},
+isbn = {9781450356183},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3205455.3205539},
+doi = {10.1145/3205455.3205539},
+abstract = {In this paper we provide a broad benchmarking of recent genetic programming approaches to symbolic regression in the context of state of the art machine learning approaches. We use a set of nearly 100 regression benchmark problems culled from open source repositories across the web. We conduct a rigorous benchmarking of four recent symbolic regression approaches as well as nine machine learning approaches from scikit-learn. The results suggest that symbolic regression performs strongly compared to state-of-the-art gradient boosting algorithms, although in terms of running times is among the slowest of the available methodologies. We discuss the results in detail and point to future research directions that may allow symbolic regression to gain wider adoption in the machine learning community.},
+booktitle = {Proceedings of the Genetic and Evolutionary Computation Conference},
+pages = {1183–1190},
+numpages = {8},
+keywords = {machine learning, genetic programming, symbolic regression, benchmarking},
+location = {Kyoto, Japan},
+series = {GECCO '18}
+}
+
+@Article{Zegklitz2021,
+author={{\v{Z}}egklitz, Jan
+and Po{\v{s}}{\'i}k, Petr},
+title={Benchmarking state-of-the-art symbolic regression algorithms},
+journal={Genetic Programming and Evolvable Machines},
+year={2021},
+month={Mar},
+day={01},
+volume={22},
+number={1},
+pages={5-33},
+abstract={Symbolic regression (SR) is a powerful method for building predictive models from data without assuming any model structure. Traditionally, genetic programming (GP) was used as the SR engine. However, for these purely evolutionary methods it was quite hard to even accommodate the function to the range of the data and the training was consequently inefficient and slow. Recently, several SR algorithms emerged which employ multiple linear regression. This allows the algorithms to create models with relatively small error right from the beginning of the search. Such algorithms are claimed to be by orders of magnitude faster than SR algorithms based on classic GP. However, a systematic comparison of these algorithms on a common set of problems is still missing and there is no basis on which to decide which algorithm to use. In this paper we conceptually and experimentally compare several representatives of such algorithms: GPTIPS, FFX, and EFS. We also include GSGP-Red, which is an enhanced version of geometric semantic genetic programming, an important algorithm in the field of SR. They are applied as off-the-shelf, ready-to-use techniques, mostly using their default settings. The methods are compared on several synthetic SR benchmark problems as well as real-world ones ranging from civil engineering to aerodynamics and acoustics. Their performance is also related to the performance of three conventional machine learning algorithms: multiple regression, random forests and support vector regression. The results suggest that across all the problems, the algorithms have comparable performance. We provide basic recommendations to the user regarding the choice of the algorithm.},
+issn={1573-7632},
+doi={10.1007/s10710-020-09387-0},
+url={https://doi.org/10.1007/s10710-020-09387-0}
+}
+
+@incollection{Kammerer2020,
+author="Kammerer, Lukas
+and Kronberger, Gabriel
+and Burlacu, Bogdan
+and Winkler, Stephan M.
+and Kommenda, Michael
+and Affenzeller, Michael",
+editor="Banzhaf, Wolfgang
+and Goodman, Erik
+and Sheneman, Leigh
+and Trujillo, Leonardo
+and Worzel, Bill",
+title="Symbolic Regression by Exhaustive Search: Reducing the Search Space Using Syntactical Constraints and Efficient Semantic Structure Deduplication",
+bookTitle="Genetic Programming Theory and Practice XVII",
+year="2020",
+publisher="Springer International Publishing",
+address="Cham",
+pages="79--99",
+abstract="Symbolic regression is a powerful system identification technique in industrial scenarios where no prior knowledge on model structure is available. Such scenarios often require specific model properties such as interpretability, robustness, trustworthiness and plausibility, that are not easily achievable using standard approaches like genetic programming for symbolic regression. In this chapter we introduce a deterministic symbolic regression algorithm specifically designed to address these issues. The algorithm uses a context-free grammar to produce models that are parameterized by a non-linear least squares local optimization procedure. A finite enumeration of all possible models is guaranteed by structural restrictions as well as a caching mechanism for detecting semantically equivalent solutions. Enumeration order is established via heuristics designed to improve search efficiency. Empirical tests on a comprehensive benchmark suite show that our approach is competitive with genetic programming in many noiseless problems while maintaining desirable properties such as simple, reliable models and reproducibility.",
+isbn="978-3-030-39958-0",
+doi="10.1007/978-3-030-39958-0\_5",
+url="https://doi.org/10.1007/978-3-030-39958-0\_5"
+}
+
+@article{Heule2017TheSO,
+  title={The science of brute force},
+  author={Marijn J. H. Heule and Oliver Kullmann},
+  journal={Communications of the ACM},
+  year={2017},
+  volume={60},
+  pages={70 - 79},
+  url={https://api.semanticscholar.org/CorpusID:27817381}
+}
+
+@article{CazenaveMCTS,
+author = {CAZENAVE, TRISTAN},
+title = {MONTE-CARLO EXPRESSION DISCOVERY},
+journal = {International Journal on Artificial Intelligence Tools},
+volume = {22},
+number = {01},
+pages = {1250035},
+year = {2013},
+doi = {10.1142/S0218213012500352},
+URL = {https://doi.org/10.1142/S0218213012500352},
+eprint = {https://doi.org/10.1142/S0218213012500352},
+abstract = { Monte-Carlo Tree Search is a general search algorithm that gives good results in games. Genetic Programming evaluates and combines trees to discover expressions that maximize a given fitness function. In this paper Monte-Carlo Tree Search is used to generate expressions that are evaluated in the same way as in Genetic Programming. Monte-Carlo Tree Search is transformed in order to search expression trees rather than lists of moves. We compare Nested Monte-Carlo Search to UCT (Upper Confidence Bounds for Trees) for various problems. Monte-Carlo Tree Search achieves state of the art results on multiple benchmark problems. The proposed approach is simple to program, does not suffer from expression growth, has a natural restart strategy to avoid local optima and is extremely easy to parallelize. }
+}
+
+@Article{Lu2021,
+author={Lu, Qiang
+and Tao, Fan
+and Zhou, Shuo
+and Wang, Zhiguang},
+title={Incorporating Actor-Critic in Monte Carlo tree search for symbolic regression},
+journal={Neural Computing and Applications},
+year={2021},
+month={Jul},
+day={01},
+volume={33},
+number={14},
+pages={8495-8511},
+abstract={Most traditional genetic programming methods that handle symbolic regression are random algorithms without memory and direction. They repeatedly search for the same or similar positions in the symbolic space, and easily fall into premature convergence. To overcome these shortcomings, we propose a new symbolic expression search algorithm based on the Monte Carlo tree search named SE-MCTS. It creates a tree to represent the symbolic space and remembers its visiting positions. Moreover, it incorporates two neural networks---Actor and Critic into the upper confidence bound to direct its search based on the given dataset features and decide when to use particle swarm optimization to find fitted constants in a mathematical expression. The experiment results show that SE-MCTS can discover more proper mathematical expressions than canonical genetic programming methods.},
+issn={1433-3058},
+doi={10.1007/s00521-020-05602-2},
+url={https://doi.org/10.1007/s00521-020-05602-2}
+}
+
+@inproceedings{10.5555/3618408.3619047,
+author = {Kamienny, Pierre-Alexandre and Lample, Guillaume and Lamprier, Sylvain and Virgolin, Marco},
+title = {Deep Generative Symbolic Regression with Monte-Carlo-Tree-Search},
+year = {2023},
+publisher = {JMLR.org},
+abstract = {Symbolic regression (SR) is the problem of learning a symbolic expression from numerical data. Recently, deep neural models trained on procedurally-generated synthetic datasets showed competitive performance compared to more classical Genetic Programming (GP) algorithms. Unlike their GP counterparts, these neural approaches are trained to generate expressions from datasets given as context. This allows them to produce accurate expressions in a single forward pass at test time. However, they usually do not benefit from search abilities, which result in low performance compared to GP on out-of-distribution datasets. In this paper, we propose a novel method which provides the best of both worlds, based on a Monte-Carlo Tree Search procedure using a context-aware neural mutation model, which is initially pre-trained to learn promising mutations, and further refined from successful experiences in an online fashion. The approach demonstrates state-of-the-art performance on the well-known SRBench benchmark.},
+booktitle = {Proceedings of the 40th International Conference on Machine Learning},
+articleno = {639},
+numpages = {14},
+location = {Honolulu, Hawaii, USA},
+series = {ICML'23}
+}
+
+@misc{sun2023symbolic,
+      title={Symbolic Physics Learner: Discovering governing equations via Monte Carlo tree search}, 
+      author={Fangzheng Sun and Yang Liu and Jian-Xun Wang and Hao Sun},
+      year={2023},
+      eprint={2205.13134},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI}
+}
+
+@Article{Auer2002,
+author={Auer, Peter
+and Cesa-Bianchi, Nicol{\`o}
+and Fischer, Paul},
+title={Finite-time Analysis of the Multiarmed Bandit Problem},
+journal={Machine Learning},
+year={2002},
+month={May},
+day={01},
+volume={47},
+number={2},
+pages={235-256},
+abstract={Reinforcement learning policies face the exploration versus exploitation dilemma, i.e. the search for a balance between exploring the environment to find profitable actions while taking the empirically best action as often as possible. A popular measure of a policy's success in addressing this dilemma is the regret, that is the loss due to the fact that the globally optimal policy is not followed all the times. One of the simplest examples of the exploration/exploitation dilemma is the multi-armed bandit problem. Lai and Robbins were the first ones to show that the regret for this problem has to grow at least logarithmically in the number of plays. Since then, policies which asymptotically achieve this regret have been devised by Lai and Robbins and many others. In this work we show that the optimal logarithmic regret is also achievable uniformly over time, with simple and efficient policies, and for all reward distributions with bounded support.},
+issn={1573-0565},
+doi={10.1023/A:1013689704352},
+url={https://doi.org/10.1023/A:1013689704352}
+}
+
+@misc{kuleshov2014algorithms,
+      title={Algorithms for multi-armed bandit problems}, 
+      author={Volodymyr Kuleshov and Doina Precup},
+      year={2014},
+      eprint={1402.6028},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI}
+}
+
+@InProceedings{10.1007/11871842_29,
+author="Kocsis, Levente
+and Szepesv{\'a}ri, Csaba",
+editor="F{\"u}rnkranz, Johannes
+and Scheffer, Tobias
+and Spiliopoulou, Myra",
+title="Bandit Based Monte-Carlo Planning",
+booktitle="Machine Learning: ECML 2006",
+year="2006",
+publisher="Springer Berlin Heidelberg",
+address="Berlin, Heidelberg",
+pages="282--293",
+abstract="For large state-space Markovian Decision Problems Monte-Carlo planning is one of the few viable approaches to find near-optimal solutions. In this paper we introduce a new algorithm, UCT, that applies bandit ideas to guide Monte-Carlo planning. In finite-horizon or discounted MDPs the algorithm is shown to be consistent and finite sample bounds are derived on the estimation error due to sampling. Experimental results show that in several domains, UCT is significantly more efficient than its alternatives.",
+isbn="978-3-540-46056-5"
+}
+
+@Article{Silver2016,
+author={Silver, David
+and Huang, Aja
+and Maddison, Chris J.
+and Guez, Arthur
+and Sifre, Laurent
+and van den Driessche, George
+and Schrittwieser, Julian
+and Antonoglou, Ioannis
+and Panneershelvam, Veda
+and Lanctot, Marc
+and Dieleman, Sander
+and Grewe, Dominik
+and Nham, John
+and Kalchbrenner, Nal
+and Sutskever, Ilya
+and Lillicrap, Timothy
+and Leach, Madeleine
+and Kavukcuoglu, Koray
+and Graepel, Thore
+and Hassabis, Demis},
+title={Mastering the game of Go with deep neural networks and tree search},
+journal={Nature},
+year={2016},
+month={Jan},
+day={01},
+volume={529},
+number={7587},
+pages={484-489},
+abstract={The game of Go has long been viewed as the most challenging of classic games for artificial intelligence owing to its enormous search space and the difficulty of evaluating board positions and moves. Here we introduce a new approach to computer Go that uses `value networks' to evaluate board positions and `policy networks' to select moves. These deep neural networks are trained by a novel combination of supervised learning from human expert games, and reinforcement learning from games of self-play. Without any lookahead search, the neural networks play Go at the level of state-of-the-art Monte Carlo tree search programs that simulate thousands of random games of self-play. We also introduce a new search algorithm that combines Monte Carlo simulation with value and policy networks. Using this search algorithm, our program AlphaGo achieved a 99.8{\%} winning rate against other Go programs, and defeated the human European Go champion by 5 games to 0. This is the first time that a computer program has defeated a human professional player in the full-sized game of Go, a feat previously thought to be at least a decade away.},
+issn={1476-4687},
+doi={10.1038/nature16961},
+url={https://doi.org/10.1038/nature16961}
+}
+
+@Article{Swiechowski2023,
+author={{\'{S}}wiechowski, Maciej
+and Godlewski, Konrad
+and Sawicki, Bartosz
+and Ma{\'{n}}dziuk, Jacek},
+title={Monte Carlo Tree Search: a review of recent modifications and applications},
+journal={Artificial Intelligence Review},
+year={2023},
+month={Mar},
+day={01},
+volume={56},
+number={3},
+pages={2497-2562},
+abstract={Monte Carlo Tree Search (MCTS) is a powerful approach to designing game-playing bots or solving sequential decision problems. The method relies on intelligent tree search that balances exploration and exploitation. MCTS performs random sampling in the form of simulations and stores statistics of actions to make more educated choices in each subsequent iteration. The method has become a state-of-the-art technique for combinatorial games. However, in more complex games (e.g. those with a high branching factor or real-time ones) as well as in various practical domains (e.g. transportation, scheduling or security) an efficient MCTS application often requires its problem-dependent modification or integration with other techniques. Such domain-specific modifications and hybrid approaches are the main focus of this survey. The last major MCTS survey was published in 2012. Contributions that appeared since its release are of particular interest for this review.},
+issn={1573-7462},
+doi={10.1007/s10462-022-10228-y},
+url={https://doi.org/10.1007/s10462-022-10228-y}
+}
+
+@unpublished{clerc:hal-00764996,
+  TITLE = {{Standard Particle Swarm Optimisation}},
+  AUTHOR = {Clerc, Maurice},
+  URL = {https://hal.science/hal-00764996},
+  NOTE = {15 pages},
+  YEAR = {2012},
+  MONTH = Sep,
+  KEYWORDS = {particle swarm ; optimisation},
+  PDF = {https://hal.science/hal-00764996/file/SPSO\_descriptions.pdf},
+  HAL_ID = {hal-00764996},
+  HAL_VERSION = {v1},
+}
+
+@article{PoliOverviewPSO,
+author = {Poli, Riccardo and Kennedy, James and Blackwell, Tim},
+year = {2007},
+month = {10},
+pages = {},
+title = {Particle Swarm Optimization: An Overview},
+volume = {1},
+journal = {Swarm Intelligence},
+doi = {10.1007/s11721-007-0002-0}
+}
+
+@InProceedings{10.1007/978-3-319-70093-9_37,
+author="Kita, Eisuke
+and Yamamoto, Risako
+and Sugiura, Hideyuki
+and Zuo, Yi",
+editor="Liu, Derong
+and Xie, Shengli
+and Li, Yuanqing
+and Zhao, Dongbin
+and El-Alfy, El-Sayed M.",
+title="Application of Grammatical Swarm to Symbolic Regression Problem",
+booktitle="Neural Information Processing",
+year="2017",
+publisher="Springer International Publishing",
+address="Cham",
+pages="356--365",
+abstract="Grammatical Swarm (GS), which is one of the evolutionary computations, is designed to find the function, the program or the program segment satisfying the design objective. Since the candidate solutions are defined as the bit-strings, the use of the translation rules translates the bit-strings into the function or the program. The swarm of particles is evolved according to Particle Swarm Optimization (PSO) in order to find the better solution. The aim of this study is to improve the convergence property of GS by changing the traditional PSO in GS with the other PSOs such as Particle Swarm Optimization with constriction factor, Union of Global and Local Particle Swarm Optimizations, Comprehensive Learning Particle Swarm Optimization, Particle Swarm Optimization with Second Global best Particle and Particle Swarm Optimization with Second Personal best Particle. The improved GS algorithms, therefore, are named as Grammatical Swarm with constriction factor (GS-cf), Union of Global and Local Grammatical Swarm (UGS), Comprehensive Learning Grammatical Swarm (CLGS), Grammatical Swarm with Second Global best Particle (SG-GS) and Grammatical Swarm with Second Personal best Particle (SG-GS), respectively. Symbolic regression problem is considered as the numerical example. The original GS is compared with the other algorithms. The effect of the model parameters for the convergence properties of the algorithms are discussed in the preliminary experiments. Then, except for CLGS and UGS, the convergence speeds of the other algorithms are faster than that of the original GS. Especially, the convergence properties of GS-cf and SP-GS are fastest among them.",
+isbn="978-3-319-70093-9"
+}
+
+@article{KARABOGA20121,
+title = {Artificial bee colony programming for symbolic regression},
+journal = {Information Sciences},
+volume = {209},
+pages = {1-15},
+year = {2012},
+issn = {0020-0255},
+doi = {https://doi.org/10.1016/j.ins.2012.05.002},
+url = {https://www.sciencedirect.com/science/article/pii/S0020025512003295},
+author = {Dervis Karaboga and Celal Ozturk and Nurhan Karaboga and Beyza Gorkemli},
+keywords = {Genetic programming, Symbolic regression, Artificial bee colony algorithm, Artificial bee colony programming},
+abstract = {Artificial bee colony algorithm simulating the intelligent foraging behavior of honey bee swarms is one of the most popular swarm based optimization algorithms. It has been introduced in 2005 and applied in several fields to solve different problems up to date. In this paper, an artificial bee colony algorithm, called as Artificial Bee Colony Programming (ABCP), is described for the first time as a new method on symbolic regression which is a very important practical problem. Symbolic regression is a process of obtaining a mathematical model using given finite sampling of values of independent variables and associated values of dependent variables. In this work, a set of symbolic regression benchmark problems are solved using artificial bee colony programming and then its performance is compared with the very well-known method evolving computer programs, genetic programming. The simulation results indicate that the proposed method is very feasible and robust on the considered test problems of symbolic regression.}
+}
+
+@inproceedings{offShellPSO,
+author = {Carlisle, A. and Dozier, G.},
+year = {2001},
+month = {01},
+pages = {},
+title = {An off-the-shelf PSO},
+booktitle = {An off-the-shelf PSO},
+journal = {Proceedings of the Workshop on Particle Swarm Optimization}
+}
+
+@Article{Koza1994,
+author={Koza, John R.},
+title={Genetic programming as a means for programming computers by natural selection},
+journal={Statistics and Computing},
+year={1994},
+month={Jun},
+day={01},
+volume={4},
+number={2},
+pages={87-112},
+abstract={Many seemingly different problems in machine learning, artificial intelligence, and symbolic processing can be viewed as requiring the discovery of a computer program that produces some desired output for particular inputs. When viewed in this way, the process of solving these problems becomes equivalent to searching a space of possible computer programs for a highly fit individual computer program. The recently developed genetic programming paradigm described herein provides a way to search the space of possible computer programs for a highly fit individual computer program to solve (or approximately solve) a surprising variety of different problems from different fields. In genetic programming, populations of computer programs are genetically bred using the Darwinian principle of survival of the fittest and using a genetic crossover (sexual recombination) operator appropriate for genetically mating computer programs. Genetic programming is illustrated via an example of machine learning of the Boolean 11-multiplexer function and symbolic regression of the econometric exchange equation from noisy empirical data.},
+issn={1573-1375},
+doi={10.1007/BF00175355},
+url={https://doi.org/10.1007/BF00175355}
+}
+
+@book{PoliFieldGuideGP,
+author = {Poli, Riccardo and Langdon, William and Mcphee, Nicholas},
+year = {2008},
+month = {01},
+pages = {},
+title = {A Field Guide to Genetic Programming},
+publisher = "Published via \texttt{http://lulu.com} and freely available at \texttt{http://www.gp-field-guide.org.uk}",
+isbn = {978-1-4092-0073-4}
+}
+
+@misc{manti2023discovering,
+      title={Discovering Interpretable Physical Models using Symbolic Regression and Discrete Exterior Calculus}, 
+      author={Simone Manti and Alessandro Lucantonio},
+      year={2023},
+      eprint={2310.06609},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
+
+@article{3ce09117-c08b-3ddb-b2ba-3ea8005b2118,
+ ISSN = {03545180, 24060933},
+ URL = {http://www.jstor.org/stable/43998756},
+ abstract = {An extension of the reverse Polish notation, as well as the extension of the corresponding algorithms for transforming infix expressions to the postfix ones and vice versa, are suggested. Further, some properties of reverse Polish notation are investigated. These properties are important in the simplification of the corresponding infix expression. A software implementing improved algorithms for the infix to postfix transformation and vice versa is developed.},
+ author = {Predrag V. Krtolica and Predrag S. Stanimirović},
+ journal = {Filomat},
+ pages = {157--172},
+ publisher = {University of Nis, Faculty of Sciences and Mathematics},
+ title = {ON SOME PROPERTIES OF REVERSE POLISH NOTATION},
+ urldate = {2024-01-11},
+ volume = {13},
+ year = {1999}
+}
+
+@inproceedings{10.1145/3449639.3459345,
+author = {Kantor, Daniel and Von Zuben, Fernando J. and de Franca, Fabricio Olivetti},
+title = {Simulated Annealing for Symbolic Regression},
+year = {2021},
+isbn = {9781450383509},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3449639.3459345},
+doi = {10.1145/3449639.3459345},
+abstract = {Symbolic regression aims to hypothesize a functional relationship involving explanatory variables and one or more dependent variables, based on examples of the desired input-output behavior. Genetic programming is a meta-heuristic commonly used in the literature to achieve this goal. Even though Symbolic Regression is sometimes associated with the potential of generating interpretable expressions, there is no guarantee that the returned function will not contain complicated constructs or even bloat. The Interaction-Transformation (IT) representation was recently proposed to alleviate this issue by constraining the search space to expressions following a simple and comprehensive pattern. In this paper, we resort to Simulated Annealing to search for a symbolic expression using the IT representation. Simulated Annealing exhibits an intrinsic ability to escape from poor local minima, which is demonstrated here to yield competitive results, particularly in terms of generalization, when compared with state-of-the-art Symbolic Regression techniques, that depend on population-based meta-heuristics, and committees of learning machines.},
+booktitle = {Proceedings of the Genetic and Evolutionary Computation Conference},
+pages = {592–599},
+numpages = {8},
+keywords = {symbolic regression, interaction transformation, simulated annealing, meta-heuristic},
+location = {Lille, France},
+series = {GECCO '21}
+}
+
+@Inbook{vanLaarhoven1987,
+author="van Laarhoven, Peter J. M.
+and Aarts, Emile H. L.",
+title="Simulated annealing",
+bookTitle="Simulated Annealing: Theory and Applications",
+year="1987",
+publisher="Springer Netherlands",
+address="Dordrecht",
+pages="7--15",
+abstract="In its original form [KIR82], [{\v{C}}ER85] the simulated annealing algorithm is based on the analogy between the simulation of the annealing pf solids and the problem of solving large combinatorial optimization problems. For this reason the algorithm became known as ``simulated annealing''. In condensed matter physics, annealing denotes a physical process in which a solid in a heat bath is heated up by increasing the temperature of the heat bath to a maximum value at which all particles of the solid randomly arrange themselves in the liquid phase, followed by cooling through slowly lowering the temperature of the heat bath. In this way, all particles arrange themselves in the low energy ground state of a corresponding lattice, provided the maximum temperature is sufficiently high and the cooling is carried out sufficiently slowly. Starting off at the maximum value of the temperature, the cooling phase of the annealing process can be described as follows.",
+isbn="978-94-015-7744-1",
+doi="10.1007/978-94-015-7744-1\_2",
+url="https://doi.org/10.1007/978-94-015-7744-1\_2"
+}
+
+@misc{udrescu2020ai,
+      title={AI Feynman: a Physics-Inspired Method for Symbolic Regression}, 
+      author={Silviu-Marian Udrescu and Max Tegmark},
+      year={2020},
+      eprint={1905.11481},
+      archivePrefix={arXiv},
+      primaryClass={physics.comp-ph}
+}
