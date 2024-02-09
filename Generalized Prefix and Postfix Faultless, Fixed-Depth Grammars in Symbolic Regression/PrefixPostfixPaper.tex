@@ -51,12 +51,12 @@ We develop faultless, fixed-depth, string-based, prefix and postfix symbolic reg
 \section{Introduction}
 Symbolic regression (SR) typically denotes the process of finding a symbolic model $f\left(\vec{x}\right)$ that takes an $N$-dimensional feature vector $\vec{x}$ as input and outputs a value $f\left(\vec{x}\right)$ denoting a prediction of the label $y$, such that some user-defined loss metric $\mathcal{L}\left(f\left(\vec{x}\right),y\right)$ is minimized. Usually, the symbolic models constituting the search space contain ``tokens'', i.e., nodes, in one of the following classes:
 \begin{itemize}
-\item[--] Leaves: Usually, any of the individual features $\vec{x} = \{x_1, x_2, \ldots,x_{N}\}$ and a constant token that can be optimized with some non-linear optimization routine like L-BFGS \cite{doi:10.1137/0916069} or Levenberg-Marquadt \cite{83b09f23-b20e-3617-8f72-24765b713f7b} \cite{doi:10.1137/0111030}.
-\item[--] Unary operators: Usually any operator that takes 1 real argument as input and outputs a real number, such as $\cos$, $\sin$, $\exp$, $\ln$, $\tan$, etc.
-\item[--] Binary operators: Usually any operator that takes 2 real arguments as input and outputs a real number, such as $+$, $-$, $*$, $\div$, etc.
+\item[--] Leaves: Any of the individual features $\vec{x} = \{x_1, x_2, \ldots,x_{N}\}$ and a constant token that can be optimized with some non-linear optimization routine like L-BFGS \cite{doi:10.1137/0916069} or Levenberg-Marquadt \cite{83b09f23-b20e-3617-8f72-24765b713f7b} \cite{doi:10.1137/0111030}.
+\item[--] Unary operators: Any operator that takes 1 real argument as input and outputs a real number, such as $\cos$, $\sin$, $\exp$, $\ln$, $\tan$, etc.
+\item[--] Binary operators: Any operator that takes 2 real arguments as input and outputs a real number, such as $+$, $-$, $*$, $\div$, etc.
 \end{itemize}
 \subsection{Symbolic Regression Algorithms}
-\textbf{Pre}fix (also known as polish notation) expressions are written with the operators coming \emph{before} the operators, for example, \texttt{+ 1 2} represents the sum of 1 and 2. \textbf{Post}fix (also known as reverse-polish notation) expressions, on the other hand, have the operators coming \emph{after} the operands, for example, \texttt{1 2 +} represents the sum of 1 and 2. These two methods of representing expressions are advantagous because they remove the need for parantheses and operator precedence rules characteristic of infix notation, where the operators are placed \emph{in between} the operands. In symbolic regression, representing expressions as prefix and/or postfix strings can result in faster evaluation of candidate expressions with less memory required compared to infix due to the requirement of parantheses to specify the order of evaluation. An interesting question then arises: \emph{In symbolic regression, which performs better, prefix or postfix?}
+\textbf{Pre}fix (also known as Polish notation) expressions are written with the operators coming \emph{before} the operators, for example, \texttt{+ 1 2} represents the sum of 1 and 2. \textbf{Post}fix (also known as Reverse-Polish notation) expressions, on the other hand, have the operators coming \emph{after} the operands, for example, \texttt{1 2 +} represents the sum of 1 and 2. These two methods of representing expressions remove the need for parentheses and operator precedence rules characteristic of infix notation, where the operators are placed \emph{in between} the operands. In symbolic regression, representing expressions as prefix and/or postfix strings can result in faster evaluation of candidate expressions with less memory required compared to infix due to the requirement of parantheses to specify the order of evaluation. An interesting question then arises: \emph{In symbolic regression, which performs better, prefix or postfix?}
 \par To the best of our knowledge, the only paper that studies the effect of prefix vs postfix expression representations on symbolic regression convergence is \cite{hemberg2008pre}.  In \cite{hemberg2008pre}, the authors compare prefix, infix, and postfix notation-based grammars on 5 bivariate symbolic regression benchmarks and found a greater relative performance of the postfix grammar that increased with complexity of ground-truth expressions. 
 However, this performance difference was mostly due to the smaller percentage of invalid individuals generated with the postfix grammar compared to the prefix grammar.  
 Furthermore, we note 2 main limitations of this result for its applicability to modern prefix/postfix-based Symbolic Regression software which motivate this paper:
@@ -75,9 +75,11 @@ At the core of every symbolic regression framework lies an underlying choice of 
 As an example, Table \ref {GECCO_Framework_reps} denotes the list of frameworks considered in the ``Interpretable Symbolic Regression for Data Science: Analysis of the 2022 Competition'' \cite{defranca2023interpretable} and the main underlying expression representations utilized. 
 
 \begin{table}
-\caption{\label{GECCO_Framework_reps}List of Symbolic Regression Frameworks submitted to the 2022 Genetic and Evolutionary Computation Conference competition \cite{defranca2023interpretable}, their underlying expression representations, and if the expression representation was stated directly in the cited paper or implied via source code and/or references. 
-\\ The frameworks Bingo, E2E Transformer, QLattice, and Operon state their choice of expression representation directly in the cited papers (namely \cite{10.1145/3520304.3534031}, \cite{kamienny2022endtoend}, \cite{Brolos2021AnAT}, and \cite{10.1145/3377929.3398099}, respectively). PS-Tree does not specify \cite{zhang2022ps} but they use the Deap GP framework \cite{DEAP_JMLR2012} (see \href{https://github.com/hengzhe-zhang/PS-Tree/blob/master/pstree/common\_utils.py\#L4}{here}) which represents expressions with prefix notation. TaylorGP strongly implies prefix notation in the example expression written in section 4.1.1 of their paper \cite{10.1145/3512290.3528757}. In Table 2 of the EQL Paper \cite{pmlr-v80-sahoo18a} they refer to the expressions as ``random graphs,'' and evidence of their acyclicity is given in their Jupyter notebook \href{https://github.com/martius-lab/EQL/blob/master/EQL-DIV-ICML-Python3/Evaluation.ipynb}{here}. GeneticEngine implies prefix usage in section 3.2 of their paper \cite{10.1145/3564719.3568697} (namely, ``Starting with the non-terminal root type $\ldots$''). PySR does not state the expression representation in their paper \cite{cranmer2023interpretable}, but a pre-order traversal of the expression tree is somewhat implied in the Julia source file \href{https://github.com/MilesCranmer/SymbolicRegression.jl/blob/db476a708762c81f46f27f22751f7ff3d1153dc7/src/Equation.jl}{here}. The uDSR framework states pre-order traversal of expression trees for the DSR component in their paper (namely, ``$\ldots$ in the pre-order (depth-first then left-to-right) traversal of the corresponding \emph{expression tree} $\ldots$'' in section 2), and for the GP expression generation, use of the Deap GP framework is shown \href{https://github.com/dso-org/deep-symbolic-optimization/blob/2069d4eda47b0fd6d3e66e0ade9605cd9574b87c/dso/dso/gp/utils.py\#L10}{here} \cite{NEURIPS2022_dbca58f3}. 
-$\mathrm{GP}_{\mathrm{ZGD}}$ \cite{10.1145/3377930.3390237} somewhat implies a pre-order traversal of expression trees in the C source file \href{https://github.com/grantdick/gpzgd/blob/42e5a1829a0b8a2eb50e116000001f82c770791e/src/gp.c}{here}. NSGA-DCGP states at the beginning of section 2 that ``To represent our functional programs we use the Cartesian Genetic Programming framework,'' \cite{izzo2016differentiable}  and the paper they cite directly states ``In CGP, programs are represented in the form of directed acyclic graphs'' \cite{Miller2011}.} 
+\caption{\label{GECCO_Framework_reps}List of Symbolic Regression Frameworks submitted to the 2022 Genetic and Evolutionary Computation Conference competition \cite{defranca2023interpretable}, their underlying expression representations, and if the expression representation was stated directly in the cited paper or implied via source code and/or references. }
+
+
+% \\ The frameworks Bingo, E2E Transformer, QLattice, and Operon state their choice of expression representation directly in the cited papers (namely \cite{10.1145/3520304.3534031}, \cite{kamienny2022endtoend}, \cite{Brolos2021AnAT}, and \cite{10.1145/3377929.3398099}, respectively). PS-Tree does not specify \cite{zhang2022ps} but they use the Deap GP framework \cite{DEAP_JMLR2012} (see \href{https://github.com/hengzhe-zhang/PS-Tree/blob/master/pstree/common\_utils.py\#L4}{here}) which represents expressions with prefix notation. TaylorGP strongly implies prefix notation in the example expression written in section 4.1.1 of their paper \cite{10.1145/3512290.3528757}. In Table 2 of the EQL Paper \cite{pmlr-v80-sahoo18a} they refer to the expressions as ``random graphs,'' and evidence of their acyclicity is given in their Jupyter notebook \href{https://github.com/martius-lab/EQL/blob/master/EQL-DIV-ICML-Python3/Evaluation.ipynb}{here}. GeneticEngine implies prefix usage in section 3.2 of their paper \cite{10.1145/3564719.3568697} (namely, ``Starting with the non-terminal root type $\ldots$''). PySR does not state the expression representation in their paper \cite{cranmer2023interpretable}, but a pre-order traversal of the expression tree is somewhat implied in the Julia source file \href{https://github.com/MilesCranmer/SymbolicRegression.jl/blob/db476a708762c81f46f27f22751f7ff3d1153dc7/src/Equation.jl}{here}. The uDSR framework states pre-order traversal of expression trees for the DSR component in their paper (namely, ``$\ldots$ in the pre-order (depth-first then left-to-right) traversal of the corresponding \emph{expression tree} $\ldots$'' in section 2), and for the GP expression generation, use of the Deap GP framework is shown \href{https://github.com/dso-org/deep-symbolic-optimization/blob/2069d4eda47b0fd6d3e66e0ade9605cd9574b87c/dso/dso/gp/utils.py\#L10}{here} \cite{NEURIPS2022_dbca58f3}. 
+% $\mathrm{GP}_{\mathrm{ZGD}}$ \cite{10.1145/3377930.3390237} somewhat implies a pre-order traversal of expression trees in the C source file \href{https://github.com/grantdick/gpzgd/blob/42e5a1829a0b8a2eb50e116000001f82c770791e/src/gp.c}{here}. NSGA-DCGP states at the beginning of section 2 that ``To represent our functional programs we use the Cartesian Genetic Programming framework,'' \cite{izzo2016differentiable}  and the paper they cite directly states ``In CGP, programs are represented in the form of directed acyclic graphs'' \cite{Miller2011}.} 
 \begin{tabular*}{\textwidth}{lll} %open PhD_Papers/2304.01117.pdf 
 \hline
 Framework&Expression Representation & Stated Directly or Implied\\
@@ -103,14 +105,12 @@ NSGA-DCGP \cite{izzo2016differentiable} & Acyclic Graph & Implied \\%``To repres
 
 As one can see in Table \ref{GECCO_Framework_reps}, the majority of frameworks represent expressions through a pre-order traversal of expression trees, followed by acyclic graph representations and lastly postfix notation.
 Figure \ref{fig:pub_freqs_pre_post_acyc_graph} shows a histogram of publication frequencies mentioning these representations in the context of symbolic regression throughout the years, obtained with the help of the scholarly python module \cite{cholewiak2021scholarly}.  %code here: 
-
-\begin{figure}
+\begin{figure}[ht]
     \centering
     \includegraphics[width=\linewidth]{pub_freqs.pdf}
     \caption{Number of mentions of prefix, postfix, and acyclic graph in publications pertaining to symbolic regression. The python module scholarly was used to generate this histogram \cite{cholewiak2021scholarly}. The search queries utilized were ``postfix notation'' AND ``symbolic regression'', ``prefix notation'' AND ``symbolic regression'', ``acyclic graph'' AND ``symbolic regression'', ``reverse polish notation'' AND ``symbolic regression'', ``polish notation'' AND ``symbolic regression'', and ``acyclic-graph'' AND ``symbolic regression''. The script to reproduce this plot is \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/d5ebdf90c0915cd5769b29bf679709dbd4a618c7/Figure_1/notations_pubs_counter.py}{here}.} 
     \label{fig:pub_freqs_pre_post_acyc_graph}
 \end{figure}
-
 It can be seen that the preferred choice of expression representation tends to be either prefix notation or acyclic graphs, and postfix tends to not be preferred as much. A possible explanation for the preference is that starting an expression from the root node, as is typically the case for prefix and acyclic graph-based expression representations, lends itself to a natural termination condition, i.e., when all of the branches from the root node terminate at a leaf node. Acyclic graphs have the added advantage of allowing children nodes to have mulitple parents, reducing the memory necessary to represent symbolic expressions with identical sub-components when compared to trees. On the other hand, postfix expressions imply building an expression tree from the leaf nodes; thus, there exist nodes where the expression tree can be either terminated or expanded further up using the same postfix-grammar. 
 
 In this paper, we restrict the analysis to prefix and postfix notations, as these can be easily represented with the same underlying data-structure, though acyclic-graph grammars can be an analysis for future work. Furthermore, the methods developed in this paper assume expressions are represented as an array of tokens. In this schema, a representation of an arbitrary acyclic graph expression is not readily apparent.
@@ -120,7 +120,7 @@ In this paper, we restrict the analysis to prefix and postfix notations, as thes
 Using prefix notation for symbolic regression entails building an expression starting from a root node, i.e., an operator. Postfix notation, on the other hand, begins building an expression from leaf nodes. Figure \ref{fig:prefix_vs_postfix} illustrates the difference.
 
 
-\begin{figure}
+\begin{figure}[ht]
     \begin{subfigure}[b]{0.51\textwidth}
         \centering
         \begin{tikzpicture}
@@ -160,7 +160,7 @@ Using prefix notation for symbolic regression entails building an expression sta
 
 \par One major difference between the two methods of building expressions is that, for prefix notation, once an expression tree branch is complete, it cannot be expanded further \emph{down} without a mutation/substitution of a leaf node. On the other hand, for postfix notation, one can continue expanding the expression tree further \emph{up} starting from the root node; an example is shown in Figure \ref{fig:postfix_add_1}.
 
-\begin{figure}
+\begin{figure}[ht]
     \begin{subfigure}[b]{0.51\textwidth}
         \centering
         \begin{tikzpicture}
@@ -240,82 +240,82 @@ We say any token in the set of all considered leaf nodes is valid if adding a le
 \subsection{Conclusion}
 What can be seen from sections \ref{subsec:prefix_grammar} and \ref{subsec:postfix_grammar} is that the grammar for building postfix expressions is less complicated than the grammar for building prefix expressions. The main reason for this difference is that, in prefix notation, one must ensure the expression does not complete until it reaches the desired depth $N$. On the other hand, postfix notation imparts the ability to add nodes to an RPN expression \emph{indefinitely} without change of method; this is not the case for prefix notation. \par Determining the minimum depth and completeness of a prefix or postfix expression list of tokens can be done via a stack-based approach as shown in algorithms \ref{alg:getPNdepth_cache} and \ref{alg:getRPNdepth_cache}.
 
-\begin{algorithm}
-\scriptsize
-\caption{Calculate Depth and Completeness of \textbf{Polish Notation (PN)} expressions. Algorithm from \cite{77180279}.}
-\label{alg:getPNdepth}
-\hspace*{\algorithmicindent} \textbf{input:}  expression, expression list of tokens in prefix notation \\
-\hspace*{\algorithmicindent} \textbf{output:} Depth of expression\\
-\hspace*{\algorithmicindent} \textbf{output:} If expression is complete 
-\begin{algorithmic}[1] 
-\Function{getPNdepth}{expression}  %code here
-    \If{expression is empty}
-        \State \Return 0, \textbf{False}
-    \EndIf
+% \begin{algorithm}
+% \scriptsize
+% \caption{Calculate Depth and Completeness of \textbf{Polish Notation (PN)} expressions. Algorithm from \cite{77180279}.}
+% \label{alg:getPNdepth}
+% \hspace*{\algorithmicindent} \textbf{input:}  expression, expression list of tokens in prefix notation \\
+% \hspace*{\algorithmicindent} \textbf{output:} Depth of expression\\
+% \hspace*{\algorithmicindent} \textbf{output:} If expression is complete 
+% \begin{algorithmic}[1] 
+% \Function{getPNdepth}{expression}  %code here
+%     \If{expression is empty}
+%         \State \Return 0, \textbf{False}
+%     \EndIf
 
-    \State Initialize empty stack
-    \State Initialize depth, numBinary, and numLeaves to 0
+%     \State Initialize empty stack
+%     \State Initialize depth, numBinary, and numLeaves to 0
 
-    \For{token \textbf{in} expression}
-        \If{token is binary operator}
-            \State Push 2 onto stack   \Comment\texttt{{Number of operands for binary operators}}
-            \State numBinary $\gets$ numBinary+1
-        \ElsIf{token is unary operator} 
-            \State Push 1 onto stack  \Comment\texttt{{Number of operands for unary operators}}
-        \Else  \Comment\texttt{{An operand}}
-            \State numLeaves $\gets$ numLeaves+1
-            \While{stack is not empty \textbf{and} top of stack == 1}
-                \State Pop top of stack \Comment\texttt{{Remove fulfilled unary operators}}
-            \EndWhile
-            \If{stack is not empty}
-                \State Decrement top of stack by 1 \Comment\texttt{{Indicate operand is consumed}}
-            \EndIf
-        \EndIf
-        \State  depth $\gets$ max(depth, stack length + 1)
-    \EndFor
-    \State \Return depth - 1, numLeaves == numBinary + 1 
-\EndFunction
-\end{algorithmic}
-\end{algorithm}
+%     \For{token \textbf{in} expression}
+%         \If{token is binary operator}
+%             \State Push 2 onto stack   \Comment\texttt{{Number of operands for binary operators}}
+%             \State numBinary $\gets$ numBinary+1
+%         \ElsIf{token is unary operator} 
+%             \State Push 1 onto stack  \Comment\texttt{{Number of operands for unary operators}}
+%         \Else  \Comment\texttt{{An operand}}
+%             \State numLeaves $\gets$ numLeaves+1
+%             \While{stack is not empty \textbf{and} top of stack == 1}
+%                 \State Pop top of stack \Comment\texttt{{Remove fulfilled unary operators}}
+%             \EndWhile
+%             \If{stack is not empty}
+%                 \State Decrement top of stack by 1 \Comment\texttt{{Indicate operand is consumed}}
+%             \EndIf
+%         \EndIf
+%         \State  depth $\gets$ max(depth, stack length + 1)
+%     \EndFor
+%     \State \Return depth - 1, numLeaves == numBinary + 1 
+% \EndFunction
+% \end{algorithmic}
+% \end{algorithm}
 
-\begin{algorithm}
-\scriptsize
-\caption{Calculate Depth and Completeness of \textbf{Reverse Polish Notation (RPN)} expressions.  Algorithm from \cite{77128902}.}
-\label{alg:getRPNdepth}
-\hspace*{\algorithmicindent} \textbf{input:}  expression, expression list of tokens in postfix notation \\
-\hspace*{\algorithmicindent} \textbf{output:} Depth of expression\\
-\hspace*{\algorithmicindent} \textbf{output:} If expression is complete 
-\begin{algorithmic}[1]
-\Function{getRPNdepth}{expression} %code here
-    \If{expression is empty}
-        \State \Return 0, \textbf{False}
-    \EndIf
+% \begin{algorithm}
+% \scriptsize
+% \caption{Calculate Depth and Completeness of \textbf{Reverse Polish Notation (RPN)} expressions.  Algorithm from \cite{77128902}.}
+% \label{alg:getRPNdepth}
+% \hspace*{\algorithmicindent} \textbf{input:}  expression, expression list of tokens in postfix notation \\
+% \hspace*{\algorithmicindent} \textbf{output:} Depth of expression\\
+% \hspace*{\algorithmicindent} \textbf{output:} If expression is complete 
+% \begin{algorithmic}[1]
+% \Function{getRPNdepth}{expression} %code here
+%     \If{expression is empty}
+%         \State \Return 0, \textbf{False}
+%     \EndIf
 
-    \State Initialize empty stack
+%     \State Initialize empty stack
 
-    \For{token \textbf{in} expression}
-        \If{token is unary operator} \Comment\texttt{{All unary operators}}
-            \State Increment top of stack by 1 
-        \ElsIf{token is binary operator} \Comment\texttt{{All binary operators}}
-            \State Push max(stack.pop(), stack.pop()) + 1 onto stack 
-        \Else  \Comment\texttt{{All operands}}
-            \State Push 1 onto stack
-        \EndIf
-    \EndFor
+%     \For{token \textbf{in} expression}
+%         \If{token is unary operator} \Comment\texttt{{All unary operators}}
+%             \State Increment top of stack by 1 
+%         \ElsIf{token is binary operator} \Comment\texttt{{All binary operators}}
+%             \State Push max(stack.pop(), stack.pop()) + 1 onto stack 
+%         \Else  \Comment\texttt{{All operands}}
+%             \State Push 1 onto stack
+%         \EndIf
+%     \EndFor
 
-   \If{size of stack greater than 1}
+%    \If{size of stack greater than 1}
 
-	    \While{size of stack greater than 1}
-	        \State Push max(stack.pop(), stack.pop()) + 1 onto  stack
-	    \EndWhile
- 	\State \Return stack.pop() - 1, \textbf{False}
+% 	    \While{size of stack greater than 1}
+% 	        \State Push max(stack.pop(), stack.pop()) + 1 onto  stack
+% 	    \EndWhile
+%  	\State \Return stack.pop() - 1, \textbf{False}
     
-    \Else
-    	\State \Return stack.pop() - 1, \textbf{True}
-    	    \EndIf
-\EndFunction
-\end{algorithmic}
-\end{algorithm}
+%     \Else
+%     	\State \Return stack.pop() - 1, \textbf{True}
+%     	    \EndIf
+% \EndFunction
+% \end{algorithmic}
+% \end{algorithm}
 
 In the next section, the symbolic regression algorithms utilized in this paper are explained in the context of the fixed-depth grammars developed in this section.
 
@@ -492,7 +492,7 @@ Genetic Programming (GP) is an evolutionary metaheuristic that can explore the s
 \par The mutation procedure starts by selecting a random integer $n$ from $0$ to $N-1$, where $N$ is the fixed depth initially specified, and a random expression of depth $n$ using the method described in section \ref{subsec:RandomSearch}. Then, an individual from the 2000 individuals who began the generation is randomly selected, and all of the depth $n$ sub-expressions within this randomly selected individual are identified, namely, the corresponding start and stop indices within the expression list. From all of the depth $n$ sub-expressions in the selected individual, one sub-expressions is selected at random and swapped with the randomly generated depth $n$ expression generated at the start of the mutation procedure, producing a new individual who is added to the population and whose fitness is evaluated according to \ref{eq:score_formula}.
 \par The crossover procedure is quite similar to the mutation procedure, the only difference being that, instead of generating a random depth $n$ expression, we start by randomly selecting 2 different individuals from the initial population. Then, we identify all of the depth $n$ sub-expressions in each of the 2 individuals and randomly select one from each individual. Finally, we swap the 2 selected sub-expressions, producing two new individuals who are added to the population and whose fitnesses are evaluated according to \ref{eq:score_formula}.
 
-\par Both the mutation and crossover procedures require the identification all of depth $n$ sub-expressions in an expression list, in our case, without creating an intermediary tree data structure. To achieve this, we iterate over the expression list and compute the right or left grasp bound of each element, depending on whether the expression representation is prefix or postfix, respectively\footnote{In \cite{3ce09117-c08b-3ddb-b2ba-3ea8005b2118}, only the routine for computing the left grasp bound is given (top of page 165); however, computing the right grasp bound just requires changing ``\texttt{*ind = *ind - 1}'' to ``\texttt{*ind = *ind + 1}''.} \cite{3ce09117-c08b-3ddb-b2ba-3ea8005b2118}. Then, we compute the depth of the sub-expression between the current element's index and its grasp bound, and finally, we append these starting and stopping indices to a list if the sub-expression has depth $n$.
+\par Both the mutation and crossover procedures require the identification of all depth-$n$ sub-expressions in an expression list, in our case, without creating an intermediary tree data structure. To achieve this, we iterate over the expression list and compute the right or left grasp bound of each element, depending on whether the expression representation is prefix or postfix, respectively\footnote{In \cite{3ce09117-c08b-3ddb-b2ba-3ea8005b2118}, only the routine for computing the left grasp bound is given (top of page 165); however, computing the right grasp bound just requires changing ``\texttt{*ind = *ind - 1}'' to ``\texttt{*ind = *ind + 1}''.} \cite{3ce09117-c08b-3ddb-b2ba-3ea8005b2118}. Then, we compute the depth of the sub-expression between the current element's index and its grasp bound, and finally, we append these starting and stopping indices to a list if the sub-expression has depth $n$.
 
 \subsection{Simulated Annealing} \label{subsec:SimulatedAnnealing}
 Simulated Annealing is a metaheuristic search strategy inspired by the metallurgic annealing process for improving industrial qualities of solid alloys \cite{vanLaarhoven1987} \cite{10.1145/3449639.3459345}. 
@@ -500,7 +500,6 @@ Simulated Annealing is a metaheuristic search strategy inspired by the metallurg
 \begin{equation}
 		P = e^{\Delta/T},  \label{eq:prob_accept_bad_SA}
 \end{equation}
-
 where $\Delta$ is the score of the perturbed expression minus the maximum score achieved thus far. We bound the temperature parameter $T$ to be between $T_{\mathrm{min}} = 0.012$ and $T_{\mathrm{max}} = 0.1$, and we set the initial temperature $T_{\mathrm{init}} = T_{\mathrm{max}}$. We use the same temperature update rule as in \cite{10.1145/3449639.3459345}, namely, $T \gets rT$, where $r \equiv \left(T_{\mathrm{min}}/T_{\mathrm{max}}\right)^{1/(i+1)}$ where $i$ is the iteration number. Lastly, to escape local minima, we use a simple update rule similar to the previous sections, namely, after $N_{\mathrm{iter}}$ iterations, if the best score has not improved, we update the temperature as $T \gets \min{\left(10\cdot T, T_{\mathrm{max}}\right)}$, else, we update the temperature as $T \gets \max{\left(T/10, T_{\mathrm{min}}\right)}$.
 
 \section{Results}\label{sec:Results}
@@ -519,222 +518,304 @@ In this section, we benchmark the 5 equations tested in \cite{hemberg2008pre} us
     \begin{tabular}{|l|l|l|l|l|l|}
 \hline 
 \# & Expression & Expression Tree & Depth $N$ & \# of Inputs & Result Plot \\ \hline 
- 1 &   $8/(2+x^2+y^2)$ & \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/13f3cc08ec72008eb735a00c14084f9b0af08293/Hemberg2008Expressions/expression_tree_Hemberg2008_expr_1.pdf}{Hemberg 1} & 4 & 2 & Figure \ref{fig:Hemberg_1_Benchmarks} \\[0.2cm]
- 2 &    $x^3\cdot(x-1) + y\cdot(y/2-1)$ & \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/13f3cc08ec72008eb735a00c14084f9b0af08293/Hemberg2008Expressions/expression_tree_Hemberg2008_expr_2.pdf}{Hemberg 2} & 4 & 2  & Figure \ref{fig:Hemberg_2_Benchmarks} \\[0.2cm]
- 3 & $x^3/5 + y^3/2 - y - x$ & \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/13f3cc08ec72008eb735a00c14084f9b0af08293/Hemberg2008Expressions/expression_tree_Hemberg2008_expr_3.pdf}{Hemberg 3} & 5 & 2  & Figure \ref{fig:Hemberg_3_Benchmarks} \\[0.2cm]
-  4 &   $\frac{30\cdot x^2}{(10-x)\cdot y^2}+x^4 - x^3 + \frac{y^2}{2} - y + \frac{8}{2+x^2+y^2} + x$ & \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/13f3cc08ec72008eb735a00c14084f9b0af08293/Hemberg2008Expressions/expression_tree_Hemberg2008_expr_4.pdf}{Hemberg 4} & 9 & 2  & Figure \ref{fig:Hemberg_4_Benchmarks} \\[0.2cm]
-  5 &   $\frac{30\cdot x^2}{(10-x)\cdot y^2}+x^4 - \frac{4}{5}x^3 + \frac{y^2}{2} - 2y + \frac{8}{2+x^2+y^2} + \frac{y^3}{2} - x$ & \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/13f3cc08ec72008eb735a00c14084f9b0af08293/Hemberg2008Expressions/expression_tree_Hemberg2008_expr_5.pdf}{Hemberg 5} & 10 & 2 & Figure \ref{fig:Hemberg_5_Benchmarks} \\[0.2cm] \hline
+ 1 &   $8/(2+x^2+y^2)$ & \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/13f3cc08ec72008eb735a00c14084f9b0af08293/Hemberg2008Expressions/expression_tree_Hemberg2008_expr_1.pdf}{Hemberg 1} & 4 & 2 & Figure \ref{subfig:hemberg_1} \\[0.2cm]
+ 2 &    $x^3\cdot(x-1) + y\cdot(y/2-1)$ & \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/13f3cc08ec72008eb735a00c14084f9b0af08293/Hemberg2008Expressions/expression_tree_Hemberg2008_expr_2.pdf}{Hemberg 2} & 4 & 2  & Figure \ref{subfig:hemberg_2} \\[0.2cm]
+ 3 & $x^3/5 + y^3/2 - y - x$ & \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/13f3cc08ec72008eb735a00c14084f9b0af08293/Hemberg2008Expressions/expression_tree_Hemberg2008_expr_3.pdf}{Hemberg 3} & 5 & 2  & Figure \ref{subfig:hemberg_3} \\[0.2cm]
+  4 &   $\frac{30\cdot x^2}{(10-x)\cdot y^2}+x^4 - x^3 + \frac{y^2}{2} - y + \frac{8}{2+x^2+y^2} + x$ & \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/13f3cc08ec72008eb735a00c14084f9b0af08293/Hemberg2008Expressions/expression_tree_Hemberg2008_expr_4.pdf}{Hemberg 4} & 9 & 2  & Figure \ref{subfig:hemberg_4} \\[0.2cm]
+  5 &   $\frac{30\cdot x^2}{(10-x)\cdot y^2}+x^4 - \frac{4}{5}x^3 + \frac{y^2}{2} - 2y + \frac{8}{2+x^2+y^2} + \frac{y^3}{2} - x$ & \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/13f3cc08ec72008eb735a00c14084f9b0af08293/Hemberg2008Expressions/expression_tree_Hemberg2008_expr_5.pdf}{Hemberg 5} & 10 & 2 & Figure \ref{subfig:hemberg_5} \\[0.2cm] \hline
 \end{tabular}}
     \caption{Expressions from \cite{hemberg2008pre} considered in section \ref{subsec:HembergBenchmarks}.}
     \label{tab:Hemberg2008PreIP_results}
 \end{table}
 
-\par The results are plotted in Figures \ref{fig:Hemberg_1_Benchmarks} - \ref{fig:Hemberg_5_Benchmarks} for benchmarks 1 - 5, respectively. For Random Search, postfix did $\sim$ worse\footnote{by worse, we mean that the average score for postfix after 2 minutes was worse than prefix given the standard deviations, i.e., $\mu_\mathrm{score}^\mathrm{postfix} + 1\cdot \sigma_\mathrm{score}^\mathrm{postfix} \leq \mu_\mathrm{score}^\mathrm{prefix} - 1\cdot \sigma_\mathrm{score}^\mathrm{prefix}$} than prefix on the first three Hemberg benchmarks and better on the last two Hemberg benchmarks. For MCTS, postfix did worse than prefix on the first Hemberg benchmark and better on the last four Hemberg benchmarks. For PSO, postfix did roughly the same as prefix but exhibited significantly quicker relative convergence on the last two Hemberg benchmarks. For the GP approach, postfix did roughly the same as prefix on the first three Hemberg benchmarks, and significantly better on the last two Hemberg benchmarks, agreeing with the results obtained in the original paper \cite{hemberg2008pre}. Lastly, for Simulated Annealing, postfix did $\sim$ worse on the second Hemberg benchmark and roughly the same on the first, third, fourth, and fifth benchmarks. 
+\par The results are plotted in Figure \ref{fig:Hemberg_Benchmarks}. For Random Search, postfix did $\sim$ worse\footnote{by worse, we mean that the average score for postfix after 2 minutes was worse than prefix given the standard deviations, i.e., $\mu_\mathrm{score}^\mathrm{postfix} + 1\cdot \sigma_\mathrm{score}^\mathrm{postfix} \leq \mu_\mathrm{score}^\mathrm{prefix} - 1\cdot \sigma_\mathrm{score}^\mathrm{prefix}$} than prefix on the first three Hemberg benchmarks and better on the last two Hemberg benchmarks. For MCTS, postfix did worse than prefix on the first Hemberg benchmark and better on the last four Hemberg benchmarks. For PSO, postfix did roughly the same as prefix but exhibited significantly quicker relative convergence on the last two Hemberg benchmarks. For the GP approach, postfix did roughly the same as prefix on the first three Hemberg benchmarks, and significantly better on the last two Hemberg benchmarks, agreeing with the results obtained in the original paper \cite{hemberg2008pre}. Lastly, for Simulated Annealing, postfix did $\sim$ worse on the second Hemberg benchmark and roughly the same on the first, third, fourth, and fifth benchmarks. 
 
 \begin{figure}
     \centering
     
     \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_1RandomSearch.pdf}
-        \caption{Random Search Hemberg 1}
-        \label{subfig:hemberg_1_RS}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/Hemberg_Benchmark_1.pdf}
+        \caption{Hemberg 1}
+        \label{subfig:hemberg_1}
     \end{subfigure}
     % \hfill
     \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_1MCTS.pdf}
-        \caption{MCTS Hemberg 1}
-        \label{subfig:hemberg_1_MCTS}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/Hemberg_Benchmark_2.pdf}
+        \caption{Hemberg 2}
+        \label{subfig:hemberg_2}
     \end{subfigure}
     
     \vspace{0.5cm}
     
     \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_1PSO.pdf}
-        \caption{PSO Hemberg 1}
-        \label{subfig:hemberg_1_PSO}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/Hemberg_Benchmark_3.pdf}
+        \caption{Hemberg 3}
+        \label{subfig:hemberg_3}
     \end{subfigure}
     % \hfill
     \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_1GP.pdf}
-        \caption{GP Hemberg 1}
-        \label{subfig:hemberg_1_GP}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/Hemberg_Benchmark_4.pdf}
+        \caption{Hemberg 4}
+        \label{subfig:hemberg_4}
     \end{subfigure}
     
     \vspace{0.5cm}
     
     \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_1SimulatedAnnealing.pdf}
-        \caption{Simulated Annealing Hemberg 1}
-        \label{subfig:hemberg_1_SA}
+        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/Hemberg_Benchmark_5.pdf}
+        \caption{Hemberg 5}
+        \label{subfig:hemberg_5}
     \end{subfigure}
     
-    \caption{Hemberg Benchmark Equation 1 (from Table \ref{tab:Hemberg2008PreIP_results}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using Prefix and Postfix expression representations.}
-    \label{fig:Hemberg_1_Benchmarks}
+    \caption{Hemberg Benchmark Equations 1-5 (from Table \ref{tab:Hemberg2008PreIP_results}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using Prefix and Postfix expression representations.}
+    \label{fig:Hemberg_Benchmarks}
 \end{figure}
 
 \begin{figure}
     \centering
     
     \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_2RandomSearch.pdf}
-        \caption{Random Search Hemberg 2}
-        \label{subfig:hemberg_2_RS}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/Feynman_Benchmark_1.pdf}
+        \caption{Feynman 1}
+        \label{subfig:feynman_1}
     \end{subfigure}
     % \hfill
     \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_2MCTS.pdf}
-        \caption{MCTS Hemberg 2}
-        \label{subfig:hemberg_2_MCTS}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/Feynman_Benchmark_2.pdf}
+        \caption{Feynman 2}
+        \label{subfig:feynman_2}
     \end{subfigure}
     
     \vspace{0.5cm}
     
     \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_2PSO.pdf}
-        \caption{PSO Hemberg 2}
-        \label{subfig:hemberg_2_PSO}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/Feynman_Benchmark_3.pdf}
+        \caption{Feynman 3}
+        \label{subfig:feynman_3}
     \end{subfigure}
     % \hfill
     \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_2GP.pdf}
-        \caption{GP Hemberg 2}
-        \label{subfig:hemberg_2_GP}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/Feynman_Benchmark_4.pdf}
+        \caption{Feynman 4}
+        \label{subfig:feynman_4}
     \end{subfigure}
     
     \vspace{0.5cm}
     
     \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_2SimulatedAnnealing.pdf}
-        \caption{Simulated Annealing Hemberg 2}
-        \label{subfig:hemberg_2_SA}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/Feynman_Benchmark_5.pdf}
+        \caption{Feynman 5}
+        \label{subfig:feynman_5}
     \end{subfigure}
     
-    \caption{Hemberg Benchmark Equation 2 (from Table \ref{tab:Hemberg2008PreIP_results}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
-    \label{fig:Hemberg_2_Benchmarks}
+    \caption{Feynman Benchmark Equations 1-5 (from Table \ref{tab:AI_Feynman_Benchmark_Equations}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using Prefix and Postfix expression representations.}
+    \label{fig:Feynman_Benchmarks}
 \end{figure}
 
-\begin{figure}
-    \centering
+% \begin{figure}
+%     \centering
     
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_3RandomSearch.pdf}
-        \caption{Random Search Hemberg 3}
-        \label{subfig:hemberg_3_RS}
-    \end{subfigure}
-    % \hfill
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_3MCTS.pdf}
-        \caption{MCTS Hemberg 3}
-        \label{subfig:hemberg_3_MCTS}
-    \end{subfigure}
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_1RandomSearch.pdf}
+%         \caption{Random Search Hemberg 1}
+%         \label{subfig:hemberg_1_RS}
+%     \end{subfigure}
+%     % \hfill
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_1MCTS.pdf}
+%         \caption{MCTS Hemberg 1}
+%         \label{subfig:hemberg_1_MCTS}
+%     \end{subfigure}
     
-    \vspace{0.5cm}
+%     \vspace{0.5cm}
     
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_3PSO.pdf}
-        \caption{PSO Hemberg 3}
-        \label{subfig:hemberg_3_PSO}
-    \end{subfigure}
-    % \hfill
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_3GP.pdf}
-        \caption{GP Hemberg 3}
-        \label{subfig:hemberg_3_GP}
-    \end{subfigure}
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_1PSO.pdf}
+%         \caption{PSO Hemberg 1}
+%         \label{subfig:hemberg_1_PSO}
+%     \end{subfigure}
+%     % \hfill
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_1GP.pdf}
+%         \caption{GP Hemberg 1}
+%         \label{subfig:hemberg_1_GP}
+%     \end{subfigure}
     
-    \vspace{0.5cm}
+%     \vspace{0.5cm}
     
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_3SimulatedAnnealing.pdf}
-        \caption{Simulated Annealing Hemberg 3}
-        \label{subfig:hemberg_3_SA}
-    \end{subfigure}
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_1SimulatedAnnealing.pdf}
+%         \caption{Simulated Annealing Hemberg 1}
+%         \label{subfig:hemberg_1_SA}
+%     \end{subfigure}
     
-    \caption{Hemberg Benchmark Equation 3 (from Table \ref{tab:Hemberg2008PreIP_results}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
-    \label{fig:Hemberg_3_Benchmarks}
-\end{figure}
+%     \caption{Hemberg Benchmark Equation 1 (from Table \ref{tab:Hemberg2008PreIP_results}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using Prefix and Postfix expression representations.}
+%     \label{fig:Hemberg_1_Benchmarks}
+% \end{figure}
 
-\begin{figure}
-    \centering
+% \begin{figure}
+%     \centering
     
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_4RandomSearch.pdf}
-        \caption{Random Search Hemberg 4}
-        \label{subfig:hemberg_4_RS}
-    \end{subfigure}
-    % \hfill
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_4MCTS.pdf}
-        \caption{MCTS Hemberg 4}
-        \label{subfig:hemberg_4_MCTS}
-    \end{subfigure}
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_2RandomSearch.pdf}
+%         \caption{Random Search Hemberg 2}
+%         \label{subfig:hemberg_2_RS}
+%     \end{subfigure}
+%     % \hfill
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_2MCTS.pdf}
+%         \caption{MCTS Hemberg 2}
+%         \label{subfig:hemberg_2_MCTS}
+%     \end{subfigure}
     
-    \vspace{0.5cm}
+%     \vspace{0.5cm}
     
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_4PSO.pdf}
-        \caption{PSO Hemberg 4}
-        \label{subfig:hemberg_4_PSO}
-    \end{subfigure}
-    % \hfill
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_4GP.pdf}
-        \caption{GP Hemberg 4}
-        \label{subfig:hemberg_4_GP}
-    \end{subfigure}
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_2PSO.pdf}
+%         \caption{PSO Hemberg 2}
+%         \label{subfig:hemberg_2_PSO}
+%     \end{subfigure}
+%     % \hfill
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_2GP.pdf}
+%         \caption{GP Hemberg 2}
+%         \label{subfig:hemberg_2_GP}
+%     \end{subfigure}
     
-    \vspace{0.5cm}
+%     \vspace{0.5cm}
     
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_4SimulatedAnnealing.pdf}
-        \caption{Simulated Annealing Hemberg 4}
-        \label{subfig:hemberg_4_SA}
-    \end{subfigure}
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_2SimulatedAnnealing.pdf}
+%         \caption{Simulated Annealing Hemberg 2}
+%         \label{subfig:hemberg_2_SA}
+%     \end{subfigure}
     
-    \caption{Hemberg Benchmark Equation 4 (from Table \ref{tab:Hemberg2008PreIP_results}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
-    \label{fig:Hemberg_4_Benchmarks}
-\end{figure}
+%     \caption{Hemberg Benchmark Equation 2 (from Table \ref{tab:Hemberg2008PreIP_results}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
+%     \label{fig:Hemberg_2_Benchmarks}
+% \end{figure}
 
-\begin{figure}
-    \centering
+% \begin{figure}
+%     \centering
     
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_5RandomSearch.pdf}
-        \caption{Random Search Hemberg 5}
-        \label{subfig:hemberg_5_RS}
-    \end{subfigure}
-    % \hfill
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_5MCTS.pdf}
-        \caption{MCTS Hemberg 5}
-        \label{subfig:hemberg_5_MCTS}
-    \end{subfigure}
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_3RandomSearch.pdf}
+%         \caption{Random Search Hemberg 3}
+%         \label{subfig:hemberg_3_RS}
+%     \end{subfigure}
+%     % \hfill
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_3MCTS.pdf}
+%         \caption{MCTS Hemberg 3}
+%         \label{subfig:hemberg_3_MCTS}
+%     \end{subfigure}
     
-    \vspace{0.5cm}
+%     \vspace{0.5cm}
     
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_5PSO.pdf}
-        \caption{PSO Hemberg 5}
-        \label{subfig:hemberg_5_PSO}
-    \end{subfigure}
-    % \hfill
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_5GP.pdf}
-        \caption{GP Hemberg 5}
-        \label{subfig:hemberg_5_GP}
-    \end{subfigure}
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_3PSO.pdf}
+%         \caption{PSO Hemberg 3}
+%         \label{subfig:hemberg_3_PSO}
+%     \end{subfigure}
+%     % \hfill
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_3GP.pdf}
+%         \caption{GP Hemberg 3}
+%         \label{subfig:hemberg_3_GP}
+%     \end{subfigure}
     
-    \vspace{0.5cm}
+%     \vspace{0.5cm}
     
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_5SimulatedAnnealing.pdf}
-        \caption{Simulated Annealing Hemberg 5}
-        \label{subfig:hemberg_5_SA}
-    \end{subfigure}
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_3SimulatedAnnealing.pdf}
+%         \caption{Simulated Annealing Hemberg 3}
+%         \label{subfig:hemberg_3_SA}
+%     \end{subfigure}
     
-    \caption{Hemberg Benchmark Equation 5 (from Table \ref{tab:Hemberg2008PreIP_results}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
-    \label{fig:Hemberg_5_Benchmarks}
-\end{figure}
+%     \caption{Hemberg Benchmark Equation 3 (from Table \ref{tab:Hemberg2008PreIP_results}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
+%     \label{fig:Hemberg_3_Benchmarks}
+% \end{figure}
+
+% \begin{figure}
+%     \centering
+    
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_4RandomSearch.pdf}
+%         \caption{Random Search Hemberg 4}
+%         \label{subfig:hemberg_4_RS}
+%     \end{subfigure}
+%     % \hfill
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_4MCTS.pdf}
+%         \caption{MCTS Hemberg 4}
+%         \label{subfig:hemberg_4_MCTS}
+%     \end{subfigure}
+    
+%     \vspace{0.5cm}
+    
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_4PSO.pdf}
+%         \caption{PSO Hemberg 4}
+%         \label{subfig:hemberg_4_PSO}
+%     \end{subfigure}
+%     % \hfill
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_4GP.pdf}
+%         \caption{GP Hemberg 4}
+%         \label{subfig:hemberg_4_GP}
+%     \end{subfigure}
+    
+%     \vspace{0.5cm}
+    
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_4SimulatedAnnealing.pdf}
+%         \caption{Simulated Annealing Hemberg 4}
+%         \label{subfig:hemberg_4_SA}
+%     \end{subfigure}
+    
+%     \caption{Hemberg Benchmark Equation 4 (from Table \ref{tab:Hemberg2008PreIP_results}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
+%     \label{fig:Hemberg_4_Benchmarks}
+% \end{figure}
+
+% \begin{figure}
+%     \centering
+    
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_5RandomSearch.pdf}
+%         \caption{Random Search Hemberg 5}
+%         \label{subfig:hemberg_5_RS}
+%     \end{subfigure}
+%     % \hfill
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_5MCTS.pdf}
+%         \caption{MCTS Hemberg 5}
+%         \label{subfig:hemberg_5_MCTS}
+%     \end{subfigure}
+    
+%     \vspace{0.5cm}
+    
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_5PSO.pdf}
+%         \caption{PSO Hemberg 5}
+%         \label{subfig:hemberg_5_PSO}
+%     \end{subfigure}
+%     % \hfill
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_5GP.pdf}
+%         \caption{GP Hemberg 5}
+%         \label{subfig:hemberg_5_GP}
+%     \end{subfigure}
+    
+%     \vspace{0.5cm}
+    
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_5SimulatedAnnealing.pdf}
+%         \caption{Simulated Annealing Hemberg 5}
+%         \label{subfig:hemberg_5_SA}
+%     \end{subfigure}
+    
+%     \caption{Hemberg Benchmark Equation 5 (from Table \ref{tab:Hemberg2008PreIP_results}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
+%     \label{fig:Hemberg_5_Benchmarks}
+% \end{figure}
 
 \subsection{Feynman Benchmarks} \label{subsec:FeynmanBenchmarks}
 In this section, we consider 5 of the equations from the \href{https://space.mit.edu/home/tegmark/aifeynman.html}{Feynman Symbolic Regression Database} with increasing expression-tree depths\footnote{For a glossary of the ``Feynman Symbolic Regression Database'' Expression Trees, see \href{https://edfink234.github.io/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees}{here}.} 
@@ -746,228 +827,228 @@ In this section, we consider 5 of the equations from the \href{https://space.mit
     \begin{tabular}{|l|l|l|l|l|l|}
 \hline 
 \# & Expression & Expression Tree & Depth $N$ & \# of Inputs & Result Plot \\ \hline 
-  1 &  $x = \frac{q\cdot E_f}{m\cdot \left(\omega_0^2 - \omega^2\right)}$ &  \href{https://edfink234.github.io/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees\#figcaption61}{Feynman 1} & 4 & 5 & Figure \ref{fig:AIFeynman_1_Benchmarks}  \\[0.2cm]
-   2 & $F = \frac{G\cdot m_1 \cdot m_2}{\left(x_2 - x_1\right)^2 + \left(y_2 - y_1\right)^2 +\left(z_2 - z_1\right)^2}$ & \href{https://edfink234.github.io/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees\#figcaption5}{Feynman 2} & 5 & 9 & Figure \ref{fig:AIFeynman_2_Benchmarks} \\[0.2cm]
- 3 & $A = \left(\frac{Z_1 \cdot Z_2 \cdot \alpha \cdot \hbar \cdot c}{4\cdot E_n \cdot \sin^2\left(\theta/2\right)}\right)^2$ &  \href{https://edfink234.github.io/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees\#figcaption101}{Feynman 3} & 6 & 7 & Figure \ref{fig:AIFeynman_3_Benchmarks} \\[0.2cm]
- 4 &   $f = \frac{\mu_m\cdot H}{k_b \cdot T} + \frac{\mu_m\cdot \alpha}{\epsilon \cdot c^2 \cdot k_b \cdot T} \cdot M$ & \href{https://edfink234.github.io/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees\#figcaption82}{Feynman 4} & 7 & 8 & Figure \ref{fig:AIFeynman_4_Benchmarks} \\[0.2cm]
- 5 &   $k = \frac{m \cdot k_G}{L^2}\cdot \left(1+\sqrt{\left(1+\frac{2 \cdot E_n \cdot L^2}{m\cdot k_G^2}\right)}\cdot \cos\left(\theta_1-\theta_2\right)\right)$ & \href{https://edfink234.github.io/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees\#figcaption102}{Feynman 5} & 8 & 6 & Figure \ref{fig:AIFeynman_5_Benchmarks} \\[0.2cm] \hline
+  1 &  $x = \frac{q\cdot E_f}{m\cdot \left(\omega_0^2 - \omega^2\right)}$ &  \href{https://edfink234.github.io/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees\#figcaption61}{Feynman 1} & 4 & 5 & Figure \ref{subfig:feynman_1}  \\[0.2cm]
+   2 & $F = \frac{G\cdot m_1 \cdot m_2}{\left(x_2 - x_1\right)^2 + \left(y_2 - y_1\right)^2 +\left(z_2 - z_1\right)^2}$ & \href{https://edfink234.github.io/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees\#figcaption5}{Feynman 2} & 5 & 9 & Figure \ref{subfig:feynman_2} \\[0.2cm]
+ 3 & $A = \left(\frac{Z_1 \cdot Z_2 \cdot \alpha \cdot \hbar \cdot c}{4\cdot E_n \cdot \sin^2\left(\theta/2\right)}\right)^2$ &  \href{https://edfink234.github.io/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees\#figcaption101}{Feynman 3} & 6 & 7 & Figure \ref{subfig:feynman_3} \\[0.2cm]
+ 4 &   $f = \frac{\mu_m\cdot H}{k_b \cdot T} + \frac{\mu_m\cdot \alpha}{\epsilon \cdot c^2 \cdot k_b \cdot T} \cdot M$ & \href{https://edfink234.github.io/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees\#figcaption82}{Feynman 4} & 7 & 8 & Figure \ref{subfig:feynman_4} \\[0.2cm]
+ 5 &   $k = \frac{m \cdot k_G}{L^2}\cdot \left(1+\sqrt{\left(1+\frac{2 \cdot E_n \cdot L^2}{m\cdot k_G^2}\right)}\cdot \cos\left(\theta_1-\theta_2\right)\right)$ & \href{https://edfink234.github.io/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees\#figcaption102}{Feynman 5} & 8 & 6 & Figure \ref{subfig:feynman_5} \\[0.2cm] \hline
 \end{tabular}}
     \caption{Expressions from \cite{udrescu2020ai} considered in section \ref{subsec:FeynmanBenchmarks}.}
     \label{tab:AI_Feynman_Benchmark_Equations}
 \end{table}
 
-\par The results are plotted in Figures \ref{fig:AIFeynman_1_Benchmarks} - \ref{fig:AIFeynman_5_Benchmarks} for benchmarks 1 to 5, respectively. For Random Search, postfix did $\sim$ the same on the first, fourth, and fifth Feynman benchmarks, better on the second benchmark, and worse on the third benchmark. For MCTS, postfix did worse than prefix on the first, second, fourth, and fifth Feynman benchmarks and better on the third Feynman benchmark. For PSO, postfix did worse on the first and third Feynman benchmarks, better on the second Feynman benchmark, and roughly the same as prefix on the last two benchmarks. For the GP approach, postfix did better on the first two Feynman benchmarks, worse on the third Feynman Benchmark, and roughly the same as prefix on the last two benchmarks. Lastly, for Simulated Annealing, postfix did $\sim$ the same on the first benchmark and the last two Feynman benchmarks and worse on the second and third Feynman benchmarks.
+\par The results are plotted in Figure \ref{fig:Feynman_Benchmarks}. For Random Search, postfix did $\sim$ the same on the first, fourth, and fifth Feynman benchmarks, better on the second benchmark, and worse on the third benchmark. For MCTS, postfix did worse than prefix on the first, second, fourth, and fifth Feynman benchmarks and better on the third Feynman benchmark. For PSO, postfix did worse on the first and third Feynman benchmarks, better on the second Feynman benchmark, and roughly the same as prefix on the last two benchmarks. For the GP approach, postfix did better on the first two Feynman benchmarks, worse on the third Feynman Benchmark, and roughly the same as prefix on the last two benchmarks. Lastly, for Simulated Annealing, postfix did $\sim$ the same on the first benchmark and the last two Feynman benchmarks and worse on the second and third Feynman benchmarks.
 
-\begin{figure}
-    \centering
+% \begin{figure}
+%     \centering
     
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_1RandomSearch.pdf}
-        \caption{Random Search Feynman 1}
-        \label{subfig:feynman_1_RS}
-    \end{subfigure}
-    % \hfill
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_1MCTS.pdf}
-        \caption{MCTS Feynman 1}
-        \label{subfig:feynman_1_MCTS}
-    \end{subfigure}
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_1RandomSearch.pdf}
+%         \caption{Random Search Feynman 1}
+%         \label{subfig:feynman_1_RS}
+%     \end{subfigure}
+%     % \hfill
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_1MCTS.pdf}
+%         \caption{MCTS Feynman 1}
+%         \label{subfig:feynman_1_MCTS}
+%     \end{subfigure}
     
-    \vspace{0.5cm}
+%     \vspace{0.5cm}
     
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_1PSO.pdf}
-        \caption{PSO Feynman 1}
-        \label{subfig:feynman_1_PSO}
-    \end{subfigure}
-    % \hfill
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_1GP.pdf}
-        \caption{GP Feynman 1}
-        \label{subfig:feynman_1_GP}
-    \end{subfigure}
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_1PSO.pdf}
+%         \caption{PSO Feynman 1}
+%         \label{subfig:feynman_1_PSO}
+%     \end{subfigure}
+%     % \hfill
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_1GP.pdf}
+%         \caption{GP Feynman 1}
+%         \label{subfig:feynman_1_GP}
+%     \end{subfigure}
     
-    \vspace{0.5cm}
+%     \vspace{0.5cm}
     
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_1SimulatedAnnealing.pdf}
-        \caption{Simulated Annealing Feynman 1}
-        \label{subfig:feynman_1_SA}
-    \end{subfigure}
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_1SimulatedAnnealing.pdf}
+%         \caption{Simulated Annealing Feynman 1}
+%         \label{subfig:feynman_1_SA}
+%     \end{subfigure}
     
-    \caption{Feynman Benchmark Equation 1 (from Table \ref{tab:AI_Feynman_Benchmark_Equations}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using Prefix and Postfix expression representations.}
-    \label{fig:AIFeynman_1_Benchmarks}
-\end{figure}
+%     \caption{Feynman Benchmark Equation 1 (from Table \ref{tab:AI_Feynman_Benchmark_Equations}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using Prefix and Postfix expression representations.}
+%     \label{fig:AIFeynman_1_Benchmarks}
+% \end{figure}
 
-\begin{figure}
-    \centering
+% \begin{figure}
+%     \centering
     
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_2RandomSearch.pdf}
-        \caption{Random Search Feynman 2}
-        \label{subfig:feynman_2_RS}
-    \end{subfigure}
-    % \hfill
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_2MCTS.pdf}
-        \caption{MCTS Feynman 2}
-        \label{subfig:feynman_2_MCTS}
-    \end{subfigure}
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_2RandomSearch.pdf}
+%         \caption{Random Search Feynman 2}
+%         \label{subfig:feynman_2_RS}
+%     \end{subfigure}
+%     % \hfill
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_2MCTS.pdf}
+%         \caption{MCTS Feynman 2}
+%         \label{subfig:feynman_2_MCTS}
+%     \end{subfigure}
     
-    \vspace{0.5cm}
+%     \vspace{0.5cm}
     
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_2PSO.pdf}
-        \caption{PSO Feynman 2}
-        \label{subfig:feynman_2_PSO}
-    \end{subfigure}
-    % \hfill
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_2GP.pdf}
-        \caption{GP Feynman 2}
-        \label{subfig:feynman_2_GP}
-    \end{subfigure}
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_2PSO.pdf}
+%         \caption{PSO Feynman 2}
+%         \label{subfig:feynman_2_PSO}
+%     \end{subfigure}
+%     % \hfill
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_2GP.pdf}
+%         \caption{GP Feynman 2}
+%         \label{subfig:feynman_2_GP}
+%     \end{subfigure}
     
-    \vspace{0.5cm}
+%     \vspace{0.5cm}
     
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_2SimulatedAnnealing.pdf}
-        \caption{Simulated Annealing Feynman 2}
-        \label{subfig:feynman_2_SA}
-    \end{subfigure}
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_2SimulatedAnnealing.pdf}
+%         \caption{Simulated Annealing Feynman 2}
+%         \label{subfig:feynman_2_SA}
+%     \end{subfigure}
     
-    \caption{Feynman Benchmark Equation 2 (from Table \ref{tab:AI_Feynman_Benchmark_Equations}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
-    \label{fig:AIFeynman_2_Benchmarks}
-\end{figure}
+%     \caption{Feynman Benchmark Equation 2 (from Table \ref{tab:AI_Feynman_Benchmark_Equations}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
+%     \label{fig:AIFeynman_2_Benchmarks}
+% \end{figure}
 
-\begin{figure}
-    \centering
+% \begin{figure}
+%     \centering
     
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_3RandomSearch.pdf}
-        \caption{Random Search Feynman 3}
-        \label{subfig:feynman_3_RS}
-    \end{subfigure}
-    % \hfill
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_3MCTS.pdf}
-        \caption{MCTS Feynman 3}
-        \label{subfig:feynman_3_MCTS}
-    \end{subfigure}
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_3RandomSearch.pdf}
+%         \caption{Random Search Feynman 3}
+%         \label{subfig:feynman_3_RS}
+%     \end{subfigure}
+%     % \hfill
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_3MCTS.pdf}
+%         \caption{MCTS Feynman 3}
+%         \label{subfig:feynman_3_MCTS}
+%     \end{subfigure}
     
-    \vspace{0.5cm}
+%     \vspace{0.5cm}
     
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_3PSO.pdf}
-        \caption{PSO Feynman 3}
-        \label{subfig:feynman_3_PSO}
-    \end{subfigure}
-    % \hfill
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_3GP.pdf}
-        \caption{GP Feynman 3}
-        \label{subfig:feynman_3_GP}
-    \end{subfigure}
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_3PSO.pdf}
+%         \caption{PSO Feynman 3}
+%         \label{subfig:feynman_3_PSO}
+%     \end{subfigure}
+%     % \hfill
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_3GP.pdf}
+%         \caption{GP Feynman 3}
+%         \label{subfig:feynman_3_GP}
+%     \end{subfigure}
     
-    \vspace{0.5cm}
+%     \vspace{0.5cm}
     
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_3SimulatedAnnealing.pdf}
-        \caption{Simulated Annealing Feynman 3}
-        \label{subfig:feynman_3_SA}
-    \end{subfigure}
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_3SimulatedAnnealing.pdf}
+%         \caption{Simulated Annealing Feynman 3}
+%         \label{subfig:feynman_3_SA}
+%     \end{subfigure}
     
-    \caption{Feynman Benchmark Equation 3 (from Table \ref{tab:AI_Feynman_Benchmark_Equations}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
-    \label{fig:AIFeynman_3_Benchmarks}
-\end{figure}
+%     \caption{Feynman Benchmark Equation 3 (from Table \ref{tab:AI_Feynman_Benchmark_Equations}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
+%     \label{fig:AIFeynman_3_Benchmarks}
+% \end{figure}
 
-\begin{figure}
-    \centering
+% \begin{figure}
+%     \centering
     
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_4RandomSearch.pdf}
-        \caption{Random Search Feynman 4}
-        \label{subfig:feynman_4_RS}
-    \end{subfigure}
-    % \hfill
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_4MCTS.pdf}
-        \caption{MCTS Feynman 4}
-        \label{subfig:feynman_4_MCTS}
-    \end{subfigure}
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_4RandomSearch.pdf}
+%         \caption{Random Search Feynman 4}
+%         \label{subfig:feynman_4_RS}
+%     \end{subfigure}
+%     % \hfill
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_4MCTS.pdf}
+%         \caption{MCTS Feynman 4}
+%         \label{subfig:feynman_4_MCTS}
+%     \end{subfigure}
     
-    \vspace{0.5cm}
+%     \vspace{0.5cm}
     
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_4PSO.pdf}
-        \caption{PSO Feynman 4}
-        \label{subfig:feynman_4_PSO}
-    \end{subfigure}
-    % \hfill
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_4GP.pdf}
-        \caption{GP Feynman 4}
-        \label{subfig:feynman_4_GP}
-    \end{subfigure}
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_4PSO.pdf}
+%         \caption{PSO Feynman 4}
+%         \label{subfig:feynman_4_PSO}
+%     \end{subfigure}
+%     % \hfill
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_4GP.pdf}
+%         \caption{GP Feynman 4}
+%         \label{subfig:feynman_4_GP}
+%     \end{subfigure}
     
-    \vspace{0.5cm}
+%     \vspace{0.5cm}
     
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_4SimulatedAnnealing.pdf}
-        \caption{Simulated Annealing Feynman 4}
-        \label{subfig:feynman_4_SA}
-    \end{subfigure}
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_4SimulatedAnnealing.pdf}
+%         \caption{Simulated Annealing Feynman 4}
+%         \label{subfig:feynman_4_SA}
+%     \end{subfigure}
     
-    \caption{Feynman Benchmark Equation 4 (from Table \ref{tab:AI_Feynman_Benchmark_Equations}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
-    \label{fig:AIFeynman_4_Benchmarks}
-\end{figure}
+%     \caption{Feynman Benchmark Equation 4 (from Table \ref{tab:AI_Feynman_Benchmark_Equations}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
+%     \label{fig:AIFeynman_4_Benchmarks}
+% \end{figure}
 
-\begin{figure}
-    \centering
+% \begin{figure}
+%     \centering
     
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_5RandomSearch.pdf}
-        \caption{Random Search Feynman 5}
-        \label{subfig:feynman_5_RS}
-    \end{subfigure}
-    % \hfill
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_5MCTS.pdf}
-        \caption{MCTS Feynman 5}
-        \label{subfig:feynman_5_MCTS}
-    \end{subfigure}
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_5RandomSearch.pdf}
+%         \caption{Random Search Feynman 5}
+%         \label{subfig:feynman_5_RS}
+%     \end{subfigure}
+%     % \hfill
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_5MCTS.pdf}
+%         \caption{MCTS Feynman 5}
+%         \label{subfig:feynman_5_MCTS}
+%     \end{subfigure}
     
-    \vspace{0.5cm}
+%     \vspace{0.5cm}
     
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_5PSO.pdf}
-        \caption{PSO Feynman 5}
-        \label{subfig:feynman_5_PSO}
-    \end{subfigure}
-    % \hfill
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_5GP.pdf}
-        \caption{GP Feynman 5}
-        \label{subfig:feynman_5_GP}
-    \end{subfigure}
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_5PSO.pdf}
+%         \caption{PSO Feynman 5}
+%         \label{subfig:feynman_5_PSO}
+%     \end{subfigure}
+%     % \hfill
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_5GP.pdf}
+%         \caption{GP Feynman 5}
+%         \label{subfig:feynman_5_GP}
+%     \end{subfigure}
     
-    \vspace{0.5cm}
+%     \vspace{0.5cm}
     
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_5SimulatedAnnealing.pdf}
-        \caption{Simulated Annealing Feynman 5}
-        \label{subfig:feynman_5_SA}
-    \end{subfigure}
+%     \begin{subfigure}[b]{0.4\textwidth}
+%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_5SimulatedAnnealing.pdf}
+%         \caption{Simulated Annealing Feynman 5}
+%         \label{subfig:feynman_5_SA}
+%     \end{subfigure}
     
-    \caption{Feynman Benchmark Equation 5 (from Table \ref{tab:AI_Feynman_Benchmark_Equations}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
-    \label{fig:AIFeynman_5_Benchmarks}
-\end{figure}
+%     \caption{Feynman Benchmark Equation 5 (from Table \ref{tab:AI_Feynman_Benchmark_Equations}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
+%     \label{fig:AIFeynman_5_Benchmarks}
+% \end{figure}
 
 %open https://space.mit.edu/home/tegmark/aifeynman.html
 %open /Users/edwardfinkelstein/Downloads/FeynmanEquations.csv /Users/edwardfinkelstein/Downloads/BonusEquations.csv
 
 \section{Remarks}
-Generally, we can observe from Figures \ref{fig:Hemberg_1_Benchmarks} - \ref{fig:AIFeynman_5_Benchmarks} that the performance of prefix vs postfix varies significantly. We assume in our formulation that the performance advantage of prefix vs postfix is related to the symbolic regression algorithm utilized, the depth of the ground-truth expression tree, the number of input variables of the ground-truth expression, and the shape of the tree such as the average number of nodes per expression-tree layer. With these assumptions, we construct a decision tree to better understand when a performance advantage will ensue from prefix, postfix, or neither, shown in Figure \ref{fig:PrefixPostfixDecisionTree}. 
+Generally, we can observe from Figures \ref{fig:Hemberg_Benchmarks} and \ref{fig:Feynman_Benchmarks} that the performance of prefix vs postfix varies significantly. We assume in our formulation that the performance advantage of prefix vs postfix is related to the symbolic regression algorithm utilized, the depth of the ground-truth expression tree, the number of input variables of the ground-truth expression, and the shape of the tree such as the average number of nodes per expression-tree layer. With these assumptions, we construct a decision tree to better understand when a performance advantage will ensue from prefix, postfix, or neither, shown in Figure \ref{fig:PrefixPostfixDecisionTree}. 
 \par What we find is that postfix notation tends to outperform prefix when the average number of nodes per layer of the ground-truth symbolic expression is larger; this insight makes some intuitive sense given that postfix strings denote expression trees starting from the leaves, which likely biases them towards fatter expression trees. For thinner expression trees, prefix tends to perform better when the SR algorithm is Random Search or MCTS or when the arity of the ground-truth expression is larger. 
 
 \begin{figure}
@@ -981,15 +1062,10 @@ Generally, we can observe from Figures \ref{fig:Hemberg_1_Benchmarks} - \ref{fig
 In this work, we have developed string-based grammars for generating symbolic expressions from a set of operands and unary+binary operators. These grammars elicit faultless prefix and postfix expressions corresponding to the entire space of strictly fixed-depth expression trees. 
 \par We have outlined five straightforward symbolic regression algorithms using these grammars. These algorithms were tested on benchmark expressions from \cite{hemberg2008pre} and \cite{udrescu2020ai} within a common C++/Eigen SR framework. The results suggest that postfix has greater aptitude for discovering ground truth expressions with a larger number of nodes per layer of expression tree, and vice versa for prefix notation. Practically, this insight is only useful if the expression tree is known a-priori; thus, a future study could explore how machine learning can predict the optimal expression representation conditioned on the data and other ingredients known beforehand. Naturally, a theoretical analysis and/or more benchmarking would be needed to substantiate the empircal findings of this paper. 
 \par 
-\par With respect to the fixed-depth symbolic regression grammars developed herein, a promising extension would be to explore how existing SR frameworks such as PySR can be improved by including a fixed-depth option. This feature would allow the user with an idea about the desired complexity to focus the available computational resources on searching the space of fixed-depth expressions rather than the much larger space of expressions with depth $\leq$ max-depth. On the other hand, it remains to be seen which state-of-the-art SR frameworks would most readily support such a feature.
-
-
-\newpage
+\par Concerning the fixed-depth symbolic regression grammars developed herein, a promising extension would be to explore how existing SR frameworks such as PySR can be improved by including a fixed-depth option. This feature would allow the user with an idea about the desired complexity to focus the available computational resources on searching the space of fixed-depth expressions rather than the much larger space of expressions with depth $\leq$ max-depth. On the other hand, it remains to be seen which state-of-the-art SR frameworks would most readily support such a feature.
 
 \bibliographystyle{splncs04}
 \bibliography{PrefixPostfixPaper}
-
-\newpage 
 
 \appendix
 \section{Hardware Specifications}

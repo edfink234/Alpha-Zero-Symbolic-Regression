@@ -10,7 +10,7 @@ import os
 
 data = '''
 Algorithm,Depth,NumberOfInputVariables,NumberOfTokensPerUnitDepth,Label
-1,4,2,2.5,3
+1,4,2,2.5,2
 1,4,2,3.5,3
 1,5,2,2.8,3
 1,9,2,4.44,1

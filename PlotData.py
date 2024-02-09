@@ -20,21 +20,31 @@ def process_csv(file_path):
     
     return time_values, np.array(avg_max_scores), np.array(std_devs), file_path.strip(".txt")
 
-# Function to plot results
-def plot_results(time_values, avg_max_scores, std_devs, file_path):
-    fig, ax = plt.subplots()
-    ax.plot(time_values, avg_max_scores, marker='o', color = "black")
-    ax.ticklabel_format(useOffset=False, style='plain')
-    plt.fill_between(time_values, avg_max_scores - std_devs, avg_max_scores + std_devs)
-    plt.title('Average MSE over Time')
-    plt.xlabel('Time (seconds)')
-    plt.ylabel('Average MSE')
-    plt.grid(True)
-    plt.tight_layout()
+def save_plot(file_path):
     plt.savefig(f"{file_path}.svg")
     plt.close()
     os.system(f"rsvg-convert -f pdf -o {file_path}.pdf {file_path}.svg")
     os.system(f"rm {file_path}.svg")
+    
+# Function to plot results
+def plot_results(time_values, avg_max_scores, std_devs, file_path, save = True, label = "", ax = "new", legend = False, y_scale = 'linear'):
+    if ax == "new":
+        fig, ax = plt.subplots()
+    ax.plot(time_values, avg_max_scores, marker='o', label = label)
+    if y_scale == 'linear':
+        ax.ticklabel_format(useOffset=False, style='plain')
+        plt.fill_between(time_values, avg_max_scores - std_devs, avg_max_scores + std_devs)
+    plt.title('Average MSE over Time')
+    plt.xlabel('Time (seconds)')
+    plt.ylabel('Average MSE')
+    plt.grid(True)
+    plt.yscale(y_scale)
+    
+    if legend:
+        plt.legend()
+    plt.tight_layout()
+    if save:
+        save_plot(file_path)
 
 def process_files(files):
     for file_path in files:
@@ -76,10 +86,36 @@ def PaperPlots(files):
 AIFeynman_Files = 'AIFeynman_Benchmarks/Feynman_1PreRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_1PostRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_2PreRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_2PostRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_3PreRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_3PostRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_4PreRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_4PostRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_5PreRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_5PostRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_1PreMCTS.txt', 'AIFeynman_Benchmarks/Feynman_1PostMCTS.txt', 'AIFeynman_Benchmarks/Feynman_2PreMCTS.txt', 'AIFeynman_Benchmarks/Feynman_2PostMCTS.txt', 'AIFeynman_Benchmarks/Feynman_3PreMCTS.txt', 'AIFeynman_Benchmarks/Feynman_3PostMCTS.txt', 'AIFeynman_Benchmarks/Feynman_4PreMCTS.txt', 'AIFeynman_Benchmarks/Feynman_4PostMCTS.txt', 'AIFeynman_Benchmarks/Feynman_5PreMCTS.txt', 'AIFeynman_Benchmarks/Feynman_5PostMCTS.txt', 'AIFeynman_Benchmarks/Feynman_1PrePSO.txt', 'AIFeynman_Benchmarks/Feynman_1PostPSO.txt', 'AIFeynman_Benchmarks/Feynman_2PrePSO.txt', 'AIFeynman_Benchmarks/Feynman_2PostPSO.txt', 'AIFeynman_Benchmarks/Feynman_3PrePSO.txt', 'AIFeynman_Benchmarks/Feynman_3PostPSO.txt', 'AIFeynman_Benchmarks/Feynman_4PrePSO.txt', 'AIFeynman_Benchmarks/Feynman_4PostPSO.txt', 'AIFeynman_Benchmarks/Feynman_5PrePSO.txt', 'AIFeynman_Benchmarks/Feynman_5PostPSO.txt', 'AIFeynman_Benchmarks/Feynman_1PreGP.txt', 'AIFeynman_Benchmarks/Feynman_1PostGP.txt', 'AIFeynman_Benchmarks/Feynman_2PreGP.txt', 'AIFeynman_Benchmarks/Feynman_2PostGP.txt','AIFeynman_Benchmarks/Feynman_3PreGP.txt', 'AIFeynman_Benchmarks/Feynman_3PostGP.txt', 'AIFeynman_Benchmarks/Feynman_4PreGP.txt', 'AIFeynman_Benchmarks/Feynman_4PostGP.txt', 'AIFeynman_Benchmarks/Feynman_5PreGP.txt', 'AIFeynman_Benchmarks/Feynman_5PostGP.txt', 'AIFeynman_Benchmarks/Feynman_1PreSimulatedAnnealing.txt', 'AIFeynman_Benchmarks/Feynman_1PostSimulatedAnnealing.txt', 'AIFeynman_Benchmarks/Feynman_2PreSimulatedAnnealing.txt', 'AIFeynman_Benchmarks/Feynman_2PostSimulatedAnnealing.txt', 'AIFeynman_Benchmarks/Feynman_3PreSimulatedAnnealing.txt', 'AIFeynman_Benchmarks/Feynman_3PostSimulatedAnnealing.txt', 'AIFeynman_Benchmarks/Feynman_4PreSimulatedAnnealing.txt', 'AIFeynman_Benchmarks/Feynman_4PostSimulatedAnnealing.txt', 'AIFeynman_Benchmarks/Feynman_5PreSimulatedAnnealing.txt', 'AIFeynman_Benchmarks/Feynman_5PostSimulatedAnnealing.txt'
 
 process_files(Hemberg_Files)
-process_files(AIFeynman_Files)
-
+#process_files(AIFeynman_Files)
 PaperPlots(Hemberg_Files)
-PaperPlots(AIFeynman_Files)
+#PaperPlots(AIFeynman_Files)
 
+def DiscoverySciencePlots(*Benchmark_File_Lists):
+    
+    for Benchmark_File_List, PlotFilePrefix in Benchmark_File_Lists:
+        for i in range(1, 6):
+            Benchmark_Files = filter(lambda file: f'{i}' in file, Benchmark_File_List)
+            fig, ax = plt.subplots()
+            for file_path in Benchmark_Files:
+                time_values, avg_max_scores, std_devs, file_path = process_csv(file_path)
+                label = 'Prefix' if 'Pre' in file_path else 'Postfix'
+                if 'RandomSearch' in file_path:
+                    label += " Random Search"
+                elif 'MCTS' in file_path:
+                    label += " MCTS"
+                elif 'PSO' in file_path:
+                    label += " PSO"
+                elif 'GP' in file_path:
+                    label += " GP"
+                elif 'SimulatedAnnealing' in file_path:
+                    label += " Simulated Annealing"
+                
+                plot_results(time_values, avg_max_scores, std_devs, file_path, save = False, label = label, ax = ax, y_scale = 'log', legend = True)
+            
+            save_plot(f"{PlotFilePrefix}{i}")
+        
+        #Feynman Benchmarks
 
+DiscoverySciencePlots((Hemberg_Files, "Hemberg_Benchmarks/Hemberg_Benchmark_"), (AIFeynman_Files, "AIFeynman_Benchmarks/Feynman_Benchmark_"))
 
+#TODO: MAYBE Make Plots of Final Means and Stds if you can get Discovery Science Paper to 13 pages

@@ -436,7 +436,7 @@ struct Board
                 this->depth = std::max(this->depth, static_cast<int>(this->stack.size()) + 1);
             }
         }
-        else
+        else //optimize with caching
         {
             if (not modify) //get_legal_moves()
             {
@@ -546,7 +546,7 @@ struct Board
             
             return std::make_pair(this->stack.back() - 1, complete);
         }
-        else
+        else //optimize with caching
         {
             if (not modify)  //get_legal_moves()
             {
@@ -1997,7 +1997,7 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
         std::vector<std::pair<int, double>> temp_scores;
         std::unordered_map<std::string, std::unordered_map<float, float>> Qsa, Nsa;
         std::string state;
-        std::string expression, orig_expression, best_expression;
+//        std::string expression, orig_expression, best_expression;
         std::unordered_map<std::string, float> Ns;
         float c = 1.4f; //"controls the balance between exploration and exploitation", see equation 2 here: https://web.engr.oregonstate.edu/~afern/classes/cs533/notes/uct.pdf, top of page 8 here: https://arxiv.org/pdf/1402.6028.pdf, first formula in section 4. Experiments here: https://cesa-bianchi.di.unimi.it/Pubblicazioni/ml-02.pdf
         std::vector<std::pair<std::string, float>> moveTracker;
@@ -2133,12 +2133,20 @@ void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expres
         std::vector<float> temp_legal_moves;
         std::vector<std::pair<int, double>> temp_scores;
         
-        size_t temp_sz, idx;
+        size_t temp_sz;
     //    std::string expression, orig_expression, best_expression;
         double timeElapsed;
         auto start_time = Clock::now();
+        std::thread pushBackThread([&]()
+        {
+            while (timeElapsedSince(start_time) < time)
+            {
+                std::this_thread::sleep_for(std::chrono::seconds(measure_period));
+                temp_scores.push_back(std::make_pair(static_cast<size_t>(timeElapsedSince(start_time)), max_score));
+            }
+        });
 
-        for (int i = 0; ((timeElapsed=timeElapsedSince(start_time)) < time/*score < stop && Board::expression_dict.size() <= 100000*/); i++)
+        for (int i = 0; (timeElapsedSince(start_time) < time/*score < stop && Board::expression_dict.size() <= 100000*/); i++)
         {
             while ((score = x.complete_status()) == -1)
             {
@@ -2159,13 +2167,10 @@ void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expres
     //            best_expression = std::move(expression);
             }
             x.pieces.clear();
-            if (((idx = static_cast<size_t>(timeElapsed)) % measure_period) == 0 && idx / measure_period > temp_scores.size())
-            {
-                temp_scores.push_back(std::make_pair(idx, max_score));
-            }
         }
-        idx = static_cast<size_t>(timeElapsed);
-        temp_scores.push_back(std::make_pair(idx, max_score));
+        // Join the separate thread to ensure it has finished before exiting
+        pushBackThread.join();
+        
         for (auto& i: temp_scores)
         {
             scores[i.first].push_back(i.second);
