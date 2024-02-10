@@ -31,7 +31,7 @@
 % If the paper title is too long for the running head, you can set
 % an abbreviated paper title here
 %
-\author{Edward Finkelstein\inst{1}\orcidID{}}
+\author{Edward Finkelstein\inst{1}}%\orcidID{}}
 %
 \authorrunning{Edward F.}
 % First names are abbreviated in the running head.
@@ -49,11 +49,11 @@ We develop faultless, fixed-depth, string-based, prefix and postfix symbolic reg
 \end{abstract}
 
 \section{Introduction}
-Symbolic regression (SR) typically denotes the process of finding a symbolic model $f\left(\vec{x}\right)$ that takes an $N$-dimensional feature vector $\vec{x}$ as input and outputs a value $f\left(\vec{x}\right)$ denoting a prediction of the label $y$, such that some user-defined loss metric $\mathcal{L}\left(f\left(\vec{x}\right),y\right)$ is minimized. Usually, the symbolic models constituting the search space contain ``tokens'', i.e., nodes, in one of the following classes:
+Symbolic regression (SR) denotes the process of finding a symbolic model $f\left(\vec{x}\right)$ that takes an $N$-dimensional feature vector $\vec{x}$ as input and outputs a value $f\left(\vec{x}\right)$ denoting a prediction of the label $y$, such that a loss metric $\mathcal{L}\left(f\left(\vec{x}\right),y\right)$ is minimized. The symbolic models constituting the search space contain ``tokens'', i.e., nodes, in one of the following classes:
 \begin{itemize}
-\item[--] Leaves: Any of the individual features $\vec{x} = \{x_1, x_2, \ldots,x_{N}\}$ and a constant token that can be optimized with some non-linear optimization routine like L-BFGS \cite{doi:10.1137/0916069} or Levenberg-Marquadt \cite{83b09f23-b20e-3617-8f72-24765b713f7b} \cite{doi:10.1137/0111030}.
-\item[--] Unary operators: Any operator that takes 1 real argument as input and outputs a real number, such as $\cos$, $\sin$, $\exp$, $\ln$, $\tan$, etc.
-\item[--] Binary operators: Any operator that takes 2 real arguments as input and outputs a real number, such as $+$, $-$, $*$, $\div$, etc.
+\item[--] Leaves: Any of the individual features $\vec{x} = \{x_1, x_2, \ldots,x_{N}\}$ and a constant token that can be optimized with a non-linear optimization routine like L-BFGS \cite{doi:10.1137/0916069} or Levenberg-Marquadt \cite{83b09f23-b20e-3617-8f72-24765b713f7b} \cite{doi:10.1137/0111030}.
+\item[--] Unary operators: Any operator that takes 1 argument as input and outputs a value, such as $\cos$, $\sin$, $\exp$, $\ln$, $\tan$, etc.
+\item[--] Binary operators: Any operator that takes 2 arguments as input and outputs a value, such as $+$, $-$, $*$, $\div$, etc.
 \end{itemize}
 \subsection{Symbolic Regression Algorithms}
 \textbf{Pre}fix (also known as Polish notation) expressions are written with the operators coming \emph{before} the operators, for example, \texttt{+ 1 2} represents the sum of 1 and 2. \textbf{Post}fix (also known as Reverse-Polish notation) expressions, on the other hand, have the operators coming \emph{after} the operands, for example, \texttt{1 2 +} represents the sum of 1 and 2. These two methods of representing expressions remove the need for parentheses and operator precedence rules characteristic of infix notation, where the operators are placed \emph{in between} the operands. In symbolic regression, representing expressions as prefix and/or postfix strings can result in faster evaluation of candidate expressions with less memory required compared to infix due to the requirement of parantheses to specify the order of evaluation. An interesting question then arises: \emph{In symbolic regression, which performs better, prefix or postfix?}
@@ -104,20 +104,20 @@ NSGA-DCGP \cite{izzo2016differentiable} & Acyclic Graph & Implied \\%``To repres
 \end{table}
 
 As one can see in Table \ref{GECCO_Framework_reps}, the majority of frameworks represent expressions through a pre-order traversal of expression trees, followed by acyclic graph representations and lastly postfix notation.
-Figure \ref{fig:pub_freqs_pre_post_acyc_graph} shows a histogram of publication frequencies mentioning these representations in the context of symbolic regression throughout the years, obtained with the help of the scholarly python module \cite{cholewiak2021scholarly}.  %code here: 
-\begin{figure}[ht]
-    \centering
-    \includegraphics[width=\linewidth]{pub_freqs.pdf}
-    \caption{Number of mentions of prefix, postfix, and acyclic graph in publications pertaining to symbolic regression. The python module scholarly was used to generate this histogram \cite{cholewiak2021scholarly}. The search queries utilized were ``postfix notation'' AND ``symbolic regression'', ``prefix notation'' AND ``symbolic regression'', ``acyclic graph'' AND ``symbolic regression'', ``reverse polish notation'' AND ``symbolic regression'', ``polish notation'' AND ``symbolic regression'', and ``acyclic-graph'' AND ``symbolic regression''. The script to reproduce this plot is \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/d5ebdf90c0915cd5769b29bf679709dbd4a618c7/Figure_1/notations_pubs_counter.py}{here}.} 
-    \label{fig:pub_freqs_pre_post_acyc_graph}
-\end{figure}
-It can be seen that the preferred choice of expression representation tends to be either prefix notation or acyclic graphs, and postfix tends to not be preferred as much. A possible explanation for the preference is that starting an expression from the root node, as is typically the case for prefix and acyclic graph-based expression representations, lends itself to a natural termination condition, i.e., when all of the branches from the root node terminate at a leaf node. Acyclic graphs have the added advantage of allowing children nodes to have mulitple parents, reducing the memory necessary to represent symbolic expressions with identical sub-components when compared to trees. On the other hand, postfix expressions imply building an expression tree from the leaf nodes; thus, there exist nodes where the expression tree can be either terminated or expanded further up using the same postfix-grammar. 
+% Figure \ref{fig:pub_freqs_pre_post_acyc_graph} shows a histogram of publication frequencies mentioning these representations in the context of symbolic regression throughout the years, obtained with the help of the scholarly python module \cite{cholewiak2021scholarly}.  %code here: 
+% \begin{figure}[ht]
+%     \centering
+%     \includegraphics[width=\linewidth]{pub_freqs.pdf}
+%     \caption{Number of mentions of prefix, postfix, and acyclic graph in publications pertaining to symbolic regression. The python module scholarly was used to generate this histogram \cite{cholewiak2021scholarly}. The search queries utilized were ``postfix notation'' AND ``symbolic regression'', ``prefix notation'' AND ``symbolic regression'', ``acyclic graph'' AND ``symbolic regression'', ``reverse polish notation'' AND ``symbolic regression'', ``polish notation'' AND ``symbolic regression'', and ``acyclic-graph'' AND ``symbolic regression''. The script to reproduce this plot is \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/d5ebdf90c0915cd5769b29bf679709dbd4a618c7/Figure_1/notations_pubs_counter.py}{here}.} 
+%     \label{fig:pub_freqs_pre_post_acyc_graph}
+% \end{figure}
+Generally, the preferred choice of expression representation in symbolic regression tends to be either prefix notation or acyclic graphs, and postfix tends to not be preferred as much\footnote{See \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/3f384098ef19681f2de23410cc1375b01ddb28b8/Figure_1/pub_freqs.pdf}{here}, for an illustration.}. A possible explanation for the preference is that starting an expression from the root node, as is typically the case for prefix and acyclic graph-based expression representations, lends itself to a natural termination condition, i.e., when all of the branches from the root node terminate at a leaf node. Acyclic graphs have the added advantage of allowing children nodes to have mulitple parents, reducing the memory necessary to represent symbolic expressions with identical sub-components when compared to trees. On the other hand, postfix expressions imply building an expression tree from the leaf nodes; thus, there exist nodes where the expression tree can be either terminated or expanded further up using the same postfix-grammar. 
 
 In this paper, we restrict the analysis to prefix and postfix notations, as these can be easily represented with the same underlying data-structure, though acyclic-graph grammars can be an analysis for future work. Furthermore, the methods developed in this paper assume expressions are represented as an array of tokens. In this schema, a representation of an arbitrary acyclic graph expression is not readily apparent.
 
 
 \subsection{Prefix and Postfix}
-Using prefix notation for symbolic regression entails building an expression starting from a root node, i.e., an operator. Postfix notation, on the other hand, begins building an expression from leaf nodes. Figure \ref{fig:prefix_vs_postfix} illustrates the difference.
+Using prefix notation for symbolic regression entails building an expression starting from a root node, i.e., an operator. Conversely, postfix notation begins building an expression from leaf nodes. Figure \ref{fig:prefix_vs_postfix} illustrates the difference.
 
 
 \begin{figure}[ht]
@@ -158,87 +158,81 @@ Using prefix notation for symbolic regression entails building an expression sta
     \label{fig:prefix_vs_postfix}
 \end{figure}
 
-\par One major difference between the two methods of building expressions is that, for prefix notation, once an expression tree branch is complete, it cannot be expanded further \emph{down} without a mutation/substitution of a leaf node. On the other hand, for postfix notation, one can continue expanding the expression tree further \emph{up} starting from the root node; an example is shown in Figure \ref{fig:postfix_add_1}.
+\par One major difference between the two methods of building expressions is that, for prefix notation, once an expression tree branch is complete, it cannot be expanded further \emph{down} without modifying a leaf node. Contrarily, postfix notation enables the expression tree to expand further \emph{up} starting from the root node, see, e.g., the transition from node \textbf{\textcolor{red}{3}} to node \textbf{\textcolor{red}{4}} in Figure \ref{subfig:postfix_tree_example}.
 
-\begin{figure}[ht]
-    \begin{subfigure}[b]{0.51\textwidth}
-        \centering
-        \begin{tikzpicture}
-            \node[text width = 6 cm, align = center] at (0,0) {\includegraphics[width=\linewidth, keepaspectratio]{expression_tree_RPN.pdf}};
-            \node at (-1.35, 2.4) {\textcolor{red}{\textbf{8}}};
-            \node at (-2.25, 0.6) {\textcolor{red}{\textbf{4}}};
-            \node at (-2.25, -1.2) {\textcolor{red}{\textbf{3}}};
-            \node at (-3.15, -3) {\textcolor{red}{\textbf{1}}};
-            \node at (-1.325, -3) {\textcolor{red}{\textbf{2}}};
-            \node at (-0.4, 0.6) {\textcolor{red}{\textbf{7}}};
-            \node at (-0.4, -1.2) {\textcolor{red}{\textbf{5}}};
-            \node at (1.4, -1.2) {\textcolor{red}{\textbf{6}}};
-        \end{tikzpicture}
-        \caption{postfix (before)}
-    \end{subfigure}
-    \hspace{1cm}
-    \begin{subfigure}[b]{0.51\textwidth}
-        \centering
-        \begin{tikzpicture}
-            \node[text width = 6 cm, align = center] at (0,0) {\includegraphics[width=\linewidth, keepaspectratio]{expression_tree_1_RPN.pdf}};
-            \node at (-1.35, 3.3) {\textcolor{red}{\textbf{9}}};
-            \node at (-1.35, 1.5) {\textcolor{red}{\textbf{8}}};
-            \node at (-2.25, -0.3) {\textcolor{red}{\textbf{4}}};
-            \node at (-2.25, -2.1) {\textcolor{red}{\textbf{3}}};
-            \node at (-3.15, -3.9) {\textcolor{red}{\textbf{1}}};
-            \node at (-1.325, -3.9) {\textcolor{red}{\textbf{2}}};
-            \node at (-0.4, -0.3) {\textcolor{red}{\textbf{7}}};
-            \node at (-0.4, -2.1) {\textcolor{red}{\textbf{5}}};
-            \node at (1.4, -2.1) {\textcolor{red}{\textbf{6}}};
-        \end{tikzpicture}
-        \caption{postfix (after)}
-    \end{subfigure}
-    \caption{Adding a node to a postfix expression tree from left (node \textcolor{red}{\textbf{8}}) to right (node \textcolor{red}{\textbf{9}}). As one can see, even though the expression on the left is complete, the tree can grow using the same method. This is not the case for the prefix representation. For example, to continue the expression tree in Figure \ref{subfig:prefix_tree_example}, one would have to add nodes going up from the root.}
-    \label{fig:postfix_add_1}
-\end{figure}
+% \begin{figure}[ht]
+%     \begin{subfigure}[b]{0.51\textwidth}
+%         \centering
+%         \begin{tikzpicture}
+%             \node[text width = 6 cm, align = center] at (0,0) {\includegraphics[width=\linewidth, keepaspectratio]{expression_tree_RPN.pdf}};
+%             \node at (-1.35, 2.4) {\textcolor{red}{\textbf{8}}};
+%             \node at (-2.25, 0.6) {\textcolor{red}{\textbf{4}}};
+%             \node at (-2.25, -1.2) {\textcolor{red}{\textbf{3}}};
+%             \node at (-3.15, -3) {\textcolor{red}{\textbf{1}}};
+%             \node at (-1.325, -3) {\textcolor{red}{\textbf{2}}};
+%             \node at (-0.4, 0.6) {\textcolor{red}{\textbf{7}}};
+%             \node at (-0.4, -1.2) {\textcolor{red}{\textbf{5}}};
+%             \node at (1.4, -1.2) {\textcolor{red}{\textbf{6}}};
+%         \end{tikzpicture}
+%         \caption{postfix (before)}
+%     \end{subfigure}
+%     \hspace{1cm}
+%     \begin{subfigure}[b]{0.51\textwidth}
+%         \centering
+%         \begin{tikzpicture}
+%             \node[text width = 6 cm, align = center] at (0,0) {\includegraphics[width=\linewidth, keepaspectratio]{expression_tree_1_RPN.pdf}};
+%             \node at (-1.35, 3.3) {\textcolor{red}{\textbf{9}}};
+%             \node at (-1.35, 1.5) {\textcolor{red}{\textbf{8}}};
+%             \node at (-2.25, -0.3) {\textcolor{red}{\textbf{4}}};
+%             \node at (-2.25, -2.1) {\textcolor{red}{\textbf{3}}};
+%             \node at (-3.15, -3.9) {\textcolor{red}{\textbf{1}}};
+%             \node at (-1.325, -3.9) {\textcolor{red}{\textbf{2}}};
+%             \node at (-0.4, -0.3) {\textcolor{red}{\textbf{7}}};
+%             \node at (-0.4, -2.1) {\textcolor{red}{\textbf{5}}};
+%             \node at (1.4, -2.1) {\textcolor{red}{\textbf{6}}};
+%         \end{tikzpicture}
+%         \caption{postfix (after)}
+%     \end{subfigure}
+%     \caption{Adding a node to a postfix expression tree from left (node \textcolor{red}{\textbf{8}}) to right (node \textcolor{red}{\textbf{9}}). As one can see, even though the expression on the left is complete, the tree can grow using the same method. This is not the case for the prefix representation. For example, to continue the expression tree in Figure \ref{subfig:prefix_tree_example}, one would have to add nodes going up from the root.}
+%     \label{fig:postfix_add_1}
+% \end{figure}
 
 \subsection{Building Fixed-Depth Expressions}
 Building fixed-depth expressions using either prefix or postfix notation requires determining the set of legal nodes at each step. 
 \par Each step corresponds to adding a ``token'' to the current expression list. The set of nodes that can be selected at a given step is defined such that any possible \emph{valid} expression can eventually be generated with depth $N$ (an input parameter). The tokens are selected and appended to an expression list in the left-to-right order that they would appear in prefix or postfix notation; see e.g. the titles of Figures \ref{subfig:prefix_tree_example} and \ref{subfig:postfix_tree_example}, respectively. 
-\par The set of legal tokens at each step is determined by the following formula \ref{eq:Generic_Policy_Mask}
-
-\begin{equation}
-    \vec{\pi}_{\mathrm{mask}} \left(\vec{U}_{A}, \vec{B}_{A}, \vec{L}_{A}\right) = 
-\vec{U}_{A}  + \vec{B}_{A} +\vec{L}_{A},
-\label{eq:Generic_Policy_Mask}
-\end{equation}
-
-where $\vec{U}_{A}$, $ \vec{B}_{A}$, and $\vec{L}_{A}$ correspond to the set of allowed unary operators, binary operators, and leaves, respectively. Additionally, let $N_U$, $N_B$, $N_L$ denote the number of considered unary operators, binary operators, and leaves, respectively,  and $N_{T}$ shall denote the total number of tokens considered.
-
-Determining whether a unary node, binary node, and/or a leaf node is allowed at the current step differs depending on if the expression is represented using prefix or postfix notation. The specific rules are thus explained in the remainder of this section.
-
+\par The set of legal tokens at each step consists of unary operators and/or binary operators and/or leaf nodes, the sizes of which we denote as $N_U$, $N_B$, and  $N_L$, respectively, and $N_{T} = N_U + N_B + N_L$ shall denote the total number of tokens considered. Determining which nodes are allowed at the current step depends on if the expressions are represented using prefix or postfix notation, explained in the remainder of this section.
 \subsection{Prefix Grammar}\label{subsec:prefix_grammar}
 At the first step, the only allowed tokens are the set of all considered operators of size $N_U + N_B$, unless the specified depth $N=0$, in which case, building the expression entails only one step, namely, selecting a leaf node.
 \par At each subsequent step, the set of allowed tokens are determined as follows:
-\subsubsection{Unary Operators}
-We say any token in the set of all considered unary operators is valid if adding a unary operator to the current expression can result in an expression with depth less than or equal to the specified depth $N$. If this condition is false, then a unary operator is not allowed.
-\subsubsection{Binary Operators}
-We say any token in the set of all considered binary operators is valid if adding a binary operator to the current expression can result in an expression with depth less than or equal to the specified depth $N$. If this condition is false, then a binary operator is not allowed.
-\subsubsection{Leaf Nodes}
-We say any token in the set of all considered leaf nodes is valid if \emph{both} of the following conditions are false for the current expression:
-\begin{enumerate}
+\begin{itemize}
+    \item[\textbf{Unary Operators:}]
+    We say any token in the set of all considered unary operators is valid if adding a unary operator to the current expression can result in an expression with depth less than or equal to the specified depth $N$. If this condition is false, then a unary operator is not allowed.
+    \item[\textbf{Binary Operators:}]
+    We say any token in the set of all considered binary operators is valid if adding a binary operator to the current expression can result in an expression with depth less than or equal to the specified depth $N$. If this condition is false, then a binary operator is not allowed.
+    \item[\textbf{Leaf Nodes:}]
+    We say any token in the set of all considered leaf nodes is valid if \emph{both} of the following conditions are false for the current expression:
+    \begin{enumerate}
     \item The number of leaf nodes in the current expression is equal to the number of binary nodes in the current expression minus 1.
     \item Adding a leaf node results in the minimum depth of the expression being less than the desired depth $N$ \textbf{and} the number of leaf nodes in the current expression is equal to the number of binary nodes in the current expression.
 \end{enumerate}
+\end{itemize}
+
 
 
 \subsection{Postfix Grammar}\label{subsec:postfix_grammar}
 At the first step, the only allowed tokens are the leaf nodes of size $N_L$.
 \par At each subsequent step, the set of allowed tokens are determined as follows:
-\subsubsection{Unary Operators}
+\begin{itemize}
+\item[\textbf{Unary Operators:}]
 We say any token in the set of all considered unary operators is valid if the number of leaf nodes in the current expression is greater than or equal to 1 \textbf{and} if adding a unary operator to the current expression can result in an expression with depth less than or equal to the specified depth $N$. If this condition is false, then a unary operator is not allowed.
-\subsubsection{Binary Operators}
+\item[\textbf{Binary Operators:}]
 We say any token in the set of all considered binary operators is valid if the number of binary nodes in the current expression is \textbf{not} equal to the number of leaf nodes in the current expression minus 1. If this condition is false, then a binary operator is not allowed.
-\subsubsection{Leaf Nodes}
+\item[\textbf{Leaf Nodes:}]
 We say any token in the set of all considered leaf nodes is valid if adding a leaf node results in the minimum depth of the expression being less than or equal to the desired depth $N$. If this condition is false, then a leaf node is not allowed.
+\end{itemize}
 
 \subsection{Conclusion}
-What can be seen from sections \ref{subsec:prefix_grammar} and \ref{subsec:postfix_grammar} is that the grammar for building postfix expressions is less complicated than the grammar for building prefix expressions. The main reason for this difference is that, in prefix notation, one must ensure the expression does not complete until it reaches the desired depth $N$. On the other hand, postfix notation imparts the ability to add nodes to an RPN expression \emph{indefinitely} without change of method; this is not the case for prefix notation. \par Determining the minimum depth and completeness of a prefix or postfix expression list of tokens can be done via a stack-based approach as shown in algorithms \ref{alg:getPNdepth_cache} and \ref{alg:getRPNdepth_cache}.
+What can be seen from sections \ref{subsec:prefix_grammar} and \ref{subsec:postfix_grammar} is that the grammar for building postfix expressions is less complicated than the grammar for building prefix expressions. The main reason for this difference is that, in prefix notation, one must ensure the expression does not complete until it reaches the desired depth $N$. On the other hand, postfix notation imparts the ability to add nodes to an RPN expression \emph{indefinitely} without change of method; this is not the case for prefix notation. \par Determining the minimum depth and completeness of a prefix or postfix expression list of tokens can be done via a stack-based approach as shown \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/0b5b6d0b56c2d108dda023a337edeb1084436da7/PrefixPostfixSR.cpp#L393-L485}{here} and \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/0b5b6d0b56c2d108dda023a337edeb1084436da7/PrefixPostfixSR.cpp#L487-L641}{here}, respectively\footnote{The algorithms for \texttt{getPNDepth} and \texttt{getRPNDepth} adopted from \cite{77180279} and \cite{77128902}, respectively.}.
 
 % \begin{algorithm}
 % \scriptsize
@@ -335,126 +329,126 @@ Our random-search approach is as follows:
 
 where $N_{\mathrm{dat}}$ is the number of data points, $\hat{Y}$ are the predicted labels from the expression, and $\vec{Y}$ are the true labels.
 
-\begin{algorithm}
-\scriptsize
-\caption{Calculate Depth and Completeness of \textbf{Polish Notation (PN)} expressions \cite{77180279}.}
-\label{alg:getPNdepth_cache}
-\hspace*{\algorithmicindent} \textbf{input:}  expression, expression list of tokens in prefix notation \\
-\hspace*{\algorithmicindent} \textbf{input:}  modify, if params should be modified \\
-\hspace*{\algorithmicindent} \textbf{input:}  binary, if depth \& completeness should be determined with binary op.  \\
-\hspace*{\algorithmicindent} \textbf{input:}  unary, if depth \& completeness should be determined with unary op.  \\
-\hspace*{\algorithmicindent} \textbf{input:} leaf, if depth \& completeness should be determined with leaf node \\
-\hspace*{\algorithmicindent} \textbf{output:} Depth of expression\\
-\hspace*{\algorithmicindent} \textbf{output:} If expression is complete \\
-\hspace*{\algorithmicindent} \textbf{param:} stack, the stack used in the algorithm \\
-\hspace*{\algorithmicindent} \textbf{param:} idx, the index of the expression element to use in the computation\\
-\hspace*{\algorithmicindent} \textbf{param:} numBinary, the number of binary operators in the expression \\
-\hspace*{\algorithmicindent} \textbf{param:} numLeaves, the number of leaf nodes in the expression 
-\begin{algorithmic}[1]
+% \begin{algorithm}
+% \scriptsize
+% \caption{Calculate Depth and Completeness of \textbf{Polish Notation (PN)} expressions \cite{77180279}.}
+% \label{alg:getPNdepth_cache}
+% \hspace*{\algorithmicindent} \textbf{input:}  expression, expression list of tokens in prefix notation \\
+% \hspace*{\algorithmicindent} \textbf{input:}  modify, if params should be modified \\
+% \hspace*{\algorithmicindent} \textbf{input:}  binary, if depth \& completeness should be determined with binary op.  \\
+% \hspace*{\algorithmicindent} \textbf{input:}  unary, if depth \& completeness should be determined with unary op.  \\
+% \hspace*{\algorithmicindent} \textbf{input:} leaf, if depth \& completeness should be determined with leaf node \\
+% \hspace*{\algorithmicindent} \textbf{output:} Depth of expression\\
+% \hspace*{\algorithmicindent} \textbf{output:} If expression is complete \\
+% \hspace*{\algorithmicindent} \textbf{param:} stack, the stack used in the algorithm \\
+% \hspace*{\algorithmicindent} \textbf{param:} idx, the index of the expression element to use in the computation\\
+% \hspace*{\algorithmicindent} \textbf{param:} numBinary, the number of binary operators in the expression \\
+% \hspace*{\algorithmicindent} \textbf{param:} numLeaves, the number of leaf nodes in the expression 
+% \begin{algorithmic}[1]
 
-\Function{getPNdepth}{expression, modify = \textbf{False},  binary = \textbf{False},  unary = \textbf{False},  leaf = \textbf{False}}  %code here
-    \If{expression is empty}
-        \State \Return 0, \textbf{False}
-    \EndIf
+% \Function{getPNdepth}{expression, modify = \textbf{False},  binary = \textbf{False},  unary = \textbf{False},  leaf = \textbf{False}}  %code here
+%     \If{expression is empty}
+%         \State \Return 0, \textbf{False}
+%     \EndIf
 
-    \If{not modify} \Comment\texttt{{called when determining legal tokens}}
-        \If{binary}  %\Comment\texttt{{depth, completeness of PN expression + binary op.}}
-            \State \Return max(depth, stack length + 2) -1,  numLeaves == numBinary + 2
-         \ElsIf{unary}  %\Comment\texttt{{depth, completeness of PN expression + unary op.}}
-            \State \Return max(depth, stack length + 2) -1,  numLeaves == numBinary + 1
-         \ElsIf{leaf}  %\Comment\texttt{{depth, completeness of PN expression + leaf node}}
-            \State lastIdxNot1 $\gets$ index of last element in stack $\neq$ 1
-            \State \Return max(depth, lastIdxNot + 1) -1,  numLeaves == numBinary
-        \EndIf
-    \Else \Comment\texttt{{called after legal token selected}}
-        \If{expression[idx] is binary operator}
-            \State Push 2 onto stack   \Comment\texttt{{Number of operands for binary operators}}
-            \State numBinary $\gets$ numBinary+1
-        \ElsIf{expression[idx] is unary operator} 
-             \State Push 1 onto stack  \Comment\texttt{{Number of operands for unary operators}}
-        \Else  \Comment\texttt{{An operand}}
-            \State numLeaves $\gets$ numLeaves+1
-            \While{stack not empty \textbf{and} top of stack is 1}
-                \State Pop top of stack \Comment\texttt{{Remove fulfilled unary operators}}
-            \EndWhile
-            \If{stack not empty}
-                \State Decrement top of stack by 1 \Comment\texttt{{Indicate operand is consumed}}
-            \EndIf
-        \EndIf
-        \State  depth $\gets$ max(depth, stack length + 1)
-        \State idx $\gets$ idx + 1
-    \EndIf
-    \State \Return depth - 1, numLeaves == numBinary + 1 
-\EndFunction
-\end{algorithmic}
-\end{algorithm}
+%     \If{not modify} \Comment\texttt{{called when determining legal tokens}}
+%         \If{binary}  %\Comment\texttt{{depth, completeness of PN expression + binary op.}}
+%             \State \Return max(depth, stack length + 2) -1,  numLeaves == numBinary + 2
+%          \ElsIf{unary}  %\Comment\texttt{{depth, completeness of PN expression + unary op.}}
+%             \State \Return max(depth, stack length + 2) -1,  numLeaves == numBinary + 1
+%          \ElsIf{leaf}  %\Comment\texttt{{depth, completeness of PN expression + leaf node}}
+%             \State lastIdxNot1 $\gets$ index of last element in stack $\neq$ 1
+%             \State \Return max(depth, lastIdxNot + 1) -1,  numLeaves == numBinary
+%         \EndIf
+%     \Else \Comment\texttt{{called after legal token selected}}
+%         \If{expression[idx] is binary operator}
+%             \State Push 2 onto stack   \Comment\texttt{{Number of operands for binary operators}}
+%             \State numBinary $\gets$ numBinary+1
+%         \ElsIf{expression[idx] is unary operator} 
+%              \State Push 1 onto stack  \Comment\texttt{{Number of operands for unary operators}}
+%         \Else  \Comment\texttt{{An operand}}
+%             \State numLeaves $\gets$ numLeaves+1
+%             \While{stack not empty \textbf{and} top of stack is 1}
+%                 \State Pop top of stack \Comment\texttt{{Remove fulfilled unary operators}}
+%             \EndWhile
+%             \If{stack not empty}
+%                 \State Decrement top of stack by 1 \Comment\texttt{{Indicate operand is consumed}}
+%             \EndIf
+%         \EndIf
+%         \State  depth $\gets$ max(depth, stack length + 1)
+%         \State idx $\gets$ idx + 1
+%     \EndIf
+%     \State \Return depth - 1, numLeaves == numBinary + 1 
+% \EndFunction
+% \end{algorithmic}
+% \end{algorithm}
 
-\begin{algorithm}
-\scriptsize
-\caption{Calculate Depth and Completeness of \textbf{Reverse Polish Notation (RPN)} expressions \cite{77128902}.}
-\label{alg:getRPNdepth_cache}
-\hspace*{\algorithmicindent} \textbf{input:}  expression, list of tokens in postfix notation \\
-\hspace*{\algorithmicindent} \textbf{input:}  modify, if params should be modified \\
-\hspace*{\algorithmicindent} \textbf{input:}  unary, if depth \& completeness should be determined with unary op.  \\
-\hspace*{\algorithmicindent} \textbf{input:} leaf, if depth \& completeness should be determined with leaf node \\
-\hspace*{\algorithmicindent} \textbf{output:} Depth of expression\\
-\hspace*{\algorithmicindent} \textbf{output:} If expression is complete \\
-\hspace*{\algorithmicindent} \textbf{param:} stack, the stack used in the algorithm \\
-\hspace*{\algorithmicindent} \textbf{param:} idx, the index of the expression element to use in the computation
-\begin{algorithmic}[1]
-\Function{getRPNdepth}{expression, modify = \textbf{False}, unary = \textbf{False},  leaf = \textbf{False}}  %code here
-    \If{expression is empty}
-        \State \Return 0, \textbf{False}
-    \EndIf
+% \begin{algorithm}
+% \scriptsize
+% \caption{Calculate Depth and Completeness of \textbf{Reverse Polish Notation (RPN)} expressions \cite{77128902}.}
+% \label{alg:getRPNdepth_cache}
+% \hspace*{\algorithmicindent} \textbf{input:}  expression, list of tokens in postfix notation \\
+% \hspace*{\algorithmicindent} \textbf{input:}  modify, if params should be modified \\
+% \hspace*{\algorithmicindent} \textbf{input:}  unary, if depth \& completeness should be determined with unary op.  \\
+% \hspace*{\algorithmicindent} \textbf{input:} leaf, if depth \& completeness should be determined with leaf node \\
+% \hspace*{\algorithmicindent} \textbf{output:} Depth of expression\\
+% \hspace*{\algorithmicindent} \textbf{output:} If expression is complete \\
+% \hspace*{\algorithmicindent} \textbf{param:} stack, the stack used in the algorithm \\
+% \hspace*{\algorithmicindent} \textbf{param:} idx, the index of the expression element to use in the computation
+% \begin{algorithmic}[1]
+% \Function{getRPNdepth}{expression, modify = \textbf{False}, unary = \textbf{False},  leaf = \textbf{False}}  %code here
+%     \If{expression is empty}
+%         \State \Return 0, \textbf{False}
+%     \EndIf
 
-    \If{not modify} \Comment\texttt{{called when determining legal tokens}}
-        \If{unary}  %\Comment\texttt{{depth, completeness of RPN expression + unary op.}}
-            \If{stack size is 1}
-                \State \Return stack[-1], \textbf{True}
-            \Else
-                \State currMax $\gets$ max(stack[-1]+1,stack[-2])+1
-                \For{i $\gets$ stack size - 2 to 1}
-                    \State currMax $\gets$ max(currMax,stack[i-1])+1
-                \EndFor
-                \State \Return currMax - 1, \textbf{False}
-            \EndIf
-        \ElsIf{leaf}  %\Comment\texttt{{depth, completeness of RPN expression + leaf node}}
-            \If{stack is empty}
-                \State \Return 0, \textbf{True}
-            \Else
-                \State currMax $\gets$ max(stack[-1],1)+1
-                \For{i $\gets$ stack size - 1 to 1}
-                    \State currMax $\gets$ max(currMax,stack[i-1])+1
-                \EndFor
-                \State \Return currMax - 1, \textbf{False}
-            \EndIf
+%     \If{not modify} \Comment\texttt{{called when determining legal tokens}}
+%         \If{unary}  %\Comment\texttt{{depth, completeness of RPN expression + unary op.}}
+%             \If{stack size is 1}
+%                 \State \Return stack[-1], \textbf{True}
+%             \Else
+%                 \State currMax $\gets$ max(stack[-1]+1,stack[-2])+1
+%                 \For{i $\gets$ stack size - 2 to 1}
+%                     \State currMax $\gets$ max(currMax,stack[i-1])+1
+%                 \EndFor
+%                 \State \Return currMax - 1, \textbf{False}
+%             \EndIf
+%         \ElsIf{leaf}  %\Comment\texttt{{depth, completeness of RPN expression + leaf node}}
+%             \If{stack is empty}
+%                 \State \Return 0, \textbf{True}
+%             \Else
+%                 \State currMax $\gets$ max(stack[-1],1)+1
+%                 \For{i $\gets$ stack size - 1 to 1}
+%                     \State currMax $\gets$ max(currMax,stack[i-1])+1
+%                 \EndFor
+%                 \State \Return currMax - 1, \textbf{False}
+%             \EndIf
                 
-        \EndIf
+%         \EndIf
 
-    \Else \Comment\texttt{{called after legal token selected}}
-        \If{expression[idx] is binary operator}
-            \State Push max(stack.pop(), stack.pop()) + 1 onto stack 
-        \ElsIf{expression[idx] is unary operator}
-            \State Increment top of stack by 1 
-        \Else 
-            \State Push 1 onto stack
-         \EndIf 
-         \State idx $\gets$ idx + 1
-         \If{stack size is 1}
+%     \Else \Comment\texttt{{called after legal token selected}}
+%         \If{expression[idx] is binary operator}
+%             \State Push max(stack.pop(), stack.pop()) + 1 onto stack 
+%         \ElsIf{expression[idx] is unary operator}
+%             \State Increment top of stack by 1 
+%         \Else 
+%             \State Push 1 onto stack
+%          \EndIf 
+%          \State idx $\gets$ idx + 1
+%          \If{stack size is 1}
 
-             \State \Return stack[-1], \textbf{True}
-        \Else
-            \State currMax $\gets$ max(stack[-1]+1,stack[-2])+1
-            \For{i $\gets$ stack size - 2 to 1}
-                \State currMax $\gets$ max(currMax,stack[i-1])+1
-            \EndFor
-            \State \Return currMax - 1, \textbf{False}
-        \EndIf
+%              \State \Return stack[-1], \textbf{True}
+%         \Else
+%             \State currMax $\gets$ max(stack[-1]+1,stack[-2])+1
+%             \For{i $\gets$ stack size - 2 to 1}
+%                 \State currMax $\gets$ max(currMax,stack[i-1])+1
+%             \EndFor
+%             \State \Return currMax - 1, \textbf{False}
+%         \EndIf
 
-    \EndIf
-\EndFunction
-\end{algorithmic}
-\end{algorithm}
+%     \EndIf
+% \EndFunction
+% \end{algorithmic}
+% \end{algorithm}
 
 \subsection{Monte Carlo Tree Search}\label{subsec:MonteCarlo TreeSearch}
 
@@ -487,7 +481,7 @@ where $\mathrm{bp}_i$ is the position of particle $i$ encountered in the best ex
 
 \subsection{Genetic Programming} \label{subsec:GeneticProgramming}
 Genetic Programming (GP) is an evolutionary metaheuristic that can explore the set of allowed symbolic models through operations, typically crossover and mutation, on an initial population \cite{manti2023discovering} \cite{PoliFieldGuideGP}, \cite{Koza1994}.
-\par In this paper, we utilize a more tradional GP SR approach similar to \cite{manti2023discovering}. First, we generate 2000 initial individuals using the method described in section \ref{subsec:RandomSearch}. For each generation, we generate an additional $\approx 2000$ individuals through crossover and mutation with probabilities 0.2 and 0.8, respectively, and the best 2000 individuals of the total $\approx 4000$ individuals are passed down to the next generation. This process repeats for $N_{\mathrm{gen}}$ generations.
+\par In this paper, we employ a traditional approach similar to \cite{manti2023discovering}. First, we generate 2000 initial individuals using the method of section \ref{subsec:RandomSearch}. For each generation, we generate an additional $\approx 2000$ individuals through crossover and mutation with probabilities 0.2 and 0.8, respectively, and the best 2000 individuals of the total $\approx 4000$ individuals are passed down to the next generation. This process repeats for $N_{\mathrm{gen}}$ generations.
 \par In this paper, the mutation and crossover operations are done directly on the expression list; \emph{no intermediary tree data structures are created}. Furthermore, the mutation and crossover operations do not alter the depth $N$ of the expression; the final depth \emph{never} changes in the algorithms detailed in this paper. 
 \par The mutation procedure starts by selecting a random integer $n$ from $0$ to $N-1$, where $N$ is the fixed depth initially specified, and a random expression of depth $n$ using the method described in section \ref{subsec:RandomSearch}. Then, an individual from the 2000 individuals who began the generation is randomly selected, and all of the depth $n$ sub-expressions within this randomly selected individual are identified, namely, the corresponding start and stop indices within the expression list. From all of the depth $n$ sub-expressions in the selected individual, one sub-expressions is selected at random and swapped with the randomly generated depth $n$ expression generated at the start of the mutation procedure, producing a new individual who is added to the population and whose fitness is evaluated according to \ref{eq:score_formula}.
 \par The crossover procedure is quite similar to the mutation procedure, the only difference being that, instead of generating a random depth $n$ expression, we start by randomly selecting 2 different individuals from the initial population. Then, we identify all of the depth $n$ sub-expressions in each of the 2 individuals and randomly select one from each individual. Finally, we swap the 2 selected sub-expressions, producing two new individuals who are added to the population and whose fitnesses are evaluated according to \ref{eq:score_formula}.
@@ -503,7 +497,7 @@ Simulated Annealing is a metaheuristic search strategy inspired by the metallurg
 where $\Delta$ is the score of the perturbed expression minus the maximum score achieved thus far. We bound the temperature parameter $T$ to be between $T_{\mathrm{min}} = 0.012$ and $T_{\mathrm{max}} = 0.1$, and we set the initial temperature $T_{\mathrm{init}} = T_{\mathrm{max}}$. We use the same temperature update rule as in \cite{10.1145/3449639.3459345}, namely, $T \gets rT$, where $r \equiv \left(T_{\mathrm{min}}/T_{\mathrm{max}}\right)^{1/(i+1)}$ where $i$ is the iteration number. Lastly, to escape local minima, we use a simple update rule similar to the previous sections, namely, after $N_{\mathrm{iter}}$ iterations, if the best score has not improved, we update the temperature as $T \gets \min{\left(10\cdot T, T_{\mathrm{max}}\right)}$, else, we update the temperature as $T \gets \max{\left(T/10, T_{\mathrm{min}}\right)}$.
 
 \section{Results}\label{sec:Results}
-In this section\footnote{The benchmarks results in this section can be reproduced by running the script \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/dce0e2ddd1a172598dcae31b738900ce9e6403e9/PrefixPostfixSR.cpp}{here} using the compilation directive given in the \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/dce0e2ddd1a172598dcae31b738900ce9e6403e9/README.md}{README.md file}}, we benchmark the algorithms defined in section \ref{sec:SymbolicRegressionAlgorithms} employing the grammars defined in section \ref{sec:Background} using the caching approaches (algorithms \ref{alg:getPNdepth_cache} and \ref{alg:getRPNdepth_cache}) for computing expression depth and completeness. We set the hyperparameter $N_{\mathrm{iter}}$ to 50,000 for all benchmarks\footnote{Obtained after significant tuning}.
+In this section\footnote{The benchmarks results in this section can be reproduced by running the script \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/0b5b6d0b56c2d108dda023a337edeb1084436da7/PrefixPostfixSR.cpp}{here} using the compilation directive given in the \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/0b5b6d0b56c2d108dda023a337edeb1084436da7/README.md}{README.md file}}, we benchmark the algorithms defined in section \ref{sec:SymbolicRegressionAlgorithms} employing the grammars defined in section \ref{sec:Background}. We set the hyper-parameter $N_{\mathrm{iter}}$ to 50,000 for all benchmarks\footnote{Obtained after significant pre-tuning.}.
 \par First, in section \ref{subsec:SimulatedAnnealing}, we perform benchmarks for the expressions considered in \cite{hemberg2008pre}. Then, in section \ref{subsec:FeynmanBenchmarks}, we consider some of the equations considered in \cite{udrescu2020ai} with varying complexity/depth of expression trees.
 \par For each configuration, i.e., Prefix Random Search, Prefix Monte Carlo Tree Search, Prefix Particle Swarm Optimization, Prefix Genetic Programming,  Prefix Simulated Annealing, Postfix Random Search, Postfix Monte Carlo Tree Search, Postfix Particle Swarm Optimization, Postfix Genetic Programming, and Postfix Simulated Annealing, we perform 50 runs of 2 minutes each for each benchmark expression considered in this section, where the MSE is sampled every 6 seconds for each run.  
 This approach is similar to how the SR algorithms in \cite{defranca2023interpretable} are given a pre-specified time budget and how \cite{manti2023discovering} plots the mean and variance of the best-achieved fitnesses over time. 
@@ -514,7 +508,7 @@ In this section, we benchmark the 5 equations tested in \cite{hemberg2008pre} us
 
 \begin{table}[] %TODO: when you change the refs in the `Result Plot` column, make each entry correspond to the line-color in the referenced plot
     \centering
-    \scalebox{0.9}{
+    \scalebox{1}{
     \begin{tabular}{|l|l|l|l|l|l|}
 \hline 
 \# & Expression & Expression Tree & Depth $N$ & \# of Inputs & Result Plot \\ \hline 
@@ -528,7 +522,7 @@ In this section, we benchmark the 5 equations tested in \cite{hemberg2008pre} us
     \label{tab:Hemberg2008PreIP_results}
 \end{table}
 
-\par The results are plotted in Figure \ref{fig:Hemberg_Benchmarks}. For Random Search, postfix did $\sim$ worse\footnote{by worse, we mean that the average score for postfix after 2 minutes was worse than prefix given the standard deviations, i.e., $\mu_\mathrm{score}^\mathrm{postfix} + 1\cdot \sigma_\mathrm{score}^\mathrm{postfix} \leq \mu_\mathrm{score}^\mathrm{prefix} - 1\cdot \sigma_\mathrm{score}^\mathrm{prefix}$} than prefix on the first three Hemberg benchmarks and better on the last two Hemberg benchmarks. For MCTS, postfix did worse than prefix on the first Hemberg benchmark and better on the last four Hemberg benchmarks. For PSO, postfix did roughly the same as prefix but exhibited significantly quicker relative convergence on the last two Hemberg benchmarks. For the GP approach, postfix did roughly the same as prefix on the first three Hemberg benchmarks, and significantly better on the last two Hemberg benchmarks, agreeing with the results obtained in the original paper \cite{hemberg2008pre}. Lastly, for Simulated Annealing, postfix did $\sim$ worse on the second Hemberg benchmark and roughly the same on the first, third, fourth, and fifth benchmarks. 
+The results are plotted in Figure \ref{fig:Hemberg_Benchmarks}. For Random Search, postfix did $\sim$ worse\footnote{by worse, we mean that the average score for postfix after 2 minutes was worse than prefix given the standard deviations, i.e., $\mu_\mathrm{score}^\mathrm{postfix} + 1\cdot \sigma_\mathrm{score}^\mathrm{postfix} \leq \mu_\mathrm{score}^\mathrm{prefix} - 1\cdot \sigma_\mathrm{score}^\mathrm{prefix}$} than prefix on the first three Hemberg benchmarks and better on the last two Hemberg benchmarks. For MCTS, postfix did worse than prefix on the first Hemberg benchmark and better on the last four Hemberg benchmarks. For PSO, postfix did roughly the same as prefix but exhibited significantly quicker relative convergence on the last two Hemberg benchmarks. For the GP approach, postfix did roughly the same as prefix on the first three Hemberg benchmarks, and significantly better on the last two Hemberg benchmarks, agreeing with the results obtained in the original paper \cite{hemberg2008pre}. Lastly, for Simulated Annealing, postfix did $\sim$ worse on the second Hemberg benchmark and roughly the same on the first, third, fourth, and fifth benchmarks. 
 
 \begin{figure}
     \centering
@@ -569,47 +563,6 @@ In this section, we benchmark the 5 equations tested in \cite{hemberg2008pre} us
     
     \caption{Hemberg Benchmark Equations 1-5 (from Table \ref{tab:Hemberg2008PreIP_results}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using Prefix and Postfix expression representations.}
     \label{fig:Hemberg_Benchmarks}
-\end{figure}
-
-\begin{figure}
-    \centering
-    
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/Feynman_Benchmark_1.pdf}
-        \caption{Feynman 1}
-        \label{subfig:feynman_1}
-    \end{subfigure}
-    % \hfill
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/Feynman_Benchmark_2.pdf}
-        \caption{Feynman 2}
-        \label{subfig:feynman_2}
-    \end{subfigure}
-    
-    \vspace{0.5cm}
-    
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/Feynman_Benchmark_3.pdf}
-        \caption{Feynman 3}
-        \label{subfig:feynman_3}
-    \end{subfigure}
-    % \hfill
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/Feynman_Benchmark_4.pdf}
-        \caption{Feynman 4}
-        \label{subfig:feynman_4}
-    \end{subfigure}
-    
-    \vspace{0.5cm}
-    
-    \begin{subfigure}[b]{0.4\textwidth}
-        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/Feynman_Benchmark_5.pdf}
-        \caption{Feynman 5}
-        \label{subfig:feynman_5}
-    \end{subfigure}
-    
-    \caption{Feynman Benchmark Equations 1-5 (from Table \ref{tab:AI_Feynman_Benchmark_Equations}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using Prefix and Postfix expression representations.}
-    \label{fig:Feynman_Benchmarks}
 \end{figure}
 
 % \begin{figure}
@@ -823,7 +776,7 @@ In this section, we consider 5 of the equations from the \href{https://space.mit
 
 \begin{table}[] %TODO: when you change the refs in the `Result Plot` column, make each entry correspond to the line-color in the referenced plot
     \centering
-    \scalebox{0.9}{
+    \scalebox{1}{
     \begin{tabular}{|l|l|l|l|l|l|}
 \hline 
 \# & Expression & Expression Tree & Depth $N$ & \# of Inputs & Result Plot \\ \hline 
@@ -838,6 +791,47 @@ In this section, we consider 5 of the equations from the \href{https://space.mit
 \end{table}
 
 \par The results are plotted in Figure \ref{fig:Feynman_Benchmarks}. For Random Search, postfix did $\sim$ the same on the first, fourth, and fifth Feynman benchmarks, better on the second benchmark, and worse on the third benchmark. For MCTS, postfix did worse than prefix on the first, second, fourth, and fifth Feynman benchmarks and better on the third Feynman benchmark. For PSO, postfix did worse on the first and third Feynman benchmarks, better on the second Feynman benchmark, and roughly the same as prefix on the last two benchmarks. For the GP approach, postfix did better on the first two Feynman benchmarks, worse on the third Feynman Benchmark, and roughly the same as prefix on the last two benchmarks. Lastly, for Simulated Annealing, postfix did $\sim$ the same on the first benchmark and the last two Feynman benchmarks and worse on the second and third Feynman benchmarks.
+
+\begin{figure}
+    \centering
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/Feynman_Benchmark_1.pdf}
+        \caption{Feynman 1}
+        \label{subfig:feynman_1}
+    \end{subfigure}
+    % \hfill
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/Feynman_Benchmark_2.pdf}
+        \caption{Feynman 2}
+        \label{subfig:feynman_2}
+    \end{subfigure}
+    
+    \vspace{0.5cm}
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/Feynman_Benchmark_3.pdf}
+        \caption{Feynman 3}
+        \label{subfig:feynman_3}
+    \end{subfigure}
+    % \hfill
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/Feynman_Benchmark_4.pdf}
+        \caption{Feynman 4}
+        \label{subfig:feynman_4}
+    \end{subfigure}
+    
+    \vspace{0.5cm}
+    
+    \begin{subfigure}[b]{0.4\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/Feynman_Benchmark_5.pdf}
+        \caption{Feynman 5}
+        \label{subfig:feynman_5}
+    \end{subfigure}
+    
+    \caption{Feynman Benchmark Equations 1-5 (from Table \ref{tab:AI_Feynman_Benchmark_Equations}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using Prefix and Postfix expression representations.}
+    \label{fig:Feynman_Benchmarks}
+\end{figure}
 
 % \begin{figure}
 %     \centering
@@ -1054,18 +1048,18 @@ Generally, we can observe from Figures \ref{fig:Hemberg_Benchmarks} and \ref{fig
 \begin{figure}
     \centering
     \includegraphics[width=\linewidth]{PrefixPostfixDecisionTree.pdf}
-    \caption{Decision Tree for determining how postfix will perform relative to prefix. The impurity measure utilized is entropy. The algorithms are enumerated from 1 to 5 using the mapping \texttt{\{1: `Random Search', 2: `MCTS', 3: `PSO', 4: `GP', 5: `Simulated Annealing'\}}. This decision tree yields 70 \% accuracy when classifying the data obtained in section \ref{sec:Results}. The code to reproduce the figure can be found \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/ec9a0c72188606b3a03b9651b794a2f01f351854/PrefixPostfixDecisionTree.py}{here}. } 
+    \caption{Decision Tree for determining how postfix will perform relative to prefix. The impurity measure utilized is entropy. The algorithms are enumerated from 1 to 5 using the mapping \texttt{\{1: `Random Search', 2: `MCTS', 3: `PSO', 4: `GP', 5: `Simulated Annealing'\}}. This decision tree yields 70 \% accuracy when classifying the data obtained in section \ref{sec:Results}. The code to reproduce the figure can be found \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/0b5b6d0b56c2d108dda023a337edeb1084436da7/PrefixPostfixDecisionTree.py}{here}. } 
     \label{fig:PrefixPostfixDecisionTree}
 \end{figure}
 
 \section{Conclusion and Outlook}
-In this work, we have developed string-based grammars for generating symbolic expressions from a set of operands and unary+binary operators. These grammars elicit faultless prefix and postfix expressions corresponding to the entire space of strictly fixed-depth expression trees. 
-\par We have outlined five straightforward symbolic regression algorithms using these grammars. These algorithms were tested on benchmark expressions from \cite{hemberg2008pre} and \cite{udrescu2020ai} within a common C++/Eigen SR framework. The results suggest that postfix has greater aptitude for discovering ground truth expressions with a larger number of nodes per layer of expression tree, and vice versa for prefix notation. Practically, this insight is only useful if the expression tree is known a-priori; thus, a future study could explore how machine learning can predict the optimal expression representation conditioned on the data and other ingredients known beforehand. Naturally, a theoretical analysis and/or more benchmarking would be needed to substantiate the empircal findings of this paper. 
-\par 
-\par Concerning the fixed-depth symbolic regression grammars developed herein, a promising extension would be to explore how existing SR frameworks such as PySR can be improved by including a fixed-depth option. This feature would allow the user with an idea about the desired complexity to focus the available computational resources on searching the space of fixed-depth expressions rather than the much larger space of expressions with depth $\leq$ max-depth. On the other hand, it remains to be seen which state-of-the-art SR frameworks would most readily support such a feature.
+In this work, we have developed string-based grammars for generating symbolic expressions from a set of operands and unary and/or binary operators. These grammars elicit faultless prefix and postfix expressions corresponding to the entire space of fixed-depth expression trees. 
+\par We have outlined five symbolic regression algorithms using these grammars. These algorithms were benchmarked on expressions from \cite{hemberg2008pre} and \cite{udrescu2020ai} within a common C++/Eigen framework. The results suggest that postfix has greater aptitude for discovering ground truth expressions with more number of nodes per layer of expression tree, and vice versa for prefix notation. A future study could explore how machine learning can predict the optimal expression representation conditioned on the data and other ingredients known beforehand. Naturally, a theoretical analysis and/or more benchmarking would be needed to substantiate the empirical findings of this paper. 
+\par A promising extension would be to explore how existing SR frameworks can incorporate these fixed-depth symbolic regression grammars including a fixed-depth option. This feature would allow the user to focus the available computational resources on searching the space of fixed-depth expressions rather than the larger space of expressions with depth $\leq$ max-depth. It remains to be seen which state-of-the-art SR frameworks would most readily support such a feature.
 
 \bibliographystyle{splncs04}
 \bibliography{PrefixPostfixPaper}
+\nocite{cholewiak2021scholarly}
 
 \appendix
 \section{Hardware Specifications}
