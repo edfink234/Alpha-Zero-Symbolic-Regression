@@ -39,6 +39,7 @@ acyclic_graph_queries = ('"acyclic graph" AND "symbolic regression"', '"acyclic-
 #        file.write(f"{i}\n")
 
 #Visualize:
+
 import matplotlib.pyplot as plt
 
 # Read integers from the file
@@ -52,6 +53,8 @@ file_path = 'acyclic_graph_pub_years.txt'
 with open(file_path, 'r') as file:
     integers_acyclic_graph = [int(line.strip()) for line in file.readlines()]
 
+fig, ax = plt.subplots(2, 1, height_ratios=[4, 1])
+plt.sca(ax[0])
 # Plot histogram
 plt.hist(integers_acyclic_graph, bins=10, color='green', edgecolor='black', label = "acyclic-graph", alpha = 0.7)   # Adjust the number of bins as needed
 plt.hist(integers_prefix, bins=10, color='skyblue', edgecolor='black', label = "prefix", alpha = 0.7)  # Adjust the number of bins as needed
@@ -61,6 +64,11 @@ plt.ylabel('Frequency')
 plt.title('# of Publication Mentions')
 plt.grid(True)
 plt.legend()
+plt.tight_layout()
+plt.sca(ax[1])
+plt.axis('off')
+plt.figtext(0.5, 0.06, "Number of mentions of prefix, postfix, and acyclic graph in publications pertaining to symbolic regression. The python module scholarly was used to generate this histogram. The search queries utilized were ''postfix notation'' AND ''symbolic regression'', ''prefix notation'' AND ''symbolic regression'', ''acyclic graph'' AND ''symbolic regression'', ''reverse polish notation'' AND ''symbolic regression'', ''polish notation'' AND ''symbolic regression'', and ''acyclic-graph'' AND ''symbolic regression''.", wrap=True, horizontalalignment='center', fontsize=9, url = "https://github.com/scholarly-python-package/scholarly") #https://stackoverflow.com/a/51486361/18255427
+
 plt.savefig("pub_freqs.svg")
 os.system(f"rsvg-convert -f pdf -o pub_freqs.pdf pub_freqs.svg")
 os.system(f"rm pub_freqs.svg")
