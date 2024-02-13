@@ -642,7 +642,6 @@ struct Board
     
     std::vector<float> get_legal_moves()
     {
-        //TODO: Fix bug -> need to add operators before determining if the condition is true or not?
         if (this->expression_type == "prefix")
         {
             if (this->pieces.empty()) //At the beginning, self.pieces is empty, so the only legal moves are the operators...
@@ -1463,7 +1462,7 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
         std::vector<float> temp_legal_moves;
         std::vector<std::pair<int, double>> temp_scores;
         std::uniform_int_distribution<int> rand_depth_dist(0, x.n);
-        size_t temp_sz, idx;
+        size_t temp_sz;
 //        std::string expression, orig_expression, best_expression;
         constexpr float T_max = 0.1f;
         constexpr float T_min = 0.012f;
@@ -1559,6 +1558,14 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
 
         double timeElapsed;
         auto start_time = Clock::now();
+        std::thread pushBackThread([&]()
+        {
+            while (timeElapsedSince(start_time) < time)
+            {
+                std::this_thread::sleep_for(std::chrono::seconds(measure_period));
+                temp_scores.push_back(std::make_pair(static_cast<size_t>(timeElapsedSince(start_time)), max_score));
+            }
+        });
         
         for (int i = 0; ((timeElapsed=timeElapsedSince(start_time)) < time/*max_score < stop*/); i++)
         {
@@ -1576,13 +1583,11 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
                 check_point_score = max_score;
             }
             Perturbation(rand_depth_dist(generator), i);
-            if (((idx = static_cast<size_t>(timeElapsed)) % measure_period) == 0 && idx / measure_period > temp_scores.size())
-            {
-                temp_scores.push_back(std::make_pair(idx, max_score));
-            }
+            
         }
-        idx = static_cast<size_t>(timeElapsed);
-        temp_scores.push_back(std::make_pair(idx, max_score));
+        // Join the separate thread to ensure it has finished before exiting
+        pushBackThread.join();
+
         for (auto& i: temp_scores)
         {
             scores[i.first].push_back(i.second);
@@ -1851,10 +1856,18 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
         float score = 0, max_score = 0, check_point_score = 0;
         std::vector<float> temp_legal_moves;
         std::vector<std::pair<int, double>> temp_scores;
-        size_t temp_sz, idx;
+        size_t temp_sz;
     //    std::string expression, orig_expression, best_expression;
         double timeElapsed;
         auto start_time = Clock::now();
+        std::thread pushBackThread([&]()
+        {
+            while (timeElapsedSince(start_time) < time)
+            {
+                std::this_thread::sleep_for(std::chrono::seconds(measure_period));
+                temp_scores.push_back(std::make_pair(static_cast<size_t>(timeElapsedSince(start_time)), max_score));
+            }
+        });
         /*
          For this setup, we don't know a-priori the number of particles, so we generate them and their corresponding velocities as needed
          */
@@ -1959,13 +1972,10 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
             }
             x.pieces.clear();
             curr_positions.clear();
-            if (((idx = static_cast<size_t>(timeElapsed)) % measure_period) == 0 && idx / measure_period > temp_scores.size())
-            {
-                temp_scores.push_back(std::make_pair(idx, max_score));
-            }
         }
-        idx = static_cast<size_t>(timeElapsed);
-        temp_scores.push_back(std::make_pair(idx, max_score));
+        // Join the separate thread to ensure it has finished before exiting
+        pushBackThread.join();
+        
         for (auto& i: temp_scores)
         {
             scores[i.first].push_back(i.second);
@@ -2005,7 +2015,6 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
         temp_legal_moves.reserve(x.reserve_amount);
         state.reserve(2*x.reserve_amount);
         double str_convert_time = 0.0;
-        size_t idx;
         double timeElapsed;
         auto getString  = [&]()
         {
@@ -2015,6 +2024,14 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
             }
         };
         auto start_time = Clock::now();
+        std::thread pushBackThread([&]()
+        {
+            while (timeElapsedSince(start_time) < time)
+            {
+                std::this_thread::sleep_for(std::chrono::seconds(measure_period));
+                temp_scores.push_back(std::make_pair(static_cast<size_t>(timeElapsedSince(start_time)), max_score));
+            }
+        });
         
         for (int i = 0; ((timeElapsed=timeElapsedSince(start_time)) < time/*score < stop && Board::expression_dict.size() <= 100000*/); i++)
         {
@@ -2091,13 +2108,11 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
             }
             x.pieces.clear();
             moveTracker.clear();
-            if (((idx = static_cast<size_t>(timeElapsed)) % measure_period) == 0 && idx / measure_period > temp_scores.size())
-            {
-                temp_scores.push_back(std::make_pair(idx, max_score));
-            }
+
         }
-        idx = static_cast<size_t>(timeElapsed);
-        temp_scores.push_back(std::make_pair(idx, max_score));
+        // Join the separate thread to ensure it has finished before exiting
+        pushBackThread.join();
+        
         for (auto& i: temp_scores)
         {
             scores[i.first].push_back(i.second);
@@ -2330,9 +2345,9 @@ int main() {
 //    PyObject* pStr = PyObject_Str(pArgs);
 //    const char* cstr = PyUnicode_AsUTF8(pStr);
 //    puts(cstr);
-
-    AIFeynmanBenchmarks(20 /*numIntervals*/, 120 /*time*/, 50 /*numRuns*/);
+    
     HembergBenchmarks(20 /*numIntervals*/, 120 /*time*/, 50 /*numRuns*/);
+//    AIFeynmanBenchmarks(20 /*numIntervals*/, 120 /*time*/, 50 /*numRuns*/);
     /*
         Then, move the generated txt files to the directories Hemberg_Benchmarks and
         AIFeynman_Benchmarks and then run PlotData.py
@@ -2342,7 +2357,4 @@ int main() {
 }
 
 //git push --set-upstream origin prefix_and_postfix_cpp_implementation
-
-
-
 

@@ -116,6 +116,6 @@ def DiscoverySciencePlots(*Benchmark_File_Lists):
         
         #Feynman Benchmarks
 
-DiscoverySciencePlots((Hemberg_Files, "Hemberg_Benchmarks/Hemberg_Benchmark_"), (AIFeynman_Files, "AIFeynman_Benchmarks/Feynman_Benchmark_"))
+DiscoverySciencePlots((Hemberg_Files, "Hemberg_Benchmarks/Hemberg_Benchmark_")) #, (AIFeynman_Files, "AIFeynman_Benchmarks/Feynman_Benchmark_"))
 
 #TODO: MAYBE Make Plots of Final Means and Stds if you can get Discovery Science Paper to 13 pages
