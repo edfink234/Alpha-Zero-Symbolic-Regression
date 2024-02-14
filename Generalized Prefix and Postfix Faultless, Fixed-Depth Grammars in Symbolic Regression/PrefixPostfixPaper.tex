@@ -10,6 +10,7 @@
 \usepackage{algpseudocode}
 \usepackage{algorithm}
 \usepackage{stackengine}
+\usepackage{amssymb}
 
 \algrenewcommand{\alglinenumber}[1]{\tiny#1:}
 
@@ -25,7 +26,7 @@
 
 \begin{document}
 %
-\title{Generalized Prefix and Postfix Faultless, Fixed-Depth Grammars in Symbolic Regression}%\thanks{Supported by organization x.}}
+\title{Generalized Fixed-Depth Prefix and Postfix Symbolic Regression Grammars}%\thanks{Supported by organization x.}}
 %
 %\titlerunning{Abbreviated paper title}
 % If the paper title is too long for the running head, you can set
@@ -150,7 +151,7 @@ Prefix notation entails building expressions from root nodes, while postfix nota
     \label{fig:prefix_vs_postfix}
 \end{figure}
 
-\par Prefix notation disables expansion of a completed expression tree branch without modifying a leaf node. Contrarily, postfix notation allows the tree to expand upwards from the root node, see, e.g., the transition from node \textbf{\textcolor{red}{3}} to node \textbf{\textcolor{red}{4}} in Figure \ref{subfig:postfix_tree_example}.
+\par Prefix notation disables expansion of a completed expression tree branch without modifying a leaf node. Contrarily, postfix notation allows the tree to expand upwards from the root node, see, e.g., $\textbf{\textcolor{red}{3}} \rightarrow \textbf{\textcolor{red}{4}} $ in Figure \ref{subfig:postfix_tree_example}.
 
 % \begin{figure}[ht]
 %     \begin{subfigure}[b]{0.51\textwidth}
@@ -222,7 +223,7 @@ Any considered leaf node is valid if adding a leaf node results in the minimum d
 \end{itemize}
 
 \subsection{Conclusion}
-Evidently, the postfix grammar is simpler than the prefix grammar.The main reason for this difference is that, in prefix notation, one must \emph{additionally} ensure the expression does not complete until it reaches the desired depth $N$. \par One can determine the minimum depth and completeness of a prefix/postfix token array via the stack-based approaches shown \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/0b5b6d0b56c2d108dda023a337edeb1084436da7/PrefixPostfixSR.cpp#L393-L485}{here} and \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/0b5b6d0b56c2d108dda023a337edeb1084436da7/PrefixPostfixSR.cpp#L487-L641}{here}, respectively\footnote{The functions \texttt{getPNDepth} and \texttt{getRPNDepth} come from \cite{77180279} and \cite{77128902}, respectively.}.
+Evidently, the postfix grammar is simpler than the prefix grammar. The main reason for this difference is that, in prefix notation, one must \emph{additionally} ensure the expression does not complete until it reaches the desired depth $N$. \par One can determine the minimum depth and completeness of a prefix/postfix token array via the stack-based approaches shown \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/0b5b6d0b56c2d108dda023a337edeb1084436da7/PrefixPostfixSR.cpp#L393-L485}{here} and \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/0b5b6d0b56c2d108dda023a337edeb1084436da7/PrefixPostfixSR.cpp#L487-L641}{here}, respectively\footnote{The functions \texttt{getPNDepth} and \texttt{getRPNDepth} come from \cite{77180279} and \cite{77128902}, respectively.}.
 
 % \begin{algorithm}
 % \scriptsize
@@ -442,32 +443,32 @@ where $N_{\mathrm{dat}}$ is the number of data points, $\hat{Y}$ are the predict
 
 \subsection{Monte Carlo Tree Search}\label{subsec:MonteCarlo TreeSearch}
 
-Monte Carlo Tree Search (MCTS) has garnered widespread adaptation in game-play and reinforcement-learning \cite{Silver2016} \cite{Swiechowski2023}. MCTS utilizes a combination of random exploration and greedy decision-making to navigate large state spaces  \cite{Swiechowski2023}. This simulative process allows MCTS to gather statistics about the performance of different actions and gradually refine its search policy \cite{Swiechowski2023}.
+Monte Carlo Tree Search (MCTS) is a popular method for navigating large game state spaces; it combines random exploration and decision-making to gather statistics and refine its search policy \cite{Silver2016} \cite{Swiechowski2023}.
 
-In symbolic regression, single-agent Monte Carlo Tree Search has been employed since \cite{CazenaveMCTS}. More recently, MCTS has been employed with Neural network policy and value estimators. For example, \cite{Lu2021} used Actor-Critic neural networks for policy and value estimation, respectively. Similarly,  \cite{10.5555/3618408.3619047} leverages a neural network to output both a mutation policy and value approximation induced by MCTS. In this paper, we adapt the non-neural network approach of \cite{sun2023symbolic}.  Our approach is as follows:
-\par As in section \ref{subsec:RandomSearch}, an iteration starts with obtaining the set of legal tokens given the current expression list, i.e., the current state $s$. For each possible action from state $s$, we choose the best token $a$ as the first one that has 0 visit counts, i.e., $N(s,a) = 0$ \footnote{Note that this MCTS variant produces the same results every time. One could change this by choosing a \emph{random} action (as opposed to the first encountered action) from state $s$ that has not been visited before. }. If no such action from the set of legal tokens from state $s$ exists, then the best action from state $s$ is chosen using the Upper-Confidence Tree (UCT) formula \cite{sun2023symbolic}:
+In symbolic regression, MCTS has been used since \cite{CazenaveMCTS}. Recently, MCTS has seen use with policy and value estimators, e.g., in \cite{Lu2021}, Actor-Critic neural networks were used for policy and value estimation. Similarly, \cite{10.5555/3618408.3619047} leverages a neural network to output a mutation policy and an MCTS-induced value approximation. Here, we adapt the non-neural network approach of \cite{sun2023symbolic} as follows:
+\par As in section \ref{subsec:RandomSearch}, an iteration begins with the set of legal tokens given the current expression list, i.e., the current state $s$. Given these tokens, we choose the best token $a$ as the first one with 0 visit counts, i.e., $N(s,a) = 0$.  If $\forall a$, $N(s,a) = 0$, we choose the Upper-Confidence Tree (UCT) formula action \cite{sun2023symbolic}:
 \begin{equation}
 \mathrm{UCT} = Q(s,a) + c\sqrt{\frac{\ln{[N(s)]}}{N(s,a)}}, \label{eq:UCT_formula}
 \end{equation}
 
-where $N(s)$ is the number of visit counts for the state $s$. The parameter $c$ controls the tradeoff between exploitation (first term in \ref{eq:UCT_formula}) and exploration (second term in \ref{eq:UCT_formula}). Following previous work \cite{Swiechowski2023} \cite{Auer2002}, \cite{kuleshov2014algorithms} \cite{10.1007/11871842_29}, we choose $c = \sqrt{2}$ as a starting point for the algorithm. After an expression is completed and the score is computed using \ref{eq:score_formula}, the $Q$ values for all state action pairs encountered during the generation of the expression are updated as \cite{sun2023symbolic}:
+where $N(s)$ is the visit count of state $s$, and $c$ controls the exploration (second term in \ref{eq:UCT_formula}) exploitation (first term in \ref{eq:UCT_formula}) tradeoff. Following previous work \cite{Swiechowski2023} \cite{Auer2002}, \cite{kuleshov2014algorithms} \cite{10.1007/11871842_29}, we initialize $c \gets \sqrt{2}$. After an expression is completed and the score is computed using \ref{eq:score_formula}, the $Q$ values for all state-action pairs encountered during the generation of the expression are updated as \cite{sun2023symbolic}:
 
 \begin{equation}
 Q(s,a) = \max{\left(Q(s,a), \mathrm{score}\right)} \label{eq:update_Q_policy}
 \end{equation}
 
-where, for the first expression which encounters $(s,a)$, $Q(s,a)$ is set to 0 on the right side of equation \ref{eq:update_Q_policy}. 
-\par To escape local minima frequented by this greedy approach, we adapt a simple update heuristic for $c$.  Every $N_{\mathrm{iter}}$ iterations, if the best score has not improved, $c \gets \sqrt{2}$, else, $c = \sqrt{2}$. This method aims to balance the exploitation of a promising neighborhood of the search space while resorting to exploration when there is confidence $\propto N_{\mathrm{iter}}$ that the neighborhood has been fully exploited.
+where, for the first visit to $(s,a)$, $Q(s,a) \gets 0$ on the right side of equation \ref{eq:update_Q_policy}. 
+\par Lastly, every $N_{\mathrm{iter}}$ iterations, if the best score has not improved, $c \gets c + \sqrt{2}$, else, $c \gets \sqrt{2}$. This method aims to balance the exploitation of a promising neighborhood of the search space while resorting to exploration when there is confidence $\propto N_{\mathrm{iter}}$ that the neighborhood has been fully exploited.
 
 \subsection{Particle Swarm Optimization} \label{subsec:ParticleSwarmOptimization}
-Particle Swarm Optimization (PSO) is a general-purrpose global optimization heuristic which uses a set of $D$-dimensional particles to find the optimal value of an objective in a $D$-dimensional search space \cite{clerc:hal-00764996}. 
-\par For finding an optimal symbolic model $f$, there exists literature documenting the use of PSO. The deap library implements general-purpose PSO \href{https://github.com/DEAP/deap/blob/60913c5543abf8318ddce0492e8ffcdf37974d86/examples/pso/basic.py}{here} as traditionally defined in \cite{PoliOverviewPSO}, where each particle has position representing a candidate solution and a velocity which perturbs the particle's position towards progressively better positions \cite{DEAP_JMLR2012}. In \cite{10.1007/978-3-319-70093-9_37}, the authors represent candidate particles as bit-string symbolic expressions which they optimize with different variations of PSO. In \cite{Lu2021}, the author's use PSO to opimize the numerical constants of candidate expressions. Lastly, \cite{KARABOGA20121} uses a particle-swarm \emph{like} algorithm, namely the ``Artificial bee colony algorithm,'' which is shown to be robust on various benchmarks. Our approach is most similar to \cite{DEAP_JMLR2012} and \cite{10.1007/978-3-319-70093-9_37} and is as follows:
-\par As before, we start with the set of legal tokens. The i'th particle corresponds to the i'th token in our expression list. For example, for depth $N = 3$, we will have at most $2\cdot 2^{N = 3} - 1 = 15$ particles, but particles are only generated as needed and never destroyed once created. Specifically, we start with 0 particles, and tokens are created as needed with random initial positions $U(0,1)$ and velocities $U(-1,1)$. We then round the position of the i'th particle to the nearest whole number and take the modulo wrt the number of allowed tokens at the current step. Thus, in our formulation, the particle's position is it's index, and the token selected is the token element in the set of allowed tokens corresponding to this index. The velocity of the particle is then updated as \cite{clerc:hal-00764996} \cite{offShellPSO}
+Particle Swarm Optimization (PSO) is a global optimization heuristic that uses ``particles'' to find the optimal value of an $\mathbb{R}^{D\in\mathbb{N}}$ objective  \cite{clerc:hal-00764996}.
+\par There exists literature documenting the use of PSO in SR. The deap library implements \href{https://github.com/DEAP/deap/blob/60913c5543abf8318ddce0492e8ffcdf37974d86/examples/pso/basic.py}{general-purpose PSO} as defined in \cite{PoliOverviewPSO}, where each particle has a position representing a candidate solution and a velocity which perturbs the particle's position towards progressively better positions \cite{DEAP_JMLR2012}. In \cite{10.1007/978-3-319-70093-9_37}, candidate particles are bit-string symbolic expressions, optimized with different PSO variants. In \cite{Lu2021}, the authors use PSO to optimize the numerical constants of candidate expressions. Lastly, \cite{KARABOGA20121} uses the ``Artificial bee colony algorithm'' variant, shown to be robust on various benchmarks. Our approach is most similar to \cite{DEAP_JMLR2012} and \cite{10.1007/978-3-319-70093-9_37} and is as follows:
+\par We start with 0 particles and create tokens as needed with random initial positions $U(0,1)$ and velocities $U(-1,1)$. We then round the position of the i'th particle to the nearest integer, take the modulo w.r.t. the number of allowed tokens at the current step, and select the token corresponding to the i'th particle's position. The velocity of the particle is then updated as \cite{clerc:hal-00764996} \cite{offShellPSO}:
 \begin{equation}
 		v \gets 0.721\cdot v + \phi_1 \cdot r_g \cdot (\mathrm{bp}_i - \mathrm{pp}_i) + \phi_2\cdot r_p \cdot (p_i - \mathrm{pp}_i) + c,
 \end{equation}
 
-where $\mathrm{bp}_i$ is the position of particle $i$ encountered in the best expression thus far, $p_i$ is the position of particle $i$ that yields the highest average score thus far, $\mathrm{pp}_i$ is the current position of particle $i$, $r_p$ and $r_g$ are random numbers $U(0,1)$, $\phi_1 \equiv 2.8$, and $\phi_2 \equiv 1.3$  \cite{offShellPSO}. The parameter $c$ functions like an exploration parameter; it is initialized to 0 and after $N_{\mathrm{iter}}$ iterations, if the best score has not improved, $c \gets U(-m\cdot N_{\mathrm{iter}}, m\cdot N_{\mathrm{iter}})$, where $m$ is an integer that we increase by 1 every $N_{\mathrm{iter}}$ iterations. Finally, after an expression is completed, the best positions are updated if the achieved score is greater than the maximum thus far.
+where $\mathrm{bp}_i$ is the position of particle $i$ encountered in the best expression thus far, $p_i$ is the position of particle $i$ that yields the highest average score thus far, $\mathrm{pp}_i$ is the current position of particle $i$, $r_p$ and $r_g$ are random numbers $U(0,1)$, $\phi_1 \equiv 2.8$, and $\phi_2 \equiv 1.3$  \cite{offShellPSO}. The parameter $c$ is initialized to 0 and after $N_{\mathrm{iter}}$ iterations, if the best score has not improved, $c \gets U(-m\cdot N_{\mathrm{iter}}, m\cdot N_{\mathrm{iter}})$, where $m \in \mathbb{N}$ is increased by 1 every $N_{\mathrm{iter}}$ iterations. After an expression is completed, the best positions are updated. 
 
 \subsection{Genetic Programming} \label{subsec:GeneticProgramming}
 Genetic Programming (GP) explores the set of allowed symbolic models through operations such as crossover and mutation on an initial population \cite{manti2023discovering} \cite{PoliFieldGuideGP}, \cite{Koza1994}. Here, we employ a traditional approach similar to \cite{manti2023discovering}. First, we generate 2000 individuals using the method of section \ref{subsec:RandomSearch}. Then, we generate an additional $\approx 2000$ individuals through crossover and mutation with probabilities 0.2 and 0.8, respectively, and the best 2000 individuals of the total $\approx 4000$ individuals are passed down to the next generation. This process repeats $N_{\mathrm{gen}}$ times.
@@ -475,7 +476,7 @@ Genetic Programming (GP) explores the set of allowed symbolic models through ope
 \par The mutation procedure starts by selecting a random integer $n$ from $0$ to $N-1$, where $N$ is the fixed depth initially specified, and a random expression of depth $n$ using the method described in section \ref{subsec:RandomSearch}. Then, an individual from the 2000 individuals who began the generation is randomly selected, and all of the depth $n$ sub-expressions within this randomly selected individual are identified, namely, the corresponding start and stop indices within the expression list. From all of the depth $n$ sub-expressions in the selected individual, one sub-expressions is selected at random and swapped with the randomly generated depth $n$ expression generated at the start of the mutation procedure, producing a new individual who is added to the population and whose fitness is evaluated according to \ref{eq:score_formula}.
 \par The crossover procedure $\simeq$ the mutation procedure, except that, instead of generating a random depth $n$ expression, we randomly select 2 unique individuals from the initial population. We then identify all depth $n$ sub-expressions in the 2 individuals and randomly select one from each individual. Finally, we swap the 2 selected sub-expressions, producing two new individuals who are added to the population and whose scores are computed according to \ref{eq:score_formula}.
 
-\par Both the mutation and crossover procedures require the identification of all depth-$n$ sub-expressions in an expression list, in our case, without creating an intermediary tree data structure. To achieve this, we iterate over the expression list and compute the right or left grasp bound of each element, depending on whether the expression representation is prefix or postfix, respectively\footnote{\cite{3ce09117-c08b-3ddb-b2ba-3ea8005b2118} only shows the routine for the left grasp bound (top of pg. 165). Computing the right grasp bound just requires changing \texttt{*ind = *ind - 1} to \texttt{*ind = *ind + 1}.} \cite{3ce09117-c08b-3ddb-b2ba-3ea8005b2118}. Then, we compute the depth of the sub-expression between the current element's index and its grasp bound, and finally, we append these starting and stopping indices to a list if the sub-expression has depth $n$.
+\par Both the mutation and crossover procedures require identifying all depth-$n$ sub-expressions in an expression list, in our case, without creating an intermediary tree data structure. To achieve this, we iterate over the expression list and compute the right or left grasp bound of each element, depending on whether the expression representation is prefix or postfix, respectively\footnote{\cite{3ce09117-c08b-3ddb-b2ba-3ea8005b2118} only shows the routine for the left grasp bound (top of pg. 165). Computing the right grasp bound just requires changing \texttt{*ind = *ind - 1} to \texttt{*ind = *ind + 1}.} \cite{3ce09117-c08b-3ddb-b2ba-3ea8005b2118}. Then, we compute the depth of the sub-expression between the current element's index and its grasp bound, and finally, we append these starting and stopping indices to a list if the sub-expression has depth $n$.
 
 \subsection{Simulated Annealing} \label{subsec:SimulatedAnnealing}
 Simulated Annealing is a search strategy inspired by the metallurgic annealing process for improving industrial qualities of solid alloys \cite{vanLaarhoven1987} \cite{10.1145/3449639.3459345}. 
@@ -486,7 +487,7 @@ Simulated Annealing is a search strategy inspired by the metallurgic annealing p
 We set $T_{\mathrm{min}} = 0.012 \leq T \leq T_{\mathrm{max}} = 0.1$ and $T_{\mathrm{init}} = T_{\mathrm{max}}$. We use the same temperature update rule as in \cite{10.1145/3449639.3459345}, namely, $T \gets rT$, where $r \equiv \left(T_{\mathrm{min}}/T_{\mathrm{max}}\right)^{1/(i+1)}$ where $i$ is the iteration number. Lastly, to escape local minima, if the best score has not improved after $N_{\mathrm{iter}}$ iterations, we update the temperature as $T \gets \min{\left(10\cdot T, T_{\mathrm{max}}\right)}$, else, we update the temperature as $T \gets \max{\left(T/10, T_{\mathrm{min}}\right)}$.
 
 \section{Results}\label{sec:Results}
-In this section\footnote{The benchmarks results in this section can be reproduced by running the script \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/0b5b6d0b56c2d108dda023a337edeb1084436da7/PrefixPostfixSR.cpp}{here} using the compilation directive given in the \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/0b5b6d0b56c2d108dda023a337edeb1084436da7/README.md}{README.md file}}, we benchmark the algorithms defined in section \ref{sec:SymbolicRegressionAlgorithms} employing the grammars defined in section \ref{sec:Background}. We set the hyper-parameter $N_{\mathrm{iter}}$ to 50,000 for all benchmarks\footnote{Obtained after significant pre-tuning.}.
+In this section\footnote{The benchmarks results in this section can be reproduced by running the script \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/0b5b6d0b56c2d108dda023a337edeb1084436da7/PrefixPostfixSR.cpp}{here} using the compilation directive given in the \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/0b5b6d0b56c2d108dda023a337edeb1084436da7/README.md}{README.md file}}, we benchmark the algorithms defined in section \ref{sec:SymbolicRegressionAlgorithms} employing the grammars defined in section \ref{sec:Background}. We set the $N_{\mathrm{iter}} \gets 50,000$ for all benchmarks\footnote{Obtained after significant pre-tuning.}.
 \par First, in section \ref{subsec:SimulatedAnnealing}, we perform benchmarks for the expressions considered in \cite{hemberg2008pre}. Then, in section \ref{subsec:FeynmanBenchmarks}, we consider some of the equations considered in \cite{udrescu2020ai} with varying complexity/depth of expression trees.
 \par For each configuration,
 % i.e., Prefix Random Search, Prefix Monte Carlo Tree Search, Prefix Particle Swarm Optimization, Prefix Genetic Programming,  Prefix Simulated Annealing, Postfix Random Search, Postfix Monte Carlo Tree Search, Postfix Particle Swarm Optimization, Postfix Genetic Programming, and Postfix Simulated Annealing,
@@ -494,10 +495,9 @@ we perform 50 2 minute runs, where the MSE is sampled every 6 seconds for each r
 This approach is similar to how the SR algorithms in \cite{defranca2023interpretable} are given a pre-specified time budget and how \cite{manti2023discovering} plots the mean and variance of the best-achieved fitnesses over time. 
 
 \subsection{Hemberg Benchmarks} \label{subsec:HembergBenchmarks}
-In this section, we benchmark the 5 equations tested in \cite{hemberg2008pre} using the Random Search \ref{subsec:RandomSearch}, Monte Carlo Tree Search \ref{subsec:MonteCarlo TreeSearch}, Particle Swarm Optimization \ref{subsec:ParticleSwarmOptimization}, Genetic Programming \ref{subsec:GeneticProgramming}, and Simulated Annealing \ref{subsec:SimulatedAnnealing} algorithms with the prefix grammar \ref{subsec:prefix_grammar} vs the postfix grammar \ref{subsec:postfix_grammar}. The expressions are tabulated in Table \ref{tab:Hemberg2008PreIP_results} as well as the depth $N$ that we run the benchmarks with\footnote{In other words, we fix the tree-depth $N$ before running a particular benchmark.}.
-\par As in the original paper \cite{hemberg2008pre}, we set the range of the two input variables $x$ and $y$ to $[-3,3]$ and sample 20 randomly sampled points from the benchmark expressions.  The considered operators and operands are $+$, $-$, $\cdot$, $/$, \specialcaret , and $\mathrm{const}$, $x$, $y$, respectively.
+In this section, we benchmark the 5 equations of \cite{hemberg2008pre}, tabulated in Table \ref{tab:Hemberg2008PreIP_results} as well as the depth $N$ that we run the benchmarks with\footnote{In other words, we fix the tree-depth $N$ before running a particular benchmark.}. As in \cite{hemberg2008pre}, we set the ranges of $x$ and $y$ to $[-3,3]$ and sample 20 random points from the benchmark equations.  The considered operators and operands are $+$, $-$, $\cdot$, $/$, \specialcaret , and $\mathrm{const}$, $x$, $y$, respectively. The results are shown in Figure \ref{fig:Hemberg_Benchmarks}.
 
-\begin{table}[] %TODO: when you change the refs in the `Result Plot` column, make each entry correspond to the line-color in the referenced plot
+\begin{table} %TODO: when you change the refs in the `Result Plot` column, make each entry correspond to the line-color in the referenced plot
     \centering
     \scalebox{1}{
     \begin{tabular}{|l|l|l|l|l|l|}
@@ -512,8 +512,6 @@ In this section, we benchmark the 5 equations tested in \cite{hemberg2008pre} us
     \caption{Expressions from \cite{hemberg2008pre} considered in section \ref{subsec:HembergBenchmarks}.}
     \label{tab:Hemberg2008PreIP_results}
 \end{table}
-
-The results are plotted in Figure \ref{fig:Hemberg_Benchmarks}. For Random Search, postfix did $\sim$ the same as prefix on the first Hemberg benchmark, $\sim$ worse\footnote{by worse, we mean that the average score for postfix after 2 minutes was worse than prefix given the standard deviations, i.e., $\mu_\mathrm{score}^\mathrm{postfix} + 1\cdot \sigma_\mathrm{score}^\mathrm{postfix} \leq \mu_\mathrm{score}^\mathrm{prefix} - 1\cdot \sigma_\mathrm{score}^\mathrm{prefix}$} than prefix on the second and third Hemberg benchmarks and better on the last two Hemberg benchmarks. For MCTS, postfix did worse than prefix on the first Hemberg benchmark and better on the last four Hemberg benchmarks. For PSO, postfix did $\sim$ the same as prefix but exhibited significantly quicker relative convergence on the last two Hemberg benchmarks. For the GP approach, postfix did $\sim$ the same as prefix on the first three Hemberg benchmarks, and significantly better on the last two Hemberg benchmarks, agreeing with the results obtained in the original paper \cite{hemberg2008pre}. Lastly, for Simulated Annealing, postfix did $\sim$ worse on the second Hemberg benchmark and $\sim$ the same on the first, third, fourth, and fifth benchmarks. 
 
 \begin{figure}
     \centering
@@ -553,220 +551,14 @@ The results are plotted in Figure \ref{fig:Hemberg_Benchmarks}. For Random Searc
         \label{subfig:hemberg_5}
     \end{subfigure}
     
-    \caption{Hemberg Benchmark Equations 1-5 (from Table \ref{tab:Hemberg2008PreIP_results}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using Prefix and Postfix expression representations.}
+    \caption{Hemberg Benchmark Equations 1-5 (from Table \ref{tab:Hemberg2008PreIP_results}). Left subplots: Average MSE over 50 runs of 2 minutes each. Right Subplots: Final Average MSE $\pm$ 1 standard deviation after 2 minutes.}
     \label{fig:Hemberg_Benchmarks}
 \end{figure}
 
-
-% \begin{figure}
-%     \centering
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_1RandomSearch.pdf}
-%         \caption{Random Search Hemberg 1}
-%         \label{subfig:hemberg_1_RS}
-%     \end{subfigure}
-%     % \hfill
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_1MCTS.pdf}
-%         \caption{MCTS Hemberg 1}
-%         \label{subfig:hemberg_1_MCTS}
-%     \end{subfigure}
-    
-%     \vspace{0.5cm}
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_1PSO.pdf}
-%         \caption{PSO Hemberg 1}
-%         \label{subfig:hemberg_1_PSO}
-%     \end{subfigure}
-%     % \hfill
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_1GP.pdf}
-%         \caption{GP Hemberg 1}
-%         \label{subfig:hemberg_1_GP}
-%     \end{subfigure}
-    
-%     \vspace{0.5cm}
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_1SimulatedAnnealing.pdf}
-%         \caption{Simulated Annealing Hemberg 1}
-%         \label{subfig:hemberg_1_SA}
-%     \end{subfigure}
-    
-%     \caption{Hemberg Benchmark Equation 1 (from Table \ref{tab:Hemberg2008PreIP_results}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using Prefix and Postfix expression representations.}
-%     \label{fig:Hemberg_1_Benchmarks}
-% \end{figure}
-
-% \begin{figure}
-%     \centering
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_2RandomSearch.pdf}
-%         \caption{Random Search Hemberg 2}
-%         \label{subfig:hemberg_2_RS}
-%     \end{subfigure}
-%     % \hfill
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_2MCTS.pdf}
-%         \caption{MCTS Hemberg 2}
-%         \label{subfig:hemberg_2_MCTS}
-%     \end{subfigure}
-    
-%     \vspace{0.5cm}
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_2PSO.pdf}
-%         \caption{PSO Hemberg 2}
-%         \label{subfig:hemberg_2_PSO}
-%     \end{subfigure}
-%     % \hfill
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_2GP.pdf}
-%         \caption{GP Hemberg 2}
-%         \label{subfig:hemberg_2_GP}
-%     \end{subfigure}
-    
-%     \vspace{0.5cm}
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_2SimulatedAnnealing.pdf}
-%         \caption{Simulated Annealing Hemberg 2}
-%         \label{subfig:hemberg_2_SA}
-%     \end{subfigure}
-    
-%     \caption{Hemberg Benchmark Equation 2 (from Table \ref{tab:Hemberg2008PreIP_results}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
-%     \label{fig:Hemberg_2_Benchmarks}
-% \end{figure}
-
-% \begin{figure}
-%     \centering
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_3RandomSearch.pdf}
-%         \caption{Random Search Hemberg 3}
-%         \label{subfig:hemberg_3_RS}
-%     \end{subfigure}
-%     % \hfill
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_3MCTS.pdf}
-%         \caption{MCTS Hemberg 3}
-%         \label{subfig:hemberg_3_MCTS}
-%     \end{subfigure}
-    
-%     \vspace{0.5cm}
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_3PSO.pdf}
-%         \caption{PSO Hemberg 3}
-%         \label{subfig:hemberg_3_PSO}
-%     \end{subfigure}
-%     % \hfill
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_3GP.pdf}
-%         \caption{GP Hemberg 3}
-%         \label{subfig:hemberg_3_GP}
-%     \end{subfigure}
-    
-%     \vspace{0.5cm}
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_3SimulatedAnnealing.pdf}
-%         \caption{Simulated Annealing Hemberg 3}
-%         \label{subfig:hemberg_3_SA}
-%     \end{subfigure}
-    
-%     \caption{Hemberg Benchmark Equation 3 (from Table \ref{tab:Hemberg2008PreIP_results}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
-%     \label{fig:Hemberg_3_Benchmarks}
-% \end{figure}
-
-% \begin{figure}
-%     \centering
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_4RandomSearch.pdf}
-%         \caption{Random Search Hemberg 4}
-%         \label{subfig:hemberg_4_RS}
-%     \end{subfigure}
-%     % \hfill
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_4MCTS.pdf}
-%         \caption{MCTS Hemberg 4}
-%         \label{subfig:hemberg_4_MCTS}
-%     \end{subfigure}
-    
-%     \vspace{0.5cm}
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_4PSO.pdf}
-%         \caption{PSO Hemberg 4}
-%         \label{subfig:hemberg_4_PSO}
-%     \end{subfigure}
-%     % \hfill
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_4GP.pdf}
-%         \caption{GP Hemberg 4}
-%         \label{subfig:hemberg_4_GP}
-%     \end{subfigure}
-    
-%     \vspace{0.5cm}
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_4SimulatedAnnealing.pdf}
-%         \caption{Simulated Annealing Hemberg 4}
-%         \label{subfig:hemberg_4_SA}
-%     \end{subfigure}
-    
-%     \caption{Hemberg Benchmark Equation 4 (from Table \ref{tab:Hemberg2008PreIP_results}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
-%     \label{fig:Hemberg_4_Benchmarks}
-% \end{figure}
-
-% \begin{figure}
-%     \centering
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_5RandomSearch.pdf}
-%         \caption{Random Search Hemberg 5}
-%         \label{subfig:hemberg_5_RS}
-%     \end{subfigure}
-%     % \hfill
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_5MCTS.pdf}
-%         \caption{MCTS Hemberg 5}
-%         \label{subfig:hemberg_5_MCTS}
-%     \end{subfigure}
-    
-%     \vspace{0.5cm}
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_5PSO.pdf}
-%         \caption{PSO Hemberg 5}
-%         \label{subfig:hemberg_5_PSO}
-%     \end{subfigure}
-%     % \hfill
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_5GP.pdf}
-%         \caption{GP Hemberg 5}
-%         \label{subfig:hemberg_5_GP}
-%     \end{subfigure}
-    
-%     \vspace{0.5cm}
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{Hemberg_Benchmarks/PrePostHemberg_5SimulatedAnnealing.pdf}
-%         \caption{Simulated Annealing Hemberg 5}
-%         \label{subfig:hemberg_5_SA}
-%     \end{subfigure}
-    
-%     \caption{Hemberg Benchmark Equation 5 (from Table \ref{tab:Hemberg2008PreIP_results}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
-%     \label{fig:Hemberg_5_Benchmarks}
-% \end{figure}
-
 \subsection{Feynman Benchmarks} \label{subsec:FeynmanBenchmarks}
-In this section, we consider 5 equations from the \href{https://space.mit.edu/home/tegmark/aifeynman.html}{Feynman Symbolic Regression Database}\footnote{For a glossary of the ``Feynman Symbolic Regression Database'' Expression Trees, see \href{https://edfink234.github.io/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees}{here}.}, tabulated in Table \ref{tab:AI_Feynman_Benchmark_Equations} along with the depth $N$ of their expression trees that we run the benchmarks with. As in \cite{udrescu2020ai}, we randomly sample $10^5$ data points from the benchmark expressions with input variable ranges set to $[1, 5]$. The considered operators are $\sin$, $\sqrt{\phantom{1}}$, $\cos$, $+$, $-$, $\cdot$, $/$, and \specialcaret, and the considered operands are $\mathrm{const}$ and the input features. 
+In this section, we consider 5 equations from the \href{https://space.mit.edu/home/tegmark/aifeynman.html}{Feynman Symbolic Regression Database}\footnote{For a glossary of the ``Feynman Symbolic Regression Database'' Expression Trees, see \href{https://edfink234.github.io/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees/AIFeynmanExpressionTrees}{here}.}, tabulated in Table \ref{tab:AI_Feynman_Benchmark_Equations} along with the depth $N$ of their expression trees that we run the benchmarks with. As in \cite{udrescu2020ai}, we randomly sample $10^5$ data points from the benchmark expressions with input variable ranges set to $[1, 5]$. The considered operators and operands are $\sin$, $\sqrt{\phantom{1}}$, $\cos$, $+$, $-$, $\cdot$, $/$, \specialcaret, and $\mathrm{const}$, input features, respectively. The results are shown in Figure \ref{fig:Feynman_Benchmarks}.
 
-\begin{table}[] %TODO: when you change the refs in the `Result Plot` column, make each entry correspond to the line-color in the referenced plot
+\begin{table} %TODO: when you change the refs in the `Result Plot` column, make each entry correspond to the line-color in the referenced plot
     \centering
     \scalebox{1}{
     \begin{tabular}{|l|l|l|l|l|l|}
@@ -782,9 +574,7 @@ In this section, we consider 5 equations from the \href{https://space.mit.edu/ho
     \label{tab:AI_Feynman_Benchmark_Equations}
 \end{table}
 
-\par The results are plotted in Figure \ref{fig:Feynman_Benchmarks}. For Random Search, postfix did $\sim$ the same on the first, fourth, and fifth Feynman benchmarks, better on the second benchmark, and worse on the third benchmark. For MCTS, postfix did worse than prefix on the first, second, fourth, and fifth Feynman benchmarks and better on the third Feynman benchmark. For PSO, postfix did worse on the first and third Feynman benchmarks, better on the second Feynman benchmark, and $\sim$ the same as prefix on the last two benchmarks. For the GP approach, postfix did better on the first two Feynman benchmarks, worse on the third Feynman Benchmark, and $\sim$ the same as prefix on the last two benchmarks. Lastly, for Simulated Annealing, postfix did $\sim$ the same on the first benchmark and the last two Feynman benchmarks and worse on the second and third Feynman benchmarks.
-
-\begin{figure}[]
+\begin{figure}
     \centering
     
     \begin{subfigure}[b]{0.4\textwidth}
@@ -821,221 +611,14 @@ In this section, we consider 5 equations from the \href{https://space.mit.edu/ho
         \label{subfig:feynman_5}
     \end{subfigure}
     
-    \caption{Feynman Benchmark Equations 1-5 (from Table \ref{tab:AI_Feynman_Benchmark_Equations}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using Prefix and Postfix expression representations.}
+    \caption{Feynman Benchmark Equations 1-5 (from Table \ref{tab:AI_Feynman_Benchmark_Equations}). Left subplots: Average MSE over 50 runs of 2 minutes each. Right Subplots: Final Average MSE $\pm$ 1 standard deviation after 2 minutes.}
     \label{fig:Feynman_Benchmarks}
 \end{figure}
 
-% \begin{figure}
-%     \centering
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_1RandomSearch.pdf}
-%         \caption{Random Search Feynman 1}
-%         \label{subfig:feynman_1_RS}
-%     \end{subfigure}
-%     % \hfill
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_1MCTS.pdf}
-%         \caption{MCTS Feynman 1}
-%         \label{subfig:feynman_1_MCTS}
-%     \end{subfigure}
-    
-%     \vspace{0.5cm}
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_1PSO.pdf}
-%         \caption{PSO Feynman 1}
-%         \label{subfig:feynman_1_PSO}
-%     \end{subfigure}
-%     % \hfill
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_1GP.pdf}
-%         \caption{GP Feynman 1}
-%         \label{subfig:feynman_1_GP}
-%     \end{subfigure}
-    
-%     \vspace{0.5cm}
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_1SimulatedAnnealing.pdf}
-%         \caption{Simulated Annealing Feynman 1}
-%         \label{subfig:feynman_1_SA}
-%     \end{subfigure}
-    
-%     \caption{Feynman Benchmark Equation 1 (from Table \ref{tab:AI_Feynman_Benchmark_Equations}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using Prefix and Postfix expression representations.}
-%     \label{fig:AIFeynman_1_Benchmarks}
-% \end{figure}
-
-% \begin{figure}
-%     \centering
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_2RandomSearch.pdf}
-%         \caption{Random Search Feynman 2}
-%         \label{subfig:feynman_2_RS}
-%     \end{subfigure}
-%     % \hfill
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_2MCTS.pdf}
-%         \caption{MCTS Feynman 2}
-%         \label{subfig:feynman_2_MCTS}
-%     \end{subfigure}
-    
-%     \vspace{0.5cm}
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_2PSO.pdf}
-%         \caption{PSO Feynman 2}
-%         \label{subfig:feynman_2_PSO}
-%     \end{subfigure}
-%     % \hfill
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_2GP.pdf}
-%         \caption{GP Feynman 2}
-%         \label{subfig:feynman_2_GP}
-%     \end{subfigure}
-    
-%     \vspace{0.5cm}
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_2SimulatedAnnealing.pdf}
-%         \caption{Simulated Annealing Feynman 2}
-%         \label{subfig:feynman_2_SA}
-%     \end{subfigure}
-    
-%     \caption{Feynman Benchmark Equation 2 (from Table \ref{tab:AI_Feynman_Benchmark_Equations}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
-%     \label{fig:AIFeynman_2_Benchmarks}
-% \end{figure}
-
-% \begin{figure}
-%     \centering
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_3RandomSearch.pdf}
-%         \caption{Random Search Feynman 3}
-%         \label{subfig:feynman_3_RS}
-%     \end{subfigure}
-%     % \hfill
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_3MCTS.pdf}
-%         \caption{MCTS Feynman 3}
-%         \label{subfig:feynman_3_MCTS}
-%     \end{subfigure}
-    
-%     \vspace{0.5cm}
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_3PSO.pdf}
-%         \caption{PSO Feynman 3}
-%         \label{subfig:feynman_3_PSO}
-%     \end{subfigure}
-%     % \hfill
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_3GP.pdf}
-%         \caption{GP Feynman 3}
-%         \label{subfig:feynman_3_GP}
-%     \end{subfigure}
-    
-%     \vspace{0.5cm}
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_3SimulatedAnnealing.pdf}
-%         \caption{Simulated Annealing Feynman 3}
-%         \label{subfig:feynman_3_SA}
-%     \end{subfigure}
-    
-%     \caption{Feynman Benchmark Equation 3 (from Table \ref{tab:AI_Feynman_Benchmark_Equations}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
-%     \label{fig:AIFeynman_3_Benchmarks}
-% \end{figure}
-
-% \begin{figure}
-%     \centering
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_4RandomSearch.pdf}
-%         \caption{Random Search Feynman 4}
-%         \label{subfig:feynman_4_RS}
-%     \end{subfigure}
-%     % \hfill
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_4MCTS.pdf}
-%         \caption{MCTS Feynman 4}
-%         \label{subfig:feynman_4_MCTS}
-%     \end{subfigure}
-    
-%     \vspace{0.5cm}
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_4PSO.pdf}
-%         \caption{PSO Feynman 4}
-%         \label{subfig:feynman_4_PSO}
-%     \end{subfigure}
-%     % \hfill
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_4GP.pdf}
-%         \caption{GP Feynman 4}
-%         \label{subfig:feynman_4_GP}
-%     \end{subfigure}
-    
-%     \vspace{0.5cm}
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_4SimulatedAnnealing.pdf}
-%         \caption{Simulated Annealing Feynman 4}
-%         \label{subfig:feynman_4_SA}
-%     \end{subfigure}
-    
-%     \caption{Feynman Benchmark Equation 4 (from Table \ref{tab:AI_Feynman_Benchmark_Equations}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
-%     \label{fig:AIFeynman_4_Benchmarks}
-% \end{figure}
-
-% \begin{figure}
-%     \centering
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_5RandomSearch.pdf}
-%         \caption{Random Search Feynman 5}
-%         \label{subfig:feynman_5_RS}
-%     \end{subfigure}
-%     % \hfill
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_5MCTS.pdf}
-%         \caption{MCTS Feynman 5}
-%         \label{subfig:feynman_5_MCTS}
-%     \end{subfigure}
-    
-%     \vspace{0.5cm}
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_5PSO.pdf}
-%         \caption{PSO Feynman 5}
-%         \label{subfig:feynman_5_PSO}
-%     \end{subfigure}
-%     % \hfill
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_5GP.pdf}
-%         \caption{GP Feynman 5}
-%         \label{subfig:feynman_5_GP}
-%     \end{subfigure}
-    
-%     \vspace{0.5cm}
-    
-%     \begin{subfigure}[b]{0.4\textwidth}
-%         \includegraphics[width=\linewidth, keepaspectratio]{AIFeynman_Benchmarks/PrePostFeynman_5SimulatedAnnealing.pdf}
-%         \caption{Simulated Annealing Feynman 5}
-%         \label{subfig:feynman_5_SA}
-%     \end{subfigure}
-    
-%     \caption{Feynman Benchmark Equation 5 (from Table \ref{tab:AI_Feynman_Benchmark_Equations}) average MSE over 50 runs of 2 minutes each. Each plot shows the results for one of the considered algorithms (Random Search, MCTS, PSO, GP, and Simulated Annealing) using prefix and postfix expression representations.}
-%     \label{fig:AIFeynman_5_Benchmarks}
-% \end{figure}
-
-%open https://space.mit.edu/home/tegmark/aifeynman.html
-%open /Users/edwardfinkelstein/Downloads/FeynmanEquations.csv /Users/edwardfinkelstein/Downloads/BonusEquations.csv
-
 \section{Remarks}
-Figures \ref{fig:Hemberg_Benchmarks} and \ref{fig:Feynman_Benchmarks} show that the performance of prefix vs postfix varies significantly, plausibly related to the choice of algorithm, the depth of the expression tree, the number of input variables, and the shape of the tree. Thus, we build a decision tree to illustrate when to use prefix, postfix, or either. 
-\par Figure \ref{fig:PrefixPostfixDecisionTree} shows that postfix $\sim$ outperforms prefix when the mean number of nodes per layer of the ground-truth expression is larger; this insight makes some intuitive sense given that postfix strings denote expression trees starting from the leaves, which likely biases them towards fatter expression trees. For thinner expression trees, prefix tends to perform better when the SR algorithm is not Random Search or when the arity of the ground-truth expression is larger. 
+
+Figures \ref{fig:Hemberg_Benchmarks} and \ref{fig:Feynman_Benchmarks} show the varying performance of prefix vs postfix. To know when to use prefix and/or postfix, we build a decision tree based on the SR algorithm, the depth of the expression tree, number of input variables, and tree shape.
+\par Figure \ref{fig:PrefixPostfixDecisionTree} shows that postfix $\sim$  outperforms prefix for ground-truth expression trees with larger number of nodes per layer, while prefix performs $\sim$ better on thinner trees with larger ground-truth arity or when not using Random Search.
 
 \begin{figure}
     \centering
@@ -1045,22 +628,25 @@ Figures \ref{fig:Hemberg_Benchmarks} and \ref{fig:Feynman_Benchmarks} show that 
 \end{figure}
 
 \section{Conclusion and Outlook}
-In this work, we developed string-based grammars for generating symbolic expressions from operands and unary and/or binary operators. These grammars elicit faultless prefix and postfix expressions corresponding to fixed-depth trees. With these grammars, we outlined five symbolic regression algorithms and benchmarked them on expressions from \cite{hemberg2008pre} and \cite{udrescu2020ai} within a C++/Eigen framework. The results suggest that postfix has greater aptitude for discovering ground truth expressions with more nodes per layer, and vice versa for prefix notation. A future study could explore how machine learning can predict the optimal expression representation from the data and other prior knowledge. Another extension could be implementing a fixed-depth option in existing SR frameworks. This feature would focus computational resources on searching the space of fixed-depth expressions instead of the larger space of depth $\leq$ max-depth expressions. 
+In this work, we developed string-based grammars for generating symbolic expressions. These grammars elicit faultless prefix and postfix expressions corresponding to fixed-depth trees. With these grammars, we outlined five symbolic regression algorithms and benchmarked them on expressions from \cite{hemberg2008pre} and \cite{udrescu2020ai} within a C++/Eigen framework. The results suggest that postfix has greater aptitude for discovering ground truth expressions with more nodes per layer, and vice versa for prefix notation. Future work could explore how machine learning can predict the optimal expression representation from data and prior knowledge. Another extension could be implementing a fixed-depth option in existing SR frameworks to focus computational resources on searching the space of fixed-depth expressions instead of the larger space of depth $\leq$ max-depth expressions. 
+
+\section{Conflict of Interest}
+Mattia Cerrato
 
 \bibliographystyle{splncs04}
 \bibliography{PrefixPostfixPaper}
 
-\appendix
-\section{Hardware Specifications}
-The benchmarks were run on a MacBook Pro with an M1 Core and $\sim$ 16 GB of usable RAM, namely, \texttt{sysctl -a | grep hw.memsize} gives: 
-\begin{verbatim}
-hw.memsize: 17179869184
-hw.memsize_usable: 16383606784
-\end{verbatim}
-The macOS system version information is obtained with \texttt{sw\_vers}:
-\begin{verbatim}
-ProductName:		macOS
-ProductVersion:		14.2.1
-BuildVersion:		23C71
-\end{verbatim}
+% \appendix
+% \section{Hardware Specifications}
+% The benchmarks were run on a MacBook Pro with an M1 Core and $\sim$ 16 GB of usable RAM, namely, \texttt{sysctl -a | grep hw.memsize} gives: 
+% \begin{verbatim}
+% hw.memsize: 17179869184
+% hw.memsize_usable: 16383606784
+% \end{verbatim}
+% The macOS system version information is obtained with \texttt{sw\_vers}:
+% \begin{verbatim}
+% ProductName:		macOS
+% ProductVersion:		14.2.1
+% BuildVersion:		23C71
+% \end{verbatim}
 \end{document}

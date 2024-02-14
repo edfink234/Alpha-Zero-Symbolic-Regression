@@ -2,6 +2,11 @@ import csv
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import re
+import matplotlib.ticker as ticker
+from matplotlib.ticker import FuncFormatter, FormatStrFormatter
+
+
 
 # Function to read CSV file and calculate average max_score
 def process_csv(file_path):
@@ -21,7 +26,7 @@ def process_csv(file_path):
     return time_values, np.array(avg_max_scores), np.array(std_devs), file_path.strip(".txt")
 
 def save_plot(file_path):
-    plt.savefig(f"{file_path}.svg")
+    plt.savefig(f"{file_path}.svg", bbox_inches='tight')
     plt.close()
     os.system(f"rsvg-convert -f pdf -o {file_path}.pdf {file_path}.svg")
     os.system(f"rm {file_path}.svg")
@@ -34,14 +39,15 @@ def plot_results(time_values, avg_max_scores, std_devs, file_path, save = True, 
     if y_scale == 'linear':
         ax.ticklabel_format(useOffset=False, style='plain')
         plt.fill_between(time_values, avg_max_scores - std_devs, avg_max_scores + std_devs)
-    plt.title('Average MSE over Time')
-    plt.xlabel('Time (seconds)')
-    plt.ylabel('Average MSE')
-    plt.grid(True)
-    plt.yscale(y_scale)
+    ax.set_title('Average MSE over Time')
+    ax.set_xlabel('Time (seconds)')
+    ax.set_ylabel('Average MSE')
+    ax.set_yscale(y_scale)
+    ax.grid(True)
+    
     
     if legend:
-        plt.legend()
+        ax.legend()
     plt.tight_layout()
     if save:
         save_plot(file_path)
@@ -85,18 +91,22 @@ def PaperPlots(files):
 
 AIFeynman_Files = 'AIFeynman_Benchmarks/Feynman_1PreRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_1PostRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_2PreRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_2PostRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_3PreRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_3PostRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_4PreRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_4PostRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_5PreRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_5PostRandomSearch.txt', 'AIFeynman_Benchmarks/Feynman_1PreMCTS.txt', 'AIFeynman_Benchmarks/Feynman_1PostMCTS.txt', 'AIFeynman_Benchmarks/Feynman_2PreMCTS.txt', 'AIFeynman_Benchmarks/Feynman_2PostMCTS.txt', 'AIFeynman_Benchmarks/Feynman_3PreMCTS.txt', 'AIFeynman_Benchmarks/Feynman_3PostMCTS.txt', 'AIFeynman_Benchmarks/Feynman_4PreMCTS.txt', 'AIFeynman_Benchmarks/Feynman_4PostMCTS.txt', 'AIFeynman_Benchmarks/Feynman_5PreMCTS.txt', 'AIFeynman_Benchmarks/Feynman_5PostMCTS.txt', 'AIFeynman_Benchmarks/Feynman_1PrePSO.txt', 'AIFeynman_Benchmarks/Feynman_1PostPSO.txt', 'AIFeynman_Benchmarks/Feynman_2PrePSO.txt', 'AIFeynman_Benchmarks/Feynman_2PostPSO.txt', 'AIFeynman_Benchmarks/Feynman_3PrePSO.txt', 'AIFeynman_Benchmarks/Feynman_3PostPSO.txt', 'AIFeynman_Benchmarks/Feynman_4PrePSO.txt', 'AIFeynman_Benchmarks/Feynman_4PostPSO.txt', 'AIFeynman_Benchmarks/Feynman_5PrePSO.txt', 'AIFeynman_Benchmarks/Feynman_5PostPSO.txt', 'AIFeynman_Benchmarks/Feynman_1PreGP.txt', 'AIFeynman_Benchmarks/Feynman_1PostGP.txt', 'AIFeynman_Benchmarks/Feynman_2PreGP.txt', 'AIFeynman_Benchmarks/Feynman_2PostGP.txt','AIFeynman_Benchmarks/Feynman_3PreGP.txt', 'AIFeynman_Benchmarks/Feynman_3PostGP.txt', 'AIFeynman_Benchmarks/Feynman_4PreGP.txt', 'AIFeynman_Benchmarks/Feynman_4PostGP.txt', 'AIFeynman_Benchmarks/Feynman_5PreGP.txt', 'AIFeynman_Benchmarks/Feynman_5PostGP.txt', 'AIFeynman_Benchmarks/Feynman_1PreSimulatedAnnealing.txt', 'AIFeynman_Benchmarks/Feynman_1PostSimulatedAnnealing.txt', 'AIFeynman_Benchmarks/Feynman_2PreSimulatedAnnealing.txt', 'AIFeynman_Benchmarks/Feynman_2PostSimulatedAnnealing.txt', 'AIFeynman_Benchmarks/Feynman_3PreSimulatedAnnealing.txt', 'AIFeynman_Benchmarks/Feynman_3PostSimulatedAnnealing.txt', 'AIFeynman_Benchmarks/Feynman_4PreSimulatedAnnealing.txt', 'AIFeynman_Benchmarks/Feynman_4PostSimulatedAnnealing.txt', 'AIFeynman_Benchmarks/Feynman_5PreSimulatedAnnealing.txt', 'AIFeynman_Benchmarks/Feynman_5PostSimulatedAnnealing.txt'
 
-process_files(Hemberg_Files)
+#process_files(Hemberg_Files)
 #process_files(AIFeynman_Files)
-PaperPlots(Hemberg_Files)
+#PaperPlots(Hemberg_Files)
 #PaperPlots(AIFeynman_Files)
 
 def DiscoverySciencePlots(*Benchmark_File_Lists):
-    
+
     for Benchmark_File_List, PlotFilePrefix in Benchmark_File_Lists:
         for i in range(1, 6):
             Benchmark_Files = filter(lambda file: f'{i}' in file, Benchmark_File_List)
-            fig, ax = plt.subplots()
-            for file_path in Benchmark_Files:
+            fig, ax = plt.subplots(1, 2, width_ratios=[2, 1])
+            xscale = 'log'
+            ax[1].grid(True)
+            ax[1].tick_params(axis='x', which="both", rotation=50)
+
+            for j, file_path in enumerate(Benchmark_Files):
                 time_values, avg_max_scores, std_devs, file_path = process_csv(file_path)
                 label = 'Prefix' if 'Pre' in file_path else 'Postfix'
                 if 'RandomSearch' in file_path:
@@ -110,12 +120,23 @@ def DiscoverySciencePlots(*Benchmark_File_Lists):
                 elif 'SimulatedAnnealing' in file_path:
                     label += " Simulated Annealing"
                 
-                plot_results(time_values, avg_max_scores, std_devs, file_path, save = False, label = label, ax = ax, y_scale = 'log', legend = True)
-            
+                plot_results(time_values, avg_max_scores, std_devs, file_path, save = False, label = label, ax = ax[0], y_scale = 'log', legend = True)
+                
+                xscale = 'symlog' if avg_max_scores[-1] == 0.0 else xscale
+                
+                ax[1].errorbar(x = avg_max_scores[-1], y = j, xerr = std_devs[-1], linestyle = 'dotted', marker='o', markersize=6, capsize = 3)
+                ax[1].set_title(r'Final $\overline{\mathrm{MSE}}\pm\mathrm{std}$')
+                ax[1].set_xlabel('Final Average MSE')
+#
+#
+            ax[1].yaxis.set_tick_params(left = False, labelleft = False)
+
+            ax[1].set_yscale('linear')
+            ax[1].set_xscale(xscale)
             save_plot(f"{PlotFilePrefix}{i}")
         
         #Feynman Benchmarks
 
-DiscoverySciencePlots((Hemberg_Files, "Hemberg_Benchmarks/Hemberg_Benchmark_")) #, (AIFeynman_Files, "AIFeynman_Benchmarks/Feynman_Benchmark_"))
+DiscoverySciencePlots((Hemberg_Files, "Hemberg_Benchmarks/Hemberg_Benchmark_"), (AIFeynman_Files, "AIFeynman_Benchmarks/Feynman_Benchmark_"))
 
 #TODO: MAYBE Make Plots of Final Means and Stds if you can get Discovery Science Paper to 13 pages
