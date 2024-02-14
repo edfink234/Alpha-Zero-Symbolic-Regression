@@ -11,6 +11,9 @@
 \usepackage{algorithm}
 \usepackage{stackengine}
 \usepackage{amssymb}
+\usepackage{caption}
+
+\DeclareCaptionLabelFormat{andtable}{#1~#2  \&  \tablename~\thetable}
 
 \algrenewcommand{\alglinenumber}[1]{\tiny#1:}
 
@@ -70,17 +73,46 @@ In this paper, we outline faultless grammars for generating fixed-depth prefix a
  
 
 \section{Background}\label{sec:Background}
-At the core of every SR framework lies a choice of expression representation. For example, Table \ref {GECCO_Framework_reps} lists the frameworks considered in \cite{defranca2023interpretable} and their underlying expression representations. 
+At the core of every SR framework lies a choice of expression representation. For example, Figure \ref {GECCO_Framework_reps} lists the frameworks considered in \cite{defranca2023interpretable} and their underlying expression representations (left) and their frequencies in SR publications over time (right).
 
-\begin{table}
-\caption{\label{GECCO_Framework_reps}List of SR Frameworks submitted to the 2022 GECCO competition \cite{defranca2023interpretable}, their underlying expression representations, and if the expression representation was stated directly in the cited paper or implied via source-code/references.}
+% \begin{table}
+% \caption{\label{GECCO_Framework_reps}List of SR Frameworks submitted to the 2022 GECCO competition \cite{defranca2023interpretable}, their underlying expression representations, and if the expression representation was stated directly in the cited paper or implied via source-code/references.}
 
 
-% \\ The frameworks Bingo, E2E Transformer, QLattice, and Operon state their choice of expression representation directly in the cited papers (namely \cite{10.1145/3520304.3534031}, \cite{kamienny2022endtoend}, \cite{Brolos2021AnAT}, and \cite{10.1145/3377929.3398099}, respectively). PS-Tree does not specify \cite{zhang2022ps} but they use the Deap GP framework \cite{DEAP_JMLR2012} (see \href{https://github.com/hengzhe-zhang/PS-Tree/blob/master/pstree/common\_utils.py\#L4}{here}) which represents expressions with prefix notation. TaylorGP strongly implies prefix notation in the example expression written in section 4.1.1 of their paper \cite{10.1145/3512290.3528757}. In Table 2 of the EQL Paper \cite{pmlr-v80-sahoo18a} they refer to the expressions as ``random graphs,'' and evidence of their acyclicity is given in their Jupyter notebook \href{https://github.com/martius-lab/EQL/blob/master/EQL-DIV-ICML-Python3/Evaluation.ipynb}{here}. GeneticEngine implies prefix usage in section 3.2 of their paper \cite{10.1145/3564719.3568697} (namely, ``Starting with the non-terminal root type $\ldots$''). PySR does not state the expression representation in their paper \cite{cranmer2023interpretable}, but a pre-order traversal of the expression tree is somewhat implied in the Julia source file \href{https://github.com/MilesCranmer/SymbolicRegression.jl/blob/db476a708762c81f46f27f22751f7ff3d1153dc7/src/Equation.jl}{here}. The uDSR framework states pre-order traversal of expression trees for the DSR component in their paper (namely, ``$\ldots$ in the pre-order (depth-first then left-to-right) traversal of the corresponding \emph{expression tree} $\ldots$'' in section 2), and for the GP expression generation, use of the Deap GP framework is shown \href{https://github.com/dso-org/deep-symbolic-optimization/blob/2069d4eda47b0fd6d3e66e0ade9605cd9574b87c/dso/dso/gp/utils.py\#L10}{here} \cite{NEURIPS2022_dbca58f3}. 
-% $\mathrm{GP}_{\mathrm{ZGD}}$ \cite{10.1145/3377930.3390237} somewhat implies a pre-order traversal of expression trees in the C source file \href{https://github.com/grantdick/gpzgd/blob/42e5a1829a0b8a2eb50e116000001f82c770791e/src/gp.c}{here}. NSGA-DCGP states at the beginning of section 2 that ``To represent our functional programs we use the Cartesian Genetic Programming framework,'' \cite{izzo2016differentiable}  and the paper they cite directly states ``In CGP, programs are represented in the form of directed acyclic graphs'' \cite{Miller2011}.} 
-\begin{tabular*}{\textwidth}{lll} %open PhD_Papers/2304.01117.pdf 
+% % \\ The frameworks Bingo, E2E Transformer, QLattice, and Operon state their choice of expression representation directly in the cited papers (namely \cite{10.1145/3520304.3534031}, \cite{kamienny2022endtoend}, \cite{Brolos2021AnAT}, and \cite{10.1145/3377929.3398099}, respectively). PS-Tree does not specify \cite{zhang2022ps} but they use the Deap GP framework \cite{DEAP_JMLR2012} (see \href{https://github.com/hengzhe-zhang/PS-Tree/blob/master/pstree/common\_utils.py\#L4}{here}) which represents expressions with prefix notation. TaylorGP strongly implies prefix notation in the example expression written in section 4.1.1 of their paper \cite{10.1145/3512290.3528757}. In Table 2 of the EQL Paper \cite{pmlr-v80-sahoo18a} they refer to the expressions as ``random graphs,'' and evidence of their acyclicity is given in their Jupyter notebook \href{https://github.com/martius-lab/EQL/blob/master/EQL-DIV-ICML-Python3/Evaluation.ipynb}{here}. GeneticEngine implies prefix usage in section 3.2 of their paper \cite{10.1145/3564719.3568697} (namely, ``Starting with the non-terminal root type $\ldots$''). PySR does not state the expression representation in their paper \cite{cranmer2023interpretable}, but a pre-order traversal of the expression tree is somewhat implied in the Julia source file \href{https://github.com/MilesCranmer/SymbolicRegression.jl/blob/db476a708762c81f46f27f22751f7ff3d1153dc7/src/Equation.jl}{here}. The uDSR framework states pre-order traversal of expression trees for the DSR component in their paper (namely, ``$\ldots$ in the pre-order (depth-first then left-to-right) traversal of the corresponding \emph{expression tree} $\ldots$'' in section 2), and for the GP expression generation, use of the Deap GP framework is shown \href{https://github.com/dso-org/deep-symbolic-optimization/blob/2069d4eda47b0fd6d3e66e0ade9605cd9574b87c/dso/dso/gp/utils.py\#L10}{here} \cite{NEURIPS2022_dbca58f3}. 
+% % $\mathrm{GP}_{\mathrm{ZGD}}$ \cite{10.1145/3377930.3390237} somewhat implies a pre-order traversal of expression trees in the C source file \href{https://github.com/grantdick/gpzgd/blob/42e5a1829a0b8a2eb50e116000001f82c770791e/src/gp.c}{here}. NSGA-DCGP states at the beginning of section 2 that ``To represent our functional programs we use the Cartesian Genetic Programming framework,'' \cite{izzo2016differentiable}  and the paper they cite directly states ``In CGP, programs are represented in the form of directed acyclic graphs'' \cite{Miller2011}.} 
+% \begin{tabular*}{\textwidth}{lll} %open PhD_Papers/2304.01117.pdf 
+% \hline
+% Framework&Expression Representation & Stated Directly or Implied\\
+% \hline
+% Bingo \cite{10.1145/3520304.3534031} &Acyclic Graph & Stated Directly\\ %Specified in Paper
+% E2E Transformer \cite{kamienny2022endtoend} &prefix & Stated Directly\\ %Specified in Paper
+% PS-Tree \cite{zhang2022ps} &prefix & Implied \\ %Not directly specified in Paper, but they use Deap GP (see here: https://github.com/hengzhe-zhang/PS-Tree/blob/master/pstree/common_utils.py#L4) which uses prefix notation internally (Simone said so)
+% QLattice \cite{Brolos2021AnAT} & Acyclic Graph & Stated Directly\\ %Specified in Paper
+% TaylorGP \cite{10.1145/3512290.3528757} & prefix & Implied \\ %Not directly specified, but they strongly imply it by writing examples in prefix notation in section 4.1.1 of the paper here: https://arxiv.org/pdf/2205.09751.pdf
+% EQL \cite{pmlr-v80-sahoo18a} & Acyclic Graph & Implied\\%Table 2 refers to the expressions as ``random graphs,'' and the following Jupyter notebook gives further evidence for this: https://github.com/martius-lab/EQL/blob/master/EQL-DIV-ICML-Python3/Evaluation.ipynb
+% GeneticEngine \cite{10.1145/3564719.3568697} & prefix & Implied \\ %'' Starting with the non-terminal
+% %root type, a concrete subclass is non-deterministically selected, and that object is created. For each field (or constructor argument), a compatible object is constructed by recursively calling this algorithm. The base case is when native
+% %types (like int or float) are used, and then native random
+% %value generators are used.'' (section 3.2 ``Meta-handlers'')  
+% Operon \cite{10.1145/3377929.3398099} & postfix  & Stated Directly \\ %Specified in Paper
+% PySR \cite{cranmer2023interpretable} & prefix & Implied \\%Very characteristic Pre-order traversal of Binary Tree: https://github.com/MilesCranmer/SymbolicRegression.jl/blob/db476a708762c81f46f27f22751f7ff3d1153dc7/src/Equation.jl
+% uDSR \cite{NEURIPS2022_dbca58f3} & prefix & Implied \\ %For the DNN part it is stated ``in the pre-order (depth-first then left-to-right) traversal of the corresponding expression'' and the GP part uses deap (see here: https://github.com/dso-org/deep-symbolic-optimization/blob/2069d4eda47b0fd6d3e66e0ade9605cd9574b87c/dso/dso/gp/utils.py#L10)
+% $\mathrm{GP}_{\mathrm{ZGD}}$ \cite{10.1145/3377930.3390237} & prefix & Implied\\ %Implied, as init_tree builds expressions by adding operators further down (pre-order) and connects the new pointer by pointing the parent to the current tree
+% NSGA-DCGP \cite{izzo2016differentiable} & Acyclic Graph & Implied \\%``To represent our functional programs we use the Cartesian Genetic Programming framework'' which states ``In CGP, programs are represented in the form of directed acyclic graphs'' \cite{Miller2011}
+% \hline 
+% \end{tabular*}
+% \end{table}
+
+\begin{figure}[ht]
+
+    \caption{Left: List of SR Frameworks submitted to the 2022 GECCO competition \cite{defranca2023interpretable}, their underlying expression representations, and if the expression representation was stated directly in the cited paper or implied via source-code/references. Right: Number of SR publications mentioning prefix, postfix, and acyclic graphs over time. The script to reproduce is \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/b2f7486b0797843ee363b20faa9a30677065f7b9/Figure_1/notations_pubs_counter.py}{here}.}
+    \centering
+    \subfloat{
+    \label{GECCO_Framework_reps}
+        \scalebox{0.75}{\begin{tabular*}{\textwidth}{l@{\hskip 0.4in}l@{\hskip 0.4in}l} %open PhD_Papers/2304.01117.pdf 
 \hline
-Framework&Expression Representation & Stated Directly or Implied\\
+\textbf{Framework}&\textbf{Representation} & \textbf{Stated Directly or Implied}\\[0.1cm]
 \hline
 Bingo \cite{10.1145/3520304.3534031} &Acyclic Graph & Stated Directly\\ %Specified in Paper
 E2E Transformer \cite{kamienny2022endtoend} &prefix & Stated Directly\\ %Specified in Paper
@@ -98,10 +130,18 @@ uDSR \cite{NEURIPS2022_dbca58f3} & prefix & Implied \\ %For the DNN part it is s
 $\mathrm{GP}_{\mathrm{ZGD}}$ \cite{10.1145/3377930.3390237} & prefix & Implied\\ %Implied, as init_tree builds expressions by adding operators further down (pre-order) and connects the new pointer by pointing the parent to the current tree
 NSGA-DCGP \cite{izzo2016differentiable} & Acyclic Graph & Implied \\%``To represent our functional programs we use the Cartesian Genetic Programming framework'' which states ``In CGP, programs are represented in the form of directed acyclic graphs'' \cite{Miller2011}
 \hline 
-\end{tabular*}
-\end{table}
+\end{tabular*}}}
+\subfloat
+{
+    \raisebox{-.5\height}{\includegraphics[width=0.45\linewidth]{pub_freqs.pdf}}
+    \label{fig:pub_freqs_pre_post_acyc_graph}
+}
+\end{figure}
 
-Prefix notation and acyclic graphs are preferred over postfix notation for representing expressions\footnote{See \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/3f384098ef19681f2de23410cc1375b01ddb28b8/Figure_1/pub_freqs.pdf}{here}, for an illustration \cite{cholewiak2021scholarly}.} \cite{defranca2023interpretable}, as they allow for a natural termination condition and reduce the memory required to represent expressions with identical sub-components, respectively. The analysis in this paper is limited to prefix and postfix notations due to their similarity.
+Prefix notation and acyclic graphs are generally preferred over postfix notation for representing expressions\footnote{See Figure \ref{fig:pub_freqs_pre_post_acyc_graph} for an illustration \cite{cholewiak2021scholarly}} \cite{defranca2023interpretable}, as they allow for a natural termination condition and reduce the memory required to represent expressions with identical sub-components, respectively. The analysis in this paper is limited to prefix and postfix notations due to their similarity.
+
+ 
+
 % Figure \ref{fig:pub_freqs_pre_post_acyc_graph} shows a histogram of publication frequencies mentioning these representations in the context of symbolic regression throughout the years, obtained with the help of the scholarly python module \cite{cholewiak2021scholarly}.  %code here: 
 % \begin{figure}[ht]
 %     \centering
@@ -487,7 +527,7 @@ Simulated Annealing is a search strategy inspired by the metallurgic annealing p
 We set $T_{\mathrm{min}} = 0.012 \leq T \leq T_{\mathrm{max}} = 0.1$ and $T_{\mathrm{init}} = T_{\mathrm{max}}$. We use the same temperature update rule as in \cite{10.1145/3449639.3459345}, namely, $T \gets rT$, where $r \equiv \left(T_{\mathrm{min}}/T_{\mathrm{max}}\right)^{1/(i+1)}$ where $i$ is the iteration number. Lastly, to escape local minima, if the best score has not improved after $N_{\mathrm{iter}}$ iterations, we update the temperature as $T \gets \min{\left(10\cdot T, T_{\mathrm{max}}\right)}$, else, we update the temperature as $T \gets \max{\left(T/10, T_{\mathrm{min}}\right)}$.
 
 \section{Results}\label{sec:Results}
-In this section\footnote{The benchmarks results in this section can be reproduced by running the script \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/0b5b6d0b56c2d108dda023a337edeb1084436da7/PrefixPostfixSR.cpp}{here} using the compilation directive given in the \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/0b5b6d0b56c2d108dda023a337edeb1084436da7/README.md}{README.md file}}, we benchmark the algorithms defined in section \ref{sec:SymbolicRegressionAlgorithms} employing the grammars defined in section \ref{sec:Background}. We set the $N_{\mathrm{iter}} \gets 50,000$ for all benchmarks\footnote{Obtained after significant pre-tuning.}.
+In this section\footnote{The benchmarks results in this section can be reproduced by running the script \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/b2f7486b0797843ee363b20faa9a30677065f7b9/PrefixPostfixSR.cpp}{here} using the compilation directive given in the \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/b2f7486b0797843ee363b20faa9a30677065f7b9/README.md}{README.md file}}, we benchmark the algorithms defined in section \ref{sec:SymbolicRegressionAlgorithms} employing the grammars defined in section \ref{sec:Background}. We set the $N_{\mathrm{iter}} \gets 50,000$ for all benchmarks\footnote{Obtained after significant pre-tuning.}.
 \par First, in section \ref{subsec:SimulatedAnnealing}, we perform benchmarks for the expressions considered in \cite{hemberg2008pre}. Then, in section \ref{subsec:FeynmanBenchmarks}, we consider some of the equations considered in \cite{udrescu2020ai} with varying complexity/depth of expression trees.
 \par For each configuration,
 % i.e., Prefix Random Search, Prefix Monte Carlo Tree Search, Prefix Particle Swarm Optimization, Prefix Genetic Programming,  Prefix Simulated Annealing, Postfix Random Search, Postfix Monte Carlo Tree Search, Postfix Particle Swarm Optimization, Postfix Genetic Programming, and Postfix Simulated Annealing,
