@@ -24,6 +24,21 @@ After compiling, run the executable:
 ./PrefixPostfixSR
 ```
 
+Then, move the generated txt files to the `Hemberg_Benchmarks` and `AIFeynman_Benchmarks` directories:
+
+```bash
+mv Hemberg_*txt Hemberg_Benchmarks
+mv Feynman_*txt AIFeynman_Benchmarks
+```
+
+Finally, run the `PlotData.py` script:
+
+```bash
+python PlotData.py
+```
+
+**Note:** To use the existing txt files, just run the `PlotData.py` script without running the `PrefixPostfixSR` executable (which will take around a week to fully execute). 
+
 ## Hardware Specifications
 
 The benchmarks were run on a MacBook Pro with an M1 Core and approximately 16 GB of usable RAM, namely, `sysctl -a | grep hw.memsize` gives:

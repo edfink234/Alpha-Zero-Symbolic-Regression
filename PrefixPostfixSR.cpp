@@ -2347,7 +2347,7 @@ int main() {
 //    puts(cstr);
     
     HembergBenchmarks(20 /*numIntervals*/, 120 /*time*/, 50 /*numRuns*/);
-//    AIFeynmanBenchmarks(20 /*numIntervals*/, 120 /*time*/, 50 /*numRuns*/);
+    AIFeynmanBenchmarks(20 /*numIntervals*/, 120 /*time*/, 50 /*numRuns*/);
     /*
         Then, move the generated txt files to the directories Hemberg_Benchmarks and
         AIFeynman_Benchmarks and then run PlotData.py

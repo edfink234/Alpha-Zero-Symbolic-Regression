@@ -58,7 +58,6 @@ def process_files(files):
         time_values, avg_max_scores, std_devs, file_path = process_csv(file_path)
         plot_results(time_values, avg_max_scores, std_devs, file_path)
         
-# Specify the path to your CSV file
 Hemberg_Files = 'Hemberg_Benchmarks/Hemberg_1PreRandomSearch.txt', 'Hemberg_Benchmarks/Hemberg_1PostRandomSearch.txt', 'Hemberg_Benchmarks/Hemberg_2PreRandomSearch.txt', 'Hemberg_Benchmarks/Hemberg_2PostRandomSearch.txt', 'Hemberg_Benchmarks/Hemberg_3PreRandomSearch.txt', 'Hemberg_Benchmarks/Hemberg_3PostRandomSearch.txt', 'Hemberg_Benchmarks/Hemberg_4PreRandomSearch.txt', 'Hemberg_Benchmarks/Hemberg_4PostRandomSearch.txt', 'Hemberg_Benchmarks/Hemberg_5PreRandomSearch.txt', 'Hemberg_Benchmarks/Hemberg_5PostRandomSearch.txt', 'Hemberg_Benchmarks/Hemberg_1PreMCTS.txt', 'Hemberg_Benchmarks/Hemberg_1PostMCTS.txt', 'Hemberg_Benchmarks/Hemberg_2PreMCTS.txt', 'Hemberg_Benchmarks/Hemberg_2PostMCTS.txt', 'Hemberg_Benchmarks/Hemberg_3PreMCTS.txt', 'Hemberg_Benchmarks/Hemberg_3PostMCTS.txt', 'Hemberg_Benchmarks/Hemberg_4PreMCTS.txt', 'Hemberg_Benchmarks/Hemberg_4PostMCTS.txt', 'Hemberg_Benchmarks/Hemberg_5PreMCTS.txt', 'Hemberg_Benchmarks/Hemberg_5PostMCTS.txt', 'Hemberg_Benchmarks/Hemberg_1PrePSO.txt', 'Hemberg_Benchmarks/Hemberg_1PostPSO.txt', 'Hemberg_Benchmarks/Hemberg_2PrePSO.txt', 'Hemberg_Benchmarks/Hemberg_2PostPSO.txt', 'Hemberg_Benchmarks/Hemberg_3PrePSO.txt', 'Hemberg_Benchmarks/Hemberg_3PostPSO.txt', 'Hemberg_Benchmarks/Hemberg_4PrePSO.txt', 'Hemberg_Benchmarks/Hemberg_4PostPSO.txt', 'Hemberg_Benchmarks/Hemberg_5PrePSO.txt', 'Hemberg_Benchmarks/Hemberg_5PostPSO.txt', 'Hemberg_Benchmarks/Hemberg_1PreGP.txt', 'Hemberg_Benchmarks/Hemberg_1PostGP.txt', 'Hemberg_Benchmarks/Hemberg_2PreGP.txt', 'Hemberg_Benchmarks/Hemberg_2PostGP.txt','Hemberg_Benchmarks/Hemberg_3PreGP.txt', 'Hemberg_Benchmarks/Hemberg_3PostGP.txt', 'Hemberg_Benchmarks/Hemberg_4PreGP.txt', 'Hemberg_Benchmarks/Hemberg_4PostGP.txt', 'Hemberg_Benchmarks/Hemberg_5PreGP.txt', 'Hemberg_Benchmarks/Hemberg_5PostGP.txt', 'Hemberg_Benchmarks/Hemberg_1PreSimulatedAnnealing.txt', 'Hemberg_Benchmarks/Hemberg_1PostSimulatedAnnealing.txt', 'Hemberg_Benchmarks/Hemberg_2PreSimulatedAnnealing.txt', 'Hemberg_Benchmarks/Hemberg_2PostSimulatedAnnealing.txt', 'Hemberg_Benchmarks/Hemberg_3PreSimulatedAnnealing.txt', 'Hemberg_Benchmarks/Hemberg_3PostSimulatedAnnealing.txt', 'Hemberg_Benchmarks/Hemberg_4PreSimulatedAnnealing.txt', 'Hemberg_Benchmarks/Hemberg_4PostSimulatedAnnealing.txt', 'Hemberg_Benchmarks/Hemberg_5PreSimulatedAnnealing.txt', 'Hemberg_Benchmarks/Hemberg_5PostSimulatedAnnealing.txt'
 
 def PaperPlots(files):
@@ -127,16 +126,10 @@ def DiscoverySciencePlots(*Benchmark_File_Lists):
                 ax[1].errorbar(x = avg_max_scores[-1], y = j, xerr = std_devs[-1], linestyle = 'dotted', marker='o', markersize=6, capsize = 3)
                 ax[1].set_title(r'Final $\overline{\mathrm{MSE}}\pm\mathrm{std}$')
                 ax[1].set_xlabel('Final Average MSE')
-#
-#
-            ax[1].yaxis.set_tick_params(left = False, labelleft = False)
 
+            ax[1].yaxis.set_tick_params(left = False, labelleft = False)
             ax[1].set_yscale('linear')
             ax[1].set_xscale(xscale)
             save_plot(f"{PlotFilePrefix}{i}")
-        
-        #Feynman Benchmarks
 
 DiscoverySciencePlots((Hemberg_Files, "Hemberg_Benchmarks/Hemberg_Benchmark_"), (AIFeynman_Files, "AIFeynman_Benchmarks/Feynman_Benchmark_"))
-
-#TODO: MAYBE Make Plots of Final Means and Stds if you can get Discovery Science Paper to 13 pages
