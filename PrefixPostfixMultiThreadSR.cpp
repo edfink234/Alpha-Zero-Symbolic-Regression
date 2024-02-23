@@ -24,6 +24,8 @@
 #include <cassert>
 #include <thread>
 #include <mutex>
+#include <condition_variable>
+#include <barrier>
 //#include <pybind11/pybind11.h>
 //#include <Python.h>
 #include <Eigen/Core>
@@ -113,13 +115,18 @@ public:
         return *this;
     }
     
+    bool operator==( Data& other)
+    {
+        return this->data == other.data;
+    }
+    
     const Eigen::VectorXf& operator[] (int i){return rows[i];}
     const Eigen::VectorXf& operator[] (const std::string& i)
     {
         return features[i];
     }
-    const long numRows() {return num_rows;}
-    const long numCols() {return num_columns;}
+    long numRows() const {return num_rows;}
+    long numCols() const {return num_columns;}
 
     friend std::ostream& operator<<(std::ostream& os, const Data& matrix)
     {
@@ -163,7 +170,7 @@ struct Board
     static constexpr float K = 0.0884956f;
     static constexpr float phi_1 = 2.8f;
     static constexpr float phi_2 = 1.3f;
-    static bool inline primary_set = false;
+//    static bool inline primary_set = false;
     static int inline __num_features;
     static std::vector<std::string> inline __input_vars;
     static std::vector<std::string> inline __unary_operators;
@@ -173,7 +180,7 @@ struct Board
     static std::vector<std::string> inline __tokens;
     static std::vector<float> inline __tokens_float;
     Eigen::VectorXf params; //store the parameters of the expression of the current episode after it's completed
-    static Data inline data;
+    static Data inline data, otherData;
     
     static std::vector<float> inline __operators_float;
     static std::vector<float> inline __unary_operators_float;
@@ -186,7 +193,10 @@ struct Board
     std::uniform_real_distribution<float> vel_dist, pos_dist;
     
     static int inline action_size;
-    static std::mutex inline thread_locker;
+    static std::barrier<std::atomic<int>> init_barrier;  // Barrier for synchronization
+    static std::once_flag inline initialization_flag;          // Flag for std::call_once
+
+    
     size_t reserve_amount;
     int num_fit_iter;
     std::string fit_method;
@@ -200,10 +210,12 @@ struct Board
     static std::unordered_map<bool, std::unordered_map<bool, std::unordered_map<bool, std::vector<float>>>> inline una_bin_leaf_legal_moves_dict;
 
     int n; //depth of RPN/PN tree
-    std::string expression_type, expression_string;;
+    std::string expression_type, expression_string;
+    static std::mutex inline thread_locker;
     // Create the empty expression list.
     std::vector<float> pieces;
     bool visualize_exploration, is_primary;
+    static std::condition_variable inline condition_var;
     
     Board(bool primary = true, int n = 3, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false) : is_primary{primary}, gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, fit_method{fitMethod}, num_fit_iter{numFitIter}, fit_grad_method{fitGradMethod}
     {
@@ -212,103 +224,6 @@ struct Board
             throw(std::runtime_error("Complexity cannot be larger than 30, sorry!"));
         }
         
-        if (is_primary and !primary_set)
-        {
-            std::scoped_lock lock(thread_locker);
-            Board::data = theData;
-            Board::__num_features = data[0].size() - 1;
-            Board::__input_vars.clear();
-            Board::expression_dict.clear();
-            Board::__input_vars.reserve(Board::__num_features);
-            for (auto i = 0; i < Board::__num_features; i++)
-            {
-                Board::__input_vars.push_back("x"+std::to_string(i));
-            }
-            Board::__unary_operators = {};//{"sin", "sqrt", "cos"};
-            Board::__binary_operators = {"*"};//{"+", "-", "*", "/", "^"};
-            Board::__operators.clear();
-            for (std::string& i: Board::__unary_operators)
-            {
-                Board::__operators.push_back(i);
-            }
-            for (std::string& i: Board::__binary_operators)
-            {
-                Board::__operators.push_back(i);
-            }
-            Board::__other_tokens = {"const"};
-            Board::__tokens = Board::__operators;
-            
-            for (auto& i: this->Board::__input_vars)
-            {
-                Board::__tokens.push_back(i);
-            }
-            for (auto& i: Board::__other_tokens)
-            {
-                Board::__tokens.push_back(i);
-            }
-            Board::action_size = Board::__tokens.size();
-            Board::__tokens_float.clear();
-            Board::__tokens_float.reserve(Board::action_size);
-            for (int i = 1; i <= Board::action_size; ++i)
-            {
-                Board::__tokens_float.push_back(i);
-            }
-            int num_operators = Board::__operators.size();
-            Board::__operators_float.clear();
-            for (int i = 1; i <= num_operators; i++)
-            {
-                Board::__operators_float.push_back(i);
-            }
-            int num_unary_operators = Board::__unary_operators.size();
-            Board::__unary_operators_float.clear();
-            for (int i = 1; i <= num_unary_operators; i++)
-            {
-                Board::__unary_operators_float.push_back(i);
-            }
-            Board::__binary_operators_float.clear();
-            for (int i = num_unary_operators + 1; i <= num_operators; i++)
-            {
-                Board::__binary_operators_float.push_back(i);
-            }
-            int ops_plus_features = num_operators + Board::__num_features;
-            Board::__input_vars_float.clear();
-            for (int i = num_operators + 1; i <= ops_plus_features; i++)
-            {
-                Board::__input_vars_float.push_back(i);
-            }
-            Board::__other_tokens_float.clear();
-            for (int i = ops_plus_features + 1; i <= Board::action_size; i++)
-            {
-                Board::__other_tokens_float.push_back(i);
-            }
-            for (int i = 0; i < Board::action_size; i++)
-            {
-                Board::__tokens_dict[Board::__tokens_float[i]] = Board::__tokens[i];
-                Board::__tokens_inv_dict[Board::__tokens[i]] = Board::__tokens_float[i];
-            }
-            
-            Board::una_bin_leaf_legal_moves_dict[true][true][true] = Board::__tokens_float;
-            Board::una_bin_leaf_legal_moves_dict[true][true][false] = Board::__operators_float;
-            Board::una_bin_leaf_legal_moves_dict[true][false][true] = Board::__unary_operators_float; //1
-            Board::una_bin_leaf_legal_moves_dict[true][false][false] = Board::__unary_operators_float;
-            Board::una_bin_leaf_legal_moves_dict[false][true][true] = Board::__binary_operators_float; //2
-            Board::una_bin_leaf_legal_moves_dict[false][true][false] = Board::__binary_operators_float;
-            
-            for (float i: Board::__input_vars_float)
-            {
-                Board::una_bin_leaf_legal_moves_dict[true][false][true].push_back(i); //1
-                Board::una_bin_leaf_legal_moves_dict[false][true][true].push_back(i); //2
-                Board::una_bin_leaf_legal_moves_dict[false][false][true].push_back(i); //3
-            }
-            for (float i: Board::__other_tokens_float)
-            {
-                Board::una_bin_leaf_legal_moves_dict[true][false][true].push_back(i); //1
-                Board::una_bin_leaf_legal_moves_dict[false][true][true].push_back(i); //2
-                Board::una_bin_leaf_legal_moves_dict[false][false][true].push_back(i); //3
-            }
-            primary_set = true;
-        }
-        while (!primary_set);
         this->n = n;
         this->expression_type = expression_type;
         this->pieces = {};
@@ -316,10 +231,106 @@ struct Board
         this->visualize_exploration = visualize_exploration;
         this->pieces.reserve(reserve_amount);
         this->cache = cache;
-//        static int counter = 0;
-//        printf("done %d\n",++counter);
-//        using std::chrono::operator""ms;
-//        std::this_thread::sleep_for(2000 ms);
+        
+        if (is_primary)
+        {
+            std::call_once(initialization_flag, [&]()
+            {
+                Board::data = theData;
+                Board::otherData = theData;
+                
+                Board::__num_features = data[0].size() - 1;
+                Board::__input_vars.clear();
+                Board::expression_dict.clear();
+                Board::__input_vars.reserve(Board::__num_features);
+                for (auto i = 0; i < Board::__num_features; i++)
+                {
+                    Board::__input_vars.push_back("x"+std::to_string(i));
+                }
+                Board::__unary_operators = {};//{"sin", "sqrt", "cos"};
+                Board::__binary_operators = {"+", "-", "*", "/", "^"};
+                Board::__operators.clear();
+                for (std::string& i: Board::__unary_operators)
+                {
+                    Board::__operators.push_back(i);
+                }
+                for (std::string& i: Board::__binary_operators)
+                {
+                    Board::__operators.push_back(i);
+                }
+                Board::__other_tokens = {"const"};
+                Board::__tokens = Board::__operators;
+                
+                for (auto& i: this->Board::__input_vars)
+                {
+                    Board::__tokens.push_back(i);
+                }
+                for (auto& i: Board::__other_tokens)
+                {
+                    Board::__tokens.push_back(i);
+                }
+                Board::action_size = Board::__tokens.size();
+                Board::__tokens_float.clear();
+                Board::__tokens_float.reserve(Board::action_size);
+                for (int i = 1; i <= Board::action_size; ++i)
+                {
+                    Board::__tokens_float.push_back(i);
+                }
+                int num_operators = Board::__operators.size();
+                Board::__operators_float.clear();
+                for (int i = 1; i <= num_operators; i++)
+                {
+                    Board::__operators_float.push_back(i);
+                }
+                int num_unary_operators = Board::__unary_operators.size();
+                Board::__unary_operators_float.clear();
+                for (int i = 1; i <= num_unary_operators; i++)
+                {
+                    Board::__unary_operators_float.push_back(i);
+                }
+                Board::__binary_operators_float.clear();
+                for (int i = num_unary_operators + 1; i <= num_operators; i++)
+                {
+                    Board::__binary_operators_float.push_back(i);
+                }
+                int ops_plus_features = num_operators + Board::__num_features;
+                Board::__input_vars_float.clear();
+                for (int i = num_operators + 1; i <= ops_plus_features; i++)
+                {
+                    Board::__input_vars_float.push_back(i);
+                }
+                Board::__other_tokens_float.clear();
+                for (int i = ops_plus_features + 1; i <= Board::action_size; i++)
+                {
+                    Board::__other_tokens_float.push_back(i);
+                }
+                for (int i = 0; i < Board::action_size; i++)
+                {
+                    Board::__tokens_dict[Board::__tokens_float[i]] = Board::__tokens[i];
+                    Board::__tokens_inv_dict[Board::__tokens[i]] = Board::__tokens_float[i];
+                }
+                
+                Board::una_bin_leaf_legal_moves_dict[true][true][true] = Board::__tokens_float;
+                Board::una_bin_leaf_legal_moves_dict[true][true][false] = Board::__operators_float;
+                Board::una_bin_leaf_legal_moves_dict[true][false][true] = Board::__unary_operators_float; //1
+                Board::una_bin_leaf_legal_moves_dict[true][false][false] = Board::__unary_operators_float;
+                Board::una_bin_leaf_legal_moves_dict[false][true][true] = Board::__binary_operators_float; //2
+                Board::una_bin_leaf_legal_moves_dict[false][true][false] = Board::__binary_operators_float;
+                
+                for (float i: Board::__input_vars_float)
+                {
+                    Board::una_bin_leaf_legal_moves_dict[true][false][true].push_back(i); //1
+                    Board::una_bin_leaf_legal_moves_dict[false][true][true].push_back(i); //2
+                    Board::una_bin_leaf_legal_moves_dict[false][false][true].push_back(i); //3
+                }
+                for (float i: Board::__other_tokens_float)
+                {
+                    Board::una_bin_leaf_legal_moves_dict[true][false][true].push_back(i); //1
+                    Board::una_bin_leaf_legal_moves_dict[false][true][true].push_back(i); //2
+                    Board::una_bin_leaf_legal_moves_dict[false][false][true].push_back(i); //3
+                }
+            });
+        }
     }
     
     float operator[](size_t index) const
@@ -676,15 +687,20 @@ struct Board
             else
             {
                 bool una_allowed = false, bin_allowed = false, leaf_allowed = false;
-                
-                pieces.push_back(Board::__binary_operators_float[0]);
-                bin_allowed = (getPNdepth(pieces).first <= this->n);
-                pieces[pieces.size() - 1] = Board::__unary_operators_float[0];
-                una_allowed = (getPNdepth(pieces).first <= this->n);
+                if (Board::__binary_operators_float.size() > 0)
+                {
+                    pieces.push_back(Board::__binary_operators_float[0]);
+                    bin_allowed = (getPNdepth(pieces).first <= this->n);
+                }
+                if (Board::__unary_operators_float.size() > 0)
+                {
+                    pieces[pieces.size() - 1] = Board::__unary_operators_float[0];
+                    una_allowed = (getPNdepth(pieces).first <= this->n);
+                }
                 pieces[pieces.size() - 1] = Board::__input_vars_float[0];
                 leaf_allowed = (!((num_leaves == num_binary + 1) || (getPNdepth(pieces).first < this->n && (num_leaves == num_binary))));
                 pieces.pop_back();
-                
+//                assert(!(!una_allowed && !bin_allowed && !leaf_allowed));
                 return Board::una_bin_leaf_legal_moves_dict[una_allowed][bin_allowed][leaf_allowed];
             }
         }
@@ -706,14 +722,18 @@ struct Board
             else
             {
                 bool una_allowed = false, bin_allowed = (num_binary != num_leaves - 1), leaf_allowed = false;
-                
-                pieces.push_back(Board::__unary_operators_float[0]);
-                una_allowed = ((num_leaves >= 1) && (getRPNdepth(pieces).first <= this->n));
+                if (Board::__unary_operators_float.size() > 0)
+                {
+                    pieces.push_back(Board::__unary_operators_float[0]);
+                    una_allowed = ((num_leaves >= 1) && (getRPNdepth(pieces).first <= this->n));
+                }
                 
                 pieces[pieces.size() - 1] = Board::__input_vars_float[0];
                 leaf_allowed = (getRPNdepth(pieces).first <= this->n);
 
                 pieces.pop_back();
+//                assert(!(!una_allowed && !bin_allowed && !leaf_allowed));
+
                 return Board::una_bin_leaf_legal_moves_dict[una_allowed][bin_allowed][leaf_allowed];
             }
         }
@@ -766,16 +786,16 @@ struct Board
             }
             else if (std::find(Board::__unary_operators_float.begin(), Board::__unary_operators_float.end(), pieces[i]) != Board::__unary_operators_float.end()) // Unary operator
             {
-                std::string operand = std::move(stack.top());
+                std::string operand = stack.top();
                 stack.pop();
                 result = token + "(" + operand + ")";
                 stack.push(result);
             }
             else // binary operator
             {
-                std::string right_operand = std::move(stack.top());
+                std::string right_operand = stack.top();
                 stack.pop();
-                std::string left_operand = std::move(stack.top());
+                std::string left_operand = stack.top();
                 stack.pop();
                 if (expression_type == "prefix")
                 {
@@ -788,12 +808,12 @@ struct Board
                 stack.push(result);
             }
         }
-        return std::move(stack.top());
+        return stack.top();
     }
 
     Eigen::VectorXf expression_evaluator(const Eigen::VectorXf& params)
     {
-        std::stack<Eigen::VectorXf> stack;
+        std::stack<const Eigen::VectorXf> stack;
         size_t const_count = 0;
         bool is_prefix = (expression_type == "prefix");
         for (int i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
@@ -803,75 +823,76 @@ struct Board
             {
                 if (token == "const")
                 {
-                    stack.push(Eigen::VectorXf::Ones(data.numRows())*this->params(const_count++));
+                    stack.push(Eigen::VectorXf::Ones(data.numRows())*this->params(const_count++)); 
                 }
                 else
                 {
-                    stack.push(Board::data[token]);
+                    stack.push(Board::data[token]); 
                 }
             }
             else if (std::find(Board::__unary_operators_float.begin(), Board::__unary_operators_float.end(), pieces[i]) != Board::__unary_operators_float.end()) // Unary operator
             {
                 if (token == "cos")
                 {
-                    Eigen::VectorXf temp = std::move(stack.top());
+                    Eigen::VectorXf temp = stack.top();
                     stack.pop();
                     stack.push(temp.array().cos());
                 }
                 else if (token == "exp")
                 {
-                    Eigen::VectorXf temp = std::move(stack.top());
+                    Eigen::VectorXf temp = stack.top();
                     stack.pop();
                     stack.push(temp.array().exp());
                 }
                 else if (token == "sqrt")
                 {
-                    Eigen::VectorXf temp = std::move(stack.top());
+                    Eigen::VectorXf temp = stack.top();
                     stack.pop();
                     stack.push(temp.array().sqrt());
                 }
                 else if (token == "sin")
                 {
-                    Eigen::VectorXf temp = std::move(stack.top());
+                    Eigen::VectorXf temp = stack.top();
                     stack.pop();
                     stack.push(temp.array().sin());
                 }
                 else if (token == "asin" || token == "arcsin")
                 {
-                    Eigen::VectorXf temp = std::move(stack.top());
+                    Eigen::VectorXf temp = stack.top();
                     stack.pop();
                     stack.push(temp.array().asin());
                 }
                 else if (token == "log" || token == "ln")
                 {
-                    Eigen::VectorXf temp = std::move(stack.top());
+                    Eigen::VectorXf temp = stack.top();
                     stack.pop();
                     stack.push(temp.array().log());
                 }
                 else if (token == "tanh")
                 {
-                    Eigen::VectorXf temp = std::move(stack.top());
+                    Eigen::VectorXf temp = stack.top();
                     stack.pop();
                     stack.push(temp.array().tanh());
                 }
                 else if (token == "acos" || token == "arccos")
                 {
-                    Eigen::VectorXf temp = std::move(stack.top());
+                    Eigen::VectorXf temp = stack.top();
                     stack.pop();
                     stack.push(temp.array().acos());
                 }
                 else if (token == "~") //unary minus
                 {
-                    Eigen::VectorXf temp = std::move(stack.top());
+                    Eigen::VectorXf temp = stack.top();
                     stack.pop();
                     stack.push(-temp.array());
                 }
             }
             else // binary operator
             {
-                Eigen::VectorXf left_operand = std::move(stack.top());
+                assert(stack.size() >= 2);
+                Eigen::VectorXf left_operand = stack.top();
                 stack.pop();
-                Eigen::VectorXf right_operand = std::move(stack.top());
+                Eigen::VectorXf right_operand = stack.top(); 
                 stack.pop();
                 if (token == "+")
                 {
@@ -895,7 +916,7 @@ struct Board
                 }
             }
         }
-        return std::move(stack.top());
+        return stack.top();
     }
     
     Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> expression_evaluator(std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& parameters)
@@ -924,64 +945,64 @@ struct Board
             {
                 if (token == "cos")
                 {
-                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = std::move(stack.top());
+                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
                     stack.pop();
                     stack.push(temp.array().cos());
                 }
                 else if (token == "exp")
                 {
-                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = std::move(stack.top());
+                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
                     stack.pop();
                     stack.push(temp.array().exp());
                 }
                 else if (token == "sqrt")
                 {
-                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = std::move(stack.top());
+                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
                     stack.pop();
                     stack.push(temp.array().sqrt());
                 }
                 else if (token == "sin")
                 {
-                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = std::move(stack.top());
+                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
                     stack.pop();
                     stack.push(temp.array().sin());
                 }
                 else if (token == "asin" || token == "arcsin")
                 {
-                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = std::move(stack.top());
+                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
                     stack.pop();
                     stack.push(temp.array().asin());
                 }
                 else if (token == "log" || token == "ln")
                 {
-                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = std::move(stack.top());
+                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
                     stack.pop();
                     stack.push(temp.array().log());
                 }
                 else if (token == "tanh")
                 {
-                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = std::move(stack.top());
+                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
                     stack.pop();
                     stack.push(temp.array().tanh());
                 }
                 else if (token == "acos" || token == "arccos")
                 {
-                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = std::move(stack.top());
+                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
                     stack.pop();
                     stack.push(temp.array().acos());
                 }
                 else if (token == "~") //unary minus
                 {
-                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = std::move(stack.top());
+                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
                     stack.pop();
                     stack.push(-temp.array());
                 }
             }
             else // binary operator
             {
-                Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> left_operand = std::move(stack.top());
+                Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> left_operand = stack.top();
                 stack.pop();
-                Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> right_operand = std::move(stack.top());
+                Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> right_operand = stack.top();
                 stack.pop();
 
                 if (token == "+")
@@ -1002,7 +1023,7 @@ struct Board
                 }
             }
         }
-        return std::move(stack.top());
+        return stack.top();
     }
     
     void AsyncPSO()
@@ -1303,11 +1324,12 @@ struct Board
                 LevenbergMarquardt();
             }
         }
-//        {
-//            std::scoped_lock lock(thread_locker);
-//            Board::expression_dict[this->expression_string].first = this->params;
-//            Board::expression_dict[this->expression_string].second = false;
-//        }
+        {
+            std::unique_lock lock(thread_locker);
+            Board::expression_dict[this->expression_string].first = this->params;
+            Board::expression_dict[this->expression_string].second = false;
+        }
+        condition_var.notify_one();
         return loss_func(expression_evaluator(this->params),data["y"]);
     }
     
@@ -1348,16 +1370,16 @@ struct Board
                 this->expression_string.reserve(8*pieces.size());
                 
                 for (float i: pieces){this->expression_string += std::to_string(i)+" ";}
-//                puts("here");
-//                std::cout << std::boolalpha << Board::expression_dict[this->expression_string].second << '\n';
-//                while (Board::expression_dict[this->expression_string].second);
-//                {
-//                    std::scoped_lock lock(thread_locker);
-//                    Board::expression_dict[this->expression_string].second = true;
-//                    
-//                }
-//                this->params = Board::expression_dict[this->expression_string].first;
-                if (!(this->params.size()))
+
+                {
+                    std::unique_lock lock(thread_locker);
+                    while (Board::expression_dict[this->expression_string].second){condition_var.wait(lock);}
+
+                    Board::expression_dict[this->expression_string].second = true;
+                    this->params = Board::expression_dict[this->expression_string].first;
+                }
+                
+                if (!this->params.size())
                 {
                     this->params.resize(__num_consts());
                     this->params.setOnes();
@@ -1964,7 +1986,7 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
          
          */
         
-        for (int iter = 0; (timeElapsedSince(start_time) < time/*Board::expression_dict.size() <= 100000*/); iter++)
+        for (int iter = 0; (timeElapsedSince(start_time) < time); iter++)
         {
             if (iter && (iter%50000 == 0))
             {
@@ -2103,7 +2125,7 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
             }
         });
         
-        for (int i = 0; (timeElapsedSince(start_time) < time/*Board::expression_dict.size() <= 100000*/); i++)
+        for (int i = 0; (timeElapsedSince(start_time) < time); i++)
         {
             if (i && (i%50000 == 0))
             {
@@ -2214,6 +2236,7 @@ void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expres
     }
     
     std::vector<std::thread> threads(num_threads);
+    std::barrier sync_point(num_threads);
     
     for (int run = 1; run <= num_runs; run++)
     {
@@ -2237,36 +2260,44 @@ void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expres
          Inside of thread:
          */
         
-        for (unsigned int i = 0; i < num_threads; i++) 
+        
+        
+        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &generator, &max_score, &sync_point]()
         {
-            threads[i] = std::thread([&]()
+            Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
+            sync_point.arrive_and_wait();
+            
+            float score = 0;
+            std::vector<float> temp_legal_moves;
+            size_t temp_sz;
+            for (int i = 0; (timeElapsedSince(start_time) < time); i++)
             {
-//                puts("before?");
-                Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
-//                puts("here?");
-                float score = 0;
-                std::vector<float> temp_legal_moves;
-                size_t temp_sz;
-                for (int i = 0; (timeElapsedSince(start_time) < time/*Board::expression_dict.size() <= 100000*/); i++)
+                while ((score = x.complete_status()) == -1)
                 {
-//                    puts("maybe?");
-                    while ((score = x.complete_status()) == -1)
-                    {
-//                        puts("after?");
-                        temp_legal_moves = x.get_legal_moves(); //the legal moves
-                        temp_sz = temp_legal_moves.size(); //the number of legal moves
-                        std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
-                        x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
-                    }
-
-                    if (score > max_score)
+                    temp_legal_moves = x.get_legal_moves(); //the legal moves
+                    temp_sz = temp_legal_moves.size(); //the number of legal moves
+                    assert(temp_sz);
+                    std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
                     {
                         std::scoped_lock lock(Board::thread_locker);
+                        x.pieces.emplace_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
+                    }
+                }
+
+                {
+                    std::scoped_lock lock(Board::thread_locker);
+                    if (score > max_score)
+                    {
                         max_score = score;
                     }
-                    x.pieces.clear();
                 }
-            });
+                x.pieces.clear();
+            }
+        };
+        
+        for (unsigned int i = 0; i < num_threads; i++)
+        {
+            threads[i] = std::thread(func);
         }
         
         for (unsigned int i = 0; i < num_threads; i++)

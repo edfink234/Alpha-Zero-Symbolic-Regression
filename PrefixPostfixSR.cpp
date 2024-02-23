@@ -666,11 +666,16 @@ struct Board
             else
             {
                 bool una_allowed = false, bin_allowed = false, leaf_allowed = false;
-                
-                pieces.push_back(Board::__binary_operators_float[0]);
-                bin_allowed = (getPNdepth(pieces).first <= this->n);
-                pieces[pieces.size() - 1] = Board::__unary_operators_float[0];
-                una_allowed = (getPNdepth(pieces).first <= this->n);
+                if (Board::__binary_operators_float.size() > 0)
+                {
+                    pieces.push_back(Board::__binary_operators_float[0]);
+                    bin_allowed = (getPNdepth(pieces).first <= this->n);
+                }
+                if (Board::__unary_operators_float.size() > 0)
+                {
+                    pieces[pieces.size() - 1] = Board::__unary_operators_float[0];
+                    una_allowed = (getPNdepth(pieces).first <= this->n);
+                }
                 pieces[pieces.size() - 1] = Board::__input_vars_float[0];
                 leaf_allowed = (!((num_leaves == num_binary + 1) || (getPNdepth(pieces).first < this->n && (num_leaves == num_binary))));
                 pieces.pop_back();
@@ -696,9 +701,11 @@ struct Board
             else
             {
                 bool una_allowed = false, bin_allowed = (num_binary != num_leaves - 1), leaf_allowed = false;
-                
-                pieces.push_back(Board::__unary_operators_float[0]);
-                una_allowed = ((num_leaves >= 1) && (getRPNdepth(pieces).first <= this->n));
+                if (Board::__unary_operators_float.size() > 0)
+                {
+                    pieces.push_back(Board::__unary_operators_float[0]);
+                    una_allowed = ((num_leaves >= 1) && (getRPNdepth(pieces).first <= this->n));
+                }
                 
                 pieces[pieces.size() - 1] = Board::__input_vars_float[0];
                 leaf_allowed = (getRPNdepth(pieces).first <= this->n);
@@ -2190,6 +2197,11 @@ void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expres
         {
             scores[i.first].push_back(i.second);
         }
+        
+        std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+        std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
+        std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+        
     }
     std::ofstream out(filename);
     for (auto& i: scores)
@@ -2346,12 +2358,14 @@ int main() {
 //    const char* cstr = PyUnicode_AsUTF8(pStr);
 //    puts(cstr);
     
-    HembergBenchmarks(20 /*numIntervals*/, 120 /*time*/, 50 /*numRuns*/);
-    AIFeynmanBenchmarks(20 /*numIntervals*/, 120 /*time*/, 50 /*numRuns*/);
+//    HembergBenchmarks(20 /*numIntervals*/, 120 /*time*/, 50 /*numRuns*/);
+//    AIFeynmanBenchmarks(20 /*numIntervals*/, 120 /*time*/, 50 /*numRuns*/);
     /*
         Then, move the generated txt files to the directories Hemberg_Benchmarks and
         AIFeynman_Benchmarks and then run PlotData.py
     */
+    
+    RandomSearch(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/);
 
     return 0;
 }
