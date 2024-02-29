@@ -1215,6 +1215,8 @@ struct Board
         lm.minimize(eigenVec);
         if (MSE(expression_evaluator(eigenVec), data["y"]) < MSE(expression_evaluator(*params), data["y"]))
         {
+//            static int count = 0;
+//            std::cout << ++count << '\r' << std::flush;
             *params = std::move(eigenVec);
         }
         

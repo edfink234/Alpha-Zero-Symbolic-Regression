@@ -48,7 +48,7 @@ Eigen::MatrixXf generateData(int numRows, int numCols, float (*func)(const Eigen
 {
     // Initialize random number generator
     std::random_device rd;
-    std::mt19937 gen(rd());
+    std::mt19937 thread_local gen(rd());
     std::uniform_real_distribution<float> distribution(min, max);
 
     // Create the matrix
@@ -180,7 +180,7 @@ struct Board
     static std::vector<std::string> inline __tokens;
     static std::vector<float> inline __tokens_float;
     Eigen::VectorXf params; //store the parameters of the expression of the current episode after it's completed
-    static Data inline data, otherData;
+    static Data inline data;
     
     static std::vector<float> inline __operators_float;
     static std::vector<float> inline __unary_operators_float;
@@ -195,7 +195,6 @@ struct Board
     static int inline action_size;
     static std::barrier<std::atomic<int>> init_barrier;  // Barrier for synchronization
     static std::once_flag inline initialization_flag;          // Flag for std::call_once
-
     
     size_t reserve_amount;
     int num_fit_iter;
@@ -227,9 +226,8 @@ struct Board
         this->n = n;
         this->expression_type = expression_type;
         this->pieces = {};
-        this->reserve_amount = 2*pow(2,this->n)-1;
         this->visualize_exploration = visualize_exploration;
-        this->pieces.reserve(reserve_amount);
+        this->pieces.reserve(2*pow(2,this->n)-1);
         this->cache = cache;
         
         if (is_primary)
@@ -237,7 +235,6 @@ struct Board
             std::call_once(initialization_flag, [&]()
             {
                 Board::data = theData;
-                Board::otherData = theData;
                 
                 Board::__num_features = data[0].size() - 1;
                 Board::__input_vars.clear();
@@ -823,7 +820,7 @@ struct Board
             {
                 if (token == "const")
                 {
-                    stack.push(Eigen::VectorXf::Ones(data.numRows())*this->params(const_count++)); 
+                    stack.push(Eigen::VectorXf::Ones(Board::data.numRows())*this->params(const_count++));
                 }
                 else
                 {
@@ -889,7 +886,7 @@ struct Board
             }
             else // binary operator
             {
-                assert(stack.size() >= 2);
+//                assert(stack.size() >= 2);
                 Eigen::VectorXf left_operand = stack.top();
                 stack.pop();
                 Eigen::VectorXf right_operand = stack.top(); 
@@ -933,7 +930,7 @@ struct Board
                 if (token == "const")
                 {
 //                    std::cout << "\nparam[" << const_count << "] = " << params[const_count].value() << '\n';
-                    stack.push(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>::Constant(data.numRows(), parameters[const_count++]));
+                    stack.push(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>::Constant(Board::data.numRows(), parameters[const_count++]));
                     
                 }
                 else
@@ -1039,8 +1036,8 @@ struct Board
             v(i) = vel_dist(gen);
         }
 
-        float swarm_best_score = loss_func(expression_evaluator(this->params),data["y"]);
-        float fpi = loss_func(expression_evaluator(particle_positions),data["y"]);
+        float swarm_best_score = loss_func(expression_evaluator(this->params),Board::data["y"]);
+        float fpi = loss_func(expression_evaluator(particle_positions),Board::data["y"]);
         float temp, fxi;
         
         if (fpi > swarm_best_score)
@@ -1057,10 +1054,10 @@ struct Board
                 v(i) = K*(v(i) + phi_1*rp*(particle_positions(i) - x(i)) + phi_2*rg*((this->params)(i) - x(i)));
                 x(i) += v(i);
                 
-                fpi = loss_func(expression_evaluator(particle_positions),data["y"]); //current score
+                fpi = loss_func(expression_evaluator(particle_positions),Board::data["y"]); //current score
                 temp = particle_positions(i); //save old position of particle i
                 particle_positions(i) = x(i); //update old position to new position
-                fxi = loss_func(expression_evaluator(particle_positions),data["y"]); //calculate the score with the new position
+                fxi = loss_func(expression_evaluator(particle_positions),Board::data["y"]); //calculate the score with the new position
                 if (fxi < fpi) //if the new vector is worse:
                 {
                     particle_positions(i) = temp; //reset particle_positions[i]
@@ -1099,8 +1096,8 @@ struct Board
             v(i) = vel_dist(gen);
         }
 
-        float swarm_best_score = loss_func(expression_evaluator(this->params),data["y"]);
-        float fpi = loss_func(expression_evaluator(particle_positions),data["y"]);
+        float swarm_best_score = loss_func(expression_evaluator(this->params),Board::data["y"]);
+        float fpi = loss_func(expression_evaluator(particle_positions),Board::data["y"]);
         float temp, fxi;
         
         if (fpi > swarm_best_score)
@@ -1116,10 +1113,10 @@ struct Board
                 v(i) = K*(v(i) + phi_1*rp*(particle_positions(i) - x(i)) + phi_2*rg*((this->params)(i) - x(i)));
                 x(i) += v(i);
                 
-                fpi = loss_func(expression_evaluator(particle_positions),data["y"]); //current score
+                fpi = loss_func(expression_evaluator(particle_positions),Board::data["y"]); //current score
                 temp = particle_positions(i); //save old position of particle i
                 particle_positions(i) = x(i); //update old position to new position
-                fxi = loss_func(expression_evaluator(particle_positions),data["y"]); //calculate the score with the new position
+                fxi = loss_func(expression_evaluator(particle_positions),Board::data["y"]); //calculate the score with the new position
                 if (fxi < fpi) //if the new vector is worse:
                 {
                     particle_positions(i) = temp; //reset particle_positions[i]
@@ -1138,7 +1135,7 @@ struct Board
     
     Eigen::AutoDiffScalar<Eigen::VectorXf> grad_func(std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& inputs)
     {
-        return MSE(expression_evaluator(inputs), data["y"]);
+        return MSE(expression_evaluator(inputs), Board::data["y"]);
     }
     
     /*
@@ -1149,7 +1146,7 @@ struct Board
     {
         if (this->fit_method == "LBFGS" || this->fit_method == "LBFGSB")
         {
-            float mse = MSE(expression_evaluator(x), data["y"]);
+            float mse = MSE(expression_evaluator(x), Board::data["y"]);
             if (this->fit_grad_method == "naive_numerical")
             {
                 float low_b, temp, fac;
@@ -1158,9 +1155,9 @@ struct Board
                     //https://stackoverflow.com/a/38855586/18255427
                     temp = x(i);
                     x(i) -= 0.00001f;
-                    low_b = MSE(expression_evaluator(x), data["y"]);
+                    low_b = MSE(expression_evaluator(x), Board::data["y"]);
                     x(i) = temp + 0.00001f;
-                    grad(i) = (MSE(expression_evaluator(x), data["y"]) - low_b) / 0.00002f ;
+                    grad(i) = (MSE(expression_evaluator(x), Board::data["y"]) - low_b) / 0.00002f ;
                     x(i) = temp;
                 }
             }
@@ -1197,7 +1194,7 @@ struct Board
         float fx;
         
         Eigen::VectorXf eigenVec = this->params;
-        float mse = MSE(expression_evaluator(this->params), data["y"]);
+        float mse = MSE(expression_evaluator(this->params), Board::data["y"]);
         try
         {
             solver.minimize((*this), eigenVec, fx);
@@ -1224,7 +1221,7 @@ struct Board
         float fx;
         
         Eigen::VectorXf eigenVec = this->params;
-        float mse = MSE(expression_evaluator(this->params), data["y"]);
+        float mse = MSE(expression_evaluator(this->params), Board::data["y"]);
         try
         {
             solver.minimize((*this), eigenVec, fx, Eigen::VectorXf::Constant(eigenVec.size(), -std::numeric_limits<float>::infinity()), Eigen::VectorXf::Constant(eigenVec.size(), std::numeric_limits<float>::infinity()));
@@ -1243,7 +1240,7 @@ struct Board
     
     int values()
     {
-        return data.numRows();
+        return Board::data.numRows();
     }
     
     int df(Eigen::VectorXf &x, Eigen::MatrixXf &fjac)
@@ -1277,19 +1274,22 @@ struct Board
         return 0;
     }
     
-    void LevenbergMarquardt()
+    bool LevenbergMarquardt()
     {
+        bool improved = false;
         auto start_time = Clock::now();
         Eigen::LevenbergMarquardt<decltype(*this), float> lm(*this);
-        Eigen::VectorXf eigenVec = this->params;
+        float score_before = MSE(expression_evaluator(this->params), Board::data["y"]);
         lm.parameters.maxfev = this->num_fit_iter;
 //        std::cout << "ftol (Cost function change) = " << lm.parameters.ftol << '\n';
 //        std::cout << "xtol (Parameters change) = " << lm.parameters.xtol << '\n';
 
-        lm.minimize(eigenVec);
-        if (MSE(expression_evaluator(eigenVec), data["y"]) < MSE(expression_evaluator(this->params), data["y"]))
+        lm.minimize(this->params);
+        if (MSE(expression_evaluator(this->params), Board::data["y"]) < score_before)
         {
-            this->params = std::move(eigenVec);
+            static int count = 0;
+            std::cout << ++count << '\r' << std::flush;
+            improved = true;
         }
         
 //        std::cout << "Iterations = " << lm.nfev << '\n';
@@ -1297,10 +1297,12 @@ struct Board
             std::scoped_lock lock(thread_locker);
             Board::fit_time += (timeElapsedSince(start_time));
         }
+        return improved;
     }
     
     float fitFunctionToData()
     {
+        bool improved = true;
         if (this->params.size())
         {
             if (this->fit_method == "PSO")
@@ -1321,16 +1323,19 @@ struct Board
             }
             else if (this->fit_method == "LevenbergMarquardt")
             {
-                LevenbergMarquardt();
+                improved = LevenbergMarquardt();
             }
         }
         {
             std::unique_lock lock(thread_locker);
-            Board::expression_dict[this->expression_string].first = this->params;
+            if (improved)
+            {
+                Board::expression_dict[this->expression_string].first = this->params;
+            }
             Board::expression_dict[this->expression_string].second = false;
         }
         condition_var.notify_one();
-        return loss_func(expression_evaluator(this->params),data["y"]);
+        return loss_func(expression_evaluator(Board::expression_dict[this->expression_string].first),Board::data["y"]);
     }
     
     /*
@@ -1390,10 +1395,13 @@ struct Board
             return 0.0f;
         }
     }
-    const Eigen::VectorXf& operator[] (int i){return data[i];}
+    const Eigen::VectorXf& operator[] (int i)
+    {
+        return Board::data[i];
+    }
     const Eigen::VectorXf& operator[] (const std::string& i)
     {
-        return data[i];
+        return Board::data[i];
     }
     
     friend std::ostream& operator<<(std::ostream& os, const Board& b)
@@ -1476,8 +1484,6 @@ struct Board
         }
     }
 };
-
-//Data Board::data;
 
 // 2.5382*cos(x_3) + x_0^2 - 0.5
 // postfix = "const x3 cos * x0 x0 * const - +"
@@ -2222,10 +2228,8 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
     out.close();
 }
 
-void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120.0 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0)
+void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::string expression_type = "prefix", const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, const int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, const int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0)
 {
-    std::random_device rand_dev;
-    std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
     std::map<int, std::vector<double>> scores; //unordered_map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
     
@@ -2243,8 +2247,8 @@ void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expres
         /*
          Outside of thread:
          */
-        float max_score = 0;
-        std::vector<std::pair<int, double>> temp_scores;
+        float max_score{0.0};
+        std::vector<std::pair<int, float>> temp_scores;
         
         auto start_time = Clock::now();
         std::thread pushBackThread([&]()
@@ -2260,13 +2264,12 @@ void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expres
          Inside of thread:
          */
         
-        
-        
-        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &generator, &max_score, &sync_point]()
+        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point]()
         {
+            std::random_device rand_dev;
+            std::mt19937 thread_local generator(rand_dev()); // Mersenne Twister random number generator
             Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
             sync_point.arrive_and_wait();
-            
             float score = 0;
             std::vector<float> temp_legal_moves;
             size_t temp_sz;
@@ -2276,18 +2279,20 @@ void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expres
                 {
                     temp_legal_moves = x.get_legal_moves(); //the legal moves
                     temp_sz = temp_legal_moves.size(); //the number of legal moves
-                    assert(temp_sz);
+//                    assert(temp_sz);
                     std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
                     {
-                        std::scoped_lock lock(Board::thread_locker);
+//                        std::scoped_lock lock(Board::thread_locker);
                         x.pieces.emplace_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
                     }
                 }
-
+//                assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
+//                assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
                 {
-                    std::scoped_lock lock(Board::thread_locker);
+                    
                     if (score > max_score)
                     {
+                        std::scoped_lock lock(Board::thread_locker);
                         max_score = score;
                     }
                 }
@@ -2481,7 +2486,7 @@ int main() {
         AIFeynman_Benchmarks and then run PlotData.py
     */
     
-    RandomSearch(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/);
+    RandomSearch(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 1 /*num threads*/);
 
     return 0;
 }
