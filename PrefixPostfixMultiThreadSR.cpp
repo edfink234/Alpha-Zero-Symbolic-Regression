@@ -210,7 +210,7 @@ struct Board
 
     int n; //depth of RPN/PN tree
     std::string expression_type, expression_string;
-    static std::mutex inline thread_locker;
+    static std::mutex inline thread_locker; //static because it needs to protect static members
     // Create the empty expression list.
     std::vector<float> pieces;
     bool visualize_exploration, is_primary;
@@ -339,7 +339,7 @@ struct Board
         throw std::out_of_range("Index out of range");
     }
     
-    int __num_binary_ops()
+    int __num_binary_ops() const
     {
         int count = 0;
         for (float token : pieces)
@@ -352,7 +352,7 @@ struct Board
         return count;
     }
 
-    int __num_unary_ops()
+    int __num_unary_ops() const
     {
         int count = 0;
         for (float token : pieces)
@@ -365,7 +365,7 @@ struct Board
         return count;
     }
 
-    int __num_leaves()
+    int __num_leaves() const
     {
         int count = 0;
 
@@ -379,7 +379,7 @@ struct Board
         return count;
     }
     
-    int __num_consts()
+    int __num_consts() const
     {
         int count = 0;
 
@@ -393,17 +393,17 @@ struct Board
         return count;
     }
     
-    bool is_unary(float token)
+    bool is_unary(float token) const
     {
         return (std::find(__unary_operators_float.begin(), __unary_operators_float.end(), token) != __unary_operators_float.end());
     }
 
-    bool is_binary(float token)
+    bool is_binary(float token) const
     {
         return (std::find(__binary_operators_float.begin(), __binary_operators_float.end(), token) != __binary_operators_float.end());
     }
     
-    bool is_operator(float token)
+    bool is_operator(float token) const
     {
         return (is_binary(token) || is_unary(token));
     }
@@ -808,7 +808,7 @@ struct Board
         return stack.top();
     }
 
-    Eigen::VectorXf expression_evaluator(const Eigen::VectorXf& params)
+    Eigen::VectorXf expression_evaluator(const Eigen::VectorXf& params) const
     {
         std::stack<const Eigen::VectorXf> stack;
         size_t const_count = 0;
@@ -820,11 +820,11 @@ struct Board
             {
                 if (token == "const")
                 {
-                    stack.push(Eigen::VectorXf::Ones(Board::data.numRows())*this->params(const_count++));
+                    stack.push(Eigen::VectorXf::Ones(Board::data.numRows())*params(const_count++));
                 }
                 else
                 {
-                    stack.push(Board::data[token]); 
+                    stack.push(Board::data[token]);
                 }
             }
             else if (std::find(Board::__unary_operators_float.begin(), Board::__unary_operators_float.end(), pieces[i]) != Board::__unary_operators_float.end()) // Unary operator
@@ -889,7 +889,7 @@ struct Board
 //                assert(stack.size() >= 2);
                 Eigen::VectorXf left_operand = stack.top();
                 stack.pop();
-                Eigen::VectorXf right_operand = stack.top(); 
+                Eigen::VectorXf right_operand = stack.top();
                 stack.pop();
                 if (token == "+")
                 {
@@ -916,7 +916,7 @@ struct Board
         return stack.top();
     }
     
-    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> expression_evaluator(std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& parameters)
+    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> expression_evaluator(std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& parameters) const
     {
         std::stack<Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>> stack;
         size_t const_count = 0;
@@ -1238,7 +1238,7 @@ struct Board
         Board::fit_time += (timeElapsedSince(start_time));
     }
     
-    int values()
+    int values() const
     {
         return Board::data.numRows();
     }
@@ -1252,7 +1252,7 @@ struct Board
         {
 //            Eigen::VectorXf xPlus(x);
 //            xPlus(i) += epsilon;
-//           
+//
 //            Eigen::VectorXf xMinus(x);
 //            xMinus(i) -= epsilon;
 //            x(i) -= epsilon;
@@ -1287,8 +1287,6 @@ struct Board
         lm.minimize(this->params);
         if (MSE(expression_evaluator(this->params), Board::data["y"]) < score_before)
         {
-            static int count = 0;
-            std::cout << ++count << '\r' << std::flush;
             improved = true;
         }
         
@@ -1302,9 +1300,10 @@ struct Board
     
     float fitFunctionToData()
     {
-        bool improved = true;
+        float loss;
         if (this->params.size())
         {
+            bool improved = true;
             if (this->fit_method == "PSO")
             {
                 PSO();
@@ -1324,18 +1323,27 @@ struct Board
             else if (this->fit_method == "LevenbergMarquardt")
             {
                 improved = LevenbergMarquardt();
+                std::unique_lock lock(thread_locker);
+                
+                if (improved)
+                {
+                    Board::expression_dict[this->expression_string].first = std::move(this->params);
+                }
+                loss = loss_func(expression_evaluator(Board::expression_dict[this->expression_string].first),Board::data["y"]);
+                Board::expression_dict[this->expression_string].second = false;
             }
+            condition_var.notify_one();
         }
+        else
         {
+            loss = loss_func(expression_evaluator(Board::expression_dict[this->expression_string].first),Board::data["y"]);
             std::unique_lock lock(thread_locker);
-            if (improved)
-            {
-                Board::expression_dict[this->expression_string].first = this->params;
-            }
             Board::expression_dict[this->expression_string].second = false;
+            condition_var.notify_one();
         }
-        condition_var.notify_one();
-        return loss_func(expression_evaluator(Board::expression_dict[this->expression_string].first),Board::data["y"]);
+        
+//        assert(Board::expression_dict[this->expression_string].first.size() == this->params.size());
+        return loss;
     }
     
     /*
@@ -1380,14 +1388,13 @@ struct Board
                     std::unique_lock lock(thread_locker);
                     while (Board::expression_dict[this->expression_string].second){condition_var.wait(lock);}
 
-                    Board::expression_dict[this->expression_string].second = true;
                     this->params = Board::expression_dict[this->expression_string].first;
-                }
-                
-                if (!this->params.size())
-                {
-                    this->params.resize(__num_consts());
-                    this->params.setOnes();
+                    if (!this->params.size())
+                    {
+                        this->params.resize(this->__num_consts());
+                        this->params.setOnes();
+                        Board::expression_dict[this->expression_string].first = this->params;
+                    }
                 }
 
                 return fitFunctionToData();
@@ -2282,7 +2289,6 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
 //                    assert(temp_sz);
                     std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
                     {
-//                        std::scoped_lock lock(Board::thread_locker);
                         x.pieces.emplace_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
                     }
                 }
@@ -2486,10 +2492,9 @@ int main() {
         AIFeynman_Benchmarks and then run PlotData.py
     */
     
-    RandomSearch(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 1 /*num threads*/);
+    RandomSearch(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/);
 
     return 0;
 }
 
 //git push --set-upstream origin prefix_and_postfix_cpp_implementation
-

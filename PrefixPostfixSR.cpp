@@ -723,12 +723,12 @@ struct Board
         std::string temp;
         temp.reserve(2*pieces.size());
         size_t sz = pieces.size() - 1;
-        int const_index = ((expression_type == "postfix") ? 0 : params->size()-1);
+        int const_index = ((expression_type == "postfix") ? 0 : this->params->size()-1);
         for (size_t i = 0; i <= sz; i++)
         {
             if (std::find(Board::__other_tokens_float.begin(), Board::__other_tokens_float.end(), pieces[i]) != Board::__other_tokens_float.end())
             {
-                temp += ((i!=sz) ? std::to_string((*params)(const_index)) + " " : std::to_string((*params)(const_index)));
+                temp += ((i!=sz) ? std::to_string((*this->params)(const_index)) + " " : std::to_string((*this->params)(const_index)));
                 if (expression_type == "postfix")
                 {
                     const_index++;
@@ -759,7 +759,7 @@ struct Board
 
             if (std::find(Board::__operators_float.begin(), Board::__operators_float.end(), pieces[i]) == Board::__operators_float.end()) // leaf
             {
-                stack.push(((!show_consts) || (std::find(Board::__other_tokens.begin(), Board::__other_tokens.end(), token) == Board::__other_tokens.end())) ? token : std::to_string((*params)(const_counter++)));
+                stack.push(((!show_consts) || (std::find(Board::__other_tokens.begin(), Board::__other_tokens.end(), token) == Board::__other_tokens.end())) ? token : std::to_string((*this->params)(const_counter++)));
             }
             else if (std::find(Board::__unary_operators_float.begin(), Board::__unary_operators_float.end(), pieces[i]) != Board::__unary_operators_float.end()) // Unary operator
             {
@@ -911,7 +911,7 @@ struct Board
             {
                 if (token == "const")
                 {
-//                    std::cout << "\nparam[" << const_count << "] = " << params[const_count].value() << '\n';
+//                    std::cout << "\nparameters[" << const_count << "] = " << parameters[const_count].value() << '\n';
                     stack.push(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>::Constant(data.numRows(), parameters[const_count++]));
                     
                 }
@@ -956,23 +956,23 @@ struct Board
     void AsyncPSO()
     {
         auto start_time = Clock::now();
-        Eigen::VectorXf particle_positions(params->size()), x(params->size());
-        Eigen::VectorXf v(params->size());
+        Eigen::VectorXf particle_positions(this->params->size()), x(this->params->size());
+        Eigen::VectorXf v(this->params->size());
         float rp, rg;
 
-        for (size_t i = 0; i < params->size(); i++)
+        for (size_t i = 0; i < this->params->size(); i++)
         {
             particle_positions(i) = x(i) = pos_dist(gen);
             v(i) = vel_dist(gen);
         }
 
-        float swarm_best_score = loss_func(expression_evaluator(*params),data["y"]);
+        float swarm_best_score = loss_func(expression_evaluator(*this->params),data["y"]);
         float fpi = loss_func(expression_evaluator(particle_positions),data["y"]);
         float temp, fxi;
         
         if (fpi > swarm_best_score)
         {
-            *params = particle_positions;
+            *this->params = particle_positions;
             swarm_best_score = fpi;
         }
         
@@ -981,7 +981,7 @@ struct Board
             for (int j = 0; j < this->num_fit_iter; j++)
             {
                 rp = pos_dist(gen), rg = pos_dist(gen);
-                v(i) = K*(v(i) + phi_1*rp*(particle_positions(i) - x(i)) + phi_2*rg*((*params)(i) - x(i)));
+                v(i) = K*(v(i) + phi_1*rp*(particle_positions(i) - x(i)) + phi_2*rg*((*this->params)(i) - x(i)));
                 x(i) += v(i);
                 
                 fpi = loss_func(expression_evaluator(particle_positions),data["y"]); //current score
@@ -994,15 +994,15 @@ struct Board
                 }
                 else if (fpi > swarm_best_score)
                 {
-                    (*params)(i) = particle_positions(i);
+                    (*this->params)(i) = particle_positions(i);
                     swarm_best_score = fpi;
                 }
             }
         };
         
         std::vector<std::future<void>> particles;
-        particles.reserve(params->size());
-        for (int i = 0; i < params->size(); i++)
+        particles.reserve(this->params->size());
+        for (int i = 0; i < this->params->size(); i++)
         {
             particles.push_back(std::async(std::launch::async | std::launch::deferred, UpdateParticle, i));
         }
@@ -1016,11 +1016,11 @@ struct Board
     void PSO()
     {
         auto start_time = Clock::now();
-        Eigen::VectorXf particle_positions(params->size()), x(params->size());
-        Eigen::VectorXf v(params->size());
+        Eigen::VectorXf particle_positions(this->params->size()), x(this->params->size());
+        Eigen::VectorXf v(this->params->size());
         float rp, rg;
 
-        for (size_t i = 0; i < params->size(); i++)
+        for (size_t i = 0; i < this->params->size(); i++)
         {
             particle_positions(i) = x(i) = pos_dist(gen);
             v(i) = vel_dist(gen);
@@ -1032,15 +1032,15 @@ struct Board
         
         if (fpi > swarm_best_score)
         {
-            *params = particle_positions;
+            *this->params = particle_positions;
             swarm_best_score = fpi;
         }
         for (int j = 0; j < this->num_fit_iter; j++)
         {
-            for (unsigned short i = 0; i < params->size(); i++) //number of particles
+            for (unsigned short i = 0; i < this->params->size(); i++) //number of particles
             {
                 rp = pos_dist(gen), rg = pos_dist(gen);
-                v(i) = K*(v(i) + phi_1*rp*(particle_positions(i) - x(i)) + phi_2*rg*((*params)(i) - x(i)));
+                v(i) = K*(v(i) + phi_1*rp*(particle_positions(i) - x(i)) + phi_2*rg*((*this->params)(i) - x(i)));
                 x(i) += v(i);
                 
                 fpi = loss_func(expression_evaluator(particle_positions),data["y"]); //current score
@@ -1053,8 +1053,8 @@ struct Board
                 }
                 else if (fpi > swarm_best_score)
                 {
-//                    printf("Iteration %d: Changing param %d from %f to %f. Score from %f to %f\n", j, i, (*params)[i], particle_positions[i], swarm_best_score, fpi);
-                    (*params)(i) = particle_positions(i);
+//                    printf("Iteration %d: Changing param %d from %f to %f. Score from %f to %f\n", j, i, (*this->params)[i], particle_positions[i], swarm_best_score, fpi);
+                    (*this->params)(i) = particle_positions(i);
                     swarm_best_score = fpi;
                 }
             }
@@ -1123,8 +1123,8 @@ struct Board
         LBFGSpp::LBFGSSolver<float, LBFGSpp::LineSearchMoreThuente> solver(param); //LineSearchBacktracking, LineSearchBracketing, LineSearchMoreThuente, LineSearchNocedalWright
         float fx;
         
-        Eigen::VectorXf eigenVec = *params;
-        float mse = MSE(expression_evaluator(*params), data["y"]);
+        Eigen::VectorXf eigenVec = *this->params;
+        float mse = MSE(expression_evaluator(*this->params), data["y"]);
         try
         {
             solver.minimize((*this), eigenVec, fx);
@@ -1135,7 +1135,7 @@ struct Board
         if (fx < mse)
         {
 //            printf("mse = %f -> fx = %f\n", mse, fx);
-            *params = eigenVec;
+            *this->params = eigenVec;
         }
         Board::fit_time += (timeElapsedSince(start_time));
     }
@@ -1150,8 +1150,8 @@ struct Board
         LBFGSpp::LBFGSBSolver<float> solver(param); //LineSearchBacktracking, LineSearchBracketing, LineSearchMoreThuente, LineSearchNocedalWright
         float fx;
         
-        Eigen::VectorXf eigenVec = *params;
-        float mse = MSE(expression_evaluator(*params), data["y"]);
+        Eigen::VectorXf eigenVec = *this->params;
+        float mse = MSE(expression_evaluator(*this->params), data["y"]);
         try
         {
             solver.minimize((*this), eigenVec, fx, Eigen::VectorXf::Constant(eigenVec.size(), -std::numeric_limits<float>::infinity()), Eigen::VectorXf::Constant(eigenVec.size(), std::numeric_limits<float>::infinity()));
@@ -1163,7 +1163,7 @@ struct Board
         if (fx < mse)
         {
 //            printf("mse = %f -> fx = %f\n", mse, fx);
-            *params = eigenVec;
+            *this->params = eigenVec;
         }
         Board::fit_time += (timeElapsedSince(start_time));
     }
@@ -1207,17 +1207,17 @@ struct Board
     {
         auto start_time = Clock::now();
         Eigen::LevenbergMarquardt<decltype(*this), float> lm(*this);
-        Eigen::VectorXf eigenVec = *params;
+        Eigen::VectorXf eigenVec = *this->params;
         lm.parameters.maxfev = this->num_fit_iter;
 //        std::cout << "ftol (Cost function change) = " << lm.parameters.ftol << '\n';
 //        std::cout << "xtol (Parameters change) = " << lm.parameters.xtol << '\n';
 
         lm.minimize(eigenVec);
-        if (MSE(expression_evaluator(eigenVec), data["y"]) < MSE(expression_evaluator(*params), data["y"]))
+        if (MSE(expression_evaluator(eigenVec), data["y"]) < MSE(expression_evaluator(*this->params), data["y"]))
         {
 //            static int count = 0;
 //            std::cout << ++count << '\r' << std::flush;
-            *params = std::move(eigenVec);
+            *this->params = std::move(eigenVec);
         }
         
 //        std::cout << "Iterations = " << lm.nfev << '\n';
@@ -1226,7 +1226,7 @@ struct Board
     
     float fitFunctionToData()
     {
-        if (params->size())
+        if (this->params->size())
         {
             if (this->fit_method == "PSO")
             {
@@ -1250,7 +1250,7 @@ struct Board
             }
         }
         
-        return loss_func(expression_evaluator(*params),data["y"]);
+        return loss_func(expression_evaluator(*this->params),data["y"]);
     }
     
     /*
