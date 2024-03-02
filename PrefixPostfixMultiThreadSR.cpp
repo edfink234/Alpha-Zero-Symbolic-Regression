@@ -37,6 +37,7 @@
 #include <unsupported/Eigen/AutoDiff>
 
 using Clock = std::chrono::high_resolution_clock;
+using namespace std::chrono_literals;
 
 //Returns the number of seconds since `start_time`
 double timeElapsedSince(auto start_time)
@@ -193,8 +194,7 @@ struct Board
     std::uniform_real_distribution<float> vel_dist, pos_dist;
     
     static int inline action_size;
-    static std::barrier<std::atomic<int>> init_barrier;  // Barrier for synchronization
-    static std::once_flag inline initialization_flag;          // Flag for std::call_once
+    static std::once_flag inline initialization_flag;  // Flag for std::call_once
     
     size_t reserve_amount;
     int num_fit_iter;
@@ -1323,22 +1323,28 @@ struct Board
             else if (this->fit_method == "LevenbergMarquardt")
             {
                 improved = LevenbergMarquardt();
-                std::unique_lock lock(thread_locker);
+//                std::unique_lock lock(thread_locker);
                 
                 if (improved)
                 {
+                    std::unique_lock lock(thread_locker);
                     Board::expression_dict[this->expression_string].first = std::move(this->params);
                 }
+                std::unique_lock lock(thread_locker);
                 loss = loss_func(expression_evaluator(Board::expression_dict[this->expression_string].first),Board::data["y"]);
+                
                 Board::expression_dict[this->expression_string].second = false;
+//                std::cout << "params: notifying" << '\r' << std::flush;
+                condition_var.notify_one();
             }
-            condition_var.notify_one();
+            
         }
         else
         {
             loss = loss_func(expression_evaluator(Board::expression_dict[this->expression_string].first),Board::data["y"]);
             std::unique_lock lock(thread_locker);
             Board::expression_dict[this->expression_string].second = false;
+//            std::cout << "no params: notifying" << '\r' << std::flush;
             condition_var.notify_one();
         }
         
@@ -1386,8 +1392,8 @@ struct Board
 
                 {
                     std::unique_lock lock(thread_locker);
-                    while (Board::expression_dict[this->expression_string].second){condition_var.wait(lock);}
-
+                    std::timed_mutex timed_lock;
+                    condition_var.wait_for(lock, 100ms, [&](){return !(Board::expression_dict[this->expression_string].second);});
                     this->params = Board::expression_dict[this->expression_string].first;
                     if (!this->params.size())
                     {
