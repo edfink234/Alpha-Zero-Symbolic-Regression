@@ -163,7 +163,6 @@ float loss_func(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
 
 struct Board
 {
-    static std::string inline best_expression = "";
     static std::unordered_map<std::string, std::pair<Eigen::VectorXf, bool>> inline expression_dict = {};
     static float inline best_loss = FLT_MAX;
     static float inline fit_time = 0;
@@ -188,6 +187,7 @@ struct Board
     static std::vector<float> inline __binary_operators_float;
     static std::vector<float> inline __input_vars_float;
     static std::vector<float> inline __other_tokens_float;
+    static std::barrier inline test_barrier = 7;
     
     std::random_device rd;
     std::mt19937 gen;
@@ -1323,31 +1323,26 @@ struct Board
             else if (this->fit_method == "LevenbergMarquardt")
             {
                 improved = LevenbergMarquardt();
-//                std::unique_lock lock(thread_locker);
+                std::scoped_lock lock(thread_locker);
                 
                 if (improved)
                 {
-                    std::unique_lock lock(thread_locker);
                     Board::expression_dict[this->expression_string].first = std::move(this->params);
                 }
-                std::unique_lock lock(thread_locker);
                 loss = loss_func(expression_evaluator(Board::expression_dict[this->expression_string].first),Board::data["y"]);
-                
                 Board::expression_dict[this->expression_string].second = false;
 //                std::cout << "params: notifying" << '\r' << std::flush;
-                condition_var.notify_one();
+                
             }
-            
         }
         else
         {
             loss = loss_func(expression_evaluator(Board::expression_dict[this->expression_string].first),Board::data["y"]);
-            std::unique_lock lock(thread_locker);
+            std::/*unique_lock*/scoped_lock lock(thread_locker);
             Board::expression_dict[this->expression_string].second = false;
 //            std::cout << "no params: notifying" << '\r' << std::flush;
-            condition_var.notify_one();
         }
-        
+//        condition_var.notify_one();
 //        assert(Board::expression_dict[this->expression_string].first.size() == this->params.size());
         return loss;
     }
@@ -1391,16 +1386,26 @@ struct Board
                 for (float i: pieces){this->expression_string += std::to_string(i)+" ";}
 
                 {
-                    std::unique_lock lock(thread_locker);
-                    std::timed_mutex timed_lock;
-                    condition_var.wait_for(lock, 100ms, [&](){return !(Board::expression_dict[this->expression_string].second);});
-                    this->params = Board::expression_dict[this->expression_string].first;
-                    if (!this->params.size())
+                    std::scoped_lock lock(thread_locker);
+                    if (Board::expression_dict[this->expression_string].second)
                     {
                         this->params.resize(this->__num_consts());
                         this->params.setOnes();
-                        Board::expression_dict[this->expression_string].first = this->params;
+                        return loss_func(expression_evaluator(this->params),Board::data["y"]);
                     }
+                    this->params = Board::expression_dict[this->expression_string].first;
+                }
+                
+                if (!this->params.size())
+                {
+                    this->params.resize(this->__num_consts());
+                    this->params.setOnes();
+                    std::scoped_lock lock(thread_locker);
+                    if (Board::expression_dict[this->expression_string].second)
+                    {
+                        return loss_func(expression_evaluator(this->params),Board::data["y"]);
+                    }
+                    Board::expression_dict[this->expression_string].first = this->params;
                 }
 
                 return fitFunctionToData();
