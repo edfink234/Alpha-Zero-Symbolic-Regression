@@ -6,10 +6,8 @@
 #include <utility>
 #include <algorithm>
 #include <future>         // std::async, std::future
-#include <unordered_set>
 #include <unordered_map>
 #include <map>
-#include <float.h>
 #include <ctime>
 #include <cstdlib>
 #include <stack>
@@ -19,24 +17,19 @@
 #include <chrono>
 #include <fstream>
 #include <iomanip>
-#include <limits>
 #include <cfloat>
 #include <cassert>
 #include <thread>
-//#include <pybind11/pybind11.h>
-//#include <Python.h>
-#include <Eigen/Core>
-#include <Eigen/Dense>
 #include <LBFGS.h>
 #include <LBFGSB.h>
-#include <unsupported/Eigen/CXX11/Tensor>
-#include <unsupported/Eigen/NonLinearOptimization>
+#include <unsupported/Eigen/NonLinearOptimization> //LevenbergMarquardt
 #include <unsupported/Eigen/AutoDiff>
 
 using Clock = std::chrono::high_resolution_clock;
 
 //Returns the number of seconds since `start_time`
-double timeElapsedSince(auto start_time)
+template <typename T>
+double timeElapsedSince(T start_time)
 {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9;
 }
@@ -124,7 +117,6 @@ public:
     {
         return (os << matrix.data);
     }
-
 };
 
 float MSE(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
@@ -133,7 +125,6 @@ float MSE(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
     {
         throw std::invalid_argument("Vectors must be of the same size");
     }
-        
     return (actual - predicted).squaredNorm() / actual.size();
 }
 
@@ -197,11 +188,10 @@ struct Board
 
     int n; //depth of RPN/PN tree
     std::string expression_type;
-    // Create the empty expression list.
-    std::vector<float> pieces;
+    std::vector<float> pieces; // Create the empty expression list.
     bool visualize_exploration, is_primary;
     
-    Board(bool primary = true, int n = 3, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false) : is_primary{primary}, gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, fit_method{fitMethod}, num_fit_iter{numFitIter}, fit_grad_method{fitGradMethod}
+    Board(bool primary = true, int n = 3, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, is_primary{primary}
     {
         if (n > 30)
         {
@@ -890,7 +880,7 @@ struct Board
                 }
                 else if (token == "^")
                 {
-                    stack.push(((expression_type == "postfix") ? left_operand.array().pow(right_operand.array()) : right_operand.array().pow(left_operand.array())));
+                    stack.push(((expression_type == "postfix") ? right_operand.array().pow(left_operand.array()) : left_operand.array().pow(right_operand.array())));
 
                 }
             }
@@ -1079,7 +1069,7 @@ struct Board
             float mse = MSE(expression_evaluator(x), data["y"]);
             if (this->fit_grad_method == "naive_numerical")
             {
-                float low_b, temp, fac;
+                float low_b, temp;
                 for (int i = 0; i < x.size(); i++) //finite differences wrt x evaluated at the current values x(i)
                 {
                     //https://stackoverflow.com/a/38855586/18255427
@@ -1294,8 +1284,7 @@ struct Board
                 this->params = &Board::expression_dict[expression_string].first;
                 if (!(this->params->size()))
                 {
-                    this->params->resize(__num_consts());
-                    this->params->setOnes();
+                    this->params->setOnes(this->__num_consts());
                 }
 
                 return fitFunctionToData();
@@ -1627,7 +1616,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
     {
         Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
         Board secondary_one(false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache), secondary_two(false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache); //For crossover and mutations
-        float score = 0.0f, max_score = 0.0f, mut_prob = 0.8f, cross_prob = 0.2f, rand_mut_cross;
+        float score = 0.0f, max_score = 0.0f, mut_prob = 0.8f, rand_mut_cross;
         constexpr int init_population = 2000;
         std::vector<std::pair<std::vector<float>, float>> individuals;
         std::pair<std::vector<float>, float> individual_1, individual_2;
@@ -1638,7 +1627,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         std::uniform_int_distribution<int> rand_depth_dist(0, x.n - 1), selector_dist(0, init_population - 1);
         int rand_depth, rand_individual_idx_1, rand_individual_idx_2;
         std::uniform_real_distribution<float> rand_mut_cross_dist(0.0f, 1.0f);
-        size_t temp_sz, idx;
+        size_t temp_sz;
     //    std::string expression, orig_expression, best_expression;
         
         auto updateScore = [&]()
@@ -1797,7 +1786,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
             }
         });
         
-        for (int ngen = 0; (timeElapsedSince(start_time) < time/*max_score < stop*/); ngen++)
+        for (/*int ngen = 0*/; (timeElapsedSince(start_time) < time/*max_score < stop*/); /*ngen++*/)
         {
 //            if (ngen && (ngen%5 == 0))
 //            {
@@ -1885,7 +1874,7 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
         best_positions.reserve(x.reserve_amount); //indices corresponding to best pieces
         curr_positions.reserve(x.reserve_amount); //indices corresponding to x.pieces
         v.reserve(x.reserve_amount); //stores record of all current particle velocities
-        float rp, rg, new_pos, new_v, noise, c = 0.0f;
+        float rp, rg, new_v, c = 0.0f;
         int c_count = 0;
         std::unordered_map<float, std::unordered_map<int, int>> Nsa;
         std::unordered_map<float, std::unordered_map<int, float>> Psa;
@@ -2023,7 +2012,7 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
         moveTracker.reserve(x.reserve_amount);
         temp_legal_moves.reserve(x.reserve_amount);
         state.reserve(2*x.reserve_amount);
-        double str_convert_time = 0.0;
+//        double str_convert_time = 0.0;
         double timeElapsed;
         auto getString  = [&]()
         {
@@ -2067,9 +2056,9 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
             while ((score = x.complete_status()) == -1)
             {
                 temp_legal_moves = x.get_legal_moves();
-                auto start_time = Clock::now();
+//                auto start_time = Clock::now();
                 getString();
-                str_convert_time += timeElapsedSince(start_time);
+//                str_convert_time += timeElapsedSince(start_time);
                 UCT = 0.0f;
                 UCT_best = -FLT_MAX;
                 best_act = -1.0f;
@@ -2159,7 +2148,6 @@ void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expres
         
         size_t temp_sz;
     //    std::string expression, orig_expression, best_expression;
-        double timeElapsed;
         auto start_time = Clock::now();
         std::thread pushBackThread([&]()
         {
@@ -2170,7 +2158,7 @@ void RandomSearch(const Eigen::MatrixXf& data, int depth = 3, std::string expres
             }
         });
 
-        for (int i = 0; (timeElapsedSince(start_time) < time/*score < stop && Board::expression_dict.size() <= 100000*/); i++)
+        for (;(timeElapsedSince(start_time) < time/*score < stop && Board::expression_dict.size() <= 100000*/);)
         {
             while ((score = x.complete_status()) == -1)
             {
@@ -2343,31 +2331,31 @@ void AIFeynmanBenchmarks(int numIntervals, double time, int numRuns)
     SimulatedAnnealing(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PostSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
 }
 
-int main() {
-    
-//    This comment block is testing the Python-C API
-//    ==============================================
-//    Py_Initialize();
-//    PyObject* pName = PyUnicode_DecodeFSDefault("scipy");
-//    PyObject* pModule = PyImport_Import(pName);
-//    Py_XDECREF(pName);
-//    std::cout << std::boolalpha << (pModule == NULL) << '\n';
-//    PyObject* pFunc = PyObject_GetAttrString(pModule, "optimize.curve_fit");
-//    PyObject* pArgs = Py_BuildValue("ff", 1.0f, 1.0f);
-//    std::vector<float> myVector = {1.0f, 2.0f, 3.0f};
-//    PyObject* pArgs = convertVectorToPythonList(myVector);
-//    PyObject* pStr = PyObject_Str(pArgs);
-//    const char* cstr = PyUnicode_AsUTF8(pStr);
-//    puts(cstr);
-    
-//    HembergBenchmarks(20 /*numIntervals*/, 120 /*time*/, 50 /*numRuns*/);
-//    AIFeynmanBenchmarks(20 /*numIntervals*/, 120 /*time*/, 50 /*numRuns*/);
+int main() 
+{
+    //    This comment block is testing the Python-C API
+    //    ==============================================
+    //    Py_Initialize();
+    //    PyObject* pName = PyUnicode_DecodeFSDefault("scipy");
+    //    PyObject* pModule = PyImport_Import(pName);
+    //    Py_XDECREF(pName);
+    //    std::cout << std::boolalpha << (pModule == NULL) << '\n';
+    //    PyObject* pFunc = PyObject_GetAttrString(pModule, "optimize.curve_fit");
+    //    PyObject* pArgs = Py_BuildValue("ff", 1.0f, 1.0f);
+    //    std::vector<float> myVector = {1.0f, 2.0f, 3.0f};
+    //    PyObject* pArgs = convertVectorToPythonList(myVector);
+    //    PyObject* pStr = PyObject_Str(pArgs);
+    //    const char* cstr = PyUnicode_AsUTF8(pStr);
+    //    puts(cstr);
+        
+    //    HembergBenchmarks(20 /*numIntervals*/, 120 /*time*/, 50 /*numRuns*/);
+    //    AIFeynmanBenchmarks(20 /*numIntervals*/, 120 /*time*/, 50 /*numRuns*/);
     /*
         Then, move the generated txt files to the directories Hemberg_Benchmarks and
         AIFeynman_Benchmarks and then run PlotData.py
     */
     
-    RandomSearch(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 16 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/);
+    RandomSearch(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearch.txt" /*name of file to save the results to*/, 1 /*number of runs*/);
 
     return 0;
 }

@@ -1,4 +1,3 @@
-//TODO: Explore nanobind
 #include <vector>
 #include <array>
 #include <iostream>
@@ -6,10 +5,8 @@
 #include <utility>
 #include <algorithm>
 #include <future>         // std::async, std::future
-#include <unordered_set>
 #include <unordered_map>
 #include <map>
-#include <float.h>
 #include <ctime>
 #include <cstdlib>
 #include <stack>
@@ -19,28 +16,21 @@
 #include <chrono>
 #include <fstream>
 #include <iomanip>
-#include <limits>
 #include <cfloat>
 #include <cassert>
 #include <thread>
 #include <mutex>
-#include <condition_variable>
-#include <barrier>
-//#include <pybind11/pybind11.h>
-//#include <Python.h>
-#include <Eigen/Core>
-#include <Eigen/Dense>
+#include <latch>
 #include <LBFGS.h>
 #include <LBFGSB.h>
-#include <unsupported/Eigen/CXX11/Tensor>
 #include <unsupported/Eigen/NonLinearOptimization>
 #include <unsupported/Eigen/AutoDiff>
 
 using Clock = std::chrono::high_resolution_clock;
-using namespace std::chrono_literals;
 
 //Returns the number of seconds since `start_time`
-double timeElapsedSince(auto start_time)
+template <typename T>
+double timeElapsedSince(T start_time)
 {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9;
 }
@@ -133,7 +123,6 @@ public:
     {
         return (os << matrix.data);
     }
-
 };
 
 float MSE(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
@@ -142,7 +131,6 @@ float MSE(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
     {
         throw std::invalid_argument("Vectors must be of the same size");
     }
-        
     return (actual - predicted).squaredNorm() / actual.size();
 }
 
@@ -170,7 +158,6 @@ struct Board
     static constexpr float K = 0.0884956f;
     static constexpr float phi_1 = 2.8f;
     static constexpr float phi_2 = 1.3f;
-//    static bool inline primary_set = false;
     static int inline __num_features;
     static std::vector<std::string> inline __input_vars;
     static std::vector<std::string> inline __unary_operators;
@@ -187,7 +174,6 @@ struct Board
     static std::vector<float> inline __binary_operators_float;
     static std::vector<float> inline __input_vars_float;
     static std::vector<float> inline __other_tokens_float;
-//    static std::barrier inline test_barrier = 7;
     
     std::random_device rd;
     std::mt19937 gen;
@@ -211,12 +197,10 @@ struct Board
     int n; //depth of RPN/PN tree
     std::string expression_type, expression_string;
     static std::mutex inline thread_locker; //static because it needs to protect static members
-    // Create the empty expression list.
-    std::vector<float> pieces;
+    std::vector<float> pieces; // Create the empty expression list.
     bool visualize_exploration, is_primary;
-    static std::condition_variable inline condition_var;
     
-    Board(bool primary = true, int n = 3, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false) : is_primary{primary}, gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, fit_method{fitMethod}, num_fit_iter{numFitIter}, fit_grad_method{fitGradMethod}
+    Board(bool primary = true, int n = 3, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, is_primary{primary}
     {
         if (n > 30)
         {
@@ -227,7 +211,8 @@ struct Board
         this->expression_type = expression_type;
         this->pieces = {};
         this->visualize_exploration = visualize_exploration;
-        this->pieces.reserve(2*pow(2,this->n)-1);
+        this->reserve_amount = 2*pow(2,this->n)-1;
+        this->pieces.reserve(this->reserve_amount);
         this->cache = cache;
         
         if (is_primary)
@@ -909,14 +894,14 @@ struct Board
                 }
                 else if (token == "^")
                 {
-                    stack.push(((expression_type == "postfix") ? left_operand.array().pow(right_operand.array()) : right_operand.array().pow(left_operand.array())));
+                    stack.push(((expression_type == "postfix") ? right_operand.array().pow(left_operand.array()) : left_operand.array().pow(right_operand.array())));
                 }
             }
         }
         return stack.top();
     }
     
-    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> expression_evaluator(std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& parameters) const
+    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> expression_evaluator(const std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& parameters) const
     {
         std::stack<Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>> stack;
         size_t const_count = 0;
@@ -1080,7 +1065,10 @@ struct Board
         {
             i.get();
         }
-        Board::fit_time += (timeElapsedSince(start_time));
+        {
+            std::scoped_lock lock(thread_locker);
+            Board::fit_time += (timeElapsedSince(start_time));
+        }
     }
     
     void PSO()
@@ -1130,7 +1118,10 @@ struct Board
             }
         }
         
-        Board::fit_time += (timeElapsedSince(start_time));
+        {
+            std::scoped_lock lock(thread_locker);
+            Board::fit_time += (timeElapsedSince(start_time));
+        }
     }
     
     Eigen::AutoDiffScalar<Eigen::VectorXf> grad_func(std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& inputs)
@@ -1149,7 +1140,7 @@ struct Board
             float mse = MSE(expression_evaluator(x), Board::data["y"]);
             if (this->fit_grad_method == "naive_numerical")
             {
-                float low_b, temp, fac;
+                float low_b, temp;
                 for (int i = 0; i < x.size(); i++) //finite differences wrt x evaluated at the current values x(i)
                 {
                     //https://stackoverflow.com/a/38855586/18255427
@@ -1207,7 +1198,10 @@ struct Board
 //            printf("mse = %f -> fx = %f\n", mse, fx);
             this->params = eigenVec;
         }
-        Board::fit_time += (timeElapsedSince(start_time));
+        {
+            std::scoped_lock lock(thread_locker);
+            Board::fit_time += (timeElapsedSince(start_time));
+        }
     }
     
     void LBFGSB()
@@ -1235,7 +1229,10 @@ struct Board
 //            printf("mse = %f -> fx = %f\n", mse, fx);
             this->params = eigenVec;
         }
-        Board::fit_time += (timeElapsedSince(start_time));
+        {
+            std::scoped_lock lock(thread_locker);
+            Board::fit_time += (timeElapsedSince(start_time));
+        }
     }
     
     int values() const
@@ -1300,7 +1297,7 @@ struct Board
     
     float fitFunctionToData()
     {
-        float loss;
+        float loss = 0.0f;
         if (this->params.size())
         {
             bool improved = true;
@@ -1322,20 +1319,18 @@ struct Board
             }
             else if (this->fit_method == "LevenbergMarquardt")
             {
-                improved = LevenbergMarquardt();
+                improved = LevenbergMarquardt(); //TODO: need to add MT support for other fit methods as well
                 
                 Eigen::VectorXf temp;
-                if (improved)
-                {
-                    std::scoped_lock lock(thread_locker);
-                    Board::expression_dict[this->expression_string].first = this->params;
-                }
                 
                 {
                     std::scoped_lock lock(thread_locker);
+                    if (improved)
+                    {
+                        Board::expression_dict[this->expression_string].first = this->params;
+                    }
                     temp = Board::expression_dict[this->expression_string].first;
                 }
-                
                 
                 loss = loss_func(expression_evaluator(temp),Board::data["y"]);
                 
@@ -1343,21 +1338,14 @@ struct Board
                     std::scoped_lock lock(thread_locker);
                     Board::expression_dict[this->expression_string].second = false;
                 }
-//                std::cout << "params: notifying" << '\r' << std::flush;
-                
             }
         }
         else
         {
-            loss = loss_func(expression_evaluator({}),Board::data["y"]);
-//            printf("Board::expression_dict[this->expression_string].second = false; waiting\33[2K\r");
-            std::/*unique_lock*/scoped_lock lock(thread_locker);
+            loss = loss_func(expression_evaluator(this->params),Board::data["y"]);
+            std::scoped_lock lock(thread_locker);
             Board::expression_dict[this->expression_string].second = false;
-//            printf("Board::expression_dict[this->expression_string].second = false; done\33[2K\r");
-//            std::cout << "no params: notifying" << '\r' << std::flush;
         }
-//        condition_var.notify_one();
-//        assert(Board::expression_dict[this->expression_string].first.size() == this->params.size());
         return loss;
     }
     
@@ -1399,7 +1387,6 @@ struct Board
                 
                 for (float i: pieces){this->expression_string += std::to_string(i)+" ";}
 
-//                printf("if (Board::expression_dict[this->expression_string].second) waiting\33[2K\r"); //TODO: potential deadlock
                 bool in_use;
                 {
                     std::scoped_lock lock(thread_locker);
@@ -1407,8 +1394,7 @@ struct Board
                 }
                 if (in_use)
                 {
-                    this->params.resize(this->__num_consts());
-                    this->params.setOnes();
+                    this->params.setOnes(this->__num_consts());
                     return loss_func(expression_evaluator(this->params),Board::data["y"]);
                 }
                 {
@@ -1419,13 +1405,10 @@ struct Board
                 
                 if (!this->params.size())
                 {
-                    this->params.resize(this->__num_consts());
-                    this->params.setOnes();
-//                    printf("if (!this->params.size()) waiting\33[2K\r"); //TODO: potential deadlock
-                    
+                    this->params.setOnes(this->__num_consts());
                     bool in_use;
                     {
-                        std::scoped_lock lock(thread_locker);
+                        std::scoped_lock<std::mutex> lock(thread_locker);
                         in_use = Board::expression_dict[this->expression_string].second;
                     }
                     
@@ -1438,7 +1421,6 @@ struct Board
                         std::scoped_lock lock(thread_locker);
                         Board::expression_dict[this->expression_string].first = this->params;
                     }
-//                    printf("if (!this->params.size()) done\33[2K\r"); //TODO: potential deadlock
                 }
 
                 return fitFunctionToData();
@@ -1770,7 +1752,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
     {
         Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
         Board secondary_one(false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache), secondary_two(false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache); //For crossover and mutations
-        float score = 0.0f, max_score = 0.0f, mut_prob = 0.8f, cross_prob = 0.2f, rand_mut_cross;
+        float score = 0.0f, max_score = 0.0f, mut_prob = 0.8f, rand_mut_cross;
         constexpr int init_population = 2000;
         std::vector<std::pair<std::vector<float>, float>> individuals;
         std::pair<std::vector<float>, float> individual_1, individual_2;
@@ -1781,7 +1763,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         std::uniform_int_distribution<int> rand_depth_dist(0, x.n - 1), selector_dist(0, init_population - 1);
         int rand_depth, rand_individual_idx_1, rand_individual_idx_2;
         std::uniform_real_distribution<float> rand_mut_cross_dist(0.0f, 1.0f);
-        size_t temp_sz, idx;
+        size_t temp_sz;
     //    std::string expression, orig_expression, best_expression;
         
         auto updateScore = [&]()
@@ -1940,7 +1922,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
             }
         });
         
-        for (int ngen = 0; (timeElapsedSince(start_time) < time); ngen++)
+        for (/*int ngen = 0*/; (timeElapsedSince(start_time) < time); /*ngen++*/)
         {
 //            if (ngen && (ngen%5 == 0))
 //            {
@@ -2027,7 +2009,7 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
         best_positions.reserve(x.reserve_amount); //indices corresponding to best pieces
         curr_positions.reserve(x.reserve_amount); //indices corresponding to x.pieces
         v.reserve(x.reserve_amount); //stores record of all current particle velocities
-        float rp, rg, new_pos, new_v, noise, c = 0.0f;
+        float rp, rg, new_v, c = 0.0f;
         int c_count = 0;
         std::unordered_map<float, std::unordered_map<int, int>> Nsa;
         std::unordered_map<float, std::unordered_map<int, float>> Psa;
@@ -2164,7 +2146,7 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
         moveTracker.reserve(x.reserve_amount);
         temp_legal_moves.reserve(x.reserve_amount);
         state.reserve(2*x.reserve_amount);
-        double str_convert_time = 0.0;
+//        double str_convert_time = 0.0;
         auto getString  = [&]()
         {
             if (!x.pieces.empty())
@@ -2207,9 +2189,9 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
             while ((score = x.complete_status()) == -1)
             {
                 temp_legal_moves = x.get_legal_moves();
-                auto start_time = Clock::now();
+//                auto start_time = Clock::now();
                 getString();
-                str_convert_time += timeElapsedSince(start_time);
+//                str_convert_time += timeElapsedSince(start_time);
                 UCT = 0.0f;
                 UCT_best = -FLT_MAX;
                 best_act = -1.0f;
@@ -2222,7 +2204,7 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
                     }
                     else
                     {
-                        best_act = a; //not explored -> explore it
+                        best_act = a; //not explored -> explore it. TODO: Append to a vector best_acts. After loop, if best_acts is empty, choose best_act, else, choose best_acts[random(0, best_acts.size()-1)]
                         break;
                     }
                     if (UCT > UCT_best)
@@ -2291,13 +2273,14 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
     }
     
     std::vector<std::thread> threads(num_threads);
-    std::barrier sync_point(num_threads);
+    std::latch sync_point(num_threads);
     
     for (int run = 1; run <= num_runs; run++)
     {
         /*
          Outside of thread:
          */
+        
         float max_score{0.0};
         std::vector<std::pair<int, float>> temp_scores;
         
@@ -2307,6 +2290,7 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
             while (timeElapsedSince(start_time) < time)
             {
                 std::this_thread::sleep_for(std::chrono::seconds(measure_period));
+                
                 temp_scores.push_back(std::make_pair(static_cast<size_t>(timeElapsedSince(start_time)), max_score));
             }
         });
@@ -2324,7 +2308,7 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
             float score = 0;
             std::vector<float> temp_legal_moves;
             size_t temp_sz;
-            for (int i = 0; (timeElapsedSince(start_time) < time); i++)
+            while (timeElapsedSince(start_time) < time)
             {
                 while ((score = x.complete_status()) == -1)
                 {
@@ -2338,13 +2322,11 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
                 }
 //                assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
 //                assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
+
+                if (score > max_score)
                 {
-                    
-                    if (score > max_score)
-                    {
-                        std::scoped_lock lock(Board::thread_locker);
-                        max_score = score;
-                    }
+                    std::scoped_lock lock(Board::thread_locker);
+                    max_score = score;
                 }
                 x.pieces.clear();
             }
@@ -2390,144 +2372,116 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
 //    std::cout << "Best expression (original format) = " << orig_expression << '\n';
 }
 
-//PyObject* convertVectorToPythonList(const std::vector<float>& inputVector)
-//{
-//    PyObject* pyList = PyTuple_New(inputVector.size());
-//
-//    for (size_t i = 0; i < inputVector.size(); ++i)
-//    {
-//        PyObject* pyFloat = PyFloat_FromDouble(static_cast<double>(inputVector[i]));
-//        PyTuple_SetItem(pyList, i, pyFloat);
-//    }
-//
-//    return pyList;
-//}
-
 void HembergBenchmarks(int numIntervals, double time, int numRuns)
 {
-    RandomSearch(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PostRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PreRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PostRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PreRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PostRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PreRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PostRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PreRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PostRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PostMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PreMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PostMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PreMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PostMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PreMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PostMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PreMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PostMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PrePSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PostPSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PrePSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PostPSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PrePSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PostPSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PrePSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PostPSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PrePSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PostPSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PostGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PreGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PostGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PreGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PostGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PreGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PostGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PreGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PostGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PostSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PreSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PostSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PreSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PostSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PreSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PostSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PreSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PostSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PostRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PostRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PostRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PostRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PostRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PostMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PreMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PostMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PreMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PostMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PreMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PostMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PreMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PostMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PrePSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PostPSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PrePSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PostPSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PrePSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PostPSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PrePSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PostPSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PrePSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PostPSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PostGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PreGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PostGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PreGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PostGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PreGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PostGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PreGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PostGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PostSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PreSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PostSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PreSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PostSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PreSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PostSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PreSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PostSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
 }
 
 void AIFeynmanBenchmarks(int numIntervals, double time, int numRuns)
 {
-    RandomSearch(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PreRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PostRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PreRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PostRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PreRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PostRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PreRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PostRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PreRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PostRandomSearch.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PreMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PostMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PreMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PostMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PreMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PostMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PreMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PostMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PreMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PostMCTS.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PrePSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PostPSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PrePSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PostPSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PrePSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PostPSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PrePSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PostPSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PrePSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PostPSO.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PreGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PostGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PreGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PostGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PreGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PostGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PreGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PostGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PreGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PostGP.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PreSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PostSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PreSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PostSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PreSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PostSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PreSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PostSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PreSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PostSimulatedAnnealing.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PostRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PostRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PostRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PostRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    RandomSearch(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PostRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PreMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PostMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PreMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PostMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PreMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PostMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PreMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PostMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PreMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    MCTS(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PostMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PrePSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PostPSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PrePSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PostPSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PrePSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PostPSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PrePSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PostPSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PrePSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    PSO(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PostPSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PreGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PostGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PreGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PostGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PreGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PostGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PreGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PostGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PreGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    GP(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PostGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PreSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PostSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PreSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PostSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PreSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PostSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PreSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PostSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PreSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+    SimulatedAnnealing(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PostSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
 }
 
-int main() {
-    
-//    This comment block is testing the Python-C API
-//    ==============================================
-//    Py_Initialize();
-//    PyObject* pName = PyUnicode_DecodeFSDefault("scipy");
-//    PyObject* pModule = PyImport_Import(pName);
-//    Py_XDECREF(pName);
-//    std::cout << std::boolalpha << (pModule == NULL) << '\n';
-//    PyObject* pFunc = PyObject_GetAttrString(pModule, "optimize.curve_fit");
-//    PyObject* pArgs = Py_BuildValue("ff", 1.0f, 1.0f);
-//    std::vector<float> myVector = {1.0f, 2.0f, 3.0f};
-//    PyObject* pArgs = convertVectorToPythonList(myVector);
-//    PyObject* pStr = PyObject_Str(pArgs);
-//    const char* cstr = PyUnicode_AsUTF8(pStr);
-//    puts(cstr);
-    
+int main() 
+{
 //    HembergBenchmarks(20 /*numIntervals*/, 120 /*time*/, 50 /*numRuns*/);
 //    AIFeynmanBenchmarks(20 /*numIntervals*/, 120 /*time*/, 50 /*numRuns*/);
     
