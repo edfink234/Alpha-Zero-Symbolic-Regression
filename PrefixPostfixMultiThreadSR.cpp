@@ -20,11 +20,13 @@
 #include <cassert>
 #include <thread>
 #include <mutex>
+#include <atomic>
 #include <latch>
 #include <LBFGS.h>
 #include <LBFGSB.h>
 #include <unsupported/Eigen/NonLinearOptimization>
 #include <unsupported/Eigen/AutoDiff>
+#include <boost/unordered/concurrent_flat_map.hpp>
 
 using Clock = std::chrono::high_resolution_clock;
 
@@ -153,7 +155,7 @@ struct Board
 {
     static std::unordered_map<std::string, std::pair<Eigen::VectorXf, bool>> inline expression_dict = {};
     static float inline best_loss = FLT_MAX;
-    static float inline fit_time = 0.0;
+    static std::atomic<float> inline fit_time = 0.0;
     
     static constexpr float K = 0.0884956f;
     static constexpr float phi_1 = 2.8f;
@@ -1065,10 +1067,7 @@ struct Board
         {
             i.get();
         }
-        {
-            std::scoped_lock lock(thread_locker);
-            Board::fit_time += (timeElapsedSince(start_time));
-        }
+        Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
     }
     
     void PSO()
@@ -1117,11 +1116,7 @@ struct Board
                 }
             }
         }
-        
-        {
-            std::scoped_lock lock(thread_locker);
-            Board::fit_time += (timeElapsedSince(start_time));
-        }
+        Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
     }
     
     Eigen::AutoDiffScalar<Eigen::VectorXf> grad_func(std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& inputs)
@@ -1198,10 +1193,7 @@ struct Board
 //            printf("mse = %f -> fx = %f\n", mse, fx);
             this->params = eigenVec;
         }
-        {
-            std::scoped_lock lock(thread_locker);
-            Board::fit_time += (timeElapsedSince(start_time));
-        }
+        Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
     }
     
     void LBFGSB()
@@ -1229,10 +1221,7 @@ struct Board
 //            printf("mse = %f -> fx = %f\n", mse, fx);
             this->params = eigenVec;
         }
-        {
-            std::scoped_lock lock(thread_locker);
-            Board::fit_time += (timeElapsedSince(start_time));
-        }
+        Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
     }
     
     int values() const
@@ -1288,10 +1277,7 @@ struct Board
         }
         
 //        std::cout << "Iterations = " << lm.nfev << '\n';
-        {
-            std::scoped_lock lock(thread_locker);
-            Board::fit_time += (timeElapsedSince(start_time));
-        }
+        Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
         return improved;
     }
     
@@ -2127,10 +2113,19 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
 }
 
 //https://arxiv.org/abs/2205.13134
-void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/)
+void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0)
 {
     std::map<int, std::vector<double>> scores; //unordered_map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
+    
+    if (num_threads == 0)
+    {
+        unsigned int temp = std::thread::hardware_concurrency();
+        num_threads = ((temp <= 1) ? 1 : temp-1);
+    }
+    
+    std::vector<std::thread> threads(num_threads);
+    std::latch sync_point(num_threads);
     
     for (int run = 1; run <= num_runs; run++)
     {
@@ -2281,7 +2276,7 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
          Outside of thread:
          */
         
-        float max_score{0.0};
+        std::atomic<float> max_score{0.0};
         std::vector<std::pair<int, float>> temp_scores;
         
         auto start_time = Clock::now();
@@ -2291,7 +2286,7 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
             {
                 std::this_thread::sleep_for(std::chrono::seconds(measure_period));
                 
-                temp_scores.push_back(std::make_pair(static_cast<size_t>(timeElapsedSince(start_time)), max_score));
+                temp_scores.push_back(std::make_pair(static_cast<size_t>(timeElapsedSince(start_time)), max_score.load()));
             }
         });
         
@@ -2325,7 +2320,6 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
 
                 if (score > max_score)
                 {
-                    std::scoped_lock lock(Board::thread_locker);
                     max_score = score;
                 }
                 x.pieces.clear();
@@ -2352,7 +2346,7 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
         
         std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
         std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-        std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+        std::cout << "Best score = " << max_score.load() << ", MSE = " << (1/max_score)-1 << '\n';
         
     }
     std::ofstream out(filename);

@@ -480,6 +480,7 @@ where $N_{\mathrm{dat}}$ is the number of data points, $\hat{Y}$ are the predict
 % \EndFunction
 % \end{algorithmic}
 % \end{algorithm}
+\newcommand{\textunderset}[2]{\begin{tabular}[t]{@{}c@{}}#2\\[-0.3em]\scriptsize#1\end{tabular}}
 
 \subsection{Monte Carlo Tree Search}\label{subsec:MonteCarlo TreeSearch}
 
@@ -487,11 +488,12 @@ Monte Carlo Tree Search (MCTS) is a popular method for navigating large game sta
 
 In symbolic regression, MCTS has been used since \cite{CazenaveMCTS}. Recently, MCTS has seen use with policy and value estimators, e.g., in \cite{Lu2021}, Actor-Critic neural networks were used for policy and value estimation. Similarly, \cite{10.5555/3618408.3619047} leverages a neural network to output a mutation policy and an MCTS-induced value approximation. Here, we adapt the non-neural network approach of \cite{sun2023symbolic} as follows:
 \par As in section \ref{subsec:RandomSearch}, an iteration begins with the set of legal tokens given the current expression list, i.e., the current state $s$. Given these tokens, we choose the best token $a$ as the first one with 0 visit counts, i.e., $N(s,a) = 0$.  If $\forall a$, $N(s,a) \neq 0$, we choose the Upper-Confidence Tree (UCT) formula action \cite{sun2023symbolic}:
+
 \begin{equation}
-\mathrm{UCT} = Q(s,a) + c\sqrt{\frac{\ln{[N(s)]}}{N(s,a)}}, \label{eq:UCT_formula}
+\mathrm{UCT} = \textunderset{$a \in \mathcal{A}$}{$\mathrm{argmax}$}\left(Q(s,a) + c\sqrt{\frac{\ln{[N(s)]}}{N(s,a)}}\right), \label{eq:UCT_formula}
 \end{equation}
 
-where $N(s)$ is the visit count of state $s$, and $c$ controls the exploration (second term in \ref{eq:UCT_formula}) exploitation (first term in \ref{eq:UCT_formula}) tradeoff. Following previous work \cite{Swiechowski2023} \cite{Auer2002}, \cite{kuleshov2014algorithms} \cite{10.1007/11871842_29}, we initialize $c \gets \sqrt{2}$. After an expression is completed and the score is computed using \ref{eq:score_formula}, the $Q$ values for all state-action pairs encountered during the generation of the expression are updated as \cite{sun2023symbolic}:
+where $N(s)$ is the visit count of state $s$, $c$ controls the exploration (second term in \ref{eq:UCT_formula}) exploitation (first term in \ref{eq:UCT_formula}) tradeoff and $\mathcal{A}$ is the set of all legal actions (given from the grammars in section \ref{sec:Background}) from the current state $s$. Following previous work \cite{Swiechowski2023} \cite{Auer2002}, \cite{kuleshov2014algorithms} \cite{10.1007/11871842_29}, we initialize $c \gets \sqrt{2}$. After an expression is completed and the score is computed using \ref{eq:score_formula}, the $Q$ values for all state-action pairs encountered during the generation of the expression are updated as \cite{sun2023symbolic}:
 
 \begin{equation}
 Q(s,a) = \max{\left(Q(s,a), \mathrm{score}\right)} \label{eq:update_Q_policy}
@@ -524,11 +526,11 @@ Simulated Annealing is a search strategy inspired by the metallurgic annealing p
 \begin{equation}
 		P = e^{\Delta/T}, \qquad (\Delta \equiv \mathrm{score}_{\mathrm{perturbed}} -   \mathrm{score}_{\mathrm{max}}). \label{eq:prob_accept_bad_SA}
 \end{equation}
-We set $T_{\mathrm{min}} = 0.012 \leq T \leq T_{\mathrm{max}} = 0.1$ and $T_{\mathrm{init}} = T_{\mathrm{max}}$. We use the same temperature update rule as in \cite{10.1145/3449639.3459345}, namely, $T \gets rT$, where $r \equiv \left(T_{\mathrm{min}}/T_{\mathrm{max}}\right)^{1/(i+1)}$ where $i$ is the iteration number. Lastly, to escape local minima, if the best score has not improved after $N_{\mathrm{iter}}$ iterations, we update the temperature as $T \gets \min{\left(10\cdot T, T_{\mathrm{max}}\right)}$, else, we update the temperature as $T \gets \max{\left(T/10, T_{\mathrm{min}}\right)}$.
+We set $T_{\mathrm{min}} = 0.012 \leq T \leq T_{\mathrm{max}} = 0.1$ and $T_{\mathrm{init}} = T_{\mathrm{max}}$ \cite{10.1145/3449639.3459345}\footnote{We set $T_{\mathrm{min}} \gets 0.012$ instead of 0.0001 as in \cite{10.1145/3449639.3459345} because of the 4-byte floating point precision of variables used in the underlying framework of this paper.}. We use the same temperature update rule as in \cite{10.1145/3449639.3459345}, namely, $T \gets rT$, where $r \equiv \left(T_{\mathrm{min}}/T_{\mathrm{max}}\right)^{1/(i+1)}$ where $i$ is the iteration number. Lastly, to escape local minima, if the best score has not improved after $N_{\mathrm{iter}}$ iterations, we update the temperature as $T \gets \min{\left(10\cdot T, T_{\mathrm{max}}\right)}$, else, we update the temperature as $T \gets \max{\left(T/10, T_{\mathrm{min}}\right)}$.
 
 \section{Results}\label{sec:Results}
 In this section\footnote{The benchmarks results in this section can be reproduced by running the script \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/b2f7486b0797843ee363b20faa9a30677065f7b9/PrefixPostfixSR.cpp}{here} using the compilation directive given in the \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/b2f7486b0797843ee363b20faa9a30677065f7b9/README.md}{README.md file}}, we benchmark the algorithms defined in section \ref{sec:SymbolicRegressionAlgorithms} employing the grammars defined in section \ref{sec:Background}. We set the $N_{\mathrm{iter}} \gets 50,000$ for all benchmarks\footnote{Obtained after significant pre-tuning.}.
-\par First, in section \ref{subsec:SimulatedAnnealing}, we perform benchmarks for the expressions considered in \cite{hemberg2008pre}. Then, in section \ref{subsec:FeynmanBenchmarks}, we consider some of the equations considered in \cite{udrescu2020ai} with varying complexity/depth of expression trees.
+\par First, in section \ref{subsec:HembergBenchmarks}, we perform benchmarks for the expressions considered in \cite{hemberg2008pre}. Then, in section \ref{subsec:FeynmanBenchmarks}, we consider some of the equations considered in \cite{udrescu2020ai} with varying complexity/depth of expression trees.
 \par For each configuration,
 % i.e., Prefix Random Search, Prefix Monte Carlo Tree Search, Prefix Particle Swarm Optimization, Prefix Genetic Programming,  Prefix Simulated Annealing, Postfix Random Search, Postfix Monte Carlo Tree Search, Postfix Particle Swarm Optimization, Postfix Genetic Programming, and Postfix Simulated Annealing,
 we perform 50 2 minute runs, where the MSE is sampled every 6 seconds for each run.  

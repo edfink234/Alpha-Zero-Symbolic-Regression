@@ -20,6 +20,7 @@
 #include <cassert>
 #include <thread>
 #include <mutex>
+#include <atomic>
 #include <latch>
 #include <unsupported/Eigen/NonLinearOptimization>
 
@@ -135,7 +136,7 @@ struct Board
 {
     static std::unordered_map<std::string, std::pair<Eigen::VectorXf, bool>> inline expression_dict = {};
     static float inline best_loss = FLT_MAX;
-    static float inline fit_time = 0.0;
+    static std::atomic<float> inline fit_time = 0.0;
 
     static int inline __num_features;
     static std::vector<std::string> inline __input_vars;
@@ -603,10 +604,7 @@ struct Board
         {
             improved = true;
         }
-        {
-            std::scoped_lock lock(thread_locker);
-            Board::fit_time += (timeElapsedSince(start_time));
-        }
+        Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
         return improved;
     }
     
@@ -750,7 +748,7 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const int nu
          Outside of thread:
          */
         
-        float max_score{0.0};
+        std::atomic<float> max_score{0.0};
         std::vector<std::pair<int, float>> temp_scores;
         
         auto start_time = Clock::now();
@@ -760,7 +758,7 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const int nu
             {
                 std::this_thread::sleep_for(std::chrono::seconds(measure_period));
                 
-                temp_scores.push_back(std::make_pair(static_cast<size_t>(timeElapsedSince(start_time)), max_score));
+                temp_scores.push_back(std::make_pair(static_cast<size_t>(timeElapsedSince(start_time)), max_score.load()));
             }
         });
         
@@ -791,7 +789,6 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const int nu
 
                 if (score > max_score)
                 {
-                    std::scoped_lock lock(Board::thread_locker);
                     max_score = score;
                 }
                 x.pieces.clear();
@@ -818,7 +815,7 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const int nu
         
         std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
         std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-        std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+        std::cout << "Best score = " << max_score.load() << ", MSE = " << (1/max_score)-1 << '\n';
         
     }
     std::ofstream out(filename);
