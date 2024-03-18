@@ -135,7 +135,6 @@ float loss_func(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
 
 struct Board
 {
-//    static std::unordered_map<std::string, std::pair<Eigen::VectorXf, bool>> inline expression_dict = {};
     static boost::concurrent_flat_map<std::string, std::pair<Eigen::VectorXf, bool>> inline expression_dict = {};
     static float inline best_loss = FLT_MAX;
     static std::atomic<float> inline fit_time = 0.0;
@@ -707,10 +706,6 @@ struct Board
                     {
                         this->params = x.second.first;
                     });
-                }
-                else
-                {
-                    puts("is this ever called?");
                 }
                 
                 if (!this->params.size())

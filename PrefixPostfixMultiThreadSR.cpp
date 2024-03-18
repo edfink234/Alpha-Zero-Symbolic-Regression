@@ -1,6 +1,7 @@
 #include <vector>
 #include <array>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <algorithm>
@@ -153,7 +154,7 @@ float loss_func(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
 
 struct Board
 {
-    static std::unordered_map<std::string, std::pair<Eigen::VectorXf, bool>> inline expression_dict = {};
+    static boost::concurrent_flat_map<std::string, std::pair<Eigen::VectorXf, bool>> inline expression_dict = {};
     static float inline best_loss = FLT_MAX;
     static std::atomic<float> inline fit_time = 0.0;
     
@@ -1010,8 +1011,9 @@ struct Board
         return stack.top();
     }
     
-    void AsyncPSO()
+    bool AsyncPSO()
     {
+        bool improved = false;
         auto start_time = Clock::now();
         Eigen::VectorXf particle_positions(this->params.size()), x(this->params.size());
         Eigen::VectorXf v(this->params.size());
@@ -1031,6 +1033,7 @@ struct Board
         {
             this->params = particle_positions;
             swarm_best_score = fpi;
+            improved = true;
         }
         
         auto UpdateParticle = [&](int i)
@@ -1052,6 +1055,7 @@ struct Board
                 else if (fpi > swarm_best_score)
                 {
                     (this->params)(i) = particle_positions(i);
+                    improved = true;
                     swarm_best_score = fpi;
                 }
             }
@@ -1068,10 +1072,12 @@ struct Board
             i.get();
         }
         Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
+        return improved;
     }
     
-    void PSO()
+    bool PSO()
     {
+        bool improved = false;
         auto start_time = Clock::now();
         Eigen::VectorXf particle_positions(this->params.size()), x(this->params.size());
         Eigen::VectorXf v(this->params.size());
@@ -1090,6 +1096,7 @@ struct Board
         if (fpi > swarm_best_score)
         {
             this->params = particle_positions;
+            improved = true;
             swarm_best_score = fpi;
         }
         for (int j = 0; j < this->num_fit_iter; j++)
@@ -1112,11 +1119,13 @@ struct Board
                 {
 //                    printf("Iteration %d: Changing param %d from %f to %f. Score from %f to %f\n", j, i, (this->params)[i], particle_positions[i], swarm_best_score, fpi);
                     (this->params)(i) = particle_positions(i);
+                    improved = true;
                     swarm_best_score = fpi;
                 }
             }
         }
         Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
+        return improved;
     }
     
     Eigen::AutoDiffScalar<Eigen::VectorXf> grad_func(std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& inputs)
@@ -1169,8 +1178,9 @@ struct Board
         return 0.f;
     }
     
-    void LBFGS()
+    bool LBFGS()
     {
+        bool improved = false;
         auto start_time = Clock::now();
         LBFGSpp::LBFGSParam<float> param;
         param.epsilon = 1e-6;
@@ -1186,18 +1196,22 @@ struct Board
             solver.minimize((*this), eigenVec, fx);
         }
         catch (std::runtime_error& e){}
+        catch (std::invalid_argument& e){}
         
 //        printf("mse = %f -> fx = %f\n", mse, fx);
         if (fx < mse)
         {
 //            printf("mse = %f -> fx = %f\n", mse, fx);
             this->params = eigenVec;
+            improved = true;
         }
         Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
+        return improved;
     }
     
-    void LBFGSB()
+    bool LBFGSB()
     {
+        bool improved = false;
         auto start_time = Clock::now();
         LBFGSpp::LBFGSBParam<float> param;
         param.epsilon = 1e-6;
@@ -1214,14 +1228,18 @@ struct Board
 //            solver.minimize((*this), eigenVec, fx, Eigen::VectorXf::Constant(eigenVec.size(), -10.f), Eigen::VectorXf::Constant(eigenVec.size(), 10.f));
         }
         catch (std::runtime_error& e){}
+        catch (std::invalid_argument& e){}
+        catch (std::logic_error& e){}
         
 //        printf("mse = %f -> fx = %f\n", mse, fx);
         if (fx < mse)
         {
 //            printf("mse = %f -> fx = %f\n", mse, fx);
             this->params = eigenVec;
+            improved = true;
         }
         Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
+        return improved;
     }
     
     int values() const
@@ -1289,48 +1307,58 @@ struct Board
             bool improved = true;
             if (this->fit_method == "PSO")
             {
-                PSO();
+                improved = PSO();
             }
             else if (this->fit_method == "AsyncPSO")
             {
-                AsyncPSO();
+                improved = AsyncPSO();
             }
             else if (this->fit_method == "LBFGS")
             {
-                LBFGS();
+                improved = LBFGS();
             }
             else if (this->fit_method == "LBFGSB")
             {
-                LBFGSB();
+                improved = LBFGSB();
             }
             else if (this->fit_method == "LevenbergMarquardt")
             {
-                improved = LevenbergMarquardt(); //TODO: need to add MT support for other fit methods as well
-                
-                Eigen::VectorXf temp;
-                
+                improved = LevenbergMarquardt();
+            }
+            Eigen::VectorXf temp_vec;
+            
+            if (improved) //If improved, update the expression_dict with this->params
+            {
+                if (Board::expression_dict.contains(this->expression_string))
                 {
-                    std::scoped_lock lock(thread_locker);
-                    if (improved)
+                    Board::expression_dict.visit(this->expression_string, [&](auto& x)
                     {
-                        Board::expression_dict[this->expression_string].first = this->params;
-                    }
-                    temp = Board::expression_dict[this->expression_string].first;
+                        x.second.first = this->params;
+                    });
                 }
-                
-                loss = loss_func(expression_evaluator(temp),Board::data["y"]);
-                
+                else
                 {
-                    std::scoped_lock lock(thread_locker);
-                    Board::expression_dict[this->expression_string].second = false;
+                    Board::expression_dict.insert_or_assign(this->expression_string, std::make_pair(this->params, false));
                 }
             }
+            Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
+            {
+                temp_vec = x.second.first;
+            });
+            
+            loss = loss_func(expression_evaluator(temp_vec),Board::data["y"]);
+            
+//            Board::expression_dict.insert_or_assign(this->expression_string, std::make_pair(temp_vec, false));
+            
+            Board::expression_dict.visit(this->expression_string, [&](auto& x)
+            {
+                x.second.second = false;
+            });
         }
         else
         {
             loss = loss_func(expression_evaluator(this->params),Board::data["y"]);
-            std::scoped_lock lock(thread_locker);
-            Board::expression_dict[this->expression_string].second = false;
+            Board::expression_dict.insert_or_assign(this->expression_string, std::make_pair(this->params, false));
         }
         return loss;
     }
@@ -1363,7 +1391,7 @@ struct Board
         {
             if (visualize_exploration)
             {
-                //TODO: call some plotting function, e.g. ROOT CERN plotting API, Matplotlib from the Python-C API, Plotly if we want a web application for this, etc. The plotting function could also have the fitted constants (rounded of course), but then this if statement would need to be moved down to below the fitFunctionToData call in this `complete_status` method.
+                //whenever. TODO: call some plotting function, e.g. ROOT CERN plotting API, Matplotlib from the Python-C API, Plotly if we want a web application for this, etc. The plotting function could also have the fitted constants (rounded of course), but then this if statement would need to be moved down to below the fitFunctionToData call in this `complete_status` method.
             }
             
             if (is_primary)
@@ -1374,28 +1402,48 @@ struct Board
                 for (float i: pieces){this->expression_string += std::to_string(i)+" ";}
 
                 bool in_use;
+                
+                if (Board::expression_dict.contains(this->expression_string))
                 {
-                    std::scoped_lock lock(thread_locker);
-                    in_use = Board::expression_dict[this->expression_string].second;
+                    Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
+                    {
+                        in_use = x.second.second;
+                    });
                 }
+                else
+                {
+                    Board::expression_dict.insert_or_assign(this->expression_string, std::make_pair(Eigen::VectorXf(), false));
+                    in_use = false;
+                }
+                
                 if (in_use)
                 {
                     this->params.setOnes(this->__num_consts());
                     return loss_func(expression_evaluator(this->params),Board::data["y"]);
                 }
+
+                if (Board::expression_dict.contains(this->expression_string))
                 {
-                    std::scoped_lock lock(thread_locker);
-                    this->params = Board::expression_dict[this->expression_string].first;
+                    Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
+                    {
+                        this->params = x.second.first;
+                    });
                 }
-                
                 
                 if (!this->params.size())
                 {
                     this->params.setOnes(this->__num_consts());
                     bool in_use;
+                    if (Board::expression_dict.contains(this->expression_string))
                     {
-                        std::scoped_lock<std::mutex> lock(thread_locker);
-                        in_use = Board::expression_dict[this->expression_string].second;
+                        Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
+                        {
+                            in_use = x.second.second;
+                        });
+                    }
+                    else
+                    {
+                        in_use = false;
                     }
                     
                     if (in_use)
@@ -1403,10 +1451,7 @@ struct Board
                         return loss_func(expression_evaluator(this->params),Board::data["y"]);
                     }
 
-                    {
-                        std::scoped_lock lock(thread_locker);
-                        Board::expression_dict[this->expression_string].first = this->params;
-                    }
+                    Board::expression_dict.insert_or_assign(this->expression_string, std::make_pair(this->params, in_use));
                 }
 
                 return fitFunctionToData();
@@ -2199,7 +2244,7 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
                     }
                     else
                     {
-                        best_act = a; //not explored -> explore it. TODO: Append to a vector best_acts. After loop, if best_acts is empty, choose best_act, else, choose best_acts[random(0, best_acts.size()-1)]
+                        best_act = a; //not explored -> explore it. 3. TODO: Append to a vector best_acts. After loop, if best_acts is empty, choose best_act, else, choose best_acts[random(0, best_acts.size()-1)]
                         break;
                     }
                     if (UCT > UCT_best)
@@ -2315,8 +2360,8 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
                         x.pieces.emplace_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
                     }
                 }
-//                assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
-//                assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
+                assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
+                assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
 
                 if (score > max_score)
                 {
@@ -2484,9 +2529,11 @@ int main()
         AIFeynman_Benchmarks and then run PlotData.py
     */
     
-    RandomSearch(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/);
+    RandomSearch(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LBFGSB", 5, "autodiff", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/);
 
     return 0;
 }
 
+//1. TODO: fix autodiff
+//2. TODO: See if `in_use` is really necessary
 //git push --set-upstream origin prefix_and_postfix_cpp_implementation
