@@ -888,7 +888,7 @@ struct Board
         return std::move(stack.top());
     }
     
-    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> expression_evaluator(std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& parameters)
+    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> expression_evaluator(const std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& parameters) const
     {
         std::stack<Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>> stack;
         size_t const_count = 0;
@@ -902,7 +902,7 @@ struct Board
                 if (token == "const")
                 {
 //                    std::cout << "\nparameters[" << const_count << "] = " << parameters[const_count].value() << '\n';
-                    stack.push(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>::Constant(data.numRows(), parameters[const_count++]));
+                    stack.push(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>::Constant(Board::data.numRows(), parameters[const_count++]));
                     
                 }
                 else
@@ -914,16 +914,64 @@ struct Board
             {
                 if (token == "cos")
                 {
-                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = std::move(stack.top());
+                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
                     stack.pop();
                     stack.push(temp.array().cos());
+                }
+                else if (token == "exp")
+                {
+                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
+                    stack.pop();
+                    stack.push(temp.array().exp());
+                }
+                else if (token == "sqrt")
+                {
+                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
+                    stack.pop();
+                    stack.push(temp.array().sqrt());
+                }
+                else if (token == "sin")
+                {
+                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
+                    stack.pop();
+                    stack.push(temp.array().sin());
+                }
+                else if (token == "asin" || token == "arcsin")
+                {
+                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
+                    stack.pop();
+                    stack.push(temp.array().asin());
+                }
+                else if (token == "log" || token == "ln")
+                {
+                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
+                    stack.pop();
+                    stack.push(temp.array().log());
+                }
+                else if (token == "tanh")
+                {
+                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
+                    stack.pop();
+                    stack.push(temp.array().tanh());
+                }
+                else if (token == "acos" || token == "arccos")
+                {
+                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
+                    stack.pop();
+                    stack.push(temp.array().acos());
+                }
+                else if (token == "~") //unary minus
+                {
+                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
+                    stack.pop();
+                    stack.push(-temp.array());
                 }
             }
             else // binary operator
             {
-                Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> left_operand = std::move(stack.top());
+                Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> left_operand = stack.top();
                 stack.pop();
-                Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> right_operand = std::move(stack.top());
+                Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> right_operand = stack.top();
                 stack.pop();
 
                 if (token == "+")
@@ -938,9 +986,17 @@ struct Board
                 {
                     stack.push(((expression_type == "postfix") ? (right_operand.array() * left_operand.array()) : (left_operand.array() * right_operand.array())));
                 }
+                else if (token == "/")
+                {
+                    stack.push(((expression_type == "postfix") ? (right_operand.array() / left_operand.array()) : (left_operand.array() / right_operand.array())));
+                }
+                else if (token == "^")
+                {
+                    stack.push(((expression_type == "postfix") ? ((left_operand.array()*(right_operand.array().log())).exp()) : ((right_operand.array()*(left_operand.array().log())).exp())));
+                }
             }
         }
-        return std::move(stack.top());
+        return stack.top();
     }
     
     void AsyncPSO()
@@ -1120,6 +1176,7 @@ struct Board
             solver.minimize((*this), eigenVec, fx);
         }
         catch (std::runtime_error& e){}
+        catch (std::invalid_argument& e){}
         
 //        printf("mse = %f -> fx = %f\n", mse, fx);
         if (fx < mse)
@@ -1148,6 +1205,8 @@ struct Board
 //            solver.minimize((*this), eigenVec, fx, Eigen::VectorXf::Constant(eigenVec.size(), -10.f), Eigen::VectorXf::Constant(eigenVec.size(), 10.f));
         }
         catch (std::runtime_error& e){}
+        catch (std::invalid_argument& e){}
+        catch (std::logic_error& e){}
         
 //        printf("mse = %f -> fx = %f\n", mse, fx);
         if (fx < mse)
@@ -2355,7 +2414,7 @@ int main()
         AIFeynman_Benchmarks and then run PlotData.py
     */
     
-    RandomSearch(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearch.txt" /*name of file to save the results to*/, 1 /*number of runs*/);
+    RandomSearch(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", 1.0f, "LBFGS", 5, "autodiff", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearch.txt" /*name of file to save the results to*/, 1 /*number of runs*/);
 
     return 0;
 }

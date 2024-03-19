@@ -214,7 +214,7 @@ struct Board
         this->expression_type = expression_type;
         this->pieces = {};
         this->visualize_exploration = visualize_exploration;
-        this->reserve_amount = 2*pow(2,this->n)-1;
+        this->reserve_amount = 2*std::pow(2,this->n)-1;
         this->pieces.reserve(this->reserve_amount);
         this->cache = cache;
         
@@ -874,7 +874,6 @@ struct Board
             }
             else // binary operator
             {
-//                assert(stack.size() >= 2);
                 Eigen::VectorXf left_operand = stack.top();
                 stack.pop();
                 Eigen::VectorXf right_operand = stack.top();
@@ -897,11 +896,37 @@ struct Board
                 }
                 else if (token == "^")
                 {
-                    stack.push(((expression_type == "postfix") ? right_operand.array().pow(left_operand.array()) : left_operand.array().pow(right_operand.array())));
+                    stack.push(((expression_type == "postfix") ? (right_operand.array().pow(left_operand.array())) : (left_operand.array().pow(right_operand.array()))));
                 }
             }
         }
         return stack.top();
+    }
+    
+    template<typename Scalar>
+    Eigen::AutoDiffScalar<Scalar> pow(const Eigen::AutoDiffScalar<Scalar>& x, const Eigen::AutoDiffScalar<Scalar>& y) const
+    {
+        using ADScalar = Eigen::AutoDiffScalar<Scalar>;
+        auto base = x.value();
+        auto exponent = y.value();
+        auto base_derivative = x.derivatives();
+        auto exponent_derivative = y.derivatives();
+        auto value = std::pow(base, exponent);
+        Eigen::VectorXf derivative(2);
+        //TODO: Make stackoverflow question about how to implement this!
+//
+//        for (int i = 0; i < base_derivative.size(); i++)
+//        {
+//            derivative(i) = base_derivative(i);
+//        }
+//        for (int i = base_derivative.size(); i < derivative.size(); i++)
+//        {
+//            derivative(i) = exponent_derivative(i - base_derivative.size());
+//        }
+//        
+        
+        
+        return ADScalar(value, derivative);
     }
     
     Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> expression_evaluator(const std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& parameters) const
@@ -917,7 +942,7 @@ struct Board
             {
                 if (token == "const")
                 {
-//                    std::cout << "\nparam[" << const_count << "] = " << params[const_count].value() << '\n';
+//                    std::cout << "\nparameters[" << const_count << "] = " << parameters[const_count].value() << '\n';
                     stack.push(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>::Constant(Board::data.numRows(), parameters[const_count++]));
                     
                 }
@@ -1005,6 +1030,10 @@ struct Board
                 else if (token == "/")
                 {
                     stack.push(((expression_type == "postfix") ? (right_operand.array() / left_operand.array()) : (left_operand.array() / right_operand.array())));
+                }
+                else if (token == "^")
+                {
+                    stack.push(((expression_type == "postfix") ? ((left_operand.array()*(right_operand.array().log())).exp()) : ((right_operand.array()*(left_operand.array().log())).exp())));
                 }
             }
         }
@@ -1422,13 +1451,10 @@ struct Board
                     return loss_func(expression_evaluator(this->params),Board::data["y"]);
                 }
 
-                if (Board::expression_dict.contains(this->expression_string))
+                Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
                 {
-                    Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
-                    {
-                        this->params = x.second.first;
-                    });
-                }
+                    this->params = x.second.first;
+                });
                 
                 if (!this->params.size())
                 {
@@ -1585,27 +1611,27 @@ float Hemberg_5(const Eigen::VectorXf& x)
 
 float Feynman_1(const Eigen::VectorXf& x)
 {
-    return (x[0]*x[1])/(x[2]*(pow(x[3],2)-pow(x[4],2)));
+    return (x[0]*x[1])/(x[2]*(std::pow(x[3],2)-std::pow(x[4],2)));
 }
 
 float Feynman_2(const Eigen::VectorXf& x)
 {
-    return (x[0]*x[1]*x[2])/(pow((x[3]-x[4]),2)+pow((x[5]-x[6]),2)+pow((x[7]-x[8]),2));
+    return (x[0]*x[1]*x[2])/(std::pow((x[3]-x[4]),2)+std::pow((x[5]-x[6]),2)+std::pow((x[7]-x[8]),2));
 }
 
 float Feynman_3(const Eigen::VectorXf& x)
 {
-    return pow((x[0]*x[1]*x[2]*x[3]*x[4])/(4*x[5]*pow(sin(x[6]/2),2)),2);
+    return std::pow((x[0]*x[1]*x[2]*x[3]*x[4])/(4*x[5]*std::pow(sin(x[6]/2),2)),2);
 }
 
 float Feynman_4(const Eigen::VectorXf& x)
 {
-    return (x[0]*x[1]/(x[2]*x[3]))+((x[0]*x[4])/(x[5]*pow(x[6],2)*x[2]*x[3]))*x[7];
+    return (x[0]*x[1]/(x[2]*x[3]))+((x[0]*x[4])/(x[5]*std::pow(x[6],2)*x[2]*x[3]))*x[7];
 }
 
 float Feynman_5(const Eigen::VectorXf& x)
 {
-    return ((x[0]*x[1])/pow(x[2],2)) * (1 + (sqrt(1 + ((2*x[3]*pow(x[2],2))/(x[0]*pow(x[1],2)))) * cos(x[4]-x[5])));
+    return ((x[0]*x[1])/std::pow(x[2],2)) * (1 + (sqrt(1 + ((2*x[3]*std::pow(x[2],2))/(x[0]*std::pow(x[1],2)))) * cos(x[4]-x[5])));
 }
 
 //https://dl.acm.org/doi/pdf/10.1145/3449639.3459345?casa_token=Np-_TMqxeJEAAAAA:8u-d6UyINV6Ex02kG9LthsQHAXMh2oxx3M4FG8ioP0hGgstIW45X8b709XOuaif5D_DVOm_FwFo
@@ -2534,6 +2560,5 @@ int main()
     return 0;
 }
 
-//1. TODO: fix autodiff
-//2. TODO: See if `in_use` is really necessary
+//TODO: See if `in_use` is really necessary
 //git push --set-upstream origin prefix_and_postfix_cpp_implementation
