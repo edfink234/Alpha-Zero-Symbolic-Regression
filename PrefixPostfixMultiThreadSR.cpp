@@ -154,7 +154,7 @@ float loss_func(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
 
 struct Board
 {
-    static boost::concurrent_flat_map<std::string, std::pair<Eigen::VectorXf, bool>> inline expression_dict = {};
+    static boost::concurrent_flat_map<std::string, Eigen::VectorXf> inline expression_dict = {};
     static float inline best_loss = FLT_MAX;
     static std::atomic<float> inline fit_time = 0.0;
     
@@ -200,7 +200,7 @@ struct Board
     int n; //depth of RPN/PN tree
     std::string expression_type, expression_string;
     static std::mutex inline thread_locker; //static because it needs to protect static members
-    std::vector<float> pieces; // Create the empty expression list.
+    std::vector<float> pieces; // Create the empty expression list. TODO: (maybe) change to float
     bool visualize_exploration, is_primary;
     
     Board(bool primary = true, int n = 3, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, is_primary{primary}
@@ -1362,32 +1362,24 @@ struct Board
                 {
                     Board::expression_dict.visit(this->expression_string, [&](auto& x)
                     {
-                        x.second.first = this->params;
+                        x.second = this->params;
                     });
                 }
                 else
                 {
-                    Board::expression_dict.insert_or_assign(this->expression_string, std::make_pair(this->params, false));
+                    Board::expression_dict.insert_or_assign(this->expression_string, this->params);
                 }
             }
             Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
             {
-                temp_vec = x.second.first;
+                temp_vec = x.second;
             });
-            
+                        
             loss = loss_func(expression_evaluator(temp_vec),Board::data["y"]);
-            
-//            Board::expression_dict.insert_or_assign(this->expression_string, std::make_pair(temp_vec, false));
-            
-            Board::expression_dict.visit(this->expression_string, [&](auto& x)
-            {
-                x.second.second = false;
-            });
         }
         else
         {
             loss = loss_func(expression_evaluator(this->params),Board::data["y"]);
-            Board::expression_dict.insert_or_assign(this->expression_string, std::make_pair(this->params, false));
         }
         return loss;
     }
@@ -1430,54 +1422,23 @@ struct Board
                 
                 for (float i: pieces){this->expression_string += std::to_string(i)+" ";}
 
-                bool in_use;
+                if (!Board::expression_dict.contains(this->expression_string))
+                {
+                    Board::expression_dict.insert_or_assign(this->expression_string, Eigen::VectorXf());
+                }
                 
                 if (Board::expression_dict.contains(this->expression_string))
                 {
                     Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
                     {
-                        in_use = x.second.second;
+                        this->params = x.second;
                     });
                 }
-                else
-                {
-                    Board::expression_dict.insert_or_assign(this->expression_string, std::make_pair(Eigen::VectorXf(), false));
-                    in_use = false;
-                }
-                
-                if (in_use)
-                {
-                    this->params.setOnes(this->__num_consts());
-                    return loss_func(expression_evaluator(this->params),Board::data["y"]);
-                }
-
-                Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
-                {
-                    this->params = x.second.first;
-                });
                 
                 if (!this->params.size())
                 {
                     this->params.setOnes(this->__num_consts());
-                    bool in_use;
-                    if (Board::expression_dict.contains(this->expression_string))
-                    {
-                        Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
-                        {
-                            in_use = x.second.second;
-                        });
-                    }
-                    else
-                    {
-                        in_use = false;
-                    }
-                    
-                    if (in_use)
-                    {
-                        return loss_func(expression_evaluator(this->params),Board::data["y"]);
-                    }
-
-                    Board::expression_dict.insert_or_assign(this->expression_string, std::make_pair(this->params, in_use));
+                    Board::expression_dict.insert_or_assign(this->expression_string, this->params);
                 }
 
                 return fitFunctionToData();
@@ -1640,7 +1601,7 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
 {
     std::random_device rand_dev;
     std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-    std::map<int, std::vector<double>> scores; //unordered_map to store the scores
+    std::map<int, std::vector<double>> scores; //map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
     
     for (int run = 1; run <= num_runs; run++)
@@ -1802,7 +1763,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
 {
     std::random_device rand_dev;
     std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-    std::map<int, std::vector<double>> scores; //unordered_map to store the scores
+    std::map<int, std::vector<double>> scores; //map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
     
     for (int run = 1; run <= num_runs; run++)
@@ -2186,7 +2147,7 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
 //https://arxiv.org/abs/2205.13134
 void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0)
 {
-    std::map<int, std::vector<double>> scores; //unordered_map to store the scores
+    std::map<int, std::vector<float>> scores; //map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
     
     if (num_threads == 0)
@@ -2200,113 +2161,253 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
     
     for (int run = 1; run <= num_runs; run++)
     {
-        Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
-        float score = 0.0f, max_score = 0.0f, check_point_score = 0.0f, UCT, best_act, UCT_best;
-        std::vector<float> temp_legal_moves;
-        std::vector<std::pair<int, double>> temp_scores;
-        std::unordered_map<std::string, std::unordered_map<float, float>> Qsa, Nsa;
-        std::string state;
-        std::unordered_map<std::string, float> Ns;
-        float c = 1.4f; //"controls the balance between exploration and exploitation", see equation 2 here: https://web.engr.oregonstate.edu/~afern/classes/cs533/notes/uct.pdf, top of page 8 here: https://arxiv.org/pdf/1402.6028.pdf, first formula in section 4. Experiments here: https://cesa-bianchi.di.unimi.it/Pubblicazioni/ml-02.pdf
-        std::vector<std::pair<std::string, float>> moveTracker;
-        moveTracker.reserve(x.reserve_amount);
-        temp_legal_moves.reserve(x.reserve_amount);
-        state.reserve(2*x.reserve_amount);
-//        double str_convert_time = 0.0;
-        auto getString  = [&]()
-        {
-            if (!x.pieces.empty())
-            {
-                state += std::to_string(x.pieces[x.pieces.size()-1]) + " ";
-            }
-        };
+        /*
+         Outside of thread:
+         */
+        std::atomic<float> max_score{0.0};
+        std::vector<std::pair<size_t, float>> temp_scores;
+        boost::concurrent_flat_map<std::string, float> Ns;
+        boost::concurrent_flat_map<std::string, boost::concurrent_flat_map<float, float>> Qsa, Nsa;
+        
         auto start_time = Clock::now();
         std::thread pushBackThread([&]()
         {
             while (timeElapsedSince(start_time) < time)
             {
                 std::this_thread::sleep_for(std::chrono::seconds(measure_period));
-                temp_scores.push_back(std::make_pair(static_cast<size_t>(timeElapsedSince(start_time)), max_score));
+                temp_scores.push_back(std::make_pair(static_cast<size_t>(timeElapsedSince(start_time)), max_score.load()));
             }
         });
         
-        for (int i = 0; (timeElapsedSince(start_time) < time); i++)
+        /*
+         Inside of thread:
+         */
+        
+        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &Ns, &Qsa, &Nsa]()
         {
-            if (i && (i%50000 == 0))
+            std::random_device rand_dev;
+            std::mt19937 thread_local generator(rand_dev());
+            Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
+            sync_point.arrive_and_wait();
+            float score = 0.0f, check_point_score = 0.0f, UCT, best_act, UCT_best;
+            
+            std::vector<float> temp_legal_moves;
+            
+            std::string state;
+            
+            float c = 1.4f; //"controls the balance between exploration and exploitation", see equation 2 here: https://web.engr.oregonstate.edu/~afern/classes/cs533/notes/uct.pdf, top of page 8 here: https://arxiv.org/pdf/1402.6028.pdf, first formula in section 4. Experiments here: https://cesa-bianchi.di.unimi.it/Pubblicazioni/ml-02.pdf
+            std::vector<std::pair<std::string, float>> moveTracker;
+            moveTracker.reserve(x.reserve_amount);
+            temp_legal_moves.reserve(x.reserve_amount);
+            state.reserve(2*x.reserve_amount);
+            //        double str_convert_time = 0.0;
+            auto getString  = [&]()
             {
-//                std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
-//                std::cout << "check_point_score = " << check_point_score
-//                << ", max_score = " << max_score << ", c = " << c << '\n';
-                if (check_point_score == max_score)
+                if (!x.pieces.empty())
                 {
-//                    std::cout << "c: " << c << " -> ";
-                    c += 1.4;
-//                    std::cout << c << '\n';
+                    state += std::to_string(x.pieces[x.pieces.size()-1]) + " ";
                 }
-                else
-                {
-//                    std::cout << "c: " << c << " -> ";
-                    c = 1.4; //if new best found, reset c and try to exploit the new best
-//                    std::cout << c << '\n';
-                    check_point_score = max_score;
-                }
-            }
-            state.clear();
-            while ((score = x.complete_status()) == -1)
+            };
+            
+            for (int i = 0; (timeElapsedSince(start_time) < time); i++)
             {
-                temp_legal_moves = x.get_legal_moves();
-//                auto start_time = Clock::now();
-                getString();
-//                str_convert_time += timeElapsedSince(start_time);
-                UCT = 0.0f;
-                UCT_best = -FLT_MAX;
-                best_act = -1.0f;
-                
-                for (auto& a : temp_legal_moves)
+                if (i && (i%50000 == 0))
                 {
-                    if (Nsa[state].count(a))
+                    //                    std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+                    //                    std::cout << "check_point_score = " << check_point_score
+                    //                    << ", max_score = " << max_score << ", c = " << c << '\n';
+                    if (check_point_score == max_score)
                     {
-                        UCT = Qsa[state][a] + c*sqrt(log(Ns[state])/Nsa[state][a]);
+                        //                        std::cout << "c: " << c << " -> ";
+                        c += 1.4;
+                        //                        std::cout << c << '\n';
                     }
                     else
                     {
-                        best_act = a; //not explored -> explore it. 3. TODO: Append to a vector best_acts. After loop, if best_acts is empty, choose best_act, else, choose best_acts[random(0, best_acts.size()-1)]
-                        break;
+                        //                        std::cout << "c: " << c << " -> ";
+                        c = 1.4; //if new best found, reset c and try to exploit the new best
+                        //                        std::cout << c << '\n';
+                        check_point_score = max_score;
                     }
-                    if (UCT > UCT_best)
+                }
+                state.clear();
+                while ((score = x.complete_status()) == -1)
+                {
+                    temp_legal_moves = x.get_legal_moves();
+//                    auto start_time = Clock::now();
+                    getString();
+//                    str_convert_time += timeElapsedSince(start_time);
+                    UCT = 0.0f;
+                    UCT_best = -FLT_MAX;
+                    best_act = -1.0f;
+                    std::vector<float> best_acts;
+                    best_acts.reserve(temp_legal_moves.size());
+                    float Nsa_sa, Ns_s, Qsa_sa;
+                    
+                    for (float a : temp_legal_moves)
                     {
-                        best_act = a;
-                        UCT_best = UCT;
+                        //                        if (Nsa[state].count(a))
+                        //                        {
+                        //                            UCT = Qsa[state][a] + c*sqrt(log(Ns[state])/Nsa[state][a]);
+                        //                        }
+                        //                        else
+                        //                        {
+                        //                            //not explored -> explore it.
+                        //                            best_acts.push_back(a);
+                        //                            UCT = -FLT_MAX;
+                        //                        }
+                        
+                        bool Nsa_has_sa = false;
+                        if (Nsa.contains(state))
+                        {
+                            Nsa.cvisit(state, [&](const auto& x)
+                            {
+                                Nsa_has_sa = x.second.contains(a);
+                            });
+                        }
+                        if (Nsa_has_sa)
+                        {
+                            Nsa.cvisit(state, [&](const auto& x)
+                            {
+                                x.second.cvisit(a, [&](const auto& y)
+                                {
+                                    Nsa_sa = y.second;
+                                });
+                            });
+                            Qsa.cvisit(state, [&](const auto& x)
+                            {
+                                x.second.cvisit(a, [&](const auto& y)
+                                {
+                                    Qsa_sa = y.second;
+                                });
+                            });
+                            Ns.cvisit(state, [&](const auto& x)
+                            {
+                                Ns_s = x.second;
+                            });
+                            
+                            UCT = Qsa_sa + c*sqrt(log(Ns_s)/Nsa_sa);
+                        }
+                        else //a hasn't been visited before
+                        {
+                            //not explored -> explore it.
+                            best_acts.push_back(a);
+                            UCT = -FLT_MAX;
+                        }
+                        if (UCT > UCT_best)
+                        {
+                            best_act = a;
+                            UCT_best = UCT;
+                        }
+                    }
+                    
+                    if (best_acts.size())
+                    {
+                        std::uniform_int_distribution<int> distribution(0, best_acts.size() - 1);
+                        best_act = best_acts[distribution(generator)];
+                    }
+                    x.pieces.push_back(best_act);
+                    moveTracker.push_back(make_pair(state, best_act));
+                    //                    Ns[state]++;
+                    //                    Nsa[state][best_act]++;
+                    if (Ns.contains(state))
+                    {
+                        Ns.insert_or_assign(state, Ns_s + 1.0f); //state is the same for all actions
+                        bool has_best_act;
+                        Nsa.cvisit(state, [&](const auto& x)
+                        {
+                            has_best_act = x.second.contains(best_act);
+                        });
+                        if (has_best_act)
+                        {
+                            Nsa.cvisit(state, [&](const auto& x)
+                            {
+                                x.second.cvisit(best_act, [&](const auto& y)
+                                {
+                                    Nsa_sa = y.second;
+                                });
+                            });
+                            Nsa.visit(state, [&](auto& x)
+                            {
+                                x.second.insert_or_assign(best_act, Nsa_sa+1.0f);
+                            });
+                        }
+                        else
+                        {
+                            Nsa.visit(state, [&](auto& x)
+                            {
+                                x.second.insert_or_assign(best_act, 1.0f);
+                            });
+                        }
+                    }
+                    else
+                    {
+                        Ns.insert_or_assign(state, 1.0f);
+                        Nsa.insert_or_assign(state, boost::concurrent_flat_map<float, float>({{best_act, 1.0f}}));
+                    }
+                }
+                //backprop reward `score`
+                //                for (auto& state_action: moveTracker)
+                //                {
+                //                    Qsa[state_action.first][state_action.second] = std::max(Qsa[state_action.first][state_action.second], score);
+                //                }
+                for (auto& state_action: moveTracker)
+                {
+                    if (Qsa.contains(state_action.first))
+                    {
+                        bool has_best_act;
+                        float Qsa_sa;
+                        Qsa.cvisit(state_action.first, [&](const auto& x)
+                        {
+                            has_best_act = x.second.contains(state_action.second);
+                        });
+                        if (has_best_act)
+                        {
+                            Qsa.cvisit(state_action.first, [&](const auto& x)
+                            {
+                                x.second.cvisit(state_action.second, [&](const auto& y)
+                                {
+                                    Qsa_sa = y.second;
+                                });
+                            });
+                            Qsa.visit(state_action.first, [&](auto& x)
+                            {
+                                x.second.insert_or_assign(state_action.second, std::max(Qsa_sa, score));
+                            });
+                        }
+                        else
+                        {
+                            Qsa.visit(state_action.first, [&](auto& x)
+                            {
+                                x.second.insert_or_assign(state_action.second, score);
+                            });
+                        }
+                    }
+                    else
+                    {
+                        Qsa.insert_or_assign(state_action.first, boost::concurrent_flat_map<float, float>({{state_action.second, score}}));
                     }
                 }
                 
-                x.pieces.push_back(best_act);
-                moveTracker.push_back(make_pair(state, best_act));
-                Ns[state]++;
-                Nsa[state][best_act]++;
+                if (score > max_score)
+                {
+                    max_score = score;
+                }
+                x.pieces.clear();
+                moveTracker.clear();
             }
-            //backprop reward `score`
-            for (auto& state_action: moveTracker)
-            {
-                Qsa[state_action.first][state_action.second] = std::max(Qsa[state_action.first][state_action.second], score);
-            }
-            
-            if (score > max_score)
-            {
-                max_score = score;
-//                expression = x._to_infix();
-//                orig_expression = x.expression();
-//                std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-//                std::cout << "Best expression = " << expression << '\n';
-//                std::cout << "Best expression (original format) = " << orig_expression << '\n';
-//                std::cout << "str_convert_time (s) = " << str_convert_time << '\n';
-//                std::cout << "Board::fit_time (s) = " << Board::fit_time << '\n';
-//                best_expression = std::move(expression);
-            }
-            x.pieces.clear();
-            moveTracker.clear();
-
+        };
+        
+        for (unsigned int i = 0; i < num_threads; i++)
+        {
+            threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
         }
+        
+        for (unsigned int i = 0; i < num_threads; i++)
+        {
+            threads[i].join();
+        }
+        
         // Join the separate thread to ensure it has finished before exiting
         pushBackThread.join();
         
@@ -2314,6 +2415,10 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
         {
             scores[i.first].push_back(i.second);
         }
+        
+        std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+        std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
+        std::cout << "Best score = " << max_score.load() << ", MSE = " << (1/max_score)-1 << '\n';
     }
     std::ofstream out(filename);
     for (auto& i: scores)
@@ -2329,7 +2434,7 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
 
 void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::string expression_type = "prefix", const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, const int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, const int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0)
 {
-    std::map<int, std::vector<double>> scores; //unordered_map to store the scores
+    std::map<int, std::vector<float>> scores; //map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
     
     if (num_threads == 0)
@@ -2348,7 +2453,7 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
          */
         
         std::atomic<float> max_score{0.0};
-        std::vector<std::pair<int, float>> temp_scores;
+        std::vector<std::pair<size_t, float>> temp_scores;
         
         auto start_time = Clock::now();
         std::thread pushBackThread([&]()
@@ -2371,7 +2476,7 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
             std::mt19937 thread_local generator(rand_dev()); // Mersenne Twister random number generator
             Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
             sync_point.arrive_and_wait();
-            float score = 0;
+            float score = 0.0f;
             std::vector<float> temp_legal_moves;
             size_t temp_sz;
             while (timeElapsedSince(start_time) < time)
@@ -2399,7 +2504,7 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
         
         for (unsigned int i = 0; i < num_threads; i++)
         {
-            threads[i] = std::thread(func);
+            threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
         }
         
         for (unsigned int i = 0; i < num_threads; i++)
@@ -2555,7 +2660,7 @@ int main()
         AIFeynman_Benchmarks and then run PlotData.py
     */
     
-    RandomSearch(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LBFGSB", 5, "autodiff", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/);
+    MCTS(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/);
 
     return 0;
 }

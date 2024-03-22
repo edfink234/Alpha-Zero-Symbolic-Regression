@@ -135,7 +135,7 @@ float loss_func(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
 
 struct Board
 {
-    static boost::concurrent_flat_map<std::string, std::pair<Eigen::VectorXf, bool>> inline expression_dict = {};
+    static boost::concurrent_flat_map<std::string, Eigen::VectorXf> inline expression_dict = {};
     static float inline best_loss = FLT_MAX;
     static std::atomic<float> inline fit_time = 0.0;
 
@@ -624,27 +624,25 @@ struct Board
                 {
                     Board::expression_dict.visit(this->expression_string, [&](auto& x)
                     {
-                        x.second.first = this->params;
+                        x.second = this->params;
                     });
                 }
                 else
                 {
-                    Board::expression_dict.insert_or_assign(this->expression_string, std::make_pair(this->params, false));
+                    Board::expression_dict.insert_or_assign(this->expression_string, this->params);
                 }
             }
             Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
             {
-                temp_vec = x.second.first;
+                temp_vec = x.second;
             });
             
             loss = loss_func(expression_evaluator(temp_vec),Board::data["y"]);
             
-            Board::expression_dict.insert_or_assign(this->expression_string, std::make_pair(temp_vec, false));
         }
         else
         {
             loss = loss_func(expression_evaluator(this->params),Board::data["y"]);
-            Board::expression_dict.insert_or_assign(this->expression_string, std::make_pair(this->params, false));
         }
         return loss;
     }
@@ -679,57 +677,24 @@ struct Board
                 
                 for (float i: pieces){this->expression_string += std::to_string(i)+" ";}
                 //https://www.boost.org/doc/libs/develop/libs/unordered/doc/html/unordered.html#concurrent_flat_map
-                bool in_use;
-                
-                if (Board::expression_dict.contains(this->expression_string))
-                {
-                    Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
-                    {
-                        in_use = x.second.second;
-                    });
-                }
-                else
-                {
-                    Board::expression_dict.insert_or_assign(this->expression_string, std::make_pair(Eigen::VectorXf(), false));
-                    in_use = false;
-                }
-                
-                if (in_use)
-                {
-                    this->params.setOnes(this->__num_consts());
-                    return loss_func(expression_evaluator(this->params),Board::data["y"]);
-                }
 
+                if (!Board::expression_dict.contains(this->expression_string))
+                {
+                    Board::expression_dict.insert_or_assign(this->expression_string, Eigen::VectorXf());
+                }
+                
                 if (Board::expression_dict.contains(this->expression_string))
                 {
                     Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
                     {
-                        this->params = x.second.first;
+                        this->params = x.second;
                     });
                 }
                 
                 if (!this->params.size())
                 {
                     this->params.setOnes(this->__num_consts());
-                    bool in_use;
-                    if (Board::expression_dict.contains(this->expression_string))
-                    {
-                        Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
-                        {
-                            in_use = x.second.second;
-                        });
-                    }
-                    else
-                    {
-                        in_use = false;
-                    }
-                    
-                    if (in_use)
-                    {
-                        return loss_func(expression_evaluator(this->params),Board::data["y"]);
-                    }
-
-                    Board::expression_dict.insert_or_assign(this->expression_string, std::make_pair(this->params, in_use));
+                    Board::expression_dict.insert_or_assign(this->expression_string, this->params);
                 }
 
                 return fitFunctionToData();
