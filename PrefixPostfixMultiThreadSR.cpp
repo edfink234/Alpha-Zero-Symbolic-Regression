@@ -232,7 +232,7 @@ struct Board
                 {
                     Board::__input_vars.push_back("x"+std::to_string(i));
                 }
-                Board::__unary_operators = {};//{"sin", "sqrt", "cos"};
+                Board::__unary_operators = {}/* = {"sin", "sqrt", "cos"}*/;
                 Board::__binary_operators = {"+", "-", "*", "/", "^"};
                 Board::__operators.clear();
                 for (std::string& i: Board::__unary_operators)
@@ -1427,13 +1427,10 @@ struct Board
                     Board::expression_dict.insert_or_assign(this->expression_string, Eigen::VectorXf());
                 }
                 
-                if (Board::expression_dict.contains(this->expression_string))
+                Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
                 {
-                    Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
-                    {
-                        this->params = x.second;
-                    });
-                }
+                    this->params = x.second;
+                });
                 
                 if (!this->params.size())
                 {
@@ -1759,15 +1756,29 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
 }
 
 //https://arxiv.org/abs/2310.06609
-void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/)
+void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0)
 {
-    std::random_device rand_dev;
-    std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
     std::map<int, std::vector<double>> scores; //map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
     
+    if (num_threads == 0)
+    {
+        unsigned int temp = std::thread::hardware_concurrency();
+        num_threads = ((temp <= 1) ? 1 : temp-1);
+    }
+    
+    std::vector<std::thread> threads(num_threads);
+    std::latch sync_point(num_threads);
+    
+    std::random_device rand_dev;
+    std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
+    
     for (int run = 1; run <= num_runs; run++)
     {
+        /*
+         Outside of thread:
+         */
+        
         Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
         Board secondary_one(false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache), secondary_two(false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache); //For crossover and mutations
         float score = 0.0f, max_score = 0.0f, mut_prob = 0.8f, rand_mut_cross;
@@ -1995,135 +2006,172 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
     out.close();
 }
 
-void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/)
+void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0)
 {
-    std::random_device rand_dev;
-    std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-    std::map<int, std::vector<double>> scores; //map to store the scores
+    std::map<int, std::vector<float>> scores; //map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
+    
+    if (num_threads == 0)
+    {
+        unsigned int temp = std::thread::hardware_concurrency();
+        num_threads = ((temp <= 1) ? 1 : temp-1);
+    }
+    
+    std::vector<std::thread> threads(num_threads);
+    std::latch sync_point(num_threads);
     
     for (int run = 1; run <= num_runs; run++)
     {
-        Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
-        float score = 0, max_score = 0, check_point_score = 0;
-        std::vector<float> temp_legal_moves;
-        std::vector<std::pair<int, double>> temp_scores;
-        size_t temp_sz;
-    //    std::string expression, orig_expression, best_expression;
+        /*
+         Outside of thread:
+         */
+        
+        std::atomic<float> max_score{0.0};
+        std::vector<std::pair<int, float>> temp_scores;
+        
         auto start_time = Clock::now();
         std::thread pushBackThread([&]()
         {
             while (timeElapsedSince(start_time) < time)
             {
                 std::this_thread::sleep_for(std::chrono::seconds(measure_period));
-                temp_scores.push_back(std::make_pair(static_cast<size_t>(timeElapsedSince(start_time)), max_score));
+                temp_scores.push_back(std::make_pair(static_cast<size_t>(timeElapsedSince(start_time)), max_score.load()));
             }
         });
-        /*
-         For this setup, we don't know a-priori the number of particles, so we generate them and their corresponding velocities as needed
-         */
-        std::vector<float> particle_positions, best_positions, v, curr_positions;
-        particle_positions.reserve(x.reserve_amount); //stores record of all current particle position indices
-        best_positions.reserve(x.reserve_amount); //indices corresponding to best pieces
-        curr_positions.reserve(x.reserve_amount); //indices corresponding to x.pieces
-        v.reserve(x.reserve_amount); //stores record of all current particle velocities
-        float rp, rg, new_v, c = 0.0f;
-        int c_count = 0;
-        std::unordered_map<float, std::unordered_map<int, int>> Nsa;
-        std::unordered_map<float, std::unordered_map<int, float>> Psa;
-        std::unordered_map<int, float> p_i_vals, p_i;
         
         /*
-         In this implementation of PSO:
-         
-             The traditional PSO initializes the particle positions to be between 0 and 1. However, in this application,
-             the particle positions are discrete values and any of the legal integer tokens (moves). The
-             velocities are continuous-valued and perturb the postions, which are subsequently constrained by rounding to
-             the nearest whole number then taking the modulo w.r.t. the # of allowed legal moves.
-         
+         Inside of thread:
          */
         
-        for (int iter = 0; (timeElapsedSince(start_time) < time); iter++)
+        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point]()
         {
-            if (iter && (iter%50000 == 0))
-            {
-    //            std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
-    //            std::cout << "check_point_score = " << check_point_score
-    //            << ", max_score = " << max_score << ", c = " << c << '\n';
-                if (check_point_score == max_score)
-                {
-                    c_count++;
-                    std::uniform_real_distribution<float> temp(-c_count, c_count);
-    //                std::cout << "c: " << c << " -> ";
-                    c = temp(generator);
-    //                std::cout << c << '\n';
-                }
-                else
-                {
-    //                std::cout << "c: " << c << " -> ";
-                    c = 0.0f; //if new best found, reset c and try to exploit the new best
-                    c_count = 0;
-    //                std::cout << c << '\n';
-                }
-                check_point_score = max_score;
-            }
+            std::random_device rand_dev;
+            std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
+            Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
+            sync_point.arrive_and_wait();
+            float score = 0, check_point_score = 0;
+            std::vector<float> temp_legal_moves;
             
-            for (int i = 0; (score = x.complete_status()) == -1; i++) //i is the index of the token
+            size_t temp_sz;
+        //    std::string expression, orig_expression, best_expression;
+            
+            /*
+             For this setup, we don't know a-priori the number of particles, so we generate them and their corresponding velocities as needed
+             */
+            std::vector<float> particle_positions, best_positions, v, curr_positions;
+            particle_positions.reserve(x.reserve_amount); //stores record of all current particle position indices
+            best_positions.reserve(x.reserve_amount); //indices corresponding to best pieces
+            curr_positions.reserve(x.reserve_amount); //indices corresponding to x.pieces
+            v.reserve(x.reserve_amount); //stores record of all current particle velocities
+            float rp, rg, new_v, c = 0.0f;
+            int c_count = 0;
+            std::unordered_map<float, std::unordered_map<int, int>> Nsa;
+            std::unordered_map<float, std::unordered_map<int, float>> Psa;
+            std::unordered_map<int, float> p_i_vals, p_i;
+            
+            /*
+             In this implementation of PSO:
+             
+                 The traditional PSO initializes the particle positions to be between 0 and 1. However, in this application,
+                 the particle positions are discrete values and any of the legal integer tokens (moves). The
+                 velocities are continuous-valued and perturb the postions, which are subsequently constrained by rounding to
+                 the nearest whole number then taking the modulo w.r.t. the # of allowed legal moves.
+             
+             */
+            
+            for (int iter = 0; (timeElapsedSince(start_time) < time); iter++)
             {
-                rp = x.pos_dist(generator), rg = x.pos_dist(generator);
-                temp_legal_moves = x.get_legal_moves(); //the legal moves
-                temp_sz = temp_legal_moves.size(); //the number of legal moves
+                if (iter && (iter%50000 == 0))
+                {
+        //            std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+        //            std::cout << "check_point_score = " << check_point_score
+        //            << ", max_score = " << max_score << ", c = " << c << '\n';
+                    if (check_point_score == max_score)
+                    {
+                        c_count++;
+                        std::uniform_real_distribution<float> temp(-c_count, c_count);
+        //                std::cout << "c: " << c << " -> ";
+                        c = temp(generator);
+        //                std::cout << c << '\n';
+                    }
+                    else
+                    {
+        //                std::cout << "c: " << c << " -> ";
+                        c = 0.0f; //if new best found, reset c and try to exploit the new best
+                        c_count = 0;
+        //                std::cout << c << '\n';
+                    }
+                    check_point_score = max_score;
+                }
+                
+                for (int i = 0; (score = x.complete_status()) == -1; i++) //i is the index of the token
+                {
+                    rp = x.pos_dist(generator), rg = x.pos_dist(generator);
+                    temp_legal_moves = x.get_legal_moves(); //the legal moves
+                    temp_sz = temp_legal_moves.size(); //the number of legal moves
 
-                if (i == particle_positions.size()) //Then we need to create a new particle with some initial position and velocity
-                {
-                    particle_positions.push_back(x.pos_dist(generator));
-                    v.push_back(x.vel_dist(generator));
+                    if (i == particle_positions.size()) //Then we need to create a new particle with some initial position and velocity
+                    {
+                        particle_positions.push_back(x.pos_dist(generator));
+                        v.push_back(x.vel_dist(generator));
+                    }
+                    
+                    particle_positions[i] = trueMod(std::round(particle_positions[i]), temp_sz);
+                    x.pieces.push_back(temp_legal_moves[particle_positions[i]]); //x.pieces holds the pieces corresponding to the indices
+                    curr_positions.push_back(particle_positions[i]);
+                    if (i == best_positions.size())
+                    {
+                        best_positions.push_back(x.pos_dist(generator));
+                        best_positions[i] = trueMod(std::round(best_positions[i]), temp_sz);
+                    }
+                    //https://hal.science/hal-00764996
+                    //https://www.researchgate.net/publication/216300408_An_off-the-shelf_PSO
+                    new_v = (0.721*v[i] + x.phi_1*rg*(best_positions[i] - particle_positions[i]) + x.phi_2*rp*(p_i[i] - particle_positions[i]) + c);
+                    v[i] = copysign(std::min(new_v, FLT_MAX), new_v);
+                    particle_positions[i] += v[i];
+                    Nsa[curr_positions[i]][i]++;
                 }
                 
-                particle_positions[i] = trueMod(std::round(particle_positions[i]), temp_sz);
-                x.pieces.push_back(temp_legal_moves[particle_positions[i]]); //x.pieces holds the pieces corresponding to the indices
-                curr_positions.push_back(particle_positions[i]);
-                if (i == best_positions.size())
+                for (int i = 0; i < curr_positions.size(); i++)
                 {
-                    best_positions.push_back(x.pos_dist(generator));
-                    best_positions[i] = trueMod(std::round(best_positions[i]), temp_sz);
+                    Psa[curr_positions[i]][i] = (Psa[curr_positions[i]][i]+score)/Nsa[curr_positions[i]][i];
+                    if (Psa[curr_positions[i]][i] > p_i_vals[i])
+                    {
+                        p_i[i] = curr_positions[i];
+                    }
+                    p_i_vals[i] = std::max(p_i_vals[i], Psa[curr_positions[i]][i]);
+                    
                 }
-                //https://hal.science/hal-00764996
-                //https://www.researchgate.net/publication/216300408_An_off-the-shelf_PSO
-                new_v = (0.721*v[i] + x.phi_1*rg*(best_positions[i] - particle_positions[i]) + x.phi_2*rp*(p_i[i] - particle_positions[i]) + c);
-                v[i] = copysign(std::min(new_v, FLT_MAX), new_v);
-                particle_positions[i] += v[i];
-                Nsa[curr_positions[i]][i]++;
-            }
-            
-            for (int i = 0; i < curr_positions.size(); i++)
-            {
-                Psa[curr_positions[i]][i] = (Psa[curr_positions[i]][i]+score)/Nsa[curr_positions[i]][i];
-                if (Psa[curr_positions[i]][i] > p_i_vals[i])
-                {
-                    p_i[i] = curr_positions[i];
-                }
-                p_i_vals[i] = std::max(p_i_vals[i], Psa[curr_positions[i]][i]);
                 
-            }
-            
-            if (score > max_score)
-            {
-                for (int idx = 0; idx < curr_positions.size(); idx++)
+                if (score > max_score)
                 {
-                    best_positions[idx] = curr_positions[idx];
+                    for (int idx = 0; idx < curr_positions.size(); idx++)
+                    {
+                        best_positions[idx] = curr_positions[idx];
+                    }
+        //            expression = x._to_infix();
+        //            orig_expression = x.expression();
+                    max_score = score;
+        //            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+        //            std::cout << "Best expression = " << expression << '\n';
+        //            std::cout << "Best expression (original format) = " << orig_expression << '\n';
+        //            best_expression = std::move(expression);
                 }
-    //            expression = x._to_infix();
-    //            orig_expression = x.expression();
-                max_score = score;
-    //            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-    //            std::cout << "Best expression = " << expression << '\n';
-    //            std::cout << "Best expression (original format) = " << orig_expression << '\n';
-    //            best_expression = std::move(expression);
+                x.pieces.clear();
+                curr_positions.clear();
             }
-            x.pieces.clear();
-            curr_positions.clear();
+        };
+        
+        for (unsigned int i = 0; i < num_threads; i++)
+        {
+            threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
         }
+        
+        for (unsigned int i = 0; i < num_threads; i++)
+        {
+            threads[i].join();
+        }
+        
         // Join the separate thread to ensure it has finished before exiting
         pushBackThread.join();
         
@@ -2131,6 +2179,10 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
         {
             scores[i.first].push_back(i.second);
         }
+        
+        std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+        std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
+        std::cout << "Best score = " << max_score.load() << ", MSE = " << (1/max_score)-1 << '\n';
     }
     std::ofstream out(filename);
     for (auto& i: scores)
@@ -2166,9 +2218,7 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
          */
         std::atomic<float> max_score{0.0};
         std::vector<std::pair<size_t, float>> temp_scores;
-        boost::concurrent_flat_map<std::string, float> Ns;
-        boost::concurrent_flat_map<std::string, boost::concurrent_flat_map<float, float>> Qsa, Nsa;
-        
+
         auto start_time = Clock::now();
         std::thread pushBackThread([&]()
         {
@@ -2183,7 +2233,7 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
          Inside of thread:
          */
         
-        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &Ns, &Qsa, &Nsa]()
+        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point]()
         {
             std::random_device rand_dev;
             std::mt19937 thread_local generator(rand_dev());
@@ -2192,7 +2242,8 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
             float score = 0.0f, check_point_score = 0.0f, UCT, best_act, UCT_best;
             
             std::vector<float> temp_legal_moves;
-            
+            std::unordered_map<std::string, std::unordered_map<float, float>> Qsa, Nsa;
+            std::unordered_map<std::string, float> Ns;
             std::string state;
             
             float c = 1.4f; //"controls the balance between exploration and exploitation", see equation 2 here: https://web.engr.oregonstate.edu/~afern/classes/cs533/notes/uct.pdf, top of page 8 here: https://arxiv.org/pdf/1402.6028.pdf, first formula in section 4. Experiments here: https://cesa-bianchi.di.unimi.it/Pubblicazioni/ml-02.pdf
@@ -2242,58 +2293,20 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
                     best_act = -1.0f;
                     std::vector<float> best_acts;
                     best_acts.reserve(temp_legal_moves.size());
-                    float Nsa_sa, Ns_s, Qsa_sa;
                     
                     for (float a : temp_legal_moves)
                     {
-                        //                        if (Nsa[state].count(a))
-                        //                        {
-                        //                            UCT = Qsa[state][a] + c*sqrt(log(Ns[state])/Nsa[state][a]);
-                        //                        }
-                        //                        else
-                        //                        {
-                        //                            //not explored -> explore it.
-                        //                            best_acts.push_back(a);
-                        //                            UCT = -FLT_MAX;
-                        //                        }
-                        
-                        bool Nsa_has_sa = false;
-                        if (Nsa.contains(state))
+                        if (Nsa[state].count(a))
                         {
-                            Nsa.cvisit(state, [&](const auto& x)
-                            {
-                                Nsa_has_sa = x.second.contains(a);
-                            });
+                            UCT = Qsa[state][a] + c*sqrt(log(Ns[state])/Nsa[state][a]);
                         }
-                        if (Nsa_has_sa)
-                        {
-                            Nsa.cvisit(state, [&](const auto& x)
-                            {
-                                x.second.cvisit(a, [&](const auto& y)
-                                {
-                                    Nsa_sa = y.second;
-                                });
-                            });
-                            Qsa.cvisit(state, [&](const auto& x)
-                            {
-                                x.second.cvisit(a, [&](const auto& y)
-                                {
-                                    Qsa_sa = y.second;
-                                });
-                            });
-                            Ns.cvisit(state, [&](const auto& x)
-                            {
-                                Ns_s = x.second;
-                            });
-                            
-                            UCT = Qsa_sa + c*sqrt(log(Ns_s)/Nsa_sa);
-                        }
-                        else //a hasn't been visited before
+                        else
                         {
                             //not explored -> explore it.
                             best_acts.push_back(a);
                             UCT = -FLT_MAX;
                         }
+                        
                         if (UCT > UCT_best)
                         {
                             best_act = a;
@@ -2308,85 +2321,13 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
                     }
                     x.pieces.push_back(best_act);
                     moveTracker.push_back(make_pair(state, best_act));
-                    //                    Ns[state]++;
-                    //                    Nsa[state][best_act]++;
-                    if (Ns.contains(state))
-                    {
-                        Ns.insert_or_assign(state, Ns_s + 1.0f); //state is the same for all actions
-                        bool has_best_act;
-                        Nsa.cvisit(state, [&](const auto& x)
-                        {
-                            has_best_act = x.second.contains(best_act);
-                        });
-                        if (has_best_act)
-                        {
-                            Nsa.cvisit(state, [&](const auto& x)
-                            {
-                                x.second.cvisit(best_act, [&](const auto& y)
-                                {
-                                    Nsa_sa = y.second;
-                                });
-                            });
-                            Nsa.visit(state, [&](auto& x)
-                            {
-                                x.second.insert_or_assign(best_act, Nsa_sa+1.0f);
-                            });
-                        }
-                        else
-                        {
-                            Nsa.visit(state, [&](auto& x)
-                            {
-                                x.second.insert_or_assign(best_act, 1.0f);
-                            });
-                        }
-                    }
-                    else
-                    {
-                        Ns.insert_or_assign(state, 1.0f);
-                        Nsa.insert_or_assign(state, boost::concurrent_flat_map<float, float>({{best_act, 1.0f}}));
-                    }
+                    Ns[state]++;
+                    Nsa[state][best_act]++;
                 }
                 //backprop reward `score`
-                //                for (auto& state_action: moveTracker)
-                //                {
-                //                    Qsa[state_action.first][state_action.second] = std::max(Qsa[state_action.first][state_action.second], score);
-                //                }
                 for (auto& state_action: moveTracker)
                 {
-                    if (Qsa.contains(state_action.first))
-                    {
-                        bool has_best_act;
-                        float Qsa_sa;
-                        Qsa.cvisit(state_action.first, [&](const auto& x)
-                        {
-                            has_best_act = x.second.contains(state_action.second);
-                        });
-                        if (has_best_act)
-                        {
-                            Qsa.cvisit(state_action.first, [&](const auto& x)
-                            {
-                                x.second.cvisit(state_action.second, [&](const auto& y)
-                                {
-                                    Qsa_sa = y.second;
-                                });
-                            });
-                            Qsa.visit(state_action.first, [&](auto& x)
-                            {
-                                x.second.insert_or_assign(state_action.second, std::max(Qsa_sa, score));
-                            });
-                        }
-                        else
-                        {
-                            Qsa.visit(state_action.first, [&](auto& x)
-                            {
-                                x.second.insert_or_assign(state_action.second, score);
-                            });
-                        }
-                    }
-                    else
-                    {
-                        Qsa.insert_or_assign(state_action.first, boost::concurrent_flat_map<float, float>({{state_action.second, score}}));
-                    }
+                    Qsa[state_action.first][state_action.second] = std::max(Qsa[state_action.first][state_action.second], score);
                 }
                 
                 if (score > max_score)
@@ -2660,7 +2601,8 @@ int main()
         AIFeynman_Benchmarks and then run PlotData.py
     */
     
-    MCTS(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/);
+//    MCTS(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/);
+    GP(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/);
 
     return 0;
 }

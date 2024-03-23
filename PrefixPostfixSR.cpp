@@ -209,7 +209,7 @@ struct Board
             {
                 Board::__input_vars.push_back("x"+std::to_string(i));
             }
-            Board::__unary_operators = {};//{"sin", "sqrt", "cos"};
+            Board::__unary_operators = {"sin", "sqrt", "cos"};
             Board::__binary_operators = {"+", "-", "*", "/", "^"};
             Board::__operators.clear();
             for (std::string& i: Board::__unary_operators)
@@ -2037,6 +2037,10 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
         {
             scores[i.first].push_back(i.second);
         }
+        
+        std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+        std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
+        std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
     }
     std::ofstream out(filename);
     for (auto& i: scores)
@@ -2414,7 +2418,8 @@ int main()
         AIFeynman_Benchmarks and then run PlotData.py
     */
     
-    RandomSearch(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", 1.0f, "LBFGS", 5, "autodiff", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearch.txt" /*name of file to save the results to*/, 1 /*number of runs*/);
+//    RandomSearch(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearch.txt" /*name of file to save the results to*/, 1 /*number of runs*/);
+    PSO(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearch.txt" /*name of file to save the results to*/, 1 /*number of runs*/);
 
     return 0;
 }
