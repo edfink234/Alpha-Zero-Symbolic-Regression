@@ -1885,6 +1885,10 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         {
             scores[i.first].push_back(i.second);
         }
+        
+        std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+        std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
+        std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
     }
     
     
@@ -2419,7 +2423,7 @@ int main()
     */
     
 //    RandomSearch(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearch.txt" /*name of file to save the results to*/, 1 /*number of runs*/);
-    PSO(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearch.txt" /*name of file to save the results to*/, 1 /*number of runs*/);
+    GP(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", 1.0f, "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearch.txt" /*name of file to save the results to*/, 1 /*number of runs*/);
 
     return 0;
 }
