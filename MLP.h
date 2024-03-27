@@ -25,12 +25,12 @@ class MultiLayerPerceptron
 {
 	public:
 		MultiLayerPerceptron(std::vector<int> layers, float bias=1.0f, float eta = 0.5f);
-//		void set_weights(std::vector<std::vector<std::vector<float> > > w_init);
-//        void reset_weights();
-//		void print_weights();
-//		std::vector<float> run(std::vector<float> x);
-//        static float mse(const std::vector<float> &y, const std::vector<float>& o);
-//		float bp(std::vector<float> x, std::vector<float> y);
+		void set_weights(std::vector<Eigen::MatrixXf>&& w_init);
+        void reset_weights();
+		void print_weights();
+        Eigen::VectorXf run(const Eigen::VectorXf& x);
+        static float mse(const std::vector<float> &y, const std::vector<float>& o);
+		float bp(std::vector<float>&& x, std::vector<float>&& y);
 //		
 		std::vector<int> layers; //# of neurons per layer including the input layer (in which case layers[0] refers to the number of inputs)
 		float bias;
@@ -38,6 +38,8 @@ class MultiLayerPerceptron
 		std::vector<std::vector<Perceptron> > network; //the actual network
         std::vector<Eigen::VectorXf> values; //holds output values of the neurons
 		std::vector<std::vector<float> > d; //contains error terms for neurons: one error term for each neuron of each layer
+    private:
+        
 };
 
 #endif

@@ -14,7 +14,7 @@ Perceptron::Perceptron(int inputs, float bias)
     this->weights = Eigen::VectorXf::Random(inputs);
 
     // Scale the weights to the desired range (-1 to 1)
-    weights = (weights.array() * 2.0f) - 1.0f;
+    this->weights = (weights.array() * 2.0f) - 1.0f;
 }
 
 // Run the perceptron. x is a vector with the input values.
@@ -54,7 +54,7 @@ MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, float bias, 
 
     for (int i = 0; i < this->layers.size(); i++) //for each layer
     {
-        this->values.emplace_back(layers[i], 0.0f); //add vector of values
+        this->values.emplace_back(Eigen::VectorXf::Zero(layers[i])); //add vector of values
         this->network.emplace_back(); //add vector of neurons
         this->d.emplace_back(layers[i], 0.0f);
         if (i > 0)  //network[0] is the input layer, so it has no neurons, i.e., it's empty
@@ -66,138 +66,139 @@ MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, float bias, 
         }
     }
 }
-//
-//
-//void MultiLayerPerceptron::set_weights(std::vector<std::vector<std::vector<float> > > w_init) 
-//{
-//    // Write all the weights into the neural network.
-//    // w_init is a vector of vectors of vectors of floats. 
-//    for (int i = 1; i < network.size(); i++){ //first layer is the input layer so they're no neurons there
-//        for (int j = 0; j < layers[i]; j++) { //for each neuron
-//            network[i][j].set_weights(w_init[i-1][j]);
-//        }
-//    }
-//}
-//
-//void MultiLayerPerceptron::reset_weights() 
-//{
-//    // Write all the weights into the neural network.
-//    // w_init is a vector of vectors of vectors of floats.
-//    for (int i = 1; i < network.size(); i++){ //first layer is the input layer so they're no neurons there
-//        for (int j = 0; j < layers[i]; j++) { //for each neuron
-//            generate(network[i][j].weights.begin(), network[i][j].weights.end(), frand);
-//        }
-//    }
-//}
-//
-//void MultiLayerPerceptron::print_weights() 
-//{
-//    std::cout << '\n';
-//    for (int i = 1; i < network.size(); i++)
-//    { //first layer is the input layer so they're no neurons there
-//        for (int j = 0; j < layers[i]; j++) 
-//        {
-//            std::cout << "Layer " << i+1 << " Neuron " << j+1 << ": ";
-//            for (auto &it: network[i][j].weights)
-//            {
-//                std::cout << it <<"   ";
-//            }
-//            std::cout << '\n';
-//        }
-//    }
-//    std::cout << '\n';
-//}
-//
-//std::vector<float> MultiLayerPerceptron::run(std::vector<float> x) 
-//{
-//    // Run an input forward through the neural network.
-//    // x is a vector with the input values.
-//    //Returns: vector with output values, i.e., the last element in the values vector
-//    this->values[0] = x; 
-//    for (int i = 1; i < network.size(); i++) //for each layer
-//    {
-//        for (int j = 0; j < this->layers[i]; j++) //for each neuron
-//        {
-//            this->values[i][j] = this->network[i][j].run(this->values[i-1]);
-//            //run the previous layer output values through this neuron `this->network[i][j]`
-//        }
-//    }
-//    return this->values.back();
-//}
-//
-///*/
-// MSE = 1/n * \sum_{i = 0}^{n-1} (y_i - o_i)^2
-// */
-//float MultiLayerPerceptron::mse(const std::vector<float>& y, const std::vector<float>& o)
-//{
-//    float mse = 0.0f;
-//    if (y.size() != o.size())
-//    {
-//        throw std::runtime_error("y and o must have the same size");
-//    }
-//    for (size_t i = 0; i < y.size(); i++)
-//    {
-//        mse += (y[i] - o[i])*(y[i] - o[i]);
-//    }
-//    return mse / y.size();
-//}
-//
-//// Run a single (x,y) pair with the backpropagation algorithm.
-//float MultiLayerPerceptron::bp(std::vector<float> x, std::vector<float> y){
-//    
-//    // Backpropagation Step by Step:
-//    
-//    // STEP 1: Feed a sample to the network `this->run(x)`
-//    // STEP 2: Calculate the MSE
-//    float MSE = this->mse(y, this->run(x));
-//    // STEP 3: Calculate the output error terms
-//    
-////        delta_k = d MSE(y_k, o_k) / d w_k
-////                = d MSE(y_k, sigmoid(x_k*w_k + b_k)) / d w_k
-////                = d ((1/n) * \sum_{i = 0}^{n-1} (y_{k_{i}} - sigmoid(x_k*w_k + b_k)_{k_{i}})^2) / d w_k
-////                = (1/n) * d (\sum_{i = 0}^{n-1} (y_{k_{i}} - sigmoid(x_k*w_k + b_k)_{k_{i}})^2) / d w_k
-////                = d (y_{k} - sigmoid(x_k*w_k + b_k))^2) / d w_k
-////                = 2 * (y_{k} - o_{k}) * d (- sigmoid(x_k*w_k + b_k)) / d w_k
-////                = -2 * (y_k - o_k) * o_k * (1 - o_k)
-////                \propto o_k * (1 - o_k) * (y_k - o_k)
-//
-//    for (int i = 0; i < this->layers.back(); i++)
-//    {
-//        float o_k = this->values.back()[i];
-//        this->d.back()[i] = o_k * (1 - o_k) * (y[i] - o_k);
-//    }
-//    
-//    // STEP 4: Calculate the error term of each unit on each layer
-//    for (int i = network.size()-2; i > 0; i--) //for each layer (starting from the one before the output layer and ending at and including the layer right before the input layer)
-//    {
-//        for (int h = 0; h < layers[i]; h++) //for each neuron in layer i
-//        {
-//            assert(layers[i] == network[i].size());
-//            float fwd_error = 0.0f;
-//            //fwd_error = \sum_{k \in \mathrm{outs}} w_{kh} \delta_k
-//            for (int k = 0; k < layers[i+1]; k++) //for each neuron in layer i+1
-//            {
-//                fwd_error += network[i+1][k].weights[h]*d[i+1][k];
-//            }
-//            
-//            //\delta_h = o_h*(1-o_h)*fwd_error
-//            this->d[i][h] = this->values[i][h] * (1 - this->values[i][h]) * fwd_error;
-//        }
-//    }
-//    
-//    // STEPS 5 & 6: Calculate the deltas and update the weights
-//    for (int i = 1; i < network.size(); i++) //for each layer
-//    {
-//        for (int j = 0; j < layers[i]; j++)
-//        {
-//            for (int k = 0; k < layers[i-1]; k++) //weights
-//            {
-//                this->network[i][j].weights[k] += this->eta*this->d[i][j]*this->values[i-1][k];
-//            }
-//            //bias
-//            this->network[i][j].weights[layers[i-1]] += this->eta*this->d[i][j]*bias;
-//        }
-//    }
-//    return MSE;
-//}
+
+
+void MultiLayerPerceptron::set_weights(std::vector<Eigen::MatrixXf>&& w_init) 
+{
+    // Write all the weights into the neural network.
+    // w_init is a vector of vectors of vectors of floats. 
+    for (int i = 1; i < network.size(); i++){ //first layer is the input layer so they're no neurons there
+        for (int j = 0; j < layers[i]; j++) { //for each neuron
+            network[i][j].set_weights(w_init[i-1].row(j));
+        }
+    }
+}
+
+void MultiLayerPerceptron::reset_weights() 
+{
+    // Write all the weights into the neural network.
+    // w_init is a vector of vectors of vectors of floats.
+    for (int i = 1; i < network.size(); i++){ //first layer is the input layer so they're no neurons there
+        for (int j = 0; j < layers[i]; j++) { //for each neuron
+            network[i][j].weights = Eigen::VectorXf::Random(network[i][j].weights.size());
+            network[i][j].weights = (network[i][j].weights.array() * 2.0f) - 1.0f;
+        }
+    }
+}
+
+void MultiLayerPerceptron::print_weights() 
+{
+    std::cout << '\n';
+    for (int i = 1; i < network.size(); i++)
+    { //first layer is the input layer so they're no neurons there
+        for (int j = 0; j < layers[i]; j++) 
+        {
+            std::cout << "Layer " << i+1 << " Neuron " << j+1 << ": ";
+            for (auto &it: network[i][j].weights)
+            {
+                std::cout << it <<"   ";
+            }
+            std::cout << '\n';
+        }
+    }
+    std::cout << '\n';
+}
+
+Eigen::VectorXf MultiLayerPerceptron::run(const Eigen::VectorXf& x) 
+{
+    // Run an input forward through the neural network.
+    // x is a vector with the input values.
+    //Returns: vector with output values, i.e., the last element in the values vector
+    this->values[0] = x; 
+    for (int i = 1; i < network.size(); i++) //for each layer
+    {
+        for (int j = 0; j < this->layers[i]; j++) //for each neuron
+        {
+            this->values[i][j] = this->network[i][j].run(this->values[i-1]);
+            //run the previous layer output values through this neuron `this->network[i][j]`
+        }
+    }
+    return this->values.back();
+}
+
+/*/
+ MSE = 1/n * \sum_{i = 0}^{n-1} (y_i - o_i)^2
+ */
+float MultiLayerPerceptron::mse(const std::vector<float>& y, const std::vector<float>& o)
+{
+    float mse = 0.0f;
+    if (y.size() != o.size())
+    {
+        throw std::runtime_error("y and o must have the same size");
+    }
+    for (size_t i = 0; i < y.size(); i++)
+    {
+        mse += (y[i] - o[i])*(y[i] - o[i]);
+    }
+    return mse / y.size();
+}
+
+// Run a single (x,y) pair with the backpropagation algorithm.
+float MultiLayerPerceptron::bp(std::vector<float>&& x, std::vector<float>&& y){
+    
+    // Backpropagation Step by Step:
+    
+    // STEP 1: Feed a sample to the network `this->run(x)`
+    // STEP 2: Calculate the MSE
+    float MSE = this->mse(y, this->run(x));
+    // STEP 3: Calculate the output error terms
+    
+//        delta_k = d MSE(y_k, o_k) / d w_k
+//                = d MSE(y_k, sigmoid(x_k*w_k + b_k)) / d w_k
+//                = d ((1/n) * \sum_{i = 0}^{n-1} (y_{k_{i}} - sigmoid(x_k*w_k + b_k)_{k_{i}})^2) / d w_k
+//                = (1/n) * d (\sum_{i = 0}^{n-1} (y_{k_{i}} - sigmoid(x_k*w_k + b_k)_{k_{i}})^2) / d w_k
+//                = d (y_{k} - sigmoid(x_k*w_k + b_k))^2) / d w_k
+//                = 2 * (y_{k} - o_{k}) * d (- sigmoid(x_k*w_k + b_k)) / d w_k
+//                = -2 * (y_k - o_k) * o_k * (1 - o_k)
+//                \propto o_k * (1 - o_k) * (y_k - o_k)
+
+    for (int i = 0; i < this->layers.back(); i++)
+    {
+        float o_k = this->values.back()[i];
+        this->d.back()[i] = o_k * (1 - o_k) * (y[i] - o_k);
+    }
+    
+    // STEP 4: Calculate the error term of each unit on each layer
+    for (int i = network.size()-2; i > 0; i--) //for each layer (starting from the one before the output layer and ending at and including the layer right before the input layer)
+    {
+        for (int h = 0; h < layers[i]; h++) //for each neuron in layer i
+        {
+            assert(layers[i] == network[i].size());
+            float fwd_error = 0.0f;
+            //fwd_error = \sum_{k \in \mathrm{outs}} w_{kh} \delta_k
+            for (int k = 0; k < layers[i+1]; k++) //for each neuron in layer i+1
+            {
+                fwd_error += network[i+1][k].weights[h]*d[i+1][k];
+            }
+            
+            //\delta_h = o_h*(1-o_h)*fwd_error
+            this->d[i][h] = this->values[i][h] * (1 - this->values[i][h]) * fwd_error;
+        }
+    }
+    
+    // STEPS 5 & 6: Calculate the deltas and update the weights
+    for (int i = 1; i < network.size(); i++) //for each layer
+    {
+        for (int j = 0; j < layers[i]; j++)
+        {
+            for (int k = 0; k < layers[i-1]; k++) //weights
+            {
+                this->network[i][j].weights[k] += this->eta*this->d[i][j]*this->values[i-1][k];
+            }
+            //bias
+            this->network[i][j].weights[layers[i-1]] += this->eta*this->d[i][j]*bias;
+        }
+    }
+    return MSE;
+}
 
