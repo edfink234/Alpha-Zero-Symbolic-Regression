@@ -7,8 +7,17 @@
 #include <csignal>
 #include <algorithm>
 
+using Clock = std::chrono::high_resolution_clock;
+using VectorRowMajorXf = Eigen::Matrix<float, Eigen::Dynamic, 1, Eigen::RowMajor>;
+
 // Define a flag to control the loop
 volatile sig_atomic_t interrupted = 0;
+
+template <typename T>
+double timeElapsedSince(T start_time)
+{
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9;
+}
 
 // Signal handler function to catch Ctrl-C
 void signalHandler(int signum) 
@@ -19,51 +28,51 @@ void signalHandler(int signum)
     }
 }
 
-//int getNum(const std::vector<float> results)
-//{
-//    if (results.size() == 1)
-//    {
-//        return static_cast<int>(results[0]*10);
-//    }
-//    else if (results.size() == 10)
-//    {
-//        return std::distance(results.begin(), std::max_element(results.begin(), results.end()));
-//    }
-//    else
-//    {
-//        std::vector<std::vector<float>> number_vecs = 
-//        {
-//            {1,1,1,1,1,1,0},
-//            {0,1,1,0,0,0,0},
-//            {1,1,0,1,1,0,1},
-//            {1,1,1,1,0,0,1},
-//            {0,1,1,0,0,1,1},
-//            {1,0,1,1,0,1,1},
-//            {1,0,1,1,1,1,1},
-//            {1,1,1,0,0,0,0},
-//            {1,1,1,1,1,1,1},
-//            {1,1,1,1,0,1,1},
-//        };
-//        
-//        int idx = 0;
-//        float mse_val = DBL_MAX, temp_mse_val;
-//        
-//        for (size_t i = 0; i < number_vecs.size(); i++)
-//        {
-//            temp_mse_val = MultiLayerPerceptron::mse(results, number_vecs[i]);
-//            if (temp_mse_val == 0)
-//            {
-//                return i;
-//            }
-//            else if (temp_mse_val < mse_val)
-//            {
-//                idx = i;
-//                mse_val = temp_mse_val;
-//            }
-//        }
-//        return idx;
-//    }
-//}
+int getNum(const Eigen::VectorXf& results)
+{
+    if (results.size() == 1)
+    {
+        return static_cast<int>(results[0]*10);
+    }
+    else if (results.size() == 10)
+    {
+        return std::distance(results.begin(), std::max_element(results.begin(), results.end()));
+    }
+    else
+    {
+        Eigen::Matrix<float, 10, 7> number_vecs
+        {
+            {1,1,1,1,1,1,0},
+            {0,1,1,0,0,0,0},
+            {1,1,0,1,1,0,1},
+            {1,1,1,1,0,0,1},
+            {0,1,1,0,0,1,1},
+            {1,0,1,1,0,1,1},
+            {1,0,1,1,1,1,1},
+            {1,1,1,0,0,0,0},
+            {1,1,1,1,1,1,1},
+            {1,1,1,1,0,1,1},
+        };
+        
+        int idx = 0;
+        float mse_val = DBL_MAX, temp_mse_val;
+        
+        for (size_t i = 0; i < number_vecs.rows(); i++)
+        {
+            temp_mse_val = MultiLayerPerceptron::mse(results, number_vecs.row(i));
+            if (temp_mse_val == 0)
+            {
+                return i;
+            }
+            else if (temp_mse_val < mse_val)
+            {
+                idx = i;
+                mse_val = temp_mse_val;
+            }
+        }
+        return idx;
+    }
+}
 
 /*
     ===========================
@@ -178,31 +187,30 @@ void signalHandler(int signum)
             d
  */
 
-//void GetData(int numInputs, MultiLayerPerceptron& sdrnn)
-//{
-//    char ans;
-//    int numOutputs = sdrnn.layers.back();
-//    printf("Would you like to test your SDR neural network with %d inputs and %d outputs (y/n)? ", numInputs, numOutputs);
-//    std::cin >> ans;
-//    if (ans != 'y')
-//    {
-//        return;
-//    }
-//    std::vector<int> results;
-//    while (ans == 'y')
-//    {
-//        puts("Time to enter your test case!");
-//        std::vector<float> inputs(numInputs);
-//        for (int i = 0; i < numInputs; i++)
-//        {
-//            printf("Enter input %d of %d: ", i+1, numInputs);
-//            std::cin >> inputs[i];
-//        }
-//        printf("Your SDR neural network's prediction is %d\n", getNum(sdrnn.run(inputs)));
-//        printf("Would you like to test your SDR neural network with %d inputs and %d outputs again (y/n)? ", numInputs, numOutputs);
-//        std::cin >> ans;
-//    }
-//}
+void GetData(int numInputs, MultiLayerPerceptron& sdrnn)
+{
+    char ans;
+    int numOutputs = sdrnn.layers.back();
+    printf("Would you like to test your SDR neural network with %d inputs and %d outputs (y/n)? ", numInputs, numOutputs);
+    std::cin >> ans;
+    if (ans != 'y')
+    {
+        return;
+    }
+    while (ans == 'y')
+    {
+        puts("Time to enter your test case!");
+        Eigen::VectorXf inputs(numInputs);
+        for (int i = 0; i < numInputs; i++)
+        {
+            printf("Enter input %d of %d: ", i+1, numInputs);
+            std::cin >> inputs[i];
+        }
+        printf("Your SDR neural network's prediction is %d\n", getNum(sdrnn.run(inputs)));
+        printf("Would you like to test your SDR neural network with %d inputs and %d outputs again (y/n)? ", numInputs, numOutputs);
+        std::cin >> ans;
+    }
+}
 
 
 int main() {
@@ -369,7 +377,7 @@ int main() {
 //     */
     
     std::cout << "Resetting weights:\n";
-    mlp = MultiLayerPerceptron({2,5,6,1});
+//    mlp = MultiLayerPerceptron({2,5,6,1});
     mlp.reset_weights();
     mlp.print_weights();
     
@@ -377,7 +385,8 @@ int main() {
     puts("Press ctrl-c to continue");
     float MSE;
     Eigen::VectorXf x_train(2), y_train(1);
-    for (int i = 0; true; i++)
+    auto start_time = Clock::now();
+    for (int i = 0; i < 1000000; i++)
     {
         MSE = 0.0;
         x_train << 0, 0;
@@ -405,6 +414,7 @@ int main() {
             break;
         }
     }
+    printf("Time elapsed = %lf\n", timeElapsedSince(start_time));
 
     std::cout<<"\n\nTrained weights (Compare to hard-coded weights):\n\n";
     mlp.print_weights();
@@ -423,66 +433,96 @@ int main() {
     int epochs = 1000;
     
     std::unique_ptr<MultiLayerPerceptron> sdrnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{7,7,1});
-
+    x_train.resize(7);
     // Dataset for the 7 to 1 network
     for (int i = 0; i < epochs; i++)
     {
         MSE = 0.0;
-        MSE += sdrnn->bp({1,1,1,1,1,1,0}, {0.05}); //0 pattern
-        MSE += sdrnn->bp({0,1,1,0,0,0,0}, {0.15}); //1 pattern
-        MSE += sdrnn->bp({1,1,0,1,1,0,1}, {0.25}); //2 pattern
-        MSE += sdrnn->bp({1,1,1,1,0,0,1}, {0.35}); //3 pattern
-        MSE += sdrnn->bp({0,1,1,0,0,1,1}, {0.45}); //4 pattern
-        MSE += sdrnn->bp({1,0,1,1,0,1,1}, {0.55}); //5 pattern
-        MSE += sdrnn->bp({1,0,1,1,1,1,1}, {0.65}); //6 pattern
-        MSE += sdrnn->bp({1,1,1,0,0,0,0}, {0.75}); //7 pattern
-        MSE += sdrnn->bp({1,1,1,1,1,1,1}, {0.85}); //8 pattern
-        MSE += sdrnn->bp({1,1,1,1,0,1,1}, {0.95}); //9 pattern
+        x_train << 1,1,1,1,1,1,0; y_train << 0.05;
+        MSE += sdrnn->bp(x_train, y_train); //0 pattern
+        x_train << 0,1,1,0,0,0,0; y_train << 0.15;
+        MSE += sdrnn->bp(x_train, y_train); //1 pattern
+        x_train << 1,1,0,1,1,0,1; y_train << 0.25;
+        MSE += sdrnn->bp(x_train, y_train); //2 pattern
+        x_train << 1,1,1,1,0,0,1; y_train << 0.35;
+        MSE += sdrnn->bp(x_train, y_train); //3 pattern
+        x_train << 0,1,1,0,0,1,1; y_train << 0.45;
+        MSE += sdrnn->bp(x_train, y_train); //4 pattern
+        x_train << 1,0,1,1,0,1,1; y_train << 0.55;
+        MSE += sdrnn->bp(x_train, y_train); //5 pattern
+        x_train << 1,0,1,1,1,1,1; y_train << 0.65;
+        MSE += sdrnn->bp(x_train, y_train); //6 pattern
+        x_train << 1,1,1,0,0,0,0; y_train << 0.75;
+        MSE += sdrnn->bp(x_train, y_train); //7 pattern
+        x_train << 1,1,1,1,1,1,1; y_train << 0.85;
+        MSE += sdrnn->bp(x_train, y_train); //8 pattern
+        x_train << 1,1,1,1,0,1,1; y_train << 0.95;
+        MSE += sdrnn->bp(x_train, y_train); //9 pattern
     }
-//    MSE /= 10.0;
-//    std::cout << '\n' << "7 to 1  network MSE: " << MSE << '\n';
-//    GetData(7, *sdrnn);
-//    
-//    // Dataset for the 7 to 10 network
-//    sdrnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{7,7,10});
-//    
-//    for (int i = 0; i < epochs; i++)
-//    {
-//        MSE = 0.0;
-//        MSE += sdrnn->bp({1,1,1,1,1,1,0}, {1,0,0,0,0,0,0,0,0,0}); //0 pattern
-//        MSE += sdrnn->bp({0,1,1,0,0,0,0}, {0,1,0,0,0,0,0,0,0,0}); //1 pattern
-//        MSE += sdrnn->bp({1,1,0,1,1,0,1}, {0,0,1,0,0,0,0,0,0,0}); //2 pattern
-//        MSE += sdrnn->bp({1,1,1,1,0,0,1}, {0,0,0,1,0,0,0,0,0,0}); //3 pattern
-//        MSE += sdrnn->bp({0,1,1,0,0,1,1}, {0,0,0,0,1,0,0,0,0,0}); //4 pattern
-//        MSE += sdrnn->bp({1,0,1,1,0,1,1}, {0,0,0,0,0,1,0,0,0,0}); //5 pattern
-//        MSE += sdrnn->bp({1,0,1,1,1,1,1}, {0,0,0,0,0,0,1,0,0,0}); //6 pattern
-//        MSE += sdrnn->bp({1,1,1,0,0,0,0}, {0,0,0,0,0,0,0,1,0,0}); //7 pattern
-//        MSE += sdrnn->bp({1,1,1,1,1,1,1}, {0,0,0,0,0,0,0,0,1,0}); //8 pattern
-//        MSE += sdrnn->bp({1,1,1,1,0,1,1}, {0,0,0,0,0,0,0,0,0,1}); //9 pattern
-//    }
-//    MSE /= 10.0;
-//    std::cout << "7 to 10 network MSE: " << MSE << '\n';
-//    GetData(7, *sdrnn);
-//
-//    // Dataset for the 7 to 7 network
-//    sdrnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{7,7,7});
-//
-//    for (int i = 0; i < epochs; i++)
-//    {
-//        MSE = 0.0;
-//        MSE += sdrnn->bp({1,1,1,1,1,1,0}, {1,1,1,1,1,1,0}); //0 pattern
-//        MSE += sdrnn->bp({0,1,1,0,0,0,0}, {0,1,1,0,0,0,0}); //1 pattern
-//        MSE += sdrnn->bp({1,1,0,1,1,0,1}, {1,1,0,1,1,0,1}); //2 pattern
-//        MSE += sdrnn->bp({1,1,1,1,0,0,1}, {1,1,1,1,0,0,1}); //3 pattern
-//        MSE += sdrnn->bp({0,1,1,0,0,1,1}, {0,1,1,0,0,1,1}); //4 pattern
-//        MSE += sdrnn->bp({1,0,1,1,0,1,1}, {1,0,1,1,0,1,1}); //5 pattern
-//        MSE += sdrnn->bp({1,0,1,1,1,1,1}, {1,0,1,1,1,1,1}); //6 pattern
-//        MSE += sdrnn->bp({1,1,1,0,0,0,0}, {1,1,1,0,0,0,0}); //7 pattern
-//        MSE += sdrnn->bp({1,1,1,1,1,1,1}, {1,1,1,1,1,1,1}); //8 pattern
-//        MSE += sdrnn->bp({1,1,1,1,0,1,1}, {1,1,1,1,0,1,1}); //9 pattern
-//    }
-//    MSE /= 10.0;
-//    std::cout << "7 to 7  network MSE: " << MSE << '\n' << '\n';
-//    GetData(7, *sdrnn);
+    MSE /= 10.0;
+    std::cout << '\n' << "7 to 1  network MSE: " << MSE << '\n';
+    GetData(7, *sdrnn);
+    
+    // Dataset for the 7 to 10 network
+    sdrnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{7,7,10});
+    y_train.resize(10);
+    for (int i = 0; i < epochs; i++)
+    {
+        MSE = 0.0;
+        x_train << 1,1,1,1,1,1,0; y_train << 1,0,0,0,0,0,0,0,0,0;
+        MSE += sdrnn->bp(x_train, y_train); //0 pattern
+        x_train << 0,1,1,0,0,0,0; y_train << 0,1,0,0,0,0,0,0,0,0;
+        MSE += sdrnn->bp(x_train, y_train); //1 pattern
+        x_train << 1,1,0,1,1,0,1; y_train << 0,0,1,0,0,0,0,0,0,0;
+        MSE += sdrnn->bp(x_train, y_train); //2 pattern
+        x_train << 1,1,1,1,0,0,1; y_train << 0,0,0,1,0,0,0,0,0,0;
+        MSE += sdrnn->bp(x_train, y_train); //3 pattern
+        x_train << 0,1,1,0,0,1,1; y_train << 0,0,0,0,1,0,0,0,0,0;
+        MSE += sdrnn->bp(x_train, y_train); //4 pattern
+        x_train << 1,0,1,1,0,1,1; y_train << 0,0,0,0,0,1,0,0,0,0;
+        MSE += sdrnn->bp(x_train, y_train); //5 pattern
+        x_train << 1,0,1,1,1,1,1; y_train << 0,0,0,0,0,0,1,0,0,0;
+        MSE += sdrnn->bp(x_train, y_train); //6 pattern
+        x_train << 1,1,1,0,0,0,0; y_train << 0,0,0,0,0,0,0,1,0,0;
+        MSE += sdrnn->bp(x_train, y_train); //7 pattern
+        x_train << 1,1,1,1,1,1,1; y_train << 0,0,0,0,0,0,0,0,1,0;
+        MSE += sdrnn->bp(x_train, y_train); //8 pattern
+        x_train << 1,1,1,1,0,1,1; y_train << 0,0,0,0,0,0,0,0,0,1;
+        MSE += sdrnn->bp(x_train, y_train); //9 pattern
+    }
+    MSE /= 10.0;
+    std::cout << "7 to 10 network MSE: " << MSE << '\n';
+    GetData(7, *sdrnn);
+
+    // Dataset for the 7 to 7 network
+    sdrnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{7,7,7});
+    y_train.resize(7);
+    for (int i = 0; i < epochs; i++)
+    {
+        MSE = 0.0;
+        x_train << 1,1,1,1,1,1,0; y_train << 1,1,1,1,1,1,0;
+        MSE += sdrnn->bp(x_train, y_train); //0 pattern
+        x_train << 0,1,1,0,0,0,0; y_train << 0,1,1,0,0,0,0;
+        MSE += sdrnn->bp(x_train, y_train); //1 pattern
+        x_train << 1,1,0,1,1,0,1; y_train << 1,1,0,1,1,0,1;
+        MSE += sdrnn->bp(x_train, y_train); //2 pattern
+        x_train << 1,1,1,1,0,0,1; y_train << 1,1,1,1,0,0,1;
+        MSE += sdrnn->bp(x_train, y_train); //3 pattern
+        x_train << 0,1,1,0,0,1,1; y_train << 0,1,1,0,0,1,1;
+        MSE += sdrnn->bp(x_train, y_train); //4 pattern
+        x_train << 1,0,1,1,0,1,1; y_train << 1,0,1,1,0,1,1;
+        MSE += sdrnn->bp(x_train, y_train); //5 pattern
+        x_train << 1,0,1,1,1,1,1; y_train << 1,0,1,1,1,1,1;
+        MSE += sdrnn->bp(x_train, y_train); //6 pattern
+        x_train << 1,1,1,0,0,0,0; y_train << 1,1,1,0,0,0,0;
+        MSE += sdrnn->bp(x_train, y_train); //7 pattern
+        x_train << 1,1,1,1,1,1,1; y_train << 1,1,1,1,1,1,1;
+        MSE += sdrnn->bp(x_train, y_train); //8 pattern
+        x_train << 1,1,1,1,0,1,1; y_train << 1,1,1,1,0,1,1;
+        MSE += sdrnn->bp(x_train, y_train); //9 pattern
+    }
+    MSE /= 10.0;
+    std::cout << "7 to 7  network MSE: " << MSE << '\n' << '\n';
+    GetData(7, *sdrnn);
     
 }

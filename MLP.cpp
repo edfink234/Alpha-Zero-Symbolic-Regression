@@ -1,10 +1,10 @@
 #include "MLP.h"
 #include <cassert>
 
-//open LinkedIn/Ex_Files_Neural_Networks/Exercise\ Files/03_03/NeuralNetworks/*cpp
-//open LinkedIn/Ex_Files_Neural_Networks/Exercise\ Files/03_03/NeuralNetworks/*h
+//open /Users/edwardfinkelstein/LinkedIn/Ex_Files_Neural_Networks/Exercise\ Files/03_03/NeuralNetworks/*cpp /Users/edwardfinkelstein/LinkedIn/Ex_Files_Neural_Networks/Exercise\ Files/03_03/NeuralNetworks/*h
+//cd /Users/edwardfinkelstein/LinkedIn/Ex_Files_Neural_Networks/Exercise\ Files/03_03/NeuralNetworks/
 
-// Return a new Perceptron object with the specified number of inputs (+1 for the bias).
+// Return a new Perceptron object with the specified number of inputs
 Perceptron::Perceptron(int inputs, float bias)
 {
     this->bias = bias;
