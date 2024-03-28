@@ -326,18 +326,34 @@ int main() {
     std::cout<<p->run(x)<<'\n';
 
     std::cout<<"\n\n--------Hardcoded XOR Example----------------\n\n";
-    MultiLayerPerceptron mlp = MultiLayerPerceptron({2,2,1});  //mlp: 2 inputs in first layer, 2 neurons in second layer, 1 neuron in 3rd layer 
-//    mlp.set_weights({{{-10,-10,15},{15,15,-10}}, {{10,10,-15}}});
-//    std::cout << "Hard-coded weights:\n";
-//    mlp.print_weights();
-//
-//    std::cout<<"XOR:"<<'\n';
-//    std::cout<<"0 0 = "<<mlp.run({0,0})[0]<<'\n';
-//    std::cout<<"0 1 = "<<mlp.run({0,1})[0]<<'\n';
-//    std::cout<<"1 0 = "<<mlp.run({1,0})[0]<<'\n';
-//    std::cout<<"1 1 = "<<mlp.run({1,1})[0]<<'\n';
-//    
-//    
+    MultiLayerPerceptron mlp = MultiLayerPerceptron({2,2,1});  //mlp: 2 inputs in first layer, 2 neurons in second layer, 1 neuron in the output (third) layer
+    Eigen::MatrixXf matrix1(2, 3);
+    matrix1 << -10, -10, 15,
+                15, 15, -10;
+    Eigen::MatrixXf matrix2(1, 3);
+    matrix2 << 10, 10, -15;
+    // Create the vector of vectors of Eigen::MatrixXf
+    std::vector<Eigen::MatrixXf> weights;
+    weights.emplace_back(matrix1);
+    weights.emplace_back(matrix2);
+
+    // Call set_weights() with the weights
+    mlp.set_weights(std::move(weights));
+
+    std::cout << "Hard-coded weights:\n";
+    mlp.print_weights();
+
+    std::cout<<"XOR:"<<'\n';
+    x << 0, 0;
+    std::cout<<mlp.run(x)<<'\n';
+    x << 0, 1;
+    std::cout<<mlp.run(x)<<'\n';
+    x << 1, 0;
+    std::cout<<mlp.run(x)<<'\n';
+    x << 1, 1;
+    std::cout<<mlp.run(x)<<'\n';
+    
+    
 //    /*
 //    XOR
 //    ===
@@ -351,65 +367,78 @@ int main() {
 //     1 | 1 |   -5   | 0.007
 //
 //     */
-//    
-//    std::cout << "Resetting weights:\n";
-////    mlp = MultiLayerPerceptron({2,4,4,1});
-//    mlp.reset_weights();
-//    mlp.print_weights();
-//    
-//    std::cout<<"Training Neural Network as an XOR Gate...\n";
-//    puts("Press ctrl-c to continue");
-//    float MSE;
-//    for (int i = 0; true; i++)
-//    {
-//        MSE = 0.0;
-//        MSE += mlp.bp({0,0},{0});
-//        MSE += mlp.bp({0,1},{1});
-//        MSE += mlp.bp({1,0},{1});
-//        MSE += mlp.bp({1,1},{0});
-//        MSE = MSE / 4.0;
-//        if (i % 100 == 0)
-//        {
-//            std::cout<<"MSE = "<<MSE<< '\r' << std::flush;
-//        }
-//        
-//        // Check if interrupted flag is set, and break out of the loop if true
-//        if (interrupted)
-//        {
-//            std::cout << "\nInterrupted by Ctrl-C. Exiting loop.\n";
-//            break;
-//        }
-//    }
-//
-//    std::cout<<"\n\nTrained weights (Compare to hard-coded weights):\n\n";
-//    mlp.print_weights();
-//
-//    std::cout<<"XOR:"<<'\n';
-//    std::cout<<"0 0 = "<<mlp.run({0,0})[0]<<'\n';
-//    std::cout<<"0 1 = "<<mlp.run({0,1})[0]<<'\n';
-//    std::cout<<"1 0 = "<<mlp.run({1,0})[0]<<'\n';
-//    std::cout<<"1 1 = "<<mlp.run({1,1})[0]<<'\n';
-//    
-//    //test code - Segment Display Recognition System
-//    int epochs = 1000;
-//    
-//    std::unique_ptr<MultiLayerPerceptron> sdrnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{7,7,1});
-//
-//    // Dataset for the 7 to 1 network
-//    for (int i = 0; i < epochs; i++)
-//    {
-//        MSE = 0.0;
-//        MSE += sdrnn->bp({1,1,1,1,1,1,0}, {0.05}); //0 pattern
-//        MSE += sdrnn->bp({0,1,1,0,0,0,0}, {0.15}); //1 pattern
-//        MSE += sdrnn->bp({1,1,0,1,1,0,1}, {0.25}); //2 pattern
-//        MSE += sdrnn->bp({1,1,1,1,0,0,1}, {0.35}); //3 pattern
-//        MSE += sdrnn->bp({0,1,1,0,0,1,1}, {0.45}); //4 pattern
-//        MSE += sdrnn->bp({1,0,1,1,0,1,1}, {0.55}); //5 pattern
-//        MSE += sdrnn->bp({1,0,1,1,1,1,1}, {0.65}); //6 pattern
-//        MSE += sdrnn->bp({1,1,1,0,0,0,0}, {0.75}); //7 pattern
-//        MSE += sdrnn->bp({1,1,1,1,1,1,1}, {0.85}); //8 pattern
-//        MSE += sdrnn->bp({1,1,1,1,0,1,1}, {0.95}); //9 pattern
-//    }
+    
+    std::cout << "Resetting weights:\n";
+    mlp = MultiLayerPerceptron({2,5,6,1});
+    mlp.reset_weights();
+    mlp.print_weights();
+    
+    std::cout<<"Training Neural Network as an XOR Gate...\n";
+    puts("Press ctrl-c to continue");
+    float MSE;
+    Eigen::VectorXf x_train(2), y_train(1);
+    for (int i = 0; true; i++)
+    {
+        MSE = 0.0;
+        x_train << 0, 0;
+        y_train << 0;
+        MSE += mlp.bp(x_train, y_train);
+        x_train << 0, 1;
+        y_train << 1;
+        MSE += mlp.bp(x_train, y_train);
+        x_train << 1, 0;
+        y_train << 1;
+        MSE += mlp.bp(x_train, y_train);
+        x_train << 1, 1;
+        y_train << 0;
+        MSE += mlp.bp(x_train, y_train);
+        MSE = MSE / 4.0;
+        if (i % 100 == 0)
+        {
+            std::cout<<"MSE = "<<MSE<< '\r' << std::flush;
+        }
+        
+        // Check if interrupted flag is set, and break out of the loop if true
+        if (interrupted)
+        {
+            std::cout << "\nInterrupted by Ctrl-C. Exiting loop.\n";
+            break;
+        }
+    }
+
+    std::cout<<"\n\nTrained weights (Compare to hard-coded weights):\n\n";
+    mlp.print_weights();
+    
+    std::cout<<"XOR:"<<'\n';
+    x << 0, 0;
+    std::cout<<mlp.run(x)<<'\n';
+    x << 0, 1;
+    std::cout<<mlp.run(x)<<'\n';
+    x << 1, 0;
+    std::cout<<mlp.run(x)<<'\n';
+    x << 1, 1;
+    std::cout<<mlp.run(x)<<'\n';
+
+    //test code - Segment Display Recognition System
+    int epochs = 1000;
+    
+    std::unique_ptr<MultiLayerPerceptron> sdrnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{7,7,1});
+
+    // Dataset for the 7 to 1 network
+    for (int i = 0; i < epochs; i++)
+    {
+        MSE = 0.0;
+        MSE += sdrnn->bp({1,1,1,1,1,1,0}, {0.05}); //0 pattern
+        MSE += sdrnn->bp({0,1,1,0,0,0,0}, {0.15}); //1 pattern
+        MSE += sdrnn->bp({1,1,0,1,1,0,1}, {0.25}); //2 pattern
+        MSE += sdrnn->bp({1,1,1,1,0,0,1}, {0.35}); //3 pattern
+        MSE += sdrnn->bp({0,1,1,0,0,1,1}, {0.45}); //4 pattern
+        MSE += sdrnn->bp({1,0,1,1,0,1,1}, {0.55}); //5 pattern
+        MSE += sdrnn->bp({1,0,1,1,1,1,1}, {0.65}); //6 pattern
+        MSE += sdrnn->bp({1,1,1,0,0,0,0}, {0.75}); //7 pattern
+        MSE += sdrnn->bp({1,1,1,1,1,1,1}, {0.85}); //8 pattern
+        MSE += sdrnn->bp({1,1,1,1,0,1,1}, {0.95}); //9 pattern
+    }
 //    MSE /= 10.0;
 //    std::cout << '\n' << "7 to 1  network MSE: " << MSE << '\n';
 //    GetData(7, *sdrnn);

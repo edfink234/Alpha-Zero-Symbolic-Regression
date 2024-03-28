@@ -12,9 +12,6 @@ Perceptron::Perceptron(int inputs, float bias)
 
     // Use Eigen's random number generation to initialize the weights
     this->weights = Eigen::VectorXf::Random(inputs);
-
-    // Scale the weights to the desired range (-1 to 1)
-    this->weights = (weights.array() * 2.0f) - 1.0f;
 }
 
 // Run the perceptron. x is a vector with the input values.
@@ -46,7 +43,7 @@ float Perceptron::sigmoid(float x)
 }
 
 // Return a new MultiLayerPerceptron object with the specified parameters.
-MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, float bias, float eta) 
+MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, float bias, float eta)
 {
     this->layers = layers;
     this->bias = bias;
@@ -56,7 +53,7 @@ MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, float bias, 
     {
         this->values.emplace_back(Eigen::VectorXf::Zero(layers[i])); //add vector of values
         this->network.emplace_back(); //add vector of neurons
-        this->d.emplace_back(layers[i], 0.0f);
+        this->d.emplace_back(Eigen::VectorXf::Zero(layers[i]));
         if (i > 0)  //network[0] is the input layer, so it has no neurons, i.e., it's empty
         {
             for (int j = 0; j < this->layers[i]; j++)
@@ -81,13 +78,19 @@ void MultiLayerPerceptron::set_weights(std::vector<Eigen::MatrixXf>&& w_init)
 
 void MultiLayerPerceptron::reset_weights() 
 {
+    static std::random_device rd;  // Obtain a random number from hardware
+    static std::mt19937 gen; // Seed the generator
+    static std::uniform_real_distribution<> distr; // Define the range
     // Write all the weights into the neural network.
     // w_init is a vector of vectors of vectors of floats.
-    for (int i = 1; i < network.size(); i++){ //first layer is the input layer so they're no neurons there
-        for (int j = 0; j < layers[i]; j++) { //for each neuron
+    for (int i = 1; i < network.size(); i++)
+    { //first layer is the input layer so they're no neurons there
+        for (int j = 0; j < layers[i]; j++)
+        { //for each neuron
             network[i][j].weights = Eigen::VectorXf::Random(network[i][j].weights.size());
-            network[i][j].weights = (network[i][j].weights.array() * 2.0f) - 1.0f;
+            network[i][j].bias = distr(gen);
         }
+        
     }
 }
 
@@ -103,7 +106,7 @@ void MultiLayerPerceptron::print_weights()
             {
                 std::cout << it <<"   ";
             }
-            std::cout << '\n';
+            std::cout << network[i][j].bias << '\n';
         }
     }
     std::cout << '\n';
@@ -129,28 +132,25 @@ Eigen::VectorXf MultiLayerPerceptron::run(const Eigen::VectorXf& x)
 /*/
  MSE = 1/n * \sum_{i = 0}^{n-1} (y_i - o_i)^2
  */
-float MultiLayerPerceptron::mse(const std::vector<float>& y, const std::vector<float>& o)
+float MultiLayerPerceptron::mse(const Eigen::VectorXf& x, const Eigen::VectorXf& y)
 {
-    float mse = 0.0f;
-    if (y.size() != o.size())
+    if (x.size() != y.size())
     {
-        throw std::runtime_error("y and o must have the same size");
+        throw std::invalid_argument("Vectors must be of the same size");
     }
-    for (size_t i = 0; i < y.size(); i++)
-    {
-        mse += (y[i] - o[i])*(y[i] - o[i]);
-    }
-    return mse / y.size();
+    return (x - y).squaredNorm() / x.size();
 }
 
 // Run a single (x,y) pair with the backpropagation algorithm.
-float MultiLayerPerceptron::bp(std::vector<float>&& x, std::vector<float>&& y){
+float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& y)
+{
     
     // Backpropagation Step by Step:
     
     // STEP 1: Feed a sample to the network `this->run(x)`
     // STEP 2: Calculate the MSE
     float MSE = this->mse(y, this->run(x));
+
     // STEP 3: Calculate the output error terms
     
 //        delta_k = d MSE(y_k, o_k) / d w_k
@@ -196,9 +196,11 @@ float MultiLayerPerceptron::bp(std::vector<float>&& x, std::vector<float>&& y){
                 this->network[i][j].weights[k] += this->eta*this->d[i][j]*this->values[i-1][k];
             }
             //bias
-            this->network[i][j].weights[layers[i-1]] += this->eta*this->d[i][j]*bias;
+            this->network[i][j].bias += this->eta*this->d[i][j]*bias;
         }
     }
+    
+
     return MSE;
 }
 

@@ -9,6 +9,7 @@
 #include <time.h>
 #include <initializer_list>
 #include <Eigen/Core>
+#include <random>
 
 class Perceptron
 {
@@ -29,17 +30,15 @@ class MultiLayerPerceptron
         void reset_weights();
 		void print_weights();
         Eigen::VectorXf run(const Eigen::VectorXf& x);
-        static float mse(const std::vector<float> &y, const std::vector<float>& o);
-		float bp(std::vector<float>&& x, std::vector<float>&& y);
-//		
+        static float mse(const Eigen::VectorXf& x, const Eigen::VectorXf& y);
+		float bp(const Eigen::VectorXf& x, const Eigen::VectorXf& y);
+//
 		std::vector<int> layers; //# of neurons per layer including the input layer (in which case layers[0] refers to the number of inputs)
 		float bias;
 		float eta; //learning rate
 		std::vector<std::vector<Perceptron> > network; //the actual network
         std::vector<Eigen::VectorXf> values; //holds output values of the neurons
-		std::vector<std::vector<float> > d; //contains error terms for neurons: one error term for each neuron of each layer
-    private:
-        
+		std::vector<Eigen::VectorXf> d; //contains error terms for neurons: one error term for each neuron of each layer
 };
 
 #endif
