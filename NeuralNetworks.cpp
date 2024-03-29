@@ -8,7 +8,6 @@
 #include <algorithm>
 
 using Clock = std::chrono::high_resolution_clock;
-using VectorRowMajorXf = Eigen::Matrix<float, Eigen::Dynamic, 1, Eigen::RowMajor>;
 
 // Define a flag to control the loop
 volatile sig_atomic_t interrupted = 0;
