@@ -37,13 +37,13 @@ class MultiLayerPerceptron
 	public:
 		MultiLayerPerceptron(std::vector<int> layers, float bias=1.0f, float eta = 0.5f);
 		void set_weights(std::vector<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>&& w_init);
-//        void reset_weights();
+        void reset_weights();
 		void print_weights();
         Eigen::VectorXf run(const Eigen::VectorXf& x);
-//        static float mse(const Eigen::VectorXf& x, const Eigen::VectorXf& y);
-//		float bp(const Eigen::VectorXf& x, const Eigen::VectorXf& y);
+        static float mse(const Eigen::VectorXf& x, const Eigen::VectorXf& y);
+		float bp(const Eigen::VectorXf& x, const Eigen::VectorXf& y);
 //        float bp(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>& x, const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>& y);
-//        float train(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>& x_train, const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>& y_train, unsigned long num_epochs = 10);
+        float train(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>& x_train, const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>& y_train, unsigned long num_epochs = 10);
         static void signalHandler(int signum);
 //
 		std::vector<int> layers; //# of neurons per layer including the input layer (in which case layers[0] refers to the number of inputs)

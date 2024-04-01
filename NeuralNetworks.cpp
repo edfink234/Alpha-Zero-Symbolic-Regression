@@ -374,27 +374,27 @@ int main() {
 //    
     std::cout << "Resetting weights:\n";
     mlp = MultiLayerPerceptron({2,5,6,1});
-//    mlp.reset_weights();
-//    mlp.print_weights();
+    mlp.reset_weights();
+    mlp.print_weights();
 //    
-//    std::cout<<"Training Neural Network as an XOR Gate...\n";
-//    
-//    auto start_time = Clock::now();
-//    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> x_train
-//    {
-//        {0, 0},
-//        {0, 1},
-//        {1, 0},
-//        {1, 1}
-//    };
-//    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> y_train
-//    {
-//        {0},
-//        {1},
-//        {1},
-//        {0}
-//    };
-//    mlp.train(x_train, y_train, 1000000);
+    std::cout<<"Training Neural Network as an XOR Gate...\n";
+    
+    auto start_time = Clock::now();
+    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> x_train
+    {
+        {0, 0},
+        {0, 1},
+        {1, 0},
+        {1, 1}
+    };
+    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> y_train
+    {
+        {0},
+        {1},
+        {1},
+        {0}
+    };
+    mlp.train(x_train, y_train, 1000000);
 
 //    float MSE;
 //    Eigen::VectorXf x_train(2), y_train(1);
