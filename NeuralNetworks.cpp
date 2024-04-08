@@ -373,7 +373,7 @@ int main() {
 ////     */
 //    
     std::cout << "Resetting weights:\n";
-    mlp = MultiLayerPerceptron({2,5,6,1});
+//    mlp = MultiLayerPerceptron({2,5,6,1});
     mlp.reset_weights();
     mlp.print_weights();
 //    
@@ -427,7 +427,7 @@ int main() {
 //        }
 //    }
     
-//    printf("Time elapsed = %lf\n", timeElapsedSince(start_time));
+    printf("Time elapsed = %lf\n", timeElapsedSince(start_time));
 
 //    std::cout<<"\n\nTrained weights (Compare to hard-coded weights):\n\n";
 //    mlp.print_weights();

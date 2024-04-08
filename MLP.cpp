@@ -218,7 +218,7 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
 //    }
     
     auto& val = this->values.back(); // For readability and performance
-//    this->d.back() = val.array() * (1 - val.array()) * (y - val).array();
+    this->d.back() = val.array() * (1 - val.array()) * (y - val).array();
     
 //     STEP 4: Calculate the error term of each unit on each layer
     for (int i = network.size()-2; i > 0; i--) //for each layer (starting from the one before the output layer and ending at and including the layer right before the input layer)
@@ -237,14 +237,19 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
 //            this->d[i][h] = this->values[i][h] * (1 - this->values[i][h]) * fwd_error;
 //        }
         
-        
-        
-//        this->d[i] = this->values[i].array() * (1 - this->values[i].array()) * (network[i+1].weights * d[i+1]).array();
+//        printf("layers[i+1] = %d\n",layers[i+1]);
+//        printf("network[i+1].weights.rows() = %lu, network[i+1].weights.cols() = %lu\n", network[i+1].weights.rows(), network[i+1].weights.cols());
+//        printf("d[i+1].rows() = %lu, d[i+1].cols() = %lu\n", d[i+1].rows(), d[i+1].cols());
+//        printf("this->values[i].rows() = %lu, this->values[i].cols() = %lu\n", this->values[i].rows(), this->values[i].cols());
+//        printf("(Eigen::Matrix<float, 1, Eigen::Dynamic>::Ones(this->values[i].rows()) - this->values[i]).rows() = %lu, (Eigen::Matrix<float, 1, Eigen::Dynamic>::Ones(this->values[i].rows()) - this->values[i]).cols() = %lu\n", (Eigen::Matrix<float, 1, Eigen::Dynamic>::Ones(this->values[i].rows(), this->values[i].cols()) - this->values[i]).rows(), (Eigen::Matrix<float, 1, Eigen::Dynamic>::Ones(this->values[i].rows(), this->values[i].cols()) - this->values[i]).cols());
+    this->d[i] = this->values[i] * (Eigen::Matrix<float, 1, Eigen::Dynamic>::Ones(this->values[i].rows(), this->values[i].cols()) - this->values[i]).transpose() * (d[i+1].transpose() * network[i+1].weights);
     }
     
+//    puts("here?");
+    
     // STEPS 5 & 6: Calculate the deltas and update the weights
-//    for (int i = 1; i < network.size(); i++) //for each layer
-//    {
+    for (int i = 1; i < network.size(); i++) //for each layer
+    {
 //        for (int j = 0; j < layers[i]; j++)
 //        {
 //            for (int k = 0; k < layers[i-1]; k++) //weights
@@ -254,7 +259,14 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
 //            //bias
 //            this->network[i][j].bias += this->eta*this->d[i][j]*bias;
 //        }
-//    }
+        
+//        printf("this->values[i-1].rows() = %lu, this->values[i-1].cols() = %lu\n", this->values[i-1].rows(), this->values[i-1].cols());
+//        printf("this->d[i].rows() = %lu, this->d[i].cols() = %lu\n", this->d[i].rows(), this->d[i].cols());
+
+        this->network[i].weights += this->eta*this->d[i]*this->values[i-1];
+//        this->network[i].biases += this->eta*this->d[i]*bias;
+        
+    }
 //
     return MSE;
 }

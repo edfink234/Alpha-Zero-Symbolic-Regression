@@ -50,9 +50,12 @@ class MultiLayerPerceptron
 		float bias;
 		float eta; //learning rate
 		std::vector<PerceptronLayer> network; //the actual network
-        std::vector<Eigen::VectorXf> values; //holds output values of the neurons
+        std::vector<Eigen::Matrix<float, 1, Eigen::Dynamic>> values; //holds output values of the neurons
 		std::vector<Eigen::VectorXf> d; //contains error terms for neurons: one error term for each neuron of each layer
         static volatile sig_atomic_t inline interrupted = 0;
+    
+    
+    
 };
 
 #endif
