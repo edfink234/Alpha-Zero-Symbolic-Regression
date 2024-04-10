@@ -1,5 +1,7 @@
 #include "MLP_Vec.h"
 #include <cassert>
+//#ifndef EIGEN_NO_DEBUG
+//#define EIGEN_NO_DEBUG
 
 //open /Users/edwardfinkelstein/LinkedIn/Ex_Files_Neural_Networks/Exercise\ Files/03_03/NeuralNetworks/*cpp /Users/edwardfinkelstein/LinkedIn/Ex_Files_Neural_Networks/Exercise\ Files/03_03/NeuralNetworks/*h
 //cd /Users/edwardfinkelstein/LinkedIn/Ex_Files_Neural_Networks/Exercise\ Files/03_03/NeuralNetworks/
@@ -69,8 +71,10 @@ void MultiLayerPerceptron::set_weights(std::vector<Eigen::MatrixXf>&& w_init)
 {
     // Write all the weights into the neural network.
     // w_init is a vector of vectors of vectors of floats.
-    for (int i = 1; i < network.size(); i++){ //first layer is the input layer so they're no neurons there
-        for (int j = 0; j < layers[i]; j++) { //for each neuron
+    for (int i = 1; i < network.size(); i++)
+    { //first layer is the input layer so they're no neurons there
+        for (int j = 0; j < layers[i]; j++)
+        { //for each neuron
             network[i][j].set_weights(w_init[i-1].row(j));
         }
     }
@@ -212,9 +216,11 @@ float MultiLayerPerceptron::train(const std::vector<Eigen::VectorXf>& x_train, c
     puts("Press ctrl-c to continue");
     float MSE;
     unsigned long int num_rows = x_train.size();
+    std::cout << x_train[0].rows() << '\n';
     for (unsigned long epoch = 0; epoch < num_epochs; epoch++)
     {
         MSE = 0.0;
+        
         for (unsigned long i = 0; i < num_rows; i++)
         {
             MSE += this->bp(x_train[i], y_train[i]);
@@ -237,3 +243,4 @@ float MultiLayerPerceptron::train(const std::vector<Eigen::VectorXf>& x_train, c
     return MSE;
 }
 
+//#endif
