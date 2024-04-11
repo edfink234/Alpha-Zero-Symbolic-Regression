@@ -6,26 +6,38 @@
 #include "MLP_Vec.h"
 #include <csignal>
 #include <algorithm>
-#include <initializer_list>
 
 using Clock = std::chrono::high_resolution_clock;
 
-// Define a flag to control the loop
-volatile sig_atomic_t interrupted = 0;
+std::vector<Eigen::VectorXf> generateNNData(int numRows, int numCols, float (*func)(const Eigen::VectorXf&), float min = -3.0f, float max = 3.0f)
+{
+    assert(numCols >= 2);
+    // Initialize random number generator
+    std::random_device rd;
+    std::mt19937 thread_local gen(rd());
+    std::uniform_real_distribution<float> distribution(min, max);
 
+    // Create the matrix
+    std::vector<Eigen::VectorXf> matrix(numRows);
+
+    for (int i = 0; i < numRows; i++)
+    {
+        matrix[i].resize(numCols - 1);
+        for (int j = 0; j < numCols - 1; j++)
+        {
+            matrix[i][j] = distribution(gen);
+        }
+        matrix[i][numCols - 1] = func(matrix[i].head(numCols-1));
+    }
+
+    return matrix;
+}
+
+//Returns the number of seconds since `start_time`
 template <typename T>
 double timeElapsedSince(T start_time)
 {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9;
-}
-
-// Signal handler function to catch Ctrl-C
-void signalHandler(int signum)
-{
-    if (signum == SIGINT)
-    {
-        interrupted = 1;
-    }
 }
 
 int getNum(const Eigen::VectorXf& results)
@@ -212,12 +224,10 @@ void GetData(int numInputs, MultiLayerPerceptron& sdrnn)
     }
 }
 
-
-int main() {
-    srand(time(NULL));
-    rand();
-    // Set up the signal handler
-    signal(SIGINT, signalHandler);
+#ifndef ONLY_MAIN
+#define ONLY_MAIN
+int main()
+{
 
     std::cout << "\n\n--------Logic Gate Example----------------\n\n";
 
@@ -547,3 +557,4 @@ int main() {
     GetData(7, *sdrnn);
     
 }
+#endif

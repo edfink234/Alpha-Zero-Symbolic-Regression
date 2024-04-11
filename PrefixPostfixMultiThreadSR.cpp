@@ -2647,7 +2647,9 @@ void AIFeynmanBenchmarks(int numIntervals, double time, int numRuns)
     SimulatedAnnealing(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PostSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
 }
 
-int main() 
+#ifndef ONLY_MAIN
+#define ONLY_MAIN
+int main()
 {
 //    HembergBenchmarks(20 /*numIntervals*/, 120 /*time*/, 50 /*numRuns*/);
 //    AIFeynmanBenchmarks(20 /*numIntervals*/, 120 /*time*/, 50 /*numRuns*/);
@@ -2662,6 +2664,6 @@ int main()
 
     return 0;
 }
-
+#endif
 //TODO: See if `in_use` is really necessary
 //git push --set-upstream origin prefix_and_postfix_cpp_implementation
