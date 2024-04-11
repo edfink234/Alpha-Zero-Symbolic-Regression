@@ -56,6 +56,13 @@ ProductVersion:		14.2.1
 BuildVersion:		23C71
 ```
 
+## Multithreaded Version
+
+To compile the multi-threaded version, the following compilation directive can be used (substituting your system's file paths naturally):
+
+```bash
+g++ -std=c++20 -o PrefixPostfixMultiThreadSR PrefixPostfixMultiThreadSR.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -ffast-math -ftree-vectorize -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include
+```
 
 
 ## License
