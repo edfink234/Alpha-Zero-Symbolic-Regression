@@ -9,6 +9,11 @@
 
 using Clock = std::chrono::high_resolution_clock;
 
+float example_func(const Eigen::VectorXf& x)
+{
+    return (30.0f*x[0]*x[0])/((10.0f-x[0])*x[1]*x[1]) + x[0]*x[0]*x[0]*x[0] - (4.0f*x[0]*x[0]*x[0])/5.0f + x[1]*x[1]/2.0f - 2.0f*x[1] + (8.0f / (2.0f + x[0]*x[0] + x[1]*x[1])) + (x[1]*x[1]*x[1])/2.0f - x[0];
+}
+
 std::vector<Eigen::VectorXf> generateNNData(int numRows, int numCols, float (*func)(const Eigen::VectorXf&), float min = -3.0f, float max = 3.0f)
 {
     assert(numCols >= 2);
@@ -22,7 +27,7 @@ std::vector<Eigen::VectorXf> generateNNData(int numRows, int numCols, float (*fu
 
     for (int i = 0; i < numRows; i++)
     {
-        matrix[i].resize(numCols - 1);
+        matrix[i].resize(numCols);
         for (int j = 0; j < numCols - 1; j++)
         {
             matrix[i][j] = distribution(gen);
@@ -224,8 +229,6 @@ void GetData(int numInputs, MultiLayerPerceptron& sdrnn)
     }
 }
 
-#ifndef ONLY_MAIN
-#define ONLY_MAIN
 int main()
 {
 
@@ -371,7 +374,6 @@ int main()
     x << 1, 1;
     std::cout<<mlp.run(x)<<'\n';
     
-    
 //    /*
 //    XOR
 //    ===
@@ -400,7 +402,6 @@ int main()
     y_train_data.reserve(4);
     
     auto start_time = Clock::now();
-    
     x_train << 0, 0;
     y_train << 0;
     x_train_data.push_back(x_train);
@@ -417,13 +418,10 @@ int main()
     y_train << 0;
     x_train_data.push_back(x_train);
     y_train_data.push_back(y_train);
-
     mlp.train(x_train_data, y_train_data, 1000000);
     printf("Time elapsed = %lf\n", timeElapsedSince(start_time));
-
     std::cout<<"\n\nTrained weights (Compare to hard-coded weights):\n\n";
     mlp.print_weights();
-    
     std::cout<<"XOR:"<<'\n';
     x << 0, 0;
     std::cout<<mlp.run(x)<<'\n';
@@ -433,6 +431,10 @@ int main()
     std::cout<<mlp.run(x)<<'\n';
     x << 1, 1;
     std::cout<<mlp.run(x)<<'\n';
+    
+    std::vector<Eigen::VectorXf> data = generateNNData(20, 3, example_func);
+    for (auto& i: data){for (float j: i){std::cout << j << ' ';}puts("");}
+    exit(1);
 
     //test code - Segment Display Recognition System
     int epochs = 1000;
@@ -555,6 +557,4 @@ int main()
     y_train_data.push_back(y_train);
     std::cout << "7 to 7  network MSE: " << MSE << '\n';
     GetData(7, *sdrnn);
-    
 }
-#endif
