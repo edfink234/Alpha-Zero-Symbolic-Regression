@@ -462,9 +462,15 @@ int main()
     y_train_data = rightCols(data, 1);
     for (auto& i: x_train_data){for (float j: i){std::cout << j << ' ';}puts("");}
     for (auto& i: y_train_data){for (float j: i){std::cout << j << ' ';}puts("");}
-    exit(1);
+    
+    std::unique_ptr<MultiLayerPerceptron> srnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{2,7,7,1});
+    srnn->set_learning_rate(1e-4);
+    MSE = srnn->train(x_train_data, y_train_data);
+    
+    std::cout << "SR network MSE: " << MSE << '\n';
+    
     //test code - Segment Display Recognition System
-    int epochs = 1000;
+    int epochs = 10000;
     
     std::unique_ptr<MultiLayerPerceptron> sdrnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{7,7,1});
     x_train.resize(7);
@@ -504,7 +510,6 @@ int main()
     y_train_data.push_back(y_train);
 
     MSE = sdrnn->train(x_train_data, y_train_data, epochs);
-    
     std::cout << '\n' << "7 to 1  network MSE: " << MSE << '\n';
     GetData(7, *sdrnn);
     
@@ -582,6 +587,7 @@ int main()
     x_train << 1,1,1,1,0,1,1; y_train << 1,1,1,1,0,1,1;
     x_train_data.push_back(x_train);
     y_train_data.push_back(y_train);
+    MSE = sdrnn->train(x_train_data, y_train_data, epochs);
     std::cout << "7 to 7  network MSE: " << MSE << '\n';
     GetData(7, *sdrnn);
 }

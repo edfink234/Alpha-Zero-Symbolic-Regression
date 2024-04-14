@@ -33,8 +33,10 @@ class MultiLayerPerceptron
         static float mse(const Eigen::VectorXf& x, const Eigen::VectorXf& y);
         float bp(const Eigen::VectorXf& x, const Eigen::VectorXf& y);
 //
-        float train(const std::vector<Eigen::VectorXf>& x_train, const std::vector<Eigen::VectorXf>& y_train, unsigned long num_epochs);
+        float train(const std::vector<Eigen::VectorXf>& x_train, const std::vector<Eigen::VectorXf>& y_train, const unsigned long num_epochs = 0);
         std::vector<int> layers; //# of neurons per layer including the input layer (in which case layers[0] refers to the number of inputs)
+        static void signalHandler(int signum);
+        void set_learning_rate(float eta) {this->eta = eta;}
 
     private:
         float bias;

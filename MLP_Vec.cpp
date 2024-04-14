@@ -1,7 +1,5 @@
 #include "MLP_Vec.h"
 #include <cassert>
-//#ifndef EIGEN_NO_DEBUG
-//#define EIGEN_NO_DEBUG
 
 //open /Users/edwardfinkelstein/LinkedIn/Ex_Files_Neural_Networks/Exercise\ Files/03_03/NeuralNetworks/*cpp /Users/edwardfinkelstein/LinkedIn/Ex_Files_Neural_Networks/Exercise\ Files/03_03/NeuralNetworks/*h
 //cd /Users/edwardfinkelstein/LinkedIn/Ex_Files_Neural_Networks/Exercise\ Files/03_03/NeuralNetworks/
@@ -47,6 +45,8 @@ float Perceptron::sigmoid(float x)
 // Return a new MultiLayerPerceptron object with the specified parameters.
 MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, float bias, float eta)
 {
+    // Set up the signal handler
+    signal(SIGINT, signalHandler);
     this->layers = layers;
     this->bias = bias;
     this->eta = eta;
@@ -216,8 +216,7 @@ float MultiLayerPerceptron::train(const std::vector<Eigen::VectorXf>& x_train, c
     puts("Press ctrl-c to continue");
     float MSE;
     unsigned long int num_rows = x_train.size();
-    std::cout << x_train[0].rows() << '\n';
-    for (unsigned long epoch = 0; epoch < num_epochs; epoch++)
+    for (unsigned long epoch = 0; ((num_epochs != 0) ? (epoch < num_epochs) : true); epoch++)
     {
         MSE = 0.0;
         
@@ -236,11 +235,17 @@ float MultiLayerPerceptron::train(const std::vector<Eigen::VectorXf>& x_train, c
         {
             std::cout << "\nInterrupted by Ctrl-C. Exiting loop.\n";
             std::cout<<"MSE = "<<MSE<< '\n';
+            MultiLayerPerceptron::interrupted = 0; //reset MultiLayerPerceptron::interrupted
             return MSE;
         }
     }
-    std::cout<<"MSE = "<<MSE<< '\n';
     return MSE;
 }
 
-//#endif
+void MultiLayerPerceptron::signalHandler(int signum)
+{
+    if (signum == SIGINT)
+    {
+        interrupted = 1;
+    }
+}
