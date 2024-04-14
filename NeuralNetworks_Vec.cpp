@@ -38,6 +38,30 @@ std::vector<Eigen::VectorXf> generateNNData(int numRows, int numCols, float (*fu
     return matrix;
 }
 
+std::vector<Eigen::VectorXf> leftCols(const std::vector<Eigen::VectorXf>& data, int numCols)
+{
+    std::vector<Eigen::VectorXf> temp;
+    temp.reserve(data.size());
+    for (const auto& row: data)
+    {
+        temp.push_back(row.head(numCols));
+    }
+    return temp;
+}
+                       
+std::vector<Eigen::VectorXf> rightCols(const std::vector<Eigen::VectorXf>& data, int numCols)
+{
+    std::vector<Eigen::VectorXf> temp;
+    assert(data.size() > 0 && data[0].size() >= numCols);
+    temp.reserve(data.size());
+    for (const auto& row: data)
+    {
+
+        temp.push_back(row.tail(numCols));
+    }
+    return temp;
+}
+
 //Returns the number of seconds since `start_time`
 template <typename T>
 double timeElapsedSince(T start_time)
@@ -434,8 +458,11 @@ int main()
     
     std::vector<Eigen::VectorXf> data = generateNNData(20, 3, example_func);
     for (auto& i: data){for (float j: i){std::cout << j << ' ';}puts("");}
+    x_train_data = leftCols(data, data[0].size() - 1);
+    y_train_data = rightCols(data, 1);
+    for (auto& i: x_train_data){for (float j: i){std::cout << j << ' ';}puts("");}
+    for (auto& i: y_train_data){for (float j: i){std::cout << j << ' ';}puts("");}
     exit(1);
-
     //test code - Segment Display Recognition System
     int epochs = 1000;
     
