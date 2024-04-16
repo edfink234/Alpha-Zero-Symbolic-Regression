@@ -56,7 +56,6 @@ std::vector<Eigen::VectorXf> rightCols(const std::vector<Eigen::VectorXf>& data,
     temp.reserve(data.size());
     for (const auto& row: data)
     {
-
         temp.push_back(row.tail(numCols));
     }
     return temp;
@@ -251,6 +250,19 @@ void GetData(int numInputs, MultiLayerPerceptron& sdrnn)
         printf("Would you like to test your SDR neural network with %d inputs and %d outputs again (y/n)? ", numInputs, numOutputs);
         std::cin >> ans;
     }
+}
+
+std::ostream& operator<<(std::ostream& out, const std::vector<Eigen::VectorXf>& data)
+{
+    for (const auto& vec: data)
+    {
+        for (size_t i = 0; i < vec.size(); i++)
+        {
+            out << vec[i] << ' ';
+        }
+        out << '\n';
+    }
+    return out;
 }
 
 int main()
@@ -468,6 +480,10 @@ int main()
     MSE = srnn->train(x_train_data, y_train_data);
     
     std::cout << "SR network MSE: " << MSE << '\n';
+    std::cout << "SR Network Prediction: "
+    << srnn->predict(x_train_data) << '\n';
+    std::cout << "Actual SR Labels: "
+    << y_train_data << '\n';
     
     //test code - Segment Display Recognition System
     int epochs = 10000;

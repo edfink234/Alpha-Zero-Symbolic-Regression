@@ -249,3 +249,13 @@ void MultiLayerPerceptron::signalHandler(int signum)
         interrupted = 1;
     }
 }
+
+std::vector<Eigen::VectorXf> MultiLayerPerceptron::predict(const std::vector<Eigen::VectorXf>& data)
+{
+    std::vector<Eigen::VectorXf> temp;
+    for (const auto& vec: data)
+    {
+        temp.push_back(this->run(vec));
+    }
+    return temp;
+}

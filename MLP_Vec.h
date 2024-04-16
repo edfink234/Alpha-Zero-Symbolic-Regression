@@ -37,7 +37,8 @@ class MultiLayerPerceptron
         std::vector<int> layers; //# of neurons per layer including the input layer (in which case layers[0] refers to the number of inputs)
         static void signalHandler(int signum);
         void set_learning_rate(float eta) {this->eta = eta;}
-
+        std::vector<Eigen::VectorXf> predict(const std::vector<Eigen::VectorXf>&);
+    
     private:
         float bias;
         float eta; //learning rate
