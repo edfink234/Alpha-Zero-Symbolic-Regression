@@ -5,19 +5,27 @@
 //cd /Users/edwardfinkelstein/LinkedIn/Ex_Files_Neural_Networks/Exercise\ Files/03_03/NeuralNetworks/
 
 // Return a new Perceptron object with the specified number of inputs
-Perceptron::Perceptron(int inputs, float bias)
+Perceptron::Perceptron(int inputs, float bias, bool is_output, float scale, float min_allowed, float max_allowed)
 {
     this->bias = bias;
     this->weights.resize(inputs);
 
     // Use Eigen's random number generation to initialize the weights
     this->weights = Eigen::VectorXf::Random(inputs);
+    this->is_output = is_output;
+    this->scale = scale;
+    this->min_allowed = min_allowed;
+    this->max_allowed = max_allowed;
 }
 
 // Run the perceptron. x is a vector with the input values.
 float Perceptron::run(const Eigen::VectorXf& x)
 {
-    return sigmoid(x.dot(weights) + bias);
+    
+//    float output = Perceptron::sigmoid(x.dot(weights) + bias);
+//    return (is_output) ? scale_between(this->scale*output) : output;
+    float dot_product = x.dot(weights) + bias;
+    return (is_output) ? dot_product : sigmoid(dot_product);
 }
 
 // Set the weights. w_init is a vector with the weights.
@@ -42,16 +50,27 @@ float Perceptron::sigmoid(float x)
     return 1.0f/(1.0f + exp(-x));
 }
 
+float Perceptron::scale_between(float unscaled_num, float min, float max)
+{
+    return (this->max_allowed - this->min_allowed) *
+    (unscaled_num - min) / (max - min) + this->min_allowed;
+}
+
 // Return a new MultiLayerPerceptron object with the specified parameters.
-MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, float bias, float eta)
+MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, float bias, float eta, float scale, float min_allowed, float max_allowed)
 {
     // Set up the signal handler
     signal(SIGINT, signalHandler);
     this->layers = layers;
     this->bias = bias;
     this->eta = eta;
+    this->scale = scale;
+    this->min_allowed = min_allowed;
+    this->max_allowed = max_allowed;
 
-    for (int i = 0; i < this->layers.size(); i++) //for each layer
+    size_t mlp_sz = this->layers.size();
+
+    for (int i = 0; i < mlp_sz; i++) //for each layer
     {
         this->values.emplace_back(Eigen::VectorXf::Zero(layers[i])); //add vector of values
         this->network.emplace_back(); //add vector of neurons
@@ -60,7 +79,7 @@ MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, float bias, 
         {
             for (int j = 0; j < this->layers[i]; j++)
             {
-                this->network[i].emplace_back(this->layers[i-1], this->bias);
+                this->network[i].emplace_back(this->layers[i-1], this->bias, (i == mlp_sz - 1), scale, min_allowed, max_allowed);
             }
         }
     }
@@ -83,7 +102,7 @@ void MultiLayerPerceptron::set_weights(std::vector<Eigen::MatrixXf>&& w_init)
 void MultiLayerPerceptron::reset_weights()
 {
     static std::random_device rd;  // Obtain a random number from hardware
-    static std::mt19937 gen; // Seed the generator
+    static std::mt19937 gen(rd()); // Seed the generator
     static std::uniform_real_distribution<> distr; // Define the range
     // Write all the weights into the neural network.
     // w_init is a vector of vectors of vectors of floats.
@@ -162,14 +181,19 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
 //                = d ((1/n) * \sum_{i = 0}^{n-1} (y_{k_{i}} - sigmoid(x_k*w_k + b_k)_{k_{i}})^2) / d w_k
 //                = (1/n) * d (\sum_{i = 0}^{n-1} (y_{k_{i}} - sigmoid(x_k*w_k + b_k)_{k_{i}})^2) / d w_k
 //                = d (y_{k} - sigmoid(x_k*w_k + b_k))^2) / d w_k
-//                = 2 * (y_{k} - o_{k}) * d (- sigmoid(x_k*w_k + b_k)) / d w_k
+//                = 2 * (y_{k} - o_{k}) * d (- o_{k}) / d w_k
 //                = -2 * (y_k - o_k) * o_k * (1 - o_k)
 //                \propto o_k * (1 - o_k) * (y_k - o_k)
-
+    
+//                = d (y_{k} - (x_k*w_k + b_k))^2) / d w_k
+//                = 2 * (y_{k} - (x_k*w_k + b_k)) * d (- (x_k*w_k + b_k)) / d w_k
+//                = -2 * (y_k - (x_k*w_k + b_k)) * x_k
+    //TODO: Fix this so it is correct!
     for (int i = 0; i < this->layers.back(); i++)
     {
         float o_k = this->values.back()[i];
-        this->d.back()[i] = o_k * (1 - o_k) * (y[i] - o_k);
+//        this->d.back()[i] = o_k * (1 - o_k) * (y[i] - o_k);
+        this->d.back()[i] = (y[i] - o_k) ;//* x.sum();
     }
     
     // STEP 4: Calculate the error term of each unit on each layer
@@ -199,11 +223,16 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
             {
                 this->network[i][j].weights[k] += this->eta*this->d[i][j]*this->values[i-1][k];
             }
-            //bias
-            this->network[i][j].bias += this->eta*this->d[i][j]*bias;
+            //bias: https://stackoverflow.com/a/13342725/18255427
+            float bias_scale_update = this->eta*this->d[i][j];
+            this->network[i][j].bias += bias_scale_update;
+//            if (network[i][j].is_output)
+//            {
+//                this->network[i][j].scale += this->d[i][j]*this->d[i][j];
+//            }
+//        https://online.stat.psu.edu/stat501/lesson/1/1.2
         }
     }
-    
     return MSE;
 }
 
@@ -216,6 +245,7 @@ float MultiLayerPerceptron::train(const std::vector<Eigen::VectorXf>& x_train, c
     puts("Press ctrl-c to continue");
     float MSE;
     unsigned long int num_rows = x_train.size();
+//    std::vector<Eigen::VectorXf> sigmoid_y_train = MultiLayerPerceptron::sigmoid(y_train);
     for (unsigned long epoch = 0; ((num_epochs != 0) ? (epoch < num_epochs) : true); epoch++)
     {
         MSE = 0.0;
@@ -255,7 +285,27 @@ std::vector<Eigen::VectorXf> MultiLayerPerceptron::predict(const std::vector<Eig
     std::vector<Eigen::VectorXf> temp;
     for (const auto& vec: data)
     {
+//        temp.push_back((-(this->run(vec).array().inverse() - 1.0f).log()).matrix());
         temp.push_back(this->run(vec));
     }
     return temp;
 }
+
+std::vector<Eigen::VectorXf> MultiLayerPerceptron::sigmoid(const std::vector<Eigen::VectorXf>& x)
+{
+    // Create a new vector to store the results
+    std::vector<Eigen::VectorXf> result;
+    result.reserve(x.size());
+    
+    for (auto& vec: x)
+    {
+        result.push_back(vec.unaryExpr([](float element)
+        {
+           // Apply the sigmoid function to each element
+           return 1.0f / (1.0f + std::exp(-element));
+        }));
+    }
+        
+    return result;
+}
+

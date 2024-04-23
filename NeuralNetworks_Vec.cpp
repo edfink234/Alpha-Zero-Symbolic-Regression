@@ -270,7 +270,7 @@ int main()
 
     std::cout << "\n\n--------Logic Gate Example----------------\n\n";
 
-    std::unique_ptr<Perceptron> p = std::make_unique<Perceptron>(2); //2 inputs
+    std::unique_ptr<Perceptron> p = std::make_unique<Perceptron>(2 /*inputs*/, 1.0f /*bias*/, false /*is_output*/, 1.0f /*scale*/, 0.0f /*min_allowed*/, 1.0f /*max_allowed*/); //2 inputs
     
     /*
      AND
@@ -383,7 +383,7 @@ int main()
     std::cout<<p->run(x)<<'\n';
 
     std::cout<<"\n\n--------Hardcoded XOR Example----------------\n\n";
-    MultiLayerPerceptron mlp = MultiLayerPerceptron({2,2,1});  //mlp: 2 inputs in first layer, 2 neurons in second layer, 1 neuron in the output (third) layer
+    MultiLayerPerceptron mlp = MultiLayerPerceptron({2,2,1} /*number of neurons in each layer*/, 1.0f /*bias*/, 0.5f /*eta*/, 1.0f /*scale*/, 0.0f /*min_allowed*/, 1.0f /*max_allowed*/);  //mlp: 2 inputs in first layer, 2 neurons in second layer, 1 neuron in the output (third) layer
     Eigen::MatrixXf matrix1(2, 3);
     matrix1 << -10, -10, 15,
                 15, 15, -10;
@@ -469,14 +469,12 @@ int main()
     std::cout<<mlp.run(x)<<'\n';
     
     std::vector<Eigen::VectorXf> data = generateNNData(20, 3, example_func);
-    for (auto& i: data){for (float j: i){std::cout << j << ' ';}puts("");}
+    std::cout << data << '\n';
     x_train_data = leftCols(data, data[0].size() - 1);
     y_train_data = rightCols(data, 1);
-    for (auto& i: x_train_data){for (float j: i){std::cout << j << ' ';}puts("");}
-    for (auto& i: y_train_data){for (float j: i){std::cout << j << ' ';}puts("");}
     
-    std::unique_ptr<MultiLayerPerceptron> srnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{2,7,7,1});
-    srnn->set_learning_rate(1e-4);
+    std::unique_ptr<MultiLayerPerceptron> srnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{2,20,7,1} /*number of neurons in each layer*/, 1.0f /*bias*/, 0.5f /*eta*/, 1.0f /*scale*/, 0.0f /*min_allowed*/, 1.0f /*max_allowed*/);
+    srnn->set_learning_rate(1e-5);
     MSE = srnn->train(x_train_data, y_train_data);
     
     std::cout << "SR network MSE: " << MSE << '\n';
@@ -486,9 +484,9 @@ int main()
     << y_train_data << '\n';
     
     //test code - Segment Display Recognition System
-    int epochs = 10000;
+    int epochs = 100000;
     
-    std::unique_ptr<MultiLayerPerceptron> sdrnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{7,7,1});
+    std::unique_ptr<MultiLayerPerceptron> sdrnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{7,7,1} /*number of neurons in each layer*/, 1.0f /*bias*/, 0.5f /*eta*/, 1.0f /*scale*/, 0.0f /*min_allowed*/, 1.0f /*max_allowed*/);
     x_train.resize(7);
     x_train_data.clear();
     y_train_data.clear();
@@ -530,7 +528,7 @@ int main()
     GetData(7, *sdrnn);
     
     // Dataset for the 7 to 10 network
-    sdrnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{7,7,10});
+    sdrnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{7,7,10} /*number of neurons in each layer*/, 1.0f /*bias*/, 0.5f /*eta*/, 1.0f /*scale*/, 0.0f /*min_allowed*/, 1.0f /*max_allowed*/);
     y_train.resize(10);
     x_train_data.clear();
     y_train_data.clear();
@@ -569,7 +567,7 @@ int main()
     GetData(7, *sdrnn);
 
     // Dataset for the 7 to 7 network
-    sdrnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{7,7,7});
+    sdrnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{7,7,7} /*number of neurons in each layer*/, 1.0f /*bias*/, 0.5f /*eta*/, 1.0f /*scale*/, 0.0f /*min_allowed*/, 1.0f /*max_allowed*/);
     y_train.resize(7);
     x_train_data.clear();
     y_train_data.clear();
