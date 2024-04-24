@@ -5,7 +5,7 @@
 //cd /Users/edwardfinkelstein/LinkedIn/Ex_Files_Neural_Networks/Exercise\ Files/03_03/NeuralNetworks/
 
 // Return a new Perceptron object with the specified number of inputs
-Perceptron::Perceptron(int inputs, float bias, bool is_output, float scale, float min_allowed, float max_allowed)
+Perceptron::Perceptron(int inputs, float bias, bool is_output)
 {
     this->bias = bias;
     this->weights.resize(inputs);
@@ -13,17 +13,11 @@ Perceptron::Perceptron(int inputs, float bias, bool is_output, float scale, floa
     // Use Eigen's random number generation to initialize the weights
     this->weights = Eigen::VectorXf::Random(inputs);
     this->is_output = is_output;
-    this->scale = scale;
-    this->min_allowed = min_allowed;
-    this->max_allowed = max_allowed;
 }
 
 // Run the perceptron. x is a vector with the input values.
 float Perceptron::run(const Eigen::VectorXf& x)
 {
-    
-//    float output = Perceptron::sigmoid(x.dot(weights) + bias);
-//    return (is_output) ? scale_between(this->scale*output) : output;
     float dot_product = x.dot(weights) + bias;
     return (is_output) ? dot_product : sigmoid(dot_product);
 }
@@ -50,23 +44,20 @@ float Perceptron::sigmoid(float x)
     return 1.0f/(1.0f + exp(-x));
 }
 
-float Perceptron::scale_between(float unscaled_num, float min, float max)
+float Perceptron::scale_between(float unscaled_num, float min, float max, float max_allowed, float min_allowed)
 {
-    return (this->max_allowed - this->min_allowed) *
-    (unscaled_num - min) / (max - min) + this->min_allowed;
+    return (max_allowed - min_allowed) *
+    (unscaled_num - min) / (max - min) + min_allowed;
 }
 
 // Return a new MultiLayerPerceptron object with the specified parameters.
-MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, float bias, float eta, float scale, float min_allowed, float max_allowed)
+MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, float bias, float eta, std::string&& output_type)
 {
     // Set up the signal handler
     signal(SIGINT, signalHandler);
     this->layers = layers;
     this->bias = bias;
     this->eta = eta;
-    this->scale = scale;
-    this->min_allowed = min_allowed;
-    this->max_allowed = max_allowed;
 
     size_t mlp_sz = this->layers.size();
 
@@ -79,7 +70,7 @@ MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, float bias, 
         {
             for (int j = 0; j < this->layers[i]; j++)
             {
-                this->network[i].emplace_back(this->layers[i-1], this->bias, (i == mlp_sz - 1), scale, min_allowed, max_allowed);
+                this->network[i].emplace_back(this->layers[i-1], this->bias, (i == mlp_sz - 1));
             }
         }
     }
@@ -224,13 +215,8 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
                 this->network[i][j].weights[k] += this->eta*this->d[i][j]*this->values[i-1][k];
             }
             //bias: https://stackoverflow.com/a/13342725/18255427
-            float bias_scale_update = this->eta*this->d[i][j];
-            this->network[i][j].bias += bias_scale_update;
-//            if (network[i][j].is_output)
-//            {
-//                this->network[i][j].scale += this->d[i][j]*this->d[i][j];
-//            }
-//        https://online.stat.psu.edu/stat501/lesson/1/1.2
+            this->network[i][j].bias += this->eta*this->d[i][j];
+            //https://online.stat.psu.edu/stat501/lesson/1/1.2
         }
     }
     return MSE;

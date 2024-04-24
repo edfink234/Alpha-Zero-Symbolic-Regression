@@ -16,22 +16,20 @@ class Perceptron
 {
     public:
         Eigen::VectorXf weights;
+        std::string output_type; //TODO: set output_type to sigmoid or none
         float bias;
-        float scale;
         bool is_output;
-        float min_allowed;
-        float max_allowed;
-        Perceptron(int inputs, float bias=1.0f, bool is_output = false, float scale = 1.0f, float min_allowed = -FLT_MAX, float max_allowed = FLT_MAX);
+        Perceptron(int inputs, float bias=1.0f, bool is_output = false);
         float run(const Eigen::VectorXf& x);
         void set_weights(const Eigen::VectorXf& w_init);
         static float sigmoid(float x);
-        float scale_between(float unscaled_num, float min = 0.0f, float max = 1.0f);
+        float scale_between(float unscaled_num, float min = 0.0f, float max = 1.0f, float max_allowed = FLT_MAX, float min_allowed = FLT_MIN);
 };
 
 class MultiLayerPerceptron
 {
     public:
-        MultiLayerPerceptron(std::vector<int> layers, float bias=1.0f, float eta = 0.5f, float scale = 1.0f, float min_allowed = -FLT_MAX, float max_allowed = FLT_MAX);
+        MultiLayerPerceptron(std::vector<int> layers, float bias=1.0f, float eta = 0.5f, std::string&& output_type = "sigmoid");
         void set_weights(std::vector<Eigen::MatrixXf>&& w_init);
         void reset_weights();
         void print_weights();
@@ -48,13 +46,11 @@ class MultiLayerPerceptron
     private:
         float bias;
         float eta; //learning rate
-        float scale;
         std::vector<std::vector<Perceptron> > network; //the actual network
         std::vector<Eigen::VectorXf> values; //holds output values of the neurons
         std::vector<Eigen::VectorXf> d; //contains error terms for neurons: one error term for each neuron of each layer
+        std::string output_type;
         static volatile sig_atomic_t inline interrupted = 0;
-        float min_allowed;
-        float max_allowed;
 };
 
 #endif
