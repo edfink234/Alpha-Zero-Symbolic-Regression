@@ -19,7 +19,7 @@ class Perceptron
         std::string output_type; //TODO: set output_type to sigmoid or none
         float bias;
         bool is_output;
-        Perceptron(int inputs, float bias=1.0f, bool is_output = false);
+        Perceptron(int inputs, float bias=1.0f, bool is_output = false, std::string&& output_type = "none");
         float run(const Eigen::VectorXf& x);
         void set_weights(const Eigen::VectorXf& w_init);
         static float sigmoid(float x);

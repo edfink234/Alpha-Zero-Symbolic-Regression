@@ -473,7 +473,7 @@ int main()
     x_train_data = leftCols(data, data[0].size() - 1);
     y_train_data = rightCols(data, 1);
     
-    std::unique_ptr<MultiLayerPerceptron> srnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{2,20,7,1} /*number of neurons in each layer*/, 1.0f /*bias*/, 0.5f /*eta*/);
+    std::unique_ptr<MultiLayerPerceptron> srnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{2,20,7,1} /*number of neurons in each layer*/, 1.0f /*bias*/, 0.5f /*eta*/, "none");
     srnn->set_learning_rate(1e-5);
     MSE = srnn->train(x_train_data, y_train_data);
     

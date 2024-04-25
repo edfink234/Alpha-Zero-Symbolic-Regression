@@ -5,7 +5,7 @@
 //cd /Users/edwardfinkelstein/LinkedIn/Ex_Files_Neural_Networks/Exercise\ Files/03_03/NeuralNetworks/
 
 // Return a new Perceptron object with the specified number of inputs
-Perceptron::Perceptron(int inputs, float bias, bool is_output)
+Perceptron::Perceptron(int inputs, float bias, bool is_output, std::string&& output_type)
 {
     this->bias = bias;
     this->weights.resize(inputs);
@@ -13,13 +13,14 @@ Perceptron::Perceptron(int inputs, float bias, bool is_output)
     // Use Eigen's random number generation to initialize the weights
     this->weights = Eigen::VectorXf::Random(inputs);
     this->is_output = is_output;
+    this->output_type = output_type;
 }
 
 // Run the perceptron. x is a vector with the input values.
 float Perceptron::run(const Eigen::VectorXf& x)
 {
     float dot_product = x.dot(weights) + bias;
-    return (is_output) ? dot_product : sigmoid(dot_product);
+    return (is_output && output_type != "sigmoid") ? dot_product : sigmoid(dot_product);
 }
 
 // Set the weights. w_init is a vector with the weights.
@@ -70,7 +71,8 @@ MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, float bias, 
         {
             for (int j = 0; j < this->layers[i]; j++)
             {
-                this->network[i].emplace_back(this->layers[i-1], this->bias, (i == mlp_sz - 1));
+                bool last_layer = (i == mlp_sz - 1);
+                this->network[i].emplace_back(this->layers[i-1], this->bias, last_layer, last_layer ? output_type : "none");
             }
         }
     }
@@ -183,8 +185,7 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
     for (int i = 0; i < this->layers.back(); i++)
     {
         float o_k = this->values.back()[i];
-//        this->d.back()[i] = o_k * (1 - o_k) * (y[i] - o_k);
-        this->d.back()[i] = (y[i] - o_k) ;//* x.sum();
+        this->d.back()[i] = ((output_type == "sigmoid") ? (o_k * (1 - o_k) * (y[i] - o_k)) : (y[i] - o_k));//* x.sum();
     }
     
     // STEP 4: Calculate the error term of each unit on each layer
@@ -231,7 +232,6 @@ float MultiLayerPerceptron::train(const std::vector<Eigen::VectorXf>& x_train, c
     puts("Press ctrl-c to continue");
     float MSE;
     unsigned long int num_rows = x_train.size();
-//    std::vector<Eigen::VectorXf> sigmoid_y_train = MultiLayerPerceptron::sigmoid(y_train);
     for (unsigned long epoch = 0; ((num_epochs != 0) ? (epoch < num_epochs) : true); epoch++)
     {
         MSE = 0.0;
