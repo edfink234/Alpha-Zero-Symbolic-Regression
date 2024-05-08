@@ -1,5 +1,6 @@
 #include "MLP_Vec.h"
 #include <cassert>
+#include <stack>
 
 //open /Users/edwardfinkelstein/LinkedIn/Ex_Files_Neural_Networks/Exercise\ Files/03_03/NeuralNetworks/*cpp /Users/edwardfinkelstein/LinkedIn/Ex_Files_Neural_Networks/Exercise\ Files/03_03/NeuralNetworks/*h
 //cd /Users/edwardfinkelstein/LinkedIn/Ex_Files_Neural_Networks/Exercise\ Files/03_03/NeuralNetworks/
@@ -19,6 +20,7 @@ Perceptron::Perceptron(int inputs, float bias, bool is_output, std::string&& out
 // Run the perceptron. x is a vector with the input values.
 float Perceptron::run(const Eigen::VectorXf& x)
 {
+    assert(x.size() == weights.size());
     float dot_product = x.dot(weights) + bias;
     return (is_output && output_type != "sigmoid") ? dot_product : sigmoid(dot_product);
 }
@@ -52,13 +54,15 @@ float Perceptron::scale_between(float unscaled_num, float min, float max, float 
 }
 
 // Return a new MultiLayerPerceptron object with the specified parameters.
-MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, float bias, float eta, std::string&& output_type)
+MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, float bias, float eta, std::string&& output_type, const std::string& expression_type)
 {
     // Set up the signal handler
     signal(SIGINT, signalHandler);
     this->layers = layers;
     this->bias = bias;
     this->eta = eta;
+    this->output_type = output_type;
+    this->expression_type = expression_type;
 
     size_t mlp_sz = this->layers.size();
 
@@ -213,7 +217,8 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
         {
             for (int k = 0; k < layers[i-1]; k++) //weights
             {
-                this->network[i][j].weights[k] += this->eta*this->d[i][j]*this->values[i-1][k];
+                this->network[i][j].weights[k] = this->expression_evaluator(this->network[i][j].weights[k], this->eta, this->d[i][j], this->values[i-1][k]);//this->network[i][j].weights[k] + this->eta*this->d[i][j]*this->values[i-1][k];
+                //TODO: Turn this into this->network[i][j].weights[k] = func(weights[k], this->eta, this->d[i][j], this->values[i-1][k]) -> obtained from the symbolic regressor -> Need an expression_evaluator method in this class most likely
             }
             //bias: https://stackoverflow.com/a/13342725/18255427
             this->network[i][j].bias += this->eta*this->d[i][j];
@@ -229,7 +234,7 @@ float MultiLayerPerceptron::train(const std::vector<Eigen::VectorXf>& x_train, c
     {
         throw std::runtime_error("# of x_train rows != # of y_train rows");
     }
-    puts("Press ctrl-c to continue");
+//    puts("Press ctrl-c to continue");
     float MSE;
     unsigned long int num_rows = x_train.size();
     for (unsigned long epoch = 0; ((num_epochs != 0) ? (epoch < num_epochs) : true); epoch++)
@@ -243,17 +248,17 @@ float MultiLayerPerceptron::train(const std::vector<Eigen::VectorXf>& x_train, c
         }
         MSE /= num_rows;
 
-        if (epoch % 100 == 0)
-        {
-            std::cout<<"MSE = "<<MSE<< '\r' << std::flush;
-        }
-        if (MultiLayerPerceptron::interrupted)
-        {
-            std::cout << "\nInterrupted by Ctrl-C. Exiting loop.\n";
-            std::cout<<"MSE = "<<MSE<< '\n';
-            MultiLayerPerceptron::interrupted = 0; //reset MultiLayerPerceptron::interrupted
-            return MSE;
-        }
+//        if (epoch % 100 == 0)
+//        {
+//            std::cout<<"MSE = "<<MSE<< '\r' << std::flush;
+//        }
+//        if (MultiLayerPerceptron::interrupted)
+//        {
+//            std::cout << "\nInterrupted by Ctrl-C. Exiting loop.\n";
+//            std::cout<<"MSE = "<<MSE<< '\n';
+//            MultiLayerPerceptron::interrupted = 0; //reset MultiLayerPerceptron::interrupted
+//            return MSE;
+//        }
     }
     return MSE;
 }
@@ -295,3 +300,121 @@ std::vector<Eigen::VectorXf> MultiLayerPerceptron::sigmoid(const std::vector<Eig
     return result;
 }
 
+float MultiLayerPerceptron::expression_evaluator(float w_k, float eta, float d_ij, float value, const Eigen::VectorXf& params)
+{
+    std::stack<float> stack;
+    size_t const_count = 0;
+    bool is_prefix = (expression_type == "prefix");
+    for (int i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
+    {
+        std::string token = MultiLayerPerceptron::__tokens_dict[pieces[i]];
+        if (std::find(MultiLayerPerceptron::__operators_float.begin(), MultiLayerPerceptron::__operators_float.end(), pieces[i]) == MultiLayerPerceptron::__operators_float.end()) // leaf
+        {
+            if (token == "const")
+            {
+                stack.push(params(const_count++));
+            }
+            else if (token == "w_k")
+            {
+                stack.push(w_k);
+            }
+            else if (token == "eta")
+            {
+                stack.push(eta);
+            }
+            else if (token == "d_ij")
+            {
+                stack.push(d_ij);
+            }
+            else if (token == "value")
+            {
+                stack.push(value);
+            }
+        }
+        else if (std::find(MultiLayerPerceptron::__unary_operators_float.begin(), MultiLayerPerceptron::__unary_operators_float.end(), pieces[i]) != MultiLayerPerceptron::__unary_operators_float.end()) // Unary operator
+        {
+            if (token == "cos")
+            {
+                float temp = stack.top();
+                stack.pop();
+                stack.push(cos(temp));
+            }
+            else if (token == "exp")
+            {
+                float temp = stack.top();
+                stack.pop();
+                stack.push(exp(temp));
+            }
+            else if (token == "sqrt")
+            {
+                float temp = stack.top();
+                stack.pop();
+                stack.push(sqrt(temp));
+            }
+            else if (token == "sin")
+            {
+                float temp = stack.top();
+                stack.pop();
+                stack.push(sin(temp));
+            }
+            else if (token == "asin" || token == "arcsin")
+            {
+                float temp = stack.top();
+                stack.pop();
+                stack.push(asin(temp));
+            }
+            else if (token == "log" || token == "ln")
+            {
+                float temp = stack.top();
+                stack.pop();
+                stack.push(log(temp));
+            }
+            else if (token == "tanh")
+            {
+                float temp = stack.top();
+                stack.pop();
+                stack.push(tanh(temp));
+            }
+            else if (token == "acos" || token == "arccos")
+            {
+                float temp = stack.top();
+                stack.pop();
+                stack.push(acos(temp));
+            }
+            else if (token == "~") //unary minus
+            {
+                float temp = stack.top();
+                stack.pop();
+                stack.push(-temp);
+            }
+        }
+        else // binary operator
+        {
+            float left_operand = stack.top();
+            stack.pop();
+            float right_operand = stack.top();
+            stack.pop();
+            if (token == "+")
+            {
+                stack.push(((expression_type == "postfix") ? (right_operand + left_operand) : (left_operand + right_operand)));
+            }
+            else if (token == "-")
+            {
+                stack.push(((expression_type == "postfix") ? (right_operand - left_operand) : (left_operand - right_operand)));
+            }
+            else if (token == "*")
+            {
+                stack.push(((expression_type == "postfix") ? (right_operand * left_operand) : (left_operand * right_operand)));
+            }
+            else if (token == "/")
+            {
+                stack.push(((expression_type == "postfix") ? (right_operand / left_operand) : (left_operand / right_operand)));
+            }
+            else if (token == "^")
+            {
+                stack.push(((expression_type == "postfix") ? (/*right_operand.pow(left_operand) */pow(right_operand, left_operand)) : (/*left_operand.pow(right_operand)*/pow(left_operand, right_operand))));
+            }
+        }
+    }
+    return stack.top();
+}

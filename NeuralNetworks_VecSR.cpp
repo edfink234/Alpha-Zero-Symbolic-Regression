@@ -28,6 +28,7 @@
 #include <unsupported/Eigen/NonLinearOptimization>
 #include <unsupported/Eigen/AutoDiff>
 #include <boost/unordered/concurrent_flat_map.hpp>
+#include "MLP_Vec.h"
 
 using Clock = std::chrono::high_resolution_clock;
 
@@ -75,19 +76,20 @@ class Data
 {
     Eigen::MatrixXf data;
     std::unordered_map<std::string, Eigen::VectorXf> features;
-    std::vector<Eigen::VectorXf> rows;
     long num_columns, num_rows;
     
 public:
     
     Data() = default; //so we can have a static Data attribute
-    
+    std::vector<Eigen::VectorXf> labels;
+    std::vector<Eigen::VectorXf> rows;
     // Assignment operator
     Data& operator=(const Eigen::MatrixXf& theData)
     {
         this->data = theData;
         this->num_columns = data.cols();
         this->num_rows = data.rows();
+
         for (size_t i = 0; i < this->num_columns - 1; i++) //for each column
         {
             this->features["x"+std::to_string(i)] = Eigen::VectorXf(this->num_rows);
@@ -99,12 +101,18 @@ public:
         
         this->features["y"] = Eigen::VectorXf(this->num_rows);
         this->rows.resize(this->num_rows);
-        
+        this->labels.resize(this->num_rows);
+
+        Eigen::VectorXf y_i(1);
         for (size_t i = 0; i < num_rows; i++)
         {
             this->features["y"](i) = this->data(i, this->num_columns - 1);
-            this->rows[i] = data.row(i);
+            this->rows[i] = data.row(i).head(data.row(i).size() - 1);
+            y_i << this->features["y"](i);
+            this->labels[i] = y_i;
+            assert(this->labels[i].size() == 1 && this->rows[i].size() == 2);
         }
+//        this->labels.push_back(this->features["y"]);
         
         return *this;
     }
@@ -171,7 +179,7 @@ struct Board
     static std::vector<float> inline __tokens_float;
     Eigen::VectorXf params; //store the parameters of the expression of the current episode after it's completed
     static Data inline data;
-    
+    static std::mutex inline thread_locker;
     static std::vector<float> inline __operators_float;
     static std::vector<float> inline __unary_operators_float;
     static std::vector<float> inline __binary_operators_float;
@@ -199,11 +207,12 @@ struct Board
 
     int n; //depth of RPN/PN tree
     std::string expression_type, expression_string;
-    static std::mutex inline thread_locker; //static because it needs to protect static members
-    std::vector<float> pieces; // Create the empty expression list. TODO: (maybe) change to float
+    std::vector<float> pieces; // Create the empty expression list.
     bool visualize_exploration, is_primary;
+    MultiLayerPerceptron srnn;
+    const unsigned long epochs;
     
-    Board(bool primary = true, int n = 3, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, is_primary{primary}
+    Board(bool primary = true, int n = 3, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false, std::vector<int> layers = {}, const unsigned long num_epochs = 1000) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, is_primary{primary}, srnn{layers, 1.0f, 0.5f, "none", expression_type}, epochs{num_epochs}
     {
         if (n > 30)
         {
@@ -227,11 +236,12 @@ struct Board
                 Board::__num_features = data[0].size() - 1;
                 Board::__input_vars.clear();
                 Board::expression_dict.clear();
-                Board::__input_vars.reserve(Board::__num_features);
-                for (auto i = 0; i < Board::__num_features; i++)
-                {
-                    Board::__input_vars.push_back("x"+std::to_string(i));
-                }
+//                Board::__input_vars.reserve(Board::__num_features);
+//                for (auto i = 0; i < Board::__num_features; i++)
+//                {
+//                    Board::__input_vars.push_back("x"+std::to_string(i));
+//                }
+                Board::__input_vars = {"w_k", "eta", "d_ij", "value"};
                 Board::__unary_operators = {}/* = {"sin", "sqrt", "cos"}*/;
                 Board::__binary_operators = {"+", "-", "*", "/", "^"};
                 Board::__operators.clear();
@@ -243,7 +253,7 @@ struct Board
                 {
                     Board::__operators.push_back(i);
                 }
-                Board::__other_tokens = {"const"};
+                Board::__other_tokens = {/*"const"*/};
                 Board::__tokens = Board::__operators;
                 
                 for (auto& i: this->Board::__input_vars)
@@ -263,15 +273,19 @@ struct Board
                 }
                 int num_operators = Board::__operators.size();
                 Board::__operators_float.clear();
+                MultiLayerPerceptron::__operators_float.clear();
                 for (int i = 1; i <= num_operators; i++)
                 {
                     Board::__operators_float.push_back(i);
+                    MultiLayerPerceptron::__operators_float.push_back(i);
                 }
                 int num_unary_operators = Board::__unary_operators.size();
                 Board::__unary_operators_float.clear();
+                MultiLayerPerceptron::__unary_operators_float.clear();
                 for (int i = 1; i <= num_unary_operators; i++)
                 {
                     Board::__unary_operators_float.push_back(i);
+                    MultiLayerPerceptron::__unary_operators_float.push_back(i);
                 }
                 Board::__binary_operators_float.clear();
                 for (int i = num_unary_operators + 1; i <= num_operators; i++)
@@ -285,13 +299,14 @@ struct Board
                     Board::__input_vars_float.push_back(i);
                 }
                 Board::__other_tokens_float.clear();
-                for (int i = ops_plus_features + 1; i <= Board::action_size; i++)
+                for (int i = ops_plus_features + 1; i <= ops_plus_features + Board::__other_tokens.size(); i++)
                 {
                     Board::__other_tokens_float.push_back(i);
                 }
                 for (int i = 0; i < Board::action_size; i++)
                 {
                     Board::__tokens_dict[Board::__tokens_float[i]] = Board::__tokens[i];
+                    MultiLayerPerceptron::__tokens_dict[Board::__tokens_float[i]] = Board::__tokens[i];
                     Board::__tokens_inv_dict[Board::__tokens[i]] = Board::__tokens_float[i];
                 }
                 
@@ -736,6 +751,7 @@ struct Board
         {
             if (std::find(Board::__other_tokens_float.begin(), Board::__other_tokens_float.end(), pieces[i]) != Board::__other_tokens_float.end())
             {
+                puts("true");
                 temp += ((i!=sz) ? std::to_string((this->params)(const_index)) + " " : std::to_string((this->params)(const_index)));
                 if (expression_type == "postfix")
                 {
@@ -1353,7 +1369,9 @@ struct Board
         }
         else
         {
-            loss = loss_func(expression_evaluator(this->params),Board::data["y"]);
+//            loss = loss_func(expression_evaluator(this->params),Board::data["y"]); //TODO: Something like train(...)
+            this->srnn.pieces = this->pieces;
+            loss = 1.0f/(1.0f+this->srnn.train(data.rows, data.labels, this->epochs));
         }
         return loss;
     }
@@ -1568,7 +1586,7 @@ float Feynman_5(const Eigen::VectorXf& x)
 
 //https://dl.acm.org/doi/pdf/10.1145/3449639.3459345?casa_token=Np-_TMqxeJEAAAAA:8u-d6UyINV6Ex02kG9LthsQHAXMh2oxx3M4FG8ioP0hGgstIW45X8b709XOuaif5D_DVOm_FwFo
 //https://core.ac.uk/download/pdf/6651886.pdf
-void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0)
+void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, const unsigned long num_epochs = 1000)
 {
     std::map<int, std::vector<float>> scores; //map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
@@ -1765,7 +1783,7 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
 }
 
 //https://arxiv.org/abs/2310.06609
-void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0)
+void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, const unsigned long num_epochs = 1000)
 {
     std::map<int, std::vector<float>> scores; //map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
@@ -2037,7 +2055,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
     out.close();
 }
 
-void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0)
+void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, const unsigned long num_epochs = 1000)
 {
     std::map<int, std::vector<float>> scores; //map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
@@ -2227,7 +2245,7 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
 }
 
 //https://arxiv.org/abs/2205.13134
-void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0)
+void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, const unsigned long num_epochs = 1000)
 {
     std::map<int, std::vector<float>> scores; //map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
@@ -2403,7 +2421,7 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
     out.close();
 }
 
-void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::string expression_type = "prefix", const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, const int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, const int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0)
+void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::string expression_type = "prefix", const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, const int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, const int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, const unsigned long num_epochs = 1000)
 {
     std::map<int, std::vector<float>> scores; //map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
@@ -2425,6 +2443,7 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
         
         std::atomic<float> max_score{0.0};
         std::vector<std::pair<size_t, float>> temp_scores;
+        std::string best_expression, orig_expression;
         
         auto start_time = Clock::now();
         std::thread pushBackThread([&]()
@@ -2441,11 +2460,11 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
          Inside of thread:
          */
         
-        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point]()
+        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &num_epochs, &best_expression, &orig_expression]()
         {
             std::random_device rand_dev;
             std::mt19937 thread_local generator(rand_dev()); // Mersenne Twister random number generator
-            Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
+            Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, layers, num_epochs);
             sync_point.arrive_and_wait();
             float score = 0.0f;
             std::vector<float> temp_legal_moves;
@@ -2468,6 +2487,9 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
                 if (score > max_score)
                 {
                     max_score = score;
+                    std::scoped_lock str_lock(Board::thread_locker);
+                    best_expression = x._to_infix();
+                    orig_expression = x.expression();
                 }
                 x.pieces.clear();
             }
@@ -2493,7 +2515,9 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
         
         std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
         std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-        std::cout << "Best score = " << max_score.load() << ", MSE = " << (1/max_score)-1 << '\n';
+        std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+        std::cout << "Best expression = " << best_expression << '\n';
+        std::cout << "Best expression (original format) = " << orig_expression << '\n';
         
     }
     std::ofstream out(filename);
@@ -2506,11 +2530,7 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
         }
     }
     out.close();
-//    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
-//    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-//    std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-//    std::cout << "Best expression = " << best_expression << '\n';
-//    std::cout << "Best expression (original format) = " << orig_expression << '\n';
+    
 }
 
 void HembergBenchmarks(int numIntervals, double time, int numRuns)
@@ -2632,7 +2652,7 @@ int main()
     */
     
 //    MCTS(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/);
-    SimulatedAnnealing(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/);
+    RandomSearch(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 60 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/, {2,10,5,5,1}, 10);
 
     return 0;
 }

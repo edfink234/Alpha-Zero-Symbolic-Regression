@@ -14,6 +14,16 @@ float example_func(const Eigen::VectorXf& x)
     return (30.0f*x[0]*x[0])/((10.0f-x[0])*x[1]*x[1]) + x[0]*x[0]*x[0]*x[0] - (4.0f*x[0]*x[0]*x[0])/5.0f + x[1]*x[1]/2.0f - 2.0f*x[1] + (8.0f / (2.0f + x[0]*x[0] + x[1]*x[1])) + (x[1]*x[1]*x[1])/2.0f - x[0];
 }
 
+float example_func_1(const Eigen::VectorXf& x)
+{
+    return std::pow((x[0]*x[1]*x[2]*x[3]*x[4])/(4*x[5]*std::pow(sin(x[6]/2),2)),2);
+}
+
+float example_func_2(const Eigen::VectorXf& x)
+{
+    return x[0]*x[0]*x[0]*(x[0]-1.0f) + x[1]*(x[1]/2.0f - 1.0f);
+}
+
 std::vector<Eigen::VectorXf> generateNNData(int numRows, int numCols, float (*func)(const Eigen::VectorXf&), float min = -3.0f, float max = 3.0f)
 {
     assert(numCols >= 2);
@@ -468,12 +478,15 @@ int main()
     x << 1, 1;
     std::cout<<mlp.run(x)<<'\n';
     
-    std::vector<Eigen::VectorXf> data = generateNNData(20, 3, example_func);
+    //100000, 8, Feynman_3, 1.0f, 5.0f
+    std::vector<Eigen::VectorXf> data = generateNNData(20, 3, example_func_2, -3.0f, 3.0f);
+//    std::vector<Eigen::VectorXf> data = generateNNData(10, 8, example_func_1, 1.0f, 5.0f);
     std::cout << data << '\n';
     x_train_data = leftCols(data, data[0].size() - 1);
     y_train_data = rightCols(data, 1);
     
-    std::unique_ptr<MultiLayerPerceptron> srnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{2,20,7,1} /*number of neurons in each layer*/, 1.0f /*bias*/, 0.5f /*eta*/, "none");
+    std::unique_ptr<MultiLayerPerceptron> srnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{2,10,5,5,1} /*number of neurons in each layer*/, 1.0f /*bias*/, 0.5f /*eta*/, "none");
+//    std::unique_ptr<MultiLayerPerceptron> srnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{7,10,5,5,1} /*number of neurons in each layer*/, 1.0f /*bias*/, 0.5f /*eta*/, "none");
     srnn->set_learning_rate(1e-5);
     MSE = srnn->train(x_train_data, y_train_data);
     
