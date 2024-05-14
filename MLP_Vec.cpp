@@ -54,7 +54,7 @@ float Perceptron::scale_between(float unscaled_num, float min, float max, float 
 }
 
 // Return a new MultiLayerPerceptron object with the specified parameters.
-MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, float bias, float eta, std::string&& output_type, const std::string& expression_type)
+MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, float bias, float eta, std::string&& output_type, const std::string& expression_type, const std::string& weight_update)
 {
     // Set up the signal handler
     signal(SIGINT, signalHandler);
@@ -63,7 +63,8 @@ MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, float bias, 
     this->eta = eta;
     this->output_type = output_type;
     this->expression_type = expression_type;
-
+    this->weight_update = weight_update;
+    
     size_t mlp_sz = this->layers.size();
 
     for (int i = 0; i < mlp_sz; i++) //for each layer
@@ -217,8 +218,14 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
         {
             for (int k = 0; k < layers[i-1]; k++) //weights
             {
-                this->network[i][j].weights[k] = this->expression_evaluator(this->network[i][j].weights[k], this->eta, this->d[i][j], this->values[i-1][k]);//this->network[i][j].weights[k] + this->eta*this->d[i][j]*this->values[i-1][k];
-                //TODO: Turn this into this->network[i][j].weights[k] = func(weights[k], this->eta, this->d[i][j], this->values[i-1][k]) -> obtained from the symbolic regressor -> Need an expression_evaluator method in this class most likely
+                if (this->weight_update == "basic")
+                {
+                    this->network[i][j].weights[k] = this->network[i][j].weights[k] + this->eta*this->d[i][j]*this->values[i-1][k];
+                }
+                else if (this->weight_update == "SR")
+                {
+                    this->network[i][j].weights[k] = this->expression_evaluator(this->network[i][j].weights[k], this->eta, this->d[i][j], this->values[i-1][k]);
+                }
             }
             //bias: https://stackoverflow.com/a/13342725/18255427
             this->network[i][j].bias += this->eta*this->d[i][j];
@@ -228,7 +235,7 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
     return MSE;
 }
 
-float MultiLayerPerceptron::train(const std::vector<Eigen::VectorXf>& x_train, const std::vector<Eigen::VectorXf>& y_train, unsigned long num_epochs)
+float MultiLayerPerceptron::train(const std::vector<Eigen::VectorXf>& x_train, const std::vector<Eigen::VectorXf>& y_train, unsigned long num_epochs, bool interactive)
 {
     if (x_train.size() != y_train.size())
     {
@@ -248,17 +255,20 @@ float MultiLayerPerceptron::train(const std::vector<Eigen::VectorXf>& x_train, c
         }
         MSE /= num_rows;
 
-//        if (epoch % 100 == 0)
-//        {
-//            std::cout<<"MSE = "<<MSE<< '\r' << std::flush;
-//        }
-//        if (MultiLayerPerceptron::interrupted)
-//        {
-//            std::cout << "\nInterrupted by Ctrl-C. Exiting loop.\n";
-//            std::cout<<"MSE = "<<MSE<< '\n';
-//            MultiLayerPerceptron::interrupted = 0; //reset MultiLayerPerceptron::interrupted
-//            return MSE;
-//        }
+        if (interactive)
+        {
+            if (epoch % 100 == 0)
+            {
+                std::cout<<"MSE = "<<MSE<< '\r' << std::flush;
+            }
+            if (MultiLayerPerceptron::interrupted)
+            {
+                std::cout << "\nInterrupted by Ctrl-C. Exiting loop.\n";
+                std::cout<<"MSE = "<<MSE<< '\n';
+                MultiLayerPerceptron::interrupted = 0; //reset MultiLayerPerceptron::interrupted
+                return MSE;
+            }
+        }
     }
     return MSE;
 }

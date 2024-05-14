@@ -34,14 +34,14 @@ class MultiLayerPerceptron
         static std::vector<float> inline __unary_operators_float;
         std::vector<float> pieces;
 
-        MultiLayerPerceptron(std::vector<int> layers, float bias=1.0f, float eta = 0.5f, std::string&& output_type = "sigmoid", const std::string& expression_type = "prefix");
+        MultiLayerPerceptron(std::vector<int> layers, float bias=1.0f, float eta = 0.5f, std::string&& output_type = "sigmoid", const std::string& expression_type = "prefix", const std::string& weight_update = "basic");
         void set_weights(std::vector<Eigen::MatrixXf>&& w_init);
         void reset_weights();
         void print_weights();
         Eigen::VectorXf run(const Eigen::VectorXf& x);
         static float mse(const Eigen::VectorXf& x, const Eigen::VectorXf& y);
         float bp(const Eigen::VectorXf& x, const Eigen::VectorXf& y);
-        float train(const std::vector<Eigen::VectorXf>& x_train, const std::vector<Eigen::VectorXf>& y_train, const unsigned long num_epochs = 0);
+        float train(const std::vector<Eigen::VectorXf>& x_train, const std::vector<Eigen::VectorXf>& y_train, const unsigned long num_epochs = 0, bool interactive = true);
         std::vector<int> layers; //# of neurons per layer including the input layer (in which case layers[0] refers to the number of inputs)
         static void signalHandler(int signum);
         void set_learning_rate(float eta) {this->eta = eta;}
@@ -58,6 +58,7 @@ class MultiLayerPerceptron
         std::string output_type;
         static volatile sig_atomic_t inline interrupted = 0;
         std::string expression_type;
+        std::string weight_update;
 };
 
 #endif
