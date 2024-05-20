@@ -13,6 +13,7 @@ Perceptron::Perceptron(int inputs, float bias, bool is_output, std::string&& out
 
     // Use Eigen's random number generation to initialize the weights
     this->weights = Eigen::VectorXf::Random(inputs);
+    this->velocities = Eigen::VectorXf::Random(inputs);
     this->is_output = is_output;
     this->output_type = output_type;
 }
@@ -54,13 +55,14 @@ float Perceptron::scale_between(float unscaled_num, float min, float max, float 
 }
 
 // Return a new MultiLayerPerceptron object with the specified parameters.
-MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, float bias, float eta, std::string&& output_type, const std::string& expression_type, const std::string& weight_update)
+MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, float bias, float eta, float theta, std::string&& output_type, const std::string& weight_update, const std::string& expression_type)
 {
     // Set up the signal handler
     signal(SIGINT, signalHandler);
     this->layers = layers;
     this->bias = bias;
     this->eta = eta;
+    this->theta = theta;
     this->output_type = output_type;
     this->expression_type = expression_type;
     this->weight_update = weight_update;
@@ -186,7 +188,7 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
 //                = d (y_{k} - (x_k*w_k + b_k))^2) / d w_k
 //                = 2 * (y_{k} - (x_k*w_k + b_k)) * d (- (x_k*w_k + b_k)) / d w_k
 //                = -2 * (y_k - (x_k*w_k + b_k)) * x_k
-    //TODO: Fix this so it is correct!
+
     for (int i = 0; i < this->layers.back(); i++)
     {
         float o_k = this->values.back()[i];
@@ -222,9 +224,14 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
                 {
                     this->network[i][j].weights[k] = this->network[i][j].weights[k] + this->eta*this->d[i][j]*this->values[i-1][k];
                 }
+                else if (this->weight_update == "heavy ball")
+                {
+                    this->network[i][j].velocities[k] = this->theta*this->network[i][j].velocities[k] + this->eta*this->d[i][j]*this->values[i-1][k];
+                    this->network[i][j].weights[k] = this->network[i][j].weights[k] + this->network[i][j].velocities[k];
+                }
                 else if (this->weight_update == "SR")
                 {
-                    this->network[i][j].weights[k] = this->expression_evaluator(this->network[i][j].weights[k], this->eta, this->d[i][j], this->values[i-1][k]);
+                    this->network[i][j].weights[k] = this->expression_evaluator(this->network[i][j].weights[k], this->d[i][j], this->values[i-1][k]);
                 }
             }
             //bias: https://stackoverflow.com/a/13342725/18255427
@@ -310,7 +317,7 @@ std::vector<Eigen::VectorXf> MultiLayerPerceptron::sigmoid(const std::vector<Eig
     return result;
 }
 
-float MultiLayerPerceptron::expression_evaluator(float w_k, float eta, float d_ij, float value, const Eigen::VectorXf& params)
+float MultiLayerPerceptron::expression_evaluator(float w_k, float d_ij, float value, const Eigen::VectorXf& params)
 {
     std::stack<float> stack;
     size_t const_count = 0;
@@ -330,7 +337,11 @@ float MultiLayerPerceptron::expression_evaluator(float w_k, float eta, float d_i
             }
             else if (token == "eta")
             {
-                stack.push(eta);
+                stack.push(this->eta);
+            }
+            else if (token == "theta")
+            {
+                stack.push(this->theta);
             }
             else if (token == "d_ij")
             {

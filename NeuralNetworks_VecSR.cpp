@@ -211,7 +211,7 @@ struct Board
     MultiLayerPerceptron srnn;
     const unsigned long epochs;
     
-    Board(bool primary = true, int n = 3, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false, std::vector<int> layers = {}, const unsigned long num_epochs = 1000, float eta = 0.5f) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, is_primary{primary}, srnn{layers, 1.0f, eta, "none", expression_type, "SR"}, epochs{num_epochs}
+    Board(bool primary = true, int n = 3, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false, std::vector<int> layers = {}, const unsigned long num_epochs = 1000, float eta = 0.5f, float theta = 0.5f) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, is_primary{primary}, srnn{layers, 1.0f, eta, theta, "none", "SR", expression_type}, epochs{num_epochs}
     {
         if (n > 30)
         {
@@ -240,7 +240,7 @@ struct Board
 //                {
 //                    Board::__input_vars.push_back("x"+std::to_string(i));
 //                }
-                Board::__input_vars = {"w_k", "eta", "d_ij", "value"};
+                Board::__input_vars = {"w_k", "eta", "d_ij", "value", "theta"};
                 Board::__unary_operators = {"cos", "exp", "sqrt", "sin", "asin", "ln", "tanh", "acos", "~"};
                 Board::__binary_operators = {"+", "-", "*", "/", "^"};
                 Board::__operators.clear();
@@ -1583,7 +1583,7 @@ float Feynman_5(const Eigen::VectorXf& x)
 
 //https://dl.acm.org/doi/pdf/10.1145/3449639.3459345?casa_token=Np-_TMqxeJEAAAAA:8u-d6UyINV6Ex02kG9LthsQHAXMh2oxx3M4FG8ioP0hGgstIW45X8b709XOuaif5D_DVOm_FwFo
 //https://core.ac.uk/download/pdf/6651886.pdf
-void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, const unsigned long num_epochs = 1000, float eta = 0.5f)
+void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, const unsigned long num_epochs = 1000, float eta = 0.5f, float theta = 0.5f)
 {
     std::map<int, std::vector<float>> scores; //map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
@@ -1620,11 +1620,11 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
          Inside of thread:
          */
         
-        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &num_epochs, &best_expression, &orig_expression, &eta]()
+        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &num_epochs, &best_expression, &orig_expression, &eta, &theta]()
         {
             std::random_device rand_dev;
             std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-            Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, layers, num_epochs, eta);
+            Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, layers, num_epochs, eta, theta);
             sync_point.arrive_and_wait();
             Board secondary(false, 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache); //For perturbations
             float score = 0.0f, check_point_score = 0.0f;
@@ -1787,7 +1787,7 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
 }
 
 //https://arxiv.org/abs/2310.06609
-void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, const unsigned long num_epochs = 1000, float eta = 0.5f)
+void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, const unsigned long num_epochs = 1000, float eta = 0.5f, float theta = 0.5f)
 {
     std::map<int, std::vector<float>> scores; //map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
@@ -1824,11 +1824,11 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
          Inside of thread:
          */
         
-        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &num_epochs, &best_expression, &orig_expression, &eta]()
+        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &num_epochs, &best_expression, &orig_expression, &eta, &theta]()
         {
             std::random_device rand_dev;
             std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-            Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, layers, num_epochs, eta);
+            Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, layers, num_epochs, eta, theta);
             sync_point.arrive_and_wait();
             Board secondary_one(false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache), secondary_two(false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache); //For crossover and mutations
             float score = 0.0f, mut_prob = 0.8f, rand_mut_cross;
@@ -2067,7 +2067,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
     out.close();
 }
 
-void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, const unsigned long num_epochs = 1000, float eta = 0.5f)
+void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, const unsigned long num_epochs = 1000, float eta = 0.5f, float theta = 0.5f)
 {
     std::map<int, std::vector<float>> scores; //map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
@@ -2105,11 +2105,11 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
          Inside of thread:
          */
         
-        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &num_epochs, &best_expression, &orig_expression, &eta]()
+        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &num_epochs, &best_expression, &orig_expression, &eta, &theta]()
         {
             std::random_device rand_dev;
             std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-            Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, layers, num_epochs, eta);
+            Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, layers, num_epochs, eta, theta);
             sync_point.arrive_and_wait();
             float score = 0, check_point_score = 0;
             std::vector<float> temp_legal_moves;
@@ -2264,7 +2264,7 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
 }
 
 //https://arxiv.org/abs/2205.13134
-void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, const unsigned long num_epochs = 1000, float eta = 0.5f)
+void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, const unsigned long num_epochs = 1000, float eta = 0.5f, float theta = 0.5f)
 {
     std::map<int, std::vector<float>> scores; //map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
@@ -2301,11 +2301,11 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
          Inside of thread:
          */
         
-        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &num_epochs, &best_expression, &orig_expression, &eta]()
+        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &num_epochs, &best_expression, &orig_expression, &eta, &theta]()
         {
             std::random_device rand_dev;
             std::mt19937 thread_local generator(rand_dev());
-            Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, layers, num_epochs, eta);
+            Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, layers, num_epochs, eta, theta);
             sync_point.arrive_and_wait();
             float score = 0.0f, check_point_score = 0.0f, UCT, best_act, UCT_best;
             
@@ -2446,7 +2446,7 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
     out.close();
 }
 
-void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::string expression_type = "prefix", const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, const int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, const int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, const unsigned long num_epochs = 1000, float eta = 0.5f)
+void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::string expression_type = "prefix", const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, const int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, const int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, const unsigned long num_epochs = 1000, float eta = 0.5f, float theta = 0.5f)
 {
     std::map<int, std::vector<float>> scores; //map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
@@ -2485,11 +2485,11 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
          Inside of thread:
          */
         
-        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &num_epochs, &best_expression, &orig_expression, &eta]()
+        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &num_epochs, &best_expression, &orig_expression, &eta, &theta]()
         {
             std::random_device rand_dev;
             std::mt19937 thread_local generator(rand_dev()); // Mersenne Twister random number generator
-            Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, layers, num_epochs, eta);
+            Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, layers, num_epochs, eta, theta);
             sync_point.arrive_and_wait();
             float score = 0.0f;
             std::vector<float> temp_legal_moves;
@@ -2676,11 +2676,11 @@ int main()
         AIFeynman_Benchmarks and then run PlotData.py
     */
     
-    RandomSearch(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 60 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/, {2,10,5,5,1} /*Neural Network*/, 10 /*num_epochs*/, 0.01 /*learning rate*/);
-    MCTS(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 60 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/, {2,10,5,5,1} /*Neural Network*/, 10 /*num_epochs*/, 0.01 /*learning rate*/);
-    PSO(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 60 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/, {2,10,5,5,1} /*Neural Network*/, 10 /*num_epochs*/, 0.01 /*learning rate*/);
-    GP(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 60 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/, {2,10,5,5,1} /*Neural Network*/, 10 /*num_epochs*/, 0.01 /*learning rate*/);
-    SimulatedAnnealing(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 60 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/, {2,10,5,5,1} /*Neural Network*/, 10 /*num_epochs*/, 0.01 /*learning rate*/);
+    RandomSearch(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 60 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/, {2,10,5,5,1} /*Neural Network*/, 10 /*num_epochs*/, 0.01 /*learning rate*/, 0.1 /*momentum*/);
+    MCTS(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 60 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/, {2,10,5,5,1} /*Neural Network*/, 10 /*num_epochs*/, 0.01 /*learning rate*/, 0.1 /*momentum*/);
+    PSO(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 60 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/, {2,10,5,5,1} /*Neural Network*/, 10 /*num_epochs*/, 0.01 /*learning rate*/, 0.1 /*momentum*/);
+    GP(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 60 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/, {2,10,5,5,1} /*Neural Network*/, 10 /*num_epochs*/, 0.01 /*learning rate*/, 0.1 /*momentum*/);
+    SimulatedAnnealing(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 60 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/, {2,10,5,5,1} /*Neural Network*/, 10 /*num_epochs*/, 0.01 /*learning rate*/, 0.1 /*momentum*/);
 
     return 0;
 }

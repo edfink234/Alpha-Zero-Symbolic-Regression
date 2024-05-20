@@ -16,7 +16,8 @@ class Perceptron
 {
     public:
         Eigen::VectorXf weights;
-        std::string output_type; 
+        Eigen::VectorXf velocities;
+        std::string output_type;
         float bias;
         bool is_output;
         Perceptron(int inputs, float bias=1.0f, bool is_output = false, std::string&& output_type = "none");
@@ -34,7 +35,7 @@ class MultiLayerPerceptron
         static std::vector<float> inline __unary_operators_float;
         std::vector<float> pieces;
 
-        MultiLayerPerceptron(std::vector<int> layers, float bias=1.0f, float eta = 0.5f, std::string&& output_type = "sigmoid", const std::string& expression_type = "prefix", const std::string& weight_update = "basic");
+        MultiLayerPerceptron(std::vector<int> layers, float bias=1.0f, float eta = 0.5f, float theta = 0.5f, std::string&& output_type = "sigmoid", const std::string& weight_update = "basic", const std::string& expression_type = "prefix");
         void set_weights(std::vector<Eigen::MatrixXf>&& w_init);
         void reset_weights();
         void print_weights();
@@ -47,11 +48,12 @@ class MultiLayerPerceptron
         void set_learning_rate(float eta) {this->eta = eta;}
         std::vector<Eigen::VectorXf> predict(const std::vector<Eigen::VectorXf>&);
         static std::vector<Eigen::VectorXf> sigmoid(const std::vector<Eigen::VectorXf>&);
-        float expression_evaluator(float w_k = 0.0f, float eta = 0.0f, float d_ij = 0.0f, float value = 0.0f, const Eigen::VectorXf& params = {});
+        float expression_evaluator(float w_k = 0.0f, float d_ij = 0.0f, float value = 0.0f, const Eigen::VectorXf& params = {});
         
     private:
         float bias;
         float eta; //learning rate
+        float theta; //momentum coefficient
         std::vector<std::vector<Perceptron> > network; //the actual network
         std::vector<Eigen::VectorXf> values; //holds output values of the neurons
         std::vector<Eigen::VectorXf> d; //contains error terms for neurons: one error term for each neuron of each layer
