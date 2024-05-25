@@ -2,6 +2,7 @@
 #include <cassert>
 #include <stack>
 
+
 //open /Users/edwardfinkelstein/LinkedIn/Ex_Files_Neural_Networks/Exercise\ Files/03_03/NeuralNetworks/*cpp /Users/edwardfinkelstein/LinkedIn/Ex_Files_Neural_Networks/Exercise\ Files/03_03/NeuralNetworks/*h
 //cd /Users/edwardfinkelstein/LinkedIn/Ex_Files_Neural_Networks/Exercise\ Files/03_03/NeuralNetworks/
 
@@ -74,6 +75,10 @@ MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, float bias, 
         this->values.emplace_back(Eigen::VectorXf::Zero(layers[i])); //add vector of values
         this->network.emplace_back(); //add vector of neurons
         this->d.emplace_back(Eigen::VectorXf::Zero(layers[i]));
+        if (this->weight_update == "SR")
+        {
+            this->d_nest.emplace_back(Eigen::VectorXf::Zero(layers[i]));
+        }
         if (i > 0)  //network[0] is the input layer, so it has no neurons, i.e., it's empty
         {
             for (int j = 0; j < this->layers[i]; j++)
@@ -195,21 +200,47 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
         this->d.back()[i] = ((output_type == "sigmoid") ? (o_k * (1 - o_k) * (y[i] - o_k)) : (y[i] - o_k));//* x.sum();
     }
     
+    if (this->weight_update == "SR")
+    {
+        this->d_nest.back() = this->d.back();
+    }
+    
     // STEP 4: Calculate the error term of each unit on each layer
     for (int i = network.size()-2; i > 0; i--) //for each layer (starting from the one before the output layer and ending at and including the layer right before the input layer)
     {
         for (int h = 0; h < layers[i]; h++) //for each neuron in layer i
         {
             assert(layers[i] == network[i].size());
-            float fwd_error = 0.0f;
+            float fwd_error = 0.0f, fwd_error_nest = 0.0f;
             //fwd_error = \sum_{k \in \mathrm{outs}} w_{kh} \delta_k
             for (int k = 0; k < layers[i+1]; k++) //for each neuron in layer i+1
             {
-                fwd_error += network[i+1][k].weights[h]*d[i+1][k];
+                if (this->weight_update == "NAG")
+                {
+                    fwd_error += (network[i+1][k].weights[h] - this->theta*this->network[i+1][k].velocities[h])*d[i+1][k];
+                }
+                else if (this->weight_update == "SR")
+                {
+                    fwd_error_nest += (network[i+1][k].weights[h] - this->theta*this->network[i+1][k].velocities[h])*d[i+1][k];
+                    fwd_error += network[i+1][k].weights[h]*d[i+1][k];
+                }
+                else
+                {
+                    fwd_error += network[i+1][k].weights[h]*d[i+1][k];
+                }
             }
             
             //\delta_h = o_h*(1-o_h)*fwd_error
-            this->d[i][h] = this->values[i][h] * (1 - this->values[i][h]) * fwd_error;
+            if (this->weight_update == "SR")
+            {
+                float deriv = this->values[i][h] * (1 - this->values[i][h]);
+                this->d[i][h] = deriv * fwd_error;
+                this->d_nest[i][h] = deriv * fwd_error_nest;
+            }
+            else
+            {
+                this->d[i][h] = this->values[i][h] * (1 - this->values[i][h]) * fwd_error;
+            }
         }
     }
     
@@ -224,14 +255,14 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
                 {
                     this->network[i][j].weights[k] = this->network[i][j].weights[k] + this->eta*this->d[i][j]*this->values[i-1][k];
                 }
-                else if (this->weight_update == "heavy ball")
+                else if (this->weight_update == "heavy ball" || this->weight_update == "NAG")
                 {
                     this->network[i][j].velocities[k] = this->theta*this->network[i][j].velocities[k] + this->eta*this->d[i][j]*this->values[i-1][k];
                     this->network[i][j].weights[k] = this->network[i][j].weights[k] + this->network[i][j].velocities[k];
                 }
                 else if (this->weight_update == "SR")
                 {
-                    this->network[i][j].weights[k] = this->expression_evaluator(this->network[i][j].weights[k], this->d[i][j], this->values[i-1][k]);
+                    this->network[i][j].weights[k] = this->expression_evaluator(this->network[i][j].weights[k], this->d[i][j], this->values[i-1][k], this->d_nest[i][j]);
                 }
             }
             //bias: https://stackoverflow.com/a/13342725/18255427
@@ -317,7 +348,7 @@ std::vector<Eigen::VectorXf> MultiLayerPerceptron::sigmoid(const std::vector<Eig
     return result;
 }
 
-float MultiLayerPerceptron::expression_evaluator(float w_k, float d_ij, float value, const Eigen::VectorXf& params)
+float MultiLayerPerceptron::expression_evaluator(float w_k, float d_ij, float value, float d_ij_nest, const Eigen::VectorXf& params)
 {
     std::stack<float> stack;
     size_t const_count = 0;
@@ -350,6 +381,10 @@ float MultiLayerPerceptron::expression_evaluator(float w_k, float d_ij, float va
             else if (token == "value")
             {
                 stack.push(value);
+            }
+            else if (token == "d_ij_nest")
+            {
+                stack.push(d_ij_nest);
             }
         }
         else if (std::find(MultiLayerPerceptron::__unary_operators_float.begin(), MultiLayerPerceptron::__unary_operators_float.end(), pieces[i]) != MultiLayerPerceptron::__unary_operators_float.end()) // Unary operator

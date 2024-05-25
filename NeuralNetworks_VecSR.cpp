@@ -240,7 +240,7 @@ struct Board
 //                {
 //                    Board::__input_vars.push_back("x"+std::to_string(i));
 //                }
-                Board::__input_vars = {"w_k", "eta", "d_ij", "value", "theta"};
+                Board::__input_vars = {"w_k", "eta", "d_ij", "value", "theta", "d_ij_nest"};
                 Board::__unary_operators = {"cos", "exp", "sqrt", "sin", "asin", "ln", "tanh", "acos", "~"};
                 Board::__binary_operators = {"+", "-", "*", "/", "^"};
                 Board::__operators.clear();

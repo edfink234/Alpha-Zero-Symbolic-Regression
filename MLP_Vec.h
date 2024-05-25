@@ -48,7 +48,7 @@ class MultiLayerPerceptron
         void set_learning_rate(float eta) {this->eta = eta;}
         std::vector<Eigen::VectorXf> predict(const std::vector<Eigen::VectorXf>&);
         static std::vector<Eigen::VectorXf> sigmoid(const std::vector<Eigen::VectorXf>&);
-        float expression_evaluator(float w_k = 0.0f, float d_ij = 0.0f, float value = 0.0f, const Eigen::VectorXf& params = {});
+        float expression_evaluator(float w_k = 0.0f, float d_ij = 0.0f, float value = 0.0f, float d_ij_nest = 0.0f, const Eigen::VectorXf& params = {});
         
     private:
         float bias;
@@ -57,6 +57,7 @@ class MultiLayerPerceptron
         std::vector<std::vector<Perceptron> > network; //the actual network
         std::vector<Eigen::VectorXf> values; //holds output values of the neurons
         std::vector<Eigen::VectorXf> d; //contains error terms for neurons: one error term for each neuron of each layer
+        std::vector<Eigen::VectorXf> d_nest; //contains error terms for neurons: one error term for each neuron of each layer    
         std::string output_type;
         static volatile sig_atomic_t inline interrupted = 0;
         std::string expression_type;
