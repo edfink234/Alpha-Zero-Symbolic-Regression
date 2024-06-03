@@ -12,11 +12,14 @@
 #include <random>
 #include <float.h>
 
+//TODO: Add linear layer option
+
 class Perceptron
 {
     public:
         Eigen::VectorXf weights;
         Eigen::VectorXf velocities;
+        Eigen::VectorXf gradients;
         std::string output_type;
         float bias;
         bool is_output;
@@ -35,7 +38,7 @@ class MultiLayerPerceptron
         static std::vector<float> inline __unary_operators_float;
         std::vector<float> pieces;
 
-        MultiLayerPerceptron(std::vector<int> layers, float bias=1.0f, float eta = 0.5f, float theta = 0.5f, std::string&& output_type = "sigmoid", const std::string& weight_update = "basic", const std::string& expression_type = "prefix");
+        MultiLayerPerceptron(std::vector<int> layers, float bias=1.0f, float eta = 0.5f, float theta = 0.5f, std::string&& output_type = "sigmoid", const std::string& weight_update = "basic", const std::string& expression_type = "prefix", float epsilon = 0.1);
         void set_weights(std::vector<Eigen::MatrixXf>&& w_init);
         void reset_weights();
         void print_weights();
@@ -54,6 +57,7 @@ class MultiLayerPerceptron
         float bias;
         float eta; //learning rate
         float theta; //momentum coefficient
+        float epsilon; //used in Adagrad
         std::vector<std::vector<Perceptron> > network; //the actual network
         std::vector<Eigen::VectorXf> values; //holds output values of the neurons
         std::vector<Eigen::VectorXf> d; //contains error terms for neurons: one error term for each neuron of each layer

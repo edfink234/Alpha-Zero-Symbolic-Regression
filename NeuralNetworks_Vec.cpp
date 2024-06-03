@@ -485,10 +485,11 @@ int main()
     x_train_data = leftCols(data, data[0].size() - 1);
     y_train_data = rightCols(data, 1);
     
-    std::unique_ptr<MultiLayerPerceptron> srnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{2,10,5,5,1} /*number of neurons in each layer*/, 1.0f /*bias*/, 0.001f /*eta*/, 0.9f /*theta*/, "NAG");
+//    std::unique_ptr<MultiLayerPerceptron> srnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{2,10,5,5,1} /*number of neurons in each layer*/, 1.0f /*bias*/, 0.001f /*eta*/, 0.9f /*theta*/, "NAG");
+    std::unique_ptr<MultiLayerPerceptron> srnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{2,10,10,5,5,1} /*number of neurons in each layer*/, 1.0f /*bias*/, 0.1f /*eta*/, 0.01f /*theta*/, "heavy ball");
 
 //    srnn->set_learning_rate(1e-3);
-    MSE = srnn->train(x_train_data, y_train_data, 1000);
+    MSE = srnn->train(x_train_data, y_train_data, 100);
     
     std::cout << "SR network MSE: " << MSE << '\n';
     std::cout << "SR Network Prediction: "
@@ -498,7 +499,7 @@ int main()
     
 //    exit(1);
     //test code - Segment Display Recognition System
-    int epochs = 100000;
+    int epochs = 10000;
     
     std::unique_ptr<MultiLayerPerceptron> sdrnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{7,7,1} /*number of neurons in each layer*/, 1.0f /*bias*/, 0.001f /*eta*/, 0.9f /*theta*/, "NAG");
     x_train.resize(7);

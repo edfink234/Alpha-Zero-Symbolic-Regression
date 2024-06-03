@@ -2,9 +2,7 @@
 #include <cassert>
 #include <stack>
 
-
-//open /Users/edwardfinkelstein/LinkedIn/Ex_Files_Neural_Networks/Exercise\ Files/03_03/NeuralNetworks/*cpp /Users/edwardfinkelstein/LinkedIn/Ex_Files_Neural_Networks/Exercise\ Files/03_03/NeuralNetworks/*h
-//cd /Users/edwardfinkelstein/LinkedIn/Ex_Files_Neural_Networks/Exercise\ Files/03_03/NeuralNetworks/
+//Time remaining 05/28/2024: 45:05
 
 // Return a new Perceptron object with the specified number of inputs
 Perceptron::Perceptron(int inputs, float bias, bool is_output, std::string&& output_type)
@@ -15,6 +13,7 @@ Perceptron::Perceptron(int inputs, float bias, bool is_output, std::string&& out
     // Use Eigen's random number generation to initialize the weights
     this->weights = Eigen::VectorXf::Random(inputs);
     this->velocities = Eigen::VectorXf::Random(inputs);
+    this->gradients = Eigen::VectorXf::Zero(inputs);
     this->is_output = is_output;
     this->output_type = output_type;
 }
@@ -56,7 +55,7 @@ float Perceptron::scale_between(float unscaled_num, float min, float max, float 
 }
 
 // Return a new MultiLayerPerceptron object with the specified parameters.
-MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, float bias, float eta, float theta, std::string&& output_type, const std::string& weight_update, const std::string& expression_type)
+MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, float bias, float eta, float theta, std::string&& output_type, const std::string& weight_update, const std::string& expression_type, float epsilon)
 {
     // Set up the signal handler
     signal(SIGINT, signalHandler);
@@ -65,8 +64,9 @@ MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, float bias, 
     this->eta = eta;
     this->theta = theta;
     this->output_type = output_type;
-    this->expression_type = expression_type;
     this->weight_update = weight_update;
+    this->expression_type = expression_type;
+    this->epsilon = epsilon;
     
     size_t mlp_sz = this->layers.size();
 
@@ -247,8 +247,9 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
     // STEPS 5 & 6: Calculate the deltas and update the weights
     for (int i = 1; i < network.size(); i++) //for each layer
     {
-        for (int j = 0; j < layers[i]; j++)
+        for (int j = 0; j < layers[i]; j++) //for each neuron
         {
+            //else...
             for (int k = 0; k < layers[i-1]; k++) //weights
             {
                 if (this->weight_update == "basic")
@@ -263,6 +264,11 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
                 else if (this->weight_update == "SR")
                 {
                     this->network[i][j].weights[k] = this->expression_evaluator(this->network[i][j].weights[k], this->d[i][j], this->values[i-1][k], this->d_nest[i][j]);
+                }
+                else if (this->weight_update == "Adagrad")
+                {
+                    this->network[i][j].gradients[k] = this->network[i][j].gradients[k] + this->d[i][j] * this->values[i-1][k] * this->d[i][j] * this->values[i-1][k];
+                    this->network[i][j].weights[k] = this->network[i][j].weights[k] + (this->eta / sqrt(this->network[i][j].gradients[k] + this->epsilon)) * this->d[i][j] * this->values[i-1][k];
                 }
             }
             //bias: https://stackoverflow.com/a/13342725/18255427
@@ -474,3 +480,24 @@ float MultiLayerPerceptron::expression_evaluator(float w_k, float d_ij, float va
     }
     return stack.top();
 }
+
+/*
+ Adagrad:
+ 
+ Each neuron has an $n \times n$ matrix called $G_t$, where $n$ is the number of (inputs?) of that neuron. $w_{t+1}$ is the new vector of weights for that neuron, $w_t$ is the current (at time $t$) vector of weights for that neuron. For a neuron in layer $i$, $g_t$ is $\propto $d_{i+1}$...?
+ 
+ AdaGrad modifies the learning rate dynamically based on the gradients acquired in previous rounds. The updated formulas are as follows:
+ 
+ $$w_{t+1} = w_{t} - \frac{\eta}{\sqrt{G_t + \epsilon}}\cdot g_t$$
+ 
+ where $\eta$ is a default value of 0.01 and $g_t$ is the gradient. $G_t$ here is a diagonal matrix where each diagonal element is the sum of the squares of the past gradients. We take an example to explain how to compute $G_t$:
+ 
+ Given $g_1 = (1, 0, 2)^T$, $g_2 = (3, 4, 0)^T$, and $g_3 = (0, 5, 6)^T$, we have:
+ 
+ \begin{align}
+ \sqrt{G_t + \epsilon} &= \begin{pmatrix} \sqrt{1^2 + 3^2 + \epsilon} & 0 & 0 \\ 0 & \sqrt{4^2 + 5^2 + \epsilon} & 0 \\ 0 & 0 & \sqrt{2^2 + 6^2 + \epsilon} \end{pmatrix} \\
+    &= \begin{pmatrix} \sqrt{10+\epsilon} & 0 & 0 \\ 0 & \sqrt{41+\epsilon} & 0 \\ 0 & 0 & \sqrt{40+\epsilon} \end{pmatrix}
+ \end{align}
+ 
+ Can you explain what $g_t$ is in the context of fully feed-forward neural netowrks with sigmoid activation exclusively? Is it a vector of the same size as $w_t$, and if so, how?
+ */
