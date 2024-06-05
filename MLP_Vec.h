@@ -22,8 +22,7 @@ class Perceptron
         Eigen::VectorXf gradients;
         std::string output_type;
         float bias;
-        bool is_output;
-        Perceptron(int inputs, float bias=1.0f, bool is_output = false, std::string&& output_type = "none");
+        Perceptron(int inputs, float bias=1.0f, std::string&& output_type = "none");
         float run(const Eigen::VectorXf& x);
         void set_weights(const Eigen::VectorXf& w_init);
         static float sigmoid(float x);
@@ -38,7 +37,7 @@ class MultiLayerPerceptron
         static std::vector<float> inline __unary_operators_float;
         std::vector<float> pieces;
 
-        MultiLayerPerceptron(std::vector<int> layers, float bias=1.0f, float eta = 0.5f, float theta = 0.5f, std::string&& output_type = "sigmoid", const std::string& weight_update = "basic", const std::string& expression_type = "prefix", float epsilon = 0.1);
+    MultiLayerPerceptron(std::vector<int> layers = {}, std::vector<std::string> layer_types = {}, float bias = 1.0f, float eta = 0.5f, float theta = 0.5f, std::string&& output_type = "sigmoid", const std::string& weight_update = "basic", const std::string& expression_type = "prefix", float epsilon = 0.1);
         void set_weights(std::vector<Eigen::MatrixXf>&& w_init);
         void reset_weights();
         void print_weights();
@@ -47,6 +46,7 @@ class MultiLayerPerceptron
         float bp(const Eigen::VectorXf& x, const Eigen::VectorXf& y);
         float train(const std::vector<Eigen::VectorXf>& x_train, const std::vector<Eigen::VectorXf>& y_train, const unsigned long num_epochs = 0, bool interactive = true);
         std::vector<int> layers; //# of neurons per layer including the input layer (in which case layers[0] refers to the number of inputs)
+        std::vector<std::string> layer_types;
         static void signalHandler(int signum);
         void set_learning_rate(float eta) {this->eta = eta;}
         std::vector<Eigen::VectorXf> predict(const std::vector<Eigen::VectorXf>&);

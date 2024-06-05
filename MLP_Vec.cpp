@@ -5,7 +5,7 @@
 //Time remaining 05/28/2024: 45:05
 
 // Return a new Perceptron object with the specified number of inputs
-Perceptron::Perceptron(int inputs, float bias, bool is_output, std::string&& output_type)
+Perceptron::Perceptron(int inputs, float bias, std::string&& output_type)
 {
     this->bias = bias;
     this->weights.resize(inputs);
@@ -14,7 +14,6 @@ Perceptron::Perceptron(int inputs, float bias, bool is_output, std::string&& out
     this->weights = Eigen::VectorXf::Random(inputs);
     this->velocities = Eigen::VectorXf::Random(inputs);
     this->gradients = Eigen::VectorXf::Zero(inputs);
-    this->is_output = is_output;
     this->output_type = output_type;
 }
 
@@ -23,7 +22,7 @@ float Perceptron::run(const Eigen::VectorXf& x)
 {
     assert(x.size() == weights.size());
     float dot_product = x.dot(weights) + bias;
-    return (is_output && output_type != "sigmoid") ? dot_product : sigmoid(dot_product);
+    return (output_type != "sigmoid") ? dot_product : sigmoid(dot_product);
 }
 
 // Set the weights. w_init is a vector with the weights.
@@ -45,7 +44,7 @@ void Perceptron::set_weights(const Eigen::VectorXf& w_init)
 // Evaluate the sigmoid function for the floating point input x.
 float Perceptron::sigmoid(float x)
 {
-    return 1.0f/(1.0f + exp(-x));
+    return 1.0f / (1.0f + exp(-x));
 }
 
 float Perceptron::scale_between(float unscaled_num, float min, float max, float max_allowed, float min_allowed)
@@ -55,11 +54,12 @@ float Perceptron::scale_between(float unscaled_num, float min, float max, float 
 }
 
 // Return a new MultiLayerPerceptron object with the specified parameters.
-MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, float bias, float eta, float theta, std::string&& output_type, const std::string& weight_update, const std::string& expression_type, float epsilon)
+MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, std::vector<std::string> layer_types, float bias, float eta, float theta, std::string&& output_type, const std::string& weight_update, const std::string& expression_type, float epsilon)
 {
     // Set up the signal handler
     signal(SIGINT, signalHandler);
     this->layers = layers;
+    this->layer_types = layer_types;
     this->bias = bias;
     this->eta = eta;
     this->theta = theta;
@@ -84,7 +84,9 @@ MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, float bias, 
             for (int j = 0; j < this->layers[i]; j++)
             {
                 bool last_layer = (i == mlp_sz - 1);
-                this->network[i].emplace_back(this->layers[i-1], this->bias, last_layer, last_layer ? output_type : "none");
+                this->network[i].emplace_back(this->layers[i-1], this->bias, layer_types[i]);//last_layer ? this->output_type : "sigmoid");
+                
+                
             }
         }
     }
