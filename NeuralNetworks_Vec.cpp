@@ -6,6 +6,7 @@
 #include "MLP_Vec.h"
 #include <csignal>
 #include <algorithm>
+#include <deque>
 
 using Clock = std::chrono::high_resolution_clock;
 
@@ -280,7 +281,7 @@ int main()
 
     std::cout << "\n\n--------Logic Gate Example----------------\n\n";
 
-    std::unique_ptr<Perceptron> p = std::make_unique<Perceptron>(2 /*inputs*/, 1.0f /*bias*/, false /*is_output*/); //2 inputs
+    std::unique_ptr<Perceptron> p = std::make_unique<Perceptron>(2 /*inputs*/, 1.0f /*bias*/, "sigmoid" /*is_output*/); //2 inputs
     
     /*
      AND
@@ -393,7 +394,7 @@ int main()
     std::cout<<p->run(x)<<'\n';
 
     std::cout<<"\n\n--------Hardcoded XOR Example----------------\n\n";
-    MultiLayerPerceptron mlp = MultiLayerPerceptron({2,2,1} /*number of neurons in each layer*/, 1.0f /*bias*/, 0.5f /*eta*/);  //mlp: 2 inputs in first layer, 2 neurons in second layer, 1 neuron in the output (third) layer
+    MultiLayerPerceptron mlp = MultiLayerPerceptron({2,2,1} /*number of neurons in each layer*/, std::deque<std::string>(2, "sigmoid") /*layer types*/, 1.0f /*bias*/, 0.5f /*eta*/);  //mlp: 2 inputs in first layer, 2 neurons in second layer, 1 neuron in the output (third) layer
     Eigen::MatrixXf matrix1(2, 3);
     matrix1 << -10, -10, 15,
                 15, 15, -10;
@@ -485,11 +486,12 @@ int main()
     x_train_data = leftCols(data, data[0].size() - 1);
     y_train_data = rightCols(data, 1);
     
-//    std::unique_ptr<MultiLayerPerceptron> srnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{2,10,5,5,1} /*number of neurons in each layer*/, 1.0f /*bias*/, 0.001f /*eta*/, 0.9f /*theta*/, "NAG");
-    std::unique_ptr<MultiLayerPerceptron> srnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{2,10,10,5,5,1} /*number of neurons in each layer*/, 1.0f /*bias*/, 0.1f /*eta*/, 0.01f /*theta*/, "heavy ball");
+//    std::unique_ptr<MultiLayerPerceptron> srnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{2,10,5,5,1} /*number of neurons in each layer*/, std::deque<std::string>(4, "sigmoid") /*layer types*/, 1.0f /*bias*/, 0.001f /*eta*/, 0.9f /*theta*/, "NAG");
+    std::unique_ptr<MultiLayerPerceptron> srnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{2,10,10,5,5,1} /*number of neurons in each layer*/, std::deque<std::string>{"sigmoid", "sigmoid", "none", "none", "none"} /*layer types*/, 1.0f /*bias*/, 0.00001f /*eta*/, 0.01f /*theta*/, "Adagrad" /*weight update rule*/);
+    //https://stackoverflow.com/a/33980220/18255427 -> Set LR low to prevent nans from gradient blow up
 
 //    srnn->set_learning_rate(1e-3);
-    MSE = srnn->train(x_train_data, y_train_data, 100);
+    MSE = srnn->train(x_train_data, y_train_data, 10000);
     
     std::cout << "SR network MSE: " << MSE << '\n';
     std::cout << "SR Network Prediction: "
@@ -501,7 +503,7 @@ int main()
     //test code - Segment Display Recognition System
     int epochs = 10000;
     
-    std::unique_ptr<MultiLayerPerceptron> sdrnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{7,7,1} /*number of neurons in each layer*/, 1.0f /*bias*/, 0.001f /*eta*/, 0.9f /*theta*/, "NAG");
+    std::unique_ptr<MultiLayerPerceptron> sdrnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{7,7,1} /*number of neurons in each layer*/, std::deque<std::string>(2, "sigmoid") /*layer types*/, 1.0f /*bias*/, 0.001f /*eta*/, 0.9f /*theta*/, "NAG");
     x_train.resize(7);
     x_train_data.clear();
     y_train_data.clear();
@@ -543,7 +545,7 @@ int main()
     GetData(7, *sdrnn);
     
     // Dataset for the 7 to 10 network
-    sdrnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{7,7,10} /*number of neurons in each layer*/, 1.0f /*bias*/, 0.5f /*eta*/);
+    sdrnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{7,7,10} /*number of neurons in each layer*/, std::deque<std::string>(2, "sigmoid") /*layer types*/, 1.0f /*bias*/, 0.5f /*eta*/);
     y_train.resize(10);
     x_train_data.clear();
     y_train_data.clear();
@@ -582,7 +584,7 @@ int main()
     GetData(7, *sdrnn);
 
     // Dataset for the 7 to 7 network
-    sdrnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{7,7,7} /*number of neurons in each layer*/, 1.0f /*bias*/, 0.5f /*eta*/);
+    sdrnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{7,7,7} /*number of neurons in each layer*/, std::deque<std::string>(2, "sigmoid") /*layer types*/, 1.0f /*bias*/, 0.5f /*eta*/);
     y_train.resize(7);
     x_train_data.clear();
     y_train_data.clear();

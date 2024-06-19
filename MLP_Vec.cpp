@@ -5,7 +5,7 @@
 //Time remaining 05/28/2024: 45:05
 
 // Return a new Perceptron object with the specified number of inputs
-Perceptron::Perceptron(int inputs, float bias, std::string&& output_type)
+Perceptron::Perceptron(int inputs, float bias, const std::string& output_type)
 {
     this->bias = bias;
     this->weights.resize(inputs);
@@ -20,8 +20,8 @@ Perceptron::Perceptron(int inputs, float bias, std::string&& output_type)
 // Run the perceptron. x is a vector with the input values.
 float Perceptron::run(const Eigen::VectorXf& x)
 {
-    assert(x.size() == weights.size());
-    float dot_product = x.dot(weights) + bias;
+    assert(x.size() == this->weights.size());
+    float dot_product = x.dot(this->weights) + bias;
     return (output_type != "sigmoid") ? dot_product : sigmoid(dot_product);
 }
 
@@ -54,12 +54,19 @@ float Perceptron::scale_between(float unscaled_num, float min, float max, float 
 }
 
 // Return a new MultiLayerPerceptron object with the specified parameters.
-MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, std::vector<std::string> layer_types, float bias, float eta, float theta, std::string&& output_type, const std::string& weight_update, const std::string& expression_type, float epsilon)
+MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, std::deque<std::string> layer_types, float bias, float eta, float theta, std::string&& output_type, const std::string& weight_update, const std::string& expression_type, float epsilon)
 {
     // Set up the signal handler
     signal(SIGINT, signalHandler);
     this->layers = layers;
     this->layer_types = layer_types;
+    if (!this->layer_types.size())
+    {
+        this->layer_types.resize(this->layers.size() - 1, "none");
+    }
+    this->layer_types.push_front("none");
+    
+    assert(this->layers.size() == this->layer_types.size());
     this->bias = bias;
     this->eta = eta;
     this->theta = theta;
@@ -83,10 +90,7 @@ MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, std::vector<
         {
             for (int j = 0; j < this->layers[i]; j++)
             {
-                bool last_layer = (i == mlp_sz - 1);
-                this->network[i].emplace_back(this->layers[i-1], this->bias, layer_types[i]);//last_layer ? this->output_type : "sigmoid");
-                
-                
+                this->network[i].emplace_back(this->layers[i-1], this->bias, this->layer_types[i]);             
             }
         }
     }
@@ -200,6 +204,7 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
     {
         float o_k = this->values.back()[i];
         this->d.back()[i] = ((output_type == "sigmoid") ? (o_k * (1 - o_k) * (y[i] - o_k)) : (y[i] - o_k));//* x.sum();
+        // /Users/edwardfinkelstein/Desktop/Machine\ Learning/\(The\ Morgan\ Kaufmann\ Series\ in\ Data\ Management\ Systems\)\ Ian\ H.\ Witten\,\ Eibe\ Frank\,\ Mark\ A.\ Hall\ -\ Data\ Mining_\ Practical\ Machine\ Learning\ Tools\ and\ Techniques\,\ Third\ Edition-Morgan\ Kaufmann\ \(2011\).pdf, page 273
     }
     
     if (this->weight_update == "SR")
@@ -235,13 +240,23 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
             //\delta_h = o_h*(1-o_h)*fwd_error
             if (this->weight_update == "SR")
             {
-                float deriv = this->values[i][h] * (1 - this->values[i][h]);
+                float deriv = 1.0f;
+                if (this->network[i][h].output_type == "sigmoid")
+                {
+                    deriv = this->values[i][h] * (1 - this->values[i][h]);
+                }
+                
                 this->d[i][h] = deriv * fwd_error;
                 this->d_nest[i][h] = deriv * fwd_error_nest;
             }
             else
             {
-                this->d[i][h] = this->values[i][h] * (1 - this->values[i][h]) * fwd_error;
+                float deriv = 1.0f;
+                if (this->network[i][h].output_type == "sigmoid")
+                {
+                    deriv = this->values[i][h] * (1 - this->values[i][h]);
+                }
+                this->d[i][h] = deriv * fwd_error;
             }
         }
     }

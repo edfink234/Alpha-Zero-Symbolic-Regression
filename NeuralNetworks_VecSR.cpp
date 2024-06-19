@@ -1168,9 +1168,9 @@ struct Board
                     //https://stackoverflow.com/a/38855586/18255427
                     temp = x(i);
                     x(i) -= 0.00001f;
-                    low_b = MSE(expression_evaluator(x), Board::data["y"]);
+                    low_b = MSE(expression_evaluator(x), Board::data["y"]); //f(x-h/2)
                     x(i) = temp + 0.00001f;
-                    grad(i) = (MSE(expression_evaluator(x), Board::data["y"]) - low_b) / 0.00002f ;
+                    grad(i) = (MSE(expression_evaluator(x), Board::data["y"]) - low_b) / 0.00002f ; //(f(x+h/2) - f(x-h/2))/h
                     x(i) = temp;
                 }
             }
@@ -2675,8 +2675,21 @@ int main()
         Then, move the generated txt files to the directories Hemberg_Benchmarks and
         AIFeynman_Benchmarks and then run PlotData.py
     */
+//    f(x_1, x_2, ..., x_{columns-1}) = x_1 + x_2 ...
+//
+//    x_1       x_2     y
+//    1.1123123 3.12312 2.2312312
+//    3.12312   4.12431 5.1234123
+//    ...
+//    3.12312   4.12431 5.1234123
     
-    RandomSearch(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 60 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/, {2,10,5,5,1} /*Neural Network*/, 10 /*num_epochs*/, 0.01 /*learning rate*/, 0.1 /*momentum*/);
+//1.1 2.2   Hemberg_2(1.1, 2.2)
+//3.0 -0.4  Hemberg_2(3.0, -0.4)
+//...
+//-1.3 -2.2 Hemberg_2(-1.3, -2.2)
+    
+    
+    RandomSearch(generateData(20 /*rows*/, 3 /*columns*/, Hemberg_2 /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 60 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/, {2,10,5,5,1} /*Neural Network*/, 10 /*num_epochs*/, 0.01 /*learning rate*/, 0.1 /*momentum*/);
     MCTS(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 60 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/, {2,10,5,5,1} /*Neural Network*/, 10 /*num_epochs*/, 0.01 /*learning rate*/, 0.1 /*momentum*/);
     PSO(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 60 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/, {2,10,5,5,1} /*Neural Network*/, 10 /*num_epochs*/, 0.01 /*learning rate*/, 0.1 /*momentum*/);
     GP(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 60 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/, {2,10,5,5,1} /*Neural Network*/, 10 /*num_epochs*/, 0.01 /*learning rate*/, 0.1 /*momentum*/);
