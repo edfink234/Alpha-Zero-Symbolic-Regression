@@ -23,7 +23,7 @@ class Perceptron
         Eigen::VectorXf gradients;
         std::string output_type;
         float bias;
-        Perceptron(int inputs, float bias=1.0f, const std::string& output_type = "none");
+        Perceptron(int inputs, float bias=1.0f, const std::string& output_type = "none"); //none => linear (w dot x + bias), sigmoid => sigmoid(w dot x + bias)
         float run(const Eigen::VectorXf& x);
         void set_weights(const Eigen::VectorXf& w_init);
         static float sigmoid(float x);

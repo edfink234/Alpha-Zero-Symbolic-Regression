@@ -1,8 +1,9 @@
 #include "MLP_Vec.h"
 #include <cassert>
 #include <stack>
+#define FLUSHTHETOILET std::flush
 
-//Time remaining 05/28/2024: 45:05
+//Source: https://github.com/LinkedInLearning/training-neural-networks-in-cpp-4404365
 
 // Return a new Perceptron object with the specified number of inputs
 Perceptron::Perceptron(int inputs, float bias, const std::string& output_type)
@@ -200,11 +201,14 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
 //                = 2 * (y_{k} - (x_k*w_k + b_k)) * d (- (x_k*w_k + b_k)) / d w_k
 //                = -2 * (y_k - (x_k*w_k + b_k)) * x_k
 
-    for (int i = 0; i < this->layers.back(); i++)
+    //Calculate the error terms for the output layer
+    for (int i = 0; i < this->layers.back(); i++) //each neuron in the last layer 
     {
         float o_k = this->values.back()[i];
-        this->d.back()[i] = ((output_type == "sigmoid") ? (o_k * (1 - o_k) * (y[i] - o_k)) : (y[i] - o_k));//* x.sum();
+        this->d.back()[i] = ((this->network.back()[i].output_type == "sigmoid") ? (o_k * (1 - o_k) * (y[i] - o_k)) : (y[i] - o_k));//* x.sum();
         // /Users/edwardfinkelstein/Desktop/Machine\ Learning/\(The\ Morgan\ Kaufmann\ Series\ in\ Data\ Management\ Systems\)\ Ian\ H.\ Witten\,\ Eibe\ Frank\,\ Mark\ A.\ Hall\ -\ Data\ Mining_\ Practical\ Machine\ Learning\ Tools\ and\ Techniques\,\ Third\ Edition-Morgan\ Kaufmann\ \(2011\).pdf, page 273
+        
+        
     }
     
     if (this->weight_update == "SR")
@@ -224,7 +228,7 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
             {
                 if (this->weight_update == "NAG")
                 {
-                    fwd_error += (network[i+1][k].weights[h] - this->theta*this->network[i+1][k].velocities[h])*d[i+1][k];
+                    fwd_error += (network[i+1][k].weights[h] - this->theta*this->network[i+1][k].velocities[h])*d[i+1][k]; //step 2: measure the gradient
                 }
                 else if (this->weight_update == "SR")
                 {
@@ -275,7 +279,7 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
                 }
                 else if (this->weight_update == "heavy ball" || this->weight_update == "NAG")
                 {
-                    this->network[i][j].velocities[k] = this->theta*this->network[i][j].velocities[k] + this->eta*this->d[i][j]*this->values[i-1][k];
+                    this->network[i][j].velocities[k] = this->theta*this->network[i][j].velocities[k] + this->eta*this->d[i][j]*this->values[i-1][k]; //step 1 & then 3 in NAG: compute momentum
                     this->network[i][j].weights[k] = this->network[i][j].weights[k] + this->network[i][j].velocities[k];
                 }
                 else if (this->weight_update == "SR")
@@ -320,7 +324,7 @@ float MultiLayerPerceptron::train(const std::vector<Eigen::VectorXf>& x_train, c
         {
             if (epoch % 100 == 0)
             {
-                std::cout<<"MSE = "<<MSE<< '\r' << std::flush;
+                std::cout << "MSE = " << MSE << '\r' << FLUSHTHETOILET;
             }
             if (MultiLayerPerceptron::interrupted)
             {
