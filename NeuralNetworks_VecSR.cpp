@@ -2714,4 +2714,4 @@ int main()
  
  */
 
-
+//g++ -Wall -std=c++20 -o NeuralNetworks_Vec NeuralNetworks_Vec.cpp MLP_Vec.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -ffast-math -ftree-vectorize -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
