@@ -59,7 +59,7 @@ class MultiLayerPerceptron
         float bias;
         float eta; //learning rate
         float theta; //momentum coefficient
-        float epsilon; //used in Adagrad
+        float epsilon; //used in AdaGrad
         std::vector<std::vector<Perceptron> > network; //the actual network
         std::vector<Eigen::VectorXf> values; //holds output values of the neurons
         std::vector<Eigen::VectorXf> d; //contains error terms for neurons: one error term for each neuron of each layer

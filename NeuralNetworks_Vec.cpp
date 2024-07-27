@@ -487,7 +487,7 @@ int main()
     y_train_data = rightCols(data, 1);
     
 //    std::unique_ptr<MultiLayerPerceptron> srnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{2,10,5,5,1} /*number of neurons in each layer*/, std::deque<std::string>(4, "sigmoid") /*layer types*/, 1.0f /*bias*/, 0.001f /*eta*/, 0.9f /*theta*/, "NAG");
-    std::unique_ptr<MultiLayerPerceptron> srnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{2,10,10,5,5,1} /*number of neurons in each layer*/, std::deque<std::string>{"sigmoid", "sigmoid", "none", "none", "none"} /*layer types*/, 1.0f /*bias*/, 1e-3f /*eta*/, 0.01f /*theta*/, "Adagrad" /*weight update rule*/);
+    std::unique_ptr<MultiLayerPerceptron> srnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{2,10,10,5,5,1} /*number of neurons in each layer*/, std::deque<std::string>{"sigmoid", "sigmoid", "none", "none", "none"} /*layer types*/, 1.0f /*bias*/, 1e-3f /*eta*/, 0.01f /*theta*/, "AdaGrad" /*weight update rule*/);
     //https://stackoverflow.com/a/33980220/18255427 -> Set LR low to prevent nans from gradient blow up
 
     /*

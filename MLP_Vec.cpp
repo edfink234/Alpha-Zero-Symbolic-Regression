@@ -286,10 +286,14 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
                 {
                     this->network[i][j].weights[k] = this->expression_evaluator(this->network[i][j].weights[k], this->d[i][j], this->values[i-1][k], this->d_nest[i][j]);
                 }
-                else if (this->weight_update == "Adagrad")
+                else if (this->weight_update == "AdaGrad")
                 {
                     this->network[i][j].gradients[k] = this->network[i][j].gradients[k] + this->d[i][j] * this->values[i-1][k] * this->d[i][j] * this->values[i-1][k];
                     this->network[i][j].weights[k] = this->network[i][j].weights[k] + (this->eta / sqrt(this->network[i][j].gradients[k] + this->epsilon)) * this->d[i][j] * this->values[i-1][k];
+                }
+                else if (this->weight_update == "Adadelta")
+                {
+                    //TODO: implement it!!!
                 }
             }
             //bias: https://stackoverflow.com/a/13342725/18255427
