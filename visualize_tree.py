@@ -24,11 +24,11 @@ class UnaryNode(Node):
         self.child = None
         
 def is_operator(token):
-    return token in {"cos", "exp", "sqrt", "sin", "asin", "arcsin", "log", "tanh", "acos", "arccos", "~", "+", "-", "*", "/", "^", "ln", "-sin"}
+    return token in {"cos", "exp", "sqrt", "sin", "asin", "arcsin", "log", "tanh", "acos", "arccos", "~", "+", "-", "*", "/", "^", "ln", "-sin", "sech"}
 def is_binary_operator(token):
     return token in {'+', '-', '*', '/', '^'}
 def is_unary_operator(token):
-    return token in {"cos", "exp", "sqrt", "sin", "asin", "arcsin", "log", "tanh", "acos", "arccos", "~", "ln", "-sin"}
+    return token in {"cos", "exp", "sqrt", "sin", "asin", "arcsin", "log", "tanh", "acos", "arccos", "~", "ln", "-sin", "sech"}
 
 
 def rpn_to_infix(rpn_expression):
@@ -314,7 +314,7 @@ def test_visualize():
 #                plot_rpn_expression_tree("q Ef * m omega_0 2 ^ omega 2 ^ - *  /".split(), block=False, save = save)
 #                plot_rpn_expression_tree("q Ef * m omega_0 2 ^ omega 2 ^ - *  /".split(), block=False, save = save)
         
-                plot_rpn_expression_tree("y y x / * -sin y 0 x * y 1 * - x x * / * 0 y x / * + * 0 +".split(), block = False, save=save)
+                plot_rpn_expression_tree("x ln arccos x y * / sech ~ cos x ln arccos x y * / sech ~ x ln arccos x y * / tanh * 1 x / 1 x ln x ln * - sqrt / ~ x y * * x ln arccos x 0 * 1 y * + * - x y * x y * * / * ~ *".split(), block = False, save=save)
 #                plot_pn_expression_tree("* / * m k_G ^ L 2 + 1 * sqrt + 1 / * * 2 E_n ^ L 2 * m ^ k_G 2 cos - theta1 theta2".split(), block=False, save = save)
             except KeyboardInterrupt:
                 plt.close()
