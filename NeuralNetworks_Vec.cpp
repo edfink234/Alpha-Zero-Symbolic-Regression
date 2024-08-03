@@ -487,7 +487,7 @@ int main()
     y_train_data = rightCols(data, 1);
     
 //    std::unique_ptr<MultiLayerPerceptron> srnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{2,10,5,5,1} /*number of neurons in each layer*/, std::deque<std::string>(4, "sigmoid") /*layer types*/, 1.0f /*bias*/, 0.001f /*eta*/, 0.9f /*theta*/, "NAG");
-    std::unique_ptr<MultiLayerPerceptron> srnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{2,10,10,5,5,1} /*number of neurons in each layer*/, std::deque<std::string>{"sigmoid", "sigmoid", "none", "none", "none"} /*layer types*/, 1.0f /*bias*/, 1e-3f /*eta*/, 0.01f /*theta*/, "AdaGrad" /*weight update rule*/);
+    std::unique_ptr<MultiLayerPerceptron> srnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{2,10,10,5,5,1} /*number of neurons in each layer*/, std::deque<std::string>{"sigmoid", "sigmoid", "none", "none", "none"} /*layer types*/, 1.0f /*bias*/, 1e-5f /*eta*/, 0.01f /*theta*/, 0.3f /*gamma*/, "none" /*output_type*/, "AdaDelta" /*weight update rule*/, "prefix" /*expression_type*/, 0.01f /*epsilon*/);
     //https://stackoverflow.com/a/33980220/18255427 -> Set LR low to prevent nans from gradient blow up
 
     /*
@@ -510,7 +510,7 @@ int main()
     //test code - Segment Display Recognition System
     int epochs = 10000;
     
-    std::unique_ptr<MultiLayerPerceptron> sdrnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{7,7,1} /*number of neurons in each layer*/, std::deque<std::string>(2, "sigmoid") /*layer types*/, 1.0f /*bias*/, 0.001f /*eta*/, 0.9f /*theta*/, "NAG");
+    std::unique_ptr<MultiLayerPerceptron> sdrnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{7,7,1} /*number of neurons in each layer*/, std::deque<std::string>(2, "sigmoid") /*layer types*/, 1.0f /*bias*/, 0.001f /*eta*/, 0.9f /*theta*/, 0.01 /*gamma*/, "sigmoid" /*output_type*/ "NAG" /*weight update rule*/);
     x_train.resize(7);
     x_train_data.clear();
     y_train_data.clear();

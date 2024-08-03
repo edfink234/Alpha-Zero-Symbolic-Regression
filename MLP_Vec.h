@@ -21,6 +21,8 @@ class Perceptron
         Eigen::VectorXf weights;
         Eigen::VectorXf velocities;
         Eigen::VectorXf gradients;
+        Eigen::VectorXf expt_grad_squared;
+        Eigen::VectorXf expt_weight_squared;
         std::string output_type;
         float bias;
         Perceptron(int inputs, float bias=1.0f, const std::string& output_type = "none"); //none => linear (w dot x + bias), sigmoid => sigmoid(w dot x + bias)
@@ -37,9 +39,9 @@ class MultiLayerPerceptron
         static std::unordered_map<float, std::string> inline __tokens_dict; //Converts number to string
         static std::vector<float> inline __operators_float;
         static std::vector<float> inline __unary_operators_float;
-        std::vector<float> pieces;
+        std::vector<float> pieces; //expression list for Symbolic Regressor
 
-    MultiLayerPerceptron(std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, float bias = 1.0f, float eta = 0.5f, float theta = 0.5f, std::string&& output_type = "sigmoid", const std::string& weight_update = "basic", const std::string& expression_type = "prefix", float epsilon = 0.1);
+    MultiLayerPerceptron(std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, float bias = 1.0f, float eta = 0.5f, float theta = 0.5f, float gamma = 0.5f, std::string&& output_type = "sigmoid", const std::string& weight_update = "basic", const std::string& expression_type = "prefix", float epsilon = 0.1f);
         void set_weights(std::vector<Eigen::MatrixXf>&& w_init);
         void reset_weights();
         void print_weights();
@@ -59,7 +61,8 @@ class MultiLayerPerceptron
         float bias;
         float eta; //learning rate
         float theta; //momentum coefficient
-        float epsilon; //used in AdaGrad
+        float epsilon; //used in AdaGrad, AdaDelta
+        float gamma; //used in AdaDelta, called $\rho$ in the original paper: https://arxiv.org/pdf/1212.5701
         std::vector<std::vector<Perceptron> > network; //the actual network
         std::vector<Eigen::VectorXf> values; //holds output values of the neurons
         std::vector<Eigen::VectorXf> d; //contains error terms for neurons: one error term for each neuron of each layer

@@ -15,6 +15,8 @@ Perceptron::Perceptron(int inputs, float bias, const std::string& output_type)
     this->weights = Eigen::VectorXf::Random(inputs);
     this->velocities = Eigen::VectorXf::Random(inputs);
     this->gradients = Eigen::VectorXf::Zero(inputs);
+    this->expt_grad_squared = Eigen::VectorXf::Zero(inputs);
+    this->expt_weight_squared = Eigen::VectorXf::Zero(inputs);
     this->output_type = output_type;
 }
 
@@ -55,7 +57,7 @@ float Perceptron::scale_between(float unscaled_num, float min, float max, float 
 }
 
 // Return a new MultiLayerPerceptron object with the specified parameters.
-MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, std::deque<std::string> layer_types, float bias, float eta, float theta, std::string&& output_type, const std::string& weight_update, const std::string& expression_type, float epsilon)
+MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, std::deque<std::string> layer_types, float bias, float eta, float theta, float gamma, std::string&& output_type, const std::string& weight_update, const std::string& expression_type, float epsilon)
 {
     // Set up the signal handler
     signal(SIGINT, signalHandler);
@@ -75,6 +77,7 @@ MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, std::deque<s
     this->weight_update = weight_update;
     this->expression_type = expression_type;
     this->epsilon = epsilon;
+    this->gamma = gamma;
     
     size_t mlp_sz = this->layers.size();
 
@@ -291,9 +294,21 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
                     this->network[i][j].gradients[k] = this->network[i][j].gradients[k] + this->d[i][j] * this->values[i-1][k] * this->d[i][j] * this->values[i-1][k];
                     this->network[i][j].weights[k] = this->network[i][j].weights[k] + (this->eta / sqrt(this->network[i][j].gradients[k] + this->epsilon)) * this->d[i][j] * this->values[i-1][k];
                 }
-                else if (this->weight_update == "Adadelta")
+                else if (this->weight_update == "AdaDelta")
                 {
                     //TODO: implement it!!!
+                    float g_t_k = this->d[i][j] * this->values[i-1][k];
+                    
+                    this->network[i][j].expt_grad_squared[k] = this->gamma*this->network[i][j].expt_grad_squared[k] + (1-this->gamma)*g_t_k*g_t_k;
+                    
+                    float delta_w_t_k = (this->eta / sqrt(this->network[i][j].expt_grad_squared[k] + this->epsilon)) * g_t_k;
+                    
+                    delta_w_t_k = sqrt((this->network[i][j].expt_weight_squared[k] + this->epsilon) / (this->network[i][j].expt_grad_squared[k] + this->epsilon) ) * g_t_k;
+                    
+                    this->network[i][j].expt_weight_squared[k] = this->gamma*this->network[i][j].expt_weight_squared[k] + (1-this->gamma)*delta_w_t_k*delta_w_t_k;
+                    
+                    this->network[i][j].weights[k] = this->network[i][j].weights[k] + delta_w_t_k;
+                    
                 }
             }
             //bias: https://stackoverflow.com/a/13342725/18255427
@@ -417,6 +432,7 @@ float MultiLayerPerceptron::expression_evaluator(float w_k, float d_ij, float va
             {
                 stack.push(d_ij_nest);
             }
+            //TODO: Add tokens for AdaGrad, AdaDelta, etc.
         }
         else if (std::find(MultiLayerPerceptron::__unary_operators_float.begin(), MultiLayerPerceptron::__unary_operators_float.end(), pieces[i]) != MultiLayerPerceptron::__unary_operators_float.end()) // Unary operator
         {
