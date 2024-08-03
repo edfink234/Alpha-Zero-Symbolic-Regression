@@ -196,8 +196,8 @@ def plot_pn_expression_tree(expression: list[str], block = False, save = False):
             implot.set_data(plt.imread('expression_tree.png'))
         plt.axis('off')
         plt.title(f"{' '.join(expression)}, depth = {getPNdepth(expression)[0]}")
-        plt.show(block = block)
-        plt.pause(0.01)
+        plt.show()
+#        plt.pause(0.01)
 
 def plot_rpn_expression_tree(expression: list[str], block = False, save = False, filename = "", title = ""):
     global called, implot
@@ -262,8 +262,8 @@ def plot_rpn_expression_tree(expression: list[str], block = False, save = False,
             implot.set_data(plt.imread('expression_tree.png'))
         plt.axis('off')
         plt.title(f"{' '.join(expression)}, depth = {getRPNdepth(expression)[0]}")
-        plt.draw()
-        plt.pause(0.01)
+        plt.show()
+#        plt.pause(0.01)
 
 # Example usage:
 def test_visualize():
@@ -307,18 +307,19 @@ def test_visualize():
     else:
 #        print(pn_to_infix(" - - + / ^ x 3 5 / ^ y 3 2 y x".split()))
 #        print(rpn_to_infix("y y x * * cos y +"))
-        while True:
-            try:
+#        while True:
+        try:
 #                plot_pn_expression_tree("+ cos cos x0 * 1.031240 + 0.008202 * 1.919085 - cos x3 - cos x0 cos cos * x0 + x3 x3".split(), block=False, save = save)
 #                plot_rpn_expression_tree("x3 cos 0.427738 * 4.779139 x1 - 0.390789 x0 0.637794 x2 * - + 0.598703 x2 cos 1.463665 cos x2 + 1.063828 x3 + x0 0.031570 x0 + 1.493230 - * * + - * * + *".split(), block=False, save = save)
 #                plot_rpn_expression_tree("q Ef * m omega_0 2 ^ omega 2 ^ - *  /".split(), block=False, save = save)
 #                plot_rpn_expression_tree("q Ef * m omega_0 2 ^ omega 2 ^ - *  /".split(), block=False, save = save)
-        
-                plot_rpn_expression_tree("x ln arccos x y * / sech ~ cos x ln arccos x y * / sech ~ x ln arccos x y * / tanh * 1 x / 1 x ln x ln * - sqrt / ~ x y * * x ln arccos x 0 * 1 y * + * - x y * x y * * / * ~ *".split(), block = False, save=save)
+    
+#                plot_rpn_expression_tree("x ln arccos x y * / sech ~ cos x ln arccos x y * / sech ~ x ln arccos x y * / tanh * 1 x / 1 x ln x ln * - sqrt / ~ x y * * x ln arccos x 0 * 1 y * + * - x y * x y * * / * ~ *".split(), block = False, save=save)
 #                plot_pn_expression_tree("* / * m k_G ^ L 2 + 1 * sqrt + 1 / * * 2 E_n ^ L 2 * m ^ k_G 2 cos - theta1 theta2".split(), block=False, save = save)
-            except KeyboardInterrupt:
-                plt.close()
-                exit()
+            plot_pn_expression_tree((("~ * * sech sin sin ^ sech sin x * x y tanh sin sin ^ sech sin x * x y * cos sin ^ sech sin x * x y * cos ^ sech sin x * x y * ^ sech sin x * x y + * ln sech sin x + * x 0 * 1 y * / ~ * * sech sin x tanh sin x * cos x 1 sech sin x * x y".split())), block=False, save = save)
+        except KeyboardInterrupt:
+            plt.close()
+            exit()
 
 if __name__ == "__main__":
     test_visualize()
