@@ -316,7 +316,9 @@ def test_visualize():
     
 #                plot_rpn_expression_tree("x ln arccos x y * / sech ~ cos x ln arccos x y * / sech ~ x ln arccos x y * / tanh * 1 x / 1 x ln x ln * - sqrt / ~ x y * * x ln arccos x 0 * 1 y * + * - x y * x y * * / * ~ *".split(), block = False, save=save)
 #                plot_pn_expression_tree("* / * m k_G ^ L 2 + 1 * sqrt + 1 / * * 2 E_n ^ L 2 * m ^ k_G 2 cos - theta1 theta2".split(), block=False, save = save)
-            plot_pn_expression_tree((("~ * * sech sin sin ^ sech sin x * x y tanh sin sin ^ sech sin x * x y * cos sin ^ sech sin x * x y * cos ^ sech sin x * x y * ^ sech sin x * x y + * ln sech sin x + * x 0 * 1 y * / ~ * * sech sin x tanh sin x * cos x 1 sech sin x * x y".split())), block=False, save = save)
+#            plot_pn_expression_tree((("* cos ~ sech / arccos ln x * x y ~ ~ * * sech / arccos ln x * x y tanh / arccos ln x * x y / - * ~ / / 1 x sqrt - 1 * ln x ln x * x y * arccos ln x + * x 0 * 1 y * * x y * x y".split())), block=False, save = save)
+            plot_pn_expression_tree("* cos ~ sech / arccos ln x * x y ~ ~ * * sech / arccos ln x * x y tanh / arccos ln x * x y / - * ~ / / 1 x sqrt - 1 * ln x ln x * x y * arccos ln x + * x 0 * 1 y * * x y * x y".split(), block=False, save = save)
+#            plot_rpn_expression_tree("x ln arccos x y * / sech ~ cos x ln arccos x y * / sech ~ x ln arccos x y * / tanh * 1 x / 1 x ln x ln * - sqrt / ~ x y * * x ln arccos x 0 * 1 y * + * - x y * x y * * / * ~ *".split(" "), block=False, save = save)
         except KeyboardInterrupt:
             plt.close()
             exit()
