@@ -1,3 +1,13 @@
+/*
+ Symbolic Differential Equation Solver
+ =====================================
+  - Data of the form (m x N), where m is the number of attributes and N the number of data points
+  - Symbolic Regressor creates an equation
+  - 
+ 
+ 
+ */
+
 #include <vector>
 #include <array>
 #include <iostream>
@@ -28,7 +38,6 @@
 #include <unsupported/Eigen/NonLinearOptimization>
 #include <unsupported/Eigen/AutoDiff>
 #include <boost/unordered/concurrent_flat_map.hpp>
-#include "MLP_Vec.h"
 
 using Clock = std::chrono::high_resolution_clock;
 
@@ -39,7 +48,36 @@ double timeElapsedSince(T start_time)
     return std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9;
 }
 
-Eigen::MatrixXf generateData(int numRows, int numCols, float (*func)(const Eigen::VectorXf&), float min = -3.0f, float max = 3.0f)
+bool isFloat(const std::string& x)
+{
+    try
+    {
+        std::stof(x);
+        return true;
+    }
+    catch (std::invalid_argument& e)
+    {
+        return false;
+    }
+}
+
+// Function to create a matrix with linspace columns. std::vector<float> min and
+// std::vector<float> max must have size == cols
+Eigen::MatrixXf createLinspaceMatrix(int rows, int cols, std::vector<float> min_vec, std::vector<float> max_vec) 
+{
+    assert((cols == min_vec.size()) && (cols == max_vec.size()));
+    Eigen::MatrixXf mat(rows, cols);
+    for (int col = 0; col < cols; ++col) 
+    {
+        for (int row = 0; row < rows; ++row) 
+        {
+            mat(row, col) = min_vec[col] + (max_vec[col] - min_vec[col]) * row / (rows - 1);
+        }
+    }
+    return mat;
+}
+
+Eigen::MatrixXf generateData(int numRows, int numCols, float min = -3.0f, float max = 3.0f)
 {
     // Initialize random number generator
     std::random_device rd;
@@ -51,17 +89,10 @@ Eigen::MatrixXf generateData(int numRows, int numCols, float (*func)(const Eigen
 
     for (int i = 0; i < numRows; i++)
     {
-        for (int j = 0; j < numCols - 1; j++)
+        for (int j = 0; j < numCols; j++)
         {
             matrix(i, j) = distribution(gen);
         }
-
-        Eigen::VectorXf rowVector(numCols - 1);
-        for (int j = 0; j < numCols - 1; j++)
-        {
-            rowVector(j) = matrix(i, j);
-        }
-        matrix(i, numCols - 1) = func(rowVector);
     }
 
     return matrix;
@@ -76,21 +107,20 @@ class Data
 {
     Eigen::MatrixXf data;
     std::unordered_map<std::string, Eigen::VectorXf> features;
+    std::vector<Eigen::VectorXf> rows;
     long num_columns, num_rows;
     
 public:
     
     Data() = default; //so we can have a static Data attribute
-    std::vector<Eigen::VectorXf> labels;
-    std::vector<Eigen::VectorXf> rows;
+    
     // Assignment operator
     Data& operator=(const Eigen::MatrixXf& theData)
     {
         this->data = theData;
         this->num_columns = data.cols();
         this->num_rows = data.rows();
-
-        for (size_t i = 0; i < this->num_columns - 1; i++) //for each column
+        for (size_t i = 0; i < this->num_columns; i++) //for each column
         {
             this->features["x"+std::to_string(i)] = Eigen::VectorXf(this->num_rows);
             for (size_t j = 0; j < this->num_rows; j++)
@@ -98,21 +128,6 @@ public:
                 this->features["x"+std::to_string(i)](j) = this->data(j,i);
             }
         }
-        
-        this->features["y"] = Eigen::VectorXf(this->num_rows);
-        this->rows.resize(this->num_rows);
-        this->labels.resize(this->num_rows);
-
-        Eigen::VectorXf y_i(1);
-        for (size_t i = 0; i < num_rows; i++)
-        {
-            this->features["y"](i) = this->data(i, this->num_columns - 1);
-            this->rows[i] = data.row(i).head(data.row(i).size() - 1);
-            y_i << this->features["y"](i);
-            this->labels[i] = y_i;
-            assert(this->labels[i].size() == 1 && this->rows[i].size() == 2);
-        }
-//        this->labels.push_back(this->features["y"]);
         
         return *this;
     }
@@ -136,28 +151,19 @@ public:
     }
 };
 
-float MSE(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
+float MSE(const Eigen::VectorXf& actual)
 {
-    if (actual.size() != predicted.size())
-    {
-        throw std::invalid_argument("Vectors must be of the same size");
-    }
-    return (actual - predicted).squaredNorm() / actual.size();
+    return actual.squaredNorm() / actual.size();
 }
 
-Eigen::AutoDiffScalar<Eigen::VectorXf> MSE(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>& predicted, const Eigen::VectorXf& actual)
+Eigen::AutoDiffScalar<Eigen::VectorXf> MSE(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>& actual)
 {
-    if (actual.size() != predicted.size())
-    {
-        throw std::invalid_argument("Vectors must be of the same size");
-    }
-        
-    return (actual - predicted).squaredNorm() / actual.size();
+    return actual.squaredNorm() / actual.size();
 }
 
-float loss_func(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
+float loss_func(const Eigen::VectorXf& actual)
 {
-    return (1.0f/(1.0f+MSE(actual, predicted)));
+    return (1.0f/(1.0f+MSE(actual)));
 }
 
 struct Board
@@ -179,7 +185,7 @@ struct Board
     static std::vector<float> inline __tokens_float;
     Eigen::VectorXf params; //store the parameters of the expression of the current episode after it's completed
     static Data inline data;
-    static std::mutex inline thread_locker;
+    
     static std::vector<float> inline __operators_float;
     static std::vector<float> inline __unary_operators_float;
     static std::vector<float> inline __binary_operators_float;
@@ -207,11 +213,13 @@ struct Board
 
     int n; //depth of RPN/PN tree
     std::string expression_type, expression_string;
+    static std::mutex inline thread_locker; //static because it needs to protect static members
+    std::vector<float> pieces; // Create the empty expression list. TODO: (maybe) change to float
+    std::vector<float> derivat;// Vector to store the derivative.
     bool visualize_exploration, is_primary;
-    MultiLayerPerceptron srnn;
-    const unsigned long epochs;
+    std::vector<float> (*diffeq)(const Board&);
     
-    Board(bool primary = true, int n = 3, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false, std::vector<int> layers = {}, const unsigned long num_epochs = 1000, float eta = 0.5f, float theta = 0.5f) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, is_primary{primary}, srnn{layers, 1.0f, eta, theta, "none", "SR", expression_type}, epochs{num_epochs}
+    Board(bool primary = true, int n = 3, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, is_primary{primary}
     {
         if (n > 30)
         {
@@ -220,11 +228,12 @@ struct Board
         
         this->n = n;
         this->expression_type = expression_type;
-        srnn.pieces = {};
+        this->pieces = {};
         this->visualize_exploration = visualize_exploration;
         this->reserve_amount = 2*std::pow(2,this->n)-1;
-        srnn.pieces.reserve(this->reserve_amount);
+        this->pieces.reserve(this->reserve_amount);
         this->cache = cache;
+        this->diffeq =
         
         if (is_primary)
         {
@@ -235,13 +244,12 @@ struct Board
                 Board::__num_features = data[0].size() - 1;
                 Board::__input_vars.clear();
                 Board::expression_dict.clear();
-//                Board::__input_vars.reserve(Board::__num_features);
-//                for (auto i = 0; i < Board::__num_features; i++)
-//                {
-//                    Board::__input_vars.push_back("x"+std::to_string(i));
-//                }
-                Board::__input_vars = {"w_k", "eta", "d_ij", "value", "theta", "d_ij_nest"};
-                Board::__unary_operators = {"cos", "exp", "sqrt", "sin", "asin", "ln", "tanh", "acos", "~"};
+                Board::__input_vars.reserve(Board::__num_features);
+                for (auto i = 0; i < Board::__num_features; i++)
+                {
+                    Board::__input_vars.push_back("x"+std::to_string(i));
+                }
+                Board::__unary_operators = {"cos", "~", "sin", "log", "ln", "asin", "arcsin", "acos", "arccos", "exp", "sech", "tanh", "sqrt"};
                 Board::__binary_operators = {"+", "-", "*", "/", "^"};
                 Board::__operators.clear();
                 for (std::string& i: Board::__unary_operators)
@@ -252,7 +260,7 @@ struct Board
                 {
                     Board::__operators.push_back(i);
                 }
-                Board::__other_tokens = {/*"const"*/};
+                Board::__other_tokens = {"const", "0", "1", "2"};
                 Board::__tokens = Board::__operators;
                 
                 for (auto& i: this->Board::__input_vars)
@@ -272,19 +280,15 @@ struct Board
                 }
                 int num_operators = Board::__operators.size();
                 Board::__operators_float.clear();
-                MultiLayerPerceptron::__operators_float.clear();
                 for (int i = 1; i <= num_operators; i++)
                 {
                     Board::__operators_float.push_back(i);
-                    MultiLayerPerceptron::__operators_float.push_back(i);
                 }
                 int num_unary_operators = Board::__unary_operators.size();
                 Board::__unary_operators_float.clear();
-                MultiLayerPerceptron::__unary_operators_float.clear();
                 for (int i = 1; i <= num_unary_operators; i++)
                 {
                     Board::__unary_operators_float.push_back(i);
-                    MultiLayerPerceptron::__unary_operators_float.push_back(i);
                 }
                 Board::__binary_operators_float.clear();
                 for (int i = num_unary_operators + 1; i <= num_operators; i++)
@@ -298,14 +302,13 @@ struct Board
                     Board::__input_vars_float.push_back(i);
                 }
                 Board::__other_tokens_float.clear();
-                for (int i = ops_plus_features + 1; i <= ops_plus_features + Board::__other_tokens.size(); i++)
+                for (int i = ops_plus_features + 1; i <= Board::action_size; i++)
                 {
                     Board::__other_tokens_float.push_back(i);
                 }
                 for (int i = 0; i < Board::action_size; i++)
                 {
                     Board::__tokens_dict[Board::__tokens_float[i]] = Board::__tokens[i];
-                    MultiLayerPerceptron::__tokens_dict[Board::__tokens_float[i]] = Board::__tokens[i];
                     Board::__tokens_inv_dict[Board::__tokens[i]] = Board::__tokens_float[i];
                 }
                 
@@ -344,7 +347,7 @@ struct Board
     int __num_binary_ops() const
     {
         int count = 0;
-        for (float token : srnn.pieces)
+        for (float token : pieces)
         {
             if (std::find(Board::__binary_operators_float.begin(), Board::__binary_operators_float.end(), token) != Board::__binary_operators_float.end())
             {
@@ -357,7 +360,7 @@ struct Board
     int __num_unary_ops() const
     {
         int count = 0;
-        for (float token : srnn.pieces)
+        for (float token : pieces)
         {
             if (std::find(Board::__unary_operators_float.begin(), Board::__unary_operators_float.end(), token) != Board::__unary_operators_float.end())
             {
@@ -371,7 +374,7 @@ struct Board
     {
         int count = 0;
 
-        for (float token : srnn.pieces)
+        for (float token : pieces)
         {
             if (!is_unary(token) && !is_binary(token))
             {
@@ -385,7 +388,7 @@ struct Board
     {
         int count = 0;
 
-        for (float token : srnn.pieces)
+        for (float token : pieces)
         {
             if (__tokens_dict[token] == "const")
             {
@@ -664,7 +667,7 @@ struct Board
     {
         if (this->expression_type == "prefix")
         {
-            if (srnn.pieces.empty()) //At the beginning, self.pieces is empty, so the only legal moves are the operators...
+            if (this->pieces.empty()) //At the beginning, self.pieces is empty, so the only legal moves are the operators...
             {
                 if (this->n != 0) // if the depth is not 0
                 {
@@ -680,7 +683,7 @@ struct Board
             
             if (this->cache)
             {
-                return Board::una_bin_leaf_legal_moves_dict[(getPNdepth(srnn.pieces, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, false /*binary*/, true /*unary*/, false /*leaf*/).first <= this->n)][(getPNdepth(srnn.pieces, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, true /*binary*/, false /*unary*/, false /*leaf*/).first <= this->n)][(!((num_leaves == num_binary + 1) || (getPNdepth(srnn.pieces, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, false /*binary*/, false /*unary*/, true /*leaf*/).first < this->n && (num_leaves == num_binary))))];
+                return Board::una_bin_leaf_legal_moves_dict[(getPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, false /*binary*/, true /*unary*/, false /*leaf*/).first <= this->n)][(getPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, true /*binary*/, false /*unary*/, false /*leaf*/).first <= this->n)][(!((num_leaves == num_binary + 1) || (getPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, false /*binary*/, false /*unary*/, true /*leaf*/).first < this->n && (num_leaves == num_binary))))];
             }
             
             else
@@ -688,17 +691,17 @@ struct Board
                 bool una_allowed = false, bin_allowed = false, leaf_allowed = false;
                 if (Board::__binary_operators_float.size() > 0)
                 {
-                    srnn.pieces.push_back(Board::__binary_operators_float[0]);
-                    bin_allowed = (getPNdepth(srnn.pieces).first <= this->n);
+                    pieces.push_back(Board::__binary_operators_float[0]);
+                    bin_allowed = (getPNdepth(pieces).first <= this->n);
                 }
                 if (Board::__unary_operators_float.size() > 0)
                 {
-                    srnn.pieces[srnn.pieces.size() - 1] = Board::__unary_operators_float[0];
-                    una_allowed = (getPNdepth(srnn.pieces).first <= this->n);
+                    pieces[pieces.size() - 1] = Board::__unary_operators_float[0];
+                    una_allowed = (getPNdepth(pieces).first <= this->n);
                 }
-                srnn.pieces[srnn.pieces.size() - 1] = Board::__input_vars_float[0];
-                leaf_allowed = (!((num_leaves == num_binary + 1) || (getPNdepth(srnn.pieces).first < this->n && (num_leaves == num_binary))));
-                srnn.pieces.pop_back();
+                pieces[pieces.size() - 1] = Board::__input_vars_float[0];
+                leaf_allowed = (!((num_leaves == num_binary + 1) || (getPNdepth(pieces).first < this->n && (num_leaves == num_binary))));
+                pieces.pop_back();
 //                assert(!(!una_allowed && !bin_allowed && !leaf_allowed));
                 return Board::una_bin_leaf_legal_moves_dict[una_allowed][bin_allowed][leaf_allowed];
             }
@@ -706,7 +709,7 @@ struct Board
 
         else //postfix
         {
-            if (srnn.pieces.empty()) //At the beginning, self.pieces is empty, so the only legal moves are the features and const
+            if (this->pieces.empty()) //At the beginning, self.pieces is empty, so the only legal moves are the features and const
             {
                 return Board::una_bin_leaf_legal_moves_dict[false][false][true];
             }
@@ -715,7 +718,7 @@ struct Board
                  
             if (this->cache)
             {
-                return Board::una_bin_leaf_legal_moves_dict[((num_leaves >= 1) && (getRPNdepth(srnn.pieces, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, true /*unary*/, false /*leaf*/).first <= this->n))][(num_binary != num_leaves - 1)][(getRPNdepth(srnn.pieces, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, false /*unary*/, true /*leaf*/).first <= this->n)];
+                return Board::una_bin_leaf_legal_moves_dict[((num_leaves >= 1) && (getRPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, true /*unary*/, false /*leaf*/).first <= this->n))][(num_binary != num_leaves - 1)][(getRPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, false /*unary*/, true /*leaf*/).first <= this->n)];
             }
             
             else
@@ -723,14 +726,14 @@ struct Board
                 bool una_allowed = false, bin_allowed = (num_binary != num_leaves - 1), leaf_allowed = false;
                 if (Board::__unary_operators_float.size() > 0)
                 {
-                    srnn.pieces.push_back(Board::__unary_operators_float[0]);
-                    una_allowed = ((num_leaves >= 1) && (getRPNdepth(srnn.pieces).first <= this->n));
+                    pieces.push_back(Board::__unary_operators_float[0]);
+                    una_allowed = ((num_leaves >= 1) && (getRPNdepth(pieces).first <= this->n));
                 }
                 
-                srnn.pieces[srnn.pieces.size() - 1] = Board::__input_vars_float[0];
-                leaf_allowed = (getRPNdepth(srnn.pieces).first <= this->n);
+                pieces[pieces.size() - 1] = Board::__input_vars_float[0];
+                leaf_allowed = (getRPNdepth(pieces).first <= this->n);
 
-                srnn.pieces.pop_back();
+                pieces.pop_back();
 //                assert(!(!una_allowed && !bin_allowed && !leaf_allowed));
 
                 return Board::una_bin_leaf_legal_moves_dict[una_allowed][bin_allowed][leaf_allowed];
@@ -743,14 +746,13 @@ struct Board
     std::string expression()
     {
         std::string temp;
-        temp.reserve(2*srnn.pieces.size());
-        size_t sz = srnn.pieces.size() - 1;
+        temp.reserve(2*pieces.size());
+        size_t sz = pieces.size() - 1;
         int const_index = ((expression_type == "postfix") ? 0 : this->params.size()-1);
         for (size_t i = 0; i <= sz; i++)
         {
-            if (std::find(Board::__other_tokens_float.begin(), Board::__other_tokens_float.end(), srnn.pieces[i]) != Board::__other_tokens_float.end())
+            if (std::find(Board::__other_tokens_float.begin(), Board::__other_tokens_float.end(), pieces[i]) != Board::__other_tokens_float.end())
             {
-                puts("true");
                 temp += ((i!=sz) ? std::to_string((this->params)(const_index)) + " " : std::to_string((this->params)(const_index)));
                 if (expression_type == "postfix")
                 {
@@ -763,7 +765,7 @@ struct Board
             }
             else
             {
-                temp += ((i!=sz) ? Board::__tokens_dict[srnn.pieces[i]] + " " : Board::__tokens_dict[srnn.pieces[i]]);
+                temp += ((i!=sz) ? Board::__tokens_dict[pieces[i]] + " " : Board::__tokens_dict[pieces[i]]);
             }
         }
         return temp;
@@ -776,15 +778,15 @@ struct Board
         size_t const_counter = 0;
         std::string result;
         
-        for (int i = (is_prefix ? (srnn.pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < srnn.pieces.size())); (is_prefix ? (i--) : (i++)))
+        for (int i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
         {
-            std::string token = Board::__tokens_dict[srnn.pieces[i]];
+            std::string token = Board::__tokens_dict[pieces[i]];
 
-            if (std::find(Board::__operators_float.begin(), Board::__operators_float.end(), srnn.pieces[i]) == Board::__operators_float.end()) // leaf
+            if (std::find(Board::__operators_float.begin(), Board::__operators_float.end(), pieces[i]) == Board::__operators_float.end()) // leaf
             {
                 stack.push(((!show_consts) || (std::find(Board::__other_tokens.begin(), Board::__other_tokens.end(), token) == Board::__other_tokens.end())) ? token : std::to_string((this->params)(const_counter++)));
             }
-            else if (std::find(Board::__unary_operators_float.begin(), Board::__unary_operators_float.end(), srnn.pieces[i]) != Board::__unary_operators_float.end()) // Unary operator
+            else if (std::find(Board::__unary_operators_float.begin(), Board::__unary_operators_float.end(), pieces[i]) != Board::__unary_operators_float.end()) // Unary operator
             {
                 std::string operand = stack.top();
                 stack.pop();
@@ -811,26 +813,42 @@ struct Board
         return stack.top();
     }
 
-    Eigen::VectorXf expression_evaluator(const Eigen::VectorXf& params) const
+    Eigen::VectorXf expression_evaluator(const Eigen::VectorXf& params, const std::vector<float>& pieces) const
     {
         std::stack<const Eigen::VectorXf> stack;
         size_t const_count = 0;
         bool is_prefix = (expression_type == "prefix");
-        for (int i = (is_prefix ? (srnn.pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < srnn.pieces.size())); (is_prefix ? (i--) : (i++)))
+        for (int i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
         {
-            std::string token = Board::__tokens_dict[srnn.pieces[i]];
-            if (std::find(Board::__operators_float.begin(), Board::__operators_float.end(), srnn.pieces[i]) == Board::__operators_float.end()) // leaf
+            std::string token = Board::__tokens_dict[pieces[i]];
+            if (std::find(Board::__operators_float.begin(), Board::__operators_float.end(), pieces[i]) == Board::__operators_float.end()) // leaf
             {
                 if (token == "const")
                 {
                     stack.push(Eigen::VectorXf::Ones(Board::data.numRows())*params(const_count++));
+                }
+                else if (token == "0")
+                {
+                    stack.push(Eigen::VectorXf::Zero(Board::data.numRows()));
+                }
+                else if (token == "1")
+                {
+                    stack.push(Eigen::VectorXf::Ones(Board::data.numRows()));
+                }
+                else if (token == "2")
+                {
+                    stack.push(Eigen::VectorXf::Ones(Board::data.numRows())*2.0f);
+                }
+                else if (isFloat(token))
+                {
+                    stack.push(Eigen::VectorXf::Ones(Board::data.numRows())*std::stof(token));
                 }
                 else
                 {
                     stack.push(Board::data[token]);
                 }
             }
-            else if (std::find(Board::__unary_operators_float.begin(), Board::__unary_operators_float.end(), srnn.pieces[i]) != Board::__unary_operators_float.end()) // Unary operator
+            else if (std::find(Board::__unary_operators_float.begin(), Board::__unary_operators_float.end(), pieces[i]) != Board::__unary_operators_float.end()) // Unary operator
             {
                 if (token == "cos")
                 {
@@ -924,29 +942,47 @@ struct Board
         return stack.top();
     }
     
-    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> expression_evaluator(const std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& parameters) const
+    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> expression_evaluator(const std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& parameters, const std::vector<float>& pieces) const
     {
         std::stack<Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>> stack;
         size_t const_count = 0;
         bool is_prefix = (expression_type == "prefix");
-        for (int i = (is_prefix ? (srnn.pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < srnn.pieces.size())); (is_prefix ? (i--) : (i++)))
+        for (int i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
         {
-            std::string token = Board::__tokens_dict[srnn.pieces[i]];
+            std::string token = Board::__tokens_dict[pieces[i]];
 
-            if (std::find(Board::__operators_float.begin(), Board::__operators_float.end(), srnn.pieces[i]) == Board::__operators_float.end()) // leaf
+            if (std::find(Board::__operators_float.begin(), Board::__operators_float.end(), pieces[i]) == Board::__operators_float.end()) // leaf
             {
                 if (token == "const")
                 {
 //                    std::cout << "\nparameters[" << const_count << "] = " << parameters[const_count].value() << '\n';
                     stack.push(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>::Constant(Board::data.numRows(), parameters[const_count++]));
-                    
+                }
+                else if (token == "0")
+                {
+//                    std::cout << "\nparameters[" << const_count << "] = " << parameters[const_count].value() << '\n';
+                    stack.push(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>::Constant(Board::data.numRows(), 0.0f));
+                }
+                else if (token == "1")
+                {
+//                    std::cout << "\nparameters[" << const_count << "] = " << parameters[const_count].value() << '\n';
+                    stack.push(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>::Constant(Board::data.numRows(), 1.0f));
+                }
+                else if (token == "2")
+                {
+//                    std::cout << "\nparameters[" << const_count << "] = " << parameters[const_count].value() << '\n';
+                    stack.push(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>::Constant(Board::data.numRows(), 2.0f));
+                }
+                else if (isFloat(token))
+                {
+                    stack.push(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>::Constant(Board::data.numRows(), std::stof(token)));
                 }
                 else
                 {
                     stack.push(Board::data[token]);
                 }
             }
-            else if (std::find(Board::__unary_operators_float.begin(), Board::__unary_operators_float.end(), srnn.pieces[i]) != Board::__unary_operators_float.end()) // Unary operator
+            else if (std::find(Board::__unary_operators_float.begin(), Board::__unary_operators_float.end(), pieces[i]) != Board::__unary_operators_float.end()) // Unary operator
             {
                 if (token == "cos")
                 {
@@ -1055,8 +1091,8 @@ struct Board
             v(i) = vel_dist(gen);
         }
 
-        float swarm_best_score = loss_func(expression_evaluator(this->params),Board::data["y"]);
-        float fpi = loss_func(expression_evaluator(particle_positions),Board::data["y"]);
+        float swarm_best_score = loss_func(expression_evaluator(this->params, this->pieces));
+        float fpi = loss_func(expression_evaluator(particle_positions, this->pieces));
         float temp, fxi;
         
         if (fpi > swarm_best_score)
@@ -1074,10 +1110,10 @@ struct Board
                 v(i) = K*(v(i) + phi_1*rp*(particle_positions(i) - x(i)) + phi_2*rg*((this->params)(i) - x(i)));
                 x(i) += v(i);
                 
-                fpi = loss_func(expression_evaluator(particle_positions),Board::data["y"]); //current score
+                fpi = loss_func(expression_evaluator(particle_positions, this->pieces)); //current score
                 temp = particle_positions(i); //save old position of particle i
                 particle_positions(i) = x(i); //update old position to new position
-                fxi = loss_func(expression_evaluator(particle_positions),Board::data["y"]); //calculate the score with the new position
+                fxi = loss_func(expression_evaluator(particle_positions, this->pieces)); //calculate the score with the new position
                 if (fxi < fpi) //if the new vector is worse:
                 {
                     particle_positions(i) = temp; //reset particle_positions[i]
@@ -1119,8 +1155,8 @@ struct Board
             v(i) = vel_dist(gen);
         }
 
-        float swarm_best_score = loss_func(expression_evaluator(this->params),Board::data["y"]);
-        float fpi = loss_func(expression_evaluator(particle_positions),Board::data["y"]);
+        float swarm_best_score = loss_func(expression_evaluator(this->params, this->pieces));
+        float fpi = loss_func(expression_evaluator(particle_positions, this->pieces));
         float temp, fxi;
         
         if (fpi > swarm_best_score)
@@ -1137,10 +1173,10 @@ struct Board
                 v(i) = K*(v(i) + phi_1*rp*(particle_positions(i) - x(i)) + phi_2*rg*((this->params)(i) - x(i)));
                 x(i) += v(i);
                 
-                fpi = loss_func(expression_evaluator(particle_positions),Board::data["y"]); //current score
+                fpi = loss_func(expression_evaluator(particle_positions, this->pieces)); //current score
                 temp = particle_positions(i); //save old position of particle i
                 particle_positions(i) = x(i); //update old position to new position
-                fxi = loss_func(expression_evaluator(particle_positions),Board::data["y"]); //calculate the score with the new position
+                fxi = loss_func(expression_evaluator(particle_positions, this->pieces)); //calculate the score with the new position
                 if (fxi < fpi) //if the new vector is worse:
                 {
                     particle_positions(i) = temp; //reset particle_positions[i]
@@ -1160,7 +1196,7 @@ struct Board
     
     Eigen::AutoDiffScalar<Eigen::VectorXf> grad_func(std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& inputs)
     {
-        return MSE(expression_evaluator(inputs), Board::data["y"]);
+        return MSE(expression_evaluator(inputs, this->pieces));
     }
     
     /*
@@ -1171,7 +1207,7 @@ struct Board
     {
         if (this->fit_method == "LBFGS" || this->fit_method == "LBFGSB")
         {
-            float mse = MSE(expression_evaluator(x), Board::data["y"]);
+            float mse = MSE(expression_evaluator(x, this->pieces));
             if (this->fit_grad_method == "naive_numerical")
             {
                 float low_b, temp;
@@ -1180,9 +1216,9 @@ struct Board
                     //https://stackoverflow.com/a/38855586/18255427
                     temp = x(i);
                     x(i) -= 0.00001f;
-                    low_b = MSE(expression_evaluator(x), Board::data["y"]); //f(x-h/2)
+                    low_b = MSE(expression_evaluator(x, this->pieces));
                     x(i) = temp + 0.00001f;
-                    grad(i) = (MSE(expression_evaluator(x), Board::data["y"]) - low_b) / 0.00002f ; //(f(x+h/2) - f(x-h/2))/h
+                    grad(i) = (MSE(expression_evaluator(x, this->pieces)) - low_b) / 0.00002f ;
                     x(i) = temp;
                 }
             }
@@ -1203,7 +1239,7 @@ struct Board
         }
         else if (this->fit_method == "LevenbergMarquardt")
         {
-            grad = (this->expression_evaluator(x) - Board::data["y"]);
+            grad = (this->expression_evaluator(x, this->pieces) - Board::data["y"]);
         }
         return 0.f;
     }
@@ -1220,7 +1256,7 @@ struct Board
         float fx;
         
         Eigen::VectorXf eigenVec = this->params;
-        float mse = MSE(expression_evaluator(this->params), Board::data["y"]);
+        float mse = MSE(expression_evaluator(this->params, this->pieces));
         try
         {
             solver.minimize((*this), eigenVec, fx);
@@ -1251,7 +1287,7 @@ struct Board
         float fx;
         
         Eigen::VectorXf eigenVec = this->params;
-        float mse = MSE(expression_evaluator(this->params), Board::data["y"]);
+        float mse = MSE(expression_evaluator(this->params, this->pieces));
         try
         {
             solver.minimize((*this), eigenVec, fx, Eigen::VectorXf::Constant(eigenVec.size(), -std::numeric_limits<float>::infinity()), Eigen::VectorXf::Constant(eigenVec.size(), std::numeric_limits<float>::infinity()));
@@ -1313,13 +1349,13 @@ struct Board
         bool improved = false;
         auto start_time = Clock::now();
         Eigen::LevenbergMarquardt<decltype(*this), float> lm(*this);
-        float score_before = MSE(expression_evaluator(this->params), Board::data["y"]);
+        float score_before = MSE(expression_evaluator(this->params, this->pieces));
         lm.parameters.maxfev = this->num_fit_iter;
 //        std::cout << "ftol (Cost function change) = " << lm.parameters.ftol << '\n';
 //        std::cout << "xtol (Parameters change) = " << lm.parameters.xtol << '\n';
 
         lm.minimize(this->params);
-        if (MSE(expression_evaluator(this->params), Board::data["y"]) < score_before)
+        if (MSE(expression_evaluator(this->params, this->pieces)) < score_before)
         {
             improved = true;
         }
@@ -1376,11 +1412,11 @@ struct Board
                 temp_vec = x.second;
             });
                         
-            loss = loss_func(expression_evaluator(temp_vec),Board::data["y"]);
+            loss = loss_func(expression_evaluator(temp_vec, this->pieces));
         }
         else
         {
-            loss = 1.0f/(1.0f+this->srnn.train(data.rows, data.labels, this->epochs, false));
+            loss = loss_func(expression_evaluator(this->params, this->pieces));
         }
         return loss;
     }
@@ -1395,7 +1431,7 @@ struct Board
     */
     float complete_status(bool cache = true)
     {
-        if (srnn.pieces.empty())
+        if (this->pieces.empty())
         {
             this->stack.clear();
             this->idx = 0;
@@ -1404,7 +1440,7 @@ struct Board
                 this->depth = 0, this->num_binary = 0, this->num_leaves = 0;
             }
         }
-        auto [depth, complete] =  ((this->expression_type == "prefix") ? getPNdepth(srnn.pieces, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/) : getRPNdepth(srnn.pieces, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/)); //structured binding :)
+        auto [depth, complete] =  ((this->expression_type == "prefix") ? getPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/) : getRPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/)); //structured binding :)
         if (!complete || depth < this->n) //Expression not complete
         {
             return -1;
@@ -1419,9 +1455,9 @@ struct Board
             if (is_primary)
             {
                 this->expression_string.clear();
-                this->expression_string.reserve(8*srnn.pieces.size());
+                this->expression_string.reserve(8*pieces.size());
                 
-                for (float i: srnn.pieces){this->expression_string += std::to_string(i)+" ";}
+                for (float i: pieces){this->expression_string += std::to_string(i)+" ";}
 
                 if (!Board::expression_dict.contains(this->expression_string))
                 {
@@ -1477,7 +1513,7 @@ struct Board
         } while (z);
     }
     
-    //Computes the grasp of an arbitrary element srnn.pieces[i],
+    //Computes the grasp of an arbitrary element pieces[i],
     //from https://www.jstor.org/stable/43998756 (bottom of pg. 165)
     int GR(size_t i, const std::vector<float>& individual)
     {
@@ -1532,70 +1568,738 @@ struct Board
             }
         }
     }
+    
+    void setPrefixGR(const std::vector<float>& prefix, std::vector<int>& grasp)
+    {
+        grasp.reserve(prefix.size());
+        for (size_t k = 0; k < prefix.size(); ++k)
+        {
+            grasp.push_back(GR(k, prefix));
+        }
+    }
+
+    /*
+    low and up: lower and upper Index bounds, respectively, for the piece of the array prefix which is to be the subject of the processing.
+    dx: string representing the variable by which the derivation is to be made. (The derivative is made wrt dx)
+    */
+    void derivePrefixHelper(int low, int up, const std::string& dx, const std::vector<float>& prefix, std::vector<int>& grasp, bool setGRvar = false)
+    {
+        if (!setGRvar)
+        {
+            grasp.clear();
+            this->derivat.clear();
+            // std::cout << this->derivat.size();
+            this->derivat.reserve(100);
+    //        Index = 0;
+            setPrefixGR(prefix, grasp);
+        }
+        //allowed ops: +, -, *, /, ^, unary +, unary -, sin(), cos(), tan(), ctg(), log(), sqrt(), const, x0, x1, ..., x_numFeatures
+        //Define `grasp` of prefix[i], i.e., the number of elements forming operands of prefix[i] (grasp(operand) = 0)
+        //The grasped elements of prefix[i] are the elements forming operands of prefix[i]
+        //The left-grasp-bound (LGB) of prefix[i] is the Index of the left-most grasped element of prefix[i] in the array prefix
+        //For the expression formed by prefix[i] and its grasped elements, the element prefix[i] is termed the `head` or `main element`
+        //ANY element prefix[i] is an N-arity operator acting on operands arg1, ..., argN, the heads of which are op1, ..., opN, where op1 is the left-neighest operator of prefix[i] in the array prefix (so operands are 0-arity operators)
+        //For an N-arity operator prefix[i]:
+            //The `grasp` of prefix[i]  is equal to i - LGB(prefix[i])
+            //grasp(prefix[i]) = N + sum(grasp(op1), ..., grasp(op_k), ..., grasp(opN))
+            //grasp(prefix[i]) = N + sum( (1 - grasp(op1)), ..., (k - grasp(op_k)), ..., (N - grasp(opN)))
+            //LGB(prefix[i]) = i - N - sum( (1 - grasp(op1)), ..., (k - grasp(op_k)), ..., (N - grasp(opN)))
+            //op_(N-j) = prefix[i - sum(grasp(op_(N-1)), ..., grasp(op_(N-j-1))) - j - 1], where j = 0, ..., N-1
+        //If the grasp of an arbitrary prefix[i] is greater than N, then at least one of its argument heads is also an operator.
+            //Example: If the grasp of any binary operator prefix[i] is greater than 2, then at least one of the two preceding elements in the RPN of the expression (prefix[i-1] and prefix[i-2]) is also an operator (unary or binary).
+        //prefix[numElements] is certainly an operator (unary or binary)
+        
+        //if prefix[up] is a binary operator, then:
+            //the head of its second argument (let's call it op2) is equal to prefix[up-1]
+            //then the grasped elements of op2 are the elements from prefix[up-1-grasp[up-1]] to prefix[up-1]
+                //e.g. prefix = {"x", "x", "*", "x", "cos", "x", "*", "+"}, up = 7 -> prefix[up] = "+" is binary
+                //so prefix[up-1] = "*" is the head of the second argument of "+" and so the grasped elements
+                //of prefix[up-1] are the elements [(prefix[up-1-grasp[up-1]] = prefix[6-3] = prefix[3]), prefix[up-1] = prefix[6]]
+                //i.e., the elements {"x", "cos", "x", "*"}
+            //the head of its first argument (lets call it op1) is equal to prefix[up-grasp(op2)-2] which is equal to prefix[up-2-grasp[up-1]].
+            //then the grasped elements of op1 are the elements from prefix[low = 0] to prefix[up-2-grasp[up-1]]
+                //e.g. prefix = {"x", "x", "*", "x", "cos", "x", "x", "*", "*", "+"}, up = 9 ->prefix[up] = "+" is binary
+                //so prefix[up-grasp(op2)-2] = prefix[9-5-2] = prefix[2] = "*" is the head of the first argument of "+" and so the grasped elements
+                //of prefix[up-grasp(op2)-2] are the elements [(Board::__tokens_dict[prefix[low]] = prefix[0], prefix[up-grasp(op2)-2] = prefix[9-5-2] = prefix[2]]
+                //i.e., the elements {"x", "x", "*"}
+
+        if (Board::__tokens_dict[prefix[low]] == "+" || Board::__tokens_dict[prefix[low]] == "-")
+        {
+            this->derivat.push_back(prefix[low]); //+/-
+            size_t temp = low+1+grasp[low+1];
+            derivePrefixHelper(low+1, temp, dx, prefix, grasp, true);  /* +/- x' */
+            derivePrefixHelper(temp+1, temp+1+grasp[temp+1], dx, prefix, grasp, true); /* +/- x' y' */
+        }
+        else if (Board::__tokens_dict[prefix[low]] == "*")
+        {
+            this->derivat.push_back(Board::__tokens_inv_dict["+"]); /* +  */
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* + * */
+            size_t temp = low+1+grasp[low+1];
+            for (int k = low+1; k <= temp; k++) /* + * x */
+            {
+                this->derivat.push_back(prefix[k]);
+            }
+            derivePrefixHelper(temp+1, temp+1+grasp[temp+1], dx, prefix, grasp, true); /* + * x y' */
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* + * x y' * */
+            derivePrefixHelper(low+1, temp, dx, prefix, grasp, true); /* + * x y' * x' */
+            for (int k = temp+1; k <= temp+1+grasp[temp+1]; k++)
+            {
+                this->derivat.push_back(prefix[k]); /* + * x y' * x' y */
+            }
+        }
+        
+        else if (Board::__tokens_dict[prefix[low]] == "/")
+        {
+            this->derivat.push_back(Board::__tokens_inv_dict["/"]); /* / */
+            this->derivat.push_back(Board::__tokens_inv_dict["-"]); /* / - */
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* / - * */
+            size_t temp = low+1+grasp[low+1];
+            derivePrefixHelper(low+1, temp, dx, prefix, grasp, true); /* / - * x' */
+            int k;
+            for (k = temp+1; k <= temp+1+grasp[temp+1]; k++) /* / - * x' y */
+            {
+                this->derivat.push_back(prefix[k]);
+            }
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* / - * x' y * */
+            for (k = low+1; k <= temp; k++) /* / - * x' y * x */
+            {
+                this->derivat.push_back(prefix[k]);
+            }
+            derivePrefixHelper(temp+1, temp+1+grasp[temp+1], dx, prefix, grasp, true); /* / - * x' y * x y' */
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* / - * x' y * x y' * */
+            for (k = temp+1; k <= temp+1+grasp[temp+1]; k++) /* / - * x' y * x y' * y */
+            {
+                this->derivat.push_back(prefix[k]);
+            }
+            for (k = temp+1; k <= temp+1+grasp[temp+1]; k++) /* / - * x' y * x y' * y y */
+            {
+                this->derivat.push_back(prefix[k]);
+            }
+        }
+        
+        else if (Board::__tokens_dict[prefix[low]] == "^")
+        {
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* * */
+            this->derivat.push_back(Board::__tokens_inv_dict["^"]); /* * ^ */
+            size_t temp = low+1+grasp[low+1];
+            int k;
+            for (k = low+1; k <= temp; k++) /* * ^ x */
+            {
+                this->derivat.push_back(prefix[k]);
+            }
+            for (k = temp+1; k <= temp+1+grasp[temp+1]; k++) /* * ^ x y */
+            {
+                this->derivat.push_back(prefix[k]);
+            }
+            std::vector<float> prefix_temp;
+            std::vector<int> grasp_temp;
+            size_t reserve_amount = up+2-low; //up-low -> x and y, 2 -> ln and *, => up+2-low -> * ln x y
+            prefix_temp.reserve(reserve_amount);
+            grasp_temp.reserve(reserve_amount);
+            prefix_temp.push_back(Board::__tokens_inv_dict["*"]); /* * */
+            prefix_temp.push_back(Board::__tokens_inv_dict["ln"]); /* * ln */
+            for (k = low+1; k <= temp; k++) /* * ln x */
+            {
+                prefix_temp.push_back(prefix[k]);
+            }
+            for (k = temp+1; k <= temp+1+grasp[temp+1]; k++) /* * ln x y */
+            {
+                prefix_temp.push_back(prefix[k]);
+            }
+            setPrefixGR(prefix_temp, grasp_temp);
+            derivePrefixHelper(0, prefix_temp.size() - 1, dx, prefix_temp, grasp_temp, true); /* * ^ x y (* ln x y)' */
+        }
+
+        else if (Board::__tokens_dict[prefix[low]] == "cos")
+        {
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* * */
+            this->derivat.push_back(Board::__tokens_inv_dict["~"]); /* * ~ */
+            this->derivat.push_back(Board::__tokens_inv_dict["sin"]); /* * ~ sin */
+            size_t temp = low+1;
+            for (int k = temp; k <= temp+grasp[temp]; k++)
+            {
+                this->derivat.push_back(prefix[k]); /* * ~ sin x */
+            }
+            derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* * ~ sin x x' */
+        }
+        
+        else if (Board::__tokens_dict[prefix[low]] == "sin")
+        {
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* * */
+            this->derivat.push_back(Board::__tokens_inv_dict["cos"]); /* * cos */
+            size_t temp = low+1;
+            for (int k = temp; k <= temp+grasp[temp]; k++)
+            {
+                this->derivat.push_back(prefix[k]); /* * cos x */
+            }
+            derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* * cos x x' */
+        }
+        
+        else if (Board::__tokens_dict[prefix[low]] == "sqrt")
+        {
+            this->derivat.push_back(Board::__tokens_inv_dict["/"]);         /* / */
+            size_t temp = low+1;
+            derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* / x' */
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]);         /* / x' * */
+            this->derivat.push_back(Board::__tokens_inv_dict["2"]);         /* / x' * 2 */
+            this->derivat.push_back(Board::__tokens_inv_dict["sqrt"]);      /* / x' * 2 sqrt */
+            for (int k = temp; k <= temp+grasp[temp]; k++) /* / x' * 2 sqrt x */
+            {
+                this->derivat.push_back(prefix[k]);
+            }
+        }
+        
+        else if (Board::__tokens_dict[prefix[low]] == "log" || Board::__tokens_dict[prefix[low]] == "ln")
+        {
+            this->derivat.push_back(Board::__tokens_inv_dict["/"]);               /* / */
+            size_t temp = low+1;
+            derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* / x' */
+            for (int k = temp; k <= temp+grasp[temp]; k++)
+            {
+                this->derivat.push_back(prefix[k]);      /* / x' x */
+            }
+        }
+        
+        else if (Board::__tokens_dict[prefix[low]] == "asin" || Board::__tokens_dict[prefix[low]] == "arcsin")
+        {
+            this->derivat.push_back(Board::__tokens_inv_dict["/"]);   /* / */
+            size_t temp = low+1;
+            derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* / x' */
+            this->derivat.push_back(Board::__tokens_inv_dict["sqrt"]); /* / x' sqrt */
+            this->derivat.push_back(Board::__tokens_inv_dict["-"]);    /* / x' sqrt - */
+            this->derivat.push_back(Board::__tokens_inv_dict["1"]);    /* / x' sqrt - 1 */
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]);    /* / x' sqrt - 1 * */
+            for (int k = temp; k <= temp+grasp[temp]; k++) /* / x' sqrt - 1 * x */
+            {
+                this->derivat.push_back(prefix[k]);
+            }
+            for (int k = temp; k <= temp+grasp[temp]; k++) /* / x' sqrt - 1 * x x */
+            {
+                this->derivat.push_back(prefix[k]);
+            }
+        }
+        
+        else if (Board::__tokens_dict[prefix[low]] == "acos" || Board::__tokens_dict[prefix[low]] == "arccos")
+        {
+            this->derivat.push_back(Board::__tokens_inv_dict["~"]);   /* ~ */
+            this->derivat.push_back(Board::__tokens_inv_dict["/"]);   /* ~ / */
+            size_t temp = low+1;
+            derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* / x' */
+            this->derivat.push_back(Board::__tokens_inv_dict["sqrt"]); /* / x' sqrt */
+            this->derivat.push_back(Board::__tokens_inv_dict["-"]);    /* / x' sqrt - */
+            this->derivat.push_back(Board::__tokens_inv_dict["1"]);    /* / x' sqrt - 1 */
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]);    /* / x' sqrt - 1 * */
+            for (int k = temp; k <= temp+grasp[temp]; k++) /* / x' sqrt - 1 * x */
+            {
+                this->derivat.push_back(prefix[k]);
+            }
+            for (int k = temp; k <= temp+grasp[temp]; k++) /* / x' sqrt - 1 * x x */
+            {
+                this->derivat.push_back(prefix[k]);
+            }
+        }
+        
+        else if (Board::__tokens_dict[prefix[low]] == "tanh")
+        {
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]);      /* * */
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]);      /* * * */
+            this->derivat.push_back(Board::__tokens_inv_dict["sech"]);   /* * * sech */
+            size_t temp = low+1;
+            for (int k = temp; k <= temp+grasp[temp]; k++) /* * * sech x */
+            {
+                this->derivat.push_back(prefix[k]);
+            }
+            this->derivat.push_back(Board::__tokens_inv_dict["sech"]);   /* * * sech x sech */
+            for (int k = temp; k <= temp+grasp[temp]; k++) /* * * sech x sech x */
+            {
+                this->derivat.push_back(prefix[k]);
+            }
+            derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* * * sech x sech x x' */
+        }
+        
+        else if (Board::__tokens_dict[prefix[low]] == "sech")
+        {
+            this->derivat.push_back(Board::__tokens_inv_dict["~"]);      /* ~ */
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]);      /* ~ * */
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]);      /* ~ * * */
+            this->derivat.push_back(Board::__tokens_inv_dict["sech"]);   /* ~ * * sech */
+            size_t temp = low+1;
+            for (int k = temp; k <= temp+grasp[temp]; k++) /* ~ * * sech x */
+            {
+                this->derivat.push_back(prefix[k]);
+            }
+            this->derivat.push_back(Board::__tokens_inv_dict["tanh"]);   /* ~ * * sech x tanh */
+            for (int k = temp; k <= temp+grasp[temp]; k++) /* ~ * * sech x tanh x */
+            {
+                this->derivat.push_back(prefix[k]);
+            }
+            derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* ~ * * sech x tanh x x' */
+        }
+        
+        else if (Board::__tokens_dict[prefix[low]] == "exp")
+        {
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]);               /* * */
+            this->derivat.push_back(Board::__tokens_inv_dict["exp"]);             /* * exp */
+            size_t temp = low+1;
+            for (int k = temp; k <= temp+grasp[temp]; k++)
+            {
+                this->derivat.push_back(prefix[k]);      /* * exp x */
+            }
+            derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* * exp x x' */
+        }
+        
+        else if (Board::__tokens_dict[prefix[low]] == "~")
+        {
+            size_t temp = low+1;
+            this->derivat.push_back(prefix[low]); /* ~ */
+            derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* ~ x' */
+        }
+        
+        else
+        {
+            if (Board::__tokens_dict[prefix[low]] == dx)
+            {
+                this->derivat.push_back(Board::__tokens_inv_dict["1"]);
+            }
+            else
+            {
+                this->derivat.push_back(Board::__tokens_inv_dict["0"]);
+            }
+        }
+    }
+
+    void derivePrefix(int low, int up, const std::string& dx, const std::vector<float>& prefix, std::vector<int>& grasp)
+    {
+        derivePrefixHelper(low, up, dx, prefix, grasp, false);
+    }
+    
+    void setPostfixGR(const std::vector<float>& postfix, std::vector<int>& grasp)
+    {
+        grasp.reserve(postfix.size()); //grasp[k] = GR( postfix[k]), k = 1, ... ,i.
+        //In the paper they do `k = 1;` instead of `k = 0;`, presumably because GR(postfix[0]) always is 0, but it works
+        //if you set k = 0 too.
+        for (size_t k = 0; k < postfix.size(); ++k)
+        {
+            grasp.push_back(GR(k, postfix));
+        }
+    }
+    
+    /*
+    low and up: lower and upper Index bounds, respectively, for the piece of the array postfix which is to be the subject of the processing.
+    dx: string representing the variable by which the derivation is to be made. (The derivative is made wrt dx)
+    */
+    void derivePostfixHelper(int low, int up, const std::string& dx, const std::vector<float>& postfix, std::vector<int>& grasp, bool setGRvar = false)
+    {
+        if (!setGRvar)
+        {
+            grasp.clear();
+            this->derivat.clear();
+            // std::cout << this->derivat.size();
+            this->derivat.reserve(100);
+    //        Index = 0;
+            setPostfixGR(postfix, grasp);
+        }
+        //allowed ops: +, -, *, /, ^, unary +, unary -, sin(), cos(), tan(), ctg(), log(), sqrt(), const, x0, x1, ..., x_numFeatures
+        //Define `grasp` of postfix[i], i.e., the number of elements forming operands of postfix[i] (grasp(operand) = 0)
+        //The grasped elements of postfix[i] are the elements forming operands of postfix[i]
+        //The left-grasp-bound (LGB) of postfix[i] is the Index of the left-most grasped element of postfix[i] in the array postfix
+        //For the expression formed by postfix[i] and its grasped elements, the element postfix[i] is termed the `head` or `main element`
+        //ANY element postfix[i] is an N-arity operator acting on operands arg1, ..., argN, the heads of which are op1, ..., opN, where op1 is the left-neighest operator of postfix[i] in the array postfix (so operands are 0-arity operators)
+        //For an N-arity operator postfix[i]:
+            //The `grasp` of postfix[i]  is equal to i - LGB(postfix[i])
+            //grasp(postfix[i]) = N + sum(grasp(op1), ..., grasp(op_k), ..., grasp(opN))
+            //grasp(postfix[i]) = N + sum( (1 - grasp(op1)), ..., (k - grasp(op_k)), ..., (N - grasp(opN)))
+            //LGB(postfix[i]) = i - N - sum( (1 - grasp(op1)), ..., (k - grasp(op_k)), ..., (N - grasp(opN)))
+            //op_(N-j) = postfix[i - sum(grasp(op_(N-1)), ..., grasp(op_(N-j-1))) - j - 1], where j = 0, ..., N-1
+        //If the grasp of an arbitrary postfix[i] is greater than N, then at least one of its argument heads is also an operator.
+            //Example: If the grasp of any binary operator postfix[i] is greater than 2, then at least one of the two preceding elements in the RPN of the expression (postfix[i-1] and postfix[i-2]) is also an operator (unary or binary).
+        //postfix[numElements] is certainly an operator (unary or binary)
+        
+        //if Board::__tokens_dict[postfix[up]] is a binary operator, then:
+            //the head of its second argument (let's call it op2) is equal to postfix[up-1]
+            //then the grasped elements of op2 are the elements from postfix[up-1-grasp[up-1]] to postfix[up-1]
+                //e.g. postfix = {"x", "x", "*", "x", "cos", "x", "*", "+"}, up = 7 -> Board::__tokens_dict[postfix[up]] = "+" is binary
+                //so postfix[up-1] = "*" is the head of the second argument of "+" and so the grasped elements
+                //of postfix[up-1] are the elements [(postfix[up-1-grasp[up-1]] = postfix[6-3] = postfix[3]), postfix[up-1] = postfix[6]]
+                //i.e., the elements {"x", "cos", "x", "*"}
+            //the head of its first argument (lets call it op1) is equal to postfix[up-grasp(op2)-2] which is equal to postfix[up-2-grasp[up-1]].
+            //then the grasped elements of op1 are the elements from postfix[low = 0] to postfix[up-2-grasp[up-1]]
+                //e.g. postfix = {"x", "x", "*", "x", "cos", "x", "x", "*", "*", "+"}, up = 9 ->Board::__tokens_dict[postfix[up]] = "+" is binary
+                //so postfix[up-grasp(op2)-2] = postfix[9-5-2] = postfix[2] = "*" is the head of the first argument of "+" and so the grasped elements
+                //of postfix[up-grasp(op2)-2] are the elements [(postfix[low] = postfix[0], postfix[up-grasp(op2)-2] = postfix[9-5-2] = postfix[2]]
+                //i.e., the elements {"x", "x", "*"}
+
+        if (Board::__tokens_dict[postfix[up]] == "+" || Board::__tokens_dict[postfix[up]] == "-")
+        {
+            derivePostfixHelper(low, up-2-grasp[up-1], dx, postfix, grasp, true);  /*Putting x'*/
+            derivePostfixHelper(up-1-grasp[up-1], up-1, dx, postfix, grasp, true); /*Putting y'*/
+            this->derivat.push_back(postfix[up]);
+        }
+        else if (Board::__tokens_dict[postfix[up]] == "*")
+        {
+            for (int k = low; k <= up-2-grasp[up-1]; k++) /* x */
+            {
+                this->derivat.push_back(postfix[k]);
+            }
+            derivePostfixHelper(up-1-grasp[up-1], up-1, dx, postfix, grasp, true); /* x y' */
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* x y' "*" */
+            derivePostfixHelper(low, up-2-grasp[up-1], dx, postfix, grasp, true); /* x y' "*" x' */
+            for (int k = up-1-grasp[up-1]; k <= up - 1; k++)
+            {
+                this->derivat.push_back(postfix[k]); /* x y' "*" x' y */
+            }
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* x y' "*" x' y "*" */
+            this->derivat.push_back(Board::__tokens_inv_dict["+"]); /* x y' "*" x' y "*" + */
+        }
+        
+        else if (Board::__tokens_dict[postfix[up]] == "/")
+        {
+            derivePostfixHelper(low, up-2-grasp[up-1], dx, postfix, grasp, true); /* x' */
+            int k;
+            for (k = up-1-grasp[up-1]; k <= up-1; k++) /* x' y */
+            {
+                this->derivat.push_back(postfix[k]);
+            }
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* x' y *  */
+            for (k = low; k <= up-2-grasp[up-1]; k++) /* x' y * x */
+            {
+                this->derivat.push_back(postfix[k]);
+            }
+            derivePostfixHelper(up-1-grasp[up-1], up-1, dx, postfix, grasp, true); /* x' y * x y' */
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* x' y * x y' * */
+            this->derivat.push_back(Board::__tokens_inv_dict["-"]); /* x' y * x y' * - */
+            for (k = up-1-grasp[up-1]; k <= up-1; k++)      /* x' y * x y' * - y */
+            {
+                this->derivat.push_back(postfix[k]);
+            }
+            for (k = up-1-grasp[up-1]; k <= up-1; k++)      /* x' y * x y' * - y y */
+            {
+                this->derivat.push_back(postfix[k]);
+            }
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* x' y * x y' * - y y * */
+            this->derivat.push_back(Board::__tokens_inv_dict["/"]); /* x' y * x y' * - y y * / */
+        }
+        
+        else if (Board::__tokens_dict[postfix[up]] == "^")
+        {
+            int k;
+            for (k = low; k <= up-2-grasp[up-1]; k++) /* x */
+            {
+                this->derivat.push_back(postfix[k]);
+            }
+            for (k = up-1-grasp[up-1]; k <= up-1; k++) /* x y */
+            {
+                this->derivat.push_back(postfix[k]);
+            }
+            this->derivat.push_back(Board::__tokens_inv_dict["^"]); /* x y ^ */
+
+            std::vector<float> postfix_temp;
+            std::vector<int> grasp_temp;
+            size_t reserve_amount = up+2-low; //up-low -> x and y, 2 -> ln and *, => up+2-low -> x ln y *
+            postfix_temp.reserve(reserve_amount);
+            grasp_temp.reserve(reserve_amount);
+            
+            for (k = low; k <= up-2-grasp[up-1]; k++) /* x */
+            {
+                postfix_temp.push_back(postfix[k]);
+            }
+            postfix_temp.push_back(Board::__tokens_inv_dict["ln"]); /* x ln  */
+            for (k = up-1-grasp[up-1]; k <= up-1; k++) /* x ln y */
+            {
+                postfix_temp.push_back(postfix[k]);
+            }
+            postfix_temp.push_back(Board::__tokens_inv_dict["*"]); /* x ln y * */
+            setPostfixGR(postfix_temp, grasp_temp);
+            
+            derivePostfixHelper(0, postfix_temp.size() - 1, dx, postfix_temp, grasp_temp, true); /* x y ^ (x ln y *)' */
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* x y ^ (x ln y *)' * */
+        }
+
+        else if (Board::__tokens_dict[postfix[up]] == "cos")
+        {
+            for (int k = low; k <= up-1; k++)
+            {
+                this->derivat.push_back(postfix[k]); /* x */
+            }
+            this->derivat.push_back(Board::__tokens_inv_dict["sin"]); /* x sin */
+            this->derivat.push_back(Board::__tokens_inv_dict["~"]); /* x sin ~ */
+            derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x sin ~ x' */
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* x sin ~ x' * */
+        }
+        
+        else if (Board::__tokens_dict[postfix[up]] == "sin")
+        {
+            for (int k = low; k <= up-1; k++)
+            {
+                this->derivat.push_back(postfix[k]); /* x */
+            }
+            this->derivat.push_back(Board::__tokens_inv_dict["cos"]); /* x cos */
+            derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x cos x' */
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* x cos x' * */
+        }
+        
+        else if (Board::__tokens_dict[postfix[up]] == "sqrt")
+        {
+            derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
+            this->derivat.push_back(Board::__tokens_inv_dict["2"]); /* x' 2 */
+            for (int k = low; k <= up-1; k++) /* x' 2 x */
+            {
+                this->derivat.push_back(postfix[k]);
+            }
+            this->derivat.push_back(Board::__tokens_inv_dict["sqrt"]);    /* x' 2 x sqrt */
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]);       /* x' 2 x sqrt * */
+            this->derivat.push_back(Board::__tokens_inv_dict["/"]);       /* x' 2 x sqrt * / */
+        }
+        
+        else if (Board::__tokens_dict[postfix[up]] == "log" || Board::__tokens_dict[postfix[up]] == "ln")
+        {
+            derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
+            for (int k = low; k <= up-1; k++)
+            {
+                this->derivat.push_back(postfix[k]);      /* x' x */
+            }
+            this->derivat.push_back(Board::__tokens_inv_dict["/"]);               /* x' x / */
+        }
+        
+        else if (Board::__tokens_dict[postfix[up]] == "asin" || Board::__tokens_dict[postfix[up]] == "arcsin")
+        {
+            derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
+            this->derivat.push_back(Board::__tokens_inv_dict["1"]); /* x' 1 */
+            for (int k = low; k <= up-1; k++) /* x' 1 x */
+            {
+                this->derivat.push_back(postfix[k]);
+            }
+            for (int k = low; k <= up-1; k++) /* x' 1 x x */
+            {
+                this->derivat.push_back(postfix[k]);
+            }
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]);   /* x' 1 x x * */
+            this->derivat.push_back(Board::__tokens_inv_dict["-"]);   /* x' 1 x x * - */
+            this->derivat.push_back(Board::__tokens_inv_dict["sqrt"]);   /* x' 1 x x * - sqrt */
+            this->derivat.push_back(Board::__tokens_inv_dict["/"]);   /* x' 1 x x * - sqrt / */
+        }
+        
+        else if (Board::__tokens_dict[postfix[up]] == "acos" || Board::__tokens_dict[postfix[up]] == "arccos")
+        {
+            derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
+            this->derivat.push_back(Board::__tokens_inv_dict["1"]); /* x' 1 */
+            for (int k = low; k <= up-1; k++) /* x' 1 x */
+            {
+                this->derivat.push_back(postfix[k]);
+            }
+            for (int k = low; k <= up-1; k++) /* x' 1 x x */
+            {
+                this->derivat.push_back(postfix[k]);
+            }
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]);   /* x' 1 x x * */
+            this->derivat.push_back(Board::__tokens_inv_dict["-"]);   /* x' 1 x x * - */
+            this->derivat.push_back(Board::__tokens_inv_dict["sqrt"]);   /* x' 1 x x * - sqrt */
+            this->derivat.push_back(Board::__tokens_inv_dict["/"]);   /* x' 1 x x * - sqrt / */
+            this->derivat.push_back(Board::__tokens_inv_dict["~"]);   /* x' 1 x x * - sqrt / ~ */
+        }
+        
+        else if (Board::__tokens_dict[postfix[up]] == "tanh")
+        {
+            for (int k = low; k <= up-1; k++) /* x */
+            {
+                this->derivat.push_back(postfix[k]);
+            }
+            this->derivat.push_back(Board::__tokens_inv_dict["sech"]);   /* x sech */
+            for (int k = low; k <= up-1; k++) /* x sech x */
+            {
+                this->derivat.push_back(postfix[k]);
+            }
+            this->derivat.push_back(Board::__tokens_inv_dict["sech"]);   /* x sech x sech */
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]);      /* x sech x sech * */
+            derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x sech x sech * x' */
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]);   /* x sech x sech * x' * */
+        }
+        
+        else if (Board::__tokens_dict[postfix[up]] == "sech")
+        {
+            for (int k = low; k <= up-1; k++) /* x */
+            {
+                this->derivat.push_back(postfix[k]);
+            }
+            this->derivat.push_back(Board::__tokens_inv_dict["sech"]);   /* x sech */
+            this->derivat.push_back(Board::__tokens_inv_dict["~"]);      /* x sech ~ */
+            for (int k = low; k <= up-1; k++) /* x sech ~ x */
+            {
+                this->derivat.push_back(postfix[k]);
+            }
+            this->derivat.push_back(Board::__tokens_inv_dict["tanh"]);   /* x sech ~ x tanh */
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]);      /* x sech ~ x tanh * */
+            derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x sech ~ x tanh * x' */
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]);   /* x sech ~ x tanh * x' * */
+        }
+        
+        else if (Board::__tokens_dict[postfix[up]] == "exp")
+        {
+            derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
+            for (int k = low; k <= up-1; k++)
+            {
+                this->derivat.push_back(postfix[k]);      /* x' x */
+            }
+            this->derivat.push_back(Board::__tokens_inv_dict["exp"]);               /* x' x exp */
+            this->derivat.push_back(Board::__tokens_inv_dict["*"]);               /* x' x exp * */
+        }
+        
+        else if (Board::__tokens_dict[postfix[up]] == "~")
+        {
+            derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
+            this->derivat.push_back(postfix[up]); /* x' ~ */
+        }
+        
+        else
+        {
+            if (Board::__tokens_dict[postfix[up]] == dx)
+            {
+                this->derivat.push_back(Board::__tokens_inv_dict["1"]);
+            }
+            else
+            {
+                this->derivat.push_back(Board::__tokens_inv_dict["0"]);
+            }
+        }
+    }
+
+    void derivePostfix(int low, int up, const std::string& dx, const std::vector<float>& postfix, std::vector<int>& grasp)
+    {
+        derivePostfixHelper(low, up, dx, postfix, grasp, false);
+    }
 };
 
-// 2.5382*cos(x_3) + x_0^2 - 0.5
-// postfix = "const x3 cos * x0 x0 * const - +"
-// prefix = "+ * const cos x3 - * x0 x0 const"
-float exampleFunc(const Eigen::VectorXf& x)
+std::vector<float> VortexRadialProfile(Board& x)
 {
-    return 2.5382f*cos(x[3]) + (x[0]*x[0]) - 0.5f;
-//    return 5.0f*cos(x[1]+x[3])+x[4];
-}
+    std::vector<float> result;
+    result.reserve(100);
+    std::vector<int> grasp;
+    std::vector<float> R_prime;
+    std::string mu = "1";
+    std::string S = "1";
+    if (x.expression_type == "prefix")
+    {
+        //- + + * / 1 2 R'' * / 1 * 2 r R' * - mu / * S S * * 2 r r R * * R R R
+        result.push_back(Board::__tokens_inv_dict["-"]);
+        result.push_back(Board::__tokens_inv_dict["+"]);
+        result.push_back(Board::__tokens_inv_dict["+"]);
+        result.push_back(Board::__tokens_inv_dict["*"]);
+        result.push_back(Board::__tokens_inv_dict["/"]);
+        result.push_back(Board::__tokens_inv_dict["1"]);
+        result.push_back(Board::__tokens_inv_dict["2"]);
+        x.derivePrefix(0, x.pieces.size()-1, "x0", x.pieces, grasp);
+        R_prime = x.derivat;
+        x.derivePrefix(0, R_prime.size()-1, "x0", R_prime, grasp);
+        for (float i: x.derivat) //R''
+        {
+            result.push_back(i);
+        }
+        result.push_back(Board::__tokens_inv_dict["*"]);
+        result.push_back(Board::__tokens_inv_dict["/"]);
+        result.push_back(Board::__tokens_inv_dict["1"]);
+        result.push_back(Board::__tokens_inv_dict["*"]);
+        result.push_back(Board::__tokens_inv_dict["2"]);
+        result.push_back(Board::__tokens_inv_dict["x0"]); //r
+        for (float i: R_prime) //R'
+        {
+            result.push_back(i);
+        }
+        result.push_back(Board::__tokens_inv_dict["*"]);
+        result.push_back(Board::__tokens_inv_dict["-"]);
+        result.push_back(Board::__tokens_inv_dict[mu]);
+        result.push_back(Board::__tokens_inv_dict["/"]);
+        result.push_back(Board::__tokens_inv_dict["*"]);
+        result.push_back(Board::__tokens_inv_dict[S]);
+        result.push_back(Board::__tokens_inv_dict[S]);
+        result.push_back(Board::__tokens_inv_dict["*"]);
+        result.push_back(Board::__tokens_inv_dict["*"]);
+        result.push_back(Board::__tokens_inv_dict["2"]);
+        result.push_back(Board::__tokens_inv_dict["x0"]); //r
+        result.push_back(Board::__tokens_inv_dict["x0"]); //r
+        for (float i: x.pieces) //R
+        {
+            result.push_back(i);
+        }
+        result.push_back(Board::__tokens_inv_dict["*"]);
+        result.push_back(Board::__tokens_inv_dict["*"]);
+        for (float i: x.pieces) //R
+        {
+            result.push_back(i);
+        }
+        for (float i: x.pieces) //R
+        {
+            result.push_back(i);
+        }
+        for (float i: x.pieces) //R
+        {
+            result.push_back(i);
+        }
+    }
+    else if (x.expression_type == "postfix")
+    {
+        //1 2 / R'' * 1 2 r * / R' * + mu S S * 2 r r * * / - R * + R R * R * -
+        result.push_back(Board::__tokens_inv_dict["1"]);
+        result.push_back(Board::__tokens_inv_dict["2"]);
+        result.push_back(Board::__tokens_inv_dict["/"]);
+        x.derivePostfix(0, x.pieces.size()-1, "x0", x.pieces, grasp);
+        R_prime = x.derivat;
+        x.derivePostfix(0, R_prime.size()-1, "x0", R_prime, grasp);
+        for (float i: x.derivat) //R''
+        {
+            result.push_back(i);
+        }
+        result.push_back(Board::__tokens_inv_dict["*"]);
+        result.push_back(Board::__tokens_inv_dict["1"]);
+        result.push_back(Board::__tokens_inv_dict["2"]);
+        result.push_back(Board::__tokens_inv_dict["x0"]); //r
+        result.push_back(Board::__tokens_inv_dict["*"]);
+        result.push_back(Board::__tokens_inv_dict["/"]);
+        for (float i: R_prime) //R'
+        {
+            result.push_back(i);
+        }
+        result.push_back(Board::__tokens_inv_dict["*"]);
+        result.push_back(Board::__tokens_inv_dict["+"]);
+        result.push_back(Board::__tokens_inv_dict[mu]);
+        result.push_back(Board::__tokens_inv_dict[S]);
+        result.push_back(Board::__tokens_inv_dict[S]);
+        result.push_back(Board::__tokens_inv_dict["*"]);
+        result.push_back(Board::__tokens_inv_dict["2"]);
+        result.push_back(Board::__tokens_inv_dict["x0"]); //r
+        result.push_back(Board::__tokens_inv_dict["x0"]); //r
+        result.push_back(Board::__tokens_inv_dict["*"]);
+        result.push_back(Board::__tokens_inv_dict["*"]);
+        result.push_back(Board::__tokens_inv_dict["/"]);
+        result.push_back(Board::__tokens_inv_dict["-"]);
+        for (float i: x.pieces) //R
+        {
+            result.push_back(i);
+        }
+        result.push_back(Board::__tokens_inv_dict["*"]);
+        result.push_back(Board::__tokens_inv_dict["+"]);
+        for (float i: x.pieces) //R
+        {
+            result.push_back(i);
+        }
+        for (float i: x.pieces) //R
+        {
+            result.push_back(i);
+        }
+        result.push_back(Board::__tokens_inv_dict["*"]);
+        for (float i: x.pieces) //R
+        {
+            result.push_back(i);
+        }
+        result.push_back(Board::__tokens_inv_dict["*"]);
+        result.push_back(Board::__tokens_inv_dict["-"]);
 
-float Hemberg_1(const Eigen::VectorXf& x)
-{
-    return 8.0f / (2.0f + x[0]*x[0] + x[1]*x[1]);
-}
-
-float Hemberg_2(const Eigen::VectorXf& x)
-{
-    return x[0]*x[0]*x[0]*(x[0]-1.0f) + x[1]*(x[1]/2.0f - 1.0f);
-}
-
-float Hemberg_3(const Eigen::VectorXf& x)
-{
-    return x[0]*x[0]*x[0]/5.0f + x[1]*x[1]*x[1]/2.0f - x[1] - x[0];
-}
-
-float Hemberg_4(const Eigen::VectorXf& x)
-{
-    return (30.0f*x[0]*x[0])/((10.0f-x[0])*x[1]*x[1]) + x[0]*x[0]*x[0]*x[0] - x[0]*x[0]*x[0] + x[1]*x[1]/2.0f - x[1] + (8.0f / (2.0f + x[0]*x[0] + x[1]*x[1])) + x[0];
-}
-
-float Hemberg_5(const Eigen::VectorXf& x)
-{
-    return (30.0f*x[0]*x[0])/((10.0f-x[0])*x[1]*x[1]) + x[0]*x[0]*x[0]*x[0] - (4.0f*x[0]*x[0]*x[0])/5.0f + x[1]*x[1]/2.0f - 2.0f*x[1] + (8.0f / (2.0f + x[0]*x[0] + x[1]*x[1])) + (x[1]*x[1]*x[1])/2.0f - x[0];
-}
-
-float Feynman_1(const Eigen::VectorXf& x)
-{
-    return (x[0]*x[1])/(x[2]*(std::pow(x[3],2)-std::pow(x[4],2)));
-}
-
-float Feynman_2(const Eigen::VectorXf& x)
-{
-    return (x[0]*x[1]*x[2])/(std::pow((x[3]-x[4]),2)+std::pow((x[5]-x[6]),2)+std::pow((x[7]-x[8]),2));
-}
-
-float Feynman_3(const Eigen::VectorXf& x)
-{
-    return std::pow((x[0]*x[1]*x[2]*x[3]*x[4])/(4*x[5]*std::pow(sin(x[6]/2),2)),2);
-}
-
-float Feynman_4(const Eigen::VectorXf& x)
-{
-    return (x[0]*x[1]/(x[2]*x[3]))+((x[0]*x[4])/(x[5]*std::pow(x[6],2)*x[2]*x[3]))*x[7];
-}
-
-float Feynman_5(const Eigen::VectorXf& x)
-{
-    return ((x[0]*x[1])/std::pow(x[2],2)) * (1 + (sqrt(1 + ((2*x[3]*std::pow(x[2],2))/(x[0]*std::pow(x[1],2)))) * cos(x[4]-x[5])));
+    }
+    return result;
 }
 
 //https://dl.acm.org/doi/pdf/10.1145/3449639.3459345?casa_token=Np-_TMqxeJEAAAAA:8u-d6UyINV6Ex02kG9LthsQHAXMh2oxx3M4FG8ioP0hGgstIW45X8b709XOuaif5D_DVOm_FwFo
 //https://core.ac.uk/download/pdf/6651886.pdf
-void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, const unsigned long num_epochs = 1000, float eta = 0.5f, float theta = 0.5f)
+void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0)
 {
     std::map<int, std::vector<float>> scores; //map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
@@ -1616,8 +2320,6 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
          */
         std::atomic<float> max_score{0.0};
         std::vector<std::pair<int, float>> temp_scores;
-        std::string best_expression, orig_expression;
-        
         auto start_time = Clock::now();
         std::thread pushBackThread([&]() // Separate thread to push_back the pair every measure_period seconds
         {
@@ -1632,11 +2334,11 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
          Inside of thread:
          */
         
-        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &num_epochs, &best_expression, &orig_expression, &eta, &theta]()
+        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point]()
         {
             std::random_device rand_dev;
             std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-            Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, layers, num_epochs, eta, theta);
+            Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
             sync_point.arrive_and_wait();
             Board secondary(false, 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache); //For perturbations
             float score = 0.0f, check_point_score = 0.0f;
@@ -1659,11 +2361,11 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
             
             auto updateScore = [&](float r = 1.0f)
             {
-    //            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.srnn.pieces) : x.getRPNdepth(x.srnn.pieces)).first == x.n);
-    //            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.srnn.pieces) : x.getRPNdepth(x.srnn.pieces)).second);
+    //            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
+    //            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
                 if ((score > max_score) || (x.pos_dist(generator) < P(score-max_score)))
                 {
-                    current = x.srnn.pieces; //update current expression
+                    current = x.pieces; //update current expression
                     if (score > max_score)
                     {
     //                    expression = x._to_infix();
@@ -1673,14 +2375,11 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
     //                    std::cout << "Best expression = " << expression << '\n';
     //                    std::cout << "Best expression (original format) = " << orig_expression << '\n';
     //                    best_expression = std::move(expression);
-                        std::scoped_lock str_lock(Board::thread_locker);
-                        best_expression = x._to_infix();
-                        orig_expression = x.expression();
                     }
                 }
                 else
                 {
-                    x.srnn.pieces = current; //reset perturbed state to current state
+                    x.pieces = current; //reset perturbed state to current state
                 }
                 T = r*T;
             };
@@ -1688,45 +2387,45 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
             //Another way to do this might be clustering...
             auto Perturbation = [&](int n, int i)
             {
-                //Step 1: Generate a random depth-n sub-expression `secondary_one.srnn.pieces`
-                secondary.srnn.pieces.clear();
+                //Step 1: Generate a random depth-n sub-expression `secondary_one.pieces`
+                secondary.pieces.clear();
                 sub_exprs.clear();
                 secondary.n = n;
                 while (secondary.complete_status() == -1)
                 {
                     temp_legal_moves = secondary.get_legal_moves();
                     std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
-                    secondary.srnn.pieces.push_back(temp_legal_moves[distribution(generator)]);
+                    secondary.pieces.push_back(temp_legal_moves[distribution(generator)]);
                 }
                 
-    //            assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.srnn.pieces) : secondary.getRPNdepth(secondary.srnn.pieces)).first == secondary.n);
-    //            assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.srnn.pieces) : secondary.getRPNdepth(secondary.srnn.pieces)).second);
+    //            assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces) : secondary.getRPNdepth(secondary.pieces)).first == secondary.n);
+    //            assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces) : secondary.getRPNdepth(secondary.pieces)).second);
                 
                 if (n == x.n)
                 {
-                    std::swap(secondary.srnn.pieces, x.srnn.pieces);
+                    std::swap(secondary.pieces, x.pieces);
                 }
                 else
                 {
                     //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
-                    //in `x.srnn.pieces` and store them in an std::vector<std::pair<int, int>>
+                    //in `x.pieces` and store them in an std::vector<std::pair<int, int>>
                     //called `sub_exprs`.
-                    secondary.get_indices(sub_exprs, x.srnn.pieces);
+                    secondary.get_indices(sub_exprs, x.pieces);
                     
                     //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `pert_ind`
 
                     std::uniform_int_distribution<int> distribution(0, sub_exprs.size() - 1);
                     int pert_ind = distribution(generator);
                     
-                    //Step 4: Substitute sub_exprs_1[pert_ind] in x.srnn.pieces with secondary_one.srnn.pieces
+                    //Step 4: Substitute sub_exprs_1[pert_ind] in x.pieces with secondary_one.pieces
                     
-                    auto start = x.srnn.pieces.begin() + sub_exprs[pert_ind].first;
-                    auto end = std::min(x.srnn.pieces.begin() + sub_exprs[pert_ind].second, x.srnn.pieces.end());
-                    x.srnn.pieces.erase(start, end+1);
-                    x.srnn.pieces.insert(start, secondary.srnn.pieces.begin(), secondary.srnn.pieces.end()); //could be a move operation: secondary.srnn.pieces doesn't need to be in a defined state after this->params
+                    auto start = x.pieces.begin() + sub_exprs[pert_ind].first;
+                    auto end = std::min(x.pieces.begin() + sub_exprs[pert_ind].second, x.pieces.end());
+                    x.pieces.erase(start, end+1);
+                    x.pieces.insert(start, secondary.pieces.begin(), secondary.pieces.end()); //could be a move operation: secondary.pieces doesn't need to be in a defined state after this->params
                 }
                 
-                //Step 5: Evaluate the new mutated `x.srnn.pieces` and update score if needed
+                //Step 5: Evaluate the new mutated `x.pieces` and update score if needed
                 score = x.complete_status(false);
                 updateScore(pow(ratio, 1.0f/(i+1)));
             };
@@ -1737,8 +2436,8 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
                 temp_legal_moves = x.get_legal_moves(); //the legal moves
                 temp_sz = temp_legal_moves.size(); //the number of legal moves
                 std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
-                x.srnn.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
-                current.push_back(x.srnn.pieces.back());
+                x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
+                current.push_back(x.pieces.back());
             }
             updateScore();
             
@@ -1782,9 +2481,7 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
         
         std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
         std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-        std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-        std::cout << "Best expression = " << best_expression << '\n';
-        std::cout << "Best expression (original format) = " << orig_expression << '\n';
+        std::cout << "Best score = " << max_score.load() << ", MSE = " << (1/max_score)-1 << '\n';
     }
     std::ofstream out(filename);
     for (auto& i: scores)
@@ -1799,7 +2496,7 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
 }
 
 //https://arxiv.org/abs/2310.06609
-void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, const unsigned long num_epochs = 1000, float eta = 0.5f, float theta = 0.5f)
+void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0)
 {
     std::map<int, std::vector<float>> scores; //map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
@@ -1820,8 +2517,6 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
          */
         std::atomic<float> max_score{0.0};
         std::vector<std::pair<int, float>> temp_scores;
-        std::string best_expression, orig_expression;
-        
         auto start_time = Clock::now();
         std::thread pushBackThread([&]() // Separate thread to push_back the pair every measure_period seconds
         {
@@ -1836,11 +2531,11 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
          Inside of thread:
          */
         
-        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &num_epochs, &best_expression, &orig_expression, &eta, &theta]()
+        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point]()
         {
             std::random_device rand_dev;
             std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-            Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, layers, num_epochs, eta, theta);
+            Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
             sync_point.arrive_and_wait();
             Board secondary_one(false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache), secondary_two(false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache); //For crossover and mutations
             float score = 0.0f, mut_prob = 0.8f, rand_mut_cross;
@@ -1858,16 +2553,13 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
             
             auto updateScore = [&]()
             {
-        //        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.srnn.pieces) : x.getRPNdepth(x.srnn.pieces)).first == x.n);
-        //        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.srnn.pieces) : x.getRPNdepth(x.srnn.pieces)).second);
+        //        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
+        //        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
                 if (score > max_score)
                 {
         //            expression = x._to_infix();
         //            orig_expression = x.expression();
                     max_score = score;
-                    std::scoped_lock str_lock(Board::thread_locker);
-                    best_expression = x._to_infix();
-                    orig_expression = x.expression();
         //            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
         //            std::cout << "Best expression = " << expression << '\n';
         //            std::cout << "Best expression (original format) = " << orig_expression << '\n';
@@ -1883,52 +2575,52 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                     temp_legal_moves = x.get_legal_moves(); //the legal moves
                     temp_sz = temp_legal_moves.size(); //the number of legal moves
                     std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
-                    x.srnn.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
+                    x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
                 }
                 
                 updateScore();
-                individuals.push_back(std::make_pair(x.srnn.pieces, score));
-                x.srnn.pieces.clear();
+                individuals.push_back(std::make_pair(x.pieces, score));
+                x.pieces.clear();
             }
             
             auto Mutation = [&](int n)
             {
-                //Step 1: Generate a random depth-n sub-expression `secondary_one.srnn.pieces`
-                secondary_one.srnn.pieces.clear();
+                //Step 1: Generate a random depth-n sub-expression `secondary_one.pieces`
+                secondary_one.pieces.clear();
                 sub_exprs_1.clear();
                 secondary_one.n = n;
                 while (secondary_one.complete_status() == -1)
                 {
                     temp_legal_moves = secondary_one.get_legal_moves();
                     std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
-                    secondary_one.srnn.pieces.push_back(temp_legal_moves[distribution(generator)]);
+                    secondary_one.pieces.push_back(temp_legal_moves[distribution(generator)]);
                 }
                 
-                assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.srnn.pieces) : secondary_one.getRPNdepth(secondary_one.srnn.pieces)).first == secondary_one.n);
-                assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.srnn.pieces) : secondary_one.getRPNdepth(secondary_one.srnn.pieces)).second);
+    //            assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).first == secondary_one.n);
+    //            assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).second);
 
                 
                 //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
-                //in `x.srnn.pieces` and store them in an std::vector<std::pair<int, int>>
+                //in `x.pieces` and store them in an std::vector<std::pair<int, int>>
                 //called `sub_exprs_1`.
-                x.srnn.pieces = individuals[selector_dist(generator)].first; //A randomly selected individual to be mutated
-                secondary_one.get_indices(sub_exprs_1, x.srnn.pieces);
+                x.pieces = individuals[selector_dist(generator)].first; //A randomly selected individual to be mutated
+                secondary_one.get_indices(sub_exprs_1, x.pieces);
                 
                 //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `mut_ind`
                 std::uniform_int_distribution<int> distribution(0, sub_exprs_1.size() - 1);
                 int mut_ind = distribution(generator);
                 
-                //Step 4: Substitute sub_exprs_1[mut_ind] in x.srnn.pieces with secondary_one.srnn.pieces
+                //Step 4: Substitute sub_exprs_1[mut_ind] in x.pieces with secondary_one.pieces
                 
-                auto start = x.srnn.pieces.begin() + sub_exprs_1[mut_ind].first;
-                auto end = std::min(x.srnn.pieces.begin() + sub_exprs_1[mut_ind].second, x.srnn.pieces.end()-1);
-                x.srnn.pieces.erase(start, end+1);
-                x.srnn.pieces.insert(start, secondary_one.srnn.pieces.begin(), secondary_one.srnn.pieces.end());
+                auto start = x.pieces.begin() + sub_exprs_1[mut_ind].first;
+                auto end = std::min(x.pieces.begin() + sub_exprs_1[mut_ind].second, x.pieces.end()-1);
+                x.pieces.erase(start, end+1);
+                x.pieces.insert(start, secondary_one.pieces.begin(), secondary_one.pieces.end());
                 
-                //Step 5: Evaluate the new mutated `x.srnn.pieces` and update score if needed
+                //Step 5: Evaluate the new mutated `x.pieces` and update score if needed
                 score = x.complete_status(false);
                 updateScore();
-                individuals.push_back(std::make_pair(x.srnn.pieces, score));
+                individuals.push_back(std::make_pair(x.pieces, score));
             };
             
             auto Crossover = [&](int n)
@@ -1992,17 +2684,17 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                     std::swap_ranges(start_1, end_1+1, start_2);
                 }
 
-                x.srnn.pieces = individual_1.first;
+                x.pieces = individual_1.first;
                 score = x.complete_status(false);
                 updateScore();
                 
-                individuals.push_back(std::make_pair(x.srnn.pieces, score));
+                individuals.push_back(std::make_pair(x.pieces, score));
                 
-                x.srnn.pieces = individual_2.first;
+                x.pieces = individual_2.first;
                 score = x.complete_status(false);
                 updateScore();
                 
-                individuals.push_back(std::make_pair(x.srnn.pieces, score));
+                individuals.push_back(std::make_pair(x.pieces, score));
             };
 
             
@@ -2060,10 +2752,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         
         std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
         std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-        std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-        std::cout << "Best expression = " << best_expression << '\n';
-        std::cout << "Best expression (original format) = " << orig_expression << '\n';
-        
+        std::cout << "Best score = " << max_score.load() << ", MSE = " << (1/max_score)-1 << '\n';
     }
     
     
@@ -2079,7 +2768,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
     out.close();
 }
 
-void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, const unsigned long num_epochs = 1000, float eta = 0.5f, float theta = 0.5f)
+void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0)
 {
     std::map<int, std::vector<float>> scores; //map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
@@ -2101,8 +2790,6 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
         
         std::atomic<float> max_score{0.0};
         std::vector<std::pair<int, float>> temp_scores;
-        std::string best_expression, orig_expression;
-        
         auto start_time = Clock::now();
         std::thread pushBackThread([&]() // Separate thread to push_back the pair every measure_period seconds
         {
@@ -2117,11 +2804,11 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
          Inside of thread:
          */
         
-        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &num_epochs, &best_expression, &orig_expression, &eta, &theta]()
+        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point]()
         {
             std::random_device rand_dev;
             std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-            Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, layers, num_epochs, eta, theta);
+            Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
             sync_point.arrive_and_wait();
             float score = 0, check_point_score = 0;
             std::vector<float> temp_legal_moves;
@@ -2191,7 +2878,7 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
                     }
                     
                     particle_positions[i] = trueMod(std::round(particle_positions[i]), temp_sz);
-                    x.srnn.pieces.push_back(temp_legal_moves[particle_positions[i]]); //x.srnn.pieces holds the pieces corresponding to the indices
+                    x.pieces.push_back(temp_legal_moves[particle_positions[i]]); //x.pieces holds the pieces corresponding to the indices
                     curr_positions.push_back(particle_positions[i]);
                     if (i == best_positions.size())
                     {
@@ -2226,15 +2913,12 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
         //            expression = x._to_infix();
         //            orig_expression = x.expression();
                     max_score = score;
-                    std::scoped_lock str_lock(Board::thread_locker);
-                    best_expression = x._to_infix();
-                    orig_expression = x.expression();
         //            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
         //            std::cout << "Best expression = " << expression << '\n';
         //            std::cout << "Best expression (original format) = " << orig_expression << '\n';
         //            best_expression = std::move(expression);
                 }
-                x.srnn.pieces.clear();
+                x.pieces.clear();
                 curr_positions.clear();
             }
         };
@@ -2259,9 +2943,7 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
         
         std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
         std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-        std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-        std::cout << "Best expression = " << best_expression << '\n';
-        std::cout << "Best expression (original format) = " << orig_expression << '\n';
+        std::cout << "Best score = " << max_score.load() << ", MSE = " << (1/max_score)-1 << '\n';
     }
     std::ofstream out(filename);
     for (auto& i: scores)
@@ -2276,7 +2958,7 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
 }
 
 //https://arxiv.org/abs/2205.13134
-void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, const unsigned long num_epochs = 1000, float eta = 0.5f, float theta = 0.5f)
+void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0)
 {
     std::map<int, std::vector<float>> scores; //map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
@@ -2297,7 +2979,6 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
          */
         std::atomic<float> max_score{0.0};
         std::vector<std::pair<size_t, float>> temp_scores;
-        std::string best_expression, orig_expression;
 
         auto start_time = Clock::now();
         std::thread pushBackThread([&]()
@@ -2313,11 +2994,11 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
          Inside of thread:
          */
         
-        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &num_epochs, &best_expression, &orig_expression, &eta, &theta]()
+        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point]()
         {
             std::random_device rand_dev;
             std::mt19937 thread_local generator(rand_dev());
-            Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, layers, num_epochs, eta, theta);
+            Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
             sync_point.arrive_and_wait();
             float score = 0.0f, check_point_score = 0.0f, UCT, best_act, UCT_best;
             
@@ -2334,9 +3015,9 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
             //        double str_convert_time = 0.0;
             auto getString  = [&]()
             {
-                if (!x.srnn.pieces.empty())
+                if (!x.pieces.empty())
                 {
-                    state += std::to_string(x.srnn.pieces[x.srnn.pieces.size()-1]) + " ";
+                    state += std::to_string(x.pieces[x.pieces.size()-1]) + " ";
                 }
             };
             
@@ -2399,7 +3080,7 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
                         std::uniform_int_distribution<int> distribution(0, best_acts.size() - 1);
                         best_act = best_acts[distribution(generator)];
                     }
-                    x.srnn.pieces.push_back(best_act);
+                    x.pieces.push_back(best_act);
                     moveTracker.push_back(make_pair(state, best_act));
                     Ns[state]++;
                     Nsa[state][best_act]++;
@@ -2413,11 +3094,8 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
                 if (score > max_score)
                 {
                     max_score = score;
-                    std::scoped_lock str_lock(Board::thread_locker);
-                    best_expression = x._to_infix();
-                    orig_expression = x.expression();
                 }
-                x.srnn.pieces.clear();
+                x.pieces.clear();
                 moveTracker.clear();
             }
         };
@@ -2442,9 +3120,7 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
         
         std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
         std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-        std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-        std::cout << "Best expression = " << best_expression << '\n';
-        std::cout << "Best expression (original format) = " << orig_expression << '\n';
+        std::cout << "Best score = " << max_score.load() << ", MSE = " << (1/max_score)-1 << '\n';
     }
     std::ofstream out(filename);
     for (auto& i: scores)
@@ -2458,7 +3134,7 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
     out.close();
 }
 
-void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::string expression_type = "prefix", const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, const int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, const int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, const unsigned long num_epochs = 1000, float eta = 0.5f, float theta = 0.5f)
+void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::string expression_type = "prefix", const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, const int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, const int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0)
 {
     std::map<int, std::vector<float>> scores; //map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
@@ -2480,7 +3156,6 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
         
         std::atomic<float> max_score{0.0};
         std::vector<std::pair<size_t, float>> temp_scores;
-        std::string best_expression, orig_expression;
         
         auto start_time = Clock::now();
         std::thread pushBackThread([&]()
@@ -2497,11 +3172,11 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
          Inside of thread:
          */
         
-        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &num_epochs, &best_expression, &orig_expression, &eta, &theta]()
+        auto func = [&depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point]()
         {
             std::random_device rand_dev;
             std::mt19937 thread_local generator(rand_dev()); // Mersenne Twister random number generator
-            Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, layers, num_epochs, eta, theta);
+            Board x(true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
             sync_point.arrive_and_wait();
             float score = 0.0f;
             std::vector<float> temp_legal_moves;
@@ -2515,20 +3190,17 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
 //                    assert(temp_sz);
                     std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
                     {
-                        x.srnn.pieces.emplace_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
+                        x.pieces.emplace_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
                     }
                 }
-                assert(((x.expression_type == "prefix") ? x.getPNdepth(x.srnn.pieces) : x.getRPNdepth(x.srnn.pieces)).first == x.n);
-                assert(((x.expression_type == "prefix") ? x.getPNdepth(x.srnn.pieces) : x.getRPNdepth(x.srnn.pieces)).second);
+                assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
+                assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
 
                 if (score > max_score)
                 {
                     max_score = score;
-                    std::scoped_lock str_lock(Board::thread_locker);
-                    best_expression = x._to_infix();
-                    orig_expression = x.expression();
                 }
-                x.srnn.pieces.clear();
+                x.pieces.clear();
             }
         };
         
@@ -2552,9 +3224,7 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
         
         std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
         std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-        std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-        std::cout << "Best expression = " << best_expression << '\n';
-        std::cout << "Best expression (original format) = " << orig_expression << '\n';
+        std::cout << "Best score = " << max_score.load() << ", MSE = " << (1/max_score)-1 << '\n';
         
     }
     std::ofstream out(filename);
@@ -2567,115 +3237,11 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
         }
     }
     out.close();
-    
-}
-
-void HembergBenchmarks(int numIntervals, double time, int numRuns)
-{
-    RandomSearch(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PostRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PostRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PostRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PostRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PostRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PostMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PreMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PostMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PreMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PostMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PreMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PostMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PreMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PostMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PrePSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PostPSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PrePSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PostPSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PrePSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PostPSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PrePSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PostPSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PrePSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PostPSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PostGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PreGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PostGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PreGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PostGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PreGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PostGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PreGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PostGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(20, 3, Hemberg_1, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PostSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PreSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_2PostSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PreSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(20, 3, Hemberg_3, -3.0f, 3.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_3PostSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PreSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(20, 3, Hemberg_4, -3.0f, 3.0f), 9 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_4PostSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PreSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(20, 3, Hemberg_5, -3.0f, 3.0f), 10 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_5PostSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-}
-
-void AIFeynmanBenchmarks(int numIntervals, double time, int numRuns)
-{
-    RandomSearch(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PostRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PostRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PostRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PostRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    RandomSearch(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PostRandomSearchMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PreMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PostMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PreMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PostMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PreMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PostMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PreMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PostMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PreMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    MCTS(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PostMCTSMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PrePSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PostPSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PrePSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PostPSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PrePSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PostPSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PrePSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PostPSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PrePSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    PSO(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PostPSOMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PreGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PostGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PreGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PostGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PreGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PostGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PreGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PostGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PreGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    GP(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PostGPMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PreSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(100000, 6, Feynman_1, 1.0f, 5.0f), 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_1PostSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PreSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(100000, 10, Feynman_2, 1.0f, 5.0f), 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_2PostSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PreSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(100000, 8, Feynman_3, 1.0f, 5.0f), 6 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_3PostSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PreSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(100000, 9, Feynman_4, 1.0f, 5.0f), 7 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_4PostSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PreSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
-    SimulatedAnnealing(generateData(100000, 7, Feynman_5, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, time /*time to run the algorithm in seconds*/, numIntervals /*number of equally spaced points in time to sample the best score thus far*/, "Feynman_5PostSimulatedAnnealingMultiThread.txt" /*name of file to save the results to*/, numRuns /*number of runs*/);
+//    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+//    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
+//    std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+//    std::cout << "Best expression = " << best_expression << '\n';
+//    std::cout << "Best expression (original format) = " << orig_expression << '\n';
 }
 
 int main()
@@ -2687,44 +3253,15 @@ int main()
         Then, move the generated txt files to the directories Hemberg_Benchmarks and
         AIFeynman_Benchmarks and then run PlotData.py
     */
-//    f(x_1, x_2, ..., x_{columns-1}) = x_1 + x_2 ...
-//
-//    x_1       x_2     y
-//    1.1123123 3.12312 2.2312312
-//    3.12312   4.12431 5.1234123
-//    ...
-//    3.12312   4.12431 5.1234123
     
-//1.1 2.2   Hemberg_2(1.1, 2.2)
-//3.0 -0.4  Hemberg_2(3.0, -0.4)
-//...
-//-1.3 -2.2 Hemberg_2(-1.3, -2.2)
+//    MCTS(generateData(100000, 7, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/);
+    //SimulatedAnnealing(generateData(20, 3, -3.0f, 3.0f), 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/);
+    std::cout << createLinspaceMatrix(20, 3, {1.1, 2.2, 3.3}, {4.4, 5.5, 2.4});
     
-    
-    RandomSearch(generateData(20 /*rows*/, 3 /*columns*/, Hemberg_2 /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 60 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/, {2,10,5,5,1} /*Neural Network*/, 10 /*num_epochs*/, 0.01 /*learning rate*/, 0.1 /*momentum*/);
-    MCTS(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 60 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/, {2,10,5,5,1} /*Neural Network*/, 10 /*num_epochs*/, 0.01 /*learning rate*/, 0.1 /*momentum*/);
-    PSO(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 60 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/, {2,10,5,5,1} /*Neural Network*/, 10 /*num_epochs*/, 0.01 /*learning rate*/, 0.1 /*momentum*/);
-    GP(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 60 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/, {2,10,5,5,1} /*Neural Network*/, 10 /*num_epochs*/, 0.01 /*learning rate*/, 0.1 /*momentum*/);
-    SimulatedAnnealing(generateData(20, 3, Hemberg_2, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 60 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/, {2,10,5,5,1} /*Neural Network*/, 10 /*num_epochs*/, 0.01 /*learning rate*/, 0.1 /*momentum*/);
 
     return 0;
 }
-//git push --set-upstream origin NeuralNetworkWeightUpdate
-/*
- Outline for NeuralNetworkWeightUpdate
- 
- 1. Pick test SR function
- 2. Pick a Neural network architecture with N inputs, 1-10 hidden layers with 1 - 10 neurons each, output_type = "none", learning_rate in {1e-1, 1e-2, 1e-3, 1e-4, 1e-5}
-    - Fixed at start
- 3. Test baseline weight-update rule and set to `best-expression`
- 4. While some_condition:
-    - Test SR update rule for some number of epochs
-        - Get score
-            - Fitting -> 
-        - Update `best-expression` if needed
-    
- 
- */
+//git push --set-upstream origin PrefixPostfixSymbolicDifferentiator
 
-//g++ -Wall -std=c++20 -o NeuralNetworks_VecSR NeuralNetworks_VecSR.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -ffast-math -ftree-vectorize -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
+//g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSR PrefixPostfixMultiThreadDiffSR.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -ffast-math -ftree-vectorize -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
 

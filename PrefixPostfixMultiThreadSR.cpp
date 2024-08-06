@@ -859,6 +859,12 @@ struct Board
                     stack.pop();
                     stack.push(temp.array().tanh());
                 }
+                else if (token == "sech")
+                {
+                    Eigen::VectorXf temp = stack.top();
+                    stack.pop();
+                    stack.push(1/temp.array().cosh());
+                }
                 else if (token == "acos" || token == "arccos")
                 {
                     Eigen::VectorXf temp = stack.top();
@@ -968,6 +974,12 @@ struct Board
                     Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
                     stack.pop();
                     stack.push(temp.array().tanh());
+                }
+                else if (token == "sech")
+                {
+                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
+                    stack.pop();
+                    stack.push(1/temp.array().cosh());
                 }
                 else if (token == "acos" || token == "arccos")
                 {
@@ -2649,8 +2661,7 @@ int main()
         - Get score
             - Fitting -> 
         - Update `best-expression` if needed
-    
- 
  */
 
+//g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadSR PrefixPostfixMultiThreadSR.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -ffast-math -ftree-vectorize -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
 
