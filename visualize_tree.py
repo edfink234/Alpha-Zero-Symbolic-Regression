@@ -312,8 +312,8 @@ def test_visualize():
 #                plot_rpn_expression_tree("x3 cos 0.427738 * 4.779139 x1 - 0.390789 x0 0.637794 x2 * - + 0.598703 x2 cos 1.463665 cos x2 + 1.063828 x3 + x0 0.031570 x0 + 1.493230 - * * + - * * + *".split(), block=False, save = save)
 #                plot_rpn_expression_tree("q Ef * m omega_0 2 ^ omega 2 ^ - *  /".split(), block=False, save = save)
 #                plot_pn_expression_tree("* / * m k_G ^ L 2 + 1 * sqrt + 1 / * * 2 E_n ^ L 2 * m ^ k_G 2 cos - theta1 theta2".split(), block=False, save = save)
-#            plot_pn_expression_tree("- + + * / 1 2 R'' * / 1 * 2 r R' * - mu / * S S * * 2 r r R * * R R R".split(), block=True, save = save)
-                plot_rpn_expression_tree("1 2 / 0 0 - * 1 2 x0 * / 1 0 - * + 1 1 1 * 2 x0 x0 * * / - x0 2 - * + x0 2 - x0 2 - * x0 2 - * -".split(), block=True, save = save)
+            plot_pn_expression_tree("/ - sqrt sech x sech x x".split(), block=True, save = save)
+#                plot_rpn_expression_tree("1 2 / 0 0 - * 1 2 x0 * / 1 0 - * + 1 1 1 * 2 x0 x0 * * / - x0 2 - * + x0 2 - x0 2 - * x0 2 - * -".split(), block=True, save = save)
 
         except KeyboardInterrupt:
             plt.close()
@@ -321,4 +321,5 @@ def test_visualize():
 
 if __name__ == "__main__":
     test_visualize()
+
 

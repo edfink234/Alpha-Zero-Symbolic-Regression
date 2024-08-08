@@ -1,13 +1,3 @@
-/*
- Symbolic Differential Equation Solver
- =====================================
-  - Data of the form (m x N), where m is the number of attributes and N the number of data points
-  - Symbolic Regressor creates an equation
-  - 
- 
- 
- */
-
 #include <vector>
 #include <array>
 #include <iostream>
@@ -102,6 +92,27 @@ int trueMod(int N, int M)
 {
     return ((N % M) + M) % M;
 };
+
+bool isConstant(const Eigen::VectorXf& vec, float tolerance = 1e-8) 
+{
+    if (vec.size() <= 1) 
+    {
+        return true; // A vector with 0 or 1 element is trivially constant
+    }
+    float firstElement = vec(0);
+    return (vec.array() - firstElement).abs().maxCoeff() <= tolerance;
+}
+
+bool isConstant(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>& vec, float tolerance = 1e-8)
+{
+    if (vec.size() <= 1)
+    {
+        return true; // A vector with 0 or 1 element is trivially constant
+    }
+    auto firstElement = vec(0);
+    return (vec.array() - firstElement).abs().maxCoeff() <= tolerance;
+}
+
 
 class Data
 {
@@ -318,7 +329,9 @@ struct Board
                     Board::__tokens_inv_dict[Board::__tokens[i]] = Board::__tokens_float[i];
                 }
                 
-                Board::una_bin_leaf_legal_moves_dict[true][true][true] = Board::__tokens_float;
+//                Board::una_bin_leaf_legal_moves_dict[true][true][true] = Board::__tokens_float;
+                Board::una_bin_leaf_legal_moves_dict[true][true][true] = Board::__operators_float;
+
                 Board::una_bin_leaf_legal_moves_dict[true][true][false] = Board::__operators_float;
                 Board::una_bin_leaf_legal_moves_dict[true][false][true] = Board::__unary_operators_float; //1
                 Board::una_bin_leaf_legal_moves_dict[true][false][false] = Board::__unary_operators_float;
@@ -330,13 +343,14 @@ struct Board
                     Board::una_bin_leaf_legal_moves_dict[true][false][true].push_back(i); //1
                     Board::una_bin_leaf_legal_moves_dict[false][true][true].push_back(i); //2
                     Board::una_bin_leaf_legal_moves_dict[false][false][true].push_back(i); //3
+                    Board::una_bin_leaf_legal_moves_dict[true][true][true].push_back(i);
                 }
-                for (float i: Board::__other_tokens_float)
-                {
-                    Board::una_bin_leaf_legal_moves_dict[true][false][true].push_back(i); //1
-                    Board::una_bin_leaf_legal_moves_dict[false][true][true].push_back(i); //2
-                    Board::una_bin_leaf_legal_moves_dict[false][false][true].push_back(i); //3
-                }
+//                for (float i: Board::__other_tokens_float)
+//                {
+//                    Board::una_bin_leaf_legal_moves_dict[true][false][true].push_back(i); //1
+//                    Board::una_bin_leaf_legal_moves_dict[false][true][true].push_back(i); //2
+//                    Board::una_bin_leaf_legal_moves_dict[false][false][true].push_back(i); //3
+//                }
             });
         }
     }
@@ -689,7 +703,42 @@ struct Board
             
             if (this->cache)
             {
-                return Board::una_bin_leaf_legal_moves_dict[(getPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, false /*binary*/, true /*unary*/, false /*leaf*/).first <= this->n)][(getPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, true /*binary*/, false /*unary*/, false /*leaf*/).first <= this->n)][(!((num_leaves == num_binary + 1) || (getPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, false /*binary*/, false /*unary*/, true /*leaf*/).first < this->n && (num_leaves == num_binary))))];
+                //basic constraints for depth
+                bool una_allowed = (getPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, false /*binary*/, true /*unary*/, false /*leaf*/).first <= this->n);
+                bool bin_allowed = (getPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, true /*binary*/, false /*unary*/, false /*leaf*/).first <= this->n);
+                bool leaf_allowed = (!((num_leaves == num_binary + 1) || (getPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, false /*binary*/, false /*unary*/, true /*leaf*/).first < this->n && (num_leaves == num_binary))));
+                std::vector<float> legal_moves = Board::una_bin_leaf_legal_moves_dict[una_allowed][bin_allowed][leaf_allowed];
+                
+                //more complicated constraints for simplification
+                if (leaf_allowed)
+                {
+                    size_t pcs_sz = pieces.size();
+                    if (pcs_sz >= 2 && Board::__tokens_dict[pieces[pcs_sz-2]] == "/") // "/ x{i}" should not result in "/ x{i} x{i}" as that is 1
+                    {
+                        for (float i: Board::__input_vars_float)
+                        {
+                            if (pieces.back() == i)
+                            {
+//                                for (float i: pieces){std::cout << Board::__tokens_dict[i] << ' ';}puts("");
+                                if (legal_moves.size() > 1)
+                                {
+                                    legal_moves.erase(std::remove(legal_moves.begin(), legal_moves.end(), i), legal_moves.end()); //remove "x{i}" from legal_moves
+                                }
+                                else //if x{i} is the only legal move, then we'll change "/" to another binary operator, like "+", "*", or "^"
+                                {
+                                    std::vector<float> sub_bin_ops = {Board::__tokens_inv_dict["*"], Board::__tokens_inv_dict["+"], Board::__tokens_inv_dict["^"]};
+                                    std::uniform_int_distribution<int> distribution(0, 2);
+                                    pieces[pcs_sz-2] = sub_bin_ops[distribution(gen)];
+                                }
+//                                for (float i: pieces){std::cout << Board::__tokens_dict[i] << ' ';}puts("");
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                return legal_moves;
+
             }
             
             else
@@ -1495,6 +1544,11 @@ struct Board
         }
         else
         {
+            auto expression_eval = expression_evaluator(this->params, this->pieces);
+            if (isConstant(expression_eval, 1e-1f)) //Ignore the trivial solution!
+            {
+                return 0.0f;
+            }
             this->diffeq_result = diffeq(*this);
             loss = loss_func(expression_evaluator(this->params, this->diffeq_result));
         }
@@ -3308,11 +3362,9 @@ int main()
     */
     
 //    MCTS(generateData(100000, 7, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/);
-    auto data = createLinspaceMatrix(20, 1, {0.1f}, {15.0f});
+    auto data = createLinspaceMatrix(1000, 1, {0.1f}, {15.0f});
     
-    std::cout << data << '\n';
-
-    RandomSearch(VortexRadialProfile, data, 4 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 0 /*num threads*/);
+    RandomSearch(VortexRadialProfile, data, 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 0 /*num threads*/);
 
  
 
