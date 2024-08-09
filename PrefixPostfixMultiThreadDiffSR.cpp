@@ -236,8 +236,9 @@ struct Board
     bool visualize_exploration, is_primary;
     std::vector<float> (*diffeq)(Board&); //differential equation we want to solve
     std::vector<float> diffeq_result;
+    float isConstTol;
     
-    Board(std::vector<float> (*diffeq)(Board&), bool primary = true, int n = 3, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, is_primary{primary}
+    Board(std::vector<float> (*diffeq)(Board&), bool primary = true, int n = 3, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false, bool const_tokens = false, float isConstTol = 1e-1f) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, is_primary{primary}
     {
         if (n > 30)
         {
@@ -252,6 +253,7 @@ struct Board
         this->pieces.reserve(this->reserve_amount);
         this->cache = cache;
         this->diffeq = diffeq;
+        this->isConstTol = isConstTol;
         
         if (is_primary)
         {
@@ -329,8 +331,15 @@ struct Board
                     Board::__tokens_inv_dict[Board::__tokens[i]] = Board::__tokens_float[i];
                 }
                 
-//                Board::una_bin_leaf_legal_moves_dict[true][true][true] = Board::__tokens_float;
-                Board::una_bin_leaf_legal_moves_dict[true][true][true] = Board::__operators_float;
+                if (const_tokens)
+                {
+                    Board::una_bin_leaf_legal_moves_dict[true][true][true] = Board::__tokens_float;
+                }
+                
+                else
+                {
+                    Board::una_bin_leaf_legal_moves_dict[true][true][true] = Board::__operators_float;
+                }
 
                 Board::una_bin_leaf_legal_moves_dict[true][true][false] = Board::__operators_float;
                 Board::una_bin_leaf_legal_moves_dict[true][false][true] = Board::__unary_operators_float; //1
@@ -343,14 +352,20 @@ struct Board
                     Board::una_bin_leaf_legal_moves_dict[true][false][true].push_back(i); //1
                     Board::una_bin_leaf_legal_moves_dict[false][true][true].push_back(i); //2
                     Board::una_bin_leaf_legal_moves_dict[false][false][true].push_back(i); //3
-                    Board::una_bin_leaf_legal_moves_dict[true][true][true].push_back(i);
+                    if (!const_tokens)
+                    {
+                        Board::una_bin_leaf_legal_moves_dict[true][true][true].push_back(i);
+                    }
                 }
-//                for (float i: Board::__other_tokens_float)
-//                {
-//                    Board::una_bin_leaf_legal_moves_dict[true][false][true].push_back(i); //1
-//                    Board::una_bin_leaf_legal_moves_dict[false][true][true].push_back(i); //2
-//                    Board::una_bin_leaf_legal_moves_dict[false][false][true].push_back(i); //3
-//                }
+                if (const_tokens)
+                {
+                    for (float i: Board::__other_tokens_float)
+                    {
+                        Board::una_bin_leaf_legal_moves_dict[true][false][true].push_back(i); //1
+                        Board::una_bin_leaf_legal_moves_dict[false][true][true].push_back(i); //2
+                        Board::una_bin_leaf_legal_moves_dict[false][false][true].push_back(i); //3
+                    }
+                }
             });
         }
     }
@@ -409,6 +424,20 @@ struct Board
         int count = 0;
 
         for (float token : pieces)
+        {
+            if (__tokens_dict[token] == "const")
+            {
+                count++;
+            }
+        }
+        return count;
+    }
+    
+    int __num_consts_diff() const
+    {
+        int count = 0;
+
+        for (float token : diffeq_result)
         {
             if (__tokens_dict[token] == "const")
             {
@@ -719,7 +748,6 @@ struct Board
                         {
                             if (pieces.back() == i)
                             {
-//                                for (float i: pieces){std::cout << Board::__tokens_dict[i] << ' ';}puts("");
                                 if (legal_moves.size() > 1)
                                 {
                                     legal_moves.erase(std::remove(legal_moves.begin(), legal_moves.end(), i), legal_moves.end()); //remove "x{i}" from legal_moves
@@ -730,7 +758,6 @@ struct Board
                                     std::uniform_int_distribution<int> distribution(0, 2);
                                     pieces[pcs_sz-2] = sub_bin_ops[distribution(gen)];
                                 }
-//                                for (float i: pieces){std::cout << Board::__tokens_dict[i] << ' ';}puts("");
                                 break;
                             }
                         }
@@ -1545,7 +1572,7 @@ struct Board
         else
         {
             auto expression_eval = expression_evaluator(this->params, this->pieces);
-            if (isConstant(expression_eval, 1e-1f)) //Ignore the trivial solution!
+            if (isConstant(expression_eval, this->isConstTol)) //Ignore the trivial solution!
             {
                 return 0.0f;
             }
@@ -1586,12 +1613,12 @@ struct Board
                 //whenever. TODO: call some plotting function, e.g. ROOT CERN plotting API, Matplotlib from the Python-C API, Plotly if we want a web application for this, etc. The plotting function could also have the fitted constants (rounded of course), but then this if statement would need to be moved down to below the fitFunctionToData call in this `complete_status` method.
             }
             
-            if (is_primary)
+            if (is_primary) //this->params is equal to the number of constants in the differential equation this->diffeq (i.e., from VortexRadialProfile)
             {
                 this->expression_string.clear();
                 this->expression_string.reserve(8*pieces.size());
                 
-                for (float i: pieces){this->expression_string += std::to_string(i)+" ";}
+                for (float i: this->pieces){this->expression_string += std::to_string(i)+" ";}
 
                 if (!Board::expression_dict.contains(this->expression_string))
                 {
@@ -2433,10 +2460,179 @@ std::vector<float> VortexRadialProfile(Board& x)
 
 //https://dl.acm.org/doi/pdf/10.1145/3449639.3459345?casa_token=Np-_TMqxeJEAAAAA:8u-d6UyINV6Ex02kG9LthsQHAXMh2oxx3M4FG8ioP0hGgstIW45X8b709XOuaif5D_DVOm_FwFo
 //https://core.ac.uk/download/pdf/6651886.pdf
-void SimulatedAnnealing(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0)
+void SimulatedAnnealing(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0)
+{
+    
+    if (num_threads == 0)
+    {
+        unsigned int temp = std::thread::hardware_concurrency();
+        num_threads = ((temp <= 1) ? 1 : temp);
+    }
+    
+    std::vector<std::thread> threads(num_threads);
+    std::latch sync_point(num_threads);
+    
+    /*
+     Outside of thread:
+     */
+    std::atomic<float> max_score{0.0};
+    std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
+    auto start_time = Clock::now();
+    
+    /*
+     Inside of thread:
+     */
+    
+    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result]()
+    {
+        std::random_device rand_dev;
+        std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
+        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
+        sync_point.arrive_and_wait();
+        Board secondary(diffeq, false, 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache); //For perturbations
+        float score = 0.0f, check_point_score = 0.0f;
+        
+        std::vector<float> current;
+        std::vector<std::pair<int, int>> sub_exprs;
+        std::vector<float> temp_legal_moves;
+        std::uniform_int_distribution<int> rand_depth_dist(0, x.n);
+        size_t temp_sz;
+//        std::string expression, orig_expression, best_expression;
+        constexpr float T_max = 0.1f;
+        constexpr float T_min = 0.012f;
+        constexpr float ratio = T_min/T_max;
+        float T = T_max;
+        
+        auto P = [&](float delta)
+        {
+            return exp(delta/T);
+        };
+        
+        auto updateScore = [&](float r = 1.0f)
+        {
+//            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
+//            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
+            if ((score > max_score) || (x.pos_dist(generator) < P(score-max_score)))
+            {
+                current = x.pieces; //update current expression
+                if (score > max_score)
+                {
+                    max_score = score;
+                    std::scoped_lock str_lock(Board::thread_locker);
+                    best_expression = x._to_infix();
+                    orig_expression = x.expression();
+                    best_expr_result = x._to_infix(x.diffeq_result);
+                    orig_expr_result = x.expression(x.diffeq_result);
+                }
+            }
+            else
+            {
+                x.pieces = current; //reset perturbed state to current state
+            }
+            T = r*T;
+        };
+        
+        //Another way to do this might be clustering...
+        auto Perturbation = [&](int n, int i)
+        {
+            //Step 1: Generate a random depth-n sub-expression `secondary_one.pieces`
+            secondary.pieces.clear();
+            sub_exprs.clear();
+            secondary.n = n;
+            while (secondary.complete_status() == -1)
+            {
+                temp_legal_moves = secondary.get_legal_moves();
+                std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
+                secondary.pieces.push_back(temp_legal_moves[distribution(generator)]);
+            }
+            
+//            assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces) : secondary.getRPNdepth(secondary.pieces)).first == secondary.n);
+//            assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces) : secondary.getRPNdepth(secondary.pieces)).second);
+            
+            if (n == x.n)
+            {
+                std::swap(secondary.pieces, x.pieces);
+            }
+            else
+            {
+                //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
+                //in `x.pieces` and store them in an std::vector<std::pair<int, int>>
+                //called `sub_exprs`.
+                secondary.get_indices(sub_exprs, x.pieces);
+                
+                //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `pert_ind`
+
+                std::uniform_int_distribution<int> distribution(0, sub_exprs.size() - 1);
+                int pert_ind = distribution(generator);
+                
+                //Step 4: Substitute sub_exprs_1[pert_ind] in x.pieces with secondary_one.pieces
+                
+                auto start = x.pieces.begin() + sub_exprs[pert_ind].first;
+                auto end = std::min(x.pieces.begin() + sub_exprs[pert_ind].second, x.pieces.end());
+                x.pieces.erase(start, end+1);
+                x.pieces.insert(start, secondary.pieces.begin(), secondary.pieces.end()); //could be a move operation: secondary.pieces doesn't need to be in a defined state after this->params
+            }
+            
+            //Step 5: Evaluate the new mutated `x.pieces` and update score if needed
+            score = x.complete_status(false);
+            updateScore(pow(ratio, 1.0f/(i+1)));
+        };
+
+        //Step 1: generate a random expression
+        while ((score = x.complete_status()) == -1)
+        {
+            temp_legal_moves = x.get_legal_moves(); //the legal moves
+            temp_sz = temp_legal_moves.size(); //the number of legal moves
+            std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
+            x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
+            current.push_back(x.pieces.back());
+        }
+        updateScore();
+        
+        for (int i = 0; (timeElapsedSince(start_time) < time); i++)
+        {
+            if (i && (i%50000 == 0))
+            {
+//                std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+                if (check_point_score == max_score)
+                {
+                    T = std::min(T*10.0f, T_max);
+                }
+                else
+                {
+                    T = std::max(T/10.0f, T_min);
+                }
+                check_point_score = max_score;
+            }
+            Perturbation(rand_depth_dist(generator), i);
+            
+        }
+    };
+    
+    for (unsigned int i = 0; i < num_threads; i++)
+    {
+        threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
+    }
+    
+    for (unsigned int i = 0; i < num_threads; i++)
+    {
+        threads[i].join();
+    }
+    
+    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
+    std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+    std::cout << "Best expression = " << best_expression << '\n';
+    std::cout << "Best expression (original format) = " << orig_expression << '\n';
+    std::cout << "Best diff result = " << best_expr_result << '\n';
+    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
+
+}
+
+//https://arxiv.org/abs/2310.06609
+void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0)
 {
     std::map<int, std::vector<float>> scores; //map to store the scores
-    size_t measure_period = static_cast<size_t>(time/interval);
     
     if (num_threads == 0)
     {
@@ -2447,656 +2643,399 @@ void SimulatedAnnealing(std::vector<float> (*diffeq)(Board&), const Eigen::Matri
     std::vector<std::thread> threads(num_threads);
     std::latch sync_point(num_threads);
     
-    for (int run = 1; run <= num_runs; run++)
+    /*
+     Outside of thread:
+     */
+    std::atomic<float> max_score{0.0};
+    std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
+    auto start_time = Clock::now();
+    
+    /*
+     Inside of thread:
+     */
+    
+    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result]()
     {
-        /*
-         Outside of thread:
-         */
-        std::atomic<float> max_score{0.0};
-        std::vector<std::pair<int, float>> temp_scores;
-        auto start_time = Clock::now();
-        std::thread pushBackThread([&]() // Separate thread to push_back the pair every measure_period seconds
+        std::random_device rand_dev;
+        std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
+        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
+        sync_point.arrive_and_wait();
+        Board secondary_one(diffeq, false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache), secondary_two(diffeq, false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache); //For crossover and mutations
+        float score = 0.0f, mut_prob = 0.8f, rand_mut_cross;
+        constexpr int init_population = 2000;
+        std::vector<std::pair<std::vector<float>, float>> individuals;
+        std::pair<std::vector<float>, float> individual_1, individual_2;
+        std::vector<std::pair<int, int>> sub_exprs_1, sub_exprs_2;
+        individuals.reserve(2*init_population);
+        std::vector<float> temp_legal_moves;
+        std::uniform_int_distribution<int> rand_depth_dist(0, x.n - 1), selector_dist(0, init_population - 1);
+        int rand_depth, rand_individual_idx_1, rand_individual_idx_2;
+        std::uniform_real_distribution<float> rand_mut_cross_dist(0.0f, 1.0f);
+        size_t temp_sz;
+    //    std::string expression, orig_expression, best_expression;
+        
+        auto updateScore = [&]()
         {
-            while (timeElapsedSince(start_time) < time)
+    //        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
+    //        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
+            if (score > max_score)
             {
-                std::this_thread::sleep_for(std::chrono::seconds(measure_period));
-                temp_scores.push_back(std::make_pair(static_cast<size_t>(timeElapsedSince(start_time)), max_score.load()));
+                max_score = score;
+                std::scoped_lock str_lock(Board::thread_locker);
+                best_expression = x._to_infix();
+                orig_expression = x.expression();
+                best_expr_result = x._to_infix(x.diffeq_result);
+                orig_expr_result = x.expression(x.diffeq_result);
             }
-        });
+        };
         
-        /*
-         Inside of thread:
-         */
-        
-        auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point]()
+        //Step 1, generate init_population expressions
+        for (int i = 0; i < init_population; i++)
         {
-            std::random_device rand_dev;
-            std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-            Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
-            sync_point.arrive_and_wait();
-            Board secondary(diffeq, false, 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache); //For perturbations
-            float score = 0.0f, check_point_score = 0.0f;
-            
-            std::vector<float> current;
-            std::vector<std::pair<int, int>> sub_exprs;
-            std::vector<float> temp_legal_moves;
-            std::uniform_int_distribution<int> rand_depth_dist(0, x.n);
-            size_t temp_sz;
-    //        std::string expression, orig_expression, best_expression;
-            constexpr float T_max = 0.1f;
-            constexpr float T_min = 0.012f;
-            constexpr float ratio = T_min/T_max;
-            float T = T_max;
-            
-            auto P = [&](float delta)
-            {
-                return exp(delta/T);
-            };
-            
-            auto updateScore = [&](float r = 1.0f)
-            {
-    //            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
-    //            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
-                if ((score > max_score) || (x.pos_dist(generator) < P(score-max_score)))
-                {
-                    current = x.pieces; //update current expression
-                    if (score > max_score)
-                    {
-    //                    expression = x._to_infix();
-    //                    orig_expression = x.expression();
-                        max_score = score;
-    //                    std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-    //                    std::cout << "Best expression = " << expression << '\n';
-    //                    std::cout << "Best expression (original format) = " << orig_expression << '\n';
-    //                    best_expression = std::move(expression);
-                    }
-                }
-                else
-                {
-                    x.pieces = current; //reset perturbed state to current state
-                }
-                T = r*T;
-            };
-            
-            //Another way to do this might be clustering...
-            auto Perturbation = [&](int n, int i)
-            {
-                //Step 1: Generate a random depth-n sub-expression `secondary_one.pieces`
-                secondary.pieces.clear();
-                sub_exprs.clear();
-                secondary.n = n;
-                while (secondary.complete_status() == -1)
-                {
-                    temp_legal_moves = secondary.get_legal_moves();
-                    std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
-                    secondary.pieces.push_back(temp_legal_moves[distribution(generator)]);
-                }
-                
-    //            assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces) : secondary.getRPNdepth(secondary.pieces)).first == secondary.n);
-    //            assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces) : secondary.getRPNdepth(secondary.pieces)).second);
-                
-                if (n == x.n)
-                {
-                    std::swap(secondary.pieces, x.pieces);
-                }
-                else
-                {
-                    //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
-                    //in `x.pieces` and store them in an std::vector<std::pair<int, int>>
-                    //called `sub_exprs`.
-                    secondary.get_indices(sub_exprs, x.pieces);
-                    
-                    //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `pert_ind`
-
-                    std::uniform_int_distribution<int> distribution(0, sub_exprs.size() - 1);
-                    int pert_ind = distribution(generator);
-                    
-                    //Step 4: Substitute sub_exprs_1[pert_ind] in x.pieces with secondary_one.pieces
-                    
-                    auto start = x.pieces.begin() + sub_exprs[pert_ind].first;
-                    auto end = std::min(x.pieces.begin() + sub_exprs[pert_ind].second, x.pieces.end());
-                    x.pieces.erase(start, end+1);
-                    x.pieces.insert(start, secondary.pieces.begin(), secondary.pieces.end()); //could be a move operation: secondary.pieces doesn't need to be in a defined state after this->params
-                }
-                
-                //Step 5: Evaluate the new mutated `x.pieces` and update score if needed
-                score = x.complete_status(false);
-                updateScore(pow(ratio, 1.0f/(i+1)));
-            };
-
-            //Step 1: generate a random expression
             while ((score = x.complete_status()) == -1)
             {
                 temp_legal_moves = x.get_legal_moves(); //the legal moves
                 temp_sz = temp_legal_moves.size(); //the number of legal moves
                 std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
                 x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
-                current.push_back(x.pieces.back());
             }
-            updateScore();
             
-            for (int i = 0; (timeElapsedSince(start_time) < time); i++)
+            updateScore();
+            individuals.push_back(std::make_pair(x.pieces, score));
+            x.pieces.clear();
+        }
+        
+        auto Mutation = [&](int n)
+        {
+            //Step 1: Generate a random depth-n sub-expression `secondary_one.pieces`
+            secondary_one.pieces.clear();
+            sub_exprs_1.clear();
+            secondary_one.n = n;
+            while (secondary_one.complete_status() == -1)
             {
-                if (i && (i%50000 == 0))
-                {
-    //                std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
-                    if (check_point_score == max_score)
-                    {
-                        T = std::min(T*10.0f, T_max);
-                    }
-                    else
-                    {
-                        T = std::max(T/10.0f, T_min);
-                    }
-                    check_point_score = max_score;
-                }
-                Perturbation(rand_depth_dist(generator), i);
-                
+                temp_legal_moves = secondary_one.get_legal_moves();
+                std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
+                secondary_one.pieces.push_back(temp_legal_moves[distribution(generator)]);
             }
+            
+//            assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).first == secondary_one.n);
+//            assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).second);
+
+            
+            //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
+            //in `x.pieces` and store them in an std::vector<std::pair<int, int>>
+            //called `sub_exprs_1`.
+            x.pieces = individuals[selector_dist(generator)].first; //A randomly selected individual to be mutated
+            secondary_one.get_indices(sub_exprs_1, x.pieces);
+            
+            //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `mut_ind`
+            std::uniform_int_distribution<int> distribution(0, sub_exprs_1.size() - 1);
+            int mut_ind = distribution(generator);
+            
+            //Step 4: Substitute sub_exprs_1[mut_ind] in x.pieces with secondary_one.pieces
+            
+            auto start = x.pieces.begin() + sub_exprs_1[mut_ind].first;
+            auto end = std::min(x.pieces.begin() + sub_exprs_1[mut_ind].second, x.pieces.end()-1);
+            x.pieces.erase(start, end+1);
+            x.pieces.insert(start, secondary_one.pieces.begin(), secondary_one.pieces.end());
+            
+            //Step 5: Evaluate the new mutated `x.pieces` and update score if needed
+            score = x.complete_status(false);
+            updateScore();
+            individuals.push_back(std::make_pair(x.pieces, score));
         };
         
-        for (unsigned int i = 0; i < num_threads; i++)
+        auto Crossover = [&](int n)
         {
-            threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
-        }
+            sub_exprs_1.clear();
+            sub_exprs_2.clear();
+            secondary_one.n = n;
+            secondary_two.n = n;
+            
+            rand_individual_idx_1 = selector_dist(generator);
+            individual_1 = individuals[rand_individual_idx_1];
+            
+            do {
+                rand_individual_idx_2 = selector_dist(generator);
+            } while (rand_individual_idx_2 == rand_individual_idx_1);
+            individual_2 = individuals[rand_individual_idx_2];
         
-        for (unsigned int i = 0; i < num_threads; i++)
-        {
-            threads[i].join();
-        }
-        
-        // Join the separate thread to ensure it has finished before exiting
-        pushBackThread.join();
-        
-        for (auto& i: temp_scores)
-        {
-            scores[i.first].push_back(i.second);
-        }
-        
-        std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
-        std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-        std::cout << "Best score = " << max_score.load() << ", MSE = " << (1/max_score)-1 << '\n';
-    }
-    std::ofstream out(filename);
-    for (auto& i: scores)
-    {
-        out << i.first << ',';
-        for (auto& j: i.second)
-        {
-            out << j << ((&j == &i.second.back()) ? '\n' : ',');
-        }
-    }
-    out.close();
-}
-
-//https://arxiv.org/abs/2310.06609
-void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0)
-{
-    std::map<int, std::vector<float>> scores; //map to store the scores
-    size_t measure_period = static_cast<size_t>(time/interval);
-    
-    if (num_threads == 0)
-    {
-        unsigned int temp = std::thread::hardware_concurrency();
-        num_threads = ((temp <= 1) ? 1 : temp-1);
-    }
-    
-    std::vector<std::thread> threads(num_threads);
-    std::latch sync_point(num_threads);
-    
-    for (int run = 1; run <= num_runs; run++)
-    {
-        /*
-         Outside of thread:
-         */
-        std::atomic<float> max_score{0.0};
-        std::vector<std::pair<int, float>> temp_scores;
-        auto start_time = Clock::now();
-        std::thread pushBackThread([&]() // Separate thread to push_back the pair every measure_period seconds
-        {
-            while (timeElapsedSince(start_time) < time)
+            //Step 1: Identify the starting and stopping index pairs of all depth-n sub-expressions
+            //in `individual_1.first` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_1`.
+            secondary_one.get_indices(sub_exprs_1, individual_1.first);
+            
+            //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
+            //in `individual_2.first` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_2`.
+            secondary_two.get_indices(sub_exprs_2, individual_2.first);
+            
+            //Step 3: Generate a random uniform int from 0 to sub_exprs_1.size() - 1 called `mut_ind_1`
+            std::uniform_int_distribution<int> distribution_1(0, sub_exprs_1.size() - 1);
+            int mut_ind_1 = distribution_1(generator);
+            
+            //Step 4: Generate a random uniform int from 0 to sub_exprs_2.size() - 1 called `mut_ind_2`
+            std::uniform_int_distribution<int> distribution_2(0, sub_exprs_2.size() - 1);
+            int mut_ind_2 = distribution_2(generator);
+            
+            //Step 5: Swap sub_exprs_1[mut_ind_1] in individual_1.first with sub_exprs_2[mut_ind_2] in individual_2.first
+            auto start_1 = individual_1.first.begin() + sub_exprs_1[mut_ind_1].first;
+            auto end_1 = std::min(individual_1.first.begin() + sub_exprs_1[mut_ind_1].second, individual_1.first.end());
+            
+            auto start_2 = individual_2.first.begin() + sub_exprs_2[mut_ind_2].first;
+            auto end_2 = std::min(individual_2.first.begin() + sub_exprs_2[mut_ind_2].second, individual_2.first.end());
+            
+    //        insert the range start_2, end_2+1 into individual_1 and the range start_1, end_1+1 into individual_2.
+            
+            if ((end_1 - start_1) < (end_2 - start_2))
             {
-                std::this_thread::sleep_for(std::chrono::seconds(measure_period));
-                temp_scores.push_back(std::make_pair(static_cast<size_t>(timeElapsedSince(start_time)), max_score.load()));
+                std::swap_ranges(start_1, end_1+1, start_2);
+                //Insert remaining part of sub_individual_2.first into individual_1.first
+                individual_1.first.insert(end_1+1, start_2 + (end_1+1-start_1), end_2+1);
+                //Remove the remaining part of sub_individual_2.first from individual_2.first
+                individual_2.first.erase(start_2 + (end_1+1-start_1), end_2+1);
             }
-        });
-        
-        /*
-         Inside of thread:
-         */
-        
-        auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point]()
-        {
-            std::random_device rand_dev;
-            std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-            Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
-            sync_point.arrive_and_wait();
-            Board secondary_one(diffeq, false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache), secondary_two(diffeq, false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache); //For crossover and mutations
-            float score = 0.0f, mut_prob = 0.8f, rand_mut_cross;
-            constexpr int init_population = 2000;
-            std::vector<std::pair<std::vector<float>, float>> individuals;
-            std::pair<std::vector<float>, float> individual_1, individual_2;
-            std::vector<std::pair<int, int>> sub_exprs_1, sub_exprs_2;
-            individuals.reserve(2*init_population);
-            std::vector<float> temp_legal_moves;
-            std::uniform_int_distribution<int> rand_depth_dist(0, x.n - 1), selector_dist(0, init_population - 1);
-            int rand_depth, rand_individual_idx_1, rand_individual_idx_2;
-            std::uniform_real_distribution<float> rand_mut_cross_dist(0.0f, 1.0f);
-            size_t temp_sz;
-        //    std::string expression, orig_expression, best_expression;
-            
-            auto updateScore = [&]()
+            else if ((end_2 - start_2) < (end_1 - start_1))
             {
-        //        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
-        //        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
-                if (score > max_score)
-                {
-        //            expression = x._to_infix();
-        //            orig_expression = x.expression();
-                    max_score = score;
-        //            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-        //            std::cout << "Best expression = " << expression << '\n';
-        //            std::cout << "Best expression (original format) = " << orig_expression << '\n';
-        //            best_expression = std::move(expression);
-                }
-            };
-            
-            //Step 1, generate init_population expressions
-            for (int i = 0; i < init_population; i++)
-            {
-                while ((score = x.complete_status()) == -1)
-                {
-                    temp_legal_moves = x.get_legal_moves(); //the legal moves
-                    temp_sz = temp_legal_moves.size(); //the number of legal moves
-                    std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
-                    x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
-                }
-                
-                updateScore();
-                individuals.push_back(std::make_pair(x.pieces, score));
-                x.pieces.clear();
+                std::swap_ranges(start_2, end_2+1, start_1);
+                //Insert remaining part of sub_individual_1.first into individual_2.first
+                individual_2.first.insert(end_2+1, start_1 + (end_2+1-start_2), end_1+1);
+                //Remove the remaining part of sub_individual_1.first from individual_1.first
+                individual_1.first.erase(start_1 + (end_2+1-start_2), end_1+1);
             }
-            
-            auto Mutation = [&](int n)
+            else
             {
-                //Step 1: Generate a random depth-n sub-expression `secondary_one.pieces`
-                secondary_one.pieces.clear();
-                sub_exprs_1.clear();
-                secondary_one.n = n;
-                while (secondary_one.complete_status() == -1)
-                {
-                    temp_legal_moves = secondary_one.get_legal_moves();
-                    std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
-                    secondary_one.pieces.push_back(temp_legal_moves[distribution(generator)]);
-                }
-                
-    //            assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).first == secondary_one.n);
-    //            assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).second);
+                std::swap_ranges(start_1, end_1+1, start_2);
+            }
 
-                
-                //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
-                //in `x.pieces` and store them in an std::vector<std::pair<int, int>>
-                //called `sub_exprs_1`.
-                x.pieces = individuals[selector_dist(generator)].first; //A randomly selected individual to be mutated
-                secondary_one.get_indices(sub_exprs_1, x.pieces);
-                
-                //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `mut_ind`
-                std::uniform_int_distribution<int> distribution(0, sub_exprs_1.size() - 1);
-                int mut_ind = distribution(generator);
-                
-                //Step 4: Substitute sub_exprs_1[mut_ind] in x.pieces with secondary_one.pieces
-                
-                auto start = x.pieces.begin() + sub_exprs_1[mut_ind].first;
-                auto end = std::min(x.pieces.begin() + sub_exprs_1[mut_ind].second, x.pieces.end()-1);
-                x.pieces.erase(start, end+1);
-                x.pieces.insert(start, secondary_one.pieces.begin(), secondary_one.pieces.end());
-                
-                //Step 5: Evaluate the new mutated `x.pieces` and update score if needed
-                score = x.complete_status(false);
-                updateScore();
-                individuals.push_back(std::make_pair(x.pieces, score));
-            };
+            x.pieces = individual_1.first;
+            score = x.complete_status(false);
+            updateScore();
             
-            auto Crossover = [&](int n)
+            individuals.push_back(std::make_pair(x.pieces, score));
+            
+            x.pieces = individual_2.first;
+            score = x.complete_status(false);
+            updateScore();
+            
+            individuals.push_back(std::make_pair(x.pieces, score));
+        };
+
+        
+        for (/*int ngen = 0*/; (timeElapsedSince(start_time) < time); /*ngen++*/)
+        {
+//            if (ngen && (ngen%5 == 0))
+//            {
+//                std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+//            }
+            //Produce N additional individuals through crossover and mutation
+            for (int n = 0; n < init_population; n++)
             {
-                sub_exprs_1.clear();
-                sub_exprs_2.clear();
-                secondary_one.n = n;
-                secondary_two.n = n;
+                //Step 1: Generate a random number between 0 and 1 called `rand_mut_cross`
+                rand_mut_cross = rand_mut_cross_dist(generator);
                 
-                rand_individual_idx_1 = selector_dist(generator);
-                individual_1 = individuals[rand_individual_idx_1];
+                //Step 2: Generate a random uniform int from 0 to x.n - 1 called `rand_depth`
+                rand_depth = rand_depth_dist(generator);
                 
-                do {
-                    rand_individual_idx_2 = selector_dist(generator);
-                } while (rand_individual_idx_2 == rand_individual_idx_1);
-                individual_2 = individuals[rand_individual_idx_2];
-            
-                //Step 1: Identify the starting and stopping index pairs of all depth-n sub-expressions
-                //in `individual_1.first` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_1`.
-                secondary_one.get_indices(sub_exprs_1, individual_1.first);
-                
-                //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
-                //in `individual_2.first` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_2`.
-                secondary_two.get_indices(sub_exprs_2, individual_2.first);
-                
-                //Step 3: Generate a random uniform int from 0 to sub_exprs_1.size() - 1 called `mut_ind_1`
-                std::uniform_int_distribution<int> distribution_1(0, sub_exprs_1.size() - 1);
-                int mut_ind_1 = distribution_1(generator);
-                
-                //Step 4: Generate a random uniform int from 0 to sub_exprs_2.size() - 1 called `mut_ind_2`
-                std::uniform_int_distribution<int> distribution_2(0, sub_exprs_2.size() - 1);
-                int mut_ind_2 = distribution_2(generator);
-                
-                //Step 5: Swap sub_exprs_1[mut_ind_1] in individual_1.first with sub_exprs_2[mut_ind_2] in individual_2.first
-                auto start_1 = individual_1.first.begin() + sub_exprs_1[mut_ind_1].first;
-                auto end_1 = std::min(individual_1.first.begin() + sub_exprs_1[mut_ind_1].second, individual_1.first.end());
-                
-                auto start_2 = individual_2.first.begin() + sub_exprs_2[mut_ind_2].first;
-                auto end_2 = std::min(individual_2.first.begin() + sub_exprs_2[mut_ind_2].second, individual_2.first.end());
-                
-        //        insert the range start_2, end_2+1 into individual_1 and the range start_1, end_1+1 into individual_2.
-                
-                if ((end_1 - start_1) < (end_2 - start_2))
+                //Step 4: Call Mutation function if 0 <= rand_mut_cross <= mut_prob, else select Crossover
+                if (rand_mut_cross <= mut_prob)
                 {
-                    std::swap_ranges(start_1, end_1+1, start_2);
-                    //Insert remaining part of sub_individual_2.first into individual_1.first
-                    individual_1.first.insert(end_1+1, start_2 + (end_1+1-start_1), end_2+1);
-                    //Remove the remaining part of sub_individual_2.first from individual_2.first
-                    individual_2.first.erase(start_2 + (end_1+1-start_1), end_2+1);
-                }
-                else if ((end_2 - start_2) < (end_1 - start_1))
-                {
-                    std::swap_ranges(start_2, end_2+1, start_1);
-                    //Insert remaining part of sub_individual_1.first into individual_2.first
-                    individual_2.first.insert(end_2+1, start_1 + (end_2+1-start_2), end_1+1);
-                    //Remove the remaining part of sub_individual_1.first from individual_1.first
-                    individual_1.first.erase(start_1 + (end_2+1-start_2), end_1+1);
+                    Mutation(rand_depth);
                 }
                 else
                 {
-                    std::swap_ranges(start_1, end_1+1, start_2);
+                    Crossover(rand_depth);
                 }
-
-                x.pieces = individual_1.first;
-                score = x.complete_status(false);
-                updateScore();
-                
-                individuals.push_back(std::make_pair(x.pieces, score));
-                
-                x.pieces = individual_2.first;
-                score = x.complete_status(false);
-                updateScore();
-                
-                individuals.push_back(std::make_pair(x.pieces, score));
-            };
-
-            
-            for (/*int ngen = 0*/; (timeElapsedSince(start_time) < time); /*ngen++*/)
-            {
-    //            if (ngen && (ngen%5 == 0))
-    //            {
-    //                std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
-    //            }
-                //Produce N additional individuals through crossover and mutation
-                for (int n = 0; n < init_population; n++)
-                {
-                    //Step 1: Generate a random number between 0 and 1 called `rand_mut_cross`
-                    rand_mut_cross = rand_mut_cross_dist(generator);
-                    
-                    //Step 2: Generate a random uniform int from 0 to x.n - 1 called `rand_depth`
-                    rand_depth = rand_depth_dist(generator);
-                    
-                    //Step 4: Call Mutation function if 0 <= rand_mut_cross <= mut_prob, else select Crossover
-                    if (rand_mut_cross <= mut_prob)
-                    {
-                        Mutation(rand_depth);
-                    }
-                    else
-                    {
-                        Crossover(rand_depth);
-                    }
-                }
-                std::sort(individuals.begin(), individuals.end(),
-                [](std::pair<std::vector<float>, float>& individual_1, std::pair<std::vector<float>, float>& individual_2)
-                {
-                    return individual_1.second > individual_2.second;
-                });
-                individuals.resize(init_population);
             }
-        };
-        
-        for (unsigned int i = 0; i < num_threads; i++)
-        {
-            threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
+            std::sort(individuals.begin(), individuals.end(),
+            [](std::pair<std::vector<float>, float>& individual_1, std::pair<std::vector<float>, float>& individual_2)
+            {
+                return individual_1.second > individual_2.second;
+            });
+            individuals.resize(init_population);
         }
-        
-        for (unsigned int i = 0; i < num_threads; i++)
-        {
-            threads[i].join();
-        }
-        
-        // Join the separate thread to ensure it has finished before exiting
-        pushBackThread.join();
-        
-        for (auto& i: temp_scores)
-        {
-            scores[i.first].push_back(i.second);
-        }
-        
-        std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
-        std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-        std::cout << "Best score = " << max_score.load() << ", MSE = " << (1/max_score)-1 << '\n';
-    }
+    };
     
-    
-    std::ofstream out(filename);
-    for (auto& i: scores)
+    for (unsigned int i = 0; i < num_threads; i++)
     {
-        out << i.first << ',';
-        for (auto& j: i.second)
-        {
-            out << j << ((&j == &i.second.back()) ? '\n' : ',');
-        }
+        threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
     }
-    out.close();
+    
+    for (unsigned int i = 0; i < num_threads; i++)
+    {
+        threads[i].join();
+    }
+    
+    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
+    std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+    std::cout << "Best expression = " << best_expression << '\n';
+    std::cout << "Best expression (original format) = " << orig_expression << '\n';
+    std::cout << "Best diff result = " << best_expr_result << '\n';
+    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
 }
 
-void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0)
+void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0)
 {
-    std::map<int, std::vector<float>> scores; //map to store the scores
-    size_t measure_period = static_cast<size_t>(time/interval);
-    
     if (num_threads == 0)
     {
         unsigned int temp = std::thread::hardware_concurrency();
-        num_threads = ((temp <= 1) ? 1 : temp-1);
+        num_threads = ((temp <= 1) ? 1 : temp);
     }
     
     std::vector<std::thread> threads(num_threads);
     std::latch sync_point(num_threads);
     
-    for (int run = 1; run <= num_runs; run++)
-    {
-        /*
-         Outside of thread:
-         */
-        
-        std::atomic<float> max_score{0.0};
-        std::vector<std::pair<int, float>> temp_scores;
-        auto start_time = Clock::now();
-        std::thread pushBackThread([&]() // Separate thread to push_back the pair every measure_period seconds
-        {
-            while (timeElapsedSince(start_time) < time)
-            {
-                std::this_thread::sleep_for(std::chrono::seconds(measure_period));
-                temp_scores.push_back(std::make_pair(static_cast<size_t>(timeElapsedSince(start_time)), max_score.load()));
-            }
-        });
-        
-        /*
-         Inside of thread:
-         */
-        
-        auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point]()
-        {
-            std::random_device rand_dev;
-            std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-            Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
-            sync_point.arrive_and_wait();
-            float score = 0, check_point_score = 0;
-            std::vector<float> temp_legal_moves;
-            
-            size_t temp_sz;
-        //    std::string expression, orig_expression, best_expression;
-            
-            /*
-             For this setup, we don't know a-priori the number of particles, so we generate them and their corresponding velocities as needed
-             */
-            std::vector<float> particle_positions, best_positions, v, curr_positions;
-            particle_positions.reserve(x.reserve_amount); //stores record of all current particle position indices
-            best_positions.reserve(x.reserve_amount); //indices corresponding to best pieces
-            curr_positions.reserve(x.reserve_amount); //indices corresponding to x.pieces
-            v.reserve(x.reserve_amount); //stores record of all current particle velocities
-            float rp, rg, new_v, c = 0.0f;
-            int c_count = 0;
-            std::unordered_map<float, std::unordered_map<int, int>> Nsa;
-            std::unordered_map<float, std::unordered_map<int, float>> Psa;
-            std::unordered_map<int, float> p_i_vals, p_i;
-            
-            /*
-             In this implementation of PSO:
-             
-                 The traditional PSO initializes the particle positions to be between 0 and 1. However, in this application,
-                 the particle positions are discrete values and any of the legal integer tokens (moves). The
-                 velocities are continuous-valued and perturb the postions, which are subsequently constrained by rounding to
-                 the nearest whole number then taking the modulo w.r.t. the # of allowed legal moves.
-             
-             */
-            
-            for (int iter = 0; (timeElapsedSince(start_time) < time); iter++)
-            {
-                if (iter && (iter%50000 == 0))
-                {
-        //            std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
-        //            std::cout << "check_point_score = " << check_point_score
-        //            << ", max_score = " << max_score << ", c = " << c << '\n';
-                    if (check_point_score == max_score)
-                    {
-                        c_count++;
-                        std::uniform_real_distribution<float> temp(-c_count, c_count);
-        //                std::cout << "c: " << c << " -> ";
-                        c = temp(generator);
-        //                std::cout << c << '\n';
-                    }
-                    else
-                    {
-        //                std::cout << "c: " << c << " -> ";
-                        c = 0.0f; //if new best found, reset c and try to exploit the new best
-                        c_count = 0;
-        //                std::cout << c << '\n';
-                    }
-                    check_point_score = max_score;
-                }
-                
-                for (int i = 0; (score = x.complete_status()) == -1; i++) //i is the index of the token
-                {
-                    rp = x.pos_dist(generator), rg = x.pos_dist(generator);
-                    temp_legal_moves = x.get_legal_moves(); //the legal moves
-                    temp_sz = temp_legal_moves.size(); //the number of legal moves
+    /*
+     Outside of thread:
+     */
+    
+    std::atomic<float> max_score{0.0};
+    std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
+    auto start_time = Clock::now();
 
-                    if (i == particle_positions.size()) //Then we need to create a new particle with some initial position and velocity
-                    {
-                        particle_positions.push_back(x.pos_dist(generator));
-                        v.push_back(x.vel_dist(generator));
-                    }
-                    
-                    particle_positions[i] = trueMod(std::round(particle_positions[i]), temp_sz);
-                    x.pieces.push_back(temp_legal_moves[particle_positions[i]]); //x.pieces holds the pieces corresponding to the indices
-                    curr_positions.push_back(particle_positions[i]);
-                    if (i == best_positions.size())
-                    {
-                        best_positions.push_back(x.pos_dist(generator));
-                        best_positions[i] = trueMod(std::round(best_positions[i]), temp_sz);
-                    }
-                    //https://hal.science/hal-00764996
-                    //https://www.researchgate.net/publication/216300408_An_off-the-shelf_PSO
-                    new_v = (0.721*v[i] + x.phi_1*rg*(best_positions[i] - particle_positions[i]) + x.phi_2*rp*(p_i[i] - particle_positions[i]) + c);
-                    v[i] = copysign(std::min(new_v, FLT_MAX), new_v);
-                    particle_positions[i] += v[i];
-                    Nsa[curr_positions[i]][i]++;
-                }
-                
-                for (int i = 0; i < curr_positions.size(); i++)
-                {
-                    Psa[curr_positions[i]][i] = (Psa[curr_positions[i]][i]+score)/Nsa[curr_positions[i]][i];
-                    if (Psa[curr_positions[i]][i] > p_i_vals[i])
-                    {
-                        p_i[i] = curr_positions[i];
-                    }
-                    p_i_vals[i] = std::max(p_i_vals[i], Psa[curr_positions[i]][i]);
-                    
-                }
-                
-                if (score > max_score)
-                {
-                    for (int idx = 0; idx < curr_positions.size(); idx++)
-                    {
-                        best_positions[idx] = curr_positions[idx];
-                    }
-        //            expression = x._to_infix();
-        //            orig_expression = x.expression();
-                    max_score = score;
-        //            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-        //            std::cout << "Best expression = " << expression << '\n';
-        //            std::cout << "Best expression (original format) = " << orig_expression << '\n';
-        //            best_expression = std::move(expression);
-                }
-                x.pieces.clear();
-                curr_positions.clear();
-            }
-        };
-        
-        for (unsigned int i = 0; i < num_threads; i++)
-        {
-            threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
-        }
-        
-        for (unsigned int i = 0; i < num_threads; i++)
-        {
-            threads[i].join();
-        }
-        
-        // Join the separate thread to ensure it has finished before exiting
-        pushBackThread.join();
-        
-        for (auto& i: temp_scores)
-        {
-            scores[i.first].push_back(i.second);
-        }
-        
-        std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
-        std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-        std::cout << "Best score = " << max_score.load() << ", MSE = " << (1/max_score)-1 << '\n';
-    }
-    std::ofstream out(filename);
-    for (auto& i: scores)
+    /*
+     Inside of thread:
+     */
+    
+    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result]()
     {
-        out << i.first << ',';
-        for (auto& j: i.second)
+        std::random_device rand_dev;
+        std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
+        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
+        sync_point.arrive_and_wait();
+        float score = 0, check_point_score = 0;
+        std::vector<float> temp_legal_moves;
+        
+        size_t temp_sz;
+    //    std::string expression, orig_expression, best_expression;
+        
+        /*
+         For this setup, we don't know a-priori the number of particles, so we generate them and their corresponding velocities as needed
+         */
+        std::vector<float> particle_positions, best_positions, v, curr_positions;
+        particle_positions.reserve(x.reserve_amount); //stores record of all current particle position indices
+        best_positions.reserve(x.reserve_amount); //indices corresponding to best pieces
+        curr_positions.reserve(x.reserve_amount); //indices corresponding to x.pieces
+        v.reserve(x.reserve_amount); //stores record of all current particle velocities
+        float rp, rg, new_v, c = 0.0f;
+        int c_count = 0;
+        std::unordered_map<float, std::unordered_map<int, int>> Nsa;
+        std::unordered_map<float, std::unordered_map<int, float>> Psa;
+        std::unordered_map<int, float> p_i_vals, p_i;
+        
+        /*
+         In this implementation of PSO:
+         
+             The traditional PSO initializes the particle positions to be between 0 and 1. However, in this application,
+             the particle positions are discrete values and any of the legal integer tokens (moves). The
+             velocities are continuous-valued and perturb the postions, which are subsequently constrained by rounding to
+             the nearest whole number then taking the modulo w.r.t. the # of allowed legal moves.
+         
+         */
+        
+        for (int iter = 0; (timeElapsedSince(start_time) < time); iter++)
         {
-            out << j << ((&j == &i.second.back()) ? '\n' : ',');
+            if (iter && (iter%50000 == 0))
+            {
+    //            std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+    //            std::cout << "check_point_score = " << check_point_score
+    //            << ", max_score = " << max_score << ", c = " << c << '\n';
+                if (check_point_score == max_score)
+                {
+                    c_count++;
+                    std::uniform_real_distribution<float> temp(-c_count, c_count);
+    //                std::cout << "c: " << c << " -> ";
+                    c = temp(generator);
+    //                std::cout << c << '\n';
+                }
+                else
+                {
+    //                std::cout << "c: " << c << " -> ";
+                    c = 0.0f; //if new best found, reset c and try to exploit the new best
+                    c_count = 0;
+    //                std::cout << c << '\n';
+                }
+                check_point_score = max_score;
+            }
+            
+            for (int i = 0; (score = x.complete_status()) == -1; i++) //i is the index of the token
+            {
+                rp = x.pos_dist(generator), rg = x.pos_dist(generator);
+                temp_legal_moves = x.get_legal_moves(); //the legal moves
+                temp_sz = temp_legal_moves.size(); //the number of legal moves
+
+                if (i == particle_positions.size()) //Then we need to create a new particle with some initial position and velocity
+                {
+                    particle_positions.push_back(x.pos_dist(generator));
+                    v.push_back(x.vel_dist(generator));
+                }
+                
+                particle_positions[i] = trueMod(std::round(particle_positions[i]), temp_sz);
+                x.pieces.push_back(temp_legal_moves[particle_positions[i]]); //x.pieces holds the pieces corresponding to the indices
+                curr_positions.push_back(particle_positions[i]);
+                if (i == best_positions.size())
+                {
+                    best_positions.push_back(x.pos_dist(generator));
+                    best_positions[i] = trueMod(std::round(best_positions[i]), temp_sz);
+                }
+                //https://hal.science/hal-00764996
+                //https://www.researchgate.net/publication/216300408_An_off-the-shelf_PSO
+                new_v = (0.721*v[i] + x.phi_1*rg*(best_positions[i] - particle_positions[i]) + x.phi_2*rp*(p_i[i] - particle_positions[i]) + c);
+                v[i] = copysign(std::min(new_v, FLT_MAX), new_v);
+                particle_positions[i] += v[i];
+                Nsa[curr_positions[i]][i]++;
+            }
+            
+            for (int i = 0; i < curr_positions.size(); i++)
+            {
+                Psa[curr_positions[i]][i] = (Psa[curr_positions[i]][i]+score)/Nsa[curr_positions[i]][i];
+                if (Psa[curr_positions[i]][i] > p_i_vals[i])
+                {
+                    p_i[i] = curr_positions[i];
+                }
+                p_i_vals[i] = std::max(p_i_vals[i], Psa[curr_positions[i]][i]);
+                
+            }
+            
+            if (score > max_score)
+            {
+                for (int idx = 0; idx < curr_positions.size(); idx++)
+                {
+                    best_positions[idx] = curr_positions[idx];
+                }
+                max_score = score;
+                std::scoped_lock str_lock(Board::thread_locker);
+                best_expression = x._to_infix();
+                orig_expression = x.expression();
+                best_expr_result = x._to_infix(x.diffeq_result);
+                orig_expr_result = x.expression(x.diffeq_result);
+            }
+            x.pieces.clear();
+            curr_positions.clear();
         }
+    };
+    
+    for (unsigned int i = 0; i < num_threads; i++)
+    {
+        threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
     }
-    out.close();
+    
+    for (unsigned int i = 0; i < num_threads; i++)
+    {
+        threads[i].join();
+    }
+        
+    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
+    std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+    std::cout << "Best expression = " << best_expression << '\n';
+    std::cout << "Best expression (original format) = " << orig_expression << '\n';
+    std::cout << "Best diff result = " << best_expr_result << '\n';
+    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
 }
 
 //https://arxiv.org/abs/2205.13134
-void MCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0)
+void MCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0)
 {
-    std::map<int, std::vector<float>> scores; //map to store the scores
-    size_t measure_period = static_cast<size_t>(time/interval);
-    
     if (num_threads == 0)
     {
         unsigned int temp = std::thread::hardware_concurrency();
@@ -3106,166 +3045,146 @@ void MCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int
     std::vector<std::thread> threads(num_threads);
     std::latch sync_point(num_threads);
     
-    for (int run = 1; run <= num_runs; run++)
-    {
-        /*
-         Outside of thread:
-         */
-        std::atomic<float> max_score{0.0};
-        std::vector<std::pair<size_t, float>> temp_scores;
+    /*
+     Outside of thread:
+     */
+    std::atomic<float> max_score{0.0};
+    std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
 
-        auto start_time = Clock::now();
-        std::thread pushBackThread([&]()
-        {
-            while (timeElapsedSince(start_time) < time)
-            {
-                std::this_thread::sleep_for(std::chrono::seconds(measure_period));
-                temp_scores.push_back(std::make_pair(static_cast<size_t>(timeElapsedSince(start_time)), max_score.load()));
-            }
-        });
+    auto start_time = Clock::now();
+    
+    /*
+     Inside of thread:
+     */
+    
+    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result]()
+    {
+        std::random_device rand_dev;
+        std::mt19937 thread_local generator(rand_dev());
+        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
+        sync_point.arrive_and_wait();
+        float score = 0.0f, check_point_score = 0.0f, UCT, best_act, UCT_best;
         
-        /*
-         Inside of thread:
-         */
+        std::vector<float> temp_legal_moves;
+        std::unordered_map<std::string, std::unordered_map<float, float>> Qsa, Nsa;
+        std::unordered_map<std::string, float> Ns;
+        std::string state;
         
-        auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point]()
+        float c = 1.4f; //"controls the balance between exploration and exploitation", see equation 2 here: https://web.engr.oregonstate.edu/~afern/classes/cs533/notes/uct.pdf, top of page 8 here: https://arxiv.org/pdf/1402.6028.pdf, first formula in section 4. Experiments here: https://cesa-bianchi.di.unimi.it/Pubblicazioni/ml-02.pdf
+        std::vector<std::pair<std::string, float>> moveTracker;
+        moveTracker.reserve(x.reserve_amount);
+        temp_legal_moves.reserve(x.reserve_amount);
+        state.reserve(2*x.reserve_amount);
+        //        double str_convert_time = 0.0;
+        auto getString  = [&]()
         {
-            std::random_device rand_dev;
-            std::mt19937 thread_local generator(rand_dev());
-            Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
-            sync_point.arrive_and_wait();
-            float score = 0.0f, check_point_score = 0.0f, UCT, best_act, UCT_best;
-            
-            std::vector<float> temp_legal_moves;
-            std::unordered_map<std::string, std::unordered_map<float, float>> Qsa, Nsa;
-            std::unordered_map<std::string, float> Ns;
-            std::string state;
-            
-            float c = 1.4f; //"controls the balance between exploration and exploitation", see equation 2 here: https://web.engr.oregonstate.edu/~afern/classes/cs533/notes/uct.pdf, top of page 8 here: https://arxiv.org/pdf/1402.6028.pdf, first formula in section 4. Experiments here: https://cesa-bianchi.di.unimi.it/Pubblicazioni/ml-02.pdf
-            std::vector<std::pair<std::string, float>> moveTracker;
-            moveTracker.reserve(x.reserve_amount);
-            temp_legal_moves.reserve(x.reserve_amount);
-            state.reserve(2*x.reserve_amount);
-            //        double str_convert_time = 0.0;
-            auto getString  = [&]()
+            if (!x.pieces.empty())
             {
-                if (!x.pieces.empty())
-                {
-                    state += std::to_string(x.pieces[x.pieces.size()-1]) + " ";
-                }
-            };
-            
-            for (int i = 0; (timeElapsedSince(start_time) < time); i++)
-            {
-                if (i && (i%50000 == 0))
-                {
-                    //                    std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
-                    //                    std::cout << "check_point_score = " << check_point_score
-                    //                    << ", max_score = " << max_score << ", c = " << c << '\n';
-                    if (check_point_score == max_score)
-                    {
-                        //                        std::cout << "c: " << c << " -> ";
-                        c += 1.4;
-                        //                        std::cout << c << '\n';
-                    }
-                    else
-                    {
-                        //                        std::cout << "c: " << c << " -> ";
-                        c = 1.4; //if new best found, reset c and try to exploit the new best
-                        //                        std::cout << c << '\n';
-                        check_point_score = max_score;
-                    }
-                }
-                state.clear();
-                while ((score = x.complete_status()) == -1)
-                {
-                    temp_legal_moves = x.get_legal_moves();
-//                    auto start_time = Clock::now();
-                    getString();
-//                    str_convert_time += timeElapsedSince(start_time);
-                    UCT = 0.0f;
-                    UCT_best = -FLT_MAX;
-                    best_act = -1.0f;
-                    std::vector<float> best_acts;
-                    best_acts.reserve(temp_legal_moves.size());
-                    
-                    for (float a : temp_legal_moves)
-                    {
-                        if (Nsa[state].count(a))
-                        {
-                            UCT = Qsa[state][a] + c*sqrt(log(Ns[state])/Nsa[state][a]);
-                        }
-                        else
-                        {
-                            //not explored -> explore it.
-                            best_acts.push_back(a);
-                            UCT = -FLT_MAX;
-                        }
-                        
-                        if (UCT > UCT_best)
-                        {
-                            best_act = a;
-                            UCT_best = UCT;
-                        }
-                    }
-                    
-                    if (best_acts.size())
-                    {
-                        std::uniform_int_distribution<int> distribution(0, best_acts.size() - 1);
-                        best_act = best_acts[distribution(generator)];
-                    }
-                    x.pieces.push_back(best_act);
-                    moveTracker.push_back(make_pair(state, best_act));
-                    Ns[state]++;
-                    Nsa[state][best_act]++;
-                }
-                //backprop reward `score`
-                for (auto& state_action: moveTracker)
-                {
-                    Qsa[state_action.first][state_action.second] = std::max(Qsa[state_action.first][state_action.second], score);
-                }
-                
-                if (score > max_score)
-                {
-                    max_score = score;
-                }
-                x.pieces.clear();
-                moveTracker.clear();
+                state += std::to_string(x.pieces[x.pieces.size()-1]) + " ";
             }
         };
         
-        for (unsigned int i = 0; i < num_threads; i++)
+        for (int i = 0; (timeElapsedSince(start_time) < time); i++)
         {
-            threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
+            if (i && (i%50000 == 0))
+            {
+                //                    std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+                //                    std::cout << "check_point_score = " << check_point_score
+                //                    << ", max_score = " << max_score << ", c = " << c << '\n';
+                if (check_point_score == max_score)
+                {
+                    //                        std::cout << "c: " << c << " -> ";
+                    c += 1.4;
+                    //                        std::cout << c << '\n';
+                }
+                else
+                {
+                    //                        std::cout << "c: " << c << " -> ";
+                    c = 1.4; //if new best found, reset c and try to exploit the new best
+                    //                        std::cout << c << '\n';
+                    check_point_score = max_score;
+                }
+            }
+            state.clear();
+            while ((score = x.complete_status()) == -1)
+            {
+                temp_legal_moves = x.get_legal_moves();
+//                    auto start_time = Clock::now();
+                getString();
+//                    str_convert_time += timeElapsedSince(start_time);
+                UCT = 0.0f;
+                UCT_best = -FLT_MAX;
+                best_act = -1.0f;
+                std::vector<float> best_acts;
+                best_acts.reserve(temp_legal_moves.size());
+                
+                for (float a : temp_legal_moves)
+                {
+                    if (Nsa[state].count(a))
+                    {
+                        UCT = Qsa[state][a] + c*sqrt(log(Ns[state])/Nsa[state][a]);
+                    }
+                    else
+                    {
+                        //not explored -> explore it.
+                        best_acts.push_back(a);
+                        UCT = -FLT_MAX;
+                    }
+                    
+                    if (UCT > UCT_best)
+                    {
+                        best_act = a;
+                        UCT_best = UCT;
+                    }
+                }
+                
+                if (best_acts.size())
+                {
+                    std::uniform_int_distribution<int> distribution(0, best_acts.size() - 1);
+                    best_act = best_acts[distribution(generator)];
+                }
+                x.pieces.push_back(best_act);
+                moveTracker.push_back(make_pair(state, best_act));
+                Ns[state]++;
+                Nsa[state][best_act]++;
+            }
+            //backprop reward `score`
+            for (auto& state_action: moveTracker)
+            {
+                Qsa[state_action.first][state_action.second] = std::max(Qsa[state_action.first][state_action.second], score);
+            }
+            
+            if (score > max_score)
+            {
+                max_score = score;
+                std::scoped_lock str_lock(Board::thread_locker);
+                best_expression = x._to_infix();
+                orig_expression = x.expression();
+                best_expr_result = x._to_infix(x.diffeq_result);
+                orig_expr_result = x.expression(x.diffeq_result);
+            }
+            x.pieces.clear();
+            moveTracker.clear();
         }
-        
-        for (unsigned int i = 0; i < num_threads; i++)
-        {
-            threads[i].join();
-        }
-        
-        // Join the separate thread to ensure it has finished before exiting
-        pushBackThread.join();
-        
-        for (auto& i: temp_scores)
-        {
-            scores[i.first].push_back(i.second);
-        }
-        
-        std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
-        std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-        std::cout << "Best score = " << max_score.load() << ", MSE = " << (1/max_score)-1 << '\n';
-    }
-    std::ofstream out(filename);
-    for (auto& i: scores)
+    };
+    
+    for (unsigned int i = 0; i < num_threads; i++)
     {
-        out << i.first << ',';
-        for (auto& j: i.second)
-        {
-            out << j << ((&j == &i.second.back()) ? '\n' : ',');
-        }
+        threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
     }
-    out.close();
+    
+    for (unsigned int i = 0; i < num_threads; i++)
+    {
+        threads[i].join();
+    }
+    
+    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
+    std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+    std::cout << "Best expression = " << best_expression << '\n';
+    std::cout << "Best expression (original format) = " << orig_expression << '\n';
+    std::cout << "Best diff result = " << best_expr_result << '\n';
+    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
 }
 
 void RandomSearch(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, const int depth = 3, const std::string expression_type = "prefix", const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0)
@@ -3285,7 +3204,6 @@ void RandomSearch(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& d
     
     std::atomic<float> max_score{0.0};
     std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
-    
     auto start_time = Clock::now();
     
     /*
@@ -3314,17 +3232,15 @@ void RandomSearch(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& d
                     x.pieces.emplace_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
                 }
             }
-            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
-            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
+//            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
+//            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
 
             if (score > max_score)
             {
                 max_score = score;
                 std::scoped_lock str_lock(Board::thread_locker);
-                
                 best_expression = x._to_infix();
                 orig_expression = x.expression();
-                
                 best_expr_result = x._to_infix(x.diffeq_result);
                 orig_expr_result = x.expression(x.diffeq_result);
             }
@@ -3364,7 +3280,7 @@ int main()
 //    MCTS(generateData(100000, 7, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/);
     auto data = createLinspaceMatrix(1000, 1, {0.1f}, {15.0f});
     
-    RandomSearch(VortexRadialProfile, data, 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 0 /*num threads*/);
+    SimulatedAnnealing(VortexRadialProfile, data, 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 0 /*num threads*/);
 
  
 
