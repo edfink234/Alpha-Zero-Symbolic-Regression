@@ -53,13 +53,13 @@ bool isFloat(const std::string& x)
 
 // Function to create a matrix with linspace columns. std::vector<float> min and
 // std::vector<float> max must have size == cols
-Eigen::MatrixXf createLinspaceMatrix(int rows, int cols, std::vector<float> min_vec, std::vector<float> max_vec) 
+Eigen::MatrixXf createLinspaceMatrix(int rows, int cols, std::vector<float> min_vec, std::vector<float> max_vec)
 {
     assert((cols == min_vec.size()) && (cols == max_vec.size()));
     Eigen::MatrixXf mat(rows, cols);
-    for (int col = 0; col < cols; ++col) 
+    for (int col = 0; col < cols; ++col)
     {
-        for (int row = 0; row < rows; ++row) 
+        for (int row = 0; row < rows; ++row)
         {
             mat(row, col) = min_vec[col] + (max_vec[col] - min_vec[col]) * row / (rows - 1);
         }
@@ -93,9 +93,9 @@ int trueMod(int N, int M)
     return ((N % M) + M) % M;
 };
 
-bool isConstant(const Eigen::VectorXf& vec, float tolerance = 1e-8) 
+bool isConstant(const Eigen::VectorXf& vec, float tolerance = 1e-8)
 {
-    if (vec.size() <= 1) 
+    if (vec.size() <= 1)
     {
         return true; // A vector with 0 or 1 element is trivially constant
     }
@@ -237,8 +237,10 @@ struct Board
     std::vector<float> (*diffeq)(Board&); //differential equation we want to solve
     std::vector<float> diffeq_result;
     float isConstTol;
+    std::unordered_map<int, int> const_positions; //e.g. {7: 0, 9: 1, 12: 2}
+    std::vector<int> derivat_const_positions;
     
-    Board(std::vector<float> (*diffeq)(Board&), bool primary = true, int n = 3, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false, bool const_tokens = false, float isConstTol = 1e-1f) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, is_primary{primary}
+    Board(std::vector<float> (*diffeq)(Board&), bool primary = true, int n = 3, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false, bool const_tokens = true, float isConstTol = 1e-1f) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, is_primary{primary}
     {
         if (n > 30)
         {
@@ -279,7 +281,7 @@ struct Board
                 {
                     Board::__operators.push_back(i);
                 }
-                Board::__other_tokens = {/*"const",*/ "0", "1", "2"};
+                Board::__other_tokens = {"const", "0", "1", "2"};
                 Board::__tokens = Board::__operators;
                 
                 for (auto& i: this->Board::__input_vars)
@@ -423,9 +425,9 @@ struct Board
     {
         int count = 0;
 
-        for (float token : pieces)
+        for (float token : this->pieces)
         {
-            if (__tokens_dict[token] == "const")
+            if (Board::__tokens_dict[token] == "const")
             {
                 count++;
             }
@@ -437,14 +439,28 @@ struct Board
     {
         int count = 0;
 
-        for (float token : diffeq_result)
+        for (float token : this->diffeq_result)
         {
-            if (__tokens_dict[token] == "const")
+            if (Board::__tokens_dict[token] == "const")
             {
                 count++;
             }
         }
         return count;
+    }
+    
+    void get_pieces_const_pos()
+    {
+        this->const_positions.clear();
+        this->derivat_const_positions.clear();
+        int const_count = 0;
+        for (size_t i = 0; i < this->pieces.size(); i++)
+        {
+            if (Board::__tokens_dict[this->pieces[i]] == "const")
+            {
+                const_positions[i] = const_count++;
+            }
+        }
     }
     
     bool is_unary(float token) const
@@ -897,17 +913,40 @@ struct Board
     }
 
     //Returns the `expression_type` string form of the expression stored in the vector<float> parameter pieces
-    std::string expression(const std::vector<float>& pieces)
+    std::string expression(const std::vector<float>& pieces, bool is_derivat = true)
     {
         std::string temp;
         temp.reserve(2*pieces.size());
         size_t sz = pieces.size() - 1;
-        int const_index = ((expression_type == "postfix") ? 0 : this->params.size()-1);
+        int const_index;
+        if (expression_type == "postfix")
+        {
+            const_index = 0;
+        }
+        else //prefix
+        {
+            if (is_derivat)
+            {
+                const_index = this->derivat_const_positions.size() - 1;
+            }
+            else
+            {
+                const_index = this->params.size()-1;
+            }
+        }
+        
         for (size_t i = 0; i <= sz; i++)
         {
             if (Board::__tokens_dict[pieces[i]] == "const")
             {
-                temp += ((i!=sz) ? std::to_string((this->params)(const_index)) + " " : std::to_string((this->params)(const_index)));
+                if (is_derivat)
+                {
+                    temp += ((i!=sz) ? std::to_string((this->params)(derivat_const_positions[const_index])) + " " : std::to_string((this->params)(derivat_const_positions[const_index])));
+                }
+                else
+                {
+                    temp += ((i!=sz) ? std::to_string((this->params)(const_index)) + " " : std::to_string((this->params)(const_index)));
+                }
                 if (expression_type == "postfix")
                 {
                     const_index++;
@@ -925,12 +964,16 @@ struct Board
         return temp;
     }
     
-    std::string _to_infix(const std::vector<float>& pieces, bool show_consts = true)
+    std::string _to_infix(const std::vector<float>& pieces, bool show_consts = true, bool is_derivat = true)
     {
         std::stack<std::string> stack;
         bool is_prefix = (expression_type == "prefix");
-        size_t const_counter = 0;
+        size_t const_counter = 0, derivat_const_positions_sz;;
         std::string result;
+        if (is_prefix && is_derivat)
+        {
+            derivat_const_positions_sz = derivat_const_positions.size();
+        }
                 
         for (int i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
         {
@@ -938,7 +981,29 @@ struct Board
 
             if (std::find(Board::__operators_float.begin(), Board::__operators_float.end(), pieces[i]) == Board::__operators_float.end()) // leaf
             {
-                stack.push( ((!show_consts) || token != "const") ? token : std::to_string((this->params)(const_counter++)));
+                if (is_derivat)
+                {
+                    if ((!show_consts) || token != "const")
+                    {
+                        stack.push(token);
+                    }
+                    else
+                    {
+                        if (is_prefix)
+                        {
+                            stack.push(std::to_string((this->params)(derivat_const_positions[derivat_const_positions_sz - 1 - const_counter++])));
+                        }
+                        else
+                        {
+                            stack.push(std::to_string((this->params)(derivat_const_positions[const_counter++])));
+                        }
+                    }
+                }
+                else
+                {
+                    stack.push( ((!show_consts) || token != "const") ? token : std::to_string((this->params)(const_counter++)));
+                }
+                
             }
             else if (std::find(Board::__unary_operators_float.begin(), Board::__unary_operators_float.end(), pieces[i]) != Board::__unary_operators_float.end()) // Unary operator
             {
@@ -968,19 +1033,40 @@ struct Board
         return stack.top();
     }
 
-    Eigen::VectorXf expression_evaluator(const Eigen::VectorXf& params, const std::vector<float>& pieces) const
+    Eigen::VectorXf expression_evaluator(const Eigen::VectorXf& params, const std::vector<float>& pieces, bool is_derivat = true) const
     {
         std::stack<const Eigen::VectorXf> stack;
-        size_t const_count = 0;
+        size_t const_count = 0, derivat_const_positions_sz;
         bool is_prefix = (expression_type == "prefix");
+        if (is_prefix && is_derivat)
+        {
+            derivat_const_positions_sz = derivat_const_positions.size();
+        }
         for (int i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
         {
             std::string token = Board::__tokens_dict[pieces[i]];
+//            assert(token.size());
             if (std::find(Board::__operators_float.begin(), Board::__operators_float.end(), pieces[i]) == Board::__operators_float.end()) // leaf
             {
                 if (token == "const")
                 {
-                    stack.push(Eigen::VectorXf::Ones(Board::data.numRows())*params(const_count++));
+                    if (is_derivat)
+                    {
+                        assert(derivat_const_positions[const_count] < params.size());
+//                        printf("I'm here, hi %f\n", params(derivat_const_positions[const_count]));
+                        if (is_prefix)
+                        {
+                            stack.push(Eigen::VectorXf::Ones(Board::data.numRows())*params(derivat_const_positions[derivat_const_positions_sz - 1 - const_count++]));
+                        }
+                        else
+                        {
+                            stack.push(Eigen::VectorXf::Ones(Board::data.numRows())*params(derivat_const_positions[const_count++]));
+                        }
+                    }
+                    else
+                    {
+                        stack.push(Eigen::VectorXf::Ones(Board::data.numRows())*params(const_count++));
+                    }
                 }
                 else if (token == "0")
                 {
@@ -1072,6 +1158,8 @@ struct Board
                 stack.pop();
                 Eigen::VectorXf right_operand = stack.top();
                 stack.pop();
+//                printf("left_operand.rows() = %lu, right_operand.rows() = %lu, left_operand.cols() = %lu, right_operand.cols() = %lu\n", left_operand.rows(), right_operand.rows(), left_operand.cols(), right_operand.cols());
+//                assert((left_operand.rows() == right_operand.rows() && left_operand.cols() == right_operand.cols()));
                 if (token == "+")
                 {
                     stack.push(((expression_type == "postfix") ? (right_operand.array() + left_operand.array()) : (left_operand.array() + right_operand.array())));
@@ -1097,11 +1185,15 @@ struct Board
         return stack.top();
     }
     
-    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> expression_evaluator(const std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& parameters, const std::vector<float>& pieces) const
+    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> expression_evaluator(const std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& parameters, const std::vector<float>& pieces, bool is_derivat = true) const
     {
         std::stack<Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>> stack;
-        size_t const_count = 0;
+        size_t const_count = 0, derivat_const_positions_sz;
         bool is_prefix = (expression_type == "prefix");
+        if (is_prefix && is_derivat)
+        {
+            derivat_const_positions_sz = derivat_const_positions.size();
+        }
         for (int i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
         {
             std::string token = Board::__tokens_dict[pieces[i]];
@@ -1111,7 +1203,21 @@ struct Board
                 if (token == "const")
                 {
 //                    std::cout << "\nparameters[" << const_count << "] = " << parameters[const_count].value() << '\n';
-                    stack.push(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>::Constant(Board::data.numRows(), parameters[const_count++]));
+                    if (is_derivat)
+                    {
+                        if (is_prefix)
+                        {
+                            stack.push(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>::Constant(Board::data.numRows(), parameters[derivat_const_positions[derivat_const_positions_sz - 1 - const_count++]]));
+                        }
+                        else
+                        {
+                            stack.push(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>::Constant(Board::data.numRows(), parameters[derivat_const_positions[const_count++]]));
+                        }
+                    }
+                    else
+                    {
+                        stack.push(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>::Constant(Board::data.numRows(), parameters[const_count++]));
+                    }
                 }
                 else if (token == "0")
                 {
@@ -1246,8 +1352,8 @@ struct Board
             v(i) = vel_dist(gen);
         }
 
-        float swarm_best_score = loss_func(expression_evaluator(this->params, this->pieces));
-        float fpi = loss_func(expression_evaluator(particle_positions, this->pieces));
+        float swarm_best_score = loss_func(expression_evaluator(this->params, this->diffeq_result));
+        float fpi = loss_func(expression_evaluator(particle_positions, this->diffeq_result));
         float temp, fxi;
         
         if (fpi > swarm_best_score)
@@ -1265,10 +1371,10 @@ struct Board
                 v(i) = K*(v(i) + phi_1*rp*(particle_positions(i) - x(i)) + phi_2*rg*((this->params)(i) - x(i)));
                 x(i) += v(i);
                 
-                fpi = loss_func(expression_evaluator(particle_positions, this->pieces)); //current score
+                fpi = loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //current score
                 temp = particle_positions(i); //save old position of particle i
                 particle_positions(i) = x(i); //update old position to new position
-                fxi = loss_func(expression_evaluator(particle_positions, this->pieces)); //calculate the score with the new position
+                fxi = loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //calculate the score with the new position
                 if (fxi < fpi) //if the new vector is worse:
                 {
                     particle_positions(i) = temp; //reset particle_positions[i]
@@ -1310,8 +1416,8 @@ struct Board
             v(i) = vel_dist(gen);
         }
 
-        float swarm_best_score = loss_func(expression_evaluator(this->params, this->pieces));
-        float fpi = loss_func(expression_evaluator(particle_positions, this->pieces));
+        float swarm_best_score = loss_func(expression_evaluator(this->params, this->diffeq_result));
+        float fpi = loss_func(expression_evaluator(particle_positions, this->diffeq_result));
         float temp, fxi;
         
         if (fpi > swarm_best_score)
@@ -1328,10 +1434,10 @@ struct Board
                 v(i) = K*(v(i) + phi_1*rp*(particle_positions(i) - x(i)) + phi_2*rg*((this->params)(i) - x(i)));
                 x(i) += v(i);
                 
-                fpi = loss_func(expression_evaluator(particle_positions, this->pieces)); //current score
+                fpi = loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //current score
                 temp = particle_positions(i); //save old position of particle i
                 particle_positions(i) = x(i); //update old position to new position
-                fxi = loss_func(expression_evaluator(particle_positions, this->pieces)); //calculate the score with the new position
+                fxi = loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //calculate the score with the new position
                 if (fxi < fpi) //if the new vector is worse:
                 {
                     particle_positions(i) = temp; //reset particle_positions[i]
@@ -1351,7 +1457,7 @@ struct Board
     
     Eigen::AutoDiffScalar<Eigen::VectorXf> grad_func(std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& inputs)
     {
-        return MSE(expression_evaluator(inputs, this->pieces));
+        return MSE(expression_evaluator(inputs, this->diffeq_result));
     }
     
     /*
@@ -1362,7 +1468,7 @@ struct Board
     {
         if (this->fit_method == "LBFGS" || this->fit_method == "LBFGSB")
         {
-            float mse = MSE(expression_evaluator(x, this->pieces));
+            float mse = MSE(expression_evaluator(x, this->diffeq_result));
             if (this->fit_grad_method == "naive_numerical")
             {
                 float low_b, temp;
@@ -1371,9 +1477,9 @@ struct Board
                     //https://stackoverflow.com/a/38855586/18255427
                     temp = x(i);
                     x(i) -= 0.00001f;
-                    low_b = MSE(expression_evaluator(x, this->pieces));
+                    low_b = MSE(expression_evaluator(x, this->diffeq_result));
                     x(i) = temp + 0.00001f;
-                    grad(i) = (MSE(expression_evaluator(x, this->pieces)) - low_b) / 0.00002f ;
+                    grad(i) = (MSE(expression_evaluator(x, this->diffeq_result)) - low_b) / 0.00002f ;
                     x(i) = temp;
                 }
             }
@@ -1394,7 +1500,7 @@ struct Board
         }
         else if (this->fit_method == "LevenbergMarquardt")
         {
-            grad = (this->expression_evaluator(x, this->pieces) - Board::data["y"]);
+            grad = (this->expression_evaluator(x, this->diffeq_result));
         }
         return 0.f;
     }
@@ -1411,7 +1517,7 @@ struct Board
         float fx;
         
         Eigen::VectorXf eigenVec = this->params;
-        float mse = MSE(expression_evaluator(this->params, this->pieces));
+        float mse = MSE(expression_evaluator(this->params, this->diffeq_result));
         try
         {
             solver.minimize((*this), eigenVec, fx);
@@ -1442,7 +1548,7 @@ struct Board
         float fx;
         
         Eigen::VectorXf eigenVec = this->params;
-        float mse = MSE(expression_evaluator(this->params, this->pieces));
+        float mse = MSE(expression_evaluator(this->params, this->diffeq_result));
         try
         {
             solver.minimize((*this), eigenVec, fx, Eigen::VectorXf::Constant(eigenVec.size(), -std::numeric_limits<float>::infinity()), Eigen::VectorXf::Constant(eigenVec.size(), std::numeric_limits<float>::infinity()));
@@ -1504,13 +1610,13 @@ struct Board
         bool improved = false;
         auto start_time = Clock::now();
         Eigen::LevenbergMarquardt<decltype(*this), float> lm(*this);
-        float score_before = MSE(expression_evaluator(this->params, this->pieces));
+        float score_before = MSE(expression_evaluator(this->params, this->diffeq_result));
         lm.parameters.maxfev = this->num_fit_iter;
 //        std::cout << "ftol (Cost function change) = " << lm.parameters.ftol << '\n';
 //        std::cout << "xtol (Parameters change) = " << lm.parameters.xtol << '\n';
 
         lm.minimize(this->params);
-        if (MSE(expression_evaluator(this->params, this->pieces)) < score_before)
+        if (MSE(expression_evaluator(this->params, this->diffeq_result)) < score_before)
         {
             improved = true;
         }
@@ -1523,60 +1629,73 @@ struct Board
     float fitFunctionToData()
     {
         float loss = 0.0f;
+        for (float i: pieces){assert(Board::__tokens_dict[i].size());}
+        auto expression_eval = expression_evaluator(this->params, this->pieces, false /*is_derivat*/);
+        if (isConstant(expression_eval, this->isConstTol)) //Ignore the trivial solution!
+        {
+            return loss;
+        }
         if (this->params.size())
         {
-            bool improved = true;
-            if (this->fit_method == "PSO")
+            this->diffeq_result = diffeq(*this);
+            if (this->__num_consts_diff())
             {
-                improved = PSO();
-            }
-            else if (this->fit_method == "AsyncPSO")
-            {
-                improved = AsyncPSO();
-            }
-            else if (this->fit_method == "LBFGS")
-            {
-                improved = LBFGS();
-            }
-            else if (this->fit_method == "LBFGSB")
-            {
-                improved = LBFGSB();
-            }
-            else if (this->fit_method == "LevenbergMarquardt")
-            {
-                improved = LevenbergMarquardt();
-            }
-            Eigen::VectorXf temp_vec;
-            
-            if (improved) //If improved, update the expression_dict with this->params
-            {
-                if (Board::expression_dict.contains(this->expression_string))
+//                printf("__num_consts_diff() = %d, this->derivat_const_positions.size() = %lu\n", __num_consts_diff(), this->derivat_const_positions.size());
+                assert(this->__num_consts_diff() == this->derivat_const_positions.size());
+                bool improved = true;
+                if (this->fit_method == "PSO")
                 {
-                    Board::expression_dict.visit(this->expression_string, [&](auto& x)
+                    improved = PSO();
+                }
+                else if (this->fit_method == "AsyncPSO")
+                {
+                    improved = AsyncPSO();
+                }
+                else if (this->fit_method == "LBFGS")
+                {
+                    improved = LBFGS();
+                }
+                else if (this->fit_method == "LBFGSB")
+                {
+                    improved = LBFGSB();
+                }
+                else if (this->fit_method == "LevenbergMarquardt")
+                {
+                    improved = LevenbergMarquardt();
+                }
+                Eigen::VectorXf temp_vec;
+                //TODO: Maybe modify the loss function so that trivial solutions are discouraged/squashed
+                
+                if (improved) //If improved, update the expression_dict with this->params
+                {
+                    if (Board::expression_dict.contains(this->expression_string))
                     {
-                        x.second = this->params;
-                    });
+                        Board::expression_dict.visit(this->expression_string, [&](auto& x)
+                        {
+                            x.second = this->params;
+                        });
+                    }
+                    else
+                    {
+                        Board::expression_dict.insert_or_assign(this->expression_string, this->params);
+                    }
                 }
-                else
+                Board::expression_dict.cvisit(this->expression_string, [&](const auto& x) //getting parameters associated with the expression
                 {
-                    Board::expression_dict.insert_or_assign(this->expression_string, this->params);
-                }
+                    temp_vec = x.second;
+                });
+                            
+                loss = loss_func(expression_evaluator(temp_vec, this->diffeq_result));
             }
-            Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
+            else
             {
-                temp_vec = x.second;
-            });
-                        
-            loss = loss_func(expression_evaluator(temp_vec, this->pieces));
+                loss = loss_func(expression_evaluator(this->params, this->diffeq_result));
+            }
         }
         else
         {
-            auto expression_eval = expression_evaluator(this->params, this->pieces);
-            if (isConstant(expression_eval, this->isConstTol)) //Ignore the trivial solution!
-            {
-                return 0.0f;
-            }
             this->diffeq_result = diffeq(*this);
+//            for (float i: diffeq_result){assert(Board::__tokens_dict[i].size());}
             loss = loss_func(expression_evaluator(this->params, this->diffeq_result));
         }
         return loss;
@@ -1634,6 +1753,10 @@ struct Board
                 {
                     this->params.setOnes(this->__num_consts());
                     Board::expression_dict.insert_or_assign(this->expression_string, this->params);
+                }
+                if (this->params.size())
+                {
+                    this->get_pieces_const_pos();
                 }
 
                 return fitFunctionToData();
@@ -1799,6 +1922,10 @@ struct Board
             for (int k = low+1; k <= temp; k++) /* + * x */
             {
                 this->derivat.push_back(prefix[k]);
+                if (Board::__tokens_dict[prefix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             derivePrefixHelper(temp+1, temp+1+grasp[temp+1], dx, prefix, grasp, true); /* + * x y' */
             this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* + * x y' * */
@@ -1806,6 +1933,10 @@ struct Board
             for (int k = temp+1; k <= temp+1+grasp[temp+1]; k++)
             {
                 this->derivat.push_back(prefix[k]); /* + * x y' * x' y */
+                if (Board::__tokens_dict[prefix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
         }
         
@@ -1820,21 +1951,37 @@ struct Board
             for (k = temp+1; k <= temp+1+grasp[temp+1]; k++) /* / - * x' y */
             {
                 this->derivat.push_back(prefix[k]);
+                if (Board::__tokens_dict[prefix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* / - * x' y * */
             for (k = low+1; k <= temp; k++) /* / - * x' y * x */
             {
                 this->derivat.push_back(prefix[k]);
+                if (Board::__tokens_dict[prefix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             derivePrefixHelper(temp+1, temp+1+grasp[temp+1], dx, prefix, grasp, true); /* / - * x' y * x y' */
             this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* / - * x' y * x y' * */
             for (k = temp+1; k <= temp+1+grasp[temp+1]; k++) /* / - * x' y * x y' * y */
             {
                 this->derivat.push_back(prefix[k]);
+                if (Board::__tokens_dict[prefix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             for (k = temp+1; k <= temp+1+grasp[temp+1]; k++) /* / - * x' y * x y' * y y */
             {
                 this->derivat.push_back(prefix[k]);
+                if (Board::__tokens_dict[prefix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
         }
         
@@ -1847,10 +1994,18 @@ struct Board
             for (k = low+1; k <= temp; k++) /* * ^ x */
             {
                 this->derivat.push_back(prefix[k]);
+                if (Board::__tokens_dict[prefix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             for (k = temp+1; k <= temp+1+grasp[temp+1]; k++) /* * ^ x y */
             {
                 this->derivat.push_back(prefix[k]);
+                if (Board::__tokens_dict[prefix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             std::vector<float> prefix_temp;
             std::vector<int> grasp_temp;
@@ -1880,6 +2035,10 @@ struct Board
             for (int k = temp; k <= temp+grasp[temp]; k++)
             {
                 this->derivat.push_back(prefix[k]); /* * ~ sin x */
+                if (Board::__tokens_dict[prefix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* * ~ sin x x' */
         }
@@ -1892,6 +2051,10 @@ struct Board
             for (int k = temp; k <= temp+grasp[temp]; k++)
             {
                 this->derivat.push_back(prefix[k]); /* * cos x */
+                if (Board::__tokens_dict[prefix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* * cos x x' */
         }
@@ -1907,6 +2070,10 @@ struct Board
             for (int k = temp; k <= temp+grasp[temp]; k++) /* / x' * 2 sqrt x */
             {
                 this->derivat.push_back(prefix[k]);
+                if (Board::__tokens_dict[prefix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
         }
         
@@ -1918,6 +2085,10 @@ struct Board
             for (int k = temp; k <= temp+grasp[temp]; k++)
             {
                 this->derivat.push_back(prefix[k]);      /* / x' x */
+                if (Board::__tokens_dict[prefix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
         }
         
@@ -1933,10 +2104,18 @@ struct Board
             for (int k = temp; k <= temp+grasp[temp]; k++) /* / x' sqrt - 1 * x */
             {
                 this->derivat.push_back(prefix[k]);
+                if (Board::__tokens_dict[prefix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             for (int k = temp; k <= temp+grasp[temp]; k++) /* / x' sqrt - 1 * x x */
             {
                 this->derivat.push_back(prefix[k]);
+                if (Board::__tokens_dict[prefix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
         }
         
@@ -1953,10 +2132,18 @@ struct Board
             for (int k = temp; k <= temp+grasp[temp]; k++) /* / x' sqrt - 1 * x */
             {
                 this->derivat.push_back(prefix[k]);
+                if (Board::__tokens_dict[prefix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             for (int k = temp; k <= temp+grasp[temp]; k++) /* / x' sqrt - 1 * x x */
             {
                 this->derivat.push_back(prefix[k]);
+                if (Board::__tokens_dict[prefix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
         }
         
@@ -1969,11 +2156,19 @@ struct Board
             for (int k = temp; k <= temp+grasp[temp]; k++) /* * * sech x */
             {
                 this->derivat.push_back(prefix[k]);
+                if (Board::__tokens_dict[prefix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             this->derivat.push_back(Board::__tokens_inv_dict["sech"]);   /* * * sech x sech */
             for (int k = temp; k <= temp+grasp[temp]; k++) /* * * sech x sech x */
             {
                 this->derivat.push_back(prefix[k]);
+                if (Board::__tokens_dict[prefix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* * * sech x sech x x' */
         }
@@ -1988,11 +2183,19 @@ struct Board
             for (int k = temp; k <= temp+grasp[temp]; k++) /* ~ * * sech x */
             {
                 this->derivat.push_back(prefix[k]);
+                if (Board::__tokens_dict[prefix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             this->derivat.push_back(Board::__tokens_inv_dict["tanh"]);   /* ~ * * sech x tanh */
             for (int k = temp; k <= temp+grasp[temp]; k++) /* ~ * * sech x tanh x */
             {
                 this->derivat.push_back(prefix[k]);
+                if (Board::__tokens_dict[prefix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* ~ * * sech x tanh x x' */
         }
@@ -2005,6 +2208,10 @@ struct Board
             for (int k = temp; k <= temp+grasp[temp]; k++)
             {
                 this->derivat.push_back(prefix[k]);      /* * exp x */
+                if (Board::__tokens_dict[prefix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* * exp x x' */
         }
@@ -2101,6 +2308,10 @@ struct Board
             for (int k = low; k <= up-2-grasp[up-1]; k++) /* x */
             {
                 this->derivat.push_back(postfix[k]);
+                if (Board::__tokens_dict[postfix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             derivePostfixHelper(up-1-grasp[up-1], up-1, dx, postfix, grasp, true); /* x y' */
             this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* x y' "*" */
@@ -2108,6 +2319,10 @@ struct Board
             for (int k = up-1-grasp[up-1]; k <= up - 1; k++)
             {
                 this->derivat.push_back(postfix[k]); /* x y' "*" x' y */
+                if (Board::__tokens_dict[postfix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* x y' "*" x' y "*" */
             this->derivat.push_back(Board::__tokens_inv_dict["+"]); /* x y' "*" x' y "*" + */
@@ -2120,11 +2335,19 @@ struct Board
             for (k = up-1-grasp[up-1]; k <= up-1; k++) /* x' y */
             {
                 this->derivat.push_back(postfix[k]);
+                if (Board::__tokens_dict[postfix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* x' y *  */
             for (k = low; k <= up-2-grasp[up-1]; k++) /* x' y * x */
             {
                 this->derivat.push_back(postfix[k]);
+                if (Board::__tokens_dict[postfix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             derivePostfixHelper(up-1-grasp[up-1], up-1, dx, postfix, grasp, true); /* x' y * x y' */
             this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* x' y * x y' * */
@@ -2132,10 +2355,18 @@ struct Board
             for (k = up-1-grasp[up-1]; k <= up-1; k++)      /* x' y * x y' * - y */
             {
                 this->derivat.push_back(postfix[k]);
+                if (Board::__tokens_dict[postfix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             for (k = up-1-grasp[up-1]; k <= up-1; k++)      /* x' y * x y' * - y y */
             {
                 this->derivat.push_back(postfix[k]);
+                if (Board::__tokens_dict[postfix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* x' y * x y' * - y y * */
             this->derivat.push_back(Board::__tokens_inv_dict["/"]); /* x' y * x y' * - y y * / */
@@ -2147,10 +2378,18 @@ struct Board
             for (k = low; k <= up-2-grasp[up-1]; k++) /* x */
             {
                 this->derivat.push_back(postfix[k]);
+                if (Board::__tokens_dict[postfix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             for (k = up-1-grasp[up-1]; k <= up-1; k++) /* x y */
             {
                 this->derivat.push_back(postfix[k]);
+                if (Board::__tokens_dict[postfix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             this->derivat.push_back(Board::__tokens_inv_dict["^"]); /* x y ^ */
 
@@ -2181,6 +2420,10 @@ struct Board
             for (int k = low; k <= up-1; k++)
             {
                 this->derivat.push_back(postfix[k]); /* x */
+                if (Board::__tokens_dict[postfix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             this->derivat.push_back(Board::__tokens_inv_dict["sin"]); /* x sin */
             this->derivat.push_back(Board::__tokens_inv_dict["~"]); /* x sin ~ */
@@ -2193,6 +2436,10 @@ struct Board
             for (int k = low; k <= up-1; k++)
             {
                 this->derivat.push_back(postfix[k]); /* x */
+                if (Board::__tokens_dict[postfix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             this->derivat.push_back(Board::__tokens_inv_dict["cos"]); /* x cos */
             derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x cos x' */
@@ -2206,6 +2453,10 @@ struct Board
             for (int k = low; k <= up-1; k++) /* x' 2 x */
             {
                 this->derivat.push_back(postfix[k]);
+                if (Board::__tokens_dict[postfix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             this->derivat.push_back(Board::__tokens_inv_dict["sqrt"]);    /* x' 2 x sqrt */
             this->derivat.push_back(Board::__tokens_inv_dict["*"]);       /* x' 2 x sqrt * */
@@ -2218,6 +2469,10 @@ struct Board
             for (int k = low; k <= up-1; k++)
             {
                 this->derivat.push_back(postfix[k]);      /* x' x */
+                if (Board::__tokens_dict[postfix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             this->derivat.push_back(Board::__tokens_inv_dict["/"]);               /* x' x / */
         }
@@ -2229,10 +2484,18 @@ struct Board
             for (int k = low; k <= up-1; k++) /* x' 1 x */
             {
                 this->derivat.push_back(postfix[k]);
+                if (Board::__tokens_dict[postfix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             for (int k = low; k <= up-1; k++) /* x' 1 x x */
             {
                 this->derivat.push_back(postfix[k]);
+                if (Board::__tokens_dict[postfix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             this->derivat.push_back(Board::__tokens_inv_dict["*"]);   /* x' 1 x x * */
             this->derivat.push_back(Board::__tokens_inv_dict["-"]);   /* x' 1 x x * - */
@@ -2247,10 +2510,18 @@ struct Board
             for (int k = low; k <= up-1; k++) /* x' 1 x */
             {
                 this->derivat.push_back(postfix[k]);
+                if (Board::__tokens_dict[postfix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             for (int k = low; k <= up-1; k++) /* x' 1 x x */
             {
                 this->derivat.push_back(postfix[k]);
+                if (Board::__tokens_dict[postfix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             this->derivat.push_back(Board::__tokens_inv_dict["*"]);   /* x' 1 x x * */
             this->derivat.push_back(Board::__tokens_inv_dict["-"]);   /* x' 1 x x * - */
@@ -2264,11 +2535,19 @@ struct Board
             for (int k = low; k <= up-1; k++) /* x */
             {
                 this->derivat.push_back(postfix[k]);
+                if (Board::__tokens_dict[postfix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             this->derivat.push_back(Board::__tokens_inv_dict["sech"]);   /* x sech */
             for (int k = low; k <= up-1; k++) /* x sech x */
             {
                 this->derivat.push_back(postfix[k]);
+                if (Board::__tokens_dict[postfix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             this->derivat.push_back(Board::__tokens_inv_dict["sech"]);   /* x sech x sech */
             this->derivat.push_back(Board::__tokens_inv_dict["*"]);      /* x sech x sech * */
@@ -2281,12 +2560,20 @@ struct Board
             for (int k = low; k <= up-1; k++) /* x */
             {
                 this->derivat.push_back(postfix[k]);
+                if (Board::__tokens_dict[postfix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             this->derivat.push_back(Board::__tokens_inv_dict["sech"]);   /* x sech */
             this->derivat.push_back(Board::__tokens_inv_dict["~"]);      /* x sech ~ */
             for (int k = low; k <= up-1; k++) /* x sech ~ x */
             {
                 this->derivat.push_back(postfix[k]);
+                if (Board::__tokens_dict[postfix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             this->derivat.push_back(Board::__tokens_inv_dict["tanh"]);   /* x sech ~ x tanh */
             this->derivat.push_back(Board::__tokens_inv_dict["*"]);      /* x sech ~ x tanh * */
@@ -2300,6 +2587,10 @@ struct Board
             for (int k = low; k <= up-1; k++)
             {
                 this->derivat.push_back(postfix[k]);      /* x' x */
+                if (Board::__tokens_dict[postfix[k]] == "const")
+                {
+                    this->derivat_const_positions.push_back(this->const_positions[k]);
+                }
             }
             this->derivat.push_back(Board::__tokens_inv_dict["exp"]);               /* x' x exp */
             this->derivat.push_back(Board::__tokens_inv_dict["*"]);               /* x' x exp * */
@@ -2377,23 +2668,40 @@ std::vector<float> VortexRadialProfile(Board& x)
         result.push_back(Board::__tokens_inv_dict["2"]);
         result.push_back(Board::__tokens_inv_dict["x0"]); //r
         result.push_back(Board::__tokens_inv_dict["x0"]); //r
-        for (float i: x.pieces) //R
+        for (size_t i = 0; i < x.pieces.size(); i++) //R
         {
-            result.push_back(i);
+//            assert(Board::__tokens_dict[x.pieces[i]].size());
+            result.push_back(x.pieces[i]);
+            if (Board::__tokens_dict[x.pieces[i]] == "const")
+            {
+                x.derivat_const_positions.push_back(x.const_positions[i]);
+            }
         }
         result.push_back(Board::__tokens_inv_dict["*"]);
         result.push_back(Board::__tokens_inv_dict["*"]);
-        for (float i: x.pieces) //R
+        for (size_t i = 0; i < x.pieces.size(); i++) //R
         {
-            result.push_back(i);
+            result.push_back(x.pieces[i]);
+            if (Board::__tokens_dict[x.pieces[i]] == "const")
+            {
+                x.derivat_const_positions.push_back(x.const_positions[i]);
+            }
         }
-        for (float i: x.pieces) //R
+        for (size_t i = 0; i < x.pieces.size(); i++) //R
         {
-            result.push_back(i);
+            result.push_back(x.pieces[i]);
+            if (Board::__tokens_dict[x.pieces[i]] == "const")
+            {
+                x.derivat_const_positions.push_back(x.const_positions[i]);
+            }
         }
-        for (float i: x.pieces) //R
+        for (size_t i = 0; i < x.pieces.size(); i++) //R
         {
-            result.push_back(i);
+            result.push_back(x.pieces[i]);
+            if (Board::__tokens_dict[x.pieces[i]] == "const")
+            {
+                x.derivat_const_positions.push_back(x.const_positions[i]);
+            }
         }
     }
     else if (x.expression_type == "postfix")
@@ -2403,22 +2711,28 @@ std::vector<float> VortexRadialProfile(Board& x)
         result.push_back(Board::__tokens_inv_dict["2"]);
         result.push_back(Board::__tokens_inv_dict["/"]);
         x.derivePostfix(0, x.pieces.size()-1, "x0", x.pieces, grasp);
+//        for (float i: result){assert(Board::__tokens_dict[i].size());}
         R_prime = x.derivat;
         x.derivePostfix(0, R_prime.size()-1, "x0", R_prime, grasp);
+//        for (float i: result){assert(Board::__tokens_dict[i].size());}
         for (float i: x.derivat) //R''
         {
             result.push_back(i);
         }
+//        for (float i: result){assert(Board::__tokens_dict[i].size());}
         result.push_back(Board::__tokens_inv_dict["*"]);
         result.push_back(Board::__tokens_inv_dict["1"]);
         result.push_back(Board::__tokens_inv_dict["2"]);
         result.push_back(Board::__tokens_inv_dict["x0"]); //r
         result.push_back(Board::__tokens_inv_dict["*"]);
         result.push_back(Board::__tokens_inv_dict["/"]);
+//        for (float i: result){assert(Board::__tokens_dict[i].size());}
         for (float i: R_prime) //R'
         {
             result.push_back(i);
         }
+//        for (float i: result){assert(Board::__tokens_dict[i].size());}
+
         result.push_back(Board::__tokens_inv_dict["*"]);
         result.push_back(Board::__tokens_inv_dict["+"]);
         result.push_back(Board::__tokens_inv_dict[mu]);
@@ -2432,25 +2746,46 @@ std::vector<float> VortexRadialProfile(Board& x)
         result.push_back(Board::__tokens_inv_dict["*"]);
         result.push_back(Board::__tokens_inv_dict["/"]);
         result.push_back(Board::__tokens_inv_dict["-"]);
-        for (float i: x.pieces) //R
+        for (size_t i = 0; i < x.pieces.size(); i++) //R
         {
-            result.push_back(i);
+//            assert(Board::__tokens_dict[x.pieces[i]].size());
+            result.push_back(x.pieces[i]);
+            if (Board::__tokens_dict[x.pieces[i]] == "const")
+            {
+                x.derivat_const_positions.push_back(x.const_positions[i]);
+            }
         }
+//        for (float i: result){assert(Board::__tokens_dict[i].size());}
+
         result.push_back(Board::__tokens_inv_dict["*"]);
         result.push_back(Board::__tokens_inv_dict["+"]);
-        for (float i: x.pieces) //R
+        for (size_t i = 0; i < x.pieces.size(); i++) //R
         {
-            result.push_back(i);
+            result.push_back(x.pieces[i]);
+            if (Board::__tokens_dict[x.pieces[i]] == "const")
+            {
+                x.derivat_const_positions.push_back(x.const_positions[i]);
+            }
         }
-        for (float i: x.pieces) //R
+        for (size_t i = 0; i < x.pieces.size(); i++) //R
         {
-            result.push_back(i);
+            result.push_back(x.pieces[i]);
+            if (Board::__tokens_dict[x.pieces[i]] == "const")
+            {
+                x.derivat_const_positions.push_back(x.const_positions[i]);
+            }
         }
         result.push_back(Board::__tokens_inv_dict["*"]);
-        for (float i: x.pieces) //R
+        for (size_t i = 0; i < x.pieces.size(); i++) //R
         {
-            result.push_back(i);
+            result.push_back(x.pieces[i]);
+            if (Board::__tokens_dict[x.pieces[i]] == "const")
+            {
+                x.derivat_const_positions.push_back(x.const_positions[i]);
+            }
         }
+//        for (float i: result){assert(Board::__tokens_dict[i].size());}
+
         result.push_back(Board::__tokens_inv_dict["*"]);
         result.push_back(Board::__tokens_inv_dict["-"]);
 
@@ -2460,7 +2795,7 @@ std::vector<float> VortexRadialProfile(Board& x)
 
 //https://dl.acm.org/doi/pdf/10.1145/3449639.3459345?casa_token=Np-_TMqxeJEAAAAA:8u-d6UyINV6Ex02kG9LthsQHAXMh2oxx3M4FG8ioP0hGgstIW45X8b709XOuaif5D_DVOm_FwFo
 //https://core.ac.uk/download/pdf/6651886.pdf
-void SimulatedAnnealing(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0)
+void SimulatedAnnealing(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, const int depth = 3, const std::string expression_type = "prefix", const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, bool const_tokens = true, float isConstTol = 1e-1f, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0)
 {
     
     if (num_threads == 0)
@@ -2483,13 +2818,13 @@ void SimulatedAnnealing(std::vector<float> (*diffeq)(Board&), const Eigen::Matri
      Inside of thread:
      */
     
-    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result]()
+    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &const_tokens, &isConstTol, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result]()
     {
         std::random_device rand_dev;
         std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
+        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol);
         sync_point.arrive_and_wait();
-        Board secondary(diffeq, false, 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache); //For perturbations
+        Board secondary(diffeq, false /*is_primary*/, 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache); //For perturbations
         float score = 0.0f, check_point_score = 0.0f;
         
         std::vector<float> current;
@@ -2630,7 +2965,7 @@ void SimulatedAnnealing(std::vector<float> (*diffeq)(Board&), const Eigen::Matri
 }
 
 //https://arxiv.org/abs/2310.06609
-void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0)
+void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, const int depth = 3, const std::string expression_type = "prefix", const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, bool const_tokens = true, float isConstTol = 1e-1f, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0)
 {
     std::map<int, std::vector<float>> scores; //map to store the scores
     
@@ -2654,11 +2989,11 @@ void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int d
      Inside of thread:
      */
     
-    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result]()
+    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &const_tokens, &isConstTol, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result]()
     {
         std::random_device rand_dev;
         std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
+        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol);
         sync_point.arrive_and_wait();
         Board secondary_one(diffeq, false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache), secondary_two(diffeq, false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache); //For crossover and mutations
         float score = 0.0f, mut_prob = 0.8f, rand_mut_cross;
@@ -2873,7 +3208,7 @@ void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int d
     std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
 }
 
-void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0)
+void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, const int depth = 3, const std::string expression_type = "prefix", const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, bool const_tokens = true, float isConstTol = 1e-1f, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0)
 {
     if (num_threads == 0)
     {
@@ -2896,11 +3231,11 @@ void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int 
      Inside of thread:
      */
     
-    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result]()
+    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &const_tokens, &isConstTol, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result]()
     {
         std::random_device rand_dev;
         std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
+        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol);
         sync_point.arrive_and_wait();
         float score = 0, check_point_score = 0;
         std::vector<float> temp_legal_moves;
@@ -3034,7 +3369,7 @@ void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int 
 }
 
 //https://arxiv.org/abs/2205.13134
-void MCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0)
+void MCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, const int depth = 3, const std::string expression_type = "prefix", const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, bool const_tokens = true, float isConstTol = 1e-1f, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0)
 {
     if (num_threads == 0)
     {
@@ -3057,11 +3392,11 @@ void MCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int
      Inside of thread:
      */
     
-    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result]()
+    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &const_tokens, &isConstTol, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result]()
     {
         std::random_device rand_dev;
         std::mt19937 thread_local generator(rand_dev());
-        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
+        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol);
         sync_point.arrive_and_wait();
         float score = 0.0f, check_point_score = 0.0f, UCT, best_act, UCT_best;
         
@@ -3187,7 +3522,7 @@ void MCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int
     std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
 }
 
-void RandomSearch(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, const int depth = 3, const std::string expression_type = "prefix", const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0)
+void RandomSearch(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, const int depth = 3, const std::string expression_type = "prefix", const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, bool const_tokens = true, float isConstTol = 1e-1f, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0)
 {
     if (num_threads == 0)
     {
@@ -3210,12 +3545,12 @@ void RandomSearch(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& d
      Inside of thread:
      */
     
-    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result]()
+    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &const_tokens, &isConstTol, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result]()
     {
         std::random_device rand_dev;
         std::mt19937 thread_local generator(rand_dev()); // Mersenne Twister random number generator
 
-        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache);
+        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol);
         sync_point.arrive_and_wait();
         float score = 0.0f;
         std::vector<float> temp_legal_moves;
@@ -3229,7 +3564,10 @@ void RandomSearch(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& d
 //                    assert(temp_sz);
                 std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
                 {
-                    x.pieces.emplace_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
+                    auto temp_piece = temp_legal_moves[distribution(generator)];
+                    assert(Board::__tokens_dict[temp_piece].size());
+                    x.pieces.emplace_back(temp_piece); //make the randomly chosen valid move
+                    
                 }
             }
 //            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
@@ -3280,9 +3618,7 @@ int main()
 //    MCTS(generateData(100000, 7, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/);
     auto data = createLinspaceMatrix(1000, 1, {0.1f}, {15.0f});
     
-    SimulatedAnnealing(VortexRadialProfile, data, 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 0 /*num threads*/);
-
- 
+    GP(VortexRadialProfile, data, 5 /*fixed depth*/, "postfix", "LBFGSB", 5, "autodiff", true /*cache*/, true /*const_tokens*/, 1e-1f /*isConstTol*/, 4 /*time to run the algorithm in seconds*/, 0 /*num threads, 0 == std::thread::hardware_concurrency()*/);
 
     return 0;
 }
@@ -3291,3 +3627,26 @@ int main()
 //g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSR PrefixPostfixMultiThreadDiffSR.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -ffast-math -ftree-vectorize -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
 
 //g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSR PrefixPostfixMultiThreadDiffSR.cpp -g -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
+
+
+/*
+ Need to get positions of consts in pieces
+ std::unordered_map<int, int> const_positions //e.g. {7: 0, 9: 1, 12: 2}
+ std::vector<int> derivat_const_positions;
+ 
+ in derivePostfix:
+ 
+    if postfix[idx] == "const": #the one that you'll be pushing back
+        #which number "const" is it, the first, second, third, ..., ?
+        derivat_const_positions.push_back(const_positions[idx])
+ 
+ in expressionEvaluator:
+    const_idx = 0;
+    for ...:
+        if derivat[idx] == "const":
+            params[derivat_const_positions[const_idx++]]
+ 
+ */
+
+
+//https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/1244f5d2a39a63289fdd9d3efdc1d00b4ae5c2ab/PrefixPostfixMultiThreadDiffSR.cpp
