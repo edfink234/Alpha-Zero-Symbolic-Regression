@@ -285,7 +285,7 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
                     this->network[i][j].velocities[k] = this->theta*this->network[i][j].velocities[k] + this->eta*this->d[i][j]*this->values[i-1][k]; //step 1 & then 3 in NAG: compute momentum
                     this->network[i][j].weights[k] = this->network[i][j].weights[k] + this->network[i][j].velocities[k];
                 }
-                else if (this->weight_update == "SR")
+                else if (this->weight_update == "SR") //symbolic regression
                 {
                     this->network[i][j].weights[k] = this->expression_evaluator(this->network[i][j].weights[k], this->d[i][j], this->values[i-1][k], this->d_nest[i][j]);
                 }
@@ -294,20 +294,35 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
                     this->network[i][j].gradients[k] = this->network[i][j].gradients[k] + this->d[i][j] * this->values[i-1][k] * this->d[i][j] * this->values[i-1][k];
                     this->network[i][j].weights[k] = this->network[i][j].weights[k] + (this->eta / sqrt(this->network[i][j].gradients[k] + this->epsilon)) * this->d[i][j] * this->values[i-1][k];
                 }
-                else if (this->weight_update == "AdaDelta")
+                else if (this->weight_update == "RMSProp")
                 {
-                    //TODO: implement it!!!
                     float g_t_k = this->d[i][j] * this->values[i-1][k];
                     
                     this->network[i][j].expt_grad_squared[k] = this->gamma*this->network[i][j].expt_grad_squared[k] + (1-this->gamma)*g_t_k*g_t_k;
                     
                     float delta_w_t_k = (this->eta / sqrt(this->network[i][j].expt_grad_squared[k] + this->epsilon)) * g_t_k;
                     
-                    delta_w_t_k = sqrt((this->network[i][j].expt_weight_squared[k] + this->epsilon) / (this->network[i][j].expt_grad_squared[k] + this->epsilon) ) * g_t_k;
+                    this->network[i][j].weights[k] = this->network[i][j].weights[k] + delta_w_t_k;
+                    
+                }
+                else if (this->weight_update == "AdaDelta") //As described in "Recent Advances in Stochastic Gradient Descent in Deep Learning"
+                {
+                    float g_t_k = this->d[i][j] * this->values[i-1][k];
+                                        
+                    this->network[i][j].expt_grad_squared[k] = this->gamma*this->network[i][j].expt_grad_squared[k] + (1-this->gamma)*g_t_k*g_t_k;
+                    
+                    float delta_w_t_k = (-this->eta / sqrt(this->network[i][j].expt_grad_squared[k] + this->epsilon)) * g_t_k;
                     
                     this->network[i][j].expt_weight_squared[k] = this->gamma*this->network[i][j].expt_weight_squared[k] + (1-this->gamma)*delta_w_t_k*delta_w_t_k;
                     
-                    this->network[i][j].weights[k] = this->network[i][j].weights[k] + delta_w_t_k;
+                    delta_w_t_k = -sqrt((this->network[i][j].expt_weight_squared[k] + this->epsilon) / (this->network[i][j].expt_grad_squared[k] + this->epsilon) ) * g_t_k;
+                    
+                    this->network[i][j].weights[k] = this->network[i][j].weights[k] - delta_w_t_k;
+                    
+                }
+                else if (this->weight_update == "Adam")
+                {
+                    float g_t_k = this->d[i][j] * this->values[i-1][k];
                     
                 }
             }
