@@ -6,7 +6,7 @@ import re
 import matplotlib.ticker as ticker
 from matplotlib.ticker import FuncFormatter, FormatStrFormatter
 
-
+marker_list = ('.', ',', 'o', 'v', '^', '<', '>', '1', '2', '3', '4', '8', 's', 'p', '*', 'h', 'H', '+', 'x', 'D', 'd', '|', '_', 'P', 'X', 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
 
 # Function to read CSV file and calculate average max_score
 def process_csv(file_path):
@@ -32,10 +32,11 @@ def save_plot(file_path):
     os.system(f"rm {file_path}.svg")
     
 # Function to plot results
-def plot_results(time_values, avg_max_scores, std_devs, file_path, save = True, label = "", ax = "new", legend = False, y_scale = 'linear'):
+def plot_results(time_values, avg_max_scores, std_devs, file_path, save = True, label = "", ax = "new", legend = False, y_scale = 'linear', marker = 0):
+    global marker_list
     if ax == "new":
         fig, ax = plt.subplots()
-    ax.plot(time_values, avg_max_scores, marker='o', label = label)
+    ax.plot(time_values, avg_max_scores, marker=marker_list[marker], label = label)
     if y_scale == 'linear':
         ax.ticklabel_format(useOffset=False, style='plain')
         plt.fill_between(time_values, avg_max_scores - std_devs, avg_max_scores + std_devs)
@@ -47,7 +48,7 @@ def plot_results(time_values, avg_max_scores, std_devs, file_path, save = True, 
     
     
     if legend:
-        ax.legend()
+        ax.legend(fontsize='6', markerscale=0.7)
     plt.tight_layout()
     if save:
         save_plot(file_path)
@@ -96,7 +97,7 @@ AIFeynman_Files = 'AIFeynman_Benchmarks/Feynman_1PreRandomSearch.txt', 'AIFeynma
 #PaperPlots(AIFeynman_Files)
 
 def DiscoverySciencePlots(*Benchmark_File_Lists):
-
+    global marker_list
     for Benchmark_File_List, PlotFilePrefix in Benchmark_File_Lists:
         for i in range(1, 6):
             Benchmark_Files = filter(lambda file: f'{i}' in file, Benchmark_File_List)
@@ -106,6 +107,7 @@ def DiscoverySciencePlots(*Benchmark_File_Lists):
             ax[1].tick_params(axis='x', which="both", rotation=50)
 
             for j, file_path in enumerate(Benchmark_Files):
+#                print(f"j = {j}")
                 time_values, avg_max_scores, std_devs, file_path = process_csv(file_path)
                 label = 'Prefix' if 'Pre' in file_path else 'Postfix'
                 if 'RandomSearch' in file_path:
@@ -119,11 +121,11 @@ def DiscoverySciencePlots(*Benchmark_File_Lists):
                 elif 'SimulatedAnnealing' in file_path:
                     label += " Simulated Annealing"
                 
-                plot_results(time_values, avg_max_scores, std_devs, file_path, save = False, label = label, ax = ax[0], y_scale = 'log', legend = True)
+                plot_results(time_values, avg_max_scores, std_devs, file_path, save = False, label = label, ax = ax[0], y_scale = 'log', legend = True, marker = j)
                 
                 xscale = 'symlog' if avg_max_scores[-1] == 0.0 else xscale
                 
-                ax[1].errorbar(x = avg_max_scores[-1], y = j, xerr = std_devs[-1], linestyle = 'dotted', marker='o', markersize=6, capsize = 3)
+                ax[1].errorbar(x = avg_max_scores[-1], y = j, xerr = std_devs[-1], linestyle = 'dotted', marker=marker_list[j], markersize=6, capsize = 3)
                 ax[1].set_title(r'Final $\overline{\mathrm{MSE}}\pm\mathrm{std}$')
                 ax[1].set_xlabel('Final Average MSE')
 
