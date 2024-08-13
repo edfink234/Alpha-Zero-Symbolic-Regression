@@ -6,6 +6,7 @@ from numpy.random import choice
 from time import time
 from matplotlib.animation import FuncAnimation
 import os
+import sys
 
 class Node:
     def __init__(self, value, unique_id):
@@ -24,11 +25,11 @@ class UnaryNode(Node):
         self.child = None
         
 def is_operator(token):
-    return token in {"cos", "exp", "sqrt", "sin", "asin", "arcsin", "log", "tanh", "acos", "arccos", "~", "+", "-", "*", "/", "^", "ln"}
+    return token in {"cos", "exp", "sqrt", "sin", "asin", "arcsin", "log", "tanh", "acos", "arccos", "~", "+", "-", "*", "/", "^", "ln", "sech"}
 def is_binary_operator(token):
     return token in {'+', '-', '*', '/', '^'}
 def is_unary_operator(token):
-    return token in {"cos", "exp", "sqrt", "sin", "asin", "arcsin", "log", "tanh", "acos", "arccos", "~", "ln"}
+    return token in {"cos", "exp", "sqrt", "sin", "asin", "arcsin", "log", "tanh", "acos", "arccos", "~", "ln", "sech"}
 
 
 def rpn_to_infix(rpn_expression):
@@ -303,7 +304,7 @@ def test_visualize():
         
 
     else:
-        print("hi")
+#        print("hi")
 #        print(pn_to_infix(" - - + / ^ x 3 5 / ^ y 3 2 y x".split()))
 #        print(rpn_to_infix("y y x * * cos y +"))
 #        while True:
@@ -312,7 +313,7 @@ def test_visualize():
 #                plot_rpn_expression_tree("x3 cos 0.427738 * 4.779139 x1 - 0.390789 x0 0.637794 x2 * - + 0.598703 x2 cos 1.463665 cos x2 + 1.063828 x3 + x0 0.031570 x0 + 1.493230 - * * + - * * + *".split(), block=False, save = save)
 #                plot_rpn_expression_tree("q Ef * m omega_0 2 ^ omega 2 ^ - *  /".split(), block=False, save = save)
 #                plot_pn_expression_tree("* / * m k_G ^ L 2 + 1 * sqrt + 1 / * * 2 E_n ^ L 2 * m ^ k_G 2 cos - theta1 theta2".split(), block=False, save = save)
-            plot_pn_expression_tree("/ - sqrt sech x sech x x".split(), block=True, save = save)
+            plot_pn_expression_tree("/ / ~ sin x0 exp x0 exp arcsin sech x0".split(), block=True, save = save)
 #                plot_rpn_expression_tree("1 2 / 0 0 - * 1 2 x0 * / 1 0 - * + 1 1 1 * 2 x0 x0 * * / - x0 2 - * + x0 2 - x0 2 - * x0 2 - * -".split(), block=True, save = save)
 
         except KeyboardInterrupt:
@@ -320,6 +321,7 @@ def test_visualize():
             exit()
 
 if __name__ == "__main__":
+
     test_visualize()
 
 

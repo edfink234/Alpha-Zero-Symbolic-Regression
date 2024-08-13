@@ -3011,8 +3011,8 @@ void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, const
         
         auto updateScore = [&]()
         {
-    //        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
-    //        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
+            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
+            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
             if (score > max_score)
             {
                 max_score = score;
@@ -3053,10 +3053,9 @@ void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, const
                 secondary_one.pieces.push_back(temp_legal_moves[distribution(generator)]);
             }
             
-//            assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).first == secondary_one.n);
-//            assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).second);
+            assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).first == secondary_one.n);
+            assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).second);
 
-            
             //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
             //in `x.pieces` and store them in an std::vector<std::pair<int, int>>
             //called `sub_exprs_1`.
@@ -3204,6 +3203,10 @@ void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, const
     std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
     std::cout << "Best expression = " << best_expression << '\n';
     std::cout << "Best expression (original format) = " << orig_expression << '\n';
+//    std::ofstream out("orig_expression.txt");
+//    out << orig_expression;
+//    out.close();
+//    system("python visualize_tree.py");
     std::cout << "Best diff result = " << best_expr_result << '\n';
     std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
 }
@@ -3570,8 +3573,8 @@ void RandomSearch(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& d
                     
                 }
             }
-//            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
-//            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
+            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
+            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
 
             if (score > max_score)
             {
@@ -3618,7 +3621,7 @@ int main()
 //    MCTS(generateData(100000, 7, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/);
     auto data = createLinspaceMatrix(1000, 1, {0.1f}, {15.0f});
     
-    GP(VortexRadialProfile, data, 5 /*fixed depth*/, "postfix", "LBFGSB", 5, "autodiff", true /*cache*/, true /*const_tokens*/, 1e-1f /*isConstTol*/, 4 /*time to run the algorithm in seconds*/, 0 /*num threads, 0 == std::thread::hardware_concurrency()*/);
+    GP(VortexRadialProfile, data, 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, false /*const_tokens*/, 1e-1f /*isConstTol*/, 1000 /*time to run the algorithm in seconds*/, 0 /*num threads, 0 == std::thread::hardware_concurrency()*/);
 
     return 0;
 }

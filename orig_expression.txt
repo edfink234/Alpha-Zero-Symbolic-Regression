@@ -1,0 +1,1 @@
+/ log sqrt cos tanh x0 x0
