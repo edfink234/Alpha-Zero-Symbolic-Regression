@@ -35,21 +35,20 @@
 % If the paper title is too long for the running head, you can set
 % an abbreviated paper title here
 %
-\author{Edward Finkelstein\inst{1}}%\orcidID{}}
+\author{\inst{1}}%\orcidID{}}
 %
-\authorrunning{Edward F.}
+\authorrunning{}
 % First names are abbreviated in the running head.
 % If there are more than two authors, 'et al.' is used.
 %
-\institute{Martell, Nebraska, USA\\
-\email{edfink234@gmail.com}}
+\institute{}
 %
 \maketitle              % typeset the header of the contribution
 %
 \begin{abstract}
-We develop faultless, fixed-depth, string-based, prefix and postfix symbolic regression grammars, capable of producing \emph{any} expression from a set of operands, unary operators and/or binary operators. Using these grammars, we outline simplified forms of 5 popular heuristic search strategies: Brute Force Search, Monte Carlo Tree Search, Particle Swarm Optimization, Genetic Programming, and Simulated Annealing. For each algorithm, we compare the relative performance of prefix vs postfix for 10 different ground-truth expressions implemented entirely within a common C++/Eigen framework. We find that postfix tends to outperform prefix when the ground-truth expression tree has a larger average number of nodes per layer, and vice versa for prefix when the ground-truth expression tree is relatively thin.
+We develop faultless, fixed-depth, string-based, prefix and postfix symbolic regression grammars, capable of producing \emph{any} expression from a set of operands, unary operators and/or binary operators. Using these grammars, we outline simplified forms of 5 popular heuristic search strategies: Brute Force Search, Monte Carlo Tree Search, Particle Swarm Optimization, Genetic Programming, and Simulated Annealing. For each algorithm, we compare the relative performance of prefix vs postfix for ten ground-truth expressions implemented entirely within a common C++/Eigen framework. Our experiments show a comparatively strong correlation between the average number of nodes per layer of the ground truth expression tree and the relative performance of prefix vs postfix. The fixed-depth grammars developed herein can enhance scientific discovery by increasing the efficiency of symbolic regression, enabling faster identification of accurate mathematical models across various disciplines.
 
-\keywords{symbolic-regression  \and prefix \and postfix.}
+\keywords{symbolic-regression  \and prefix \and postfix \and grammars.}
 \end{abstract}
 
 \section{Introduction}
@@ -59,6 +58,8 @@ Symbolic regression (SR) denotes finding a symbolic model $f\left(\vec{x}\right)
 \item \textbf{Binary operators: } Any operator that takes 2 arguments as input and outputs a value, such as $+$, $-$, $*$, $\div$, etc.
 \item \textbf{Leaf Nodes: } Any of the individual features $\vec{x} = \{x_1, x_2, \ldots,x_{N}\}$ and a constant token that can be optimized with a non-linear optimization routine like L-BFGS \cite{doi:10.1137/0916069} or Levenberg-Marquadt \cite{83b09f23-b20e-3617-8f72-24765b713f7b} \cite{doi:10.1137/0111030}.
 \end{itemize}
+Symbolic Regression (SR) is useful for elucidating first-principles in scientific domains due to the interpretable nature of the method \cite{Angelis2023}. Nevertheless, the main challenge lies in controlling the complexity of the outputted expressions while efficiently navigating the space of possible equations. Thus, in this paper, we document prefix and postfix symbolic regression grammars that, for the first time, guarantee the generation of any possible expression of a fixed complexity, offering a robust solution for controlling expression complexity while efficiently exploring the search space. 
+
 \subsection{Prefix and Postfix Notation in Symbolic Regression}
 \textbf{Pre}fix (also known as Polish notation) expressions are written with the operators coming \emph{before} the operators, for example, \texttt{+ 1 2} represents the sum of 1 and 2. \textbf{Post}fix (also known as Reverse-Polish notation) expressions, on the other hand, have the operators coming \emph{after} the operands, for example, \texttt{1 2 +} represents the sum of 1 and 2. Both prefix and postfix remove the need for parentheses and operator precedence rules characteristic of infix notation (where operators are placed \emph{in between} operands), resulting in faster expression evaluation and less memory. An interesting question then arises: \emph{In symbolic regression, which performs better, prefix or postfix?}
 \par To our knowledge, the only paper that studies the effect of prefix vs postfix expressions in SR is \cite{hemberg2008pre}.  In \cite{hemberg2008pre}, the authors compare prefix, infix, and postfix notation-based grammars on 5 bivariate equations and found that postfix performed better than prefix as the complexity increased due to the smaller percentage of invalid individuals.  
@@ -73,6 +74,7 @@ In this paper, we outline faultless grammars for generating fixed-depth prefix a
  
 
 \section{Background}\label{sec:Background}
+% \subsection{Expression Representations}
 At the core of every SR framework lies a choice of expression representation. For example, Figure \ref {GECCO_Framework_reps} lists the frameworks considered in \cite{defranca2023interpretable} and their underlying expression representations (left) and their frequencies in SR publications over time (right).
 
 % \begin{table}
@@ -245,8 +247,8 @@ In the first step, if the specified depth $N=0$, then the allowed tokens are the
     \item \textbf{Leaf Nodes: }
     Any considered leaf node is valid if \emph{both} of the following conditions are false:
     \begin{enumerate}
-    \item The current expression has \texttt{num\_leaves = num\_binary - 1}.
-    \item Adding a leaf node results in the minimum depth being $<$ the desired depth $N$ \textbf{and} \texttt{num\_leaves = num\_binary} in the current expression.
+    \item The current expression has \texttt{num\_leaves == num\_binary + 1}.
+    \item Adding a leaf node results in the minimum depth being $<$ the desired depth $N$ \textbf{and} \texttt{num\_leaves == num\_binary} in the current expression.
     \end{enumerate}
 \end{itemize}
 
@@ -263,7 +265,7 @@ Any considered leaf node is valid if adding a leaf node results in the minimum d
 \end{itemize}
 
 \subsection{Conclusion}
-Evidently, the postfix grammar is simpler than the prefix grammar. The main reason for this difference is that, in prefix notation, one must \emph{additionally} ensure the expression does not complete until it reaches the desired depth $N$. \par One can determine the minimum depth and completeness of a prefix/postfix token array via the stack-based approaches shown \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/0b5b6d0b56c2d108dda023a337edeb1084436da7/PrefixPostfixSR.cpp#L393-L485}{here} and \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/0b5b6d0b56c2d108dda023a337edeb1084436da7/PrefixPostfixSR.cpp#L487-L641}{here}, respectively\footnote{The functions \texttt{getPNDepth} and \texttt{getRPNDepth} come from \cite{77180279} and \cite{77128902}, respectively.}.
+Evidently, the postfix grammar is simpler than the prefix grammar. The main reason for this difference is that, in prefix notation, one must \emph{additionally} ensure the expression does not complete until it reaches the desired depth $N$. \par One can determine the minimum depth and completeness of a prefix/postfix token array via the stack-based approaches shown \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/0b5b6d0b56c2d108dda023a337edeb1084436da7/PrefixPostfixSR.cpp#L393-L485}{here} and \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/0b5b6d0b56c2d108dda023a337edeb1084436da7/PrefixPostfixSR.cpp#L487-L641}{here}, respectively\footnote{The functions \texttt{getPNDepth} and \texttt{getRPNDepth} come from \cite{77180279} and \cite{77128902}, respectively. Caching is added for optimization.}.
 
 % \begin{algorithm}
 % \scriptsize
@@ -346,7 +348,7 @@ The next section explains the symbolic regression algorithms used in this paper 
 
 \section{Symbolic Regression Algorithms}\label{sec:SymbolicRegressionAlgorithms}
 
-This section details the fixed-depth-grammar algorithms of this paper: Random Search, Monte Carlo Tree Search (MCTS), Particle Swarm Optimization (PSO), Genetic Programming (GP), and Simulated Annealing (SA).
+This section details the fixed-depth-grammar algorithms of this paper: Random Search, Monte Carlo Tree Search (MCTS), Particle Swarm Optimization (PSO), Genetic Programming (GP), and Simulated Annealing (SA). Given our limited computational resources, we generally opted to use hyperparameter values commonly recommended in the literature and known to perform robustly across a range of scenarios.
 
 \subsection{Random Search}\label{subsec:RandomSearch}
 
@@ -530,7 +532,7 @@ We set $T_{\mathrm{min}} = 0.012 \leq T \leq T_{\mathrm{max}} = 0.1$ and $T_{\ma
 
 \section{Results}\label{sec:Results}
 In this section\footnote{The benchmarks results in this section can be reproduced by running the script \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/b2f7486b0797843ee363b20faa9a30677065f7b9/PrefixPostfixSR.cpp}{here} using the compilation directive given in the \href{https://github.com/edfink234/Alpha-Zero-Symbolic-Regression/blob/b2f7486b0797843ee363b20faa9a30677065f7b9/README.md}{README.md file}}, we benchmark the algorithms defined in section \ref{sec:SymbolicRegressionAlgorithms} employing the grammars defined in section \ref{sec:Background}. We set the $N_{\mathrm{iter}} \gets 50,000$ for all benchmarks\footnote{Obtained after significant pre-tuning.}.
-\par First, in section \ref{subsec:HembergBenchmarks}, we perform benchmarks for the expressions considered in \cite{hemberg2008pre}. Then, in section \ref{subsec:FeynmanBenchmarks}, we consider some of the equations considered in \cite{udrescu2020ai} with varying complexity/depth of expression trees.
+\par First, in section \ref{subsec:HembergBenchmarks}, we perform benchmarks for the five expressions considered in \cite{hemberg2008pre}. Then, in section \ref{subsec:FeynmanBenchmarks}, we consider five of the equations in \cite{udrescu2020ai}, each with varying depth of expression tree.
 \par For each configuration,
 % i.e., Prefix Random Search, Prefix Monte Carlo Tree Search, Prefix Particle Swarm Optimization, Prefix Genetic Programming,  Prefix Simulated Annealing, Postfix Random Search, Postfix Monte Carlo Tree Search, Postfix Particle Swarm Optimization, Postfix Genetic Programming, and Postfix Simulated Annealing,
 we perform 50 2 minute runs, where the MSE is sampled every 6 seconds for each run.  
@@ -660,7 +662,7 @@ In this section, we consider 5 equations from the \href{https://space.mit.edu/ho
 \section{Remarks}
 
 Figures \ref{fig:Hemberg_Benchmarks} and \ref{fig:Feynman_Benchmarks} show the varying performance of prefix vs postfix. To know when to use prefix and/or postfix, we build a decision tree based on the SR algorithm, the depth of the expression tree, number of input variables, and tree shape.
-\par Figure \ref{fig:PrefixPostfixDecisionTree} shows that postfix $\sim$  outperforms prefix for ground-truth expression trees with larger number of nodes per layer, while prefix performs $\sim$ better on thinner trees with larger ground-truth arity or when not using Random Search.
+\par Figure \ref{fig:PrefixPostfixDecisionTree} suggests that the average number of nodes per layer of the ground-truth expression is the strongest indicator of the relative performance of prefix vs postfix in the symbolic regression benchmarks considered, followed by search algorithm, depth of ground-truth expression, and lastly data dimensionality.
 
 \begin{figure}
     \centering
@@ -670,7 +672,7 @@ Figures \ref{fig:Hemberg_Benchmarks} and \ref{fig:Feynman_Benchmarks} show the v
 \end{figure}
 
 \section{Conclusion and Outlook}
-In this work, we developed string-based grammars for generating symbolic expressions. These grammars elicit faultless prefix and postfix expressions corresponding to fixed-depth trees. With these grammars, we outlined five symbolic regression algorithms and benchmarked them on expressions from \cite{hemberg2008pre} and \cite{udrescu2020ai} within a C++/Eigen framework. The results suggest that postfix has greater aptitude for discovering ground truth expressions with more nodes per layer, and vice versa for prefix notation. Future work could explore how machine learning can predict the optimal expression representation from data and prior knowledge. Another extension could be implementing a fixed-depth option in existing SR frameworks to focus computational resources on searching the space of fixed-depth expressions instead of the larger space of depth $\leq$ max-depth expressions. 
+In this work, we developed string-based grammars for generating symbolic expressions. These grammars elicit faultless prefix and postfix expressions corresponding to fixed-depth trees. With these grammars, we outlined five symbolic regression algorithms and benchmarked them on expressions from \cite{hemberg2008pre} and \cite{udrescu2020ai} within a C++/Eigen framework. The results suggest the average number of nodes per layer of the ground-truth expression to be the most influential factor in determining the relative performance of prefix versus postfix in the symbolic regression benchmarks considered. Future work could expand the analysis for a larger corpus of test expressions and hyper-parameter tunings, contingent on available resources. A promising application of this work could be implementing a fixed-depth option in existing SR frameworks/grammar implementations to focus computational resources on searching the space of fixed-depth expressions instead of the larger space of depth $\leq$ max-depth expressions, enhancing efficiency and probability of scientific discovery. 
 
 \bibliographystyle{splncs04}
 \bibliography{PrefixPostfixPaper}
