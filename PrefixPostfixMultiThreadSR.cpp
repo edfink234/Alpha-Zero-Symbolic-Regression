@@ -684,6 +684,7 @@ struct Board
                 }
                 pieces[pieces.size() - 1] = Board::__input_vars_float[0];
                 leaf_allowed = (!((num_leaves == num_binary + 1) || (getPNdepth(pieces).first < this->n && (num_leaves == num_binary))));
+                // !(x || (y && z))
                 pieces.pop_back();
 //                assert(!(!una_allowed && !bin_allowed && !leaf_allowed));
                 return Board::una_bin_leaf_legal_moves_dict[una_allowed][bin_allowed][leaf_allowed];

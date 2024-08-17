@@ -487,7 +487,7 @@ int main()
     y_train_data = rightCols(data, 1);
     
 //    std::unique_ptr<MultiLayerPerceptron> srnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{2,10,5,5,1} /*number of neurons in each layer*/, std::deque<std::string>(4, "sigmoid") /*layer types*/, 1.0f /*bias*/, 0.001f /*eta*/, 0.9f /*theta*/, "NAG");
-    std::unique_ptr<MultiLayerPerceptron> srnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{2,10,10,5,5,1} /*number of neurons in each layer*/, std::deque<std::string>{"sigmoid", "sigmoid", "none", "none", "none"} /*layer types*/, 1.0f /*bias*/, 1e-3f /*eta*/, 0.01f /*theta*/, 0.9f /*gamma*/, "none" /*output_type*/, "AdaDelta" /*weight update rule*/, "prefix" /*expression_type*/, 0.1f /*epsilon*/);
+    std::unique_ptr<MultiLayerPerceptron> srnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{2,10,10,5,5,1} /*number of neurons in each layer*/, std::deque<std::string>{"sigmoid", "sigmoid", "none", "none", "none"} /*layer types*/, 1.0f /*bias*/, 1e-4f /*eta*/, 0.01f /*theta*/, 0.9f /*gamma*/, "none" /*output_type*/, "Adam" /*weight update rule*/, "prefix" /*expression_type*/, 1e-8f /*epsilon*/);
     //https://stackoverflow.com/a/33980220/18255427 -> Set LR low to prevent nans from gradient blow up
 
     /*
@@ -629,3 +629,5 @@ int main()
     std::cout << "7 to 7  network MSE: " << MSE << '\n';
     GetData(7, *sdrnn);
 }
+
+// g++ -Wall -std=c++20 -o NeuralNetworks_Vec NeuralNetworks_Vec.cpp MLP_Vec.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -ffast-math -ftree-vectorize -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native

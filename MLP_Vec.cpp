@@ -14,6 +14,8 @@ Perceptron::Perceptron(int inputs, float bias, const std::string& output_type)
     // Use Eigen's random number generation to initialize the weights
     this->weights = Eigen::VectorXf::Random(inputs);
     this->velocities = Eigen::VectorXf::Random(inputs);
+    this->v = Eigen::VectorXf::Zero(inputs); //2nd moment vector for Adam
+    this->m = Eigen::VectorXf::Zero(inputs); //1st moment vector for Adam
     this->gradients = Eigen::VectorXf::Zero(inputs);
     this->expt_grad_squared = Eigen::VectorXf::Zero(inputs);
     this->expt_weight_squared = Eigen::VectorXf::Zero(inputs);
@@ -57,7 +59,7 @@ float Perceptron::scale_between(float unscaled_num, float min, float max, float 
 }
 
 // Return a new MultiLayerPerceptron object with the specified parameters.
-MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, std::deque<std::string> layer_types, float bias, float eta, float theta, float gamma, std::string&& output_type, const std::string& weight_update, const std::string& expression_type, float epsilon)
+MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, std::deque<std::string> layer_types, float bias, float eta, float theta, float gamma, std::string&& output_type, const std::string& weight_update, const std::string& expression_type, float epsilon, float beta_1, float beta_2)
 {
     // Set up the signal handler
     signal(SIGINT, signalHandler);
@@ -78,7 +80,10 @@ MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, std::deque<s
     this->expression_type = expression_type;
     this->epsilon = epsilon;
     this->gamma = gamma;
-    
+    this->beta_1 = beta_1;
+    this->beta_2 = beta_2;
+    this->t = 0; //used in Adam
+
     size_t mlp_sz = this->layers.size();
 
     for (int i = 0; i < mlp_sz; i++) //for each layer
@@ -269,6 +274,7 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
     }
     
     // STEPS 5 & 6: Calculate the deltas and update the weights
+    this->t++; //increase t by 1 for Adam
     for (int i = 1; i < network.size(); i++) //for each layer
     {
         for (int j = 0; j < layers[i]; j++) //for each neuron
@@ -323,7 +329,11 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
                 else if (this->weight_update == "Adam")
                 {
                     float g_t_k = this->d[i][j] * this->values[i-1][k];
-                    
+                    this->network[i][j].m[k] = this->beta_1*this->network[i][j].m[k] + (1-this->beta_1)*g_t_k;
+                    this->network[i][j].v[k] = this->beta_2*this->network[i][j].v[k] + (1-this->beta_2)*g_t_k*g_t_k;
+                    float m_t_k_hat = this->network[i][j].m[k]/(1-pow(this->beta_1, t));
+                    float v_t_k_hat = this->network[i][j].v[k]/(1-pow(this->beta_2, t));
+                    this->network[i][j].weights[k] = this->network[i][j].weights[k] + (this->eta * m_t_k_hat) / (sqrt(v_t_k_hat) + this->epsilon);
                 }
             }
             //bias: https://stackoverflow.com/a/13342725/18255427
