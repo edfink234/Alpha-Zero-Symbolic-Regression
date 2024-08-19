@@ -754,8 +754,8 @@ struct Board
                                 }
                                 else //if x{i} is the only legal move, then we'll change "/" to another binary operator, like "+", "*", or "^"
                                 {
-                                    std::vector<float> sub_bin_ops = {Board::__tokens_inv_dict["*"], Board::__tokens_inv_dict["+"], Board::__tokens_inv_dict["^"]};
-                                    std::uniform_int_distribution<int> distribution(0, 2);
+                                    std::vector<float> sub_bin_ops = {Board::__tokens_inv_dict["*"], Board::__tokens_inv_dict["+"]/*, Board::__tokens_inv_dict["^"]*/};
+                                    std::uniform_int_distribution<int> distribution(0, 1);
                                     pieces[pcs_sz-2] = sub_bin_ops[distribution(gen)];
                                 }
                                 break;
@@ -1731,6 +1731,20 @@ struct Board
         }
     }
     
+    bool areDerivatRangesEqual(int start_idx_1, int start_idx_2, int num_steps)
+    {
+        int stop_idx_1 = start_idx_1 + num_steps;
+        
+        for (int i = start_idx_1, j = start_idx_2; i < stop_idx_1; i++, j++)
+        {
+            if (derivat[i] != derivat[j])
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    
     void setPrefixGR(const std::vector<float>& prefix, std::vector<int>& grasp)
     {
         grasp.reserve(prefix.size());
@@ -1794,6 +1808,8 @@ struct Board
             derivePrefixHelper(low+1, temp, dx, prefix, grasp, true);  /* +/- x' */
             int x_prime_high = this->derivat.size();
             derivePrefixHelper(temp+1, temp+1+grasp[temp+1], dx, prefix, grasp, true); /* +/- x' y' */
+            int y_prime_high = derivat.size();
+            int step;
             
             /*
              Simplification cases:
@@ -1832,6 +1848,13 @@ struct Board
                     derivat[op_idx] = Board::__tokens_inv_dict["~"]; //change binary minus to unary minus
                     derivat.erase(derivat.begin() + x_prime_low); //remove x'
                 }
+            }
+            else if ((Board::__tokens_dict[prefix[low]] == "-") && ((step = (y_prime_high - x_prime_high)) == (x_prime_high - x_prime_low)) && (areDerivatRangesEqual(x_prime_low, x_prime_high, step)))
+            {
+//                puts("hi 194");
+                assert(derivat[op_idx] == prefix[low]);
+                derivat[op_idx] = Board::__tokens_inv_dict["0"]; //change "-" to "0";
+                derivat.erase(derivat.begin() + op_idx + 1, derivat.begin() + y_prime_high);
             }
         }
         else if (Board::__tokens_dict[prefix[low]] == "*")
@@ -2208,7 +2231,9 @@ struct Board
             derivePostfixHelper(low, up-2-grasp[up-1], dx, postfix, grasp, true);  /*Putting x'*/
             int x_prime_high = derivat.size();
             derivePostfixHelper(up-1-grasp[up-1], up-1, dx, postfix, grasp, true); /*Putting y'*/
-                    
+            int y_prime_high = derivat.size();
+            int step;
+            
             /*
              Simplification cases:
                 
@@ -2234,6 +2259,13 @@ struct Board
     //                puts("hi 156");
                     derivat.push_back(Board::__tokens_inv_dict["~"]); //0 y - -> y ~
                 }
+            }
+            
+            else if ((Board::__tokens_dict[postfix[up]] == "-") && ((step = (x_prime_high - x_prime_low)) == (y_prime_high - x_prime_high)) && (areDerivatRangesEqual(x_prime_low, x_prime_high, step)))
+            {
+//                puts("hi 180");
+                derivat[x_prime_low] = Board::__tokens_inv_dict["0"]; //change first symbol of x' to 0
+                derivat.erase(derivat.begin() + x_prime_low + 1, derivat.begin() + y_prime_high); //erase the rest of x' and y'
             }
             
             else
@@ -3504,7 +3536,7 @@ int main()
 //    MCTS(generateData(100000, 7, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/);
     auto data = createLinspaceMatrix(1000, 1, {0.1f}, {15.0f});
     
-    RandomSearch(VortexRadialProfile, data, 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 1 /*time to run the algorithm in seconds*/, 1 /*num threads*/);
+    RandomSearch(VortexRadialProfile, data, 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 0 /*num threads*/);
 
  
 
