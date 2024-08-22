@@ -1946,30 +1946,124 @@ struct Board
         
         else if (Board::__tokens_dict[prefix[low]] == "/")
         {
-            this->derivat.push_back(Board::__tokens_inv_dict["/"]); /* / */
-            this->derivat.push_back(Board::__tokens_inv_dict["-"]); /* / - */
-            this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* / - * */
+            int div_idx = derivat.size();
+            derivat.push_back(Board::__tokens_inv_dict["/"]); /* / */
+            derivat.push_back(Board::__tokens_inv_dict["-"]); /* / - */
+            derivat.push_back(Board::__tokens_inv_dict["*"]); /* / - * */
             size_t temp = low+1+grasp[low+1];
-            derivePrefixHelper(low+1, temp, dx, prefix, grasp, true); /* / - * x' */
+            int x_prime_low = derivat.size();
             int k;
-            for (k = temp+1; k <= temp+1+grasp[temp+1]; k++) /* / - * x' y */
+            derivePrefixHelper(low+1, temp, dx, prefix, grasp, true); /* / - * x' */
+            if (Board::__tokens_dict[derivat[x_prime_low]] == "0") //* 0 y -> 0
             {
-                this->derivat.push_back(prefix[k]);
+    //            puts("hi 297");
+                derivat[x_prime_low - 1] = Board::__tokens_inv_dict["0"]; //change "*" to "0"
+                assert(x_prime_low + 1 == derivat.size());
+                derivat.pop_back(); //remove x', which is 0
             }
-            this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* / - * x' y * */
+            else
+            {
+                int y_low = derivat.size();
+                for (k = temp+1; k <= temp+1+grasp[temp+1]; k++) /* / - * x' y */
+                {
+                    derivat.push_back(prefix[k]);
+                }
+                if (Board::__tokens_dict[derivat[y_low]] == "0") //* x' 0 -> 0
+                {
+    //                puts("hi 312");
+                    derivat[x_prime_low - 1] = Board::__tokens_inv_dict["0"]; //change "*" to "0"
+                    derivat.erase(derivat.begin() + x_prime_low, derivat.end()); //remove x' and 0
+                }
+                else if (Board::__tokens_dict[derivat[y_low]] == "1") //* x' 1 -> x'
+                {
+    //                puts("hi 318");
+                    assert(y_low == derivat.size() - 1);
+                    derivat.erase(derivat.begin() + x_prime_low - 1); //erase "*"
+                    derivat.pop_back(); //erase the "1"
+                }
+                else if (Board::__tokens_dict[derivat[x_prime_low]] == "1") //* 1 y -> y
+                {
+//                    puts("hi 326");
+                    derivat.erase(derivat.begin() + x_prime_low - 1, derivat.begin() + x_prime_low + 1); //erase "*" and "1"
+                }
+            }
+            derivat.push_back(Board::__tokens_inv_dict["*"]); /* / - * x' y * */
+            int x_low = derivat.size();
             for (k = low+1; k <= temp; k++) /* / - * x' y * x */
             {
-                this->derivat.push_back(prefix[k]);
+                derivat.push_back(prefix[k]);
             }
-            derivePrefixHelper(temp+1, temp+1+grasp[temp+1], dx, prefix, grasp, true); /* / - * x' y * x y' */
-            this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* / - * x' y * x y' * */
-            for (k = temp+1; k <= temp+1+grasp[temp+1]; k++) /* / - * x' y * x y' * y */
+            if (Board::__tokens_dict[derivat[x_low]] == "0") //* 0 y' -> 0
             {
-                this->derivat.push_back(prefix[k]);
+    //            puts("hi 338");
+                derivat.erase(derivat.begin() + x_low - 1); //erase "*"
             }
-            for (k = temp+1; k <= temp+1+grasp[temp+1]; k++) /* / - * x' y * x y' * y y */
+            else
             {
-                this->derivat.push_back(prefix[k]);
+                int y_prime_low = derivat.size();
+                derivePrefixHelper(temp+1, temp+1+grasp[temp+1], dx, prefix, grasp, true); /* / - * x' y * x y' */
+                if (Board::__tokens_dict[derivat[y_prime_low]] == "0") //* x 0 -> 0
+                {
+    //                puts("hi 347");
+                    assert(y_prime_low == derivat.size() - 1);
+                    derivat.erase(derivat.begin() + x_low - 1, derivat.begin() + y_prime_low); //erase * and x
+                }
+                else if (Board::__tokens_dict[derivat[x_low]] == "1") //* 1 y' -> y'
+                {
+    //                puts("hi 352");
+                    derivat.erase(derivat.begin() + x_low - 1, derivat.begin() + y_prime_low); //erase * and 1
+                }
+                else if (Board::__tokens_dict[derivat[y_prime_low]] == "1") //* x 1 -> x
+                {
+    //                puts("hi 357");
+                    assert(y_prime_low == derivat.size() - 1);
+                    derivat.erase(derivat.begin() + x_low - 1); //erase "*"
+                    derivat.pop_back(); //remove the "1"
+                }
+            }
+            
+            if (((k = (x_low - x_prime_low)) == (derivat.size() - (x_low - 1))) && (areDerivatRangesEqual(x_prime_low - 1, x_low - 1, k))) //- thing1 thing1 -> 0
+            {
+    //            puts("hi 367");
+                derivat[div_idx] = Board::__tokens_inv_dict["0"];
+                derivat.erase(derivat.begin() + div_idx + 1, derivat.end()); //erase everything else
+            }
+            else
+            {
+                if (Board::__tokens_dict[derivat[x_prime_low - 1]] == "0") //- 0 * x y' -> ~ * x y'
+                {
+    //                puts("hi 375");
+                    derivat[x_prime_low - 2] = Board::__tokens_inv_dict["~"]; //change "-" to "~"
+                    derivat.erase(derivat.begin() + x_prime_low - 1); //erase "0"
+                }
+                else if (Board::__tokens_dict[derivat[x_low - 1]] == "0") //- * x' y 0 -> * x' y
+                {
+//                    puts("hi 381");
+                    assert(derivat.size() == x_low);
+                    derivat.erase(derivat.begin() + x_prime_low - 2); //erase the "-"
+                    derivat.pop_back(); //erase the "0"
+                }
+                derivat.push_back(Board::__tokens_inv_dict["*"]); /* / - * x' y * x y' * */
+                int y_low = derivat.size();
+                for (k = temp+1; k <= temp+1+grasp[temp+1]; k++) /* / - * x' y * x y' * y */
+                {
+                    derivat.push_back(prefix[k]);
+                }
+                if (Board::__tokens_dict[derivat[y_low]] == "1") // / - * x' y * x y' * 1 1 ->  - * x' y * x y'
+                {
+    //                puts("hi 381");
+                    assert(y_low = derivat.size() - 1);
+                    derivat.erase(derivat.begin() + y_low - 1); //erase "*"
+                    derivat.erase(derivat.begin() + div_idx); //erase "/"
+                    derivat.pop_back(); //erase "1"
+                }
+                else
+                {
+                    for (k = temp+1; k <= temp+1+grasp[temp+1]; k++) /* / - * x' y * x y' * y y */
+                    {
+                        derivat.push_back(prefix[k]);
+                    }
+                }
             }
         }
         
@@ -2363,30 +2457,115 @@ struct Board
         
         else if (Board::__tokens_dict[postfix[up]] == "/")
         {
+            int x_prime_low = derivat.size();
             derivePostfixHelper(low, up-2-grasp[up-1], dx, postfix, grasp, true); /* x' */
             int k;
-            for (k = up-1-grasp[up-1]; k <= up-1; k++) /* x' y */
+            if (Board::__tokens_dict[derivat.back()] == "0") //0 y * -> 0
             {
-                this->derivat.push_back(postfix[k]);
+    //            puts("hi 286");
             }
-            this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* x' y *  */
+            else
+            {
+                int y_low = derivat.size();
+                for (k = up-1-grasp[up-1]; k <= up-1; k++) /* x' y */
+                {
+                    derivat.push_back(postfix[k]);
+                }
+                if (Board::__tokens_dict[derivat.back()] == "0") //x' 0 * -> 0
+                {
+    //                puts("hi 297");
+                    derivat.erase(derivat.begin() + x_prime_low, derivat.end() - 1); //erase x'
+                }
+                else if (Board::__tokens_dict[derivat.back()] == "1") //x' 1 * -> x'
+                {
+    //                puts("hi 302");
+                    derivat.pop_back(); //remove the "1"
+                }
+                else if (Board::__tokens_dict[derivat[y_low-1]] == "1") //1 y * -> y
+                {
+    //                puts("hi 307");
+                    derivat.erase(derivat.begin() + y_low - 1); //erase the "1"
+                }
+                else
+                {
+                    derivat.push_back(Board::__tokens_inv_dict["*"]); /* x' y *  */
+                }
+            }
+            int x_low = derivat.size();
             for (k = low; k <= up-2-grasp[up-1]; k++) /* x' y * x */
             {
-                this->derivat.push_back(postfix[k]);
+                derivat.push_back(postfix[k]);
             }
-            derivePostfixHelper(up-1-grasp[up-1], up-1, dx, postfix, grasp, true); /* x' y * x y' */
-            this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* x' y * x y' * */
-            this->derivat.push_back(Board::__tokens_inv_dict["-"]); /* x' y * x y' * - */
-            for (k = up-1-grasp[up-1]; k <= up-1; k++)      /* x' y * x y' * - y */
+            if (Board::__tokens_dict[derivat.back()] == "0") //0 y' * -> 0
             {
-                this->derivat.push_back(postfix[k]);
+    //            puts("hi 322");
             }
-            for (k = up-1-grasp[up-1]; k <= up-1; k++)      /* x' y * x y' * - y y */
+            else
             {
-                this->derivat.push_back(postfix[k]);
+                int y_prime_low = derivat.size();
+                derivePostfixHelper(up-1-grasp[up-1], up-1, dx, postfix, grasp, true); /* x' y * x y' */
+                if (Board::__tokens_dict[derivat.back()] == "0") //x 0 * -> 0
+                {
+    //                puts("hi 330");
+                    derivat.erase(derivat.begin() + x_low, derivat.begin() + y_prime_low); //erase x
+                }
+                else if (Board::__tokens_dict[derivat.back()] == "1") //x 1 * -> x
+                {
+    //                puts("hi 335");
+                    derivat.pop_back(); //erase the 1
+                }
+                else if (Board::__tokens_dict[derivat[y_prime_low - 1]] == "1") //1 y' * -> y'
+                {
+    //                puts("hi 340");
+                    derivat.erase(derivat.begin() + y_prime_low - 1); //erase the "1"
+                }
+                else
+                {
+                    derivat.push_back(Board::__tokens_inv_dict["*"]); /* x' y * x y' * */
+                }
             }
-            this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* x' y * x y' * - y y * */
-            this->derivat.push_back(Board::__tokens_inv_dict["/"]); /* x' y * x y' * - y y * / */
+            if (((k = (x_low - x_prime_low)) == (derivat.size() - x_low)) && (areDerivatRangesEqual(x_prime_low, x_low, k))) //thing1 thing1 - -> 0
+            {
+    //            puts("hi 350");
+                derivat[x_prime_low] = Board::__tokens_inv_dict["0"]; //change first symbol of x' to 0
+                derivat.erase(derivat.begin() + x_prime_low + 1, derivat.end()); //erase the rest of x' y * and x y' *
+            }
+            else
+            {
+                if (Board::__tokens_dict[derivat[x_low - 1]] == "0") //0 x y' * - -> x y' * ~
+                {
+    //                puts("hi 358");
+                    derivat.erase(derivat.begin() + x_low - 1); //remove "0"
+                    derivat.push_back(Board::__tokens_inv_dict["~"]); //add "~" at the end
+                }
+                else if (Board::__tokens_dict[derivat.back()] == "0") //x' y * 0 - -> x' y *
+                {
+    //                puts("hi 364");
+                    derivat.pop_back(); //remove "0"
+                }
+                else
+                {
+                    derivat.push_back(Board::__tokens_inv_dict["-"]); /* x' y * x y' * - */
+                }
+                for (k = up-1-grasp[up-1]; k <= up-1; k++)      /* x' y * x y' * - y */
+                {
+                    derivat.push_back(postfix[k]);
+                }
+                if (Board::__tokens_dict[derivat.back()] == "1") //"1 1 * /" -> ""
+                {
+    //                puts("hi 377");
+                    derivat.pop_back(); //remove the "1"
+                }
+                else
+                {
+                    for (k = up-1-grasp[up-1]; k <= up-1; k++)      /* x' y * x y' * - y y */
+                    {
+                        derivat.push_back(postfix[k]);
+                    }
+                    derivat.push_back(Board::__tokens_inv_dict["*"]); /* x' y * x y' * - y y * */
+                    derivat.push_back(Board::__tokens_inv_dict["/"]); /* x' y * x y' * - y y * / */
+                }
+            }
         }
         
         else if (Board::__tokens_dict[postfix[up]] == "^")
@@ -3536,7 +3715,7 @@ int main()
 //    MCTS(generateData(100000, 7, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/);
     auto data = createLinspaceMatrix(1000, 1, {0.1f}, {15.0f});
     
-    RandomSearch(VortexRadialProfile, data, 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 0 /*num threads*/);
+    RandomSearch(VortexRadialProfile, data, 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 0 /*num threads*/);
 
  
 
