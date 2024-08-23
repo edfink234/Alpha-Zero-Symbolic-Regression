@@ -335,6 +335,11 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
                     float v_t_k_hat = this->network[i][j].v[k]/(1-pow(this->beta_2, t));
                     this->network[i][j].weights[k] = this->network[i][j].weights[k] + (this->eta * m_t_k_hat) / (sqrt(v_t_k_hat) + this->epsilon);
                 }
+                else if (this->weight_update == "Nadam")
+                {
+                    float g_t_k = this->d[i][j] * this->values[i-1][k];
+                    
+                }
             }
             //bias: https://stackoverflow.com/a/13342725/18255427
             this->network[i][j].bias += this->eta*this->d[i][j];
