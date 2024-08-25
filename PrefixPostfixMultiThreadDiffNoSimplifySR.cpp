@@ -268,8 +268,8 @@ struct Board
                 {
                     Board::__input_vars.push_back("x"+std::to_string(i));
                 }
-                Board::__unary_operators = {"~"};//{"cos", "~", "sin", "log", "ln", "asin", "arcsin", "acos", "arccos", "exp", "sech", "tanh", "sqrt"};
-                Board::__binary_operators = {"+", "-", "*", "/"};//, "^"};
+                Board::__unary_operators = {"~", "log", "ln"};//{"cos", "~", "sin", "log", "ln", "asin", "arcsin", "acos", "arccos", "exp", "sech", "tanh", "sqrt"};
+                Board::__binary_operators = {"+", "-", "*", "/", "^"};
                 Board::__operators.clear();
                 for (std::string& i: Board::__unary_operators)
                 {
@@ -754,8 +754,8 @@ struct Board
                                 }
                                 else //if x{i} is the only legal move, then we'll change "/" to another binary operator, like "+", "*", or "^"
                                 {
-                                    std::vector<float> sub_bin_ops = {Board::__tokens_inv_dict["*"], Board::__tokens_inv_dict["+"]/*, Board::__tokens_inv_dict["^"]*/};
-                                    std::uniform_int_distribution<int> distribution(0, 1);
+                                    std::vector<float> sub_bin_ops = {Board::__tokens_inv_dict["*"], Board::__tokens_inv_dict["+"], Board::__tokens_inv_dict["^"]};
+                                    std::uniform_int_distribution<int> distribution(0, 2);
                                     pieces[pcs_sz-2] = sub_bin_ops[distribution(gen)];
                                 }
                                 break;
@@ -3280,7 +3280,7 @@ int main()
 //    MCTS(generateData(100000, 7, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/);
     auto data = createLinspaceMatrix(1000, 1, {0.1f}, {15.0f});
     
-    RandomSearch(VortexRadialProfile, data, 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 0 /*num threads*/);
+    RandomSearch(VortexRadialProfile, data, 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 0 /*num threads*/);
 
  
 
