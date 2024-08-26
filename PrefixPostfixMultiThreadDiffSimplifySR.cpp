@@ -860,7 +860,7 @@ struct Board
         size_t const_counter = 0;
         std::string result;
                 
-        for (auto i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
+        for (int i = (is_prefix ? (static_cast<int>(pieces.size()) - 1) : 0); (is_prefix ? (i >= 0) : (i < static_cast<int>(pieces.size()))); (is_prefix ? (i--) : (i++)))
         {
             std::string token = Board::__tokens_dict[pieces[i]];
 
@@ -932,7 +932,7 @@ struct Board
         size_t const_counter = 0;
         std::string result;
                 
-        for (auto i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
+        for (int i = (is_prefix ? (static_cast<int>(pieces.size()) - 1) : 0); (is_prefix ? (i >= 0) : (i < static_cast<int>(pieces.size()))); (is_prefix ? (i--) : (i++)))
         {
             std::string token = Board::__tokens_dict[pieces[i]];
 
@@ -973,7 +973,7 @@ struct Board
         std::stack<const Eigen::VectorXf> stack;
         size_t const_count = 0;
         bool is_prefix = (expression_type == "prefix");
-        for (auto i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
+        for (int i = (is_prefix ? (static_cast<int>(pieces.size()) - 1) : 0); (is_prefix ? (i >= 0) : (i < static_cast<int>(pieces.size()))); (is_prefix ? (i--) : (i++)))
         {
             std::string token = Board::__tokens_dict[pieces[i]];
             assert(token.size());
@@ -1103,7 +1103,7 @@ struct Board
         std::stack<Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>> stack;
         size_t const_count = 0;
         bool is_prefix = (expression_type == "prefix");
-        for (auto i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
+        for (int i = (is_prefix ? (static_cast<int>(pieces.size()) - 1) : 0); (is_prefix ? (i >= 0) : (i < static_cast<int>(pieces.size()))); (is_prefix ? (i--) : (i++)))
         {
             std::string token = Board::__tokens_dict[pieces[i]];
 
@@ -1241,7 +1241,7 @@ struct Board
         Eigen::VectorXf v(this->params.size());
         float rp, rg;
 
-        for (auto i = 0; i < this->params.size(); i++)
+        for (long i = 0; i < this->params.size(); i++)
         {
             particle_positions(i) = x(i) = pos_dist(gen);
             v(i) = vel_dist(gen);
@@ -1305,7 +1305,7 @@ struct Board
         Eigen::VectorXf v(this->params.size());
         float rp, rg;
 
-        for (auto i = 0; i < this->params.size(); i++)
+        for (long i = 0; i < this->params.size(); i++)
         {
             particle_positions(i) = x(i) = pos_dist(gen);
             v(i) = vel_dist(gen);
@@ -2882,7 +2882,7 @@ struct Board
         else if (Board::__tokens_dict[postfix[up]] == "~")
         {
             derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
-            if (derivat.back() == Board::__tokens_inv_dict["~"]) 
+            if (derivat.back() == Board::__tokens_inv_dict["~"])
             {
                 derivat.pop_back(); //two unary minuses cancel each-other
             }
@@ -3574,6 +3574,7 @@ void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int 
                     p_i[i] = curr_positions[i];
                 }
                 p_i_vals[i] = std::max(p_i_vals[i], Psa[curr_positions[i]][i]);
+                
             }
             
             if (score > max_score)
@@ -3868,7 +3869,7 @@ int main()
 //    MCTS(generateData(100000, 7, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/);
     auto data = createLinspaceMatrix(1000, 1, {0.1f}, {15.0f});
     
-    RandomSearch(VortexRadialProfile, data, 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 0 /*num threads*/);
+    RandomSearch(VortexRadialProfile, data, 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 0 /*num threads*/);
 
  
 
