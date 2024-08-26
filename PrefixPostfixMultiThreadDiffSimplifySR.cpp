@@ -55,7 +55,7 @@ bool isFloat(const std::string& x)
 // std::vector<float> max must have size == cols
 Eigen::MatrixXf createLinspaceMatrix(int rows, int cols, std::vector<float> min_vec, std::vector<float> max_vec)
 {
-    assert((cols == min_vec.size()) && (cols == max_vec.size()));
+    assert((cols == static_cast<int>(min_vec.size())) && (cols == static_cast<int>(max_vec.size())));
     Eigen::MatrixXf mat(rows, cols);
     for (int col = 0; col < cols; ++col)
     {
@@ -131,17 +131,17 @@ public:
         this->data = theData;
         this->num_columns = data.cols();
         this->num_rows = data.rows();
-        for (size_t i = 0; i < this->num_columns; i++) //for each column
+        for (long i = 0; i < this->num_columns; i++) //for each column
         {
             this->features["x"+std::to_string(i)] = Eigen::VectorXf(this->num_rows);
-            for (size_t j = 0; j < this->num_rows; j++)
+            for (long j = 0; j < this->num_rows; j++)
             {
                 this->features["x"+std::to_string(i)](j) = this->data(j,i);
             }
         }
         this->rows.resize(this->num_rows);
         
-        for (size_t i = 0; i < num_rows; i++)
+        for (long i = 0; i < num_rows; i++)
         {
             this->rows[i] = data.row(i);
         }
@@ -860,7 +860,7 @@ struct Board
         size_t const_counter = 0;
         std::string result;
                 
-        for (int i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
+        for (auto i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
         {
             std::string token = Board::__tokens_dict[pieces[i]];
 
@@ -932,7 +932,7 @@ struct Board
         size_t const_counter = 0;
         std::string result;
                 
-        for (int i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
+        for (auto i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
         {
             std::string token = Board::__tokens_dict[pieces[i]];
 
@@ -973,7 +973,7 @@ struct Board
         std::stack<const Eigen::VectorXf> stack;
         size_t const_count = 0;
         bool is_prefix = (expression_type == "prefix");
-        for (int i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
+        for (auto i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
         {
             std::string token = Board::__tokens_dict[pieces[i]];
             assert(token.size());
@@ -1103,7 +1103,7 @@ struct Board
         std::stack<Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>> stack;
         size_t const_count = 0;
         bool is_prefix = (expression_type == "prefix");
-        for (int i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
+        for (auto i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
         {
             std::string token = Board::__tokens_dict[pieces[i]];
 
@@ -1241,7 +1241,7 @@ struct Board
         Eigen::VectorXf v(this->params.size());
         float rp, rg;
 
-        for (size_t i = 0; i < this->params.size(); i++)
+        for (auto i = 0; i < this->params.size(); i++)
         {
             particle_positions(i) = x(i) = pos_dist(gen);
             v(i) = vel_dist(gen);
@@ -1305,7 +1305,7 @@ struct Board
         Eigen::VectorXf v(this->params.size());
         float rp, rg;
 
-        for (size_t i = 0; i < this->params.size(); i++)
+        for (auto i = 0; i < this->params.size(); i++)
         {
             particle_positions(i) = x(i) = pos_dist(gen);
             v(i) = vel_dist(gen);
@@ -1803,7 +1803,7 @@ struct Board
         {
             int op_idx = this->derivat.size();
             this->derivat.push_back(prefix[low]); //+/-
-            size_t temp = low+1+grasp[low+1];
+            int temp = low+1+grasp[low+1];
             int x_prime_low = this->derivat.size();
             derivePrefixHelper(low+1, temp, dx, prefix, grasp, true);  /* +/- x' */
             int x_prime_high = this->derivat.size();
@@ -1824,7 +1824,7 @@ struct Board
             {
     //            puts("hi 147");
                 //remove y'
-                if (x_prime_high == derivat.size() - 1)
+                if (x_prime_high == static_cast<int>(derivat.size()) - 1)
                 {
                     derivat.pop_back();
                 }
@@ -1862,7 +1862,7 @@ struct Board
             derivat.push_back(Board::__tokens_inv_dict["+"]); /* +  */
             derivat.push_back(Board::__tokens_inv_dict["*"]); /* + * */
             int x_low = derivat.size();
-            size_t temp = low+1+grasp[low+1];
+            int temp = low+1+grasp[low+1];
             for (int k = low+1; k <= temp; k++) /* + * x */
             {
                 derivat.push_back(prefix[k]);
@@ -1938,7 +1938,7 @@ struct Board
             else if (Board::__tokens_dict[derivat[x_prime_low - 1]] == "0") //+ * x y' 0 -> * x y'
             {
     //            puts("hi 254");
-                assert(derivat.size() == x_prime_low);
+                assert(static_cast<int>(derivat.size()) == x_prime_low);
                 derivat.erase(derivat.begin() + x_low - 2); //erase "+"
                 derivat.pop_back(); //remove "0"
             }
@@ -1950,7 +1950,7 @@ struct Board
             derivat.push_back(Board::__tokens_inv_dict["/"]); /* / */
             derivat.push_back(Board::__tokens_inv_dict["-"]); /* / - */
             derivat.push_back(Board::__tokens_inv_dict["*"]); /* / - * */
-            size_t temp = low+1+grasp[low+1];
+            int temp = low+1+grasp[low+1];
             int x_prime_low = derivat.size();
             int k;
             derivePrefixHelper(low+1, temp, dx, prefix, grasp, true); /* / - * x' */
@@ -1958,7 +1958,7 @@ struct Board
             {
     //            puts("hi 297");
                 derivat[x_prime_low - 1] = Board::__tokens_inv_dict["0"]; //change "*" to "0"
-                assert(x_prime_low + 1 == derivat.size());
+                assert(x_prime_low + 1 == static_cast<int>(derivat.size()));
                 derivat.pop_back(); //remove x', which is 0
             }
             else
@@ -1977,7 +1977,7 @@ struct Board
                 else if (Board::__tokens_dict[derivat[y_low]] == "1") //* x' 1 -> x'
                 {
     //                puts("hi 318");
-                    assert(y_low == derivat.size() - 1);
+                    assert(y_low == static_cast<int>(derivat.size()) - 1);
                     derivat.erase(derivat.begin() + x_prime_low - 1); //erase "*"
                     derivat.pop_back(); //erase the "1"
                 }
@@ -2005,7 +2005,7 @@ struct Board
                 if (Board::__tokens_dict[derivat[y_prime_low]] == "0") //* x 0 -> 0
                 {
     //                puts("hi 347");
-                    assert(y_prime_low == derivat.size() - 1);
+                    assert(y_prime_low == static_cast<int>(derivat.size()) - 1);
                     derivat.erase(derivat.begin() + x_low - 1, derivat.begin() + y_prime_low); //erase * and x
                 }
                 else if (Board::__tokens_dict[derivat[x_low]] == "1") //* 1 y' -> y'
@@ -2016,13 +2016,13 @@ struct Board
                 else if (Board::__tokens_dict[derivat[y_prime_low]] == "1") //* x 1 -> x
                 {
     //                puts("hi 357");
-                    assert(y_prime_low == derivat.size() - 1);
+                    assert(y_prime_low == static_cast<int>(derivat.size()) - 1);
                     derivat.erase(derivat.begin() + x_low - 1); //erase "*"
                     derivat.pop_back(); //remove the "1"
                 }
             }
             
-            if (((k = (x_low - x_prime_low)) == (derivat.size() - (x_low - 1))) && (areDerivatRangesEqual(x_prime_low - 1, x_low - 1, k))) //- thing1 thing1 -> 0
+            if (((k = (x_low - x_prime_low)) == (static_cast<int>(derivat.size()) - (x_low - 1))) && (areDerivatRangesEqual(x_prime_low - 1, x_low - 1, k))) //- thing1 thing1 -> 0
             {
     //            puts("hi 367");
                 derivat[div_idx] = Board::__tokens_inv_dict["0"];
@@ -2039,7 +2039,7 @@ struct Board
                 else if (Board::__tokens_dict[derivat[x_low - 1]] == "0") //- * x' y 0 -> * x' y
                 {
 //                    puts("hi 381");
-                    assert(derivat.size() == x_low);
+                    assert(static_cast<int>(derivat.size()) == x_low);
                     derivat.erase(derivat.begin() + x_prime_low - 2); //erase the "-"
                     derivat.pop_back(); //erase the "0"
                 }
@@ -2052,7 +2052,7 @@ struct Board
                 if (Board::__tokens_dict[derivat[y_low]] == "1") // / - * x' y * x y' * 1 1 ->  - * x' y * x y'
                 {
     //                puts("hi 381");
-                    assert(y_low == derivat.size() - 1);
+                    assert(y_low == static_cast<int>(derivat.size()) - 1);
                     derivat.erase(derivat.begin() + y_low - 1); //erase "*"
                     derivat.erase(derivat.begin() + div_idx); //erase "/"
                     derivat.pop_back(); //erase "1"
@@ -2071,7 +2071,7 @@ struct Board
         {
             derivat.push_back(Board::__tokens_inv_dict["*"]); /* * */
             derivat.push_back(Board::__tokens_inv_dict["^"]); /* * ^ */
-            size_t temp = low+1+grasp[low+1];
+            int temp = low+1+grasp[low+1];
             int k;
             int x_low = derivat.size();
             for (k = low+1; k <= temp; k++) /* * ^ x */
@@ -2081,14 +2081,14 @@ struct Board
             if (derivat[x_low] == Board::__tokens_inv_dict["0"]) //* ^ 0 y (* ln 0 y)' -> 0 (maybe problematic for y < 0, but oh well 😮‍💨)
             {
     //            puts("hi 454");
-                assert(x_low == derivat.size() - 1);
+                assert(x_low == static_cast<int>(derivat.size()) - 1);
                 derivat.erase(derivat.begin() + x_low - 2, derivat.begin() + x_low); //erase "*" and "^"
                 return;
             }
             else if (derivat[x_low] == Board::__tokens_inv_dict["1"]) //* ^ 1 y (* ln 1 y)' -> 0 (because ln(1) is 0)
             {
     //            puts("hi 461");
-                assert(x_low == derivat.size() - 1);
+                assert(x_low == static_cast<int>(derivat.size()) - 1);
                 derivat[x_low] = Board::__tokens_inv_dict["0"]; //change "1" to "0"
                 derivat.erase(derivat.begin() + x_low - 2, derivat.begin() + x_low); //erase "*" and "^"
                 return;
@@ -2100,7 +2100,7 @@ struct Board
             }
             if (derivat[y_low] == Board::__tokens_inv_dict["0"]) //* ^ x 0 (* ln x 0)' -> 0
             {
-                assert(y_low == derivat.size() - 1);
+                assert(y_low == static_cast<int>(derivat.size()) - 1);
     //            puts("hi 474");
                 derivat[x_low - 2] = Board::__tokens_inv_dict["0"]; //change "*" to "0)
                 derivat.erase(derivat.begin() + x_low - 1, derivat.end()); //erase the rest
@@ -2108,7 +2108,7 @@ struct Board
             }
             else if (derivat[y_low] == Board::__tokens_inv_dict["1"]) //^ x 1 -> x
             {
-                assert(y_low == derivat.size() - 1);
+                assert(y_low == static_cast<int>(derivat.size()) - 1);
                 derivat.pop_back(); //erase the "1"
                 derivat.erase(derivat.begin() + x_low - 1); //erase the "*"
     //            puts("hi 485");
@@ -2133,7 +2133,7 @@ struct Board
             if (prefix_temp[y_low] == Board::__tokens_inv_dict["1"]) //* ln x 1 -> ln x
             {
     //            puts("hi 506");
-                assert(y_low == prefix_temp.size() - 1);
+                assert(y_low == static_cast<int>(prefix_temp.size()) - 1);
                 prefix_temp.pop_back(); //remove the "1"
                 prefix_temp.erase(prefix_temp.begin() + x_temp_low - 2); //erase the "*"
             }
@@ -2150,7 +2150,7 @@ struct Board
             else if (derivat[temp_term_low] == Board::__tokens_inv_dict["1"]) //* ^ x y 1 -> ^ x y
             {
     //            puts("hi 522");
-                assert(temp_term_low == derivat.size() - 1);
+                assert(temp_term_low == static_cast<int>(derivat.size()) - 1);
                 derivat.erase(derivat.begin() + x_low - 2); //erasing "*"
                 derivat.pop_back(); //erasing the "1"
             }
@@ -2161,7 +2161,7 @@ struct Board
             this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* * */
             this->derivat.push_back(Board::__tokens_inv_dict["~"]); /* * ~ */
             this->derivat.push_back(Board::__tokens_inv_dict["sin"]); /* * ~ sin */
-            size_t temp = low+1;
+            int temp = low+1;
             for (int k = temp; k <= temp+grasp[temp]; k++)
             {
                 this->derivat.push_back(prefix[k]); /* * ~ sin x */
@@ -2173,7 +2173,7 @@ struct Board
         {
             this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* * */
             this->derivat.push_back(Board::__tokens_inv_dict["cos"]); /* * cos */
-            size_t temp = low+1;
+            int temp = low+1;
             for (int k = temp; k <= temp+grasp[temp]; k++)
             {
                 this->derivat.push_back(prefix[k]); /* * cos x */
@@ -2184,7 +2184,7 @@ struct Board
         else if (Board::__tokens_dict[prefix[low]] == "sqrt")
         {
             this->derivat.push_back(Board::__tokens_inv_dict["/"]);         /* / */
-            size_t temp = low+1;
+            int temp = low+1;
             derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* / x' */
             this->derivat.push_back(Board::__tokens_inv_dict["*"]);         /* / x' * */
             this->derivat.push_back(Board::__tokens_inv_dict["2"]);         /* / x' * 2 */
@@ -2198,13 +2198,13 @@ struct Board
         else if (Board::__tokens_dict[prefix[low]] == "log" || Board::__tokens_dict[prefix[low]] == "ln")
         {
             derivat.push_back(Board::__tokens_inv_dict["/"]);               /* / */
-            size_t temp = low+1;
+            int temp = low+1;
             int x_prime_low = derivat.size();
             derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* / x' */
             if (derivat[x_prime_low] == Board::__tokens_inv_dict["0"]) // / 0 x -> 0
             {
 //                puts("hi 578");
-                assert(derivat.size() - 1 == x_prime_low);
+                assert(static_cast<int>(derivat.size()) - 1 == x_prime_low);
                 derivat[x_prime_low - 1] = Board::__tokens_inv_dict["0"]; //change "/" to 0
                 derivat.erase(derivat.begin() + x_prime_low, derivat.end()); //delete the rest
                 return;
@@ -2226,7 +2226,7 @@ struct Board
         else if (Board::__tokens_dict[prefix[low]] == "asin" || Board::__tokens_dict[prefix[low]] == "arcsin")
         {
             this->derivat.push_back(Board::__tokens_inv_dict["/"]);   /* / */
-            size_t temp = low+1;
+            int temp = low+1;
             derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* / x' */
             this->derivat.push_back(Board::__tokens_inv_dict["sqrt"]); /* / x' sqrt */
             this->derivat.push_back(Board::__tokens_inv_dict["-"]);    /* / x' sqrt - */
@@ -2246,7 +2246,7 @@ struct Board
         {
             this->derivat.push_back(Board::__tokens_inv_dict["~"]);   /* ~ */
             this->derivat.push_back(Board::__tokens_inv_dict["/"]);   /* ~ / */
-            size_t temp = low+1;
+            int temp = low+1;
             derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* / x' */
             this->derivat.push_back(Board::__tokens_inv_dict["sqrt"]); /* / x' sqrt */
             this->derivat.push_back(Board::__tokens_inv_dict["-"]);    /* / x' sqrt - */
@@ -2267,7 +2267,7 @@ struct Board
             this->derivat.push_back(Board::__tokens_inv_dict["*"]);      /* * */
             this->derivat.push_back(Board::__tokens_inv_dict["*"]);      /* * * */
             this->derivat.push_back(Board::__tokens_inv_dict["sech"]);   /* * * sech */
-            size_t temp = low+1;
+            int temp = low+1;
             for (int k = temp; k <= temp+grasp[temp]; k++) /* * * sech x */
             {
                 this->derivat.push_back(prefix[k]);
@@ -2286,7 +2286,7 @@ struct Board
             this->derivat.push_back(Board::__tokens_inv_dict["*"]);      /* ~ * */
             this->derivat.push_back(Board::__tokens_inv_dict["*"]);      /* ~ * * */
             this->derivat.push_back(Board::__tokens_inv_dict["sech"]);   /* ~ * * sech */
-            size_t temp = low+1;
+            int temp = low+1;
             for (int k = temp; k <= temp+grasp[temp]; k++) /* ~ * * sech x */
             {
                 this->derivat.push_back(prefix[k]);
@@ -2302,7 +2302,7 @@ struct Board
         else if (Board::__tokens_dict[prefix[low]] == "exp")
         {
             derivat.push_back(Board::__tokens_inv_dict["*"]);               //*
-            size_t temp = low+1;
+            int temp = low+1;
             derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); //* x'
             derivat.push_back(Board::__tokens_inv_dict["exp"]);           //* x' exp
             for (int k = temp; k <= temp+grasp[temp]; k++)
@@ -2313,7 +2313,7 @@ struct Board
         
         else if (Board::__tokens_dict[prefix[low]] == "~")
         {
-            size_t temp = low+1;
+            int temp = low+1;
             int un_minus_idx = derivat.size();
             derivat.push_back(prefix[low]); /* ~ */
             int x_prime_low = derivat.size();
@@ -2604,7 +2604,7 @@ struct Board
                     derivat.push_back(Board::__tokens_inv_dict["*"]); /* x' y * x y' * */
                 }
             }
-            if (((k = (x_low - x_prime_low)) == (derivat.size() - x_low)) && (areDerivatRangesEqual(x_prime_low, x_low, k))) //thing1 thing1 - -> 0
+            if (((k = (x_low - x_prime_low)) == (static_cast<int>(derivat.size()) - x_low)) && (areDerivatRangesEqual(x_prime_low, x_low, k))) //thing1 thing1 - -> 0
             {
     //            puts("hi 350");
                 derivat[x_prime_low] = Board::__tokens_inv_dict["0"]; //change first symbol of x' to 0
@@ -2776,7 +2776,7 @@ struct Board
             if (derivat.back() == Board::__tokens_inv_dict["0"]) //0 x / -> 0
             {
                 //            puts("hi 551");
-                assert(x_prime_low == derivat.size() - 1);
+                assert(x_prime_low == static_cast<int>(derivat.size()) - 1);
                 return;
             }
             int x_low = derivat.size();
@@ -3544,7 +3544,7 @@ void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int 
                 temp_legal_moves = x.get_legal_moves(); //the legal moves
                 temp_sz = temp_legal_moves.size(); //the number of legal moves
 
-                if (i == particle_positions.size()) //Then we need to create a new particle with some initial position and velocity
+                if (i == static_cast<int>(particle_positions.size())) //Then we need to create a new particle with some initial position and velocity
                 {
                     particle_positions.push_back(x.pos_dist(generator));
                     v.push_back(x.vel_dist(generator));
@@ -3553,7 +3553,7 @@ void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int 
                 particle_positions[i] = trueMod(std::round(particle_positions[i]), temp_sz);
                 x.pieces.push_back(temp_legal_moves[particle_positions[i]]); //x.pieces holds the pieces corresponding to the indices
                 curr_positions.push_back(particle_positions[i]);
-                if (i == best_positions.size())
+                if (i == static_cast<int>(best_positions.size()))
                 {
                     best_positions.push_back(x.pos_dist(generator));
                     best_positions[i] = trueMod(std::round(best_positions[i]), temp_sz);
@@ -3566,7 +3566,7 @@ void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int 
                 Nsa[curr_positions[i]][i]++;
             }
             
-            for (int i = 0; i < curr_positions.size(); i++)
+            for (int i = 0; i < static_cast<int>(curr_positions.size()); i++)
             {
                 Psa[curr_positions[i]][i] = (Psa[curr_positions[i]][i]+score)/Nsa[curr_positions[i]][i];
                 if (Psa[curr_positions[i]][i] > p_i_vals[i])
@@ -3574,12 +3574,11 @@ void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int 
                     p_i[i] = curr_positions[i];
                 }
                 p_i_vals[i] = std::max(p_i_vals[i], Psa[curr_positions[i]][i]);
-                
             }
             
             if (score > max_score)
             {
-                for (int idx = 0; idx < curr_positions.size(); idx++)
+                for (int idx = 0; idx < static_cast<int>(curr_positions.size()); idx++)
                 {
                     best_positions[idx] = curr_positions[idx];
                 }
