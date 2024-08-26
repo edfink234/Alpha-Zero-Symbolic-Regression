@@ -2120,7 +2120,7 @@ struct Board
             grasp_temp.reserve(reserve_amount);
             prefix_temp.push_back(Board::__tokens_inv_dict["*"]); /* * */
             prefix_temp.push_back(Board::__tokens_inv_dict["ln"]); /* * ln */
-            x_low = prefix_temp.size();
+            int x_temp_low = prefix_temp.size();
             for (k = low+1; k <= temp; k++) /* * ln x */
             {
                 prefix_temp.push_back(prefix[k]);
@@ -2135,7 +2135,7 @@ struct Board
     //            puts("hi 506");
                 assert(y_low == prefix_temp.size() - 1);
                 prefix_temp.pop_back(); //remove the "1"
-                prefix_temp.erase(prefix_temp.begin() + x_low - 2); //erase the "*"
+                prefix_temp.erase(prefix_temp.begin() + x_temp_low - 2); //erase the "*"
             }
             setPrefixGR(prefix_temp, grasp_temp);
             int temp_term_low = derivat.size();
@@ -2197,12 +2197,29 @@ struct Board
         
         else if (Board::__tokens_dict[prefix[low]] == "log" || Board::__tokens_dict[prefix[low]] == "ln")
         {
-            this->derivat.push_back(Board::__tokens_inv_dict["/"]);               /* / */
+            derivat.push_back(Board::__tokens_inv_dict["/"]);               /* / */
             size_t temp = low+1;
+            int x_prime_low = derivat.size();
             derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* / x' */
+            if (derivat[x_prime_low] == Board::__tokens_inv_dict["0"]) // / 0 x -> 0
+            {
+//                puts("hi 578");
+                assert(derivat.size() - 1 == x_prime_low);
+                derivat[x_prime_low - 1] = Board::__tokens_inv_dict["0"]; //change "/" to 0
+                derivat.erase(derivat.begin() + x_prime_low, derivat.end()); //delete the rest
+                return;
+            }
+            int x_low = derivat.size();
             for (int k = temp; k <= temp+grasp[temp]; k++)
             {
-                this->derivat.push_back(prefix[k]);      /* / x' x */
+                derivat.push_back(prefix[k]);      /* / x' x */
+            }
+            int step = derivat.size() - x_low;
+            if ((step == (x_low - x_prime_low)) && areDerivatRangesEqual(x_prime_low, x_low, step)) // / something something -> 1
+            {
+//                puts("hi 591");
+                derivat[x_prime_low - 1] = Board::__tokens_inv_dict["1"]; //change "/" to 0
+                derivat.erase(derivat.begin() + x_prime_low, derivat.end()); //delete the rest
             }
         }
         
@@ -2284,14 +2301,14 @@ struct Board
         
         else if (Board::__tokens_dict[prefix[low]] == "exp")
         {
-            this->derivat.push_back(Board::__tokens_inv_dict["*"]);               /* * */
-            this->derivat.push_back(Board::__tokens_inv_dict["exp"]);             /* * exp */
+            derivat.push_back(Board::__tokens_inv_dict["*"]);               //*
             size_t temp = low+1;
+            derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); //* x'
+            derivat.push_back(Board::__tokens_inv_dict["exp"]);           //* x' exp
             for (int k = temp; k <= temp+grasp[temp]; k++)
             {
-                this->derivat.push_back(prefix[k]);      /* * exp x */
+                derivat.push_back(prefix[k]);      //* x' exp x
             }
-            derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* * exp x x' */
         }
         
         else if (Board::__tokens_dict[prefix[low]] == "~")
@@ -2665,7 +2682,7 @@ struct Board
                 }
                 else if (derivat.back() == Board::__tokens_inv_dict["1"]) //x 1 ^ -> x
                 {
-                    puts("hi 426");
+//                    puts("hi 426");
                     derivat.pop_back(); //erase the 1
                 }
                 else
@@ -2754,12 +2771,29 @@ struct Board
         
         else if (Board::__tokens_dict[postfix[up]] == "log" || Board::__tokens_dict[postfix[up]] == "ln")
         {
+            int x_prime_low = derivat.size();
             derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
+            if (derivat.back() == Board::__tokens_inv_dict["0"]) //0 x / -> 0
+            {
+                //            puts("hi 551");
+                assert(x_prime_low == derivat.size() - 1);
+                return;
+            }
+            int x_low = derivat.size();
             for (int k = low; k <= up-1; k++)
             {
-                this->derivat.push_back(postfix[k]);      /* x' x */
+                derivat.push_back(postfix[k]);      /* x' x */
             }
-            this->derivat.push_back(Board::__tokens_inv_dict["/"]);               /* x' x / */
+            int step = derivat.size() - x_low;
+            if ((step == (x_low - x_prime_low)) && areDerivatRangesEqual(x_prime_low, x_low, step)) //something something / -> 1
+            {
+                //                puts("hi 563");
+                derivat[x_prime_low] = Board::__tokens_inv_dict["1"]; //replace first symbol of x' with "1"
+                derivat.erase(derivat.begin() + x_prime_low + 1, derivat.end()); //erase the rest
+                return;
+            }
+            
+            derivat.push_back(Board::__tokens_inv_dict["/"]);               /* x' x / */
         }
         
         else if (Board::__tokens_dict[postfix[up]] == "asin" || Board::__tokens_dict[postfix[up]] == "arcsin")
@@ -3835,7 +3869,7 @@ int main()
 //    MCTS(generateData(100000, 7, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/);
     auto data = createLinspaceMatrix(1000, 1, {0.1f}, {15.0f});
     
-    RandomSearch(VortexRadialProfile, data, 5 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 0 /*num threads*/);
+    RandomSearch(VortexRadialProfile, data, 5 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 0 /*num threads*/);
 
  
 
