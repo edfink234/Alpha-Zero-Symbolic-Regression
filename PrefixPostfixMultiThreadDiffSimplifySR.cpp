@@ -268,7 +268,7 @@ struct Board
                 {
                     Board::__input_vars.push_back("x"+std::to_string(i));
                 }
-                Board::__unary_operators = {"~", "log", "ln", "exp", "cos", "sin"};//{"cos", "~", "sin", "log", "ln", "asin", "arcsin", "acos", "arccos", "exp", "sech", "tanh", "sqrt"};
+                Board::__unary_operators = {"~", "log", "ln", "exp", "cos", "sin", "sqrt"};//{"cos", "~", "sin", "log", "ln", "asin", "arcsin", "acos", "arccos", "exp", "sech", "tanh", "sqrt"};
                 Board::__binary_operators = {"+", "-", "*", "/", "^"};
                 Board::__operators.clear();
                 for (std::string& i: Board::__unary_operators)
@@ -2184,27 +2184,48 @@ struct Board
         
         else if (Board::__tokens_dict[prefix[low]] == "sin")
         {
-            this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* * */
-            this->derivat.push_back(Board::__tokens_inv_dict["cos"]); /* * cos */
+            derivat.push_back(Board::__tokens_inv_dict["*"]); /* * */
+            int x_prime_low = derivat.size();
             int temp = low+1;
+            derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* * x' */
+            if (derivat[x_prime_low] == Board::__tokens_inv_dict["0"]) //* 0 cos x -> 0
+            {
+//                puts("hi 565");
+                assert(static_cast<int>(derivat.size() - 1) == x_prime_low);
+                derivat.erase(derivat.begin() + x_prime_low - 1); //erase "*"
+                return;
+            }
+            derivat.push_back(Board::__tokens_inv_dict["cos"]); /* * x' cos */
             for (int k = temp; k <= temp+grasp[temp]; k++)
             {
-                this->derivat.push_back(prefix[k]); /* * cos x */
+                derivat.push_back(prefix[k]); /* * x' cos x */
             }
-            derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* * cos x x' */
+            if (derivat[x_prime_low] == Board::__tokens_inv_dict["1"]) //* 1 cos x -> cos x
+            {
+//                puts("hi 577");
+                derivat.erase(derivat.begin() + x_prime_low - 1, derivat.begin() + x_prime_low + 1); //erase "*" and "1"
+            }
         }
         
         else if (Board::__tokens_dict[prefix[low]] == "sqrt")
         {
-            this->derivat.push_back(Board::__tokens_inv_dict["/"]);         /* / */
+            derivat.push_back(Board::__tokens_inv_dict["/"]);         /* / */
             int temp = low+1;
+            int x_prime_low = derivat.size();
             derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* / x' */
-            this->derivat.push_back(Board::__tokens_inv_dict["*"]);         /* / x' * */
-            this->derivat.push_back(Board::__tokens_inv_dict["2"]);         /* / x' * 2 */
-            this->derivat.push_back(Board::__tokens_inv_dict["sqrt"]);      /* / x' * 2 sqrt */
+            if (derivat[x_prime_low] == Board::__tokens_inv_dict["0"])
+            {
+    //            puts("hi 590");
+                assert(x_prime_low == static_cast<int>(derivat.size() - 1));
+                derivat.erase(derivat.begin() + x_prime_low - 1); //erase the "/"
+                return;
+            }
+            derivat.push_back(Board::__tokens_inv_dict["*"]);         /* / x' * */
+            derivat.push_back(Board::__tokens_inv_dict["2"]);         /* / x' * 2 */
+            derivat.push_back(Board::__tokens_inv_dict["sqrt"]);      /* / x' * 2 sqrt */
             for (int k = temp; k <= temp+grasp[temp]; k++) /* / x' * 2 sqrt x */
             {
-                this->derivat.push_back(prefix[k]);
+                derivat.push_back(prefix[k]);
             }
         }
         
@@ -2787,26 +2808,45 @@ struct Board
         
         else if (Board::__tokens_dict[postfix[up]] == "sin")
         {
+            derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
+            if (derivat.back() == Board::__tokens_inv_dict["0"]) //0 x cos * -> 0
+            {
+//                puts("hi 540");
+                return;
+            }
+            int x_low = derivat.size();
             for (int k = low; k <= up-1; k++)
             {
-                this->derivat.push_back(postfix[k]); /* x */
+                derivat.push_back(postfix[k]); /* x' x */
             }
-            this->derivat.push_back(Board::__tokens_inv_dict["cos"]); /* x cos */
-            derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x cos x' */
-            this->derivat.push_back(Board::__tokens_inv_dict["*"]); /* x cos x' * */
+            derivat.push_back(Board::__tokens_inv_dict["cos"]); /* x' x cos */
+            if (derivat[x_low - 1] == Board::__tokens_inv_dict["1"]) //1 x cos * -> x cos
+            {
+//                puts("hi 551");
+                derivat.erase(derivat.begin() + x_low - 1); //erase the "1"
+            }
+            else
+            {
+                derivat.push_back(Board::__tokens_inv_dict["*"]); /* x' x cos * */
+            }
         }
         
         else if (Board::__tokens_dict[postfix[up]] == "sqrt")
         {
             derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
-            this->derivat.push_back(Board::__tokens_inv_dict["2"]); /* x' 2 */
+            if (derivat.back() == Board::__tokens_inv_dict["0"]) //0 2 x sqrt * / -> 0
+            {
+//                puts("hi 565");
+                return;
+            }
+            derivat.push_back(Board::__tokens_inv_dict["2"]); /* x' 2 */
             for (int k = low; k <= up-1; k++) /* x' 2 x */
             {
-                this->derivat.push_back(postfix[k]);
+                derivat.push_back(postfix[k]);
             }
-            this->derivat.push_back(Board::__tokens_inv_dict["sqrt"]);    /* x' 2 x sqrt */
-            this->derivat.push_back(Board::__tokens_inv_dict["*"]);       /* x' 2 x sqrt * */
-            this->derivat.push_back(Board::__tokens_inv_dict["/"]);       /* x' 2 x sqrt * / */
+            derivat.push_back(Board::__tokens_inv_dict["sqrt"]);    /* x' 2 x sqrt */
+            derivat.push_back(Board::__tokens_inv_dict["*"]);       /* x' 2 x sqrt * */
+            derivat.push_back(Board::__tokens_inv_dict["/"]);       /* x' 2 x sqrt * / */
         }
         
         else if (Board::__tokens_dict[postfix[up]] == "log" || Board::__tokens_dict[postfix[up]] == "ln")
@@ -3923,7 +3963,7 @@ int main()
 //    MCTS(generateData(100000, 7, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/);
     auto data = createLinspaceMatrix(1000, 1, {0.1f}, {15.0f});
     
-    RandomSearch(VortexRadialProfile, data, 15 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 0 /*num threads*/);
+    RandomSearch(VortexRadialProfile, data, 10 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 0 /*num threads*/);
 
  
 
