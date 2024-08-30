@@ -2321,7 +2321,7 @@ struct Board
             if (derivat[x_prime_low] == Board::__tokens_inv_dict["0"])
             {
 //                puts("hi 696");
-                assert(x_prime_low = static_cast<int>(derivat.size()) - 1);
+                assert(x_prime_low == static_cast<int>(derivat.size()) - 1);
                 derivat.erase(derivat.begin() + x_prime_low - 1); //delete the "*"
                 return;
             }
@@ -2352,7 +2352,7 @@ struct Board
             if (derivat[x_prime_low] == Board::__tokens_inv_dict["0"]) //* 0 * ~ sech x tanh x -> 0
             {
 //                puts("hi 722");
-                assert(x_prime_low = static_cast<int>(derivat.size()) - 1);
+                assert(x_prime_low == static_cast<int>(derivat.size()) - 1);
                 derivat.erase(derivat.begin() + x_prime_low - 1); //erase the "*"
                 return;
             }
