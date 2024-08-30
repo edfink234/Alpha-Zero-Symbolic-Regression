@@ -268,7 +268,7 @@ struct Board
                 {
                     Board::__input_vars.push_back("x"+std::to_string(i));
                 }
-                Board::__unary_operators = {"~", "log", "ln", "exp", "cos", "sin", "sqrt", "asin", "arcsin", "acos", "arccos", "tanh", "sech"};//{"cos", "~", "sin", "log", "ln", "asin", "arcsin", "acos", "arccos", "exp", "sech", "tanh", "sqrt"};
+                Board::__unary_operators = {"~", "log", "ln", "exp", "cos", "sin", "sqrt", "asin", "arcsin", "acos", "arccos", "tanh", "sech"};
                 Board::__binary_operators = {"+", "-", "*", "/", "^"};
                 Board::__operators.clear();
                 for (std::string& i: Board::__unary_operators)
@@ -2316,6 +2316,7 @@ struct Board
         {
             derivat.push_back(Board::__tokens_inv_dict["*"]);      //*
             int x_prime_low = derivat.size();
+            int temp = low+1;
             derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); //* x'
             if (derivat[x_prime_low] == Board::__tokens_inv_dict["0"])
             {
@@ -2324,7 +2325,6 @@ struct Board
                 derivat.erase(derivat.begin() + x_prime_low - 1); //delete the "*"
                 return;
             }
-            int temp = low+1;
             derivat.push_back(Board::__tokens_inv_dict["*"]);      //* x' *
             derivat.push_back(Board::__tokens_inv_dict["sech"]);   //* x' * sech
             for (int k = temp; k <= temp+grasp[temp]; k++) //* x' * sech x
@@ -2340,21 +2340,29 @@ struct Board
         
         else if (Board::__tokens_dict[prefix[low]] == "sech")
         {
-            this->derivat.push_back(Board::__tokens_inv_dict["~"]);      /* ~ */
-            this->derivat.push_back(Board::__tokens_inv_dict["*"]);      /* ~ * */
-            this->derivat.push_back(Board::__tokens_inv_dict["*"]);      /* ~ * * */
-            this->derivat.push_back(Board::__tokens_inv_dict["sech"]);   /* ~ * * sech */
+            derivat.push_back(Board::__tokens_inv_dict["*"]); //*
+            int x_prime_low = derivat.size();
             int temp = low+1;
-            for (int k = temp; k <= temp+grasp[temp]; k++) /* ~ * * sech x */
+            derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); //* x'
+            if (derivat[x_prime_low] == Board::__tokens_inv_dict["0"]) //* 0 * ~ sech x tanh x -> 0
             {
-                this->derivat.push_back(prefix[k]);
+//                puts("hi 722");
+                assert(x_prime_low = static_cast<int>(derivat.size()) - 1);
+                derivat.erase(derivat.begin() + x_prime_low - 1); //erase the "*"
+                return;
             }
-            this->derivat.push_back(Board::__tokens_inv_dict["tanh"]);   /* ~ * * sech x tanh */
-            for (int k = temp; k <= temp+grasp[temp]; k++) /* ~ * * sech x tanh x */
+            derivat.push_back(Board::__tokens_inv_dict["*"]);      //* x' *
+            derivat.push_back(Board::__tokens_inv_dict["~"]);      //* x' * ~
+            derivat.push_back(Board::__tokens_inv_dict["sech"]);   //* x' * ~ sech
+            for (int k = temp; k <= temp+grasp[temp]; k++) //* x' * ~ sech x
             {
-                this->derivat.push_back(prefix[k]);
+                derivat.push_back(prefix[k]);
             }
-            derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* ~ * * sech x tanh x x' */
+            derivat.push_back(Board::__tokens_inv_dict["tanh"]);   //* x' * ~ sech x tanh
+            for (int k = temp; k <= temp+grasp[temp]; k++) //* x' * ~ sech x tanh x
+            {
+                derivat.push_back(prefix[k]);
+            }
         }
         
         else if (Board::__tokens_dict[prefix[low]] == "exp")
@@ -2971,20 +2979,25 @@ struct Board
         
         else if (Board::__tokens_dict[postfix[up]] == "sech")
         {
-            for (int k = low; k <= up-1; k++) /* x */
+            derivePostfixHelper(low, up-1, dx, postfix, grasp, true); //x'
+            if (derivat.back() == Board::__tokens_inv_dict["0"]) //0 x sech ~ x tanh * * -> 0
             {
-                this->derivat.push_back(postfix[k]);
+//                puts("hi 681");
+                return;
             }
-            this->derivat.push_back(Board::__tokens_inv_dict["sech"]);   /* x sech */
-            this->derivat.push_back(Board::__tokens_inv_dict["~"]);      /* x sech ~ */
-            for (int k = low; k <= up-1; k++) /* x sech ~ x */
+            for (int k = low; k <= up-1; k++) //x' x
             {
-                this->derivat.push_back(postfix[k]);
+                derivat.push_back(postfix[k]);
             }
-            this->derivat.push_back(Board::__tokens_inv_dict["tanh"]);   /* x sech ~ x tanh */
-            this->derivat.push_back(Board::__tokens_inv_dict["*"]);      /* x sech ~ x tanh * */
-            derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x sech ~ x tanh * x' */
-            this->derivat.push_back(Board::__tokens_inv_dict["*"]);   /* x sech ~ x tanh * x' * */
+            derivat.push_back(Board::__tokens_inv_dict["sech"]);   //x' x sech
+            derivat.push_back(Board::__tokens_inv_dict["~"]);      //x' x sech ~
+            for (int k = low; k <= up-1; k++) //x' x sech ~ x
+            {
+                derivat.push_back(postfix[k]);
+            }
+            derivat.push_back(Board::__tokens_inv_dict["tanh"]);   //x' x sech ~ x tanh
+            derivat.push_back(Board::__tokens_inv_dict["*"]);      //x' x sech ~ x tanh *
+            derivat.push_back(Board::__tokens_inv_dict["*"]);   //x' x sech ~ x tanh * *
         }
         
         else if (Board::__tokens_dict[postfix[up]] == "exp")
@@ -4002,7 +4015,7 @@ int main()
 //    MCTS(generateData(100000, 7, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/);
     auto data = createLinspaceMatrix(1000, 1, {0.1f}, {15.0f});
     
-    RandomSearch(VortexRadialProfile, data, 3 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 0 /*num threads*/);
+    RandomSearch(VortexRadialProfile, data, 8 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 0 /*num threads*/);
 
  
 
