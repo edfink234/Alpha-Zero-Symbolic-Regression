@@ -13,12 +13,11 @@
 #include <random>
 #include <float.h>
 
-//TODO: Add linear layer option
-
 class Perceptron
 {
     public:
         Eigen::VectorXf weights;
+        Eigen::VectorXf prev_weights;
         Eigen::VectorXf velocities;
         Eigen::VectorXf gradients;
         Eigen::VectorXf expt_grad_squared;
@@ -43,7 +42,7 @@ class MultiLayerPerceptron
         static std::vector<float> inline __unary_operators_float;
         std::vector<float> pieces; //expression list for Symbolic Regressor
 
-    MultiLayerPerceptron(std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, float bias = 1.0f, float eta = 0.5f, float theta = 0.5f, float gamma = 0.5f, std::string&& output_type = "sigmoid", const std::string& weight_update = "basic", const std::string& expression_type = "prefix", float epsilon = 0.1f, float beta_1 = 0.9, float beta_2 = 0.999);
+    MultiLayerPerceptron(std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, std::string&& output_type = "sigmoid", const std::string& weight_update = "basic", const std::string& expression_type = "prefix", float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f);
         void set_weights(std::vector<Eigen::MatrixXf>&& w_init);
         void reset_weights();
         void print_weights();
@@ -57,7 +56,7 @@ class MultiLayerPerceptron
         void set_learning_rate(float eta) {this->eta = eta;}
         std::vector<Eigen::VectorXf> predict(const std::vector<Eigen::VectorXf>&);
         static std::vector<Eigen::VectorXf> sigmoid(const std::vector<Eigen::VectorXf>&);
-        float expression_evaluator(float w_k = 0.0f, float d_ij = 0.0f, float value = 0.0f, float d_ij_nest = 0.0f, const Eigen::VectorXf& params = {});
+        float expression_evaluator(float w_k = 0.0f, float d_ij = 0.0f, float value = 0.0f, float d_ij_nest = 0.0f, float velocity_k = 0.0f, float gradient_k = 0.0f, float g_t_k = 0.0f, float expt_grad_squared_k = 0.0f, float delta_w_t_k = 0.0f, float expt_weight_squared_k = 0.0f, float delta_w_t_k_ada_delta = 0.0f, float m_t_k = 0.0f, float v_t_k = 0.0f, float m_t_k_hat = 0.0f, float v_t_k_hat = 0.0f, float prev_w_k = 0.0f, const Eigen::VectorXf& params = {});
         
     private:
         float bias;
