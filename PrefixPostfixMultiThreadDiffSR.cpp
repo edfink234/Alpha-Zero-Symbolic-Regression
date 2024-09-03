@@ -1664,7 +1664,6 @@ struct Board
                     improved = LevenbergMarquardt();
                 }
                 Eigen::VectorXf temp_vec;
-                //TODO: Maybe modify the loss function so that trivial solutions are discouraged/squashed
                 
                 if (improved) //If improved, update the expression_dict with this->params
                 {
