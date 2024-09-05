@@ -93,7 +93,25 @@ int trueMod(int N, int M)
     return ((N % M) + M) % M;
 };
 
-bool isConstant(const Eigen::VectorXf& vec, float tolerance = 1e-8)
+bool isZero(const Eigen::VectorXf& vec, float tolerance = 1e-5f)
+{
+    if (vec.size() <= 1)
+    {
+        return true; // A vector with 0 or 1 element is trivially constant
+    }
+    return (((vec.array()).abs().maxCoeff()) <= tolerance);
+}
+
+bool isZero(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>& vec, float tolerance = 1e-5f)
+{
+    if (vec.size() <= 1)
+    {
+        return true; // A vector with 0 or 1 element is trivially constant
+    }
+    return (((vec.array()).abs().maxCoeff()) <= tolerance);
+}
+
+bool isConstant(const Eigen::VectorXf& vec, float tolerance = 1e-5f)
 {
     if (vec.size() <= 1)
     {
@@ -103,7 +121,7 @@ bool isConstant(const Eigen::VectorXf& vec, float tolerance = 1e-8)
     return (vec.array() - firstElement).abs().maxCoeff() <= tolerance;
 }
 
-bool isConstant(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>& vec, float tolerance = 1e-8)
+bool isConstant(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>& vec, float tolerance = 1e-5f)
 {
     if (vec.size() <= 1)
     {
@@ -239,7 +257,7 @@ struct Board
     std::vector<float> diffeq_result;
     float isConstTol;
     
-    Board(std::vector<float> (*diffeq)(Board&), bool primary = true, int n = 3, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = true) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, is_primary{primary}
+    Board(std::vector<float> (*diffeq)(Board&), bool primary = true, int n = 3, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, is_primary{primary}
     {
         if (n > 30)
         {
@@ -263,6 +281,7 @@ struct Board
             {
                 Board::data = theData;
                 Board::__num_features = Board::data[0].size();
+                printf("Number of features = %d\n", Board::__num_features);
                 Board::__input_vars.clear();
                 Board::expression_dict.clear();
                 Board::__input_vars.reserve(Board::__num_features);
@@ -1629,9 +1648,28 @@ struct Board
     {
         float score = 0.0f;
         Eigen::VectorXf expression_eval = expression_evaluator(this->params, this->pieces);
-        if (isConstant(expression_eval, this->isConstTol)) //Ignore the trivial solution!
+        if ((Board::__num_features == 1) && isConstant(expression_eval, this->isConstTol)) //Ignore the trivial solution (1-d functions)!
         {
             return score;
+        }
+        else if (Board::__num_features > 1)
+        {
+            std::vector<int> grasp;
+            for (const std::string& i: Board::__input_vars)
+            {
+                if (this->expression_type == "prefix")
+                {
+                    this->derivePrefix(0, this->pieces.size() - 1, i, this->pieces, grasp);
+                }
+                else //postfix
+                {
+                    this->derivePostfix(0, this->pieces.size() - 1, i, this->pieces, grasp);
+                }
+                if (isZero(expression_evaluator(this->params, this->derivat), this->isConstTol)) //Ignore the trivial solution (N-d functions)!
+                {
+                    return score;
+                }
+            }
         }
         if (this->params.size())
         {
@@ -3237,7 +3275,7 @@ std::vector<float> VortexRadialProfile(Board& x)
         result.push_back(Board::__tokens_inv_dict["2"]);
         x.derivePrefix(0, x.pieces.size()-1, "x0", x.pieces, grasp);
         R_prime = x.derivat;
-        x.derivePrefix(0, R_prime.size()-1, "x0", R_prime, grasp);
+        x.derivePrefix(0, R_prime.size()-1, "x0", R_prime, grasp); //derivat will store second derivative of R_prime
         for (float i: x.derivat) //R''
         {
             result.push_back(i);
@@ -3291,7 +3329,7 @@ std::vector<float> VortexRadialProfile(Board& x)
         result.push_back(Board::__tokens_inv_dict["/"]);
         x.derivePostfix(0, x.pieces.size()-1, "x0", x.pieces, grasp);
         R_prime = x.derivat;
-        x.derivePostfix(0, R_prime.size()-1, "x0", R_prime, grasp);
+        x.derivePostfix(0, R_prime.size()-1, "x0", R_prime, grasp); //derivat will store second derivative of R_prime
         for (float i: x.derivat) //R''
         {
             result.push_back(i);
@@ -4174,7 +4212,7 @@ int main()
     
     auto data = createLinspaceMatrix(1000, 1, {0.1f}, {15.0f});
     
-    GP(VortexRadialProfile /*differential equation to solve*/, data /*data used to solve differential equation*/, 1 /*fixed depth of generated solutions*/, "prefix" /*expression representation*/, "LBFGSB" /*fit method if expression contains const tokens*/, 1 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 0.1 /*time to run the algorithm in seconds*/, 1 /*num threads*/, true /*whether to include const tokens {0, 1, 2}*/, 0.1 /*threshold for which solutions cannot be constant*/, true /*whether to include "const" token to be optimized. */);
+    RandomSearch(VortexRadialProfile /*differential equation to solve*/, data /*data used to solve differential equation*/, 3 /*fixed depth of generated solutions*/, "prefix" /*expression representation*/, "LBFGSB" /*fit method if expression contains const tokens*/, 1 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 1 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 1e-5 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/);
 
  
 
