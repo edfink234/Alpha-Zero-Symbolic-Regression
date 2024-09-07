@@ -313,8 +313,8 @@ def test_visualize():
 #                plot_rpn_expression_tree("x3 cos 0.427738 * 4.779139 x1 - 0.390789 x0 0.637794 x2 * - + 0.598703 x2 cos 1.463665 cos x2 + 1.063828 x3 + x0 0.031570 x0 + 1.493230 - * * + - * * + *".split(), block=False, save = save)
 #                plot_rpn_expression_tree("q Ef * m omega_0 2 ^ omega 2 ^ - *  /".split(), block=False, save = save)
 #                plot_pn_expression_tree("- * ~ sin x 1 * ^ x 1 / 1 x".split(), block=True, save = save)
-#            plot_pn_expression_tree("* * ^ tanh sech x x + ln tanh sech x * / * * ~ sech x tanh x * sech sech x sech sech x tanh sech x x y ".split(), block=True, save = save)
-                plot_pn_expression_tree(" / / * ~ sech x0 tanh x0 * 2 sqrt sech x0 sqrt - 1 * sqrt sech x0 sqrt sech x0 ".split(), block=True, save = save)
+#            plot_rpn_expression_tree("i u_t * 1 2 / u_xx u_yy + * + u* u * u * -".split(), block=True, save = save)
+                plot_pn_expression_tree("- + * i u_t * / 1 2 + u_xx u_yy * * u* u u".split(), block=True, save = save)
 
         except KeyboardInterrupt:
             plt.close()
