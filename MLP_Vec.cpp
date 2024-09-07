@@ -60,7 +60,7 @@ float Perceptron::scale_between(float unscaled_num, float min, float max, float 
 }
 
 // Return a new MultiLayerPerceptron object with the specified parameters.
-MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, std::deque<std::string> layer_types, float bias, float eta, float theta, float gamma, std::string&& output_type, const std::string& weight_update, const std::string& expression_type, float epsilon, float beta_1, float beta_2)
+MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, std::deque<std::string> layer_types, float bias, float eta, float theta, float gamma, const std::string& weight_update, const std::string& expression_type, float epsilon, float beta_1, float beta_2)
 {
     // Set up the signal handler
     signal(SIGINT, signalHandler);
@@ -76,7 +76,6 @@ MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, std::deque<s
     this->bias = bias;
     this->eta = eta;
     this->theta = theta;
-    this->output_type = output_type;
     this->weight_update = weight_update;
     this->expression_type = expression_type;
     this->epsilon = epsilon;

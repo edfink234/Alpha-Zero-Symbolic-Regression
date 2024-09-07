@@ -42,7 +42,7 @@ class MultiLayerPerceptron
         static std::vector<float> inline __unary_operators_float;
         std::vector<float> pieces; //expression list for Symbolic Regressor
 
-    MultiLayerPerceptron(std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, std::string&& output_type = "sigmoid", const std::string& weight_update = "basic", const std::string& expression_type = "prefix", float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f);
+    MultiLayerPerceptron(std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, const std::string& weight_update = "basic", const std::string& expression_type = "prefix", float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f);
         void set_weights(std::vector<Eigen::MatrixXf>&& w_init);
         void reset_weights();
         void print_weights();
