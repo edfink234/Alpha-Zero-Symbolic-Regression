@@ -34,7 +34,7 @@ namespace std
 {
     std::string to_string(std::complex<float> val)
     {
-        return "(" + std::to_string(val.real) + ", " + std::to_string(val.imag) + ")";
+        return "(" + std::to_string(val.real()) + " + " + std::to_string(val.imag()) + "i)";
     }
 }
 
@@ -61,17 +61,9 @@ bool isFloat(const std::string& x)
     }
 }
 
-namespace std
-{
-    std::string to_string(std::complex<float> val)
-    {
-        return "(" + std::to_string(val.real()) + ", " + std::to_string(val.imag()) + ")";
-    }
-}
-
 // Function to create a matrix with linspace columns. std::vector<float> min and
 // std::vector<float> max must have size == cols
-Eigen::MatrixXcf createinspaceMatrix(int rows, int cols, std::vector<float> min_vec, std::vector<float> max_vec)
+Eigen::MatrixXcf createLinspaceMatrix(int rows, int cols, std::vector<float> min_vec, std::vector<float> max_vec)
 {
     assert((cols == static_cast<int>(min_vec.size())) && (cols == static_cast<int>(max_vec.size())));
     Eigen::MatrixXcf mat(rows, cols);
@@ -120,14 +112,14 @@ bool isZero(const Eigen::VectorXcf& vec, float tolerance = 1e-5f)
     return (((vec.array()).abs().maxCoeff()) <= tolerance);
 }
 
-bool isZero(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>& vec, float tolerance = 1e-5f)
-{
-    if (vec.size() <= 1)
-    {
-        return true; // A vector with 0 or 1 element is trivially constant
-    }
-    return (((vec.array()).abs().maxCoeff()) <= tolerance);
-}
+//bool isZero(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>& vec, float tolerance = 1e-5f)
+//{
+//    if (vec.size() <= 1)
+//    {
+//        return true; // A vector with 0 or 1 element is trivially constant
+//    }
+//    return (((vec.array()).abs().maxCoeff()) <= tolerance);
+//}
 
 bool isConstant(const Eigen::VectorXcf& vec, float tolerance = 1e-5f)
 {
@@ -139,15 +131,15 @@ bool isConstant(const Eigen::VectorXcf& vec, float tolerance = 1e-5f)
     return (vec.array() - firstElement).abs().maxCoeff() <= tolerance;
 }
 
-bool isConstant(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>& vec, float tolerance = 1e-5f)
-{
-    if (vec.size() <= 1)
-    {
-        return true; // A vector with 0 or 1 element is trivially constant
-    }
-    auto firstElement = vec(0);
-    return (vec.array() - firstElement).abs().maxCoeff() <= tolerance;
-}
+//bool isConstant(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>& vec, float tolerance = 1e-5f)
+//{
+//    if (vec.size() <= 1)
+//    {
+//        return true; // A vector with 0 or 1 element is trivially constant
+//    }
+//    auto firstElement = vec(0);
+//    return (vec.array() - firstElement).abs().maxCoeff() <= tolerance;
+//}
 
 class Data
 {
@@ -203,20 +195,15 @@ public:
     }
 };
 
-float MSE(const Eigen::VectorXf& actual)
-{
-    return actual.squaredNorm() / actual.size();
-}
-
 float MSE(const Eigen::VectorXcf& actual)
 {
     return actual.squaredNorm() / actual.size();
 }
 
-Eigen::AutoDiffScalar<Eigen::VectorXf> MSE(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>& actual)
-{
-    return actual.squaredNorm() / actual.size();
-}
+//Eigen::AutoDiffScalar<Eigen::VectorXf> MSE(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>& actual)
+//{
+//    return actual.squaredNorm() / actual.size();
+//}
 
 float loss_func(const Eigen::VectorXcf& actual)
 {
@@ -259,7 +246,6 @@ struct Board
     size_t reserve_amount;
     int num_fit_iter;
     std::string fit_method;
-    std::string fit_grad_method;
     
     bool cache;
     bool const_token;
@@ -278,8 +264,9 @@ struct Board
     std::vector<float> (*diffeq)(Board&); //differential equation we want to solve
     std::vector<float> diffeq_result;
     float isConstTol;
+    bool LBFGS_real;
     
-    Board(std::vector<float> (*diffeq)(Board&), bool primary = true, int n = 3, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, is_primary{primary}
+    Board(std::vector<float> (*diffeq)(Board&), bool primary = true, int n = 3, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, const Eigen::MatrixXcf& theData = {}, bool visualize_exploration = false, bool cache = false, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, is_primary{primary}
     {
         if (n > 30)
         {
@@ -1125,11 +1112,11 @@ struct Board
                 }
                 else if (token == "1")
                 {
-                    stack.push(Eigen::VectorcXcf::Ones(Board::data.numRows()));
+                    stack.push(Eigen::VectorXcf::Ones(Board::data.numRows()));
                 }
                 else if (token == "2")
                 {
-                    stack.push(Eigen::VectorXcf::Constant(Board::data.numRows(), std::complex<float>(2.0f, 0.0f));
+                    stack.push(Eigen::VectorXcf::Constant(Board::data.numRows(), std::complex<float>(2.0f, 0.0f)));
                 }
                 else if (isFloat(token))
                 {
@@ -1238,150 +1225,6 @@ struct Board
         return stack.top();
     }
     
-//    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> expression_evaluator(const std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& parameters, const std::vector<float>& pieces) const
-//    {
-//        std::stack<Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>> stack;
-//        size_t const_count = 0, const_idx;
-//        std::string token;
-//        bool is_prefix = (expression_type == "prefix");
-//        for (int i = (is_prefix ? (static_cast<int>(pieces.size()) - 1) : 0); (is_prefix ? (i >= 0) : (i < static_cast<int>(pieces.size()))); (is_prefix ? (i--) : (i++)))
-//        {
-//            if (this->const_token && (pieces[i] >= const_val))
-//            {
-//                const_idx = pieces[i] - this->const_val;
-//                token = "const" + std::to_string(const_idx);
-//            }
-//            else
-//            {
-//               token = Board::__tokens_dict[pieces[i]];
-//            }
-//            assert(token.size());
-//            if (std::find(Board::__operators_float.begin(), Board::__operators_float.end(), pieces[i]) == Board::__operators_float.end()) // leaf
-//            {
-//                if (token.substr(0,5) == "const")
-//                {
-////                    std::cout << "\nparameters[" << const_count << "] = " << parameters[const_count].value() << '\n';
-//                    stack.push(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>::Constant(Board::data.numRows(), parameters[(!this->const_token ? (const_count++) : const_idx)]));
-//                }
-//                else if (token == "0")
-//                {
-////                    std::cout << "\nparameters[" << const_count << "] = " << parameters[const_count].value() << '\n';
-//                    stack.push(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>::Constant(Board::data.numRows(), 0.0f));
-//                }
-//                else if (token == "1")
-//                {
-////                    std::cout << "\nparameters[" << const_count << "] = " << parameters[const_count].value() << '\n';
-//                    stack.push(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>::Constant(Board::data.numRows(), 1.0f));
-//                }
-//                else if (token == "2")
-//                {
-////                    std::cout << "\nparameters[" << const_count << "] = " << parameters[const_count].value() << '\n';
-//                    stack.push(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>::Constant(Board::data.numRows(), 2.0f));
-//                }
-//                else if (isFloat(token))
-//                {
-//                    stack.push(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>::Constant(Board::data.numRows(), std::stof(token)));
-//                }
-//                else
-//                {
-//                    stack.push(Board::data[token]);
-//                }
-//            }
-//            else if (std::find(Board::__unary_operators_float.begin(), Board::__unary_operators_float.end(), pieces[i]) != Board::__unary_operators_float.end()) // Unary operator
-//            {
-//                if (token == "cos")
-//                {
-//                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
-//                    stack.pop();
-//                    stack.push(temp.array().cos());
-//                }
-//                else if (token == "exp")
-//                {
-//                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
-//                    stack.pop();
-//                    stack.push(temp.array().exp());
-//                }
-//                else if (token == "sqrt")
-//                {
-//                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
-//                    stack.pop();
-//                    stack.push(temp.array().sqrt());
-//                }
-//                else if (token == "sin")
-//                {
-//                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
-//                    stack.pop();
-//                    stack.push(temp.array().sin());
-//                }
-//                else if (token == "asin" || token == "arcsin")
-//                {
-//                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
-//                    stack.pop();
-//                    stack.push(temp.array().asin());
-//                }
-//                else if (token == "log" || token == "ln")
-//                {
-//                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
-//                    stack.pop();
-//                    stack.push(temp.array().log());
-//                }
-//                else if (token == "tanh")
-//                {
-//                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
-//                    stack.pop();
-//                    stack.push(temp.array().tanh());
-//                }
-//                else if (token == "sech")
-//                {
-//                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
-//                    stack.pop();
-//                    stack.push(1/temp.array().cosh());
-//                }
-//                else if (token == "acos" || token == "arccos")
-//                {
-//                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
-//                    stack.pop();
-//                    stack.push(temp.array().acos());
-//                }
-//                else if (token == "~") //unary minus
-//                {
-//                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
-//                    stack.pop();
-//                    stack.push(-temp.array());
-//                }
-//            }
-//            else // binary operator
-//            {
-//                Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> left_operand = stack.top();
-//                stack.pop();
-//                Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> right_operand = stack.top();
-//                stack.pop();
-//
-//                if (token == "+")
-//                {
-//                    stack.push(((expression_type == "postfix") ? (right_operand.array() + left_operand.array()) : (left_operand.array() + right_operand.array())));
-//                }
-//                else if (token == "-")
-//                {
-//                    stack.push(((expression_type == "postfix") ? (right_operand.array() - left_operand.array()) : (left_operand.array() - right_operand.array())));
-//                }
-//                else if (token == "*")
-//                {
-//                    stack.push(((expression_type == "postfix") ? (right_operand.array() * left_operand.array()) : (left_operand.array() * right_operand.array())));
-//                }
-//                else if (token == "/")
-//                {
-//                    stack.push(((expression_type == "postfix") ? (right_operand.array() / left_operand.array()) : (left_operand.array() / right_operand.array())));
-//                }
-//                else if (token == "^")
-//                {
-//                    stack.push(((expression_type == "postfix") ? ((left_operand.array()*(right_operand.array().log())).exp()) : ((right_operand.array()*(left_operand.array().log())).exp())));
-//                }
-//            }
-//        }
-//        return stack.top();
-//    }
-    
     bool AsyncPSO()
     {
         bool improved = false;
@@ -1398,7 +1241,8 @@ struct Board
 
         float swarm_best_score = loss_func(expression_evaluator(this->params, this->diffeq_result));
         float fpi = loss_func(expression_evaluator(particle_positions, this->diffeq_result));
-        float temp, fxi;
+        float fxi;
+        std::complex<float> temp;
         
         if (fpi > swarm_best_score)
         {
@@ -1462,7 +1306,8 @@ struct Board
 
         float swarm_best_score = loss_func(expression_evaluator(this->params, this->diffeq_result));
         float fpi = loss_func(expression_evaluator(particle_positions, this->diffeq_result));
-        float temp, fxi;
+        float fxi;
+        std::complex<float> temp;
         
         if (fpi > swarm_best_score)
         {
@@ -1474,9 +1319,10 @@ struct Board
         {
             for (unsigned short i = 0; i < this->params.size(); i++) //number of particles
             {
+                //real
                 rp = pos_dist(gen), rg = pos_dist(gen);
-                v(i) = K*(v(i) + phi_1*rp*(particle_positions(i) - x(i)) + phi_2*rg*((this->params)(i) - x(i)));
-                x(i) += v(i);
+                v(i).real(K*(v(i).real() + phi_1*rp*(particle_positions(i).real() - x(i).real()) + phi_2*rg*((this->params)(i).real() - x(i).real())));
+                x(i).real(x(i).real() + v(i).real());
                 
                 fpi = loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //current score
                 temp = particle_positions(i); //save old position of particle i
@@ -1488,189 +1334,43 @@ struct Board
                 }
                 else if (fpi > swarm_best_score)
                 {
+                    std::cout << "Iteration " << j << ": Changing param " << i << " from " << (this->params)[i]
+                    << " to " << particle_positions[i] << ". Score from " << swarm_best_score << " to " << fpi
+                    << ".\n";
 //                    printf("Iteration %d: Changing param %d from %f to %f. Score from %f to %f\n", j, i, (this->params)[i], particle_positions[i], swarm_best_score, fpi);
                     (this->params)(i) = particle_positions(i);
                     improved = true;
                     swarm_best_score = fpi;
                 }
-            }
-        }
-        Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
-        return improved;
-    }
-    
-//    Eigen::AutoDiffScalar<Eigen::VectorXf> grad_func(std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& inputs)
-//    {
-//        return MSE(expression_evaluator(inputs, this->diffeq_result));
-//    }
-    
-    /*
-     x: parameter vector: (x_0, x_1, ..., x_{x.size()-1})
-     g: gradient evaluated at x: (g_0(x_0), g_1(x_1), ..., g_{g.size()-1}(x_{x.size()-1}))
-     */
-    float operator()(Eigen::VectorXcf& x, Eigen::VectorXcf& grad)
-    {
-        if (this->fit_method == "LBFGS" || this->fit_method == "LBFGSB")
-        {
-            float mse = MSE(expression_evaluator(x, this->diffeq_result));
-            if (this->fit_grad_method == "naive_numerical")
-            {
-                float low_b;
-                std::complex<float> temp;
-                for (int i = 0; i < x.size(); i++) //finite differences wrt x evaluated at the current values x(i)
-                {
-                    //https://stackoverflow.com/a/38855586/18255427
-                    temp = x(i);
-                    x(i) -= 0.00001f;
-                    low_b = MSE(expression_evaluator(x, this->diffeq_result));
-                    x(i) = temp + 0.00001f;
-                    grad(i) = (MSE(expression_evaluator(x, this->diffeq_result)) - low_b) / 0.00002f ;
-                    x(i) = temp;
-                }
-            }
-
-//            else if (this->fit_grad_method == "autodiff")
-//            {
-//                size_t sz = x.size();
-//                std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>> inputs(sz);
-//                inputs.reserve(sz);
-//                for (size_t i = 0; i < sz; i++)
+                
+//                rp = pos_dist(gen), rg = pos_dist(gen);
+//                v(i) = K*(v(i) + phi_1*rp*(particle_positions(i) - x(i)) + phi_2*rg*((this->params)(i) - x(i)));
+//                x(i) += v(i);
+//                
+//                fpi = loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //current score
+//                temp = particle_positions(i); //save old position of particle i
+//                particle_positions(i) = x(i); //update old position to new position
+//                fxi = loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //calculate the score with the new position
+//                if (fxi < fpi) //if the new vector is worse:
 //                {
-//                    inputs[i].value() = x(i);
-//                    inputs[i].derivatives() = Eigen::VectorXf::Unit(sz, i);
+//                    particle_positions(i) = temp; //reset particle_positions[i]
 //                }
-//                grad = grad_func(inputs).derivatives();
-//            }
-            return mse;
-        }
-        else if (this->fit_method == "LevenbergMarquardt")
-        {
-            grad = (this->expression_evaluator(x, this->diffeq_result));
-        }
-        return 0.f;
-    }
-    
-    bool LBFGS()
-    {
-        bool improved = false;
-        auto start_time = Clock::now();
-        LBFGSpp::LBFGSParam<float> param;
-        param.epsilon = 1e-6;
-        param.max_iterations = this->num_fit_iter;
-        //https://lbfgspp.statr.me/doc/LineSearchBacktracking_8h_source.html
-        LBFGSpp::LBFGSSolver<float, LBFGSpp::LineSearchMoreThuente> solver(param); //LineSearchBacktracking, LineSearchBracketing, LineSearchMoreThuente, LineSearchNocedalWright
-        float fx;
-        
-        Eigen::VectorXcf eigenVec = this->params;
-        float mse = MSE(expression_evaluator(this->params, this->diffeq_result));
-        try
-        {
-            solver.minimize((*this), eigenVec, fx);
-        }
-        catch (std::runtime_error& e){}
-        catch (std::invalid_argument& e){}
-        
-//        printf("mse = %f -> fx = %f\n", mse, fx);
-        if (fx < mse)
-        {
-//            printf("mse = %f -> fx = %f\n", mse, fx);
-            this->params = eigenVec;
-            improved = true;
+//                else if (fpi > swarm_best_score)
+//                {
+//                    std::cout << "Iteration " << j << ": Changing param " << i << " from " << (this->params)[i]
+//                    << " to " << particle_positions[i] << ". Score from " << swarm_best_score << " to " << fpi
+//                    << ".\n";
+////                    printf("Iteration %d: Changing param %d from %f to %f. Score from %f to %f\n", j, i, (this->params)[i], particle_positions[i], swarm_best_score, fpi);
+//                    (this->params)(i) = particle_positions(i);
+//                    improved = true;
+//                    swarm_best_score = fpi;
+//                }
+            }
         }
         Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
         return improved;
     }
-    
-    bool LBFGSB()
-    {
-        bool improved = false;
-        auto start_time = Clock::now();
-        LBFGSpp::LBFGSBParam<float> param;
-        param.epsilon = 1e-6;
-        param.max_iterations = this->num_fit_iter;
-        //https://lbfgspp.statr.me/doc/LineSearchBacktracking_8h_source.html
-        LBFGSpp::LBFGSBSolver<float> solver(param); //LineSearchBacktracking, LineSearchBracketing, LineSearchMoreThuente, LineSearchNocedalWright
-        float fx;
         
-        Eigen::VectorXcf eigenVec = this->params;
-        float mse = MSE(expression_evaluator(this->params, this->diffeq_result));
-        try
-        {
-            solver.minimize((*this), eigenVec, fx, Eigen::VectorXcf::Constant(eigenVec.size(), -std::numeric_limits<float>::infinity()), Eigen::VectorXcf::Constant(eigenVec.size(), std::numeric_limits<float>::infinity()));
-//            solver.minimize((*this), eigenVec, fx, Eigen::VectorXf::Constant(eigenVec.size(), -10.f), Eigen::VectorXf::Constant(eigenVec.size(), 10.f));
-        }
-        catch (std::runtime_error& e){}
-        catch (std::invalid_argument& e){}
-        catch (std::logic_error& e){}
-        
-//        printf("mse = %f -> fx = %f\n", mse, fx);
-        if (fx < mse)
-        {
-//            printf("mse = %f -> fx = %f\n", mse, fx);
-            this->params = eigenVec;
-            improved = true;
-        }
-        Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
-        return improved;
-    }
-    
-    int values() const
-    {
-        return Board::data.numRows();
-    }
-    
-    int df(Eigen::VectorXcf &x, Eigen::MatrixXcf &fjac)
-    {
-        std::complex<float> epsilon, temp;
-        epsilon = std::complex<float>(1e-5f, 1e-5f);
-
-        for (int i = 0; i < x.size(); i++)
-        {
-//            Eigen::VectorXf xPlus(x);
-//            xPlus(i) += epsilon;
-//
-//            Eigen::VectorXf xMinus(x);
-//            xMinus(i) -= epsilon;
-//            x(i) -= epsilon;
-            
-            temp = x(i);
-            
-            x(i) = temp + epsilon;
-            Eigen::VectorXcf fvecPlus(values());
-            operator()(x, fvecPlus);
-
-            x(i) = temp - epsilon;
-            Eigen::VectorXcf fvecMinus(values());
-            operator()(x, fvecMinus);
-
-            fjac.block(0, i, values(), 1) = std::move((fvecPlus - fvecMinus) / (2.0f * epsilon));
-            
-            x(i) = temp;
-        }
-        return 0;
-    }
-    
-    bool LevenbergMarquardt()
-    {
-        bool improved = false;
-        auto start_time = Clock::now();
-        Eigen::LevenbergMarquardt<decltype(*this), float> lm(*this);
-        float score_before = MSE(expression_evaluator(this->params, this->diffeq_result));
-        lm.parameters.maxfev = this->num_fit_iter;
-//        std::cout << "ftol (Cost function change) = " << lm.parameters.ftol << '\n';
-//        std::cout << "xtol (Parameters change) = " << lm.parameters.xtol << '\n';
-
-        lm.minimize(this->params);
-        if (MSE(expression_evaluator(this->params, this->diffeq_result)) < score_before)
-        {
-            improved = true;
-        }
-        
-//        std::cout << "Iterations = " << lm.nfev << '\n';
-        Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
-        return improved;
-    }
-    
     float fitFunctionToData()
     {
         float score = 0.0f;
@@ -1711,18 +1411,6 @@ struct Board
                 else if (this->fit_method == "AsyncPSO")
                 {
                     improved = AsyncPSO();
-                }
-                else if (this->fit_method == "LBFGS")
-                {
-                    improved = LBFGS();
-                }
-                else if (this->fit_method == "LBFGSB")
-                {
-                    improved = LBFGSB();
-                }
-                else if (this->fit_method == "LevenbergMarquardt")
-                {
-                    improved = LevenbergMarquardt();
                 }
                 Eigen::VectorXcf temp_vec;
                 
@@ -1831,7 +1519,7 @@ struct Board
     {
         return Board::data[i];
     }
-    const Eigen::VectorXf& operator[] (const std::string& i)
+    const Eigen::VectorXcf& operator[] (const std::string& i)
     {
         return Board::data[i];
     }
@@ -3527,7 +3215,7 @@ std::vector<float> VortexRadialProfile(Board& x) // open /Users/edwardfinkelstei
 
 //https://dl.acm.org/doi/pdf/10.1145/3449639.3459345?casa_token=Np-_TMqxeJEAAAAA:8u-d6UyINV6Ex02kG9LthsQHAXMh2oxx3M4FG8ioP0hGgstIW45X8b709XOuaif5D_DVOm_FwFo
 //https://core.ac.uk/download/pdf/6651886.pdf
-void SimulatedAnnealing(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
+void SimulatedAnnealing(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
 {
     
     if (num_threads == 0)
@@ -3550,13 +3238,13 @@ void SimulatedAnnealing(std::vector<float> (*diffeq)(Board&), const Eigen::Matri
      Inside of thread:
      */
     
-    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token]()
+    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token]()
     {
         std::random_device rand_dev;
         std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token);
+        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token);
         sync_point.arrive_and_wait();
-        Board secondary(diffeq, false, 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token); //For perturbations
+        Board secondary(diffeq, false, 0, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token); //For perturbations
         float score = 0.0f, check_point_score = 0.0f;
         
         std::vector<float> current;
@@ -3697,7 +3385,7 @@ void SimulatedAnnealing(std::vector<float> (*diffeq)(Board&), const Eigen::Matri
 }
 
 //https://arxiv.org/abs/2310.06609
-void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
+void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
 {
     std::map<int, std::vector<float>> scores; //map to store the scores
     
@@ -3721,13 +3409,13 @@ void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int d
      Inside of thread:
      */
     
-    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token]()
+    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token]()
     {
         std::random_device rand_dev;
         std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token);
+        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token);
         sync_point.arrive_and_wait();
-        Board secondary_one(diffeq, false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token), secondary_two(diffeq, false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token); //For crossover and mutations
+        Board secondary_one(diffeq, false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token), secondary_two(diffeq, false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token); //For crossover and mutations
         float score = 0.0f, mut_prob = 0.8f, rand_mut_cross;
         constexpr int init_population = 2000;
         std::vector<std::pair<std::vector<float>, float>> individuals;
@@ -3940,7 +3628,7 @@ void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int d
     std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
 }
 
-void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
+void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
 {
     if (num_threads == 0)
     {
@@ -3963,11 +3651,11 @@ void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int 
      Inside of thread:
      */
     
-    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token]()
+    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token]()
     {
         std::random_device rand_dev;
         std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token);
+        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token);
         sync_point.arrive_and_wait();
         float score = 0, check_point_score = 0;
         std::vector<float> temp_legal_moves;
@@ -4101,7 +3789,7 @@ void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int 
 }
 
 //https://arxiv.org/abs/2205.13134
-void MCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
+void MCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
 {
     if (num_threads == 0)
     {
@@ -4124,11 +3812,11 @@ void MCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int
      Inside of thread:
      */
     
-    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token]()
+    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token]()
     {
         std::random_device rand_dev;
         std::mt19937 thread_local generator(rand_dev());
-        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token);
+        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token);
         sync_point.arrive_and_wait();
         float score = 0.0f, check_point_score = 0.0f, UCT, best_act, UCT_best;
         
@@ -4254,7 +3942,7 @@ void MCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int
     std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
 }
 
-void RandomSearch(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, const int depth = 3, const std::string expression_type = "prefix", const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
+void RandomSearch(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, const int depth = 3, const std::string expression_type = "prefix", const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
 {
     if (num_threads == 0)
     {
@@ -4277,12 +3965,12 @@ void RandomSearch(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& d
      Inside of thread:
      */
     
-    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token]()
+    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token]()
     {
         std::random_device rand_dev;
         std::mt19937 thread_local generator(rand_dev()); // Mersenne Twister random number generator
 
-        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token);
+        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token);
         sync_point.arrive_and_wait();
         float score = 0.0f;
         std::vector<float> temp_legal_moves;
@@ -4352,9 +4040,9 @@ int main()
         AIFeynman_Benchmarks and then run PlotData.py
     */
     
-    auto data = createLinspaceMatrix(1000, 1, {0.1f}, {15.0f});
+    auto data = createLinspaceMatrix(1000, 3, {-10.0f, -10.0f, 0.1f}, {10.0f, 10.0f, 20.0f});
     
-    RandomSearch(VortexRadialProfile /*differential equation to solve*/, data /*data used to solve differential equation*/, 3 /*fixed depth of generated solutions*/, "prefix" /*expression representation*/, "LBFGSB" /*fit method if expression contains const tokens*/, 1 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 1 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 1e-5 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/);
+    RandomSearch(NLS_2D /*differential equation to solve*/, data /*data used to solve differential equation*/, 3 /*fixed depth of generated solutions*/, "prefix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, true /*cache*/, 1 /*time to run the algorithm in seconds*/, 1 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 1e-5 /*threshold for which solutions cannot be constant*/, true /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/);
 
  
 
@@ -4365,3 +4053,9 @@ int main()
 //g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifyComplexSR PrefixPostfixMultiThreadDiffSimplifyComplexSR.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -ffast-math -ftree-vectorize -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
 
 //g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifyComplexSR PrefixPostfixMultiThreadDiffSimplifyComplexSR.cpp -g -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
+
+//Solution? 
+/// sech - x2 x0 / * 1 i cos x1
+//(sech((x2 - x0)) / ((1 * i) / cos(x1)))
+
+ 

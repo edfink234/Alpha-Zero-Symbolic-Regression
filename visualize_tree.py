@@ -314,7 +314,7 @@ def test_visualize():
 #                plot_rpn_expression_tree("q Ef * m omega_0 2 ^ omega 2 ^ - *  /".split(), block=False, save = save)
 #                plot_pn_expression_tree("- * ~ sin x 1 * ^ x 1 / 1 x".split(), block=True, save = save)
 #            plot_rpn_expression_tree("i u_t * 1 2 / u_xx u_yy + * + u* u * u * -".split(), block=True, save = save)
-                plot_pn_expression_tree("- + * i u_t * / 1 2 + u_xx u_yy * * u* u u".split(), block=True, save = save)
+                plot_pn_expression_tree("/ sech - x2 x0 / * 1 i cos x1".split(), block=True, save = save)
 
         except KeyboardInterrupt:
             plt.close()
