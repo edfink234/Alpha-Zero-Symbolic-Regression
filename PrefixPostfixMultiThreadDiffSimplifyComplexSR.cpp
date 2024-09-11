@@ -39,7 +39,6 @@ namespace std
 }
 
 using Clock = std::chrono::high_resolution_clock;
-//using testComp = Eigen::VectorXcf;
 
 //Returns the number of seconds since `start_time`
 template <typename T>
@@ -112,15 +111,6 @@ bool isZero(const Eigen::VectorXcf& vec, float tolerance = 1e-5f)
     return (((vec.array()).abs().maxCoeff()) <= tolerance);
 }
 
-//bool isZero(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>& vec, float tolerance = 1e-5f)
-//{
-//    if (vec.size() <= 1)
-//    {
-//        return true; // A vector with 0 or 1 element is trivially constant
-//    }
-//    return (((vec.array()).abs().maxCoeff()) <= tolerance);
-//}
-
 bool isConstant(const Eigen::VectorXcf& vec, float tolerance = 1e-5f)
 {
     if (vec.size() <= 1)
@@ -130,16 +120,6 @@ bool isConstant(const Eigen::VectorXcf& vec, float tolerance = 1e-5f)
     std::complex<float> firstElement = vec(0);
     return (vec.array() - firstElement).abs().maxCoeff() <= tolerance;
 }
-
-//bool isConstant(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>& vec, float tolerance = 1e-5f)
-//{
-//    if (vec.size() <= 1)
-//    {
-//        return true; // A vector with 0 or 1 element is trivially constant
-//    }
-//    auto firstElement = vec(0);
-//    return (vec.array() - firstElement).abs().maxCoeff() <= tolerance;
-//}
 
 class Data
 {
@@ -199,11 +179,6 @@ float MSE(const Eigen::VectorXcf& actual)
 {
     return actual.squaredNorm() / actual.size();
 }
-
-//Eigen::AutoDiffScalar<Eigen::VectorXf> MSE(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>& actual)
-//{
-//    return actual.squaredNorm() / actual.size();
-//}
 
 float loss_func(const Eigen::VectorXcf& actual)
 {
@@ -299,7 +274,7 @@ struct Board
                     Board::__input_vars.push_back("x"+std::to_string(i));
                 }
                 Board::__input_vars.push_back("i");
-                Board::__unary_operators = {"~", "log", "ln", "exp", "cos", "sin", "sqrt", "asin", "arcsin", "acos", "arccos", "tanh", "sech"};
+                Board::__unary_operators = {"~", "log", "ln", "exp", "cos", "sin", "sqrt", "asin", "arcsin", "acos", "arccos", "tanh", "sech", "conj"};
                 Board::__binary_operators = {"+", "-", "*", "/", "^"};
                 Board::__operators.clear();
                 for (std::string& i: Board::__unary_operators)
@@ -408,6 +383,17 @@ struct Board
                         Board::una_bin_leaf_legal_moves_dict[false][false][true].push_back(i); //3
                     }
                 }
+                float conj = Board::__tokens_inv_dict["conj"];
+                
+                // Erase 'conj' from the containers containing unary operators
+                auto& v1 = Board::una_bin_leaf_legal_moves_dict[true][true][true];
+                v1.erase(std::remove(v1.begin(), v1.end(), conj), v1.end());
+                auto& v2 = Board::una_bin_leaf_legal_moves_dict[true][true][false];
+                v2.erase(std::remove(v2.begin(), v2.end(), conj), v2.end());
+                auto& v3 = Board::una_bin_leaf_legal_moves_dict[true][false][true];
+                v3.erase(std::remove(v3.begin(), v3.end(), conj), v3.end());
+                auto& v4 = Board::una_bin_leaf_legal_moves_dict[true][false][false];
+                v4.erase(std::remove(v4.begin(), v4.end(), conj), v4.end());
             });
         }
     }
@@ -1082,7 +1068,7 @@ struct Board
         return stack.top();
     }
 
-    Eigen::VectorXcf expression_evaluator(const Eigen::VectorXcf& params, const std::vector<float>& pieces) const //Boost.Hana
+    Eigen::VectorXcf expression_evaluator(const Eigen::VectorXcf& params, const std::vector<float>& pieces) const
     {
         std::stack<const Eigen::VectorXcf> stack;
         size_t const_count = 0, const_idx;
@@ -1193,6 +1179,12 @@ struct Board
                     stack.pop();
                     stack.push(-temp.array());
                 }
+                else if (token == "conj")
+                {
+                    Eigen::VectorXcf temp = stack.top();
+                    stack.pop();
+                    stack.push(temp.array().conjugate());
+                }
             }
             else // binary operator
             {
@@ -1255,9 +1247,10 @@ struct Board
         {
             for (int j = 0; j < this->num_fit_iter; j++)
             {
+                //real
                 rp = pos_dist(gen), rg = pos_dist(gen);
-                v(i) = K*(v(i) + phi_1*rp*(particle_positions(i) - x(i)) + phi_2*rg*((this->params)(i) - x(i)));
-                x(i) += v(i);
+                v(i).real(K*(v(i).real() + phi_1*rp*(particle_positions(i).real() - x(i).real()) + phi_2*rg*((this->params)(i).real() - x(i).real())));
+                x(i).real(x(i).real() + v(i).real());
                 
                 fpi = loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //current score
                 temp = particle_positions(i); //save old position of particle i
@@ -1269,6 +1262,32 @@ struct Board
                 }
                 else if (fpi > swarm_best_score)
                 {
+//                    std::cout << "Iteration " << j << ": Changing param " << i << " from " << (this->params)[i]
+//                    << " to " << particle_positions[i] << ". Score from " << swarm_best_score << " to " << fpi
+//                    << ".\n";
+                    (this->params)(i) = particle_positions(i);
+                    improved = true;
+                    swarm_best_score = fpi;
+                }
+                
+                //imag
+                rp = pos_dist(gen), rg = pos_dist(gen);
+                v(i).imag(K*(v(i).imag() + phi_1*rp*(particle_positions(i).imag() - x(i).imag()) + phi_2*rg*((this->params)(i).imag() - x(i).imag())));
+                x(i).imag(x(i).imag() + v(i).imag());
+                
+                fpi = loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //current score
+                temp = particle_positions(i); //save old position of particle i
+                particle_positions(i) = x(i); //update old position to new position
+                fxi = loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //calculate the score with the new position
+                if (fxi < fpi) //if the new vector is worse:
+                {
+                    particle_positions(i) = temp; //reset particle_positions[i]
+                }
+                else if (fpi > swarm_best_score)
+                {
+//                    std::cout << "Iteration " << j << ": Changing param " << i << " from " << (this->params)[i]
+//                    << " to " << particle_positions[i] << ". Score from " << swarm_best_score << " to " << fpi
+//                    << ".\n";
                     (this->params)(i) = particle_positions(i);
                     improved = true;
                     swarm_best_score = fpi;
@@ -1281,6 +1300,7 @@ struct Board
         for (int i = 0; i < this->params.size(); i++)
         {
             particles.push_back(std::async(std::launch::async | std::launch::deferred, UpdateParticle, i));
+
         }
         for (auto& i: particles)
         {
@@ -1334,37 +1354,36 @@ struct Board
                 }
                 else if (fpi > swarm_best_score)
                 {
-                    std::cout << "Iteration " << j << ": Changing param " << i << " from " << (this->params)[i]
-                    << " to " << particle_positions[i] << ". Score from " << swarm_best_score << " to " << fpi
-                    << ".\n";
-//                    printf("Iteration %d: Changing param %d from %f to %f. Score from %f to %f\n", j, i, (this->params)[i], particle_positions[i], swarm_best_score, fpi);
+//                    std::cout << "Iteration " << j << ": Changing param " << i << " from " << (this->params)[i]
+//                    << " to " << particle_positions[i] << ". Score from " << swarm_best_score << " to " << fpi
+//                    << ".\n";
                     (this->params)(i) = particle_positions(i);
                     improved = true;
                     swarm_best_score = fpi;
                 }
                 
-//                rp = pos_dist(gen), rg = pos_dist(gen);
-//                v(i) = K*(v(i) + phi_1*rp*(particle_positions(i) - x(i)) + phi_2*rg*((this->params)(i) - x(i)));
-//                x(i) += v(i);
-//                
-//                fpi = loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //current score
-//                temp = particle_positions(i); //save old position of particle i
-//                particle_positions(i) = x(i); //update old position to new position
-//                fxi = loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //calculate the score with the new position
-//                if (fxi < fpi) //if the new vector is worse:
-//                {
-//                    particle_positions(i) = temp; //reset particle_positions[i]
-//                }
-//                else if (fpi > swarm_best_score)
-//                {
+                //imag
+                rp = pos_dist(gen), rg = pos_dist(gen);
+                v(i).imag(K*(v(i).imag() + phi_1*rp*(particle_positions(i).imag() - x(i).imag()) + phi_2*rg*((this->params)(i).imag() - x(i).imag())));
+                x(i).imag(x(i).imag() + v(i).imag());
+                
+                fpi = loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //current score
+                temp = particle_positions(i); //save old position of particle i
+                particle_positions(i) = x(i); //update old position to new position
+                fxi = loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //calculate the score with the new position
+                if (fxi < fpi) //if the new vector is worse:
+                {
+                    particle_positions(i) = temp; //reset particle_positions[i]
+                }
+                else if (fpi > swarm_best_score)
+                {
 //                    std::cout << "Iteration " << j << ": Changing param " << i << " from " << (this->params)[i]
 //                    << " to " << particle_positions[i] << ". Score from " << swarm_best_score << " to " << fpi
 //                    << ".\n";
-////                    printf("Iteration %d: Changing param %d from %f to %f. Score from %f to %f\n", j, i, (this->params)[i], particle_positions[i], swarm_best_score, fpi);
-//                    (this->params)(i) = particle_positions(i);
-//                    improved = true;
-//                    swarm_best_score = fpi;
-//                }
+                    (this->params)(i) = particle_positions(i);
+                    improved = true;
+                    swarm_best_score = fpi;
+                }
             }
         }
         Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
@@ -2984,6 +3003,7 @@ std::vector<float> NLS_2D(Board& x) // open /Users/edwardfinkelstein/Downloads/n
     if (x.expression_type == "prefix")
     {
         //- + * i u_t * / 1 2 + u_xx u_yy * * u* u u
+        //- + * i u_t * / 1 2 + u_xx u_yy * * conj u u u
         result.push_back(Board::__tokens_inv_dict["-"]);
         result.push_back(Board::__tokens_inv_dict["+"]);
         result.push_back(Board::__tokens_inv_dict["*"]);
@@ -3014,14 +3034,20 @@ std::vector<float> NLS_2D(Board& x) // open /Users/edwardfinkelstein/Downloads/n
         }
         result.push_back(Board::__tokens_inv_dict["*"]);
         result.push_back(Board::__tokens_inv_dict["*"]);
-        for (float i: x.pieces) //u*
+//        for (float i: x.pieces) //u*
+//        {
+//            if (Board::__tokens_dict[i] == "i")
+//            {
+//                result.push_back(Board::__tokens_inv_dict["~"]);
+//            }
+//            result.push_back(i);
+//        }
+        result.push_back(Board::__tokens_inv_dict["conj"]);
+        for (float i: x.pieces) //u
         {
-            if (Board::__tokens_dict[i] == "i")
-            {
-                result.push_back(Board::__tokens_inv_dict["~"]);
-            }
             result.push_back(i);
         }
+        //TODO: need to change above to conj u
         for (float i: x.pieces) //u
         {
             result.push_back(i);
@@ -3034,6 +3060,7 @@ std::vector<float> NLS_2D(Board& x) // open /Users/edwardfinkelstein/Downloads/n
     else
     {
         //  i u_t * 1 2 / u_xx u_yy + * + u* u * u * -
+        //  i u_t * 1 2 / u_xx u_yy + * + u conj u * u * -
         result.push_back(Board::__tokens_inv_dict["i"]);
         x.derivePrefix(0, x.pieces.size()-1, "x2", x.pieces, grasp);
         for (float i: x.derivat) //u_t
@@ -3061,14 +3088,20 @@ std::vector<float> NLS_2D(Board& x) // open /Users/edwardfinkelstein/Downloads/n
         result.push_back(Board::__tokens_inv_dict["+"]);
         result.push_back(Board::__tokens_inv_dict["*"]);
         result.push_back(Board::__tokens_inv_dict["+"]);
-        for (float i: x.pieces) //u*
+//        for (float i: x.pieces) //u*
+//        {
+//            result.push_back(i);
+//            if (Board::__tokens_dict[i] == "i")
+//            {
+//                result.push_back(Board::__tokens_inv_dict["~"]);
+//            }
+//        }
+        for (float i: x.pieces) //u
         {
             result.push_back(i);
-            if (Board::__tokens_dict[i] == "i")
-            {
-                result.push_back(Board::__tokens_inv_dict["~"]);
-            }
         }
+        result.push_back(Board::__tokens_inv_dict["conj"]);
+        //TODO: need to change above to `u conj`
         for (float i: x.pieces) //u
         {
             result.push_back(i);
@@ -3380,7 +3413,7 @@ void SimulatedAnnealing(std::vector<float> (*diffeq)(Board&), const Eigen::Matri
     std::cout << "Best expression = " << best_expression << '\n';
     std::cout << "Best expression (original format) = " << orig_expression << '\n';
     std::cout << "Best diff result = " << best_expr_result << '\n';
-    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
+    std::cout << "Best diff result (original format) = " << orig_expr_result << '\n';
 
 }
 
@@ -3625,7 +3658,7 @@ void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int 
     std::cout << "Best expression = " << best_expression << '\n';
     std::cout << "Best expression (original format) = " << orig_expression << '\n';
     std::cout << "Best diff result = " << best_expr_result << '\n';
-    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
+    std::cout << "Best diff result (original format) = " << orig_expr_result << '\n';
 }
 
 void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
@@ -3785,7 +3818,7 @@ void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int
     std::cout << "Best expression = " << best_expression << '\n';
     std::cout << "Best expression (original format) = " << orig_expression << '\n';
     std::cout << "Best diff result = " << best_expr_result << '\n';
-    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
+    std::cout << "Best diff result (original format) = " << orig_expr_result << '\n';
 }
 
 //https://arxiv.org/abs/2205.13134
@@ -3939,7 +3972,7 @@ void MCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, in
     std::cout << "Best expression = " << best_expression << '\n';
     std::cout << "Best expression (original format) = " << orig_expression << '\n';
     std::cout << "Best diff result = " << best_expr_result << '\n';
-    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
+    std::cout << "Best diff result (original format) = " << orig_expr_result << '\n';
 }
 
 void RandomSearch(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, const int depth = 3, const std::string expression_type = "prefix", const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
@@ -4027,7 +4060,7 @@ void RandomSearch(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& 
     std::cout << "Best expression = " << best_expression << '\n';
     std::cout << "Best expression (original format) = " << orig_expression << '\n';
     std::cout << "Best diff result = " << best_expr_result << '\n';
-    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
+    std::cout << "Best diff result (original format) = " << orig_expr_result << '\n';
 }
 
 int main()
@@ -4042,7 +4075,7 @@ int main()
     
     auto data = createLinspaceMatrix(1000, 3, {-10.0f, -10.0f, 0.1f}, {10.0f, 10.0f, 20.0f});
     
-    RandomSearch(NLS_2D /*differential equation to solve*/, data /*data used to solve differential equation*/, 3 /*fixed depth of generated solutions*/, "prefix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, true /*cache*/, 1 /*time to run the algorithm in seconds*/, 1 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 1e-5 /*threshold for which solutions cannot be constant*/, true /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/);
+    RandomSearch(NLS_2D /*differential equation to solve*/, data /*data used to solve differential equation*/, 3 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "AsyncPSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, true /*cache*/, 1 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 1e-5 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/);
 
  
 
