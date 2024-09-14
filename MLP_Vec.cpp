@@ -59,6 +59,8 @@ float Perceptron::scale_between(float unscaled_num, float min, float max, float 
     (unscaled_num - min) / (max - min) + min_allowed;
 }
 
+
+
 // Return a new MultiLayerPerceptron object with the specified parameters.
 MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, std::deque<std::string> layer_types, float bias, float eta, float theta, float gamma, const std::string& weight_update, const std::string& expression_type, float epsilon, float beta_1, float beta_2)
 {
