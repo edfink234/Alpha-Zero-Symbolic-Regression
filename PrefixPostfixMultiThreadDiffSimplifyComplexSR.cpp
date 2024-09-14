@@ -4075,7 +4075,7 @@ int main()
     
     auto data = createLinspaceMatrix(1000, 3, {-10.0f, -10.0f, 0.1f}, {10.0f, 10.0f, 20.0f});
     
-    RandomSearch(NLS_2D /*differential equation to solve*/, data /*data used to solve differential equation*/, 3 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "AsyncPSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, true /*cache*/, 1 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 1e-5 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/);
+    RandomSearch(NLS_2D /*differential equation to solve*/, data /*data used to solve differential equation*/, 3 /*fixed depth of generated solutions*/, "prefix" /*expression representation*/, "AsyncPSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, true /*cache*/, 1 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 1e-5 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/);
 
  
 
