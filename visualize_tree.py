@@ -314,8 +314,25 @@ def test_visualize():
 #                plot_rpn_expression_tree("q Ef * m omega_0 2 ^ omega 2 ^ - *  /".split(), block=False, save = save)
 #                plot_pn_expression_tree("- * ~ sin x 1 * ^ x 1 / 1 x".split(), block=True, save = save)
 #            plot_rpn_expression_tree("i u_t * 1 2 / u_xx u_yy + * + u conj u * u * -".split(), block=True, save = save)
-                plot_pn_expression_tree("- + * i u_t * / 1 2 + u_xx u_yy * * conj u u u".split(), block=True, save = save)
-
+#                x_real = "+ x y"
+#                x_imag = "* x cos y"
+#                plot_pn_expression_tree(("+ " + x_real + " * i " + x_imag).split(), block=True, save = save)
+                '''
+                depth_real  depth_imag  total_depth
+                2           2           4
+                3           2           4
+                4           2           5
+                4           3           5
+                4           4           6 
+                2           3           5
+                2           4           6
+                3           3           5
+                3           4           6 
+                '''
+#                x_real = "x y +"
+#                x_imag = "x y cos *"
+#                plot_rpn_expression_tree((x_real + " i " + x_imag + " * +").split(), block=True, save = save)
+                plot_pn_expression_tree(("+ * ln / x0 x1 sech cos x0 * i sin exp sech x2").split(), block=True, save = save)
         except KeyboardInterrupt:
             plt.close()
             exit()
