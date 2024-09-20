@@ -240,6 +240,7 @@ struct Board
     std::vector<float> diffeq_result;
     float isConstTol;
     bool LBFGS_real;
+    float conj;
     
     Board(std::vector<float> (*diffeq)(Board&), bool primary = true, int n = 3, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, const Eigen::MatrixXcf& theData = {}, bool visualize_exploration = false, bool cache = false, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, is_primary{primary}
     {
@@ -384,7 +385,7 @@ struct Board
                     }
                 }
                 // Erase 'conj' from the containers containing unary operators
-                float conj = Board::__tokens_inv_dict["conj"];
+                this->conj = Board::__tokens_inv_dict["conj"];
                 auto& v1 = Board::una_bin_leaf_legal_moves_dict[true][true][true];
                 v1.erase(std::remove(v1.begin(), v1.end(), conj), v1.end());
                 auto& v2 = Board::una_bin_leaf_legal_moves_dict[true][true][false];
@@ -396,6 +397,7 @@ struct Board
                 
                 // Erase 'i' from the containers containing leaves
                 float I = Board::__tokens_inv_dict["i"];
+                printf("I = %f\n", I);
 //                exit(1);
                 auto& v5 = Board::una_bin_leaf_legal_moves_dict[true][true][true];
                 v5.erase(std::remove(v5.begin(), v5.end(), I), v5.end());
@@ -406,29 +408,29 @@ struct Board
                 auto& v8 = Board::una_bin_leaf_legal_moves_dict[false][false][true];
                 v8.erase(std::remove(v8.begin(), v8.end(), I), v8.end());
                 
-//                printf("Board::una_bin_leaf_legal_moves_dict[true][true][true]: ");
-//                for (float i: Board::una_bin_leaf_legal_moves_dict[true][true][true]) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
-//                
-//                printf("Board::una_bin_leaf_legal_moves_dict[true][true][false]: ");
-//                for (float i: Board::una_bin_leaf_legal_moves_dict[true][true][false]) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
-//                
-//                printf("Board::una_bin_leaf_legal_moves_dict[true][false][true]: ");
-//                for (float i: Board::una_bin_leaf_legal_moves_dict[true][false][true]) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
-//                
-//                printf("Board::una_bin_leaf_legal_moves_dict[true][false][false]: ");
-//                for (float i: Board::una_bin_leaf_legal_moves_dict[true][false][false]) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
-//                
-//                printf("Board::una_bin_leaf_legal_moves_dict[false][true][true]: ");
-//                for (float i: Board::una_bin_leaf_legal_moves_dict[false][true][true]) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
-//                
-//                printf("Board::una_bin_leaf_legal_moves_dict[false][true][false]: ");
-//                for (float i: Board::una_bin_leaf_legal_moves_dict[false][true][false]) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
-//                
-//                printf("Board::una_bin_leaf_legal_moves_dict[false][false][true]: ");
-//                for (float i: Board::una_bin_leaf_legal_moves_dict[false][false][true]) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
-//               
-//                printf("Board::una_bin_leaf_legal_moves_dict[false][false][false]: ");
-//                for (float i: Board::una_bin_leaf_legal_moves_dict[false][false][false]) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
+                printf("Board::una_bin_leaf_legal_moves_dict[true][true][true]: ");
+                for (float i: Board::una_bin_leaf_legal_moves_dict[true][true][true]) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
+                
+                printf("Board::una_bin_leaf_legal_moves_dict[true][true][false]: ");
+                for (float i: Board::una_bin_leaf_legal_moves_dict[true][true][false]) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
+                
+                printf("Board::una_bin_leaf_legal_moves_dict[true][false][true]: ");
+                for (float i: Board::una_bin_leaf_legal_moves_dict[true][false][true]) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
+                
+                printf("Board::una_bin_leaf_legal_moves_dict[true][false][false]: ");
+                for (float i: Board::una_bin_leaf_legal_moves_dict[true][false][false]) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
+                
+                printf("Board::una_bin_leaf_legal_moves_dict[false][true][true]: ");
+                for (float i: Board::una_bin_leaf_legal_moves_dict[false][true][true]) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
+                
+                printf("Board::una_bin_leaf_legal_moves_dict[false][true][false]: ");
+                for (float i: Board::una_bin_leaf_legal_moves_dict[false][true][false]) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
+                
+                printf("Board::una_bin_leaf_legal_moves_dict[false][false][true]: ");
+                for (float i: Board::una_bin_leaf_legal_moves_dict[false][false][true]) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
+               
+                printf("Board::una_bin_leaf_legal_moves_dict[false][false][false]: ");
+                for (float i: Board::una_bin_leaf_legal_moves_dict[false][false][false]) {std::cout << Board::__tokens_dict[i] << ' ';}puts("");
             });
         }
     }
@@ -951,7 +953,7 @@ struct Board
             {
                 token = Board::__tokens_dict[pieces[i]];
             }
-
+            std::cout << "token = " << token << '\n';
             if (std::find(Board::__operators_float.begin(), Board::__operators_float.end(), pieces[i]) == Board::__operators_float.end()) // leaf
             {
                 if ((!show_consts) || token.substr(0,5) != "const")
@@ -3083,7 +3085,6 @@ std::vector<float> NLS_2D(Board& x) // open /Users/edwardfinkelstein/Downloads/n
         {
             result.push_back(i);
         }
-        //TODO: need to change above to conj u
         for (float i: x.pieces) //u
         {
             result.push_back(i);
@@ -3137,7 +3138,6 @@ std::vector<float> NLS_2D(Board& x) // open /Users/edwardfinkelstein/Downloads/n
             result.push_back(i);
         }
         result.push_back(Board::__tokens_inv_dict["conj"]);
-        //TODO: need to change above to `u conj`
         for (float i: x.pieces) //u
         {
             result.push_back(i);
@@ -3696,7 +3696,7 @@ void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int 
     std::cout << "Best diff result (original format) = " << orig_expr_result << '\n';
 }
 
-void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
+void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int real_depth = 3, int imag_depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
 {
     if (num_threads == 0)
     {
@@ -3719,11 +3719,13 @@ void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int
      Inside of thread:
      */
     
-    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token]()
+    auto func = [&diffeq, &real_depth, &imag_depth, &expression_type, &method, &num_fit_iter, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token]()
     {
         std::random_device rand_dev;
         std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token);
+        Board real_x(diffeq, false, real_depth, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token),
+        imag_x(diffeq, false, imag_depth, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token);
+        Board x(diffeq, true, std::max(real_depth, imag_depth+1)+1, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token);
         sync_point.arrive_and_wait();
         float score = 0, check_point_score = 0;
         std::vector<float> temp_legal_moves;
@@ -3734,16 +3736,26 @@ void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int
         /*
          For this setup, we don't know a-priori the number of particles, so we generate them and their corresponding velocities as needed
          */
-        std::vector<float> particle_positions, best_positions, v, curr_positions;
-        particle_positions.reserve(x.reserve_amount); //stores record of all current particle position indices
-        best_positions.reserve(x.reserve_amount); //indices corresponding to best pieces
-        curr_positions.reserve(x.reserve_amount); //indices corresponding to x.pieces
-        v.reserve(x.reserve_amount); //stores record of all current particle velocities
+        std::vector<float> particle_positions_real, best_positions_real, v_real, curr_positions_real;
+        particle_positions_real.reserve(real_x.reserve_amount); //stores record of all current particle position indices
+        best_positions_real.reserve(real_x.reserve_amount); //indices corresponding to best pieces
+        curr_positions_real.reserve(real_x.reserve_amount); //indices corresponding to x.pieces
+        v_real.reserve(real_x.reserve_amount); //stores record of all current particle velocities
+        std::unordered_map<float, std::unordered_map<int, int>> Nsa_real;
+        std::unordered_map<float, std::unordered_map<int, float>> Psa_real;
+        std::unordered_map<int, float> p_i_vals_real, p_i_real;
+        
+        std::vector<float> particle_positions_imag, best_positions_imag, v_imag, curr_positions_imag;
+        particle_positions_imag.reserve(imag_x.reserve_amount); //stores record of all current particle position indices
+        best_positions_imag.reserve(imag_x.reserve_amount); //indices corresponding to best pieces
+        curr_positions_imag.reserve(imag_x.reserve_amount); //indices corresponding to x.pieces
+        v_imag.reserve(imag_x.reserve_amount); //stores record of all current particle velocities
+        std::unordered_map<float, std::unordered_map<int, int>> Nsa_imag;
+        std::unordered_map<float, std::unordered_map<int, float>> Psa_imag;
+        std::unordered_map<int, float> p_i_vals_imag, p_i_imag;
+        
         float rp, rg, new_v, c = 0.0f;
         int c_count = 0;
-        std::unordered_map<float, std::unordered_map<int, int>> Nsa;
-        std::unordered_map<float, std::unordered_map<int, float>> Psa;
-        std::unordered_map<int, float> p_i_vals, p_i;
         
         /*
          In this implementation of PSO:
@@ -3779,38 +3791,37 @@ void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int
                 }
                 check_point_score = max_score;
             }
-            
-            for (int i = 0; (score = x.complete_status()) == -1; i++) //i is the index of the token
+            //Build real part
+            for (int i = 0; (score = real_x.complete_status()) == -1; i++) //i is the index of the token
             {
-                rp = x.pos_dist(generator), rg = x.pos_dist(generator);
-                temp_legal_moves = x.get_legal_moves(); //the legal moves
+                rp = real_x.pos_dist(generator), rg = real_x.pos_dist(generator);
+                temp_legal_moves = real_x.get_legal_moves(); //the legal moves
                 temp_sz = temp_legal_moves.size(); //the number of legal moves
 
-                if (i == static_cast<int>(particle_positions.size())) //Then we need to create a new particle with some initial position and velocity
+                if (i == static_cast<int>(particle_positions_real.size())) //Then we need to create a new particle with some initial position and velocity
                 {
-                    particle_positions.push_back(x.pos_dist(generator));
-                    v.push_back(x.vel_dist(generator));
+                    particle_positions_real.push_back(real_x.pos_dist(generator));
+                    v_real.push_back(real_x.vel_dist(generator));
                 }
                 
-                particle_positions[i] = trueMod(std::round(particle_positions[i]), temp_sz);
-                x.pieces.push_back(temp_legal_moves[particle_positions[i]]); //x.pieces holds the pieces corresponding to the indices
-                curr_positions.push_back(particle_positions[i]);
-                if (i == static_cast<int>(best_positions.size()))
+                particle_positions_real[i] = trueMod(std::round(particle_positions_real[i]), temp_sz);
+                real_x.pieces.push_back(temp_legal_moves[particle_positions_real[i]]); //x.pieces holds the pieces corresponding to the indices
+                curr_positions_real.push_back(particle_positions_real[i]);
+                if (i == static_cast<int>(best_positions_real.size()))
                 {
-                    best_positions.push_back(x.pos_dist(generator));
-                    best_positions[i] = trueMod(std::round(best_positions[i]), temp_sz);
+                    best_positions_real.push_back(real_x.pos_dist(generator));
+                    best_positions_real[i] = trueMod(std::round(best_positions_real[i]), temp_sz);
                 }
                 //https://hal.science/hal-00764996
                 //https://www.researchgate.net/publication/216300408_An_off-the-shelf_PSO
-                new_v = (0.721*v[i] + x.phi_1*rg*(best_positions[i] - particle_positions[i]) + x.phi_2*rp*(p_i[i] - particle_positions[i]) + c);
-                v[i] = copysign(std::min(new_v, FLT_MAX), new_v);
-                particle_positions[i] += v[i];
-                Nsa[curr_positions[i]][i]++;
+                new_v = (0.721*v[i] + x.phi_1*rg*(best_positions_real[i] - particle_positions_real[i]) + x.phi_2*rp*(p_i[i] - particle_positions_real[i]) + c);
+                v_real[i] = copysign(std::min(new_v, FLT_MAX), new_v);
+                particle_positions_real[i] += v_real[i];
+                Nsa_real[curr_positions_real[i]][i]++;
             }
-            
-            for (int i = 0; i < static_cast<int>(curr_positions.size()); i++)
+            for (int i = 0; i < static_cast<int>(curr_positions_real.size()); i++)
             {
-                Psa[curr_positions[i]][i] = (Psa[curr_positions[i]][i]+score)/Nsa[curr_positions[i]][i];
+                Psa_real[curr_positions[i]][i] = (Psa[curr_positions[i]][i]+score)/Nsa[curr_positions[i]][i];
                 if (Psa[curr_positions[i]][i] > p_i_vals[i])
                 {
                     p_i[i] = curr_positions[i];
@@ -3832,8 +3843,13 @@ void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int
                 best_expr_result = x._to_infix(x.diffeq_result);
                 orig_expr_result = x.expression(x.diffeq_result);
             }
+            
             x.pieces.clear();
-            curr_positions.clear();
+            real_x.pieces.clear();
+            imag_x.pieces.clear();
+            curr_positions_real.clear();
+            curr_positions_imag.clear();
+
         }
     };
     
@@ -3857,7 +3873,7 @@ void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int
 }
 
 //https://arxiv.org/abs/2205.13134
-void MCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
+void MCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int real_depth = 3, int imag_depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
 {
     if (num_threads == 0)
     {
@@ -3880,30 +3896,46 @@ void MCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, in
      Inside of thread:
      */
     
-    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token]()
+    auto func = [&diffeq, &real_depth, &imag_depth, &expression_type, &method, &num_fit_iter, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token]()
     {
         std::random_device rand_dev;
         std::mt19937 thread_local generator(rand_dev());
-        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token);
+        
+        Board real_x(diffeq, false, real_depth, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token),
+        imag_x(diffeq, false, imag_depth, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token);
+        Board x(diffeq, true, std::max(real_depth, imag_depth+1)+1, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token);
+        
         sync_point.arrive_and_wait();
         float score = 0.0f, check_point_score = 0.0f, UCT, best_act, UCT_best;
         
         std::vector<float> temp_legal_moves;
-        std::unordered_map<std::string, std::unordered_map<float, float>> Qsa, Nsa;
-        std::unordered_map<std::string, float> Ns;
+        std::unordered_map<std::string, std::unordered_map<float, float>> Qsa_real, Nsa_real;
+        std::unordered_map<std::string, float> Ns_real;
+        std::unordered_map<std::string, std::unordered_map<float, float>> Qsa_imag, Nsa_imag;
+        std::unordered_map<std::string, float> Ns_imag;
         std::string state;
         
         float c = 1.4f; //"controls the balance between exploration and exploitation", see equation 2 here: https://web.engr.oregonstate.edu/~afern/classes/cs533/notes/uct.pdf, top of page 8 here: https://arxiv.org/pdf/1402.6028.pdf, first formula in section 4. Experiments here: https://cesa-bianchi.di.unimi.it/Pubblicazioni/ml-02.pdf
-        std::vector<std::pair<std::string, float>> moveTracker;
-        moveTracker.reserve(x.reserve_amount);
+        std::vector<std::pair<std::string, float>> moveTracker_real;
+        moveTracker_real.reserve(real_x.reserve_amount);
+        std::vector<std::pair<std::string, float>> moveTracker_imag;
+        moveTracker_imag.reserve(imag_x.reserve_amount);
+        
         temp_legal_moves.reserve(x.reserve_amount);
         state.reserve(2*x.reserve_amount);
         //        double str_convert_time = 0.0;
-        auto getString  = [&]()
+        auto getRealString  = [&]()
         {
-            if (!x.pieces.empty())
+            if (!real_x.pieces.empty())
             {
-                state += std::to_string(x.pieces[x.pieces.size()-1]) + " ";
+                state += std::to_string(real_x.pieces[real_x.pieces.size()-1]) + " ";
+            }
+        };
+        auto getImagString  = [&]()
+        {
+            if (!imag_x.pieces.empty())
+            {
+                state += std::to_string(imag_x.pieces[imag_x.pieces.size()-1]) + " ";
             }
         };
         
@@ -3928,12 +3960,13 @@ void MCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, in
                     check_point_score = max_score;
                 }
             }
+            //Build real part
             state.clear();
-            while ((score = x.complete_status()) == -1)
+            while ((score = real_x.complete_status()) == -1)
             {
-                temp_legal_moves = x.get_legal_moves();
+                temp_legal_moves = real_x.get_legal_moves();
 //                    auto start_time = Clock::now();
-                getString();
+                getRealString();
 //                    str_convert_time += timeElapsedSince(start_time);
                 UCT = 0.0f;
                 UCT_best = -FLT_MAX;
@@ -3943,9 +3976,9 @@ void MCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, in
                 
                 for (float a : temp_legal_moves)
                 {
-                    if (Nsa[state].count(a))
+                    if (Nsa_real[state].count(a))
                     {
-                        UCT = Qsa[state][a] + c*sqrt(log(Ns[state])/Nsa[state][a]);
+                        UCT = Qsa_real[state][a] + c*sqrt(log(Ns_real[state])/Nsa_real[state][a]);
                     }
                     else
                     {
@@ -3966,15 +3999,107 @@ void MCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, in
                     std::uniform_int_distribution<int> distribution(0, best_acts.size() - 1);
                     best_act = best_acts[distribution(generator)];
                 }
-                x.pieces.push_back(best_act);
-                moveTracker.push_back(make_pair(state, best_act));
-                Ns[state]++;
-                Nsa[state][best_act]++;
+                real_x.pieces.push_back(best_act);
+                moveTracker_real.push_back(make_pair(state, best_act));
+                Ns_real[state]++;
+                Nsa_real[state][best_act]++;
             }
-            //backprop reward `score`
-            for (auto& state_action: moveTracker)
+            
+            assert(((real_x.expression_type == "prefix") ? real_x.getPNdepth(real_x.pieces) : real_x.getRPNdepth(real_x.pieces)).first == real_x.n);
+            assert(((real_x.expression_type == "prefix") ? real_x.getPNdepth(real_x.pieces) : real_x.getRPNdepth(real_x.pieces)).second);
+            
+            //Build imaginary part
+            state.clear();
+            while ((score = imag_x.complete_status()) == -1)
             {
-                Qsa[state_action.first][state_action.second] = std::max(Qsa[state_action.first][state_action.second], score);
+                temp_legal_moves = imag_x.get_legal_moves();
+//                    auto start_time = Clock::now();
+                getImagString();
+//                    str_convert_time += timeElapsedSince(start_time);
+                UCT = 0.0f;
+                UCT_best = -FLT_MAX;
+                best_act = -1.0f;
+                std::vector<float> best_acts;
+                best_acts.reserve(temp_legal_moves.size());
+                
+                for (float a : temp_legal_moves)
+                {
+                    if (Nsa_imag[state].count(a))
+                    {
+                        UCT = Qsa_imag[state][a] + c*sqrt(log(Ns_imag[state])/Nsa_imag[state][a]);
+                    }
+                    else
+                    {
+                        //not explored -> explore it.
+                        best_acts.push_back(a);
+                        UCT = -FLT_MAX;
+                    }
+                    
+                    if (UCT > UCT_best)
+                    {
+                        best_act = a;
+                        UCT_best = UCT;
+                    }
+                }
+                
+                if (best_acts.size())
+                {
+                    std::uniform_int_distribution<int> distribution(0, best_acts.size() - 1);
+                    best_act = best_acts[distribution(generator)];
+                }
+                imag_x.pieces.push_back(best_act);
+                moveTracker_imag.push_back(make_pair(state, best_act));
+                Ns_imag[state]++;
+                Nsa_imag[state][best_act]++;
+            }
+            
+            assert(((imag_x.expression_type == "prefix") ? imag_x.getPNdepth(imag_x.pieces) : imag_x.getRPNdepth(imag_x.pieces)).first == imag_x.n);
+            assert(((imag_x.expression_type == "prefix") ? imag_x.getPNdepth(imag_x.pieces) : imag_x.getRPNdepth(imag_x.pieces)).second);
+            
+            x.pieces.reserve(imag_x.pieces.size() + real_x.pieces.size() + 3);
+            //Build total prefix expression: + real * i imag
+            if (x.expression_type == "prefix")
+            {
+                x.pieces.push_back(Board::__tokens_inv_dict["+"]);
+                for (float i: real_x.pieces)
+                {
+                    x.pieces.push_back(i);
+                }
+                x.pieces.push_back(Board::__tokens_inv_dict["*"]);
+                x.pieces.push_back(Board::__tokens_inv_dict["i"]);
+                for (float i: imag_x.pieces)
+                {
+                    x.pieces.push_back(i);
+                }
+            }
+            //Build total postfix expression: real i imag * +
+            else //postfix
+            {
+                for (float i: real_x.pieces)
+                {
+                    x.pieces.push_back(i);
+                }
+                x.pieces.push_back(Board::__tokens_inv_dict["i"]);
+                for (float i: imag_x.pieces)
+                {
+                    x.pieces.push_back(i);
+                }
+                x.pieces.push_back(Board::__tokens_inv_dict["*"]);
+                x.pieces.push_back(Board::__tokens_inv_dict["+"]);
+            }
+                        
+            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
+            score = x.complete_status(false);
+            
+            //backprop reward `score` for real part
+            for (auto& state_action: moveTracker_real)
+            {
+                Qsa_real[state_action.first][state_action.second] = std::max(Qsa_real[state_action.first][state_action.second], score);
+            }
+            //backprop reward `score` for imaginary part
+            for (auto& state_action: moveTracker_imag)
+            {
+                Qsa_imag[state_action.first][state_action.second] = std::max(Qsa_imag[state_action.first][state_action.second], score);
             }
             
             if (score > max_score)
@@ -3986,8 +4111,12 @@ void MCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, in
                 best_expr_result = x._to_infix(x.diffeq_result);
                 orig_expr_result = x.expression(x.diffeq_result);
             }
+            
+            real_x.pieces.clear();
+            imag_x.pieces.clear();
             x.pieces.clear();
-            moveTracker.clear();
+            moveTracker_real.clear();
+            moveTracker_imag.clear();
         }
     };
     
@@ -4010,7 +4139,7 @@ void MCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, in
     std::cout << "Best diff result (original format) = " << orig_expr_result << '\n';
 }
 
-void RandomSearch(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, const int depth = 3, const std::string expression_type = "prefix", const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
+void RandomSearch(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int real_depth = 3, int imag_depth = 3, const std::string expression_type = "prefix", const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
 {
     if (num_threads == 0)
     {
@@ -4033,14 +4162,12 @@ void RandomSearch(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& 
      Inside of thread:
      */
     
-    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token]()
+    auto func = [&diffeq, &real_depth, &imag_depth, &expression_type, &method, &num_fit_iter, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token]()
     {
         std::random_device rand_dev;
-        std::mt19937 thread_local generator(rand_dev()); // Mersenne Twister random number generator
+        std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
         
-        int real_depth = depth;
-        int imag_depth = depth;
-        Board real_x(diffeq, false, imag_depth, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token),
+        Board real_x(diffeq, false, real_depth, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token),
         imag_x(diffeq, false, imag_depth, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token);
         Board x(diffeq, true, std::max(real_depth, imag_depth+1)+1, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token);
         
@@ -4108,7 +4235,6 @@ void RandomSearch(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& 
             }
             
             assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
-                        
             score = x.complete_status(false);
             
             if (score > max_score)
@@ -4123,7 +4249,6 @@ void RandomSearch(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& 
             x.pieces.clear();
             real_x.pieces.clear();
             imag_x.pieces.clear();
-
         }
     };
     
@@ -4158,7 +4283,7 @@ int main()
     
     auto data = createLinspaceMatrix(1000, 3, {-10.0f, -10.0f, 0.1f}, {10.0f, 10.0f, 20.0f});
     
-    RandomSearch(NLS_2D /*differential equation to solve*/, data /*data used to solve differential equation*/, 2 /*fixed depth of generated solutions*/, "prefix" /*expression representation*/, "AsyncPSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, true /*cache*/, 1 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 1e-5 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/);
+    MCTS(NLS_2D /*differential equation to solve*/, data /*data used to solve differential equation*/, 2 /*fixed depth of generated real part of solutions*/, 2 /*fixed depth of generated imaginary part of solutions*/, "postfix" /*expression representation*/, "AsyncPSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, true /*cache*/, 1 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 1e-5 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/);
 
  
 
