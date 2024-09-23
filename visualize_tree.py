@@ -332,7 +332,7 @@ def test_visualize():
 #                x_real = "x y +"
 #                x_imag = "x y cos *"
 #                plot_rpn_expression_tree((x_real + " i " + x_imag + " * +").split(), block=True, save = save)
-                plot_pn_expression_tree(("+ * ln / x0 x1 sech cos x0 * i sin exp sech x2").split(), block=True, save = save)
+                plot_pn_expression_tree(("+ sin x * y 2").split(), block=True, save = save)
         except KeyboardInterrupt:
             plt.close()
             exit()

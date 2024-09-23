@@ -954,7 +954,7 @@ struct Board
             {
                 token = Board::__tokens_dict[pieces[i]];
             }
-            std::cout << "token = " << token << '\n';
+//            std::cout << "token = " << token << '\n';
             if (std::find(Board::__operators_float.begin(), Board::__operators_float.end(), pieces[i]) == Board::__operators_float.end()) // leaf
             {
                 if ((!show_consts) || token.substr(0,5) != "const")
@@ -3285,7 +3285,7 @@ std::vector<float> VortexRadialProfile(Board& x) // open /Users/edwardfinkelstei
 
 //https://dl.acm.org/doi/pdf/10.1145/3449639.3459345?casa_token=Np-_TMqxeJEAAAAA:8u-d6UyINV6Ex02kG9LthsQHAXMh2oxx3M4FG8ioP0hGgstIW45X8b709XOuaif5D_DVOm_FwFo
 //https://core.ac.uk/download/pdf/6651886.pdf
-void SimulatedAnnealing(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
+void SimulatedAnnealing(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int real_depth = 3, int imag_depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
 {
     
     if (num_threads == 0)
@@ -3308,19 +3308,24 @@ void SimulatedAnnealing(std::vector<float> (*diffeq)(Board&), const Eigen::Matri
      Inside of thread:
      */
     
-    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token]()
+    auto func = [&diffeq, &real_depth, &imag_depth, &expression_type, &method, &num_fit_iter, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token]()
     {
         std::random_device rand_dev;
         std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token);
+        Board x(diffeq, true, std::max(real_depth, imag_depth+1)+1, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token);
+        Board real_x(diffeq, false, real_depth, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token),
+        imag_x(diffeq, false, imag_depth, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token);
         sync_point.arrive_and_wait();
-        Board secondary(diffeq, false, 0, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token); //For perturbations
+        Board secondary_real(diffeq, false, (real_depth > 0) ? real_depth : 0, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token),
+        secondary_imag(diffeq, false, (imag_depth > 0) ? imag_depth : 0, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token);
+            //For perturbations
         float score = 0.0f, check_point_score = 0.0f;
         
-        std::vector<float> current;
+        std::vector<float> current, real_current, imag_current;
         std::vector<std::pair<int, int>> sub_exprs;
         std::vector<float> temp_legal_moves;
-        std::uniform_int_distribution<int> rand_depth_dist(0, x.n);
+        std::uniform_int_distribution<int> rand_depth_dist_real(0, real_x.n);
+        std::uniform_int_distribution<int> rand_depth_dist_imag(0, imag_x.n);
         size_t temp_sz;
 //        std::string expression, orig_expression, best_expression;
         constexpr float T_max = 0.1f;
@@ -3340,6 +3345,8 @@ void SimulatedAnnealing(std::vector<float> (*diffeq)(Board&), const Eigen::Matri
             if ((score > max_score) || (x.pos_dist(generator) < P(score-max_score)))
             {
                 current = x.pieces; //update current expression
+                real_current = real_x.pieces;
+                imag_current = imag_x.pieces;
                 if (score > max_score)
                 {
                     max_score = score;
@@ -3353,70 +3360,170 @@ void SimulatedAnnealing(std::vector<float> (*diffeq)(Board&), const Eigen::Matri
             else
             {
                 x.pieces = current; //reset perturbed state to current state
+                real_x.pieces = real_current;
+                imag_x.pieces = imag_current;
             }
             T = r*T;
         };
         
-        //Another way to do this might be clustering...
-        auto Perturbation = [&](int n, int i)
+        auto BuildWholeExpression = [&]()
         {
-            //Step 1: Generate a random depth-n sub-expression `secondary_one.pieces`
-            secondary.pieces.clear();
-            sub_exprs.clear();
-            secondary.n = n;
-            while (secondary.complete_status() == -1)
+            x.pieces.clear();
+            x.pieces.reserve(imag_x.pieces.size() + real_x.pieces.size() + 3);
+            //Build total prefix expression: + real * i imag
+            if (x.expression_type == "prefix")
             {
-                temp_legal_moves = secondary.get_legal_moves();
+                x.pieces.push_back(Board::__tokens_inv_dict["+"]);
+                for (float i: real_x.pieces)
+                {
+                    x.pieces.push_back(i);
+                }
+                x.pieces.push_back(Board::__tokens_inv_dict["*"]);
+                x.pieces.push_back(Board::__tokens_inv_dict["i"]);
+                for (float i: imag_x.pieces)
+                {
+                    assert(i != x.conj);
+                    x.pieces.push_back(i);
+                }
+            }
+            //Build total postfix expression: real i imag * +
+            else //postfix
+            {
+                for (float i: real_x.pieces)
+                {
+                    x.pieces.push_back(i);
+                }
+                x.pieces.push_back(Board::__tokens_inv_dict["i"]);
+                for (float i: imag_x.pieces)
+                {
+                    x.pieces.push_back(i);
+                }
+                x.pieces.push_back(Board::__tokens_inv_dict["*"]);
+                x.pieces.push_back(Board::__tokens_inv_dict["+"]);
+            }
+            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
+        };
+        
+        //Another way to do this might be clustering...
+        auto Perturbation = [&](int real_n, int imag_n, int i)
+        {
+            //Real Case:
+            //Step 1: Generate a random depth-n sub-expression `secondary_real.pieces`
+            secondary_real.pieces.clear();
+            sub_exprs.clear();
+            secondary_real.n = real_n;
+            while (secondary_real.complete_status() == -1)
+            {
+                temp_legal_moves = secondary_real.get_legal_moves();
                 std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
-                secondary.pieces.push_back(temp_legal_moves[distribution(generator)]);
+                secondary_real.pieces.push_back(temp_legal_moves[distribution(generator)]);
             }
             
-//            assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces) : secondary.getRPNdepth(secondary.pieces)).first == secondary.n);
-//            assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces) : secondary.getRPNdepth(secondary.pieces)).second);
+            assert(((secondary_real.expression_type == "prefix") ? secondary_real.getPNdepth(secondary_real.pieces) : secondary_real.getRPNdepth(secondary_real.pieces)).first == secondary_real.n);
+            assert(((secondary_real.expression_type == "prefix") ? secondary_real.getPNdepth(secondary_real.pieces) : secondary_real.getRPNdepth(secondary_real.pieces)).second);
             
-            if (n == x.n)
+            if (real_n == real_x.n)
             {
-                std::swap(secondary.pieces, x.pieces);
+                std::swap(secondary_real.pieces, real_x.pieces);
             }
             else
             {
-                //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
-                //in `x.pieces` and store them in an std::vector<std::pair<int, int>>
+                //Step 2: Identify the starting and stopping index pairs of all depth-real_n sub-expressions
+                //in `real_x.pieces` and store them in an std::vector<std::pair<int, int>>
                 //called `sub_exprs`.
-                secondary.get_indices(sub_exprs, x.pieces);
+                secondary_real.get_indices(sub_exprs, real_x.pieces);
                 
                 //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `pert_ind`
-
                 std::uniform_int_distribution<int> distribution(0, sub_exprs.size() - 1);
                 int pert_ind = distribution(generator);
-                
-                //Step 4: Substitute sub_exprs_1[pert_ind] in x.pieces with secondary_one.pieces
-                
-                auto start = x.pieces.begin() + sub_exprs[pert_ind].first;
-                auto end = std::min(x.pieces.begin() + sub_exprs[pert_ind].second, x.pieces.end());
-                x.pieces.erase(start, end+1);
-                x.pieces.insert(start, secondary.pieces.begin(), secondary.pieces.end()); //could be a move operation: secondary.pieces doesn't need to be in a defined state after this->params
+                //Step 4: Substitute sub_exprs_1[pert_ind] in real_x.pieces with secondary_real.pieces
+                auto start = real_x.pieces.begin() + sub_exprs[pert_ind].first;
+                auto end = std::min(real_x.pieces.begin() + sub_exprs[pert_ind].second, real_x.pieces.end());
+                real_x.pieces.erase(start, end+1);
+                real_x.pieces.insert(start, secondary_real.pieces.begin(), secondary_real.pieces.end()); //could be a move operation: secondary_real.pieces doesn't need to be in a defined state after this->params
             }
             
+            //Imaginary Case:
+            //Step 1: Generate a random depth-n sub-expression `secondary_imag.pieces`
+            secondary_imag.pieces.clear();
+            sub_exprs.clear();
+            secondary_imag.n = imag_n;
+            while (secondary_imag.complete_status() == -1)
+            {
+                temp_legal_moves = secondary_imag.get_legal_moves();
+                std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
+                secondary_imag.pieces.push_back(temp_legal_moves[distribution(generator)]);
+            }
+
+            assert(((secondary_imag.expression_type == "prefix") ? secondary_imag.getPNdepth(secondary_imag.pieces) : secondary_imag.getRPNdepth(secondary_imag.pieces)).first == secondary_imag.n);
+            assert(((secondary_imag.expression_type == "prefix") ? secondary_imag.getPNdepth(secondary_imag.pieces) : secondary_imag.getRPNdepth(secondary_imag.pieces)).second);
+
+            if (imag_n == imag_x.n)
+            {
+                std::swap(secondary_imag.pieces, imag_x.pieces);
+            }
+            else
+            {
+                //Step 2: Identify the starting and stopping index pairs of all depth-imag_n sub-expressions
+                //in `imag_x.pieces` and store them in an std::vector<std::pair<int, int>>
+                //called `sub_exprs`.
+                secondary_imag.get_indices(sub_exprs, imag_x.pieces);
+                
+                //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `pert_ind`
+                std::uniform_int_distribution<int> distribution(0, sub_exprs.size() - 1);
+                int pert_ind = distribution(generator);
+                assert(imag_x.pieces.size());
+                assert(sub_exprs.size());
+                assert(pert_ind < sub_exprs.size());
+
+                //Step 4: Substitute sub_exprs_1[pert_ind] in imag_x.pieces with secondary_imag.pieces
+                auto start = imag_x.pieces.begin() + sub_exprs[pert_ind].first;
+                auto end = std::min(imag_x.pieces.begin() + sub_exprs[pert_ind].second, imag_x.pieces.end());
+                imag_x.pieces.erase(start, end+1);
+                imag_x.pieces.insert(start, secondary_imag.pieces.begin(), secondary_imag.pieces.end()); //could be a move operation: secondary_imag.pieces doesn't need to be in a defined state after this->params
+            }
+            BuildWholeExpression();
             //Step 5: Evaluate the new mutated `x.pieces` and update score if needed
             score = x.complete_status(false);
             updateScore(pow(ratio, 1.0f/(i+1)));
         };
 
         //Step 1: generate a random expression
-        while ((score = x.complete_status()) == -1)
+        //Build real part
+        while ((score = real_x.complete_status()) == -1)
         {
-            temp_legal_moves = x.get_legal_moves(); //the legal moves
+            temp_legal_moves = real_x.get_legal_moves(); //the legal moves
             temp_sz = temp_legal_moves.size(); //the number of legal moves
+            assert(temp_sz);
             std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
-            x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
-            current.push_back(x.pieces.back());
+            real_x.pieces.emplace_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
         }
+        assert(((real_x.expression_type == "prefix") ? real_x.getPNdepth(real_x.pieces) : real_x.getRPNdepth(real_x.pieces)).first == real_x.n);
+        assert(((real_x.expression_type == "prefix") ? real_x.getPNdepth(real_x.pieces) : real_x.getRPNdepth(real_x.pieces)).second);
+
+        //Build imaginary part
+        while ((score = imag_x.complete_status()) == -1)
+        {
+            temp_legal_moves = imag_x.get_legal_moves(); //the legal moves
+            temp_sz = temp_legal_moves.size(); //the number of legal moves
+            assert(temp_sz);
+            std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
+            imag_x.pieces.emplace_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
+        }
+        
+        assert(((imag_x.expression_type == "prefix") ? imag_x.getPNdepth(imag_x.pieces) : imag_x.getRPNdepth(imag_x.pieces)).first == imag_x.n);
+        assert(((imag_x.expression_type == "prefix") ? imag_x.getPNdepth(imag_x.pieces) : imag_x.getRPNdepth(imag_x.pieces)).second);
+        
+        BuildWholeExpression();
+        current = x.pieces;
+        real_current = real_x.pieces;
+        imag_current = imag_x.pieces;
+        score = x.complete_status(false);
         updateScore();
         
         for (int i = 0; (timeElapsedSince(start_time) < time); i++)
         {
-            if (i && (i%50000 == 0))
+            if (i && (i%500 == 0))
             {
 //                std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
                 if (check_point_score == max_score)
@@ -3429,7 +3536,7 @@ void SimulatedAnnealing(std::vector<float> (*diffeq)(Board&), const Eigen::Matri
                 }
                 check_point_score = max_score;
             }
-            Perturbation(rand_depth_dist(generator), i);
+            Perturbation(rand_depth_dist_real(generator), rand_depth_dist_imag(generator), i);
             
         }
     };
@@ -3495,14 +3602,16 @@ void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int 
         secondary_two_imag(diffeq, false, (imag_depth > 0) ? imag_depth-1 : 0, expression_type, method, num_fit_iter, data, false, cache, const_tokens, isConstTol, const_token); //For crossover and mutations of imag part
         
         float score = 0.0f, mut_prob = 0.8f, rand_mut_cross;
-        constexpr int init_population = 2000;
+        constexpr int init_population = 20;
         std::vector<std::pair<std::vector<float>, float>> real_individuals, imag_individuals;
         std::pair<std::vector<float>, float> individual_1_real, individual_2_real, individual_1_imag, individual_2_imag;
         std::vector<std::pair<int, int>> sub_exprs_1, sub_exprs_2;
         real_individuals.reserve(2*init_population);
         imag_individuals.reserve(2*init_population);
         std::vector<float> temp_legal_moves;
-        std::uniform_int_distribution<int> rand_depth_dist(0, x.n - 1), selector_dist(0, init_population - 1);
+        std::uniform_int_distribution<int> selector_dist(0, init_population - 1);
+        std::uniform_int_distribution<int> rand_depth_dist_real(0, real_x.n - 1);
+        std::uniform_int_distribution<int> rand_depth_dist_imag(0, imag_x.n - 1);
         int rand_depth_real, rand_depth_imag, rand_individual_idx_1, rand_individual_idx_2;
         std::uniform_real_distribution<float> rand_mut_cross_dist(0.0f, 1.0f);
         size_t temp_sz;
@@ -3525,6 +3634,7 @@ void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int 
         
         auto BuildWholeExpression = [&]()
         {
+            x.pieces.clear();
             x.pieces.reserve(imag_x.pieces.size() + real_x.pieces.size() + 3);
             //Build total prefix expression: + real * i imag
             if (x.expression_type == "prefix")
@@ -3626,7 +3736,6 @@ void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int 
             int mut_ind_real = real_distribution(generator);
             
             //Step 4: Substitute sub_exprs_1[mut_ind_real] in real_x.pieces with secondary_one_real.pieces
-            
             auto start_real = real_x.pieces.begin() + sub_exprs_1[mut_ind_real].first;
             auto end_real = std::min(real_x.pieces.begin() + sub_exprs_1[mut_ind_real].second, real_x.pieces.end()-1);
             real_x.pieces.erase(start_real, end_real+1);
@@ -3658,7 +3767,9 @@ void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int 
             int mut_ind_imag = imag_distribution(generator);
 
             //Step 4: Substitute sub_exprs_1[mut_ind_imag] in imag_x.pieces with secondary_one_imag.pieces
-
+            assert(sub_exprs_1.size());
+            assert(mut_ind_imag < sub_exprs_1.size());
+            
             auto start_imag = imag_x.pieces.begin() + sub_exprs_1[mut_ind_imag].first;
             auto end_imag = std::min(imag_x.pieces.begin() + sub_exprs_1[mut_ind_imag].second, imag_x.pieces.end()-1);
             imag_x.pieces.erase(start_imag, end_imag+1);
@@ -3766,6 +3877,9 @@ void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int 
             int mut_ind_2_imag = distribution_2_imag(generator);
 
             //Step 5: Swap sub_exprs_1[mut_ind_1_imag] in individual_1_imag.first with sub_exprs_2[mut_ind_2_imag] in individual_2_imag.first
+            assert(sub_exprs_1.size());
+            assert(mut_ind_1_imag < sub_exprs_1.size());
+            
             auto start_1_imag = individual_1_imag.first.begin() + sub_exprs_1[mut_ind_1_imag].first;
             auto end_1_imag = std::min(individual_1_imag.first.begin() + sub_exprs_1[mut_ind_1_imag].second, individual_1_imag.first.end());
 
@@ -3825,8 +3939,8 @@ void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int 
                 rand_mut_cross = rand_mut_cross_dist(generator);
                 
                 //Step 2: Generate a random uniform int from 0 to x.n - 1 called `rand_depth`
-                rand_depth_real = rand_depth_dist(generator);
-                rand_depth_imag = rand_depth_dist(generator);
+                rand_depth_real = rand_depth_dist_real(generator);
+                rand_depth_imag = rand_depth_dist_imag(generator);
 
                 //Step 4: Call Mutation function if 0 <= rand_mut_cross <= mut_prob, else select Crossover
                 
@@ -4545,7 +4659,7 @@ int main()
     
     auto data = createLinspaceMatrix(1000, 3, {-10.0f, -10.0f, 0.1f}, {10.0f, 10.0f, 20.0f});
     
-    GP(NLS_2D /*differential equation to solve*/, data /*data used to solve differential equation*/, 2 /*fixed depth of generated real part of solutions*/, 2 /*fixed depth of generated imaginary part of solutions*/, "prefix" /*expression representation*/, "AsyncPSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, true /*cache*/, 1 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 1e-5 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/);
+    GP(NLS_2D /*differential equation to solve*/, data /*data used to solve differential equation*/, 2 /*fixed depth of generated real part of solutions*/, 2 /*fixed depth of generated imaginary part of solutions*/, "postfix" /*expression representation*/, "AsyncPSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, true /*cache*/, 5 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 1e-5 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/);
 
  
 
@@ -4556,9 +4670,5 @@ int main()
 //g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifyComplexSR_Corrected PrefixPostfixMultiThreadDiffSimplifyComplexSR_Corrected.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -ffast-math -ftree-vectorize -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
 
 //g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifyComplexSR_Corrected PrefixPostfixMultiThreadDiffSimplifyComplexSR_Corrected.cpp -g -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
-
-//Solution? 
-/// sech - x2 x0 / * 1 i cos x1
-//(sech((x2 - x0)) / ((1 * i) / cos(x1)))
 
  
