@@ -4647,6 +4647,67 @@ void RandomSearch(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& 
     std::cout << "Best diff result (original format) = " << orig_expr_result << '\n';
 }
 
+// Helper function to create a linspace vector
+std::vector<float> linspace(float min_val, float max_val, int num_points)
+{
+    std::vector<float> linspaced(num_points);
+    float step = (max_val - min_val) / (num_points - 1);
+    for (int i = 0; i < num_points; ++i)
+    {
+        linspaced[i] = min_val + i * step;
+    }
+    return linspaced;
+}
+
+// Function to create a matrix with all combinations of linspace values (flattened meshgrid)
+Eigen::MatrixXcf createMeshgridMatrix(int rows, int cols, std::vector<float> min_vec, std::vector<float> max_vec)
+{
+    assert((cols == static_cast<int>(min_vec.size())) && (cols == static_cast<int>(max_vec.size())));
+
+    // Create linspaces for each variable (column)
+    std::vector<std::vector<float>> linspaces;
+    for (int col = 0; col < cols; ++col)
+    {
+        linspaces.push_back(linspace(min_vec[col], max_vec[col], rows));
+    }
+
+    // Calculate the total number of combinations (flattened meshgrid size)
+    int total_combinations = 1;
+    for (int col = 0; col < cols; ++col)
+    {
+        total_combinations *= rows;
+    }
+
+    // Create the flattened meshgrid matrix
+    Eigen::MatrixXcf mat(total_combinations, cols);
+
+    // Fill in the matrix with all combinations of linspace values
+    for (int col = 0; col < cols; ++col)
+    {
+        int repeat_count = 1;
+        for (int i = col + 1; i < cols; ++i)
+        {
+            repeat_count *= rows;
+        }
+        
+        int num_repeats = total_combinations / (repeat_count * rows);
+        for (int repeat = 0; repeat < num_repeats; ++repeat)
+        {
+            for (int i = 0; i < rows; ++i)
+            {
+                for (int j = 0; j < repeat_count; ++j)
+                {
+                    int row = repeat * repeat_count * rows + i * repeat_count + j;
+                    mat(row, col) = std::complex<float>(linspaces[col][i], 0.0f);
+                }
+            }
+        }
+    }
+
+    return mat;
+}
+
+
 int main()
 {
 //    HembergBenchmarks(20 /*numIntervals*/, 120 /*time*/, 50 /*numRuns*/);
@@ -4657,9 +4718,15 @@ int main()
         AIFeynman_Benchmarks and then run PlotData.py
     */
     
-    auto data = createLinspaceMatrix(1000, 3, {-10.0f, -10.0f, 0.1f}, {10.0f, 10.0f, 20.0f});
+    auto data = createMeshgridMatrix(60, 3, {-10.0f, -10.0f, 0.1f}, {10.0f, 10.0f, 20.0f});
+//    std::cout << data << '\n';
+//    std::cout << data.size() << '\n';
+//    std::cout << data.rows() << '\n';
+//    std::cout << data.cols() << '\n';
     
-    GP(NLS_2D /*differential equation to solve*/, data /*data used to solve differential equation*/, 2 /*fixed depth of generated real part of solutions*/, 2 /*fixed depth of generated imaginary part of solutions*/, "postfix" /*expression representation*/, "AsyncPSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, true /*cache*/, 5 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 1e-5 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/);
+//    data = createLinspaceMatrix(1000, 3, {-10.0f, -10.0f, 0.1f}, {10.0f, 10.0f, 20.0f});
+    
+    GP(NLS_2D /*differential equation to solve*/, data /*data used to solve differential equation*/, 2 /*fixed depth of generated real part of solutions*/, 2 /*fixed depth of generated imaginary part of solutions*/, "postfix" /*expression representation*/, "AsyncPSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, true /*cache*/, 50 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 1e-5 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/);
 
  
 
