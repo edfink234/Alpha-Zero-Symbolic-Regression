@@ -4248,6 +4248,7 @@ void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int
     std::cout << "Best diff result (original format) = " << orig_expr_result << '\n';
 }
 
+//TODO: Implement using concurrent unordered flat maps so that threads share info (first do real case)
 //https://arxiv.org/abs/2205.13134
 void MCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& data, int real_depth = 3, int imag_depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
 {
@@ -4726,7 +4727,7 @@ int main()
     
 //    data = createLinspaceMatrix(1000, 3, {-10.0f, -10.0f, 0.1f}, {10.0f, 10.0f, 20.0f});
     
-    GP(NLS_2D /*differential equation to solve*/, data /*data used to solve differential equation*/, 2 /*fixed depth of generated real part of solutions*/, 2 /*fixed depth of generated imaginary part of solutions*/, "postfix" /*expression representation*/, "AsyncPSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, true /*cache*/, 50 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 1e-5 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/);
+    RandomSearch(NLS_2D /*differential equation to solve*/, data /*data used to solve differential equation*/, 2 /*fixed depth of generated real part of solutions*/, 2 /*fixed depth of generated imaginary part of solutions*/, "postfix" /*expression representation*/, "AsyncPSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, true /*cache*/, 250 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 1e-5 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/);
 
  
 

@@ -1648,7 +1648,7 @@ struct Board
     {
         float score = 0.0f;
         Eigen::VectorXf expression_eval = expression_evaluator(this->params, this->pieces);
-        if ((Board::__num_features == 1) && isConstant(expression_eval, this->isConstTol)) //Ignore the trivial solution (1-d functions)!
+        if ((Board::__num_features == 1) && isConstant(expression_eval, sqrt(this->isConstTol))) //Ignore the trivial solution (1-d functions)!
         {
             return score;
         }
@@ -1665,7 +1665,7 @@ struct Board
                 {
                     this->derivePostfix(0, this->pieces.size() - 1, i, this->pieces, grasp);
                 }
-                if (isZero(expression_evaluator(this->params, this->derivat), this->isConstTol)) //Ignore the trivial solution (N-d functions)!
+                if (isZero(expression_evaluator(this->params, this->derivat), sqrt(this->isConstTol))) //Ignore the trivial solution (N-d functions)!
                 {
                     return score;
                 }
@@ -3959,6 +3959,254 @@ void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int 
 }
 
 //https://arxiv.org/abs/2205.13134
+void ConcurrentMCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
+{
+    if (num_threads == 0)
+    {
+        unsigned int temp = std::thread::hardware_concurrency();
+        num_threads = ((temp <= 1) ? 1 : temp-1);
+    }
+    
+    std::vector<std::thread> threads(num_threads);
+    std::latch sync_point(num_threads);
+    
+    /*
+     Outside of thread:
+     */
+    std::atomic<float> max_score{0.0};
+    std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
+
+    auto start_time = Clock::now();
+    
+    /*
+     Inside of thread:
+     */
+    
+    boost::concurrent_flat_map<std::string, boost::concurrent_flat_map<float, float>> Qsa;
+    boost::concurrent_flat_map<std::string, boost::concurrent_flat_map<float, int>> Nsa;
+    boost::concurrent_flat_map<std::string, int> Ns;
+    
+    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token, &Qsa, &Nsa, &Ns]()
+    {
+        std::random_device rand_dev;
+        std::mt19937 thread_local generator(rand_dev());
+        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token);
+        sync_point.arrive_and_wait();
+        float score = 0.0f, check_point_score = 0.0f, UCT, best_act, UCT_best;
+        
+        std::vector<float> temp_legal_moves;
+        std::string state;
+        
+        float c = 1.4f; //"controls the balance between exploration and exploitation", see equation 2 here: https://web.engr.oregonstate.edu/~afern/classes/cs533/notes/uct.pdf, top of page 8 here: https://arxiv.org/pdf/1402.6028.pdf, first formula in section 4. Experiments here: https://cesa-bianchi.di.unimi.it/Pubblicazioni/ml-02.pdf
+        std::vector<std::pair<std::string, float>> moveTracker;
+        moveTracker.reserve(x.reserve_amount);
+        temp_legal_moves.reserve(x.reserve_amount);
+        state.reserve(2*x.reserve_amount);
+        //        double str_convert_time = 0.0;
+        auto getString  = [&]()
+        {
+            if (!x.pieces.empty())
+            {
+                state += std::to_string(x.pieces[x.pieces.size()-1]) + " ";
+            }
+        };
+        
+        for (int i = 0; (timeElapsedSince(start_time) < time); i++)
+        {
+            if (i && (i%1000 == 0))
+            {
+                //                    std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+                //                    std::cout << "check_point_score = " << check_point_score
+                //                    << ", max_score = " << max_score << ", c = " << c << '\n';
+                if (check_point_score == max_score)
+                {
+                    //                        std::cout << "c: " << c << " -> ";
+                    c += 1.4;
+                    //                        std::cout << c << '\n';
+                }
+                else
+                {
+                    //                        std::cout << "c: " << c << " -> ";
+                    c = 1.4; //if new best found, reset c and try to exploit the new best
+                    //                        std::cout << c << '\n';
+                    check_point_score = max_score;
+                }
+            }
+            state.clear();
+            while ((score = x.complete_status()) == -1)
+            {
+                temp_legal_moves = x.get_legal_moves();
+//                assert(temp_legal_moves.size());
+                
+//                for (float i: temp_legal_moves)
+//                {
+//                    assert(i >= 0.0f);
+//                }
+//                    auto start_time = Clock::now();
+                getString();
+//                    str_convert_time += timeElapsedSince(start_time);
+                UCT = 0.0f;
+                UCT_best = -FLT_MAX;
+                best_act = -1.0f;
+                std::vector<float> best_acts;
+                best_acts.reserve(temp_legal_moves.size());
+                
+                for (float a : temp_legal_moves)
+                {
+//                    assert(a > -1.0f);
+//                    boost::concurrent_flat_map<std::string, boost::concurrent_flat_map<float, float>>
+                    if (Nsa.contains(state))
+                    {
+                        int Nsa_contains_a = 0;
+                        Nsa.cvisit(state, [&](const auto& x)
+                        {
+                            if (x.second.contains(a))
+                            {
+                               x.second.cvisit(a, [&](const auto& y)
+                               {
+                                   Nsa_contains_a = y.second;
+                               });
+                            }
+                        });
+                        if (Nsa_contains_a)
+                        {
+                            float Qsa_s_a;
+                            int Ns_s, Nsa_s_a;
+                            Qsa.cvisit(state, [&](const auto& x)
+                            {
+                                x.second.cvisit(a, [&](const auto& y)
+                                {
+                                    Qsa_s_a = y.second;
+                                });
+                            });
+                            Nsa.cvisit(state, [&](const auto& x)
+                            {
+                                x.second.cvisit(a, [&](const auto& y)
+                                {
+                                    Nsa_s_a = y.second;
+                                });
+                            });
+                            Ns.cvisit(state, [&](const auto& x)
+                            {
+                                Ns_s = x.second;
+                            });
+                            UCT = Qsa_s_a + c*sqrt(log(Ns_s)/Nsa_s_a);
+                        }
+                        else
+                        {
+                            Nsa.visit(state, [&](auto& x)
+                            {
+                                x.second.insert_or_assign(a, 0);
+                            });
+                            Qsa.visit(state, [&](auto& x)
+                            {
+                               x.second.insert_or_assign(a, 0.0f);
+                            });
+                            Ns.insert_or_assign(state, 0);
+                            best_acts.push_back(a);
+                            UCT = -FLT_MAX;
+                        }
+                    }
+                    else
+                    {
+                        Nsa.insert_or_assign(state, boost::concurrent_flat_map<float, int>({{a, 0}}));
+                        Qsa.insert_or_assign(state, boost::concurrent_flat_map<float, float>({{a, 0.0f}}));
+                        Ns.insert_or_assign(state, 0);
+                        best_acts.push_back(a);
+                        UCT = -FLT_MAX;
+                    }
+                    
+                    if (UCT > UCT_best)
+                    {
+                        best_act = a;
+                        UCT_best = UCT;
+                    }
+                }
+//                assert(best_acts.size() || (best_act > -1.0f));
+                if (best_acts.size())
+                {
+                    std::uniform_int_distribution<int> distribution(0, best_acts.size() - 1);
+                    best_act = best_acts[distribution(generator)];
+                }
+                
+                x.pieces.push_back(best_act);
+                moveTracker.push_back(make_pair(state, best_act));
+//                assert(Ns.contains(state));
+                Ns.visit(state, [&](auto& x)
+                {
+                    x.second++;
+                });
+//                assert(Nsa.contains(state));
+                Nsa.visit(state, [&](auto& x)
+                {
+                    if (!x.second.contains(best_act))
+                    {
+                        x.second.insert_or_assign(best_act, 0);
+                    }
+//                    assert( x.second.contains(best_act));
+                    x.second.visit(best_act, [&](auto& y)
+                    {
+                       y.second++;
+                    });
+                });
+            }
+            //backprop reward `score`
+            for (auto& state_action: moveTracker)
+            {
+//                assert(Qsa.contains(state_action.first));
+                Qsa.visit(state_action.first, [&](auto& x)
+                {
+//                    assert(x.second.contains(state_action.second));
+                    if (!x.second.contains(state_action.second))
+                    {
+                        Nsa.visit(state, [&](auto& y)
+                        {
+                            y.second.insert_or_assign(state_action.second, 0);
+                        });
+                        x.second.insert_or_assign(state_action.second, 0.0f);
+                    }
+                    
+                    x.second.visit(state_action.second, [&](auto& y)
+                    {
+                        y.second = std::max(y.second, score);
+                    });
+                });
+            }
+            
+            if (score > max_score)
+            {
+                max_score = score;
+                std::scoped_lock str_lock(Board::thread_locker);
+                best_expression = x._to_infix();
+                orig_expression = x.expression();
+                best_expr_result = x._to_infix(x.diffeq_result);
+                orig_expr_result = x.expression(x.diffeq_result);
+            }
+            x.pieces.clear();
+            moveTracker.clear();
+        }
+    };
+    
+    for (unsigned int i = 0; i < num_threads; i++)
+    {
+        threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
+    }
+    
+    for (unsigned int i = 0; i < num_threads; i++)
+    {
+        threads[i].join();
+    }
+    
+    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
+    std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+    std::cout << "Best expression = " << best_expression << '\n';
+    std::cout << "Best expression (original format) = " << orig_expression << '\n';
+    std::cout << "Best diff result = " << best_expr_result << '\n';
+    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
+}
+
+//https://arxiv.org/abs/2205.13134
 void MCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
 {
     if (num_threads == 0)
@@ -4011,7 +4259,7 @@ void MCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int
         
         for (int i = 0; (timeElapsedSince(start_time) < time); i++)
         {
-            if (i && (i%50000 == 0))
+            if (i && (i%500 == 0))
             {
                 //                    std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
                 //                    std::cout << "check_point_score = " << check_point_score
@@ -4200,6 +4448,67 @@ void RandomSearch(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& d
     std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
 }
 
+// Helper function to create a linspace vector
+std::vector<float> linspace(float min_val, float max_val, int num_points)
+{
+    std::vector<float> linspaced(num_points);
+    float step = (max_val - min_val) / (num_points - 1);
+    for (int i = 0; i < num_points; ++i)
+    {
+        linspaced[i] = min_val + i * step;
+    }
+    return linspaced;
+}
+
+// Function to create a vector of Eigen::VectorXf representing all combinations of linspace values
+std::vector<Eigen::VectorXf> createMeshgridVectors(int rows, int cols, std::vector<float> min_vec, std::vector<float> max_vec)
+{
+    assert((cols == static_cast<int>(min_vec.size())) && (cols == static_cast<int>(max_vec.size())));
+
+    // Create linspaces for each variable (column)
+    std::vector<std::vector<float>> linspaces;
+    for (int col = 0; col < cols; ++col)
+    {
+        linspaces.push_back(linspace(min_vec[col], max_vec[col], rows));
+    }
+
+    // Calculate the total number of combinations (flattened meshgrid size)
+    int total_combinations = 1;
+    for (int col = 0; col < cols; ++col)
+    {
+        total_combinations *= rows;
+    }
+
+    // Create a vector to store all combinations as Eigen::VectorXf
+    std::vector<Eigen::VectorXf> vectors(total_combinations, Eigen::VectorXf(cols));
+
+    // Fill in the vectors with all combinations of linspace values
+    for (int col = 0; col < cols; ++col)
+    {
+        int repeat_count = 1;
+        for (int i = col + 1; i < cols; ++i)
+        {
+            repeat_count *= rows;
+        }
+        
+        int num_repeats = total_combinations / (repeat_count * rows);
+        for (int repeat = 0; repeat < num_repeats; ++repeat)
+        {
+            for (int i = 0; i < rows; ++i)
+            {
+                for (int j = 0; j < repeat_count; ++j)
+                {
+                    int index = repeat * repeat_count * rows + i * repeat_count + j;
+                    vectors[index](col) = linspaces[col][i];
+                }
+            }
+        }
+    }
+
+    return vectors;
+}
+
+
 int main()
 {
 //    HembergBenchmarks(20 /*numIntervals*/, 120 /*time*/, 50 /*numRuns*/);
@@ -4210,10 +4519,19 @@ int main()
         AIFeynman_Benchmarks and then run PlotData.py
     */
     
-    auto data = createLinspaceMatrix(1000, 1, {0.1f}, {15.0f});
+    auto data = createLinspaceMatrix(1000, 1, {-10.0f}, {10.0f});
     
-    RandomSearch(VortexRadialProfile /*differential equation to solve*/, data /*data used to solve differential equation*/, 3 /*fixed depth of generated solutions*/, "prefix" /*expression representation*/, "LBFGSB" /*fit method if expression contains const tokens*/, 1 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 1 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 1e-5 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/);
-
+    ConcurrentMCTS(VortexRadialProfile /*differential equation to solve*/, data /*data used to solve differential equation*/, 7 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "LBFGSB" /*fit method if expression contains const tokens*/, 1 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 600 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 2.5e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/);
+//    boost::concurrent_flat_map<std::string, boost::concurrent_flat_map<float, float>> test;
+//    test.insert_or_assign("hi", boost::concurrent_flat_map<float, float>({{1.0f, 1.1f}}));
+//    test.cvisit("hi", [&](const auto& x)
+//    {
+//        std::cout << x.first << ' ';
+//        x.second.cvisit(1.0f, [&](const auto& y)
+//        {
+//            std::cout << y.first << ' ' << y.second << '\n';
+//        });
+//    });
  
 
     return 0;
