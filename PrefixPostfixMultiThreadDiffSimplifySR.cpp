@@ -233,6 +233,7 @@ struct Board
     static int inline action_size;
     static std::atomic<float> inline const_val;
     static std::once_flag inline initialization_flag;  // Flag for std::call_once
+    static std::unordered_map<std::string, std::pair<float, float>> inline feature_mins_maxes;
     
     size_t reserve_amount;
     int num_fit_iter;
@@ -301,6 +302,17 @@ struct Board
                     Board::__operators.push_back(i);
                 }
                 Board::__other_tokens = {"0", "1", "2"};
+                //Add points at boundary to Board::__other_tokens
+                size_t feature_mins_maxes_start_val = Board::__other_tokens.size();
+                for (const std::string& i: Board::__input_vars)
+                {
+                    std::cout << i << '\n';
+                    float min_val = Board::data[i].minCoeff();
+                    float max_val = Board::data[i].maxCoeff();
+                    Board::__other_tokens.push_back(std::to_string(min_val)); //add smallest element
+                    Board::__other_tokens.push_back(std::to_string(max_val)); //add largest element
+                }
+                size_t feature_mins_maxes_end_val = Board::__other_tokens.size();
                 if (const_token)
                 {
                     Board::__other_tokens.push_back("const");
@@ -315,6 +327,17 @@ struct Board
                 {
                     Board::__tokens.push_back(i);
                 }
+//                for (size_t i = 0; i < feature_mins_maxes_start_val; i++)
+//                {
+//                    
+//                }
+//                for (size_t i = feature_mins_maxes_start_val; i < feature_mins_maxes_end_val; i+=2)
+//                {
+//                    
+//                }
+                
+//                feature_mins_maxes[i] = std::make_pair(min_val, max_val);
+
                 if (const_token)
                 {
                     assert(Board::__tokens.back() == "const");
@@ -1088,8 +1111,9 @@ struct Board
             }
             else
             {
-               token = Board::__tokens_dict[pieces[i]];
+                token = Board::__tokens_dict[pieces[i]];
             }
+            std::cout << "pieces[i] = " << pieces[i] << '\n';
             assert(token.size());
             if (std::find(Board::__operators_float.begin(), Board::__operators_float.end(), pieces[i]) == Board::__operators_float.end()) //not an operator, i.e., a leaf
             {
@@ -1644,6 +1668,34 @@ struct Board
         return improved;
     }
     
+    float enforceBoundaryConditions()
+    {
+        float boundary_score = 0.0f;
+        std::vector<int> grasp;
+        grasp.reserve(100);
+        std::vector<float> temp;
+        temp.reserve(50);
+        auto [min_val, max_val] = feature_mins_maxes["x1"];
+        std::cout << "min_val, max_val = " << min_val << ' ' << max_val << '\n';
+        
+        if (this->expression_type == "prefix")
+        {
+            this->derivePrefix(0, this->pieces.size() - 1, "x1", this->pieces, grasp);
+            temp = this->derivat;
+            float x1 = Board::__tokens_inv_dict["x1"];  // Cache the value of x1
+            std::replace(temp.begin(), temp.end(), x1, min_val);  // Replace all occurrences of x1 with min_val
+            boundary_score += loss_func(expression_evaluator(this->params, temp));
+            std::replace(temp.begin(), temp.end(), min_val, max_val); // Replace all occurrences of min_val with max_val
+            boundary_score += loss_func(expression_evaluator(this->params, temp));
+            
+        }
+        else //postfix
+        {
+            this->derivePostfix(0, this->pieces.size() - 1, "x1", this->pieces, grasp);
+        }
+        return boundary_score;
+    }
+    
     float fitFunctionToData()
     {
         float score = 0.0f;
@@ -1729,6 +1781,7 @@ struct Board
         {
             this->diffeq_result = diffeq(*this);
             score = loss_func(expression_evaluator(this->params, this->diffeq_result));
+            score += enforceBoundaryConditions();
         }
         return score;
     }
@@ -4651,7 +4704,7 @@ int main()
     auto data = createMeshgridVectors(10, 3, {0.1f, -1.1f, 0.1f}, {2.1f, 1.1f, 20.0f});
     std::cout << data << '\n';
 
-    ConcurrentMCTS(TwoDAdvectionDiffusion /*differential equation to solve*/, data /*data used to solve differential equation*/, 7 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "LBFGSB" /*fit method if expression contains const tokens*/, 1 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 10 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/);
+    ConcurrentMCTS(TwoDAdvectionDiffusion /*differential equation to solve*/, data /*data used to solve differential equation*/, 7 /*fixed depth of generated solutions*/, "prefix" /*expression representation*/, "LBFGSB" /*fit method if expression contains const tokens*/, 1 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 10 /*time to run the algorithm in seconds*/, 1 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/);
     
 //    boost::concurrent_flat_map<std::string, boost::concurrent_flat_map<float, float>> test;
 //    test.insert_or_assign("hi", boost::concurrent_flat_map<float, float>({{1.0f, 1.1f}}));
