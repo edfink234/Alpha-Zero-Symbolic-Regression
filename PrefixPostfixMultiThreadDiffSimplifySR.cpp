@@ -24,6 +24,8 @@
 #include <atomic>
 #include <latch>
 #include <tuple>
+#include <functional>
+#include <numbers>
 #include <LBFGS.h>
 #include <LBFGSB.h>
 #include <unsupported/Eigen/NonLinearOptimization>
@@ -87,6 +89,84 @@ Eigen::MatrixXf generateData(int numRows, int numCols, float min = -3.0f, float 
     }
 
     return matrix;
+}
+
+// Helper function to create a linspace vector
+std::vector<float> linspace(float min_val, float max_val, int num_points)
+{
+    std::vector<float> linspaced(num_points);
+    float step = (max_val - min_val) / (num_points - 1);
+    for (int i = 0; i < num_points; ++i)
+    {
+        linspaced[i] = min_val + i * step;
+    }
+    return linspaced;
+}
+
+Eigen::MatrixXf createMeshgridVectors(int rows, int cols, std::vector<float> min_vec, std::vector<float> max_vec)
+{
+    assert((cols == static_cast<int>(min_vec.size())) && (cols == static_cast<int>(max_vec.size())));
+
+    // Create linspaces for each variable (column)
+    std::vector<std::vector<float>> linspaces;
+    for (int col = 0; col < cols; ++col)
+    {
+        linspaces.push_back(linspace(min_vec[col], max_vec[col], rows));
+    }
+
+    // Calculate the total number of combinations (flattened meshgrid size)
+    int total_combinations = 1;
+    for (int col = 0; col < cols; ++col)
+    {
+        total_combinations *= rows;
+    }
+
+    // Create a matrix to store all combinations (rows = total_combinations, cols = number of variables)
+    Eigen::MatrixXf matrix(total_combinations, cols);
+
+    // Fill in the matrix with all combinations of linspace values
+    for (int col = 0; col < cols; ++col)
+    {
+        int repeat_count = 1;
+        for (int i = col + 1; i < cols; ++i)
+        {
+            repeat_count *= rows;
+        }
+        
+        int num_repeats = total_combinations / (repeat_count * rows);
+        for (int repeat = 0; repeat < num_repeats; ++repeat)
+        {
+            for (int i = 0; i < rows; ++i)
+            {
+                for (int j = 0; j < repeat_count; ++j)
+                {
+                    int index = repeat * repeat_count * rows + i * repeat_count + j;
+                    matrix(index, col) = linspaces[col][i];
+                }
+            }
+        }
+    }
+
+    return matrix;
+}
+
+Eigen::MatrixXf addColumnWithLambda(const Eigen::MatrixXf& matrix, const std::function<float(const Eigen::RowVectorXf&)>& lambda) {
+    // Get the number of rows and columns of the input matrix
+    int rows = matrix.rows();
+    int cols = matrix.cols();
+    
+    // Create a new matrix with an additional column
+    Eigen::MatrixXf newMatrix(rows, cols + 1);
+    
+    // Copy the original matrix into the new matrix (without the last column)
+    newMatrix.block(0, 0, rows, cols) = matrix;
+    
+    // Apply the lambda function to each row and store the result in the last column
+    for (int i = 0; i < rows; ++i) {
+        newMatrix(i, cols) = lambda(matrix.row(i));
+    }
+    
+    return newMatrix;
 }
 
 int trueMod(int N, int M)
@@ -319,7 +399,7 @@ struct Board
                 {
                     Board::__operators.push_back(i);
                 }
-                Board::__other_tokens = {"0", "1", "2"};
+                Board::__other_tokens = {"0", "1", "2", "4"};
                 //Add points at boundary to Board::__other_tokens
                 size_t feature_mins_maxes_start_val = Board::__other_tokens.size();
                 for (const std::string& i: Board::__input_vars)
@@ -342,23 +422,6 @@ struct Board
                 {
                     Board::__tokens.push_back(i);
                 }
-//                for (size_t i = 0; i < feature_mins_maxes_start_val; i++)
-//                {
-//                    std::cout << Board::__other_tokens[i] << '\n';
-//                    Board::__tokens.push_back(Board::__other_tokens[i]);
-//                }
-//                for (size_t i = feature_mins_maxes_start_val, j = 0; i < feature_mins_maxes_end_val; i+=2, j++)
-//                {
-//                    std::cout << Board::__input_vars[j] << '\n';
-//                    std::cout << Board::__other_tokens[i] << '\n'
-//                    << Board::__other_tokens[i+1] << '\n';
-//                    Board::__tokens.push_back(Board::__other_tokens[i]);
-//                    Board::__tokens.push_back(Board::__other_tokens[i+1]);
-//                    feature_mins_maxes[Board::__input_vars[j]] = std::make_pair(i, i+1);
-//                }
-//                exit(1);
-//                feature_mins_maxes[i] = std::make_pair(min_val, max_val);
-
                 if (const_token)
                 {
                     assert(Board::__tokens.back() == "const");
@@ -370,7 +433,6 @@ struct Board
                 {
                     Board::__tokens_float.push_back(i);
                 }
-                printf("Board::__tokens_float.back() = %f\n", Board::__tokens_float.back());
                 if (const_token)
                 {
                     const_val = Board::__tokens_float.back();
@@ -416,7 +478,6 @@ struct Board
                     feature_mins_maxes[Board::__input_vars[j]] = std::make_pair(i, i+1);
                 }
                 fmm_idx += feature_mins_maxes_end_val;
-                std::cout << "fmm_idx = " << fmm_idx << '\n';
                 for (int i = fmm_idx; i <= Board::action_size; i++)
                 {
                     assert(false || const_token);
@@ -447,8 +508,7 @@ struct Board
                 
                 for (float i: Board::__input_vars_float)
                 {
-                    std::cout << i << '\n';
-//                    assert(i <= Board::__tokens_float.back());
+                    assert(i <= Board::__tokens_float.back());
                     Board::una_bin_leaf_legal_moves_dict[true][false][true].push_back(i); //1
                     Board::una_bin_leaf_legal_moves_dict[false][true][true].push_back(i); //2
                     Board::una_bin_leaf_legal_moves_dict[false][false][true].push_back(i); //3
@@ -461,14 +521,12 @@ struct Board
                 {
                     for (float i: Board::__other_tokens_float)
                     {
-                        std::cout << i << '\n';
-//                        assert(i <= Board::__tokens_float.back());
+                        assert(i <= Board::__tokens_float.back());
                         Board::una_bin_leaf_legal_moves_dict[true][false][true].push_back(i); //1
                         Board::una_bin_leaf_legal_moves_dict[false][true][true].push_back(i); //2
                         Board::una_bin_leaf_legal_moves_dict[false][false][true].push_back(i); //3
                     }
                 }
-//                exit(1);
             });
             
         }
@@ -1181,6 +1239,10 @@ struct Board
                 {
                     stack.push(Eigen::VectorXf::Ones(Board::data.numRows())*2.0f);
                 }
+                else if (token == "4")
+                {
+                    stack.push(Eigen::VectorXf::Ones(Board::data.numRows())*4.0f);
+                }
                 else if (isFloat(token))
                 {
                     stack.push(Eigen::VectorXf::Ones(Board::data.numRows())*std::stof(token));
@@ -1323,6 +1385,11 @@ struct Board
                 {
 //                    std::cout << "\nparameters[" << const_count << "] = " << parameters[const_count].value() << '\n';
                     stack.push(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>::Constant(Board::data.numRows(), 2.0f));
+                }
+                else if (token == "4")
+                {
+//                    std::cout << "\nparameters[" << const_count << "] = " << parameters[const_count].value() << '\n';
+                    stack.push(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>::Constant(Board::data.numRows(), 4.0f));
                 }
                 else if (isFloat(token))
                 {
@@ -3528,7 +3595,7 @@ std::vector<float> VortexRadialProfile(Board& x)
 }
 
 //x0 -> x, x1 -> y, x2 -> t
-std::vector<float> TwoDAdvectionDiffusion(Board& x)
+std::vector<float> TwoDAdvectionDiffusion_1(Board& x)
 {
     std::vector<float> result;
     result.reserve(100);
@@ -3540,8 +3607,9 @@ std::vector<float> TwoDAdvectionDiffusion(Board& x)
     if (x.expression_type == "prefix")
     {
         //- + + T_t (* T - 1 * y y)_x (* T - 1 * y y)_y * kappa + T_{xx} T_{yy}
+        //- + T_t (* T - 1 * y y)_x * kappa + T_{xx} T_{yy}
         result.push_back(Board::__tokens_inv_dict["-"]); //-
-        result.push_back(Board::__tokens_inv_dict["+"]); //+
+//        result.push_back(Board::__tokens_inv_dict["+"]); //+
         result.push_back(Board::__tokens_inv_dict["+"]); //+
         
         x.derivePrefix(0, x.pieces.size()-1, "x2", x.pieces, grasp);
@@ -3567,8 +3635,138 @@ std::vector<float> TwoDAdvectionDiffusion(Board& x)
             result.push_back(i);
         }
         
+//        x.derivePrefix(0, temp.size()-1, "x1", temp, grasp); //derivat will store first derivative of temp wrt y
+//        for (float i: x.derivat) //(* T - 1 * y y)_y
+//        {
+//            result.push_back(i);
+//        }
+        
+        result.push_back(Board::__tokens_inv_dict["*"]); //*
+        result.push_back(Board::__tokens_inv_dict[kappa]); //kappa
+        result.push_back(Board::__tokens_inv_dict["+"]); //+
+        x.derivePrefix(0, x.pieces.size()-1, "x0", x.pieces, grasp);
+        temp = x.derivat;
+        x.derivePrefix(0, temp.size()-1, "x0", temp, grasp);
+        for (float i: x.derivat) //T_xx
+        {
+            result.push_back(i);
+        }
+        
+        x.derivePrefix(0, x.pieces.size()-1, "x1", x.pieces, grasp);
+        temp = x.derivat;
+        x.derivePrefix(0, temp.size()-1, "x1", temp, grasp);
+        for (float i: x.derivat) //T_yy
+        {
+            result.push_back(i);
+        }
+        
+    }
+    else if (x.expression_type == "postfix")
+    {
+        //T_t (T 1 y y * - *)_x + (T 1 y y * - *)_y + kappa T_{xx} T_{yy} + * -
+        //T_t (T 1 y y * - *)_x + kappa T_{xx} T_{yy} + * -
+        x.derivePostfix(0, x.pieces.size()-1, "x2", x.pieces, grasp);
+        for (float i: x.derivat) //T_t
+        {
+            result.push_back(i);
+        }
+        
+        for (float i: x.pieces)
+        {
+            temp.push_back(i);
+        }
+        temp.push_back(Board::__tokens_inv_dict["1"]);
+        temp.push_back(Board::__tokens_inv_dict["x1"]);
+        temp.push_back(Board::__tokens_inv_dict["x1"]);
+        temp.push_back(Board::__tokens_inv_dict["*"]);
+        temp.push_back(Board::__tokens_inv_dict["-"]);
+        temp.push_back(Board::__tokens_inv_dict["*"]);
+        
+        x.derivePostfix(0, temp.size()-1, "x0", temp, grasp); //derivat will store first derivative of temp wrt x
+        for (float i: x.derivat) //(T 1 y y * - *)_x
+        {
+            result.push_back(i);
+        }
+        result.push_back(Board::__tokens_inv_dict["+"]); //+
+        
+//        x.derivePostfix(0, temp.size()-1, "x1", temp, grasp); //derivat will store first derivative of temp wrt y
+//        for (float i: x.derivat) //(T 1 y y * - *)_y
+//        {
+//            result.push_back(i);
+//        }
+//        result.push_back(Board::__tokens_inv_dict["+"]); //+
+        result.push_back(Board::__tokens_inv_dict[kappa]); //kappa
+//        
+        x.derivePostfix(0, x.pieces.size()-1, "x0", x.pieces, grasp);
+        temp = x.derivat;
+        x.derivePostfix(0, temp.size()-1, "x0", temp, grasp);
+        for (float i: x.derivat) //T_xx
+        {
+            result.push_back(i);
+        }
+        
+        x.derivePostfix(0, x.pieces.size()-1, "x1", x.pieces, grasp);
+        temp = x.derivat;
+        x.derivePostfix(0, temp.size()-1, "x1", temp, grasp);
+        for (float i: x.derivat) //T_yy
+        {
+            result.push_back(i);
+        }
+//        
+        result.push_back(Board::__tokens_inv_dict["+"]); //+
+        result.push_back(Board::__tokens_inv_dict["*"]); //*
+        result.push_back(Board::__tokens_inv_dict["-"]); //-
+        
+    }
+    return result;
+}
+
+//x0 -> x, x1 -> y, x2 -> t
+std::vector<float> TwoDAdvectionDiffusion_2(Board& x)
+{
+    std::vector<float> result;
+    result.reserve(100);
+    std::vector<int> grasp;
+    grasp.reserve(100);
+    std::vector<float> temp;
+    size_t temp_sz;
+    temp.reserve(50);
+    std::string kappa = "1";
+    if (x.expression_type == "prefix")
+    {
+        //- + + T_t (* T sin * 4 y)_x (* T cos * 4 x)_y * kappa + T_{xx} T_{yy}
+        result.push_back(Board::__tokens_inv_dict["-"]); //-
+        result.push_back(Board::__tokens_inv_dict["+"]); //+
+        result.push_back(Board::__tokens_inv_dict["+"]); //+
+        
+        x.derivePrefix(0, x.pieces.size()-1, "x2", x.pieces, grasp);
+        for (float i: x.derivat) //T_t
+        {
+            result.push_back(i);
+        }
+        
+        temp.push_back(Board::__tokens_inv_dict["*"]);
+        for (float i: x.pieces)
+        {
+            temp.push_back(i);
+        }
+        temp.push_back(Board::__tokens_inv_dict["sin"]);
+        temp.push_back(Board::__tokens_inv_dict["*"]);
+        temp.push_back(Board::__tokens_inv_dict["4"]);
+        temp.push_back(Board::__tokens_inv_dict["x1"]);
+        
+        x.derivePrefix(0, temp.size()-1, "x0", temp, grasp); //derivat will store first derivative of temp wrt x
+        for (float i: x.derivat) //(* T sin * 4 y)_x
+        {
+            result.push_back(i);
+        }
+        
+        temp_sz = temp.size();
+        temp[temp_sz - 1] = Board::__tokens_inv_dict["x0"];
+        temp[temp_sz - 4] = Board::__tokens_inv_dict["cos"];
+        
         x.derivePrefix(0, temp.size()-1, "x1", temp, grasp); //derivat will store first derivative of temp wrt y
-        for (float i: x.derivat) //(* T - 1 * y y)_y
+        for (float i: x.derivat) //(* T cos * 4 x)_y
         {
             result.push_back(i);
         }
@@ -3595,7 +3793,7 @@ std::vector<float> TwoDAdvectionDiffusion(Board& x)
     }
     else if (x.expression_type == "postfix")
     {
-        //T_t (T 1 y y * - *)_x + (T 1 y y * - *)_y + kappa T_{xx} T_{yy} + * -
+        //T_t (T 4 y * sin *)_x + (T 4 x * cos *)_y + kappa T_{xx} T_{yy} + * -
         x.derivePostfix(0, x.pieces.size()-1, "x2", x.pieces, grasp);
         for (float i: x.derivat) //T_t
         {
@@ -3606,28 +3804,30 @@ std::vector<float> TwoDAdvectionDiffusion(Board& x)
         {
             temp.push_back(i);
         }
-        temp.push_back(Board::__tokens_inv_dict["1"]);
-        temp.push_back(Board::__tokens_inv_dict["x1"]);
+        temp.push_back(Board::__tokens_inv_dict["4"]);
         temp.push_back(Board::__tokens_inv_dict["x1"]);
         temp.push_back(Board::__tokens_inv_dict["*"]);
-        temp.push_back(Board::__tokens_inv_dict["-"]);
+        temp.push_back(Board::__tokens_inv_dict["sin"]);
         temp.push_back(Board::__tokens_inv_dict["*"]);
         
         x.derivePostfix(0, temp.size()-1, "x0", temp, grasp); //derivat will store first derivative of temp wrt x
-        for (float i: x.derivat) //(T 1 y y * - *)_x
+        for (float i: x.derivat) //(T 4 y * sin *)_x
         {
             result.push_back(i);
         }
         result.push_back(Board::__tokens_inv_dict["+"]); //+
         
+        temp_sz = temp.size();
+        temp[temp_sz - 4] = Board::__tokens_inv_dict["x0"];
+        temp[temp_sz - 2] = Board::__tokens_inv_dict["cos"];
         x.derivePostfix(0, temp.size()-1, "x1", temp, grasp); //derivat will store first derivative of temp wrt y
-        for (float i: x.derivat) //(T 1 y y * - *)_y
+        for (float i: x.derivat) //(T 4 x * cos *)_y
         {
             result.push_back(i);
         }
         result.push_back(Board::__tokens_inv_dict["+"]); //+
         result.push_back(Board::__tokens_inv_dict[kappa]); //kappa
-//        
+//
         x.derivePostfix(0, x.pieces.size()-1, "x0", x.pieces, grasp);
         temp = x.derivat;
         x.derivePostfix(0, temp.size()-1, "x0", temp, grasp);
@@ -3643,7 +3843,7 @@ std::vector<float> TwoDAdvectionDiffusion(Board& x)
         {
             result.push_back(i);
         }
-//        
+//
         result.push_back(Board::__tokens_inv_dict["+"]); //+
         result.push_back(Board::__tokens_inv_dict["*"]); //*
         result.push_back(Board::__tokens_inv_dict["-"]); //-
@@ -4720,98 +4920,39 @@ void RandomSearch(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& d
     std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
 }
 
-// Helper function to create a linspace vector
-std::vector<float> linspace(float min_val, float max_val, int num_points)
-{
-    std::vector<float> linspaced(num_points);
-    float step = (max_val - min_val) / (num_points - 1);
-    for (int i = 0; i < num_points; ++i)
-    {
-        linspaced[i] = min_val + i * step;
-    }
-    return linspaced;
-}
-
-Eigen::MatrixXf createMeshgridVectors(int rows, int cols, std::vector<float> min_vec, std::vector<float> max_vec)
-{
-    assert((cols == static_cast<int>(min_vec.size())) && (cols == static_cast<int>(max_vec.size())));
-
-    // Create linspaces for each variable (column)
-    std::vector<std::vector<float>> linspaces;
-    for (int col = 0; col < cols; ++col)
-    {
-        linspaces.push_back(linspace(min_vec[col], max_vec[col], rows));
-    }
-
-    // Calculate the total number of combinations (flattened meshgrid size)
-    int total_combinations = 1;
-    for (int col = 0; col < cols; ++col)
-    {
-        total_combinations *= rows;
-    }
-
-    // Create a matrix to store all combinations (rows = total_combinations, cols = number of variables)
-    Eigen::MatrixXf matrix(total_combinations, cols);
-
-    // Fill in the matrix with all combinations of linspace values
-    for (int col = 0; col < cols; ++col)
-    {
-        int repeat_count = 1;
-        for (int i = col + 1; i < cols; ++i)
-        {
-            repeat_count *= rows;
-        }
-        
-        int num_repeats = total_combinations / (repeat_count * rows);
-        for (int repeat = 0; repeat < num_repeats; ++repeat)
-        {
-            for (int i = 0; i < rows; ++i)
-            {
-                for (int j = 0; j < repeat_count; ++j)
-                {
-                    int index = repeat * repeat_count * rows + i * repeat_count + j;
-                    matrix(index, col) = linspaces[col][i];
-                }
-            }
-        }
-    }
-
-    return matrix;
-}
-
-
-
 int main()
 {
-//    HembergBenchmarks(20 /*numIntervals*/, 120 /*time*/, 50 /*numRuns*/);
-//    AIFeynmanBenchmarks(20 /*numIntervals*/, 120 /*time*/, 50 /*numRuns*/);
-    
-    /*
-        Then, move the generated txt files to the directories Hemberg_Benchmarks and
-        AIFeynman_Benchmarks and then run PlotData.py
-    */
-    
 //    auto data = createLinspaceMatrix(1000, 1, {-10.0f}, {10.0f});
-//    
 //    ConcurrentMCTS(VortexRadialProfile /*differential equation to solve*/, data /*data used to solve differential equation*/, 6 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "LBFGSB" /*fit method if expression contains const tokens*/, 1 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 180 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 2.5e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/);
-    
-    auto data = createMeshgridVectors(10, 3, {0.1f, -1.1f, 0.1f}, {2.1f, 1.1f, 20.0f});
-//    std::cout << data << '\n';
 
-    ConcurrentMCTS(TwoDAdvectionDiffusion /*differential equation to solve*/, data /*data used to solve differential equation*/, 7 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "LBFGSB" /*fit method if expression contains const tokens*/, 1 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 10 /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/);
-    
-//    boost::concurrent_flat_map<std::string, boost::concurrent_flat_map<float, float>> test;
-//    test.insert_or_assign("hi", boost::concurrent_flat_map<float, float>({{1.0f, 1.1f}}));
-//    test.cvisit("hi", [&](const auto& x)
+//    auto data = addColumnWithLambda(createMeshgridVectors(10, 3, {0.1f, -1.1f, 0.1f}, {2.1f, 1.1f, 20.0f}),
+//    [&](const Eigen::VectorXf& row) -> float
 //    {
-//        std::cout << x.first << ' ';
-//        x.second.cvisit(1.0f, [&](const auto& y)
-//        {
-//            std::cout << y.first << ' ' << y.second << '\n';
-//        });
+//        //2D-Gaussian
+//        float x = row(0);
+//        float y = row(1);
+//        float x0 = 1.1f; //std::numbers::pi_v<float>
+//        float y0 = 0.0f;
+//        float sigma = 0.2f;
+//        return std::exp(-((std::pow(x - x0, 2) + std::pow(y - y0, 2)) / (2 * std::pow(sigma, 2))));
 //    });
- 
+//    std::cout << data << '\n';
+//    ConcurrentMCTS(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data /*data used to solve differential equation*/, 5 /*fixed depth of generated solutions*/, "prefix" /*expression representation*/, "LBFGSB" /*fit method if expression contains const tokens*/, 1 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 10 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/);
+    
+    auto data = addColumnWithLambda(createMeshgridVectors(10, 3, {0.1f, 0.1f, 0.1f}, {2.0f*std::numbers::pi_v<float>, 2.0f*std::numbers::pi_v<float>, 20.0f}),
+    [&](const Eigen::VectorXf& row) -> float
+    {
+        //2D-Gaussian
+        float x = row(0);
+        float y = row(1);
+        float x0 = 1.1f; //std::numbers::pi_v<float>
+        float y0 = 0.0f;
+        float sigma = 0.2f;
+        return std::exp(-((std::pow(x - x0, 2) + std::pow(y - y0, 2)) / (2 * std::pow(sigma, 2))));
+    });
 
+    ConcurrentMCTS(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data /*data used to solve differential equation*/, 5 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "LBFGSB" /*fit method if expression contains const tokens*/, 1 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 10 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/);
+    
     return 0;
 }
 //git push --set-upstream origin PrefixPostfixSymbolicDifferentiator
