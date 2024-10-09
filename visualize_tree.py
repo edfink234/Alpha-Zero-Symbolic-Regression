@@ -332,8 +332,8 @@ def test_visualize():
 #                x_real = "x y +"
 #                x_imag = "x y cos *"
 #                plot_rpn_expression_tree((x_real + " i " + x_imag + " * +").split(), block=True, save = save)
-#                plot_pn_expression_tree(("+ sin x * y 2").split(), block=True, save = save)
-                plot_rpn_expression_tree("x x y cos * sin +".split(), block=True, save = save)
+#                plot_pn_expression_tree(("/ * - x_0 x0 exp - * - x0 x_0 - x_0 x0 * - x1 y_0 - x1 y_0 * sigma sigma").split(), block=True, save = save)
+                plot_rpn_expression_tree("x_0 x0 - x0 x_0 - x_0 x0 - * x1 y_0 - x1 y_0 - * - exp * sigma sigma * /".split(), block=True, save = save)
         except KeyboardInterrupt:
             plt.close()
             exit()
@@ -343,3 +343,5 @@ if __name__ == "__main__":
     test_visualize()
 
 
+#-((x - x_0)*(x - x_0)) = -(x^2 - 2*x*x_0 + x_0^2)
+#(x - x_0)*(x_0 - x) = x*x_0 - x^2 - x_0^2 + x*x_0 = -(x^2 - 2*x*x_0 + x_0^2)
