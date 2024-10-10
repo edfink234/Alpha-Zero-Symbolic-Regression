@@ -3209,12 +3209,12 @@ std::vector<float> NLS_2D(Board& x) // open /Users/edwardfinkelstein/Downloads/n
             result.push_back(i);
         }
     }
-    else
+    else //postfix
     {
         //  i u_t * 1 2 / u_xx u_yy + * + u* u * u * -
         //  i u_t * 1 2 / u_xx u_yy + * + u conj u * u * -
         result.push_back(Board::__tokens_inv_dict["i"]);
-        x.derivePrefix(0, x.pieces.size()-1, "x2", x.pieces, grasp);
+        x.derivePostfix(0, x.pieces.size()-1, "x2", x.pieces, grasp);
         for (float i: x.derivat) //u_t
         {
             result.push_back(i);
@@ -3223,16 +3223,16 @@ std::vector<float> NLS_2D(Board& x) // open /Users/edwardfinkelstein/Downloads/n
         result.push_back(Board::__tokens_inv_dict["1"]);
         result.push_back(Board::__tokens_inv_dict["2"]);
         result.push_back(Board::__tokens_inv_dict["/"]);
-        x.derivePrefix(0, x.pieces.size()-1, "x0", x.pieces, grasp);
+        x.derivePostfix(0, x.pieces.size()-1, "x0", x.pieces, grasp);
         u_x = x.derivat;
-        x.derivePrefix(0, x.pieces.size()-1, "x0", u_x, grasp);
+        x.derivePostfix(0, x.pieces.size()-1, "x0", u_x, grasp);
         for (float i: x.derivat) //u_xx
         {
             result.push_back(i);
         }
-        x.derivePrefix(0, x.pieces.size()-1, "x1", x.pieces, grasp);
+        x.derivePostfix(0, x.pieces.size()-1, "x1", x.pieces, grasp);
         u_y = x.derivat;
-        x.derivePrefix(0, x.pieces.size()-1, "x1", u_y, grasp);
+        x.derivePostfix(0, x.pieces.size()-1, "x1", u_y, grasp);
         for (float i: x.derivat) //u_yy
         {
             result.push_back(i);
@@ -3368,7 +3368,7 @@ std::vector<float> NLS_2D_Harmonic_Potential(Board& x) // open /Users/edwardfink
             result.push_back(i);
         }
     }
-    else
+    else if (x.expression_type == "postfix")
     {
         //  i u_t * 1 2 / u_xx u_yy + * + u* u * u * -
         //  i u_t * 1 2 / u_xx u_yy + * + u conj u * u * -
@@ -3376,7 +3376,7 @@ std::vector<float> NLS_2D_Harmonic_Potential(Board& x) // open /Users/edwardfink
         //  V = 1 2 / m * omega_x omega_x * x x * * omega_y omega_y * y y * * + *
         
         result.push_back(Board::__tokens_inv_dict["i"]);
-        x.derivePrefix(0, x.pieces.size()-1, "x2", x.pieces, grasp);
+        x.derivePostfix(0, x.pieces.size()-1, "x2", x.pieces, grasp);
         for (float i: x.derivat) //u_t
         {
             result.push_back(i);
@@ -3385,16 +3385,16 @@ std::vector<float> NLS_2D_Harmonic_Potential(Board& x) // open /Users/edwardfink
         result.push_back(Board::__tokens_inv_dict["1"]);
         result.push_back(Board::__tokens_inv_dict["2"]);
         result.push_back(Board::__tokens_inv_dict["/"]);
-        x.derivePrefix(0, x.pieces.size()-1, "x0", x.pieces, grasp);
+        x.derivePostfix(0, x.pieces.size()-1, "x0", x.pieces, grasp);
         u_x = x.derivat;
-        x.derivePrefix(0, x.pieces.size()-1, "x0", u_x, grasp);
+        x.derivePostfix(0, x.pieces.size()-1, "x0", u_x, grasp);
         for (float i: x.derivat) //u_xx
         {
             result.push_back(i);
         }
-        x.derivePrefix(0, x.pieces.size()-1, "x1", x.pieces, grasp);
+        x.derivePostfix(0, x.pieces.size()-1, "x1", x.pieces, grasp);
         u_y = x.derivat;
-        x.derivePrefix(0, x.pieces.size()-1, "x1", u_y, grasp);
+        x.derivePostfix(0, x.pieces.size()-1, "x1", u_y, grasp);
         for (float i: x.derivat) //u_yy
         {
             result.push_back(i);
@@ -3532,14 +3532,14 @@ std::vector<float> NLS_2D_Potential(Board& x) // open /Users/edwardfinkelstein/D
             result.push_back(i);
         }
     }
-    else
+    else if (x.expression_type == "postfix")
     {
         //  i u_t * 1 2 / u_xx u_yy + * + u* u * u * -
         //  i u_t * 1 2 / u_xx u_yy + * + u conj u * u * -
         //  i u_t * 1 2 / u_xx u_yy + * + u conj u * u * - V u * -
         
         result.push_back(Board::__tokens_inv_dict["i"]);
-        x.derivePrefix(0, x.pieces.size()-1, "x2", x.pieces, grasp);
+        x.derivePostfix(0, x.pieces.size()-1, "x2", x.pieces, grasp);
         for (float i: x.derivat) //u_t
         {
             result.push_back(i);
@@ -3548,16 +3548,16 @@ std::vector<float> NLS_2D_Potential(Board& x) // open /Users/edwardfinkelstein/D
         result.push_back(Board::__tokens_inv_dict["1"]);
         result.push_back(Board::__tokens_inv_dict["2"]);
         result.push_back(Board::__tokens_inv_dict["/"]);
-        x.derivePrefix(0, x.pieces.size()-1, "x0", x.pieces, grasp);
+        x.derivePostfix(0, x.pieces.size()-1, "x0", x.pieces, grasp);
         u_x = x.derivat;
-        x.derivePrefix(0, x.pieces.size()-1, "x0", u_x, grasp);
+        x.derivePostfix(0, x.pieces.size()-1, "x0", u_x, grasp);
         for (float i: x.derivat) //u_xx
         {
             result.push_back(i);
         }
-        x.derivePrefix(0, x.pieces.size()-1, "x1", x.pieces, grasp);
+        x.derivePostfix(0, x.pieces.size()-1, "x1", x.pieces, grasp);
         u_y = x.derivat;
-        x.derivePrefix(0, x.pieces.size()-1, "x1", u_y, grasp);
+        x.derivePostfix(0, x.pieces.size()-1, "x1", u_y, grasp);
         for (float i: x.derivat) //u_yy
         {
             result.push_back(i);
@@ -5069,6 +5069,8 @@ void RandomSearch(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& 
                 orig_expression = x.expression();
                 best_expr_result = x._to_infix(x.diffeq_result);
                 orig_expr_result = x.expression(x.diffeq_result);
+                std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+                std::cout << "Best expression = " << best_expression << '\n';
             }
             x.pieces.clear();
             real_x.pieces.clear();
@@ -5100,30 +5102,19 @@ void RandomSearch(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXcf& 
 
 int main()
 {
-//    HembergBenchmarks(20 /*numIntervals*/, 120 /*time*/, 50 /*numRuns*/);
-//    AIFeynmanBenchmarks(20 /*numIntervals*/, 120 /*time*/, 50 /*numRuns*/);
+//    auto data = createMeshgridMatrixWithLambda(10, 3, {-10.0f, -10.0f, 0.1f}, {10.0f, 10.0f, 20.0f},
+//    [&](const Eigen::VectorXcf& row)
+//    {
+//        std::complex<float> m(1.0f, 0.0f);
+//        std::complex<float> omega_x(1.0f, 0.0f);
+//        std::complex<float> omega_y(1.0f, 0.0f);
+//        
+//        return std::complex<float>(0.5f, 0.0f) * m * (omega_x*omega_x*row[0]*row[0] + omega_y*omega_y*row[1]*row[1]);
+//    });
+//    RandomSearch(NLS_2D_Potential /*differential equation to solve*/, data /*data used to solve differential equation*/, 2 /*fixed depth of generated real part of solutions*/, 2 /*fixed depth of generated imaginary part of solutions*/, "postfix" /*expression representation*/, "AsyncPSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, true /*cache*/, 5 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 1e-5 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/);
     
-    /*
-        Then, move the generated txt files to the directories Hemberg_Benchmarks and
-        AIFeynman_Benchmarks and then run PlotData.py
-    */
-    
-//    auto data = createMeshgridMatrix(60, 3, {-10.0f, -10.0f, 0.1f}, {10.0f, 10.0f, 20.0f});
-    auto data = createMeshgridMatrixWithLambda(10, 3, {-10.0f, -10.0f, 0.1f}, {10.0f, 10.0f, 20.0f},
-    [&](const Eigen::VectorXcf& row)
-    {
-        std::complex<float> m(1.0f, 0.0f);
-        std::complex<float> omega_x(1.0f, 0.0f);
-        std::complex<float> omega_y(1.0f, 0.0f);
-        
-        return std::complex<float>(0.5f, 0.0f) * m * (omega_x*omega_x*row[0]*row[0] + omega_y*omega_y*row[1]*row[1]);
-    });
-    
-//    data = createLinspaceMatrix(1000, 3, {-10.0f, -10.0f, 0.1f}, {10.0f, 10.0f, 20.0f});
-    
-    RandomSearch(NLS_2D_Potential /*differential equation to solve*/, data /*data used to solve differential equation*/, 2 /*fixed depth of generated real part of solutions*/, 2 /*fixed depth of generated imaginary part of solutions*/, "postfix" /*expression representation*/, "AsyncPSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, true /*cache*/, 5 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 1e-5 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/);
-
- 
+    auto data = createMeshgridMatrix(10, 3, {-10.0f, -10.0f, 0.1f}, {10.0f, 10.0f, 20.0f});
+    RandomSearch(NLS_2D_Harmonic_Potential /*differential equation to solve*/, data /*data used to solve differential equation*/, 3 /*fixed depth of generated real part of solutions*/, 3 /*fixed depth of generated imaginary part of solutions*/, "postfix" /*expression representation*/, "AsyncPSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, true /*cache*/, 1500 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 1e-5 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/);
 
     return 0;
 }

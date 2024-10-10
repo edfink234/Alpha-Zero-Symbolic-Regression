@@ -424,6 +424,11 @@ struct Board
             throw(std::runtime_error("Complexity cannot be larger than 30, sorry!"));
         }
         
+        if ((boundary_condition_type == "AdvectionDiffusion2D_1" || boundary_condition_type == "AdvectionDiffusion2D_2" || initial_condition_type == "AdvectionDiffusion2D") && (fitMethod == "LBFGS" || fitMethod == "LBFGSB" || fitMethod == "LevenbergMarquardt"))
+        {
+            throw(std::runtime_error("LBFGS, LBFGSB, and LevenbergMarquardt are not supported with initial and/or boundary contitions."));
+        }
+        
         this->n = n;
         this->expression_type = expression_type;
         this->pieces = {};
@@ -504,7 +509,7 @@ struct Board
                 }
                 if (const_token)
                 {
-                    const_val = Board::__tokens_float.back();
+                    Board::const_val = Board::__tokens_float.back();
                 }
                 int num_operators = Board::__operators.size();
                 Board::__operators_float.clear();
@@ -1617,7 +1622,18 @@ struct Board
         }
 
         float swarm_best_score = loss_func(expression_evaluator(this->params, this->diffeq_result));
+        //Boundary conditions
+        swarm_best_score += getBoundaryScore();
+        //Initial conditions
+        swarm_best_score += getInitialConditionScore();
+        
         float fpi = loss_func(expression_evaluator(particle_positions, this->diffeq_result));
+        this->MSE_curr = (1.0f/fpi) - 1.0f;
+        //Boundary conditions
+        fpi += getBoundaryScore(particle_positions);
+        //Initial conditions
+        fpi += getInitialConditionScore(particle_positions);
+        
         float temp, fxi;
         
         if (fpi > swarm_best_score)
@@ -1636,9 +1652,20 @@ struct Board
                 x(i) += v(i);
                 
                 fpi = loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //current score
+                this->MSE_curr = (1.0f/fpi) - 1.0f;
+                //Boundary conditions
+                fpi += getBoundaryScore(particle_positions);
+                //Initial conditions
+                fpi += getInitialConditionScore(particle_positions);
+                
                 temp = particle_positions(i); //save old position of particle i
                 particle_positions(i) = x(i); //update old position to new position
                 fxi = loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //calculate the score with the new position
+                //Boundary conditions
+                fxi += getBoundaryScore(particle_positions, false);
+                //Initial conditions
+                fxi += getInitialConditionScore(particle_positions, false);
+                
                 if (fxi < fpi) //if the new vector is worse:
                 {
                     particle_positions(i) = temp; //reset particle_positions[i]
@@ -1681,7 +1708,18 @@ struct Board
         }
 
         float swarm_best_score = loss_func(expression_evaluator(this->params, this->diffeq_result));
+        //Boundary conditions
+        swarm_best_score += getBoundaryScore();
+        //Initial conditions
+        swarm_best_score += getInitialConditionScore();
+        
         float fpi = loss_func(expression_evaluator(particle_positions, this->diffeq_result));
+        this->MSE_curr = (1.0f/fpi) - 1.0f;
+        //Boundary conditions
+        fpi += getBoundaryScore(particle_positions);
+        //Initial conditions
+        fpi += getInitialConditionScore(particle_positions);
+        
         float temp, fxi;
         
         if (fpi > swarm_best_score)
@@ -1690,6 +1728,7 @@ struct Board
             improved = true;
             swarm_best_score = fpi;
         }
+        
         for (int j = 0; j < this->num_fit_iter; j++)
         {
             for (unsigned short i = 0; i < this->params.size(); i++) //number of particles
@@ -1699,16 +1738,26 @@ struct Board
                 x(i) += v(i);
                 
                 fpi = loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //current score
+                this->MSE_curr = (1.0f/fpi) - 1.0f;
+                //Boundary conditions
+                fpi += getBoundaryScore(particle_positions);
+                //Initial conditions
+                fpi += getInitialConditionScore(particle_positions);
+                
                 temp = particle_positions(i); //save old position of particle i
                 particle_positions(i) = x(i); //update old position to new position
                 fxi = loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //calculate the score with the new position
+                //Boundary conditions
+                fxi += getBoundaryScore(particle_positions, false);
+                //Initial conditions
+                fxi += getInitialConditionScore(particle_positions, false);
+                
                 if (fxi < fpi) //if the new vector is worse:
                 {
                     particle_positions(i) = temp; //reset particle_positions[i]
                 }
                 else if (fpi > swarm_best_score)
                 {
-//                    printf("Iteration %d: Changing param %d from %f to %f. Score from %f to %f\n", j, i, (this->params)[i], particle_positions[i], swarm_best_score, fpi);
                     (this->params)(i) = particle_positions(i);
                     improved = true;
                     swarm_best_score = fpi;
@@ -1891,7 +1940,7 @@ struct Board
     }
     
     //periodic BCs in x, Neumann BCs in y
-    float BC_AdvectionDiffusion2D_1()
+    float BC_AdvectionDiffusion2D_1(const Eigen::VectorXf& params, bool updateMSECurr = true)
     {
         float boundary_score = 0.0f;
         std::vector<int> grasp;
@@ -1916,14 +1965,164 @@ struct Board
         float x1 = Board::__tokens_inv_dict["x1"];  // Cache the value of x1
         
         std::replace(temp.begin(), temp.end(), x1, min_val);  // Replace all occurrences of x1 with min_val
+        temp_score = loss_func(expression_evaluator(params, temp));
+        boundary_score += temp_score;
+        if (updateMSECurr){this->MSE_curr += (1.0f/temp_score) - 1.0f;}
+        
+        std::replace(temp.begin(), temp.end(), min_val, max_val); // Replace all occurrences of min_val with max_val
+        temp_score = loss_func(expression_evaluator(params, temp));
+        boundary_score += temp_score;
+        if (updateMSECurr){this->MSE_curr += (1.0f/temp_score) - 1.0f;}
+        
+        std::tie(min_val, max_val) = feature_mins_maxes["x0"];
+        
+        //T(x_min) = T(x_max)
+        temp = this->pieces;
+        temp_1 = this->pieces;
+        float x0 = Board::__tokens_inv_dict["x0"];  // Cache the value of x0
+        
+        std::replace(temp.begin(), temp.end(), x0, min_val);  // Replace all occurrences of x0 with min_val
+        std::replace(temp_1.begin(), temp_1.end(), x0, max_val);  // Replace all occurrences of x0 with max_val
+        temp_score = loss_func(expression_evaluator(params, temp), expression_evaluator(params, temp_1));
+        boundary_score += temp_score;
+        if (updateMSECurr){this->MSE_curr += (1.0f/temp_score) - 1.0f;}
+        
+        //dT(x_min)/dx = dT(x_max)/dx
+        if (this->expression_type == "prefix")
+        {
+            this->derivePrefix(0, this->pieces.size() - 1, "x0", this->pieces, grasp);
+        }
+        else //postfix
+        {
+            this->derivePostfix(0, this->pieces.size() - 1, "x0", this->pieces, grasp);
+        }
+        temp = this->derivat;
+        temp_1 = this->derivat;
+        std::replace(temp.begin(), temp.end(), x0, min_val);  // Replace all occurrences of x0 with min_val
+        std::replace(temp_1.begin(), temp_1.end(), x0, max_val);  // Replace all occurrences of x0 with max_val
+        temp_score = loss_func(expression_evaluator(params, temp), expression_evaluator(params, temp_1));
+        boundary_score += temp_score;
+        if (updateMSECurr){this->MSE_curr += (1.0f/temp_score) - 1.0f;}
+        
+        return boundary_score;
+    }
+    
+    //periodic BCs in x and y
+    float BC_AdvectionDiffusion2D_2(const Eigen::VectorXf& params, bool updateMSECurr = true)
+    {
+        float boundary_score = 0.0f;
+        std::vector<int> grasp;
+        grasp.reserve(100);
+        std::vector<float> temp, temp_1;
+        float temp_score;
+        temp.reserve(50);
+        auto [min_val, max_val] = feature_mins_maxes["x0"];
+
+        //T(x_min) = T(x_max)
+        temp = this->pieces;
+        temp_1 = this->pieces;
+        float x0 = Board::__tokens_inv_dict["x0"];  // Cache the value of x0
+        
+        std::replace(temp.begin(), temp.end(), x0, min_val);  // Replace all occurrences of x0 with min_val
+        std::replace(temp_1.begin(), temp_1.end(), x0, max_val);  // Replace all occurrences of x0 with max_val
+        temp_score = loss_func(expression_evaluator(params, temp), expression_evaluator(params, temp_1));
+        boundary_score += temp_score;
+        if (updateMSECurr){this->MSE_curr += (1.0f/temp_score) - 1.0f;}
+        
+        //dT(x_min)/dx = dT(x_max)/dx
+        if (this->expression_type == "prefix")
+        {
+            this->derivePrefix(0, this->pieces.size() - 1, "x0", this->pieces, grasp);
+        }
+        else //postfix
+        {
+            this->derivePostfix(0, this->pieces.size() - 1, "x0", this->pieces, grasp);
+        }
+        temp = this->derivat;
+        temp_1 = this->derivat;
+        std::replace(temp.begin(), temp.end(), x0, min_val);  // Replace all occurrences of x0 with min_val
+        std::replace(temp_1.begin(), temp_1.end(), x0, max_val);  // Replace all occurrences of x0 with max_val
+        temp_score = loss_func(expression_evaluator(params, temp), expression_evaluator(params, temp_1));
+        boundary_score += temp_score;
+        if (updateMSECurr){this->MSE_curr += (1.0f/temp_score) - 1.0f;}
+        
+        std::tie(min_val, max_val) = feature_mins_maxes["x1"];
+        
+        //T(y_min) = T(y_max)
+        temp = this->pieces;
+        temp_1 = this->pieces;
+        float x1 = Board::__tokens_inv_dict["x1"];  // Cache the value of x1
+        
+        std::replace(temp.begin(), temp.end(), x1, min_val);  // Replace all occurrences of x1 with min_val
+        std::replace(temp_1.begin(), temp_1.end(), x1, max_val);  // Replace all occurrences of x1 with max_val
+        temp_score = loss_func(expression_evaluator(params, temp), expression_evaluator(params, temp_1));
+        boundary_score += temp_score;
+        if (updateMSECurr){this->MSE_curr += (1.0f/temp_score) - 1.0f;}
+        
+        //dT(y_min)/dy = dT(y_max)/dy
+        if (this->expression_type == "prefix")
+        {
+            this->derivePrefix(0, this->pieces.size() - 1, "x1", this->pieces, grasp);
+        }
+        else //postfix
+        {
+            this->derivePostfix(0, this->pieces.size() - 1, "x1", this->pieces, grasp);
+        }
+        temp = this->derivat;
+        temp_1 = this->derivat;
+        std::replace(temp.begin(), temp.end(), x1, min_val);  // Replace all occurrences of x1 with min_val
+        std::replace(temp_1.begin(), temp_1.end(), x1, max_val);  // Replace all occurrences of x1 with max_val
+        temp_score = loss_func(expression_evaluator(params, temp), expression_evaluator(params, temp_1));
+        boundary_score += temp_score;
+        if (updateMSECurr){this->MSE_curr += (1.0f/temp_score) - 1.0f;}
+        
+        return boundary_score;
+    }
+    
+    //check that f(x2=0) = x3
+    float IC_AdvectionDiffusion2D(const Eigen::VectorXf& params, bool updateMSECurr = true)
+    {
+        std::vector<float> temp = this->pieces;
+        std::replace(temp.begin(), temp.end(), Board::__tokens_inv_dict["x2"], Board::__tokens_inv_dict["0"]);  // Replace all occurrences of x2 with 0 (time t = 0)
+        float IC_Score = loss_func(expression_evaluator(params, temp), Board::data["x3"]);
+        if (updateMSECurr){this->MSE_curr += (1.0f/IC_Score) - 1.0f;}
+        return IC_Score;
+    }
+    
+    //periodic BCs in x, Neumann BCs in y
+    float BC_AdvectionDiffusion2D_1()
+    {
+        float boundary_score = 0.0f;
+        std::vector<int> grasp;
+        grasp.reserve(100);
+        std::vector<float> temp, temp_1;
+        float temp_score;
+        temp.reserve(50);
+        auto [min_val, max_val] = feature_mins_maxes["x1"];
+    //        std::cout << "min_val, max_val = " << min_val << ' ' << max_val << '\n';
+    //        std::cout << "values of min_val, max_val = " << Board::__tokens_dict[min_val] << ' ' <<  Board::__tokens_dict[max_val] << '\n';
+        
+        //dT/dy = 0 at boundaries
+        if (this->expression_type == "prefix")
+        {
+            this->derivePrefix(0, this->pieces.size() - 1, "x1", this->pieces, grasp);
+        }
+        else //postfix
+        {
+            this->derivePostfix(0, this->pieces.size() - 1, "x1", this->pieces, grasp);
+        }
+        temp = this->derivat;
+        float x1 = Board::__tokens_inv_dict["x1"];  // Cache the value of x1
+        
+        std::replace(temp.begin(), temp.end(), x1, min_val);  // Replace all occurrences of x1 with min_val
         temp_score = loss_func(expression_evaluator(this->params, temp));
         boundary_score += temp_score;
-        MSE_curr += (1.0f/temp_score) - 1.0f;
+        this->MSE_curr += (1.0f/temp_score) - 1.0f;
         
         std::replace(temp.begin(), temp.end(), min_val, max_val); // Replace all occurrences of min_val with max_val
         temp_score = loss_func(expression_evaluator(this->params, temp));
         boundary_score += temp_score;
-        MSE_curr += (1.0f/temp_score) - 1.0f;
+        this->MSE_curr += (1.0f/temp_score) - 1.0f;
         
         std::tie(min_val, max_val) = feature_mins_maxes["x0"];
         
@@ -1936,7 +2135,7 @@ struct Board
         std::replace(temp_1.begin(), temp_1.end(), x0, max_val);  // Replace all occurrences of x0 with max_val
         temp_score = loss_func(expression_evaluator(this->params, temp), expression_evaluator(this->params, temp_1));
         boundary_score += temp_score;
-        MSE_curr += (1.0f/temp_score) - 1.0f;
+        this->MSE_curr += (1.0f/temp_score) - 1.0f;
         
         //dT(x_min)/dx = dT(x_max)/dx
         if (this->expression_type == "prefix")
@@ -1953,11 +2152,11 @@ struct Board
         std::replace(temp_1.begin(), temp_1.end(), x0, max_val);  // Replace all occurrences of x0 with max_val
         temp_score = loss_func(expression_evaluator(this->params, temp), expression_evaluator(this->params, temp_1));
         boundary_score += temp_score;
-        MSE_curr += (1.0f/temp_score) - 1.0f;
+        this->MSE_curr += (1.0f/temp_score) - 1.0f;
         
         return boundary_score;
     }
-    
+
     //periodic BCs in x and y
     float BC_AdvectionDiffusion2D_2()
     {
@@ -1978,7 +2177,7 @@ struct Board
         std::replace(temp_1.begin(), temp_1.end(), x0, max_val);  // Replace all occurrences of x0 with max_val
         temp_score = loss_func(expression_evaluator(this->params, temp), expression_evaluator(this->params, temp_1));
         boundary_score += temp_score;
-        MSE_curr += (1.0f/temp_score) - 1.0f;
+        this->MSE_curr += (1.0f/temp_score) - 1.0f;
         
         //dT(x_min)/dx = dT(x_max)/dx
         if (this->expression_type == "prefix")
@@ -1995,7 +2194,7 @@ struct Board
         std::replace(temp_1.begin(), temp_1.end(), x0, max_val);  // Replace all occurrences of x0 with max_val
         temp_score = loss_func(expression_evaluator(this->params, temp), expression_evaluator(this->params, temp_1));
         boundary_score += temp_score;
-        MSE_curr += (1.0f/temp_score) - 1.0f;
+        this->MSE_curr += (1.0f/temp_score) - 1.0f;
         
         std::tie(min_val, max_val) = feature_mins_maxes["x1"];
         
@@ -2008,7 +2207,7 @@ struct Board
         std::replace(temp_1.begin(), temp_1.end(), x1, max_val);  // Replace all occurrences of x1 with max_val
         temp_score = loss_func(expression_evaluator(this->params, temp), expression_evaluator(this->params, temp_1));
         boundary_score += temp_score;
-        MSE_curr += (1.0f/temp_score) - 1.0f;
+        this->MSE_curr += (1.0f/temp_score) - 1.0f;
         
         //dT(y_min)/dy = dT(y_max)/dy
         if (this->expression_type == "prefix")
@@ -2025,19 +2224,67 @@ struct Board
         std::replace(temp_1.begin(), temp_1.end(), x1, max_val);  // Replace all occurrences of x1 with max_val
         temp_score = loss_func(expression_evaluator(this->params, temp), expression_evaluator(this->params, temp_1));
         boundary_score += temp_score;
-        MSE_curr += (1.0f/temp_score) - 1.0f;
+        this->MSE_curr += (1.0f/temp_score) - 1.0f;
         
         return boundary_score;
     }
-    
+
     //check that f(x2=0) = x3
     float IC_AdvectionDiffusion2D()
     {
         std::vector<float> temp = this->pieces;
         std::replace(temp.begin(), temp.end(), Board::__tokens_inv_dict["x2"], Board::__tokens_inv_dict["0"]);  // Replace all occurrences of x2 with 0 (time t = 0)
         float IC_Score = loss_func(expression_evaluator(this->params, temp), Board::data["x3"]);
-        MSE_curr += (1.0f/IC_Score) - 1.0f;
+        this->MSE_curr += (1.0f/IC_Score) - 1.0f;
         return IC_Score;
+    }
+    
+    float getBoundaryScore()
+    {
+        float score = 0.0f;
+        if (Board::boundary_condition_type == "AdvectionDiffusion2D_1")
+        {
+            score += BC_AdvectionDiffusion2D_1();
+        }
+        else if (Board::boundary_condition_type == "AdvectionDiffusion2D_2")
+        {
+            score += BC_AdvectionDiffusion2D_2();
+        }
+        return score;
+    }
+    
+    float getBoundaryScore(const Eigen::VectorXf& temp_vec, bool updateMSECurr = true)
+    {
+        float score = 0.0f;
+        if (Board::boundary_condition_type == "AdvectionDiffusion2D_1")
+        {
+            score += BC_AdvectionDiffusion2D_1(temp_vec, updateMSECurr);
+        }
+        else if (Board::boundary_condition_type == "AdvectionDiffusion2D_2")
+        {
+            score += BC_AdvectionDiffusion2D_2(temp_vec, updateMSECurr);
+        }
+        return score;
+    }
+    
+    float getInitialConditionScore()
+    {
+        float score = 0.0f;
+        if (Board::initial_condition_type == "AdvectionDiffusion2D")
+        {
+            score += IC_AdvectionDiffusion2D();
+        }
+        return score;
+    }
+    
+    float getInitialConditionScore(const Eigen::VectorXf& temp_vec, bool updateMSECurr = true)
+    {
+        float score = 0.0f;
+        if (Board::initial_condition_type == "AdvectionDiffusion2D")
+        {
+            score += IC_AdvectionDiffusion2D(temp_vec, updateMSECurr);
+        }
+        return score;
     }
     
     float fitFunctionToData()
@@ -2046,7 +2293,7 @@ struct Board
         Eigen::VectorXf expression_eval = expression_evaluator(this->params, this->pieces);
         if ((Board::__num_features == 1) && isConstant(expression_eval, sqrt(this->isConstTol))) //Ignore the trivial solution (1-d functions)!
         {
-            MSE_curr = FLT_MAX;
+            this->MSE_curr = FLT_MAX;
             return score;
         }
         else if (Board::__num_features > 1)
@@ -2064,7 +2311,7 @@ struct Board
                 }
                 if (isZero(expression_evaluator(this->params, this->derivat), sqrt(this->isConstTol))) //Ignore the trivial solution (N-d functions)!
                 {
-                    MSE_curr = FLT_MAX;
+                    this->MSE_curr = FLT_MAX;
                     return score;
                 }
             }
@@ -2117,61 +2364,31 @@ struct Board
                 });
                             
                 score = loss_func(expression_evaluator(temp_vec, this->diffeq_result));
-                MSE_curr = (1.0f/score) - 1.0f;
+                this->MSE_curr = (1.0f/score) - 1.0f;
                 //Boundary conditions
-                if (Board::boundary_condition_type == "AdvectionDiffusion2D_1")
-                {
-                    score += BC_AdvectionDiffusion2D_1();
-                }
-                else if (Board::boundary_condition_type == "AdvectionDiffusion2D_2")
-                {
-                    score += BC_AdvectionDiffusion2D_2();
-                }
+                score += getBoundaryScore(temp_vec);
                 //Initial conditions
-                if (Board::initial_condition_type == "AdvectionDiffusion2D")
-                {
-                    score += IC_AdvectionDiffusion2D();
-                }
+                score += getInitialConditionScore(temp_vec);
             }
             else
             {
                 score = loss_func(expression_evaluator(this->params, this->diffeq_result));
-                MSE_curr = (1.0f/score) - 1.0f;
+                this->MSE_curr = (1.0f/score) - 1.0f;
                 //Boundary conditions
-                if (Board::boundary_condition_type == "AdvectionDiffusion2D_1")
-                {
-                    score += BC_AdvectionDiffusion2D_1();
-                }
-                else if (Board::boundary_condition_type == "AdvectionDiffusion2D_2")
-                {
-                    score += BC_AdvectionDiffusion2D_2();
-                }
+                score += getBoundaryScore();
                 //Initial conditions
-                if (Board::initial_condition_type == "AdvectionDiffusion2D")
-                {
-                    score += IC_AdvectionDiffusion2D();
-                }
+                score += getInitialConditionScore();
             }
         }
         else
         {
             this->diffeq_result = diffeq(*this);
             score = loss_func(expression_evaluator(this->params, this->diffeq_result));
-            MSE_curr = (1.0f/score) - 1.0f;
+            this->MSE_curr = (1.0f/score) - 1.0f;
             //Boundary conditions
-            if (Board::boundary_condition_type == "AdvectionDiffusion2D_1")
-            {
-                score += BC_AdvectionDiffusion2D_1();
-            }
-            else if (Board::boundary_condition_type == "AdvectionDiffusion2D_2")
-            {
-                score += BC_AdvectionDiffusion2D_2();
-            }
+            score += getBoundaryScore();
             //Initial conditions
-            if (Board::initial_condition_type == "AdvectionDiffusion2D")
-            {
-                score += IC_AdvectionDiffusion2D();
-            }
+            score += getInitialConditionScore();
         }
         return score;
     }
@@ -5341,7 +5558,10 @@ int main()
         return std::exp(-(std::pow(x - Board::AdvectionDiffusion2DVars::x_0, 2) + std::pow(y - Board::AdvectionDiffusion2DVars::y_0, 2))) / (2 * std::pow(Board::AdvectionDiffusion2DVars::sigma, 2));
     });
         
-    RandomSearch(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data /*data used to solve differential equation*/, 4 /*fixed depth of generated solutions*/, "prefix" /*expression representation*/, "LBFGSB" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 50 /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_2" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
+    RandomSearch(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data /*data used to solve differential equation*/, 4 /*fixed depth of generated solutions*/, "prefix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 5 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_2" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
+    Board::expression_dict.clear();
+    GP(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data /*data used to solve differential equation*/, 4 /*fixed depth of generated solutions*/, "prefix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 5 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_2" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
+    
     
     return 0;
 }
