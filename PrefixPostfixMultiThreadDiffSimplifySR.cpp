@@ -4206,41 +4206,25 @@ std::vector<float> TwoDAdvectionDiffusion_1(Board& x)
     std::string kappa = "1";
     if (x.expression_type == "prefix")
     {
-        //- + + T_t (* T - 1 * y y)_x (* T - 1 * y y)_y * kappa + T_{xx} T_{yy}
-        //- + T_t (* T - 1 * y y)_x * kappa + T_{xx} T_{yy}
+        //- + T_t * - 1 * y y T_x * kappa + T_{xx} T_{yy}
         result.push_back(Board::__tokens_inv_dict["-"]); //-
-//        result.push_back(Board::__tokens_inv_dict["+"]); //+
         result.push_back(Board::__tokens_inv_dict["+"]); //+
-        
         x.derivePrefix(0, x.pieces.size()-1, "x2", x.pieces, grasp);
         for (float i: x.derivat) //T_t
         {
             result.push_back(i);
         }
-        
-        temp.push_back(Board::__tokens_inv_dict["*"]);
-        for (float i: x.pieces)
-        {
-            temp.push_back(i);
-        }
-        temp.push_back(Board::__tokens_inv_dict["-"]);
-        temp.push_back(Board::__tokens_inv_dict["1"]);
-        temp.push_back(Board::__tokens_inv_dict["*"]);
-        temp.push_back(Board::__tokens_inv_dict["x1"]);
-        temp.push_back(Board::__tokens_inv_dict["x1"]);
-        
-        x.derivePrefix(0, temp.size()-1, "x0", temp, grasp); //derivat will store first derivative of temp wrt x
-        for (float i: x.derivat) //(* T - 1 * y y)_x
+        result.push_back(Board::__tokens_inv_dict["*"]);
+        result.push_back(Board::__tokens_inv_dict["-"]);
+        result.push_back(Board::__tokens_inv_dict["1"]);
+        result.push_back(Board::__tokens_inv_dict["*"]);
+        result.push_back(Board::__tokens_inv_dict["x1"]);
+        result.push_back(Board::__tokens_inv_dict["x1"]);
+        x.derivePrefix(0, x.pieces.size()-1, "x0", x.pieces, grasp);
+        for (float i: x.derivat) //T_x
         {
             result.push_back(i);
         }
-        
-//        x.derivePrefix(0, temp.size()-1, "x1", temp, grasp); //derivat will store first derivative of temp wrt y
-//        for (float i: x.derivat) //(* T - 1 * y y)_y
-//        {
-//            result.push_back(i);
-//        }
-        
         result.push_back(Board::__tokens_inv_dict["*"]); //*
         result.push_back(Board::__tokens_inv_dict[kappa]); //kappa
         result.push_back(Board::__tokens_inv_dict["+"]); //+
@@ -4251,7 +4235,6 @@ std::vector<float> TwoDAdvectionDiffusion_1(Board& x)
         {
             result.push_back(i);
         }
-        
         x.derivePrefix(0, x.pieces.size()-1, "x1", x.pieces, grasp);
         temp = x.derivat;
         x.derivePrefix(0, temp.size()-1, "x1", temp, grasp);
@@ -4259,44 +4242,28 @@ std::vector<float> TwoDAdvectionDiffusion_1(Board& x)
         {
             result.push_back(i);
         }
-        
     }
     else if (x.expression_type == "postfix")
     {
-        //T_t (T 1 y y * - *)_x + (T 1 y y * - *)_y + kappa T_{xx} T_{yy} + * -
-        //T_t (T 1 y y * - *)_x + kappa T_{xx} T_{yy} + * -
+        //T_t 1 y y * - T_x * + kappa T_{xx} T_{yy} + * -
         x.derivePostfix(0, x.pieces.size()-1, "x2", x.pieces, grasp);
         for (float i: x.derivat) //T_t
         {
             result.push_back(i);
         }
-        
-        for (float i: x.pieces)
-        {
-            temp.push_back(i);
-        }
-        temp.push_back(Board::__tokens_inv_dict["1"]);
-        temp.push_back(Board::__tokens_inv_dict["x1"]);
-        temp.push_back(Board::__tokens_inv_dict["x1"]);
-        temp.push_back(Board::__tokens_inv_dict["*"]);
-        temp.push_back(Board::__tokens_inv_dict["-"]);
-        temp.push_back(Board::__tokens_inv_dict["*"]);
-        
-        x.derivePostfix(0, temp.size()-1, "x0", temp, grasp); //derivat will store first derivative of temp wrt x
-        for (float i: x.derivat) //(T 1 y y * - *)_x
+        result.push_back(Board::__tokens_inv_dict["1"]);
+        result.push_back(Board::__tokens_inv_dict["x1"]);
+        result.push_back(Board::__tokens_inv_dict["x1"]);
+        result.push_back(Board::__tokens_inv_dict["*"]);
+        result.push_back(Board::__tokens_inv_dict["-"]);
+        x.derivePostfix(0, x.pieces.size()-1, "x0", x.pieces, grasp);
+        for (float i: x.derivat) //T_x
         {
             result.push_back(i);
         }
+        result.push_back(Board::__tokens_inv_dict["*"]);
         result.push_back(Board::__tokens_inv_dict["+"]); //+
-        
-//        x.derivePostfix(0, temp.size()-1, "x1", temp, grasp); //derivat will store first derivative of temp wrt y
-//        for (float i: x.derivat) //(T 1 y y * - *)_y
-//        {
-//            result.push_back(i);
-//        }
-//        result.push_back(Board::__tokens_inv_dict["+"]); //+
         result.push_back(Board::__tokens_inv_dict[kappa]); //kappa
-//        
         x.derivePostfix(0, x.pieces.size()-1, "x0", x.pieces, grasp);
         temp = x.derivat;
         x.derivePostfix(0, temp.size()-1, "x0", temp, grasp);
@@ -4312,11 +4279,9 @@ std::vector<float> TwoDAdvectionDiffusion_1(Board& x)
         {
             result.push_back(i);
         }
-//        
         result.push_back(Board::__tokens_inv_dict["+"]); //+
         result.push_back(Board::__tokens_inv_dict["*"]); //*
         result.push_back(Board::__tokens_inv_dict["-"]); //-
-        
     }
     return result;
 }
@@ -4329,12 +4294,11 @@ std::vector<float> TwoDAdvectionDiffusion_2(Board& x)
     std::vector<int> grasp;
     grasp.reserve(100);
     std::vector<float> temp;
-    size_t temp_sz;
     temp.reserve(50);
     std::string kappa = "1";
     if (x.expression_type == "prefix")
     {
-        //- + + T_t (* T sin * 4 y)_x (* T cos * 4 x)_y * kappa + T_{xx} T_{yy}
+        //- + + T_t * sin * 4 y T_x * cos * 4 x T_y * kappa + T_{xx} T_{yy}
         result.push_back(Board::__tokens_inv_dict["-"]); //-
         result.push_back(Board::__tokens_inv_dict["+"]); //+
         result.push_back(Board::__tokens_inv_dict["+"]); //+
@@ -4344,29 +4308,26 @@ std::vector<float> TwoDAdvectionDiffusion_2(Board& x)
         {
             result.push_back(i);
         }
+        result.push_back(Board::__tokens_inv_dict["*"]);
+        result.push_back(Board::__tokens_inv_dict["sin"]);
+        result.push_back(Board::__tokens_inv_dict["*"]);
+        result.push_back(Board::__tokens_inv_dict["4"]);
+        result.push_back(Board::__tokens_inv_dict["x1"]);
         
-        temp.push_back(Board::__tokens_inv_dict["*"]);
-        for (float i: x.pieces)
-        {
-            temp.push_back(i);
-        }
-        temp.push_back(Board::__tokens_inv_dict["sin"]);
-        temp.push_back(Board::__tokens_inv_dict["*"]);
-        temp.push_back(Board::__tokens_inv_dict["4"]);
-        temp.push_back(Board::__tokens_inv_dict["x1"]);
-        
-        x.derivePrefix(0, temp.size()-1, "x0", temp, grasp); //derivat will store first derivative of temp wrt x
-        for (float i: x.derivat) //(* T sin * 4 y)_x
+        x.derivePrefix(0, x.pieces.size()-1, "x0", x.pieces, grasp);
+        for (float i: x.derivat) //T_x
         {
             result.push_back(i);
         }
         
-        temp_sz = temp.size();
-        temp[temp_sz - 1] = Board::__tokens_inv_dict["x0"];
-        temp[temp_sz - 4] = Board::__tokens_inv_dict["cos"];
+        result.push_back(Board::__tokens_inv_dict["*"]);
+        result.push_back(Board::__tokens_inv_dict["cos"]);
+        result.push_back(Board::__tokens_inv_dict["*"]);
+        result.push_back(Board::__tokens_inv_dict["4"]);
+        result.push_back(Board::__tokens_inv_dict["x0"]);
         
-        x.derivePrefix(0, temp.size()-1, "x1", temp, grasp); //derivat will store first derivative of temp wrt y
-        for (float i: x.derivat) //(* T cos * 4 x)_y
+        x.derivePrefix(0, x.pieces.size()-1, "x1", x.pieces, grasp);
+        for (float i: x.derivat) //T_y
         {
             result.push_back(i);
         }
@@ -4393,41 +4354,35 @@ std::vector<float> TwoDAdvectionDiffusion_2(Board& x)
     }
     else if (x.expression_type == "postfix")
     {
-        //T_t (T 4 y * sin *)_x + (T 4 x * cos *)_y + kappa T_{xx} T_{yy} + * -
+        //T_t 4 y * sin T_x * + 4 x * cos T_y * + kappa T_{xx} T_{yy} + * -
         x.derivePostfix(0, x.pieces.size()-1, "x2", x.pieces, grasp);
         for (float i: x.derivat) //T_t
         {
             result.push_back(i);
         }
-        
-        for (float i: x.pieces)
-        {
-            temp.push_back(i);
-        }
-        temp.push_back(Board::__tokens_inv_dict["4"]);
-        temp.push_back(Board::__tokens_inv_dict["x1"]);
-        temp.push_back(Board::__tokens_inv_dict["*"]);
-        temp.push_back(Board::__tokens_inv_dict["sin"]);
-        temp.push_back(Board::__tokens_inv_dict["*"]);
-        
-        x.derivePostfix(0, temp.size()-1, "x0", temp, grasp); //derivat will store first derivative of temp wrt x
-        for (float i: x.derivat) //(T 4 y * sin *)_x
+        result.push_back(Board::__tokens_inv_dict["4"]);
+        result.push_back(Board::__tokens_inv_dict["x1"]);
+        result.push_back(Board::__tokens_inv_dict["*"]);
+        result.push_back(Board::__tokens_inv_dict["sin"]);
+        x.derivePostfix(0, x.pieces.size()-1, "x0", x.pieces, grasp); //derivat will store first derivative of temp wrt x
+        for (float i: x.derivat) //T_x
         {
             result.push_back(i);
         }
+        result.push_back(Board::__tokens_inv_dict["*"]); //*
         result.push_back(Board::__tokens_inv_dict["+"]); //+
-        
-        temp_sz = temp.size();
-        temp[temp_sz - 4] = Board::__tokens_inv_dict["x0"];
-        temp[temp_sz - 2] = Board::__tokens_inv_dict["cos"];
-        x.derivePostfix(0, temp.size()-1, "x1", temp, grasp); //derivat will store first derivative of temp wrt y
-        for (float i: x.derivat) //(T 4 x * cos *)_y
+        result.push_back(Board::__tokens_inv_dict["4"]);
+        result.push_back(Board::__tokens_inv_dict["x0"]);
+        result.push_back(Board::__tokens_inv_dict["*"]);
+        result.push_back(Board::__tokens_inv_dict["cos"]);
+        x.derivePostfix(0, x.pieces.size()-1, "x1", x.pieces, grasp);
+        for (float i: x.derivat) //T_y
         {
             result.push_back(i);
         }
+        result.push_back(Board::__tokens_inv_dict["*"]); //*
         result.push_back(Board::__tokens_inv_dict["+"]); //+
         result.push_back(Board::__tokens_inv_dict[kappa]); //kappa
-//
         x.derivePostfix(0, x.pieces.size()-1, "x0", x.pieces, grasp);
         temp = x.derivat;
         x.derivePostfix(0, temp.size()-1, "x0", temp, grasp);
@@ -4435,7 +4390,6 @@ std::vector<float> TwoDAdvectionDiffusion_2(Board& x)
         {
             result.push_back(i);
         }
-        
         x.derivePostfix(0, x.pieces.size()-1, "x1", x.pieces, grasp);
         temp = x.derivat;
         x.derivePostfix(0, temp.size()-1, "x1", temp, grasp);
@@ -4443,11 +4397,9 @@ std::vector<float> TwoDAdvectionDiffusion_2(Board& x)
         {
             result.push_back(i);
         }
-//
         result.push_back(Board::__tokens_inv_dict["+"]); //+
         result.push_back(Board::__tokens_inv_dict["*"]); //*
         result.push_back(Board::__tokens_inv_dict["-"]); //-
-        
     }
     return result;
 }
@@ -5552,15 +5504,46 @@ int main()
         //2D-Gaussian
         float x = row(0);
         float y = row(1);
-        Board::AdvectionDiffusion2DVars::x_0 = std::numbers::pi_v<float>; //std::numbers::pi_v<float>
+        Board::AdvectionDiffusion2DVars::x_0 = std::numbers::pi_v<float>;
         Board::AdvectionDiffusion2DVars::y_0 = std::numbers::pi_v<float>;
         Board::AdvectionDiffusion2DVars::sigma = 0.2f;
         return std::exp(-(std::pow(x - Board::AdvectionDiffusion2DVars::x_0, 2) + std::pow(y - Board::AdvectionDiffusion2DVars::y_0, 2))) / (2 * std::pow(Board::AdvectionDiffusion2DVars::sigma, 2));
     });
         
+    Board::expression_dict.clear();
+    RandomSearch(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data /*data used to solve differential equation*/, 4 /*fixed depth of generated solutions*/, "prefix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 5 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
+    Board::expression_dict.clear();
+    GP(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data /*data used to solve differential equation*/, 4 /*fixed depth of generated solutions*/, "prefix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 5 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
+    Board::expression_dict.clear();
+    RandomSearch(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data /*data used to solve differential equation*/, 4 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 5 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
+    Board::expression_dict.clear();
+    GP(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data /*data used to solve differential equation*/, 4 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 5 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
+    Board::expression_dict.clear();
+    
     RandomSearch(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data /*data used to solve differential equation*/, 4 /*fixed depth of generated solutions*/, "prefix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 5 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_2" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
     Board::expression_dict.clear();
     GP(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data /*data used to solve differential equation*/, 4 /*fixed depth of generated solutions*/, "prefix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 5 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_2" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
+    Board::expression_dict.clear();
+    RandomSearch(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data /*data used to solve differential equation*/, 4 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 5 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_2" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
+    Board::expression_dict.clear();
+    GP(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data /*data used to solve differential equation*/, 4 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 5 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_2" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
+    
+    
+//    constexpr double time = 5.0;
+//    constexpr int num_notations = 2;
+//    constexpr const char* notations[num_notations] = {"prefix", "postfix"};
+//    
+//    for (int depth = 0; depth < 31; depth++)
+//    {
+//        //either {const_tokens: false}, {const_tokens: true}, {const_tokens: true and const_token: true}
+//        for (int notation = 0; notation < num_notations; notation++)
+//        {
+//            //const_tokens: false
+//            Board::expression_dict.clear();
+//            RandomSearch(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data /*data used to solve differential equation*/, depth /*fixed depth of generated solutions*/, "prefix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "TwoDAdvectionDiffusion_2" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
+//            
+//        }
+//    }
     
     
     return 0;
