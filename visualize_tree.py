@@ -333,10 +333,11 @@ def test_visualize():
 #                x_imag = "x y cos *"
 #                plot_rpn_expression_tree((x_real + " i " + x_imag + " * +").split(), block=True, save = save)
 #                plot_pn_expression_tree(("/ * - x_0 x0 exp - * - x0 x_0 - x_0 x0 * - x1 y_0 - x1 y_0 * sigma sigma").split(), block=True, save = save)
-                plot_rpn_expression_tree("T_t 1 y y * - T_x * + kappa T_{xx} T_{yy} + * -".split(), block=True, save = save)
-                plot_pn_expression_tree(("- + T_t * - 1 * y y T_x * kappa + T_{xx} T_{yy}").split(), block=True, save = save)
-                plot_rpn_expression_tree("T_t 4 y * sin T_x * + 4 x * cos T_y * + kappa T_{xx} T_{yy} + * -".split(), block=True, save = save)
-                plot_pn_expression_tree(("- + + T_t * sin * 4 y T_x * cos * 4 x T_y * kappa + T_{xx} T_{yy}").split(), block=True, save = save)
+#                plot_rpn_expression_tree("T_t 1 y y * - T_x * + kappa T_{xx} T_{yy} + * -".split(), block=True, save = save)
+#                plot_pn_expression_tree(("- + T_t * - 1 * y y T_x * kappa + T_{xx} T_{yy}").split(), block=True, save = save)
+#                plot_rpn_expression_tree("T_t 4 y * sin T_x * + 4 x * cos T_y * + kappa T_{xx} T_{yy} + * -".split(), block=True, save = save)
+#                plot_pn_expression_tree(("- + + T_t * sin * 4 y T_x * cos * 4 x T_y * kappa + T_{xx} T_{yy}").split(), block=True, save = save)
+                plot_rpn_expression_tree("x3 x3 ^ x1 cos x0 tanh - + x2 x3 x3 ^ + x3 x3 tanh ^ / /".split(), block=True, save = save)
 
 
         except KeyboardInterrupt:

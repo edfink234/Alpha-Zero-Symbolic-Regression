@@ -535,16 +535,11 @@ struct Board
                     Board::__input_vars_float.push_back(i);
                 }
                 Board::__other_tokens_float.clear();
-//                for (int i = ops_plus_features + 1; i <= Board::action_size; i++)
-//                {
-//                    Board::__other_tokens_float.push_back(i);
-//                }
                 int fmm_idx = ops_plus_features + 1;
                 for (int i = fmm_idx; i < fmm_idx + feature_mins_maxes_start_val; i++)
                 {
                     Board::__other_tokens_float.push_back(i);
                 }
-//                fmm_idx += feature_mins_maxes_start_val;
                 for (int i = fmm_idx + feature_mins_maxes_start_val, j = 0; i < fmm_idx + feature_mins_maxes_end_val; i+=2, j++)
                 {
                     Board::__other_tokens_float.push_back(i);
@@ -558,12 +553,14 @@ struct Board
                     Board::__other_tokens_float.push_back(i);
                 }
                 
+                Board::__tokens_dict.clear();
+                Board::__tokens_inv_dict.clear();
                 for (int i = 0; i < Board::action_size; i++)
                 {
                     Board::__tokens_dict[Board::__tokens_float[i]] = Board::__tokens[i];
                     Board::__tokens_inv_dict[Board::__tokens[i]] = Board::__tokens_float[i];
                 }
-                
+                Board::una_bin_leaf_legal_moves_dict.clear();
                 if (const_tokens)
                 {
                     Board::una_bin_leaf_legal_moves_dict[true][true][true] = Board::__tokens_float;
@@ -999,7 +996,7 @@ struct Board
                         }
                     }
                 }
-                
+                assert(legal_moves.size());
                 return legal_moves;
 
             }
@@ -1020,7 +1017,8 @@ struct Board
                 pieces[pieces.size() - 1] = Board::__input_vars_float[0];
                 leaf_allowed = (!((num_leaves == num_binary + 1) || (getPNdepth(pieces).first < this->n && (num_leaves == num_binary))));
                 pieces.pop_back();
-//                assert(!(!una_allowed && !bin_allowed && !leaf_allowed));
+                assert(!(!una_allowed && !bin_allowed && !leaf_allowed));
+                
                 return Board::una_bin_leaf_legal_moves_dict[una_allowed][bin_allowed][leaf_allowed];
             }
         }
@@ -2680,7 +2678,6 @@ struct Board
                 this->derivat.push_back(Board::__tokens_inv_dict["*"]);
                 this->derivat.push_back(Board::__tokens_inv_dict["AdvectionDiffusion2DVars::sigma"]);
                 this->derivat.push_back(Board::__tokens_inv_dict["AdvectionDiffusion2DVars::sigma"]);
-                return;
             }
             else if (dx == "x3")
             {
@@ -4422,8 +4419,9 @@ void SimulatedAnnealing(std::vector<float> (*diffeq)(Board&), const Eigen::Matri
      Outside of thread:
      */
     std::atomic<float> max_score{0.0};
-    std::atomic<float> best_MSE{0.0f};
+    std::atomic<float> best_MSE{FLT_MAX};
     std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
+    
     auto start_time = Clock::now();
     
     /*
@@ -4435,6 +4433,7 @@ void SimulatedAnnealing(std::vector<float> (*diffeq)(Board&), const Eigen::Matri
         std::random_device rand_dev;
         std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
         Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token, boundary_condition_type, initial_condition_type);
+        
         sync_point.arrive_and_wait();
         Board secondary(diffeq, false, 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token, boundary_condition_type, initial_condition_type); //For perturbations
         float score = 0.0f, check_point_score = 0.0f;
@@ -4574,7 +4573,6 @@ void SimulatedAnnealing(std::vector<float> (*diffeq)(Board&), const Eigen::Matri
     std::cout << "Best expression (original format) = " << orig_expression << '\n';
     std::cout << "Best diff result = " << best_expr_result << '\n';
     std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
-
 }
 
 //https://arxiv.org/abs/2310.06609
@@ -4585,7 +4583,7 @@ void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int d
     if (num_threads == 0)
     {
         unsigned int temp = std::thread::hardware_concurrency();
-        num_threads = ((temp <= 1) ? 1 : temp-1);
+        num_threads = ((temp <= 1) ? 1 : temp);
     }
     
     std::vector<std::thread> threads(num_threads);
@@ -4595,8 +4593,9 @@ void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int d
      Outside of thread:
      */
     std::atomic<float> max_score{0.0};
-    std::atomic<float> best_MSE{0.0f};
+    std::atomic<float> best_MSE{FLT_MAX};
     std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
+    
     auto start_time = Clock::now();
     
     /*
@@ -4625,8 +4624,8 @@ void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int d
         
         auto updateScore = [&]()
         {
-    //        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
-    //        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
+            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
+            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
             if (score > max_score)
             {
                 max_score = score;
@@ -4636,6 +4635,12 @@ void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int d
                 orig_expression = x.expression();
                 best_expr_result = x._to_infix(x.diffeq_result);
                 orig_expr_result = x.expression(x.diffeq_result);
+                std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+                std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
+                std::cout << "Best expression = " << best_expression << '\n';
+                std::cout << "Best expression (original format) = " << orig_expression << '\n';
+                std::cout << "Best diff result = " << best_expr_result << '\n';
+                std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
             }
         };
         
@@ -4646,10 +4651,10 @@ void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int d
             {
                 temp_legal_moves = x.get_legal_moves(); //the legal moves
                 temp_sz = temp_legal_moves.size(); //the number of legal moves
+                assert(temp_sz);
                 std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
                 x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
             }
-            
             updateScore();
             individuals.push_back(std::make_pair(x.pieces, score));
             x.pieces.clear();
@@ -4668,10 +4673,9 @@ void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int d
                 secondary_one.pieces.push_back(temp_legal_moves[distribution(generator)]);
             }
             
-//            assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).first == secondary_one.n);
-//            assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).second);
+            assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).first == secondary_one.n);
+            assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).second);
 
-            
             //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
             //in `x.pieces` and store them in an std::vector<std::pair<int, int>>
             //called `sub_exprs_1`.
@@ -4703,11 +4707,13 @@ void GP(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int d
             secondary_two.n = n;
             
             rand_individual_idx_1 = selector_dist(generator);
+            assert(individuals.size() && rand_individual_idx_1 < individuals.size());
             individual_1 = individuals[rand_individual_idx_1];
             
             do {
                 rand_individual_idx_2 = selector_dist(generator);
             } while (rand_individual_idx_2 == rand_individual_idx_1);
+            assert(individuals.size() && rand_individual_idx_1 < individuals.size());
             individual_2 = individuals[rand_individual_idx_2];
         
             //Step 1: Identify the starting and stopping index pairs of all depth-n sub-expressions
@@ -4839,8 +4845,9 @@ void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int 
      */
     
     std::atomic<float> max_score{0.0};
-    std::atomic<float> best_MSE{0.0f};
+    std::atomic<float> best_MSE{FLT_MAX};
     std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
+    
     auto start_time = Clock::now();
 
     /*
@@ -4852,6 +4859,7 @@ void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int 
         std::random_device rand_dev;
         std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
         Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token, boundary_condition_type, initial_condition_type);
+        
         sync_point.arrive_and_wait();
         float score = 0, check_point_score = 0;
         std::vector<float> temp_legal_moves;
@@ -4960,6 +4968,11 @@ void PSO(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int 
                 orig_expression = x.expression();
                 best_expr_result = x._to_infix(x.diffeq_result);
                 orig_expr_result = x.expression(x.diffeq_result);
+                std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
+                std::cout << "Best expression = " << best_expression << '\n';
+                std::cout << "Best expression (original format) = " << orig_expression << '\n';
+                std::cout << "Best diff result = " << best_expr_result << '\n';
+                std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
             }
             x.pieces.clear();
             curr_positions.clear();
@@ -4991,7 +5004,7 @@ void ConcurrentMCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf&
     if (num_threads == 0)
     {
         unsigned int temp = std::thread::hardware_concurrency();
-        num_threads = ((temp <= 1) ? 1 : temp-1);
+        num_threads = ((temp <= 1) ? 1 : temp);
     }
     
     std::vector<std::thread> threads(num_threads);
@@ -5001,10 +5014,10 @@ void ConcurrentMCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf&
      Outside of thread:
      */
     std::atomic<float> max_score{0.0f};
-    std::atomic<float> best_MSE{0.0f};
+    std::atomic<float> best_MSE{FLT_MAX};
     
     std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
-
+    
     auto start_time = Clock::now();
     
     /*
@@ -5020,6 +5033,7 @@ void ConcurrentMCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf&
         std::random_device rand_dev;
         std::mt19937 thread_local generator(rand_dev());
         Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token, boundary_condition_type, initial_condition_type);
+        
         sync_point.arrive_and_wait();
         float score = 0.0f, check_point_score = 0.0f, UCT, best_act, UCT_best;
         
@@ -5242,7 +5256,7 @@ void MCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int
     if (num_threads == 0)
     {
         unsigned int temp = std::thread::hardware_concurrency();
-        num_threads = ((temp <= 1) ? 1 : temp-1);
+        num_threads = ((temp <= 1) ? 1 : temp);
     }
     
     std::vector<std::thread> threads(num_threads);
@@ -5252,9 +5266,9 @@ void MCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int
      Outside of thread:
      */
     std::atomic<float> max_score{0.0};
-    std::atomic<float> best_MSE{0.0f};
+    std::atomic<float> best_MSE{FLT_MAX};
     std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
-
+    
     auto start_time = Clock::now();
     
     /*
@@ -5266,6 +5280,7 @@ void MCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int
         std::random_device rand_dev;
         std::mt19937 thread_local generator(rand_dev());
         Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token, boundary_condition_type, initial_condition_type);
+        
         sync_point.arrive_and_wait();
         float score = 0.0f, check_point_score = 0.0f, UCT, best_act, UCT_best;
         
@@ -5408,8 +5423,9 @@ void RandomSearch(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& d
      */
     
     std::atomic<float> max_score{0.0};
-    std::atomic<float> best_MSE{0.0f};
+    std::atomic<float> best_MSE{FLT_MAX};
     std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
+    
     auto start_time = Clock::now();
     
     /*
@@ -5422,6 +5438,7 @@ void RandomSearch(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& d
         std::mt19937 thread_local generator(rand_dev()); // Mersenne Twister random number generator
 
         Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token, boundary_condition_type, initial_condition_type);
+        
         sync_point.arrive_and_wait();
         float score = 0.0f;
         std::vector<float> temp_legal_moves;
@@ -5484,21 +5501,25 @@ void RandomSearch(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& d
 
 int main()
 {
-//    auto data = addColumnWithLambda(createMeshgridVectors(10, 3, {0.1f, -1.1f, 0.1f}, {2.1f, 1.1f, 20.0f}),
-//    [&](const Eigen::VectorXf& row) -> float
-//    {
-//        //2D-Gaussian
-//        float x = row(0);
-//        float y = row(1);
-//        Board::AdvectionDiffusion2DVars::x_0 = 1.1f; //std::numbers::pi_v<float>
-//        Board::AdvectionDiffusion2DVars::y_0 = 0.0f;
-//        Board::AdvectionDiffusion2DVars::sigma = 0.2f;
-//        return std::exp(-(std::pow(x - Board::AdvectionDiffusion2DVars::x_0, 2) + std::pow(y - Board::AdvectionDiffusion2DVars::y_0, 2))) / (2 * std::pow(Board::AdvectionDiffusion2DVars::sigma, 2));
-//    });
-//    std::cout << data << '\n';
-//    RandomSearch(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data /*data used to solve differential equation*/, 5 /*fixed depth of generated solutions*/, "prefix" /*expression representation*/, "LBFGSB" /*fit method if expression contains const tokens*/, 1 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 10 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
+    constexpr double time = 100000.0;
     
-    auto data = createMeshgridWithLambda(10, 3, {0.1f, 0.1f, 0.1f}, {2.0f*std::numbers::pi_v<float>, 2.0f*std::numbers::pi_v<float>, 20.0f},
+    //Case 1
+    auto data1 = createMeshgridWithLambda(10, 3, {0.1f, -1.1f, 0.1f}, {2.1f, 1.1f, 20.0f},
+    [&](const Eigen::VectorXf& row) -> float
+    {
+        //2D-Gaussian
+        float x = row(0);
+        float y = row(1);
+        Board::AdvectionDiffusion2DVars::x_0 = 1.1f;
+        Board::AdvectionDiffusion2DVars::y_0 = 0.0f;
+        Board::AdvectionDiffusion2DVars::sigma = 0.2f;
+        return std::exp(-(std::pow(x - Board::AdvectionDiffusion2DVars::x_0, 2) + std::pow(y - Board::AdvectionDiffusion2DVars::y_0, 2))) / (2 * std::pow(Board::AdvectionDiffusion2DVars::sigma, 2));
+    });
+    
+    GP(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data1 /*data used to solve differential equation*/, 4 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
+
+    //Case 2
+    auto data2 = createMeshgridWithLambda(10, 3, {0.1f, 0.1f, 0.1f}, {2.0f*std::numbers::pi_v<float>, 2.0f*std::numbers::pi_v<float>, 20.0f},
     [&](const Eigen::VectorXf& row) -> float
     {
         //2D-Gaussian
@@ -5509,42 +5530,6 @@ int main()
         Board::AdvectionDiffusion2DVars::sigma = 0.2f;
         return std::exp(-(std::pow(x - Board::AdvectionDiffusion2DVars::x_0, 2) + std::pow(y - Board::AdvectionDiffusion2DVars::y_0, 2))) / (2 * std::pow(Board::AdvectionDiffusion2DVars::sigma, 2));
     });
-        
-    Board::expression_dict.clear();
-    RandomSearch(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data /*data used to solve differential equation*/, 4 /*fixed depth of generated solutions*/, "prefix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 5 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
-    Board::expression_dict.clear();
-    GP(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data /*data used to solve differential equation*/, 4 /*fixed depth of generated solutions*/, "prefix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 5 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
-    Board::expression_dict.clear();
-    RandomSearch(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data /*data used to solve differential equation*/, 4 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 5 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
-    Board::expression_dict.clear();
-    GP(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data /*data used to solve differential equation*/, 4 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 5 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
-    Board::expression_dict.clear();
-    
-    RandomSearch(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data /*data used to solve differential equation*/, 4 /*fixed depth of generated solutions*/, "prefix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 5 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_2" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
-    Board::expression_dict.clear();
-    GP(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data /*data used to solve differential equation*/, 4 /*fixed depth of generated solutions*/, "prefix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 5 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_2" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
-    Board::expression_dict.clear();
-    RandomSearch(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data /*data used to solve differential equation*/, 4 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 5 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_2" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
-    Board::expression_dict.clear();
-    GP(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data /*data used to solve differential equation*/, 4 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, 5 /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_2" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
-    
-    
-//    constexpr double time = 5.0;
-//    constexpr int num_notations = 2;
-//    constexpr const char* notations[num_notations] = {"prefix", "postfix"};
-//    
-//    for (int depth = 0; depth < 31; depth++)
-//    {
-//        //either {const_tokens: false}, {const_tokens: true}, {const_tokens: true and const_token: true}
-//        for (int notation = 0; notation < num_notations; notation++)
-//        {
-//            //const_tokens: false
-//            Board::expression_dict.clear();
-//            RandomSearch(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data /*data used to solve differential equation*/, depth /*fixed depth of generated solutions*/, "prefix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "TwoDAdvectionDiffusion_2" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
-//            
-//        }
-//    }
-    
     
     return 0;
 }

@@ -1,0 +1,23 @@
+from os import system
+
+print("compiling...")
+system(r"g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR1 PrefixPostfixMultiThreadDiffSimplifySR1.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -ffast-math -ftree-vectorize -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native")
+print("compiled 1")
+system(r"g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR2 PrefixPostfixMultiThreadDiffSimplifySR2.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -ffast-math -ftree-vectorize -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native")
+print("compiled 2")
+system(r"g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR3 PrefixPostfixMultiThreadDiffSimplifySR3.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -ffast-math -ftree-vectorize -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native")
+print("compiled 3")
+system(r"g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR4 PrefixPostfixMultiThreadDiffSimplifySR4.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -ffast-math -ftree-vectorize -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native")
+print("compiled 4")
+system(r"g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR5 PrefixPostfixMultiThreadDiffSimplifySR5.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -ffast-math -ftree-vectorize -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native")
+print("compiled 5")
+system(r"g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR6 PrefixPostfixMultiThreadDiffSimplifySR6.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -ffast-math -ftree-vectorize -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native")
+print("compiled 6")
+print("running...")
+system("./PrefixPostfixMultiThreadDiffSimplifySR1")
+system("./PrefixPostfixMultiThreadDiffSimplifySR2")
+system("./PrefixPostfixMultiThreadDiffSimplifySR3")
+system("./PrefixPostfixMultiThreadDiffSimplifySR4")
+system("./PrefixPostfixMultiThreadDiffSimplifySR5")
+system("./PrefixPostfixMultiThreadDiffSimplifySR6")
+

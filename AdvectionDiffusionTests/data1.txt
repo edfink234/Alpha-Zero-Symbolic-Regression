@@ -1,0 +1,725 @@
+Algorithm & depth & notation & MSE & const_tokens & const_token
+Random Search & 1 & prefix & 3.40282e+38 & false & false
+MCTS & 1 & prefix & 3.40282e+38 & false & false
+Concurrent MCTS & 1 & prefix & 3.40282e+38 & false & false
+PSO & 1 & prefix & 3.40282e+38 & false & false
+GP & 1 & prefix & 3.40282e+38 & false & false
+Simulated Annealing & 1 & prefix & 3.40282e+38 & false & false
+Random Search & 1 & postfix & 3.40282e+38 & false & false
+MCTS & 1 & postfix & 3.40282e+38 & false & false
+Concurrent MCTS & 1 & postfix & 3.40282e+38 & false & false
+PSO & 1 & postfix & 3.40282e+38 & false & false
+GP & 1 & postfix & 3.40282e+38 & false & false
+Simulated Annealing & 1 & postfix & 3.40282e+38 & false & false
+Random Search & 2 & prefix & 46.9809 & false & false
+MCTS & 2 & prefix & 44.9126 & false & false
+Concurrent MCTS & 2 & prefix & inf & false & false
+PSO & 2 & prefix & inf & false & false
+GP & 2 & prefix & 46.9809 & false & false
+Simulated Annealing & 2 & prefix & 44.7403 & false & false
+Random Search & 2 & postfix & 49.3126 & false & false
+MCTS & 2 & postfix & 406.324 & false & false
+Concurrent MCTS & 2 & postfix & 12318.8 & false & false
+PSO & 2 & postfix & 1.19577e+07 & false & false
+GP & 2 & postfix & inf & false & false
+Simulated Annealing & 2 & postfix & inf & false & false
+Random Search & 3 & prefix & 33.6203 & false & false
+MCTS & 3 & prefix & 49.0166 & false & false
+Concurrent MCTS & 3 & prefix & 63.0551 & false & false
+PSO & 3 & prefix & 45.3375 & false & false
+GP & 3 & prefix & 46.5659 & false & false
+Simulated Annealing & 3 & prefix & 46.9809 & false & false
+Random Search & 3 & postfix & 37.3022 & false & false
+MCTS & 3 & postfix & 46.9809 & false & false
+Concurrent MCTS & 3 & postfix & 690.113 & false & false
+PSO & 3 & postfix & 36.0483 & false & false
+GP & 3 & postfix & 51.0676 & false & false
+Simulated Annealing & 3 & postfix & 2397.54 & false & false
+Random Search & 4 & prefix & 34.8854 & false & false
+MCTS & 4 & prefix & 46.0214 & false & false
+Concurrent MCTS & 4 & prefix & 153.923 & false & false
+PSO & 4 & prefix & 49.7137 & false & false
+GP & 4 & prefix & 35.2741 & false & false
+Simulated Annealing & 4 & prefix & 45.7811 & false & false
+Random Search & 4 & postfix & 46.2392 & false & false
+MCTS & 4 & postfix & 44.6649 & false & false
+Concurrent MCTS & 4 & postfix & inf & false & false
+PSO & 4 & postfix & 73.1723 & false & false
+GP & 4 & postfix & 48.2754 & false & false
+Simulated Annealing & 4 & postfix & 48.0172 & false & false
+Random Search & 5 & prefix & 45.9681 & false & false
+MCTS & 5 & prefix & 10619.3 & false & false
+Concurrent MCTS & 5 & prefix & inf & false & false
+PSO & 5 & prefix & 62.3158 & false & false
+GP & 5 & prefix & 64.2955 & false & false
+Simulated Annealing & 5 & prefix & 46.5762 & false & false
+Random Search & 5 & postfix & 44.2159 & false & false
+MCTS & 5 & postfix & inf & false & false
+Concurrent MCTS & 5 & postfix & 45.4064 & false & false
+PSO & 5 & postfix & 92.9183 & false & false
+GP & 5 & postfix & 34.8741 & false & false
+Simulated Annealing & 5 & postfix & 59.5568 & false & false
+Random Search & 6 & prefix & 45.0705 & false & false
+MCTS & 6 & prefix & 40.7589 & false & false
+Concurrent MCTS & 6 & prefix & 636.558 & false & false
+PSO & 6 & prefix & 46.4115 & false & false
+GP & 6 & prefix & 34.1383 & false & false
+Simulated Annealing & 6 & prefix & 38.6204 & false & false
+Random Search & 6 & postfix & 41.3189 & false & false
+MCTS & 6 & postfix & 146.009 & false & false
+Concurrent MCTS & 6 & postfix & 2.62516e+06 & false & false
+PSO & 6 & postfix & 39.1416 & false & false
+GP & 6 & postfix & 49.4533 & false & false
+Simulated Annealing & 6 & postfix & 52.072 & false & false
+Random Search & 7 & prefix & 53.2391 & false & false
+MCTS & 7 & prefix & 156.235 & false & false
+Concurrent MCTS & 7 & prefix & 33.5816 & false & false
+PSO & 7 & prefix & 77.3088 & false & false
+GP & 7 & prefix & 48.2823 & false & false
+Simulated Annealing & 7 & prefix & 74.625 & false & false
+Random Search & 7 & postfix & 3177.44 & false & false
+MCTS & 7 & postfix & 53.6442 & false & false
+Concurrent MCTS & 7 & postfix & 43.717 & false & false
+PSO & 7 & postfix & inf & false & false
+GP & 7 & postfix & 746.213 & false & false
+Simulated Annealing & 7 & postfix & 48.3141 & false & false
+Random Search & 8 & prefix & 44.2071 & false & false
+MCTS & 8 & prefix & inf & false & false
+Concurrent MCTS & 8 & prefix & 34.3824 & false & false
+PSO & 8 & prefix & 129.996 & false & false
+GP & 8 & prefix & 36.699 & false & false
+Simulated Annealing & 8 & prefix & 44.6896 & false & false
+Random Search & 8 & postfix & 8.75417e+10 & false & false
+MCTS & 8 & postfix & 48.3129 & false & false
+Concurrent MCTS & 8 & postfix & 7076.77 & false & false
+PSO & 8 & postfix & 59.6957 & false & false
+GP & 8 & postfix & 59.5135 & false & false
+Simulated Annealing & 8 & postfix & 54.4609 & false & false
+Random Search & 9 & prefix & 61279.4 & false & false
+MCTS & 9 & prefix & 36.1352 & false & false
+Concurrent MCTS & 9 & prefix & 324.714 & false & false
+PSO & 9 & prefix & 56.833 & false & false
+GP & 9 & prefix & inf & false & false
+Simulated Annealing & 9 & prefix & 65.4693 & false & false
+Random Search & 9 & postfix & 45.3992 & false & false
+MCTS & 9 & postfix & 36.7638 & false & false
+Concurrent MCTS & 9 & postfix & 34.8442 & false & false
+PSO & 9 & postfix & 22.7113 & false & false
+GP & 9 & postfix & 6308.05 & false & false
+Simulated Annealing & 9 & postfix & 35.3058 & false & false
+Random Search & 10 & prefix & 36.5199 & false & false
+MCTS & 10 & prefix & 1.00167e+27 & false & false
+Concurrent MCTS & 10 & prefix & 28.5691 & false & false
+PSO & 10 & prefix & 61.7478 & false & false
+GP & 10 & prefix & 40.4437 & false & false
+Simulated Annealing & 10 & prefix & 329.12 & false & false
+Random Search & 10 & postfix & 49.0192 & false & false
+MCTS & 10 & postfix & 36.5348 & false & false
+Concurrent MCTS & 10 & postfix & 44.2514 & false & false
+PSO & 10 & postfix & 53.4463 & false & false
+GP & 10 & postfix & inf & false & false
+Simulated Annealing & 10 & postfix & 82.4564 & false & false
+Random Search & 11 & prefix & 3353.85 & false & false
+MCTS & 11 & prefix & 214.189 & false & false
+Concurrent MCTS & 11 & prefix & 2.66397e+28 & false & false
+PSO & 11 & prefix & 59.8999 & false & false
+GP & 11 & prefix & 589.201 & false & false
+Simulated Annealing & 11 & prefix & inf & false & false
+Random Search & 11 & postfix & 46.8777 & false & false
+MCTS & 11 & postfix & 59.7138 & false & false
+Concurrent MCTS & 11 & postfix & inf & false & false
+PSO & 11 & postfix & 223213 & false & false
+GP & 11 & postfix & 156.282 & false & false
+Simulated Annealing & 11 & postfix & 1085.41 & false & false
+Random Search & 12 & prefix & inf & false & false
+MCTS & 12 & prefix & 4.12419e+07 & false & false
+Concurrent MCTS & 12 & prefix & 150.301 & false & false
+PSO & 12 & prefix & 517.936 & false & false
+GP & 12 & prefix & 9.73086e+34 & false & false
+Simulated Annealing & 12 & prefix & 36.8789 & false & false
+Random Search & 12 & postfix & 134.518 & false & false
+MCTS & 12 & postfix & 116491 & false & false
+Concurrent MCTS & 12 & postfix & 3.40282e+38 & false & false
+PSO & 12 & postfix & 14128.7 & false & false
+GP & 12 & postfix & 7.44184e+06 & false & false
+Simulated Annealing & 12 & postfix & 1.9486e+09 & false & false
+Random Search & 13 & prefix & 440081 & false & false
+MCTS & 13 & prefix & 49.3577 & false & false
+Concurrent MCTS & 13 & prefix & 3.40282e+38 & false & false
+PSO & 13 & prefix & 121.048 & false & false
+GP & 13 & prefix & 6.02295e+33 & false & false
+Simulated Annealing & 13 & prefix & 3.40282e+38 & false & false
+Random Search & 13 & postfix & 2.75459e+15 & false & false
+MCTS & 13 & postfix & 12615.4 & false & false
+Concurrent MCTS & 13 & postfix & 5.24114e+07 & false & false
+PSO & 13 & postfix & 238611 & false & false
+GP & 13 & postfix & 1217.91 & false & false
+Simulated Annealing & 13 & postfix & inf & false & false
+Random Search & 14 & prefix & 2.54762e+06 & false & false
+MCTS & 14 & prefix & 3.40282e+38 & false & false
+Concurrent MCTS & 14 & prefix & 3.40282e+38 & false & false
+PSO & 14 & prefix & 40935.4 & false & false
+GP & 14 & prefix & 74018.8 & false & false
+Simulated Annealing & 14 & prefix & 46.1047 & false & false
+Random Search & 14 & postfix & 77.6421 & false & false
+MCTS & 14 & postfix & 1.57385e+07 & false & false
+Concurrent MCTS & 14 & postfix & inf & false & false
+PSO & 14 & postfix & inf & false & false
+GP & 14 & postfix & 3.40282e+38 & false & false
+Simulated Annealing & 14 & postfix & 71.8941 & false & false
+Random Search & 15 & prefix & 3.40282e+38 & false & false
+MCTS & 15 & prefix & inf & false & false
+Concurrent MCTS & 15 & prefix & 3.40282e+38 & false & false
+PSO & 15 & prefix & 29344.6 & false & false
+GP & 15 & prefix & inf & false & false
+Simulated Annealing & 15 & prefix & 58023 & false & false
+Random Search & 15 & postfix & 1.68153e+14 & false & false
+MCTS & 15 & postfix & 8.25488e+16 & false & false
+Concurrent MCTS & 15 & postfix & 359.323 & false & false
+PSO & 15 & postfix & 455260 & false & false
+GP & 15 & postfix & inf & false & false
+Simulated Annealing & 15 & postfix & inf & false & false
+Random Search & 16 & prefix & inf & false & false
+MCTS & 16 & prefix & 5.0713e+21 & false & false
+Concurrent MCTS & 16 & prefix & 3.40282e+38 & false & false
+PSO & 16 & prefix & 3.69415e+07 & false & false
+GP & 16 & prefix & 3.40282e+38 & false & false
+Simulated Annealing & 16 & prefix & 219.147 & false & false
+Random Search & 16 & postfix & 3.40282e+38 & false & false
+MCTS & 16 & postfix & 3014.82 & false & false
+Concurrent MCTS & 16 & postfix & 3.40282e+38 & false & false
+PSO & 16 & postfix & 1.9706e+30 & false & false
+GP & 16 & postfix & 790830 & false & false
+Simulated Annealing & 16 & postfix & 3.40282e+38 & false & false
+Random Search & 17 & prefix & 3.40282e+38 & false & false
+MCTS & 17 & prefix & 3.40282e+38 & false & false
+Concurrent MCTS & 17 & prefix & inf & false & false
+PSO & 17 & prefix & 60.5936 & false & false
+GP & 17 & prefix & 3.63915e+06 & false & false
+Simulated Annealing & 17 & prefix & 3.40282e+38 & false & false
+Random Search & 17 & postfix & 54.4692 & false & false
+MCTS & 17 & postfix & 1.18522e+23 & false & false
+Concurrent MCTS & 17 & postfix & 3.40282e+38 & false & false
+PSO & 17 & postfix & 54.7932 & false & false
+GP & 17 & postfix & 215.822 & false & false
+Simulated Annealing & 17 & postfix & 3.40282e+38 & false & false
+Random Search & 18 & prefix & 3.40282e+38 & false & false
+MCTS & 18 & prefix & 3.40282e+38 & false & false
+Concurrent MCTS & 18 & prefix & 3.40282e+38 & false & false
+PSO & 18 & prefix & 3.40282e+38 & false & false
+GP & 18 & prefix & 3.40282e+38 & false & false
+Simulated Annealing & 18 & prefix & 3.40282e+38 & false & false
+Random Search & 18 & postfix & 3.40282e+38 & false & false
+MCTS & 18 & postfix & 3.40282e+38 & false & false
+Concurrent MCTS & 18 & postfix & 3.40282e+38 & false & false
+PSO & 18 & postfix & 6.82701e+07 & false & false
+GP & 18 & postfix & 3.40282e+38 & false & false
+Simulated Annealing & 18 & postfix & 3.40282e+38 & false & false
+Random Search & 19 & prefix & 3.40282e+38 & false & false
+MCTS & 19 & prefix & 3.40282e+38 & false & false
+Concurrent MCTS & 19 & prefix & 3.40282e+38 & false & false
+PSO & 19 & prefix & 678462 & false & false
+GP & 19 & prefix & 3.40282e+38 & false & false
+Simulated Annealing & 19 & prefix & 3.40282e+38 & false & false
+Random Search & 19 & postfix & 3.40282e+38 & false & false
+MCTS & 19 & postfix & 3.40282e+38 & false & false
+Concurrent MCTS & 19 & postfix & 3.40282e+38 & false & false
+PSO & 19 & postfix & 3.40282e+38 & false & false
+GP & 19 & postfix & 3.40282e+38 & false & false
+Simulated Annealing & 19 & postfix & 3.40282e+38 & false & false
+Random Search & 20 & prefix & 3.40282e+38 & false & false
+MCTS & 20 & prefix & 8.27042e+17 & false & false
+Concurrent MCTS & 20 & prefix & 3.40282e+38 & false & false
+PSO & 20 & prefix & 3.40282e+38 & false & false
+GP & 20 & prefix & 3.40282e+38 & false & false
+Simulated Annealing & 20 & prefix & 3.40282e+38 & false & false
+Random Search & 20 & postfix & inf & false & false
+MCTS & 20 & postfix & 3.40282e+38 & false & false
+Concurrent MCTS & 20 & postfix & 3.40282e+38 & false & false
+PSO & 20 & postfix & 3.40282e+38 & false & false
+GP & 20 & postfix & 3.40282e+38 & false & false
+Simulated Annealing & 20 & postfix & 3.40282e+38 & false & false
+Random Search & 21 & prefix & 4.28777e+09 & false & false
+MCTS & 21 & prefix & 3.40282e+38 & false & false
+Concurrent MCTS & 21 & prefix & 3.40282e+38 & false & false
+PSO & 21 & prefix & 3.40282e+38 & false & false
+GP & 21 & prefix & 3.40282e+38 & false & false
+Simulated Annealing & 21 & prefix & 3.40282e+38 & false & false
+Random Search & 21 & postfix & 3.40282e+38 & false & false
+MCTS & 21 & postfix & 3.40282e+38 & false & false
+Concurrent MCTS & 21 & postfix & 3.40282e+38 & false & false
+PSO & 21 & postfix & 3.40282e+38 & false & false
+GP & 21 & postfix & 3.40282e+38 & false & false
+Simulated Annealing & 21 & postfix & 3.40282e+38 & false & false
+Random Search & 22 & prefix & 3.40282e+38 & false & false
+MCTS & 22 & prefix & 3.40282e+38 & false & false
+Concurrent MCTS & 22 & prefix & 3.40282e+38 & false & false
+PSO & 22 & prefix & 3.40282e+38 & false & false
+GP & 22 & prefix & 3.40282e+38 & false & false
+Simulated Annealing & 22 & prefix & 3.40282e+38 & false & false
+Random Search & 22 & postfix & 3.40282e+38 & false & false
+MCTS & 22 & postfix & 3.40282e+38 & false & false
+Concurrent MCTS & 22 & postfix & 3.40282e+38 & false & false
+PSO & 22 & postfix & inf & false & false
+GP & 22 & postfix & 3.40282e+38 & false & false
+Simulated Annealing & 22 & postfix & 3.40282e+38 & false & false
+Random Search & 23 & prefix & 3.40282e+38 & false & false
+MCTS & 23 & prefix & 3.40282e+38 & false & false
+Concurrent MCTS & 23 & prefix & 3.40282e+38 & false & false
+PSO & 23 & prefix & 3.40282e+38 & false & false
+GP & 23 & prefix & 3.40282e+38 & false & false
+Simulated Annealing & 23 & prefix & 3.40282e+38 & false & false
+Random Search & 23 & postfix & 3.40282e+38 & false & false
+MCTS & 23 & postfix & 3.40282e+38 & false & false
+Concurrent MCTS & 23 & postfix & 3.40282e+38 & false & false
+PSO & 23 & postfix & 3407.35 & false & false
+GP & 23 & postfix & 3.40282e+38 & false & false
+Simulated Annealing & 23 & postfix & 3.40282e+38 & false & false
+Random Search & 24 & prefix & 3.40282e+38 & false & false
+MCTS & 24 & prefix & 3.40282e+38 & false & false
+Concurrent MCTS & 24 & prefix & 3.40282e+38 & false & false
+PSO & 24 & prefix & 3.40282e+38 & false & false
+GP & 24 & prefix & 3.40282e+38 & false & false
+Simulated Annealing & 24 & prefix & inf & false & false
+Random Search & 24 & postfix & 3.40282e+38 & false & false
+MCTS & 24 & postfix & 3.40282e+38 & false & false
+Concurrent MCTS & 24 & postfix & 3.40282e+38 & false & false
+PSO & 24 & postfix & 3.40282e+38 & false & false
+GP & 24 & postfix & 3.40282e+38 & false & false
+Simulated Annealing & 24 & postfix & 3.40282e+38 & false & false
+Random Search & 25 & prefix & 3.40282e+38 & false & false
+MCTS & 25 & prefix & 3.40282e+38 & false & false
+Concurrent MCTS & 25 & prefix & 3.40282e+38 & false & false
+PSO & 25 & prefix & 3.40282e+38 & false & false
+GP & 25 & prefix & 3.40282e+38 & false & false
+Simulated Annealing & 25 & prefix & 3.40282e+38 & false & false
+Random Search & 25 & postfix & 3.40282e+38 & false & false
+MCTS & 25 & postfix & 3.40282e+38 & false & false
+Concurrent MCTS & 25 & postfix & 3.40282e+38 & false & false
+PSO & 25 & postfix & 3.40282e+38 & false & false
+GP & 25 & postfix & 3.40282e+38 & false & false
+Simulated Annealing & 25 & postfix & 3.40282e+38 & false & false
+Random Search & 26 & prefix & 3.40282e+38 & false & false
+MCTS & 26 & prefix & 3.40282e+38 & false & false
+Concurrent MCTS & 26 & prefix & 3.40282e+38 & false & false
+PSO & 26 & prefix & 3.40282e+38 & false & false
+GP & 26 & prefix & 3.40282e+38 & false & false
+Simulated Annealing & 26 & prefix & 3.40282e+38 & false & false
+Random Search & 26 & postfix & 3.40282e+38 & false & false
+MCTS & 26 & postfix & 3.40282e+38 & false & false
+Concurrent MCTS & 26 & postfix & 3.40282e+38 & false & false
+PSO & 26 & postfix & 3.40282e+38 & false & false
+GP & 26 & postfix & 3.40282e+38 & false & false
+Simulated Annealing & 26 & postfix & 3.40282e+38 & false & false
+Random Search & 27 & prefix & 3.40282e+38 & false & false
+MCTS & 27 & prefix & 3.40282e+38 & false & false
+Concurrent MCTS & 27 & prefix & 3.40282e+38 & false & false
+PSO & 27 & prefix & 3.40282e+38 & false & false
+GP & 27 & prefix & 3.40282e+38 & false & false
+Simulated Annealing & 27 & prefix & 3.40282e+38 & false & false
+Random Search & 27 & postfix & 3.40282e+38 & false & false
+MCTS & 27 & postfix & 3.40282e+38 & false & false
+Concurrent MCTS & 27 & postfix & 3.40282e+38 & false & false
+PSO & 27 & postfix & 3.40282e+38 & false & false
+GP & 27 & postfix & 3.40282e+38 & false & false
+Simulated Annealing & 27 & postfix & 3.40282e+38 & false & false
+Random Search & 28 & prefix & 3.40282e+38 & false & false
+MCTS & 28 & prefix & 3.40282e+38 & false & false
+Concurrent MCTS & 28 & prefix & 3.40282e+38 & false & false
+PSO & 28 & prefix & 3.40282e+38 & false & false
+GP & 28 & prefix & 3.40282e+38 & false & false
+Simulated Annealing & 28 & prefix & 3.40282e+38 & false & false
+Random Search & 28 & postfix & 3.40282e+38 & false & false
+MCTS & 28 & postfix & 3.40282e+38 & false & false
+Concurrent MCTS & 28 & postfix & 3.40282e+38 & false & false
+PSO & 28 & postfix & 3.40282e+38 & false & false
+GP & 28 & postfix & 3.40282e+38 & false & false
+Simulated Annealing & 28 & postfix & 3.40282e+38 & false & false
+Random Search & 29 & prefix & 3.40282e+38 & false & false
+MCTS & 29 & prefix & 3.40282e+38 & false & false
+Concurrent MCTS & 29 & prefix & 3.40282e+38 & false & false
+PSO & 29 & prefix & 3.40282e+38 & false & false
+GP & 29 & prefix & 3.40282e+38 & false & false
+Simulated Annealing & 29 & prefix & 3.40282e+38 & false & false
+Random Search & 29 & postfix & 3.40282e+38 & false & false
+MCTS & 29 & postfix & 3.40282e+38 & false & false
+Concurrent MCTS & 29 & postfix & 3.40282e+38 & false & false
+PSO & 29 & postfix & 3.40282e+38 & false & false
+GP & 29 & postfix & 3.40282e+38 & false & false
+Simulated Annealing & 29 & postfix & 3.40282e+38 & false & false
+Random Search & 30 & prefix & 3.40282e+38 & false & false
+MCTS & 30 & prefix & 3.40282e+38 & false & false
+Concurrent MCTS & 30 & prefix & 3.40282e+38 & false & false
+PSO & 30 & prefix & 3.40282e+38 & false & false
+GP & 30 & prefix & 3.40282e+38 & false & false
+Simulated Annealing & 30 & prefix & 3.40282e+38 & false & false
+Random Search & 30 & postfix & 3.40282e+38 & false & false
+MCTS & 30 & postfix & 3.40282e+38 & false & false
+Concurrent MCTS & 30 & postfix & 3.40282e+38 & false & false
+PSO & 30 & postfix & 3.40282e+38 & false & false
+GP & 30 & postfix & 3.40282e+38 & false & false
+Simulated Annealing & 30 & postfix & 3.40282e+38 & false & false
+Random Search & 1 & prefix & 3.40282e+38 & true & false
+MCTS & 1 & prefix & 3.40282e+38 & true & false
+Concurrent MCTS & 1 & prefix & 3.40282e+38 & true & false
+PSO & 1 & prefix & 3.40282e+38 & true & false
+GP & 1 & prefix & 3.40282e+38 & true & false
+Simulated Annealing & 1 & prefix & 3.40282e+38 & true & false
+Random Search & 1 & postfix & 3.40282e+38 & true & false
+MCTS & 1 & postfix & 3.40282e+38 & true & false
+Concurrent MCTS & 1 & postfix & 3.40282e+38 & true & false
+PSO & 1 & postfix & 3.40282e+38 & true & false
+GP & 1 & postfix & 3.40282e+38 & true & false
+Simulated Annealing & 1 & postfix & 3.40282e+38 & true & false
+Random Search & 2 & prefix & 1.15145e+11 & true & false
+MCTS & 2 & prefix & 64.5726 & true & false
+Concurrent MCTS & 2 & prefix & 3.40282e+38 & true & false
+PSO & 2 & prefix & 386.139 & true & false
+GP & 2 & prefix & 2.16231e+10 & true & false
+Simulated Annealing & 2 & prefix & 360.295 & true & false
+Random Search & 2 & postfix & 272.045 & true & false
+MCTS & 2 & postfix & inf & true & false
+Concurrent MCTS & 2 & postfix & 3.40282e+38 & true & false
+PSO & 2 & postfix & 348.539 & true & false
+GP & 2 & postfix & 12557.8 & true & false
+Simulated Annealing & 2 & postfix & 46.9809 & true & false
+Random Search & 3 & prefix & 2.49651e+09 & true & false
+MCTS & 3 & prefix & 4020.08 & true & false
+Concurrent MCTS & 3 & prefix & 3.40282e+38 & true & false
+PSO & 3 & prefix & 121.936 & true & false
+GP & 3 & prefix & 161.577 & true & false
+Simulated Annealing & 3 & prefix & inf & true & false
+Random Search & 3 & postfix & 854.663 & true & false
+MCTS & 3 & postfix & 44.1077 & true & false
+Concurrent MCTS & 3 & postfix & 52.7853 & true & false
+PSO & 3 & postfix & 1.79041e+30 & true & false
+GP & 3 & postfix & 60.4948 & true & false
+Simulated Annealing & 3 & postfix & 53.2656 & true & false
+Random Search & 4 & prefix & 216366 & true & false
+MCTS & 4 & prefix & inf & true & false
+Concurrent MCTS & 4 & prefix & 3.40282e+38 & true & false
+PSO & 4 & prefix & 3.85783e+19 & true & false
+GP & 4 & prefix & 71.3236 & true & false
+Simulated Annealing & 4 & prefix & 2463.6 & true & false
+Random Search & 4 & postfix & 52073.2 & true & false
+MCTS & 4 & postfix & 43.3195 & true & false
+Concurrent MCTS & 4 & postfix & 44124.5 & true & false
+PSO & 4 & postfix & 44.1658 & true & false
+GP & 4 & postfix & inf & true & false
+Simulated Annealing & 4 & postfix & 43.5528 & true & false
+Random Search & 5 & prefix & 7598.26 & true & false
+MCTS & 5 & prefix & 981.587 & true & false
+Concurrent MCTS & 5 & prefix & 3.40282e+38 & true & false
+PSO & 5 & prefix & 43.3341 & true & false
+GP & 5 & prefix & 48.7731 & true & false
+Simulated Annealing & 5 & prefix & 26.9713 & true & false
+Random Search & 5 & postfix & 48.3289 & true & false
+MCTS & 5 & postfix & 36.6058 & true & false
+Concurrent MCTS & 5 & postfix & 417.348 & true & false
+PSO & 5 & postfix & 42.4004 & true & false
+GP & 5 & postfix & 47.4648 & true & false
+Simulated Annealing & 5 & postfix & 33.9118 & true & false
+Random Search & 6 & prefix & 649.723 & true & false
+MCTS & 6 & prefix & 1134.18 & true & false
+Concurrent MCTS & 6 & prefix & 2.30955e+11 & true & false
+PSO & 6 & prefix & 259.448 & true & false
+GP & 6 & prefix & 1.67396e+07 & true & false
+Simulated Annealing & 6 & prefix & 95.1798 & true & false
+Random Search & 6 & postfix & 85.311 & true & false
+MCTS & 6 & postfix & 40.012 & true & false
+Concurrent MCTS & 6 & postfix & 99.2801 & true & false
+PSO & 6 & postfix & 25.8595 & true & false
+GP & 6 & postfix & 2820.67 & true & false
+Simulated Annealing & 6 & postfix & 43.4178 & true & false
+Random Search & 7 & prefix & 2.2286e+28 & true & false
+MCTS & 7 & prefix & 370770 & true & false
+Concurrent MCTS & 7 & prefix & 6.55901e+17 & true & false
+PSO & 7 & prefix & 43.5885 & true & false
+GP & 7 & prefix & 40.5873 & true & false
+Simulated Annealing & 7 & prefix & 34.5872 & true & false
+Random Search & 7 & postfix & 13.5257 & true & false
+MCTS & 7 & postfix & inf & true & false
+Concurrent MCTS & 7 & postfix & 4.93052e+07 & true & false
+PSO & 7 & postfix & 43.0201 & true & false
+GP & 7 & postfix & 2464.14 & true & false
+Simulated Annealing & 7 & postfix & inf & true & false
+Random Search & 8 & prefix & 239.005 & true & false
+MCTS & 8 & prefix & 75560.1 & true & false
+Concurrent MCTS & 8 & prefix & 3.40282e+38 & true & false
+PSO & 8 & prefix & 34.0377 & true & false
+GP & 8 & prefix & 319593 & true & false
+Simulated Annealing & 8 & prefix & 12.6641 & true & false
+Random Search & 8 & postfix & inf & true & false
+MCTS & 8 & postfix & inf & true & false
+Concurrent MCTS & 8 & postfix & 4.12125e+07 & true & false
+PSO & 8 & postfix & 44.2877 & true & false
+GP & 8 & postfix & 36.4338 & true & false
+Simulated Annealing & 8 & postfix & 1.65015e+18 & true & false
+Random Search & 9 & prefix & 39.7725 & true & false
+MCTS & 9 & prefix & 8.38348e+20 & true & false
+Concurrent MCTS & 9 & prefix & 3.40282e+38 & true & false
+PSO & 9 & prefix & 32.9198 & true & false
+GP & 9 & prefix & 426.591 & true & false
+Simulated Annealing & 9 & prefix & 3016.79 & true & false
+Random Search & 9 & postfix & 125.257 & true & false
+MCTS & 9 & postfix & 32859.5 & true & false
+Concurrent MCTS & 9 & postfix & 37.7178 & true & false
+PSO & 9 & postfix & 43.5822 & true & false
+GP & 9 & postfix & inf & true & false
+Simulated Annealing & 9 & postfix & 44078.7 & true & false
+Random Search & 10 & prefix & inf & true & false
+MCTS & 10 & prefix & 8.07247e+12 & true & false
+Concurrent MCTS & 10 & prefix & 3.40282e+38 & true & false
+PSO & 10 & prefix & 106.653 & true & false
+GP & 10 & prefix & 46.1201 & true & false
+Simulated Annealing & 10 & prefix & 24.0469 & true & false
+Random Search & 10 & postfix & inf & true & false
+MCTS & 10 & postfix & inf & true & false
+Concurrent MCTS & 10 & postfix & 1005.12 & true & false
+PSO & 10 & postfix & inf & true & false
+GP & 10 & postfix & 3.26105e+08 & true & false
+Simulated Annealing & 10 & postfix & 47.72 & true & false
+Random Search & 11 & prefix & 3.40282e+38 & true & false
+MCTS & 11 & prefix & 1559.16 & true & false
+Concurrent MCTS & 11 & prefix & 3.40282e+38 & true & false
+PSO & 11 & prefix & 346.362 & true & false
+GP & 11 & prefix & inf & true & false
+Simulated Annealing & 11 & prefix & 23.023 & true & false
+Random Search & 11 & postfix & 9.41352e+09 & true & false
+MCTS & 11 & postfix & 44.8816 & true & false
+Concurrent MCTS & 11 & postfix & 182263 & true & false
+PSO & 11 & postfix & 58.5843 & true & false
+GP & 11 & postfix & 60.6179 & true & false
+Simulated Annealing & 11 & postfix & 1652.14 & true & false
+Random Search & 12 & prefix & 1196.33 & true & false
+MCTS & 12 & prefix & 3.13566e+10 & true & false
+Concurrent MCTS & 12 & prefix & 3.40282e+38 & true & false
+PSO & 12 & prefix & 481.247 & true & false
+GP & 12 & prefix & 602.527 & true & false
+Simulated Annealing & 12 & prefix & 1.55717e+07 & true & false
+Random Search & 12 & postfix & inf & true & false
+MCTS & 12 & postfix & 23.3383 & true & false
+Concurrent MCTS & 12 & postfix & 44735.4 & true & false
+PSO & 12 & postfix & 47.7055 & true & false
+GP & 12 & postfix & 5.485e+10 & true & false
+Simulated Annealing & 12 & postfix & 45.1032 & true & false
+Random Search & 13 & prefix & 3.40282e+38 & true & false
+MCTS & 13 & prefix & 3.40282e+38 & true & false
+Concurrent MCTS & 13 & prefix & 3.40282e+38 & true & false
+PSO & 13 & prefix & 3.40282e+38 & true & false
+GP & 13 & prefix & 3.40282e+38 & true & false
+Simulated Annealing & 13 & prefix & 3.40282e+38 & true & false
+Random Search & 13 & postfix & 72.8729 & true & false
+MCTS & 13 & postfix & 13.528 & true & false
+Concurrent MCTS & 13 & postfix & 595.559 & true & false
+PSO & 13 & postfix & 3107.48 & true & false
+GP & 13 & postfix & 195.016 & true & false
+Simulated Annealing & 13 & postfix & 257.306 & true & false
+Random Search & 14 & prefix & 1.13729e+16 & true & false
+MCTS & 14 & prefix & 1790.39 & true & false
+Concurrent MCTS & 14 & prefix & 3.40282e+38 & true & false
+PSO & 14 & prefix & 54977.9 & true & false
+GP & 14 & prefix & 3.40282e+38 & true & false
+Simulated Annealing & 14 & prefix & inf & true & false
+Random Search & 14 & postfix & 90217.7 & true & false
+MCTS & 14 & postfix & 4.02802e+06 & true & false
+Concurrent MCTS & 14 & postfix & 593.687 & true & false
+PSO & 14 & postfix & 152.837 & true & false
+GP & 14 & postfix & 5.35157e+06 & true & false
+Simulated Annealing & 14 & postfix & 81.5191 & true & false
+Random Search & 15 & prefix & 3.80907e+07 & true & false
+MCTS & 15 & prefix & 3502.23 & true & false
+Concurrent MCTS & 15 & prefix & 3.40282e+38 & true & false
+PSO & 15 & prefix & 67.4351 & true & false
+GP & 15 & prefix & 127.692 & true & false
+Simulated Annealing & 15 & prefix & 98410.2 & true & false
+Random Search & 15 & postfix & inf & true & false
+MCTS & 15 & postfix & 6096.2 & true & false
+Concurrent MCTS & 15 & postfix & 3.40282e+38 & true & false
+PSO & 15 & postfix & 1.11598e+09 & true & false
+GP & 15 & postfix & 48.2435 & true & false
+Simulated Annealing & 15 & postfix & inf & true & false
+Random Search & 16 & prefix & 9482.64 & true & false
+MCTS & 16 & prefix & 6.57038e+30 & true & false
+Concurrent MCTS & 16 & prefix & 3.40282e+38 & true & false
+PSO & 16 & prefix & 873344 & true & false
+GP & 16 & prefix & 3.40282e+38 & true & false
+Simulated Annealing & 16 & prefix & 3.40282e+38 & true & false
+Random Search & 16 & postfix & 31522.5 & true & false
+MCTS & 16 & postfix & 43.5381 & true & false
+Concurrent MCTS & 16 & postfix & 8.09453e+12 & true & false
+PSO & 16 & postfix & 4.52351e+10 & true & false
+GP & 16 & postfix & 1.50534e+10 & true & false
+Simulated Annealing & 16 & postfix & 99.037 & true & false
+Random Search & 17 & prefix & 16353.3 & true & false
+MCTS & 17 & prefix & 3.40282e+38 & true & false
+Concurrent MCTS & 17 & prefix & 3.40282e+38 & true & false
+PSO & 17 & prefix & 159479 & true & false
+GP & 17 & prefix & 3.40282e+38 & true & false
+Simulated Annealing & 17 & prefix & 1.07809e+09 & true & false
+Random Search & 17 & postfix & 12640 & true & false
+MCTS & 17 & postfix & 50.7223 & true & false
+Concurrent MCTS & 17 & postfix & inf & true & false
+PSO & 17 & postfix & 101.948 & true & false
+GP & 17 & postfix & 4.64777e+14 & true & false
+Simulated Annealing & 17 & postfix & 11570.2 & true & false
+Random Search & 18 & prefix & 3.40282e+38 & true & false
+MCTS & 18 & prefix & 1.07671e+10 & true & false
+Concurrent MCTS & 18 & prefix & 3.40282e+38 & true & false
+PSO & 18 & prefix & 3.40282e+38 & true & false
+GP & 18 & prefix & 3.40282e+38 & true & false
+Simulated Annealing & 18 & prefix & 3.40282e+38 & true & false
+Random Search & 18 & postfix & 63033.8 & true & false
+MCTS & 18 & postfix & 3.47105e+09 & true & false
+Concurrent MCTS & 18 & postfix & 1.12294e+13 & true & false
+PSO & 18 & postfix & inf & true & false
+GP & 18 & postfix & 187520 & true & false
+Simulated Annealing & 18 & postfix & 9.64306e+09 & true & false
+Random Search & 19 & prefix & 1.04298e+25 & true & false
+MCTS & 19 & prefix & 3.11754e+24 & true & false
+Concurrent MCTS & 19 & prefix & 1265.56 & true & false
+PSO & 19 & prefix & 2595.7 & true & false
+GP & 19 & prefix & 1329 & true & false
+Simulated Annealing & 19 & prefix & 52264.3 & true & false
+Random Search & 19 & postfix & 455.878 & true & false
+MCTS & 19 & postfix & 2.42693e+08 & true & false
+Concurrent MCTS & 19 & postfix & 3.40282e+38 & true & false
+PSO & 19 & postfix & inf & true & false
+GP & 19 & postfix & 7.91502e+10 & true & false
+Simulated Annealing & 19 & postfix & 44.9946 & true & false
+Random Search & 20 & prefix & 1.03023e+08 & true & false
+MCTS & 20 & prefix & 3.40282e+38 & true & false
+Concurrent MCTS & 20 & prefix & 3.40282e+38 & true & false
+PSO & 20 & prefix & 3.40282e+38 & true & false
+GP & 20 & prefix & 3.40282e+38 & true & false
+Simulated Annealing & 20 & prefix & 3.40282e+38 & true & false
+Random Search & 20 & postfix & 610.917 & true & false
+MCTS & 20 & postfix & 4.21144e+11 & true & false
+Concurrent MCTS & 20 & postfix & 1.72345e+08 & true & false
+PSO & 20 & postfix & 5766.79 & true & false
+GP & 20 & postfix & 688391 & true & false
+Simulated Annealing & 20 & postfix & 451444 & true & false
+Random Search & 21 & prefix & 3.40282e+38 & true & false
+MCTS & 21 & prefix & 3.40282e+38 & true & false
+Concurrent MCTS & 21 & prefix & 3.40282e+38 & true & false
+PSO & 21 & prefix & 114032 & true & false
+GP & 21 & prefix & 3.40282e+38 & true & false
+Simulated Annealing & 21 & prefix & 3.40282e+38 & true & false
+Random Search & 21 & postfix & 850.766 & true & false
+MCTS & 21 & postfix & 76553.5 & true & false
+Concurrent MCTS & 21 & postfix & 1.03398e+27 & true & false
+PSO & 21 & postfix & 394783 & true & false
+GP & 21 & postfix & 1293.85 & true & false
+Simulated Annealing & 21 & postfix & 566.681 & true & false
+Random Search & 22 & prefix & inf & true & false
+MCTS & 22 & prefix & 3.40282e+38 & true & false
+Concurrent MCTS & 22 & prefix & 3.40282e+38 & true & false
+PSO & 22 & prefix & 3.40282e+38 & true & false
+GP & 22 & prefix & 3.40282e+38 & true & false
+Simulated Annealing & 22 & prefix & 3.40282e+38 & true & false
+Random Search & 22 & postfix & inf & true & false
+MCTS & 22 & postfix & 1.77593e+08 & true & false
+Concurrent MCTS & 22 & postfix & 3.40282e+38 & true & false
+PSO & 22 & postfix & 601.76 & true & false
+GP & 22 & postfix & 1.63916e+07 & true & false
+Simulated Annealing & 22 & postfix & 1802.83 & true & false
+Random Search & 23 & prefix & 3.40282e+38 & true & false
+MCTS & 23 & prefix & inf & true & false
+Concurrent MCTS & 23 & prefix & 3.40282e+38 & true & false
+PSO & 23 & prefix & 3.40282e+38 & true & false
+GP & 23 & prefix & 3.40282e+38 & true & false
+Simulated Annealing & 23 & prefix & 3.40282e+38 & true & false
+Random Search & 23 & postfix & inf & true & false
+MCTS & 23 & postfix & 496.628 & true & false
+Concurrent MCTS & 23 & postfix & 620593 & true & false
+PSO & 23 & postfix & 3554.83 & true & false
+GP & 23 & postfix & inf & true & false
+Simulated Annealing & 23 & postfix & 3.40282e+38 & true & false
+Random Search & 24 & prefix & 3.40282e+38 & true & false
+MCTS & 24 & prefix & 3.40282e+38 & true & false
+Concurrent MCTS & 24 & prefix & 3.40282e+38 & true & false
+PSO & 24 & prefix & 3.40282e+38 & true & false
+GP & 24 & prefix & 3.40282e+38 & true & false
+Simulated Annealing & 24 & prefix & 3.40282e+38 & true & false
+Random Search & 24 & postfix & inf & true & false
+MCTS & 24 & postfix & 2.81979e+06 & true & false
+Concurrent MCTS & 24 & postfix & 511968 & true & false
+PSO & 24 & postfix & 1893.09 & true & false
+GP & 24 & postfix & 85761.2 & true & false
+Simulated Annealing & 24 & postfix & 8.42193e+06 & true & false
+Random Search & 25 & prefix & 3.40282e+38 & true & false
+MCTS & 25 & prefix & 3.40282e+38 & true & false
+Concurrent MCTS & 25 & prefix & 3.40282e+38 & true & false
+PSO & 25 & prefix & 3.40282e+38 & true & false
+GP & 25 & prefix & 3.40282e+38 & true & false
+Simulated Annealing & 25 & prefix & 9.1798e+12 & true & false
+Random Search & 25 & postfix & 538.073 & true & false
+MCTS & 25 & postfix & 41.1076 & true & false
+Concurrent MCTS & 25 & postfix & 3.40282e+38 & true & false
+PSO & 25 & postfix & 736.811 & true & false
+GP & 25 & postfix & 3.40282e+38 & true & false
+Simulated Annealing & 25 & postfix & 237294 & true & false
+Random Search & 26 & prefix & 3.40282e+38 & true & false
+MCTS & 26 & prefix & 3.40282e+38 & true & false
+Concurrent MCTS & 26 & prefix & 3.40282e+38 & true & false
+PSO & 26 & prefix & 11081.7 & true & false
+GP & 26 & prefix & 3.40282e+38 & true & false
+Simulated Annealing & 26 & prefix & 3.40282e+38 & true & false
+Random Search & 26 & postfix & 1.96977e+25 & true & false
+MCTS & 26 & postfix & 3.40282e+38 & true & false
+Concurrent MCTS & 26 & postfix & 3.40282e+38 & true & false
+PSO & 26 & postfix & 110.099 & true & false
+GP & 26 & postfix & 30.3877 & true & false
+Simulated Annealing & 26 & postfix & 8010.47 & true & false
+Random Search & 27 & prefix & 3.40282e+38 & true & false
+MCTS & 27 & prefix & 167.118 & true & false
+Concurrent MCTS & 27 & prefix & 3.40282e+38 & true & false
+PSO & 27 & prefix & 3.40282e+38 & true & false
+GP & 27 & prefix & 3.40282e+38 & true & false
+Simulated Annealing & 27 & prefix & 3.40282e+38 & true & false
+Random Search & 27 & postfix & 46.8594 & true & false
+MCTS & 27 & postfix & 2.60965e+11 & true & false
+Concurrent MCTS & 27 & postfix & 236553 & true & false
+PSO & 27 & postfix & 774.628 & true & false
+GP & 27 & postfix & 3.40282e+38 & true & false
+Simulated Annealing & 27 & postfix & 404905 & true & false
+Random Search & 28 & prefix & 3.40282e+38 & true & false
+MCTS & 28 & prefix & 3.40282e+38 & true & false
+Concurrent MCTS & 28 & prefix & 3.40282e+38 & true & false
+PSO & 28 & prefix & 3.40282e+38 & true & false
+GP & 28 & prefix & 3.40282e+38 & true & false
+Simulated Annealing & 28 & prefix & 3.40282e+38 & true & false
+Random Search & 28 & postfix & 3.40282e+38 & true & false
+MCTS & 28 & postfix & 5.72209e+06 & true & false
+Concurrent MCTS & 28 & postfix & 3.40282e+38 & true & false
+PSO & 28 & postfix & 54.1112 & true & false
+GP & 28 & postfix & 575.709 & true & false
+Simulated Annealing & 28 & postfix & 575.651 & true & false
+Random Search & 29 & prefix & 3.40282e+38 & true & false
+MCTS & 29 & prefix & 3.40282e+38 & true & false
+Concurrent MCTS & 29 & prefix & 3.40282e+38 & true & false
+PSO & 29 & prefix & 3.40282e+38 & true & false
+GP & 29 & prefix & 3.40282e+38 & true & false
+Simulated Annealing & 29 & prefix & 3.40282e+38 & true & false
+Random Search & 29 & postfix & 331375 & true & false
+MCTS & 29 & postfix & 3.72543e+24 & true & false
+Concurrent MCTS & 29 & postfix & 3.40282e+38 & true & false
+PSO & 29 & postfix & 114.881 & true & false
+GP & 29 & postfix & 1.1921e+22 & true & false
+Simulated Annealing & 29 & postfix & 3.40282e+38 & true & false
+Random Search & 30 & prefix & 3.40282e+38 & true & false
+MCTS & 30 & prefix & 3.40282e+38 & true & false
+Concurrent MCTS & 30 & prefix & 3.40282e+38 & true & false
+PSO & 30 & prefix & 3.40282e+38 & true & false
+GP & 30 & prefix & 3.40282e+38 & true & false
+Simulated Annealing & 30 & prefix & 3.40282e+38 & true & false
+Random Search & 30 & postfix & 1404.33 & true & false
+MCTS & 30 & postfix & 62.0796 & true & false
+Concurrent MCTS & 30 & postfix & 3.40282e+38 & true & false
+PSO & 30 & postfix & 2.24863e+20 & true & false
+GP & 30 & postfix & 246208 & true & false
+Simulated Annealing & 30 & postfix & inf & true & false
+Random Search & 1 & prefix & 3.40282e+38 & true & true
+MCTS & 1 & prefix & 3.40282e+38 & true & true
+Concurrent MCTS & 1 & prefix & 3.40282e+38 & true & true
+PSO & 1 & prefix & 3.40282e+38 & true & true
