@@ -267,50 +267,25 @@ def plot_rpn_expression_tree(expression: list[str], block = False, save = False,
 # Example usage:
 def test_visualize():
 #    # Example usage:
-    save = False
+    save = True
     
     if save:
 #        plot_pn_expression_tree("- + + - + - + / * 30 ^ x 2 * - 10 x y ^ x 4 * / 4 5 ^ x 3 / ^ y 2 2 * 2 y / 8 + + 2 ^ x 2 ^ y 2 / ^ y 3 2 x", block=False, save = save)
 #        os.system("rsvg-convert -f pdf -o expression_tree_PN_Hemberg2008_expr_5.pdf expression_tree_PN_Hemberg2008_expr_5.svg")
         
-        plot_rpn_expression_tree("8 2 x 2 ^ + y 2 ^ + /", block=False, save = save, filename = "Hemberg2008Expressions/expression_tree_Hemberg2008_expr_1.svg", title = r"(8 / ((2 + (x ^ 2)) + (y ^ 2))), depth = 4")
-        os.system("rsvg-convert -f pdf -o Hemberg2008Expressions/expression_tree_Hemberg2008_expr_1.pdf Hemberg2008Expressions/expression_tree_Hemberg2008_expr_1.svg")
-        plot_rpn_expression_tree("x 3 ^ x 1 + * y y 2 / 1 - * +", block=False, save = save, filename = "Hemberg2008Expressions/expression_tree_Hemberg2008_expr_2.svg", title = r"(((x ^ 3) * (x + 1)) + (y * ((y / 2) - 1))), depth = 4")
-        os.system("rsvg-convert -f pdf -o Hemberg2008Expressions/expression_tree_Hemberg2008_expr_2.pdf Hemberg2008Expressions/expression_tree_Hemberg2008_expr_2.svg")
-        plot_rpn_expression_tree("x 3 ^ 5 / y 3 ^ 2 / + y - x -", block=False, save = save, filename = "Hemberg2008Expressions/expression_tree_Hemberg2008_expr_3.svg", title = r"(((((x ^ 3) / 5) + ((y ^ 3) / 2)) - y) - x), depth = 5")
-        os.system("rsvg-convert -f pdf -o Hemberg2008Expressions/expression_tree_Hemberg2008_expr_3.pdf Hemberg2008Expressions/expression_tree_Hemberg2008_expr_3.svg")
-        plot_rpn_expression_tree("30 x 2 ^ * 10 x - y * / x 4 ^ + x 3 ^ - y 2 ^ 2 / + y - 8 2 x 2 ^ + y 2 ^ + / + x +", block=False, save = save, filename = "Hemberg2008Expressions/expression_tree_Hemberg2008_expr_4.svg", title = r"((((((((30 * (x ^ 2)) / ((10 - x) * y)) + (x ^ 4)) - (x ^ 3)) + ((y ^ 2) / 2)) - y) + (8 / ((2 + (x ^ 2)) + (y ^ 2)))) + x), depth = 9")
-        os.system("rsvg-convert -f pdf -o Hemberg2008Expressions/expression_tree_Hemberg2008_expr_4.pdf Hemberg2008Expressions/expression_tree_Hemberg2008_expr_4.svg")
-        plot_rpn_expression_tree("30 x 2 ^ * 10 x - y * / x 4 ^ + 4 5 / x 3 ^ * - y 2 ^ 2 / + 2 y * - 8 2 x 2 ^ + y 2 ^ + / + y 3 ^ 2 / + x -", block=False, save = save, filename = "Hemberg2008Expressions/expression_tree_Hemberg2008_expr_5.svg", title = r"(((((((((30 * (x ^ 2)) / ((10 - x) * y)) + (x ^ 4)) - ((4 / 5) * (x ^ 3))) + ((y ^ 2) / 2)) - (2 * y)) + (8 / ((2 + (x ^ 2)) + (y ^ 2)))) + ((y ^ 3) / 2)) - x), depth = 10")
-        os.system("rsvg-convert -f pdf -o Hemberg2008Expressions/expression_tree_Hemberg2008_expr_5.pdf Hemberg2008Expressions/expression_tree_Hemberg2008_expr_5.svg")
+        plot_rpn_expression_tree("I 0 sech ^ y 4 I ^ x exp / / y 4 I ^ x exp / / 0.2 t 20.0 - - tanh * - -", block=False, save = save, filename = "/Users/edwardfinkelstein/AIFeynmanExpressionTrees/AE601/Case1BestTree.svg", title = r"((I ^ sech(0)) - ((y / ((4 ^ I) / exp(x))) - ((y / ((4 ^ I) / exp(x))) * tanh((0.2 - (t - 20.000000)))))), depth = 6")
+#        os.system("rsvg-convert -f pdf -o /Users/edwardfinkelstein/AIFeynmanExpressionTrees/AE601/Case1BestTree.pdf Case1BestTree.svg")
+        plot_rpn_expression_tree("I 0.2 t ^ π log log sech 0.2 0.0 x y 0.1 + / / + + / ^", block=False, save = save, filename = "/Users/edwardfinkelstein/AIFeynmanExpressionTrees/AE601/Case2BestTree.svg", title = r"(I ^ ((0.2 ^ t) / (sech(log(log(π))) + (0.2 + (0.000000 / (x / (y + 0.100000))))))), depth = 7")
+#        os.system("rsvg-convert -f pdf -o /Users/edwardfinkelstein/AIFeynmanExpressionTrees/AE601/Case2BestTree.pdf Case2BestTree.svg")
         
-        rpn_1 = rpn_to_infix(r_1:="8 2 x 2 ^ + y 2 ^ + /")
-        rpn_2 = rpn_to_infix(r_2:="x 3 ^ x 1 + * y y 2 / 1 - * +")
-        rpn_3 = rpn_to_infix(r_3:="x 3 ^ 5 / y 3 ^ 2 / + y - x -")
-        rpn_4 = rpn_to_infix(r_4:="30 x 2 ^ * 10 x - y * / x 4 ^ + x 3 ^ - y 2 ^ 2 / + y - 8 2 x 2 ^ + y 2 ^ + / + x +")
-        rpn_5 = rpn_to_infix(r_5:="30 x 2 ^ * 10 x - y * / x 4 ^ + 4 5 / x 3 ^ * - y 2 ^ 2 / + 2 y * - 8 2 x 2 ^ + y 2 ^ + / + y 3 ^ 2 / + x -")
-        
-        pn_1 = pn_to_infix(p_1:="/ 8 + + 2 ^ x 2 ^ y 2")
-        pn_2 = pn_to_infix(p_2:="+ * ^ x 3 + x 1 * y - / y 2 1")
-        pn_3 = pn_to_infix(p_3:=" - - + / ^ x 3 5 / ^ y 3 2 y x")
-        pn_4 = pn_to_infix(p_4:="+ + - + - + / * 30 ^ x 2 * - 10 x y ^ x 4 ^ x 3 / ^ y 2 2 y / 8 + + 2 ^ x 2 ^ y 2 x")
-        pn_5 = pn_to_infix(p_5:="- + + - + - + / * 30 ^ x 2 * - 10 x y ^ x 4 * / 4 5 ^ x 3 / ^ y 2 2 * 2 y / 8 + + 2 ^ x 2 ^ y 2 / ^ y 3 2 x")
-        
-        print(rpn_1==pn_1, rpn_2==pn_2, rpn_3==pn_3, rpn_4==pn_4, rpn_5==pn_5, sep='\n')
-        print(rpn_1, rpn_2, rpn_3, rpn_4, rpn_5, '\n', sep='\n')
-        print(r_1, r_2, r_3, r_4, r_5, '\n', p_1, p_2, p_3, p_4, p_5, sep='\n')
-        
-        
-        
-
     else:
 #        print("hi")
 #        print(pn_to_infix(" - - + / ^ x 3 5 / ^ y 3 2 y x".split()))
 #        print(rpn_to_infix("y y x * * cos y +"))
 #        while True:
         try:
-#                plot_pn_expression_tree("+ cos cos x0 * 1.031240 + 0.008202 * 1.919085 - cos x3 - cos x0 cos cos * x0 + x3 x3".split(), block=False, save = save)
-#                plot_rpn_expression_tree("x3 cos 0.427738 * 4.779139 x1 - 0.390789 x0 0.637794 x2 * - + 0.598703 x2 cos 1.463665 cos x2 + 1.063828 x3 + x0 0.031570 x0 + 1.493230 - * * + - * * + *".split(), block=False, save = save)
+#                plot_pn_expression_tree("+ cos cos x * 1.031240 + 0.008202 * 1.919085 - cos I - cos x cos cos * x + I I".split(), block=False, save = save)
+#                plot_rpn_expression_tree("I cos 0.427738 * 4.779139 y - 0.390789 x 0.637794 t * - + 0.598703 t cos 1.463665 cos t + 1.063828 I + x 0.031570 x + 1.493230 - * * + - * * + *".split(), block=False, save = save)
 #                plot_rpn_expression_tree("q Ef * m omega_0 2 ^ omega 2 ^ - *  /".split(), block=False, save = save)
 #                plot_pn_expression_tree("- * ~ sin x 1 * ^ x 1 / 1 x".split(), block=True, save = save)
 #            plot_rpn_expression_tree("i u_t * 1 2 / u_xx u_yy + * + u conj u * u * -".split(), block=True, save = save)
@@ -332,12 +307,12 @@ def test_visualize():
 #                x_real = "x y +"
 #                x_imag = "x y cos *"
 #                plot_rpn_expression_tree((x_real + " i " + x_imag + " * +").split(), block=True, save = save)
-#                plot_pn_expression_tree(("/ * - x_0 x0 exp - * - x0 x_0 - x_0 x0 * - x1 y_0 - x1 y_0 * sigma sigma").split(), block=True, save = save)
+#                plot_pn_expression_tree(("/ * - x_0 x exp - * - x x_0 - x_0 x * - y y_0 - y y_0 * sigma sigma").split(), block=True, save = save)
 #                plot_rpn_expression_tree("T_t 1 y y * - T_x * + kappa T_{xx} T_{yy} + * -".split(), block=True, save = save)
 #                plot_pn_expression_tree(("- + T_t * - 1 * y y T_x * kappa + T_{xx} T_{yy}").split(), block=True, save = save)
 #                plot_rpn_expression_tree("T_t 4 y * sin T_x * + 4 x * cos T_y * + kappa T_{xx} T_{yy} + * -".split(), block=True, save = save)
 #                plot_pn_expression_tree(("- + + T_t * sin * 4 y T_x * cos * 4 x T_y * kappa + T_{xx} T_{yy}").split(), block=True, save = save)
-                plot_rpn_expression_tree("x3 x3 ^ x1 cos x0 tanh - + x2 x3 x3 ^ + x3 x3 tanh ^ / /".split(), block=True, save = save)
+                plot_rpn_expression_tree("I I ^ y cos x tanh - + t I I ^ + I I tanh ^ / /".split(), block=True, save = save)
 
 
         except KeyboardInterrupt:
