@@ -9,8 +9,8 @@ def sech(x):
 
 # Create a grid for x and y values
 sigma = 0.2
-x_vals = np.linspace(0.1, 2*np.pi, 100)
-y_vals = np.linspace(0.1, 2*np.pi, 100)
+x_vals = np.linspace(0.1, 2*np.pi, 1000)
+y_vals = np.linspace(0.1, 2*np.pi, 1000)
 x, y = np.meshgrid(x_vals, y_vals)
 x0 = np.pi
 y0 = np.pi
@@ -39,7 +39,6 @@ for t in time_values:
     # Left subplot: 3D surface plot
     ax1 = fig.add_subplot(121, projection='3d')
     surf = ax1.plot_surface(x, y, T_vals, cmap='jet', edgecolor='none')
-    fig.colorbar(surf, ax=ax1, shrink=0.5, aspect=5)
     ax1.set_title(f'3D Plot of $T(x, y)$ for $t = {t}$')
     ax1.set_xlabel('$x$')
     ax1.set_ylabel('$y$')

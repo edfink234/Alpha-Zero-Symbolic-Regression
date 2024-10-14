@@ -16,8 +16,8 @@ def T(x, y, t):
     return I_val - (y * np.exp(x) / (4**I_val)) * (1 - np.tanh(20.2 - t))
 
 # Create a grid for x and y values
-x_vals = np.linspace(0.1, 2.1, 400)
-y_vals = np.linspace(-1.1, 1.1, 400)
+x_vals = np.linspace(0.1, 2.1, 1000)
+y_vals = np.linspace(-1.1, 1.1, 1000)
 x, y = np.meshgrid(x_vals, y_vals)
 
 # Time values to generate plots for
@@ -39,11 +39,6 @@ cmap_="coolwarm"
 for t in time_values:
     T_vals = T(x, y, t)
     
-#    if np.isclose(abs(min(T_vals.flatten())),max(T_vals.flatten()), atol=3e-1):
-#        cmap_ = LinearSegmentedColormap.from_list("", [inverse_violet_color, inverse_blue_color, grey_color, "violet", "blue"])
-#    else:
-#        cmap_ = LinearSegmentedColormap.from_list("", [grey_color, "violet", "blue"])
-    # Create the figure and two subplots
     fig = plt.figure(figsize=(14, 6))
     
     # Left subplot: 3D surface plot
