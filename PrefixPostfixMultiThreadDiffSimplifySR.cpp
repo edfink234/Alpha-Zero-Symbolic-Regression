@@ -4470,6 +4470,12 @@ void SimulatedAnnealing(std::vector<float> (*diffeq)(Board&), const Eigen::Matri
                     orig_expression = x.expression();
                     best_expr_result = x._to_infix(x.diffeq_result);
                     orig_expr_result = x.expression(x.diffeq_result);
+                    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+                    std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
+                    std::cout << "Best expression = " << best_expression << '\n';
+                    std::cout << "Best expression (original format) = " << orig_expression << '\n';
+                    std::cout << "Best diff result = " << best_expr_result << '\n';
+                    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
                 }
             }
             else
@@ -5382,6 +5388,12 @@ void MCTS(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& data, int
                 orig_expression = x.expression();
                 best_expr_result = x._to_infix(x.diffeq_result);
                 orig_expr_result = x.expression(x.diffeq_result);
+                std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+                std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
+                std::cout << "Best expression = " << best_expression << '\n';
+                std::cout << "Best expression (original format) = " << orig_expression << '\n';
+                std::cout << "Best diff result = " << best_expr_result << '\n';
+                std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
             }
             x.pieces.clear();
             moveTracker.clear();
@@ -5475,6 +5487,12 @@ void RandomSearch(std::vector<float> (*diffeq)(Board&), const Eigen::MatrixXf& d
                 orig_expression = x.expression();
                 best_expr_result = x._to_infix(x.diffeq_result);
                 orig_expr_result = x.expression(x.diffeq_result);
+                std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+                std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
+                std::cout << "Best expression = " << best_expression << '\n';
+                std::cout << "Best expression (original format) = " << orig_expression << '\n';
+                std::cout << "Best diff result = " << best_expr_result << '\n';
+                std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
             }
             x.pieces.clear();
         }
@@ -5504,19 +5522,19 @@ int main()
     constexpr double time = 100000.0;
     
     //Case 1
-    auto data1 = createMeshgridWithLambda(10, 3, {0.1f, -1.1f, 0.1f}, {2.1f, 1.1f, 20.0f},
-    [&](const Eigen::VectorXf& row) -> float
-    {
-        //2D-Gaussian
-        float x = row(0);
-        float y = row(1);
-        Board::AdvectionDiffusion2DVars::x_0 = 1.1f;
-        Board::AdvectionDiffusion2DVars::y_0 = 0.0f;
-        Board::AdvectionDiffusion2DVars::sigma = 0.2f;
-        return std::exp(-(std::pow(x - Board::AdvectionDiffusion2DVars::x_0, 2) + std::pow(y - Board::AdvectionDiffusion2DVars::y_0, 2))) / (2 * std::pow(Board::AdvectionDiffusion2DVars::sigma, 2));
-    });
+//    auto data1 = createMeshgridWithLambda(10, 3, {0.1f, -1.1f, 0.1f}, {2.1f, 1.1f, 20.0f},
+//    [&](const Eigen::VectorXf& row) -> float
+//    {
+//        //2D-Gaussian
+//        float x = row(0);
+//        float y = row(1);
+//        Board::AdvectionDiffusion2DVars::x_0 = 1.1f;
+//        Board::AdvectionDiffusion2DVars::y_0 = 0.0f;
+//        Board::AdvectionDiffusion2DVars::sigma = 0.2f;
+//        return std::exp(-(std::pow(x - Board::AdvectionDiffusion2DVars::x_0, 2) + std::pow(y - Board::AdvectionDiffusion2DVars::y_0, 2))) / (2 * std::pow(Board::AdvectionDiffusion2DVars::sigma, 2));
+//    });
     
-    GP(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data1 /*data used to solve differential equation*/, 4 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
+//    GP(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data1 /*data used to solve differential equation*/, 6 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
 
     //Case 2
     auto data2 = createMeshgridWithLambda(10, 3, {0.1f, 0.1f, 0.1f}, {2.0f*std::numbers::pi_v<float>, 2.0f*std::numbers::pi_v<float>, 20.0f},
@@ -5530,6 +5548,8 @@ int main()
         Board::AdvectionDiffusion2DVars::sigma = 0.2f;
         return std::exp(-(std::pow(x - Board::AdvectionDiffusion2DVars::x_0, 2) + std::pow(y - Board::AdvectionDiffusion2DVars::y_0, 2))) / (2 * std::pow(Board::AdvectionDiffusion2DVars::sigma, 2));
     });
+    
+    MCTS(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data2 /*data used to solve differential equation*/, 13 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_2" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
     
     return 0;
 }
