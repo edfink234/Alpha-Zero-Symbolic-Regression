@@ -350,6 +350,65 @@ float loss_func(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
     return (1.0f/(1.0f+MSE(actual, predicted)));
 }
 
+namespace InvertedPendulum
+{
+    struct State
+    {
+        float x;   // Position
+        float v;   // Velocity
+    };
+
+    // Constants for the potential
+    float m = 1.0;         // Mass
+    float Omega = 1.0;     // Frequency of the harmonic trap
+    float A = 1.0;         // Amplitude of the Gaussian potential
+    float sigma = 1.0;     // Width of the Gaussian potential
+    float T = 10.0;        // Final time
+    float dt = 0.01;       // Time step
+    float v_th = 0.01;     // Velocity threshold
+    float x_star = 0.5;    // Final position sought
+    
+    int steps = static_cast<int>(T / dt);
+
+    // Function to compute the potential V(x - xi(t))
+    float potential(float x, float xi)
+    {
+        float V_MT = 0.5 * Omega * Omega * (x - xi) * (x - xi);
+        float V_G = A * exp(-(x - xi) * (x - xi) / sigma);
+        return V_MT + V_G;
+    }
+
+    // Function to compute the force (negative derivative of potential)
+    float force(float x, float xi)
+    {
+        return -(Omega * Omega * (x - xi)) - (2.0 * A * (x - xi) / sigma) * exp(-(x - xi) * (x - xi) / sigma);
+    }
+
+    // Define the right-hand side of the ODE (returns dx/dt and dv/dt)
+    State derivative(const State& state, float xi)
+    {
+        State deriv;
+        deriv.x = state.v;                  // dx/dt = v
+        deriv.v = force(state.x, xi) / m;   // dv/dt = F/m
+        return deriv;
+    }
+    
+    // RK4 step for updating state
+    State rk4_step(const State& state, float xi, float dt)
+    {
+        State k1 = derivative(state, xi);
+        State k2 = derivative({state.x + 0.5f * dt * k1.x, state.v + 0.5f * dt * k1.v}, xi);
+        State k3 = derivative({state.x + 0.5f * dt * k2.x, state.v + 0.5f * dt * k2.v}, xi);
+        State k4 = derivative({state.x + dt * k3.x, state.v + dt * k3.v}, xi);
+
+        State new_state;
+        new_state.x = state.x + (dt / 6.0f) * (k1.x + 2.0f * k2.x + 2.0f * k3.x + k4.x);
+        new_state.v = state.v + (dt / 6.0f) * (k1.v + 2.0f * k2.v + 2.0f * k3.v + k4.v);
+
+        return new_state;
+    }
+}
+
 struct Board
 {
     static boost::concurrent_flat_map<std::string, Eigen::VectorXf> inline expression_dict;
@@ -434,7 +493,7 @@ struct Board
         if (is_primary)
         {
             std::call_once(initialization_flag, [&]()
-                           {
+            {
                 Board::data = theData;
                 Board::boundary_condition_type = boundary_condition_type;
                 Board::initial_condition_type = initial_condition_type;
@@ -727,6 +786,31 @@ struct Board
             }
         }
         return std::make_pair(this->depth - 1, this->num_leaves == this->num_binary + 1);
+    }
+    
+    float loss_func()
+    {
+        using namespace InvertedPendulum;
+        // Initial conditions
+        State state;
+        state.x = 1.0;    // x(0) = x0
+        state.v = 0.0;    // v(0) = 0
+        // Time evolution loop
+        
+        for (int step = 0; step < steps; ++step)
+        {
+            float t = step * dt;
+            // Update the state using RK4
+            state = rk4_step(state, expression_evaluator(this->params, this->pieces, t), dt);
+        }
+        
+        this->MSE_curr = (x_star - state.x)*(x_star - state.x);
+        float abs_v = std::abs(state.v);
+        if (abs_v > v_th)
+        {
+            this->MSE_curr += (abs_v - v_th)*(abs_v - v_th);
+        }
+        return (1.0f / (1.0f + this->MSE_curr));
     }
     
     /*
@@ -1135,6 +1219,7 @@ struct Board
             else if (std::find(Board::__unary_operators.begin(), Board::__unary_operators.end(), pieces[i]) != Board::__unary_operators.end()) // Unary operator
             {
                 std::string operand = stack.top();
+                assert(!stack.empty());
                 stack.pop();
                 result = token + "(" + operand + ")";
                 stack.push(result);
@@ -1142,8 +1227,10 @@ struct Board
             else // binary operator
             {
                 std::string right_operand = stack.top();
+                assert(!stack.empty());
                 stack.pop();
                 std::string left_operand = stack.top();
+                assert(!stack.empty());
                 stack.pop();
                 if (expression_type == "prefix")
                 {
@@ -1156,7 +1243,149 @@ struct Board
                 stack.push(result);
             }
         }
-        
+        assert(!stack.empty());
+        return stack.top();
+    }
+    
+    float expression_evaluator(const Eigen::VectorXf& params, const std::vector<std::string>& pieces, float t) const
+    {
+        std::stack<float> stack;
+        std::string token;
+        bool is_prefix = (expression_type == "prefix");
+        for (int i = (is_prefix ? (static_cast<int>(pieces.size()) - 1) : 0); (is_prefix ? (i >= 0) : (i < static_cast<int>(pieces.size()))); (is_prefix ? (i--) : (i++)))
+        {
+            token = pieces[i];
+            //            std::cout << "pieces[i] = " << pieces[i] << '\n';
+            assert(token.size());
+            if (std::find(Board::__operators.begin(), Board::__operators.end(), token) == Board::__operators.end()) //not an operator, i.e., a leaf
+            {
+                if (token.substr(0,5) == "const")
+                {
+                    int temp_idx = std::stoi(token.substr(5));
+                    assert(temp_idx < params.size());
+                    stack.push(params(temp_idx));
+                }
+                else if (token == "0")
+                {
+                    stack.push(0.0f);
+                }
+                else if (token == "1")
+                {
+                    stack.push(1.0f);
+                }
+                else if (token == "2")
+                {
+                    stack.push(2.0f);
+                }
+                else if (token == "4")
+                {
+                    stack.push(4.0f);
+                }
+                else if (isFloat(token))
+                {
+                    stack.push(std::stof(token));
+                }
+                else if (token == "x0")
+                {
+                    stack.push(t);
+                }
+                else
+                {
+                    throw(std::runtime_error("bad token"));
+                }
+            }
+            else if (std::find(Board::__unary_operators.begin(), Board::__unary_operators.end(), token) != Board::__unary_operators.end()) // Unary operator
+            {
+                if (token == "cos")
+                {
+                    float temp = stack.top();
+                    stack.pop();
+                    stack.push(cos(temp));
+                }
+                else if (token == "exp")
+                {
+                    float temp = stack.top();
+                    stack.pop();
+                    stack.push(exp(temp));
+                }
+                else if (token == "sqrt")
+                {
+                    float temp = stack.top();
+                    stack.pop();
+                    stack.push(sqrt(temp));
+                }
+                else if (token == "sin")
+                {
+                    float temp = stack.top();
+                    stack.pop();
+                    stack.push(sin(temp));
+                }
+                else if (token == "asin" || token == "arcsin")
+                {
+                    float temp = stack.top();
+                    stack.pop();
+                    stack.push(asin(temp));
+                }
+                else if (token == "log" || token == "ln")
+                {
+                    float temp = stack.top();
+                    stack.pop();
+                    stack.push(log(temp));
+                }
+                else if (token == "tanh")
+                {
+                    float temp = stack.top();
+                    stack.pop();
+                    stack.push(tanh(temp));
+                }
+                else if (token == "sech")
+                {
+                    float temp = stack.top();
+                    stack.pop();
+                    stack.push(1.0f/cosh(temp));
+                }
+                else if (token == "acos" || token == "arccos")
+                {
+                    float temp = stack.top();
+                    stack.pop();
+                    stack.push(acos(temp));
+                }
+                else if (token == "~") //unary minus
+                {
+                    float temp = stack.top();
+                    stack.pop();
+                    stack.push(-temp);
+                }
+            }
+            else // binary operator
+            {
+                float left_operand = stack.top();
+                stack.pop();
+                float right_operand = stack.top();
+                stack.pop();
+                if (token == "+")
+                {
+                    stack.push(((expression_type == "postfix") ? (right_operand + left_operand) : (left_operand + right_operand)));
+                }
+                else if (token == "-")
+                {
+                    stack.push(((expression_type == "postfix") ? (right_operand - left_operand) : (left_operand - right_operand)));
+                }
+                else if (token == "*")
+                {
+                    stack.push(((expression_type == "postfix") ? (right_operand * left_operand) : (left_operand * right_operand)));
+                }
+                else if (token == "/")
+                {
+                    stack.push(((expression_type == "postfix") ? (right_operand / left_operand) : (left_operand / right_operand)));
+                }
+                else if (token == "^")
+                {
+                    stack.push((expression_type == "postfix") ? (std::pow(right_operand, left_operand)) : (std::pow(left_operand, right_operand)));
+                }
+            }
+
+        }
         return stack.top();
     }
     
@@ -1489,13 +1718,13 @@ struct Board
             v(i) = vel_dist(gen);
         }
         
-        float swarm_best_score = loss_func(expression_evaluator(this->params, this->diffeq_result));
+        float swarm_best_score = ::loss_func(expression_evaluator(this->params, this->diffeq_result));
         //Boundary conditions
         swarm_best_score += getBoundaryScore();
         //Initial conditions
         swarm_best_score += getInitialConditionScore();
         
-        float fpi = loss_func(expression_evaluator(particle_positions, this->diffeq_result));
+        float fpi = ::loss_func(expression_evaluator(particle_positions, this->diffeq_result));
         this->MSE_curr = (1.0f/fpi) - 1.0f;
         //Boundary conditions
         fpi += getBoundaryScore(particle_positions);
@@ -1519,7 +1748,7 @@ struct Board
                 v(i) = K*(v(i) + phi_1*rp*(particle_positions(i) - x(i)) + phi_2*rg*((this->params)(i) - x(i)));
                 x(i) += v(i);
                 
-                fpi = loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //current score
+                fpi = ::loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //current score
                 this->MSE_curr = (1.0f/fpi) - 1.0f;
                 //Boundary conditions
                 fpi += getBoundaryScore(particle_positions);
@@ -1528,7 +1757,7 @@ struct Board
                 
                 temp = particle_positions(i); //save old position of particle i
                 particle_positions(i) = x(i); //update old position to new position
-                fxi = loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //calculate the score with the new position
+                fxi = ::loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //calculate the score with the new position
                 //Boundary conditions
                 fxi += getBoundaryScore(particle_positions, false);
                 //Initial conditions
@@ -1560,7 +1789,7 @@ struct Board
         Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
         return improved;
     }
-    
+
     bool PSO()
     {
         bool improved = false;
@@ -1575,13 +1804,13 @@ struct Board
             v(i) = vel_dist(gen);
         }
         
-        float swarm_best_score = loss_func(expression_evaluator(this->params, this->diffeq_result));
+        float swarm_best_score = ::loss_func(expression_evaluator(this->params, this->diffeq_result));
         //Boundary conditions
         swarm_best_score += getBoundaryScore();
         //Initial conditions
         swarm_best_score += getInitialConditionScore();
         
-        float fpi = loss_func(expression_evaluator(particle_positions, this->diffeq_result));
+        float fpi = ::loss_func(expression_evaluator(particle_positions, this->diffeq_result));
         this->MSE_curr = (1.0f/fpi) - 1.0f;
         //Boundary conditions
         fpi += getBoundaryScore(particle_positions);
@@ -1605,7 +1834,7 @@ struct Board
                 v(i) = K*(v(i) + phi_1*rp*(particle_positions(i) - x(i)) + phi_2*rg*((this->params)(i) - x(i)));
                 x(i) += v(i);
                 
-                fpi = loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //current score
+                fpi = ::loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //current score
                 this->MSE_curr = (1.0f/fpi) - 1.0f;
                 //Boundary conditions
                 fpi += getBoundaryScore(particle_positions);
@@ -1614,7 +1843,7 @@ struct Board
                 
                 temp = particle_positions(i); //save old position of particle i
                 particle_positions(i) = x(i); //update old position to new position
-                fxi = loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //calculate the score with the new position
+                fxi = ::loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //calculate the score with the new position
                 //Boundary conditions
                 fxi += getBoundaryScore(particle_positions, false);
                 //Initial conditions
@@ -1832,12 +2061,12 @@ struct Board
         std::string x1 = "x1";  // Cache the value of x1
         
         std::replace(temp.begin(), temp.end(), x1, min_val);  // Replace all occurrences of x1 with min_val
-        temp_score = loss_func(expression_evaluator(params, temp));
+        temp_score = ::loss_func(expression_evaluator(params, temp));
         boundary_score += temp_score;
         if (updateMSECurr){this->MSE_curr += (1.0f/temp_score) - 1.0f;}
         
         std::replace(temp.begin(), temp.end(), min_val, max_val); // Replace all occurrences of min_val with max_val
-        temp_score = loss_func(expression_evaluator(params, temp));
+        temp_score = ::loss_func(expression_evaluator(params, temp));
         boundary_score += temp_score;
         if (updateMSECurr){this->MSE_curr += (1.0f/temp_score) - 1.0f;}
         
@@ -1850,7 +2079,7 @@ struct Board
         
         std::replace(temp.begin(), temp.end(), x0, min_val);  // Replace all occurrences of x0 with min_val
         std::replace(temp_1.begin(), temp_1.end(), x0, max_val);  // Replace all occurrences of x0 with max_val
-        temp_score = loss_func(expression_evaluator(params, temp), expression_evaluator(params, temp_1));
+        temp_score = ::loss_func(expression_evaluator(params, temp), expression_evaluator(params, temp_1));
         boundary_score += temp_score;
         if (updateMSECurr){this->MSE_curr += (1.0f/temp_score) - 1.0f;}
         
@@ -1867,13 +2096,13 @@ struct Board
         temp_1 = this->derivat;
         std::replace(temp.begin(), temp.end(), x0, min_val);  // Replace all occurrences of x0 with min_val
         std::replace(temp_1.begin(), temp_1.end(), x0, max_val);  // Replace all occurrences of x0 with max_val
-        temp_score = loss_func(expression_evaluator(params, temp), expression_evaluator(params, temp_1));
+        temp_score = ::loss_func(expression_evaluator(params, temp), expression_evaluator(params, temp_1));
         boundary_score += temp_score;
         if (updateMSECurr){this->MSE_curr += (1.0f/temp_score) - 1.0f;}
         
         return boundary_score;
     }
-    
+
     //periodic BCs in x and y
     float BC_AdvectionDiffusion2D_2(const Eigen::VectorXf& params, bool updateMSECurr = true)
     {
@@ -1892,7 +2121,7 @@ struct Board
         
         std::replace(temp.begin(), temp.end(), x0, min_val);  // Replace all occurrences of x0 with min_val
         std::replace(temp_1.begin(), temp_1.end(), x0, max_val);  // Replace all occurrences of x0 with max_val
-        temp_score = loss_func(expression_evaluator(params, temp), expression_evaluator(params, temp_1));
+        temp_score = ::loss_func(expression_evaluator(params, temp), expression_evaluator(params, temp_1));
         boundary_score += temp_score;
         if (updateMSECurr){this->MSE_curr += (1.0f/temp_score) - 1.0f;}
         
@@ -1909,7 +2138,7 @@ struct Board
         temp_1 = this->derivat;
         std::replace(temp.begin(), temp.end(), x0, min_val);  // Replace all occurrences of x0 with min_val
         std::replace(temp_1.begin(), temp_1.end(), x0, max_val);  // Replace all occurrences of x0 with max_val
-        temp_score = loss_func(expression_evaluator(params, temp), expression_evaluator(params, temp_1));
+        temp_score = ::loss_func(expression_evaluator(params, temp), expression_evaluator(params, temp_1));
         boundary_score += temp_score;
         if (updateMSECurr){this->MSE_curr += (1.0f/temp_score) - 1.0f;}
         
@@ -1922,7 +2151,7 @@ struct Board
         
         std::replace(temp.begin(), temp.end(), x1, min_val);  // Replace all occurrences of x1 with min_val
         std::replace(temp_1.begin(), temp_1.end(), x1, max_val);  // Replace all occurrences of x1 with max_val
-        temp_score = loss_func(expression_evaluator(params, temp), expression_evaluator(params, temp_1));
+        temp_score = ::loss_func(expression_evaluator(params, temp), expression_evaluator(params, temp_1));
         boundary_score += temp_score;
         if (updateMSECurr){this->MSE_curr += (1.0f/temp_score) - 1.0f;}
         
@@ -1939,23 +2168,23 @@ struct Board
         temp_1 = this->derivat;
         std::replace(temp.begin(), temp.end(), x1, min_val);  // Replace all occurrences of x1 with min_val
         std::replace(temp_1.begin(), temp_1.end(), x1, max_val);  // Replace all occurrences of x1 with max_val
-        temp_score = loss_func(expression_evaluator(params, temp), expression_evaluator(params, temp_1));
+        temp_score = ::loss_func(expression_evaluator(params, temp), expression_evaluator(params, temp_1));
         boundary_score += temp_score;
         if (updateMSECurr){this->MSE_curr += (1.0f/temp_score) - 1.0f;}
         
         return boundary_score;
     }
-    
+
     //check that f(x2=0) = x3
     float IC_AdvectionDiffusion2D(const Eigen::VectorXf& params, bool updateMSECurr = true)
     {
         std::vector<std::string> temp = this->pieces;
         std::replace(temp.begin(), temp.end(), std::string("x2"), std::string("0"));  // Replace all occurrences of x2 with 0 (time t = 0)
-        float IC_Score = loss_func(expression_evaluator(params, temp), Board::data["x3"]);
+        float IC_Score = ::loss_func(expression_evaluator(params, temp), Board::data["x3"]);
         if (updateMSECurr){this->MSE_curr += (1.0f/IC_Score) - 1.0f;}
         return IC_Score;
     }
-    
+
     //periodic BCs in x, Neumann BCs in y
     float BC_AdvectionDiffusion2D_1()
     {
@@ -1980,12 +2209,12 @@ struct Board
         temp = this->derivat;
         
         std::replace(temp.begin(), temp.end(), std::string("x1"), min_val);  // Replace all occurrences of x1 with min_val
-        temp_score = loss_func(expression_evaluator(this->params, temp));
+        temp_score = ::loss_func(expression_evaluator(this->params, temp));
         boundary_score += temp_score;
         this->MSE_curr += (1.0f/temp_score) - 1.0f;
         
         std::replace(temp.begin(), temp.end(), min_val, max_val); // Replace all occurrences of min_val with max_val
-        temp_score = loss_func(expression_evaluator(this->params, temp));
+        temp_score = ::loss_func(expression_evaluator(this->params, temp));
         boundary_score += temp_score;
         this->MSE_curr += (1.0f/temp_score) - 1.0f;
         
@@ -1998,7 +2227,7 @@ struct Board
         
         std::replace(temp.begin(), temp.end(), x0, min_val);  // Replace all occurrences of x0 with min_val
         std::replace(temp_1.begin(), temp_1.end(), x0, max_val);  // Replace all occurrences of x0 with max_val
-        temp_score = loss_func(expression_evaluator(this->params, temp), expression_evaluator(this->params, temp_1));
+        temp_score = ::loss_func(expression_evaluator(this->params, temp), expression_evaluator(this->params, temp_1));
         boundary_score += temp_score;
         this->MSE_curr += (1.0f/temp_score) - 1.0f;
         
@@ -2015,13 +2244,13 @@ struct Board
         temp_1 = this->derivat;
         std::replace(temp.begin(), temp.end(), x0, min_val);  // Replace all occurrences of x0 with min_val
         std::replace(temp_1.begin(), temp_1.end(), x0, max_val);  // Replace all occurrences of x0 with max_val
-        temp_score = loss_func(expression_evaluator(this->params, temp), expression_evaluator(this->params, temp_1));
+        temp_score = ::loss_func(expression_evaluator(this->params, temp), expression_evaluator(this->params, temp_1));
         boundary_score += temp_score;
         this->MSE_curr += (1.0f/temp_score) - 1.0f;
         
         return boundary_score;
     }
-    
+
     //periodic BCs in x and y
     float BC_AdvectionDiffusion2D_2()
     {
@@ -2040,7 +2269,7 @@ struct Board
         
         std::replace(temp.begin(), temp.end(), x0, min_val);  // Replace all occurrences of x0 with min_val
         std::replace(temp_1.begin(), temp_1.end(), x0, max_val);  // Replace all occurrences of x0 with max_val
-        temp_score = loss_func(expression_evaluator(this->params, temp), expression_evaluator(this->params, temp_1));
+        temp_score = ::loss_func(expression_evaluator(this->params, temp), expression_evaluator(this->params, temp_1));
         boundary_score += temp_score;
         this->MSE_curr += (1.0f/temp_score) - 1.0f;
         
@@ -2057,7 +2286,7 @@ struct Board
         temp_1 = this->derivat;
         std::replace(temp.begin(), temp.end(), x0, min_val);  // Replace all occurrences of x0 with min_val
         std::replace(temp_1.begin(), temp_1.end(), x0, max_val);  // Replace all occurrences of x0 with max_val
-        temp_score = loss_func(expression_evaluator(this->params, temp), expression_evaluator(this->params, temp_1));
+        temp_score = ::loss_func(expression_evaluator(this->params, temp), expression_evaluator(this->params, temp_1));
         boundary_score += temp_score;
         this->MSE_curr += (1.0f/temp_score) - 1.0f;
         
@@ -2070,7 +2299,7 @@ struct Board
         
         std::replace(temp.begin(), temp.end(), x1, min_val);  // Replace all occurrences of x1 with min_val
         std::replace(temp_1.begin(), temp_1.end(), x1, max_val);  // Replace all occurrences of x1 with max_val
-        temp_score = loss_func(expression_evaluator(this->params, temp), expression_evaluator(this->params, temp_1));
+        temp_score = ::loss_func(expression_evaluator(this->params, temp), expression_evaluator(this->params, temp_1));
         boundary_score += temp_score;
         this->MSE_curr += (1.0f/temp_score) - 1.0f;
         
@@ -2087,19 +2316,19 @@ struct Board
         temp_1 = this->derivat;
         std::replace(temp.begin(), temp.end(), x1, min_val);  // Replace all occurrences of x1 with min_val
         std::replace(temp_1.begin(), temp_1.end(), x1, max_val);  // Replace all occurrences of x1 with max_val
-        temp_score = loss_func(expression_evaluator(this->params, temp), expression_evaluator(this->params, temp_1));
+        temp_score = ::loss_func(expression_evaluator(this->params, temp), expression_evaluator(this->params, temp_1));
         boundary_score += temp_score;
         this->MSE_curr += (1.0f/temp_score) - 1.0f;
         
         return boundary_score;
     }
-    
+
     //check that f(x2=0) = x3
     float IC_AdvectionDiffusion2D()
     {
         std::vector<std::string> temp = this->pieces;
         std::replace(temp.begin(), temp.end(), std::string("x2"), std::string("0"));  // Replace all occurrences of x2 with 0 (time t = 0)
-        float IC_Score = loss_func(expression_evaluator(this->params, temp), Board::data["x3"]);
+        float IC_Score = ::loss_func(expression_evaluator(this->params, temp), Board::data["x3"]);
         this->MSE_curr += (1.0f/IC_Score) - 1.0f;
         return IC_Score;
     }
@@ -2214,7 +2443,7 @@ struct Board
                     if (Board::expression_dict.contains(this->expression_string))
                     {
                         Board::expression_dict.visit(this->expression_string, [&](auto& x)
-                                                     {
+                        {
                             x.second = this->params;
                         });
                     }
@@ -2234,32 +2463,16 @@ struct Board
                     this->MSE_curr = FLT_MAX;
                     return score;
                 }
-                score = loss_func(expression_eval);
-                this->MSE_curr = (1.0f/score) - 1.0f;
-                //Boundary conditions
-                score += getBoundaryScore(temp_vec);
-                //Initial conditions
-                score += getInitialConditionScore(temp_vec);
+                return this->loss_func();
             }
             else
             {
-                score = loss_func(expression_evaluator(this->params, this->diffeq_result));
-                this->MSE_curr = (1.0f/score) - 1.0f;
-                //Boundary conditions
-                score += getBoundaryScore();
-                //Initial conditions
-                score += getInitialConditionScore();
+                return this->loss_func();
             }
         }
         else
         {
-            this->diffeq_result = diffeq(*this);
-            score = loss_func(expression_evaluator(this->params, this->diffeq_result));
-            this->MSE_curr = (1.0f/score) - 1.0f;
-            //Boundary conditions
-            score += getBoundaryScore();
-            //Initial conditions
-            score += getInitialConditionScore();
+            return this->loss_func();
         }
         return score;
     }
@@ -5151,8 +5364,6 @@ void ConcurrentMCTS(std::vector<std::string> (*diffeq)(Board&), const Eigen::Mat
     std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
     std::cout << "Best expression = " << best_expression << '\n';
     std::cout << "Best expression (original format) = " << orig_expression << '\n';
-    std::cout << "Best diff result = " << best_expr_result << '\n';
-    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
 }
 
 //https://arxiv.org/abs/2205.13134
@@ -5172,7 +5383,7 @@ void MCTS(std::vector<std::string> (*diffeq)(Board&), const Eigen::MatrixXf& dat
      */
     std::atomic<float> max_score{0.0};
     std::atomic<float> best_MSE{FLT_MAX};
-    std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
+    std::string best_expression, orig_expression;
     
     auto start_time = Clock::now();
     
@@ -5180,7 +5391,7 @@ void MCTS(std::vector<std::string> (*diffeq)(Board&), const Eigen::MatrixXf& dat
      Inside of thread:
      */
     
-    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token, &best_MSE, &boundary_condition_type, &initial_condition_type]()
+    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &const_tokens, &isConstTol, &const_token, &best_MSE, &boundary_condition_type, &initial_condition_type]()
     {
         std::random_device rand_dev;
         std::mt19937 thread_local generator(rand_dev());
@@ -5287,14 +5498,10 @@ void MCTS(std::vector<std::string> (*diffeq)(Board&), const Eigen::MatrixXf& dat
                 best_MSE = x.MSE_curr;
                 best_expression = x._to_infix();
                 orig_expression = x.expression();
-                best_expr_result = x._to_infix(x.diffeq_result);
-                orig_expr_result = x.expression(x.diffeq_result);
                 std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
                 std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
                 std::cout << "Best expression = " << best_expression << '\n';
                 std::cout << "Best expression (original format) = " << orig_expression << '\n';
-                std::cout << "Best diff result = " << best_expr_result << '\n';
-                std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
             }
             x.pieces.clear();
             moveTracker.clear();
@@ -5316,8 +5523,6 @@ void MCTS(std::vector<std::string> (*diffeq)(Board&), const Eigen::MatrixXf& dat
     std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
     std::cout << "Best expression = " << best_expression << '\n';
     std::cout << "Best expression (original format) = " << orig_expression << '\n';
-    std::cout << "Best diff result = " << best_expr_result << '\n';
-    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
 }
 
 void RandomSearch(std::vector<std::string> (*diffeq)(Board&), const Eigen::MatrixXf& data, const int depth = 3, const std::string expression_type = "prefix", const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false, std::string boundary_condition_type = "none", std::string initial_condition_type = "none")
@@ -5337,7 +5542,7 @@ void RandomSearch(std::vector<std::string> (*diffeq)(Board&), const Eigen::Matri
     
     std::atomic<float> max_score{0.0};
     std::atomic<float> best_MSE{FLT_MAX};
-    std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
+    std::string best_expression, orig_expression;
     
     auto start_time = Clock::now();
     
@@ -5345,7 +5550,7 @@ void RandomSearch(std::vector<std::string> (*diffeq)(Board&), const Eigen::Matri
      Inside of thread:
      */
     
-    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token, &best_MSE, &boundary_condition_type, &initial_condition_type]()
+    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &const_tokens, &isConstTol, &const_token, &best_MSE, &boundary_condition_type, &initial_condition_type]()
     {
         std::random_device rand_dev;
         std::mt19937 thread_local generator(rand_dev()); // Mersenne Twister random number generator
@@ -5379,14 +5584,10 @@ void RandomSearch(std::vector<std::string> (*diffeq)(Board&), const Eigen::Matri
                 best_MSE = x.MSE_curr;
                 best_expression = x._to_infix();
                 orig_expression = x.expression();
-                best_expr_result = x._to_infix(x.diffeq_result);
-                orig_expr_result = x.expression(x.diffeq_result);
                 std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
                 std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
                 std::cout << "Best expression = " << best_expression << '\n';
                 std::cout << "Best expression (original format) = " << orig_expression << '\n';
-                std::cout << "Best diff result = " << best_expr_result << '\n';
-                std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
             }
             x.pieces.clear();
         }
@@ -5407,13 +5608,11 @@ void RandomSearch(std::vector<std::string> (*diffeq)(Board&), const Eigen::Matri
     std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
     std::cout << "Best expression = " << best_expression << '\n';
     std::cout << "Best expression (original format) = " << orig_expression << '\n';
-    std::cout << "Best diff result = " << best_expr_result << '\n';
-    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
 }
 
 int main()
 {
-    constexpr double time = 5;
+    constexpr double time = 10000;
     
     //Case 1
 //    auto data1 = createMeshgridWithLambda(10, 3, {0.1f, -1.1f, 0.1f}, {2.1f, 1.1f, 20.0f},
@@ -5431,26 +5630,28 @@ int main()
 //    GP(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data1 /*data used to solve differential equation*/, 6 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
 
     //Case 2
-    auto data2 = createMeshgridWithLambda(10, 3, {0.1f, 0.1f, 0.1f}, {2.0f*std::numbers::pi_v<float>, 2.0f*std::numbers::pi_v<float>, 20.0f},
-    [&](const Eigen::VectorXf& row) -> float
-    {
-        //2D-Gaussian
-        float x = row(0);
-        float y = row(1);
-        Board::AdvectionDiffusion2DVars::x_0 = std::numbers::pi_v<float>;
-        Board::AdvectionDiffusion2DVars::y_0 = std::numbers::pi_v<float>;
-        Board::AdvectionDiffusion2DVars::sigma = 0.2f;
-        return std::exp(-(std::pow(x - Board::AdvectionDiffusion2DVars::x_0, 2) + std::pow(y - Board::AdvectionDiffusion2DVars::y_0, 2))) / (2 * std::pow(Board::AdvectionDiffusion2DVars::sigma, 2));
-    });
+//    auto data2 = createMeshgridWithLambda(10, 3, {0.1f, 0.1f, 0.1f}, {2.0f*std::numbers::pi_v<float>, 2.0f*std::numbers::pi_v<float>, 20.0f},
+//    [&](const Eigen::VectorXf& row) -> float
+//    {
+//        //2D-Gaussian
+//        float x = row(0);
+//        float y = row(1);
+//        Board::AdvectionDiffusion2DVars::x_0 = std::numbers::pi_v<float>;
+//        Board::AdvectionDiffusion2DVars::y_0 = std::numbers::pi_v<float>;
+//        Board::AdvectionDiffusion2DVars::sigma = 0.2f;
+//        return std::exp(-(std::pow(x - Board::AdvectionDiffusion2DVars::x_0, 2) + std::pow(y - Board::AdvectionDiffusion2DVars::y_0, 2))) / (2 * std::pow(Board::AdvectionDiffusion2DVars::sigma, 2));
+//    });
         
-    SimulatedAnnealing(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data2 /*data used to solve differential equation*/, 13 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, true /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_2" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
+//    SimulatedAnnealing(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data2 /*data used to solve differential equation*/, 13 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, true /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_2" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
+        
+    RandomSearch(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, createLinspaceMatrix(10, 1, {0.0f}, {InvertedPendulum::T}) /*data used to solve differential equation*/, 3 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "none" /*boundary condition type*/, "none" /*initial condition type*/);
     
     return 0;
 }
 
 //git push --set-upstream origin PrefixPostfixSymbolicDifferentiator
 
-//g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_PrototypeImprovement PrefixPostfixMultiThreadDiffSimplifySR_PrototypeImprovement.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -ffast-math -ftree-vectorize -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
+//g++ -Wall -std=c++20 -o InvertedPendulum InvertedPendulum.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -ffast-math -ftree-vectorize -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
 
 //g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_PrototypeImprovement PrefixPostfixMultiThreadDiffSimplifySR_PrototypeImprovement.cpp -g -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
 
