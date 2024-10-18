@@ -267,7 +267,7 @@ def plot_rpn_expression_tree(expression: list[str], block = False, save = False,
 # Example usage:
 def test_visualize():
 #    # Example usage:
-    save = True
+    save = False
     
     if save:
 #        plot_pn_expression_tree("- + + - + - + / * 30 ^ x 2 * - 10 x y ^ x 4 * / 4 5 ^ x 3 / ^ y 2 2 * 2 y / 8 + + 2 ^ x 2 ^ y 2 / ^ y 3 2 x", block=False, save = save)
@@ -307,12 +307,19 @@ def test_visualize():
 #                x_real = "x y +"
 #                x_imag = "x y cos *"
 #                plot_rpn_expression_tree((x_real + " i " + x_imag + " * +").split(), block=True, save = save)
-#                plot_pn_expression_tree(("/ * - x_0 x exp - * - x x_0 - x_0 x * - y y_0 - y y_0 * sigma sigma").split(), block=True, save = save)
+#                plot_pn_expression_tree(("/ * - x_0 x0 x3 * sigma sigma").split(), block=True, save = save) #✅
+#                plot_pn_expression_tree(("/ * - y_0 x1 x3 * sigma sigma").split(), block=True, save = save) #✅
+#                plot_rpn_expression_tree(("x_0 x0 - x3 * sigma sigma * /").split(), block=True, save = save) #✅
+#                plot_rpn_expression_tree(("y_0 x1 - x0 x_0 - x_0 x0 - * x1 y_0 - x1 y_0 - * - exp * sigma sigma * /").split(), block=True, save = save) ✅
+#                plot_rpn_expression_tree(("y_0 x1 - x3 * sigma sigma * /").split(), block=True, save = save) #✅
+                plot_pn_expression_tree(("* - y_0 x1 * 2 x3").split(), block=True, save = save)
+                
+            
 #                plot_rpn_expression_tree("T_t 1 y y * - T_x * + kappa T_{xx} T_{yy} + * -".split(), block=True, save = save)
 #                plot_pn_expression_tree(("- + T_t * - 1 * y y T_x * kappa + T_{xx} T_{yy}").split(), block=True, save = save)
 #                plot_rpn_expression_tree("T_t 4 y * sin T_x * + 4 x * cos T_y * + kappa T_{xx} T_{yy} + * -".split(), block=True, save = save)
 #                plot_pn_expression_tree(("- + + T_t * sin * 4 y T_x * cos * 4 x T_y * kappa + T_{xx} T_{yy}").split(), block=True, save = save)
-                plot_rpn_expression_tree("I I ^ y cos x tanh - + t I I ^ + I I tanh ^ / /".split(), block=True, save = save)
+#                plot_rpn_expression_tree("I I ^ y cos x tanh - + t I I ^ + I I tanh ^ / /".split(), block=True, save = save)
 
 
         except KeyboardInterrupt:

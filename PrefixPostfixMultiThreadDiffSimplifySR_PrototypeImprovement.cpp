@@ -530,6 +530,10 @@ struct Board
                         Board::una_bin_leaf_legal_moves_dict[false][false][true].push_back(i); //3
                     }
                 }
+                std::cout << "Board::__unary_operators.size() = " << Board::__unary_operators.size() << '\n';
+                std::cout << "Board::__binary_operators.size() = " << Board::__binary_operators.size() << '\n';
+                std::cout << "Board::__tokens.size() = " << Board::__tokens.size() << '\n';
+
             });
             
         }
@@ -2487,61 +2491,77 @@ struct Board
         
         if (Board::initial_condition_type == "AdvectionDiffusion2D" && prefix[low] == "x3")
         {
-            // / * - x_0 x0 exp - * - x0 x_0 - x_0 x0 * - x1 y_0 - x1 y_0 * sigma sigma
             if (dx == "x0")
             {
-                this->derivat.push_back("/");
+                // / * - x_0 x0 exp - * - x0 x_0 - x_0 x0 * - x1 y_0 - x1 y_0 * sigma sigma ✅
+//                this->derivat.push_back("/");
+//                this->derivat.push_back("*");
+//                this->derivat.push_back("-");
+//                this->derivat.push_back("AdvectionDiffusion2DVars::x_0");
+//                this->derivat.push_back("x0");
+//                this->derivat.push_back("exp");
+//                this->derivat.push_back("-");
+//                this->derivat.push_back("*");
+//                this->derivat.push_back("-");
+//                this->derivat.push_back("x0");
+//                this->derivat.push_back("AdvectionDiffusion2DVars::x_0");
+//                this->derivat.push_back("-");
+//                this->derivat.push_back("AdvectionDiffusion2DVars::x_0");
+//                this->derivat.push_back("x0");
+//                this->derivat.push_back("*");
+//                this->derivat.push_back("-");
+//                this->derivat.push_back("x1");
+//                this->derivat.push_back("AdvectionDiffusion2DVars::y_0");
+//                this->derivat.push_back("-");
+//                this->derivat.push_back("x1");
+//                this->derivat.push_back("AdvectionDiffusion2DVars::y_0");
+//                this->derivat.push_back("*");
+//                this->derivat.push_back("AdvectionDiffusion2DVars::sigma");
+//                this->derivat.push_back("AdvectionDiffusion2DVars::sigma");
+                // * - x_0 x0 * 2 x3 ✅
                 this->derivat.push_back("*");
                 this->derivat.push_back("-");
                 this->derivat.push_back("AdvectionDiffusion2DVars::x_0");
                 this->derivat.push_back("x0");
-                this->derivat.push_back("exp");
-                this->derivat.push_back("-");
                 this->derivat.push_back("*");
-                this->derivat.push_back("-");
-                this->derivat.push_back("x0");
-                this->derivat.push_back("AdvectionDiffusion2DVars::x_0");
-                this->derivat.push_back("-");
-                this->derivat.push_back("AdvectionDiffusion2DVars::x_0");
-                this->derivat.push_back("x0");
-                this->derivat.push_back("*");
-                this->derivat.push_back("-");
-                this->derivat.push_back("x1");
-                this->derivat.push_back("AdvectionDiffusion2DVars::y_0");
-                this->derivat.push_back("-");
-                this->derivat.push_back("x1");
-                this->derivat.push_back("AdvectionDiffusion2DVars::y_0");
-                this->derivat.push_back("*");
-                this->derivat.push_back("AdvectionDiffusion2DVars::sigma");
-                this->derivat.push_back("AdvectionDiffusion2DVars::sigma");
+                this->derivat.push_back("2");
+                this->derivat.push_back("x3");
             }
-            // / * - y_0 x1 exp - * - x0 x_0 - x_0 x0 * - x1 y_0 - x1 y_0 * sigma sigma
             else if (dx == "x1")
             {
-                this->derivat.push_back("/");
+                // / * - y_0 x1 exp - * - x0 x_0 - x_0 x0 * - x1 y_0 - x1 y_0 * sigma sigma
+//                this->derivat.push_back("/");
+//                this->derivat.push_back("*");
+//                this->derivat.push_back("-");
+//                this->derivat.push_back("AdvectionDiffusion2DVars::y_0");
+//                this->derivat.push_back("x1");
+//                this->derivat.push_back("exp");
+//                this->derivat.push_back("-");
+//                this->derivat.push_back("*");
+//                this->derivat.push_back("-");
+//                this->derivat.push_back("x0");
+//                this->derivat.push_back("AdvectionDiffusion2DVars::x_0");
+//                this->derivat.push_back("-");
+//                this->derivat.push_back("AdvectionDiffusion2DVars::x_0");
+//                this->derivat.push_back("x0");
+//                this->derivat.push_back("*");
+//                this->derivat.push_back("-");
+//                this->derivat.push_back("x1");
+//                this->derivat.push_back("AdvectionDiffusion2DVars::y_0");
+//                this->derivat.push_back("-");
+//                this->derivat.push_back("x1");
+//                this->derivat.push_back("AdvectionDiffusion2DVars::y_0");
+//                this->derivat.push_back("*");
+//                this->derivat.push_back("AdvectionDiffusion2DVars::sigma");
+//                this->derivat.push_back("AdvectionDiffusion2DVars::sigma");
+                // * - y_0 x1 * 2 x3 ✅
                 this->derivat.push_back("*");
                 this->derivat.push_back("-");
                 this->derivat.push_back("AdvectionDiffusion2DVars::y_0");
                 this->derivat.push_back("x1");
-                this->derivat.push_back("exp");
-                this->derivat.push_back("-");
                 this->derivat.push_back("*");
-                this->derivat.push_back("-");
-                this->derivat.push_back("x0");
-                this->derivat.push_back("AdvectionDiffusion2DVars::x_0");
-                this->derivat.push_back("-");
-                this->derivat.push_back("AdvectionDiffusion2DVars::x_0");
-                this->derivat.push_back("x0");
-                this->derivat.push_back("*");
-                this->derivat.push_back("-");
-                this->derivat.push_back("x1");
-                this->derivat.push_back("AdvectionDiffusion2DVars::y_0");
-                this->derivat.push_back("-");
-                this->derivat.push_back("x1");
-                this->derivat.push_back("AdvectionDiffusion2DVars::y_0");
-                this->derivat.push_back("*");
-                this->derivat.push_back("AdvectionDiffusion2DVars::sigma");
-                this->derivat.push_back("AdvectionDiffusion2DVars::sigma");
+                this->derivat.push_back("2");
+                this->derivat.push_back("x3");
             }
             else if (dx == "x3")
             {
@@ -3251,61 +3271,80 @@ struct Board
         
         if (Board::initial_condition_type == "AdvectionDiffusion2D" && postfix[up] == "x3")
         {
-            // x_0 x0 - x0 x_0 - x_0 x0 - * x1 y_0 - x1 y_0 - * - exp * sigma sigma * /
+            
             if (dx == "x0")
             {
+                // x_0 x0 - x0 x_0 - x_0 x0 - * x1 y_0 - x1 y_0 - * - exp * sigma sigma * / ✅
+//                this->derivat.push_back("AdvectionDiffusion2DVars::x_0");
+//                this->derivat.push_back("x0");
+//                this->derivat.push_back("-");
+//                this->derivat.push_back("x0");
+//                this->derivat.push_back("AdvectionDiffusion2DVars::x_0");
+//                this->derivat.push_back("-");
+//                this->derivat.push_back("AdvectionDiffusion2DVars::x_0");
+//                this->derivat.push_back("x0");
+//                this->derivat.push_back("-");
+//                this->derivat.push_back("*");
+//                this->derivat.push_back("x1");
+//                this->derivat.push_back("AdvectionDiffusion2DVars::y_0");
+//                this->derivat.push_back("-");
+//                this->derivat.push_back("x1");
+//                this->derivat.push_back("AdvectionDiffusion2DVars::y_0");
+//                this->derivat.push_back("-");
+//                this->derivat.push_back("*");
+//                this->derivat.push_back("-");
+//                this->derivat.push_back("exp");
+//                this->derivat.push_back("*");
+//                this->derivat.push_back("AdvectionDiffusion2DVars::sigma");
+//                this->derivat.push_back("AdvectionDiffusion2DVars::sigma");
+//                this->derivat.push_back("*");
+//                this->derivat.push_back("/");
+                //x_0 x0 - 2 x3 * *
                 this->derivat.push_back("AdvectionDiffusion2DVars::x_0");
                 this->derivat.push_back("x0");
                 this->derivat.push_back("-");
-                this->derivat.push_back("x0");
-                this->derivat.push_back("AdvectionDiffusion2DVars::x_0");
-                this->derivat.push_back("-");
-                this->derivat.push_back("AdvectionDiffusion2DVars::x_0");
-                this->derivat.push_back("x0");
-                this->derivat.push_back("-");
+                this->derivat.push_back("2");
+                this->derivat.push_back("x3");
                 this->derivat.push_back("*");
-                this->derivat.push_back("x1");
-                this->derivat.push_back("AdvectionDiffusion2DVars::y_0");
-                this->derivat.push_back("-");
-                this->derivat.push_back("x1");
-                this->derivat.push_back("AdvectionDiffusion2DVars::y_0");
-                this->derivat.push_back("-");
                 this->derivat.push_back("*");
-                this->derivat.push_back("-");
-                this->derivat.push_back("exp");
-                this->derivat.push_back("*");
-                this->derivat.push_back("AdvectionDiffusion2DVars::sigma");
-                this->derivat.push_back("AdvectionDiffusion2DVars::sigma");
-                this->derivat.push_back("*");
-                this->derivat.push_back("/");
+
             }
-            // y_0 x1 - x0 x_0 - x_0 x0 - * x1 y_0 - x1 y_0 - * - exp * sigma sigma * /
+            // y_0 x1 - x3 * sigma sigma * /
             else if (dx == "x1")
             {
+                // y_0 x1 - x0 x_0 - x_0 x0 - * x1 y_0 - x1 y_0 - * - exp * sigma sigma * / ✅
+//                this->derivat.push_back("AdvectionDiffusion2DVars::y_0");
+//                this->derivat.push_back("x1");
+//                this->derivat.push_back("-");
+//                this->derivat.push_back("x0");
+//                this->derivat.push_back("AdvectionDiffusion2DVars::x_0");
+//                this->derivat.push_back("-");
+//                this->derivat.push_back("AdvectionDiffusion2DVars::x_0");
+//                this->derivat.push_back("x0");
+//                this->derivat.push_back("-");
+//                this->derivat.push_back("*");
+//                this->derivat.push_back("x1");
+//                this->derivat.push_back("AdvectionDiffusion2DVars::y_0");
+//                this->derivat.push_back("-");
+//                this->derivat.push_back("x1");
+//                this->derivat.push_back("AdvectionDiffusion2DVars::y_0");
+//                this->derivat.push_back("-");
+//                this->derivat.push_back("*");
+//                this->derivat.push_back("-");
+//                this->derivat.push_back("exp");
+//                this->derivat.push_back("*");
+//                this->derivat.push_back("AdvectionDiffusion2DVars::sigma");
+//                this->derivat.push_back("AdvectionDiffusion2DVars::sigma");
+//                this->derivat.push_back("*");
+//                this->derivat.push_back("/");
+                //y_0 x1 - 2 x3 * *
                 this->derivat.push_back("AdvectionDiffusion2DVars::y_0");
                 this->derivat.push_back("x1");
                 this->derivat.push_back("-");
-                this->derivat.push_back("x0");
-                this->derivat.push_back("AdvectionDiffusion2DVars::x_0");
-                this->derivat.push_back("-");
-                this->derivat.push_back("AdvectionDiffusion2DVars::x_0");
-                this->derivat.push_back("x0");
-                this->derivat.push_back("-");
+                this->derivat.push_back("2");
+                this->derivat.push_back("x3");
                 this->derivat.push_back("*");
-                this->derivat.push_back("x1");
-                this->derivat.push_back("AdvectionDiffusion2DVars::y_0");
-                this->derivat.push_back("-");
-                this->derivat.push_back("x1");
-                this->derivat.push_back("AdvectionDiffusion2DVars::y_0");
-                this->derivat.push_back("-");
                 this->derivat.push_back("*");
-                this->derivat.push_back("-");
-                this->derivat.push_back("exp");
-                this->derivat.push_back("*");
-                this->derivat.push_back("AdvectionDiffusion2DVars::sigma");
-                this->derivat.push_back("AdvectionDiffusion2DVars::sigma");
-                this->derivat.push_back("*");
-                this->derivat.push_back("/");
             }
             else if (dx == "x3")
             {
@@ -5209,8 +5248,13 @@ void MCTS(std::vector<std::string> (*diffeq)(Board&), const Eigen::MatrixXf& dat
             }
         };
         
-        for (int i = 0; (timeElapsedSince(start_time) < time); i++)
+        for (int i = 0; (((timeElapsedSince(start_time) < time) || (Board::expression_dict.size() < 105614388))); i++)
         {
+            if (!(Board::expression_dict.size()%1000000))
+            {
+                std::scoped_lock str_lock(Board::thread_locker);
+                std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+            }
             if (i && (i%500 == 0))
             {
                 //                    std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
@@ -5356,7 +5400,7 @@ void RandomSearch(std::vector<std::string> (*diffeq)(Board&), const Eigen::Matri
         float score = 0.0f;
         std::vector<std::string> temp_legal_moves;
         size_t temp_sz;
-        while (timeElapsedSince(start_time) < time)
+        while ((timeElapsedSince(start_time) < time) || (Board::expression_dict.size() < 105614388))
         {
             while ((score = x.complete_status()) == -1)
             {
@@ -5413,20 +5457,20 @@ void RandomSearch(std::vector<std::string> (*diffeq)(Board&), const Eigen::Matri
 
 int main()
 {
-    constexpr double time = 5;
+    constexpr double time = 100000;
     
     //Case 1
-//    auto data1 = createMeshgridWithLambda(10, 3, {0.1f, -1.1f, 0.1f}, {2.1f, 1.1f, 20.0f},
-//    [&](const Eigen::VectorXf& row) -> float
-//    {
-//        //2D-Gaussian
-//        float x = row(0);
-//        float y = row(1);
-//        Board::AdvectionDiffusion2DVars::x_0 = 1.1f;
-//        Board::AdvectionDiffusion2DVars::y_0 = 0.0f;
-//        Board::AdvectionDiffusion2DVars::sigma = 0.2f;
-//        return std::exp(-(std::pow(x - Board::AdvectionDiffusion2DVars::x_0, 2) + std::pow(y - Board::AdvectionDiffusion2DVars::y_0, 2))) / (2 * std::pow(Board::AdvectionDiffusion2DVars::sigma, 2));
-//    });
+    auto data1 = createMeshgridWithLambda(10, 3, {0.1f, -1.1f, 0.1f}, {2.1f, 1.1f, 20.0f},
+    [&](const Eigen::VectorXf& row) -> float
+    {
+        //2D-Gaussian
+        float x = row(0);
+        float y = row(1);
+        Board::AdvectionDiffusion2DVars::x_0 = 1.1f;
+        Board::AdvectionDiffusion2DVars::y_0 = 0.0f;
+        Board::AdvectionDiffusion2DVars::sigma = 0.2f;
+        return std::exp(-(std::pow(x - Board::AdvectionDiffusion2DVars::x_0, 2) + std::pow(y - Board::AdvectionDiffusion2DVars::y_0, 2))) / (2 * std::pow(Board::AdvectionDiffusion2DVars::sigma, 2));
+    });
     
 //    GP(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data1 /*data used to solve differential equation*/, 6 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
 
@@ -5442,8 +5486,8 @@ int main()
         Board::AdvectionDiffusion2DVars::sigma = 0.2f;
         return std::exp(-(std::pow(x - Board::AdvectionDiffusion2DVars::x_0, 2) + std::pow(y - Board::AdvectionDiffusion2DVars::y_0, 2))) / (2 * std::pow(Board::AdvectionDiffusion2DVars::sigma, 2));
     });
-        
-    SimulatedAnnealing(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data2 /*data used to solve differential equation*/, 13 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, true /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_2" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
+            
+    MCTS(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data2 /*data used to solve differential equation*/, 3 /*fixed depth of generated solutions*/, "prefix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_2" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
     
     return 0;
 }

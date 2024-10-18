@@ -9,7 +9,7 @@ import matplotlib.colors
 
 # Define the function I and T
 def I(x, y):
-    return np.exp(-((x - 1.1)**2 + y**2) / 0.08)
+    return np.exp(-((x - 1.1)**2 + y**2)) / 0.08
 
 def T(x, y, t):
     I_val = I(x, y)

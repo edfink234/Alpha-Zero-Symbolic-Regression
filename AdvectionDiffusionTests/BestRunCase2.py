@@ -16,7 +16,7 @@ x0 = np.pi
 y0 = np.pi
 
 # Define the initial condition T0 (equivalent to I_val in your case)
-T0 = np.exp(-((x - x0)**2 + (y - y0)**2) / (2 * sigma**2))
+T0 = np.exp(-((x - x0)**2 + (y - y0)**2)) / (2 * sigma**2)
 
 # Define the function for T at a given time t
 def T_func(T0, t):
@@ -27,7 +27,7 @@ time_values = [0.1, 3.4, 20]
 print(time_values)
 
 # Set limits for the plot (matching MATLAB)
-z_limits = [0, 1]  # Equivalent to 'limits = [0, 1]' in MATLAB
+z_limits = [0, 7]  # Equivalent to 'limits = [0, 7]' in MATLAB
 
 # Loop over time values and generate the plots
 for t in time_values:
