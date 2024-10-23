@@ -267,15 +267,16 @@ def plot_rpn_expression_tree(expression: list[str], block = False, save = False,
 # Example usage:
 def test_visualize():
 #    # Example usage:
-    save = False
+    save = True
     
     if save:
 #        plot_pn_expression_tree("- + + - + - + / * 30 ^ x 2 * - 10 x y ^ x 4 * / 4 5 ^ x 3 / ^ y 2 2 * 2 y / 8 + + 2 ^ x 2 ^ y 2 / ^ y 3 2 x", block=False, save = save)
 #        os.system("rsvg-convert -f pdf -o expression_tree_PN_Hemberg2008_expr_5.pdf expression_tree_PN_Hemberg2008_expr_5.svg")
         
-        plot_rpn_expression_tree("I 0 sech ^ y 4 I ^ x exp / / y 4 I ^ x exp / / 0.2 t 20.0 - - tanh * - -", block=False, save = save, filename = "/Users/edwardfinkelstein/AIFeynmanExpressionTrees/AE601/Case1BestTree.svg", title = r"((I ^ sech(0)) - ((y / ((4 ^ I) / exp(x))) - ((y / ((4 ^ I) / exp(x))) * tanh((0.2 - (t - 20.000000)))))), depth = 6")
+#        plot_rpn_expression_tree("I I tanh t sqrt ^ ^ I t 0.2 y * / + sech x y 2 I ^ + + sech * -", block=False, save = save, filename = "/Users/edwardfinkelstein/AIFeynmanExpressionTrees/AE601/Case1BestTree.svg", title = r"((I ^ (tanh(I) ^ sqrt(t))) - (sech((I + (t / (0.2 * y)))) * sech((x + (y + (2 ^ I)))))), depth = 6")
+        plot_rpn_expression_tree("I 1 I sqrt asin ^ ^ 2 6.283185 / x y + + t 20.000000 * t 0 + * / sech +", block=False, save = save, filename = "/Users/edwardfinkelstein/AIFeynmanExpressionTrees/AE601/Case2ImprovedTree.svg", title = r"((I ^ (1 ^ asin(sqrt(I)))) + sech((((2 / 6.283185) + (x + y)) / ((t * 20.000000) * (t + 0))))), depth = 5")
 #        os.system("rsvg-convert -f pdf -o /Users/edwardfinkelstein/AIFeynmanExpressionTrees/AE601/Case1BestTree.pdf Case1BestTree.svg")
-        plot_rpn_expression_tree("I 0.2 t ^ π log log sech 0.2 0.0 x y 0.1 + / / + + / ^", block=False, save = save, filename = "/Users/edwardfinkelstein/AIFeynmanExpressionTrees/AE601/Case2BestTree.svg", title = r"(I ^ ((0.2 ^ t) / (sech(log(log(π))) + (0.2 + (0.000000 / (x / (y + 0.100000))))))), depth = 7")
+#        plot_rpn_expression_tree("I 0.2 t ^ π log log sech 0.2 0.0 x y 0.1 + / / + + / ^", block=False, save = save, filename = "/Users/edwardfinkelstein/AIFeynmanExpressionTrees/AE601/Case2BestTree.svg", title = r"(I ^ ((0.2 ^ t) / (sech(log(log(π))) + (0.2 + (0.000000 / (x / (y + 0.100000))))))), depth = 7")
 #        os.system("rsvg-convert -f pdf -o /Users/edwardfinkelstein/AIFeynmanExpressionTrees/AE601/Case2BestTree.pdf Case2BestTree.svg")
         
     else:
@@ -312,7 +313,7 @@ def test_visualize():
 #                plot_rpn_expression_tree(("x_0 x0 - x3 * sigma sigma * /").split(), block=True, save = save) #✅
 #                plot_rpn_expression_tree(("y_0 x1 - x0 x_0 - x_0 x0 - * x1 y_0 - x1 y_0 - * - exp * sigma sigma * /").split(), block=True, save = save) ✅
 #                plot_rpn_expression_tree(("y_0 x1 - x3 * sigma sigma * /").split(), block=True, save = save) #✅
-                plot_pn_expression_tree(("* - y_0 x1 * 2 x3").split(), block=True, save = save)
+#                plot_pn_expression_tree(("* - y_0 x1 * 2 x3").split(), block=True, save = save)
                 
             
 #                plot_rpn_expression_tree("T_t 1 y y * - T_x * + kappa T_{xx} T_{yy} + * -".split(), block=True, save = save)
@@ -320,6 +321,7 @@ def test_visualize():
 #                plot_rpn_expression_tree("T_t 4 y * sin T_x * + 4 x * cos T_y * + kappa T_{xx} T_{yy} + * -".split(), block=True, save = save)
 #                plot_pn_expression_tree(("- + + T_t * sin * 4 y T_x * cos * 4 x T_y * kappa + T_{xx} T_{yy}").split(), block=True, save = save)
 #                plot_rpn_expression_tree("I I ^ y cos x tanh - + t I I ^ + I I tanh ^ / /".split(), block=True, save = save)
+                plot_rpn_expression_tree("x3 0.02 x2 x3 1.371258 * ^ ^ ^ 12.163561 0.100000 x3 ^ * 0.100000 x0 - * x1 x2 - exp 2.100000 sin 0.100000 x2 / x0 + + / * -".split(), block=True, save = save)
 
 
         except KeyboardInterrupt:

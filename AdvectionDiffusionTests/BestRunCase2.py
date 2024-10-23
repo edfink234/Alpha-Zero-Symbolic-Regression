@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from os import system
+from numpy import arcsin as asin, sqrt, arcsin
+assert(arcsin == asin)
 
 # Define sech function
 def sech(x):
@@ -20,19 +22,24 @@ T0 = np.exp(-((x - x0)**2 + (y - y0)**2)) / (2 * sigma**2)
 
 # Define the function for T at a given time t
 def T_func(T0, t):
-    return T0 ** ((0.2 ** t) / (sech(np.log(np.log(np.pi))) + 0.2))
+#    return T0 ** ((0.2 ** t) / (sech(np.log(np.log(np.pi))) + 0.2))
+#    return (T0 * (0.100000 ** (t * (T0 + np.exp(T0)))));
+    
+    return ((T0 ** (1 ** asin(sqrt(T0)))) + sech((((2 / 6.283185) + (x + y)) / ((t * 20.000000) * (t + 0)))))
+    
 
 # Time values to generate plots for
 time_values = [0.1, 3.4, 20]
 print(time_values)
 
 # Set limits for the plot (matching MATLAB)
-z_limits = [0, 7]  # Equivalent to 'limits = [0, 7]' in MATLAB
+#z_limits = [0, 0.5]  # Equivalent to 'limits = [0, 7]' in MATLAB
 
 # Loop over time values and generate the plots
 for t in time_values:
     T_vals = T_func(T0, t)
     
+    print(max(T_vals.ravel()), min(T_vals.ravel()))
     # Create the figure and two subplots
     fig = plt.figure(figsize=(14, 6))
     
@@ -43,8 +50,8 @@ for t in time_values:
     ax1.set_xlabel('$x$')
     ax1.set_ylabel('$y$')
     ax1.set_zlabel('$T(x, y)$')
-    ax1.set_zlim(z_limits)  # Matching the zlim from MATLAB
-    surf.set_clim(z_limits)  # Setting color limits
+#    ax1.set_zlim(z_limits)  # Matching the zlim from MATLAB
+#    surf.set_clim(z_limits)  # Setting color limits
 
     # Right subplot: heatmap
     ax2 = fig.add_subplot(122)
@@ -59,7 +66,7 @@ for t in time_values:
     t_ = str(t).replace(".", "_")
     plt.savefig(f'T_plot_t{t_}_Case2.svg', format='svg')
     system(f"rsvg-convert -f pdf -o T_plot_t{t_}_Case2.pdf T_plot_t{t_}_Case2.svg")
-    system(f"rm T_plot_t{t_}_Case2.svg")
+#    system(f"rm T_plot_t{t_}_Case2.svg")
 
     # Close the figure to free up memory
     plt.close(fig)

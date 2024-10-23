@@ -5,7 +5,9 @@ from os import system
 from matplotlib.colors import LinearSegmentedColormap, ListedColormap
 import matplotlib.cm as cm
 import matplotlib.colors
+from numpy import tanh, sin, cos
 
+sech = lambda x: 1/np.cosh(x)
 
 # Define the function I and T
 def I(x, y):
@@ -13,7 +15,20 @@ def I(x, y):
 
 def T(x, y, t):
     I_val = I(x, y)
-    return I_val - (y * np.exp(x) / (4**I_val)) * (1 - np.tanh(20.2 - t))
+#    return I_val - (y * np.exp(x) / (4**I_val)) * (1 - np.tanh(20.2 - t))
+    
+    sigma = 0.2
+
+    test = lambda x, y, t, I_val: ((x3 ^ (tanh(x3) ^ sqrt(x2))) - (sech((x3 + (x2 / (AdvectionDiffusion2DVars::sigma * x1)))) * sech((x0 + (x1 + (2 ^ x3))))))
+    
+    
+    print(np.sum((test(x, y, 0, I_val)-I_val)**2))
+    
+    
+
+    return test(x, y, t, I_val)
+    
+    return
 
 # Create a grid for x and y values
 x_vals = np.linspace(0.1, 2.1, 1000)
@@ -43,7 +58,7 @@ for t in time_values:
     
     # Left subplot: 3D surface plot
     ax1 = fig.add_subplot(121, projection='3d')
-    ax1.plot_surface(x, y, T_vals, cmap=cmap_, edgecolor='none')
+    surf = ax1.plot_surface(x, y, T_vals, cmap=cmap_, edgecolor='none')
     ax1.set_title(f'3D Plot of $T(x, y)$ for $t = {t}$')
     ax1.set_xlabel('$x$')
     ax1.set_ylabel('$y$')

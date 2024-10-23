@@ -434,7 +434,7 @@ struct Board
         if (is_primary)
         {
             std::call_once(initialization_flag, [&]()
-                           {
+            {
                 Board::data = theData;
                 Board::boundary_condition_type = boundary_condition_type;
                 Board::initial_condition_type = initial_condition_type;
@@ -2218,7 +2218,7 @@ struct Board
                     if (Board::expression_dict.contains(this->expression_string))
                     {
                         Board::expression_dict.visit(this->expression_string, [&](auto& x)
-                                                     {
+                        {
                             x.second = this->params;
                         });
                     }
@@ -2301,34 +2301,37 @@ struct Board
             
             if (is_primary)
             {
-                this->expression_string.clear();
-                this->expression_string.reserve(8*pieces.size());
-                size_t const_count = 0;
-                
-                for (std::string& token: this->pieces)
+                if (this->const_token)
                 {
-                    if (token.substr(0,5) == "const")
+                    this->expression_string.clear();
+                    this->expression_string.reserve(8*pieces.size());
+                    size_t const_count = 0;
+                    
+                    for (std::string& token: this->pieces)
                     {
-                        token = "const" + std::to_string(const_count++);
-                        assert(isFloat(token.substr(5)));
+                        if (token.substr(0,5) == "const")
+                        {
+                            token = "const" + std::to_string(const_count++);
+                            assert(isFloat(token.substr(5)));
+                        }
+                        this->expression_string += token+" ";
                     }
-                    this->expression_string += token+" ";
-                }
-                
-                if (!Board::expression_dict.contains(this->expression_string))
-                {
-                    Board::expression_dict.insert_or_assign(this->expression_string, Eigen::VectorXf());
-                }
-                
-                Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
-                {
-                    this->params = x.second;
-                });
-                
-                if (!this->params.size())
-                {
-                    this->params.setOnes(this->__num_consts());
-                    Board::expression_dict.insert_or_assign(this->expression_string, this->params);
+                    
+                    if (!Board::expression_dict.contains(this->expression_string))
+                    {
+                        Board::expression_dict.insert_or_assign(this->expression_string, Eigen::VectorXf());
+                    }
+                    
+                    Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
+                    {
+                        this->params = x.second;
+                    });
+                    
+                    if (!this->params.size())
+                    {
+                        this->params.setOnes(this->__num_consts());
+                        Board::expression_dict.insert_or_assign(this->expression_string, this->params);
+                    }
                 }
                 
                 return fitFunctionToData();
@@ -2572,6 +2575,15 @@ struct Board
                 this->derivat.push_back("0");
             }
             return;
+        }
+        
+        if (Board::initial_condition_type == "AdvectionDiffusion2D" && (dx == "x0" || dx == "x1"))
+        {
+            if (std::find(prefix.begin(), prefix.end(), dx) == prefix.end() && std::find(prefix.begin(), prefix.end(), "x3") == prefix.end())
+            {
+                this->derivat.push_back("0");
+                return;
+            }
         }
         
         if (std::find(prefix.begin(), prefix.end(), dx) == prefix.end())
@@ -3355,6 +3367,15 @@ struct Board
                 this->derivat.push_back("0");
             }
             return;
+        }
+        
+        if (Board::initial_condition_type == "AdvectionDiffusion2D" && (dx == "x0" || dx == "x1"))
+        {
+            if (std::find(postfix.begin(), postfix.end(), dx) == postfix.end() && std::find(postfix.begin(), postfix.end(), "x3") == postfix.end())
+            {
+                this->derivat.push_back("0");
+                return;
+            }
         }
         
         if (std::find(postfix.begin(), postfix.end(), dx) == postfix.end())
@@ -5400,7 +5421,10 @@ void RandomSearch(std::vector<std::string> (*diffeq)(Board&), const Eigen::Matri
         float score = 0.0f;
         std::vector<std::string> temp_legal_moves;
         size_t temp_sz;
-        while ((timeElapsedSince(start_time) < time) || (Board::expression_dict.size() < 105614388))
+        
+//        int n_count = 0;
+//        
+        while ((timeElapsedSince(start_time) < time))
         {
             while ((score = x.complete_status()) == -1)
             {
@@ -5415,7 +5439,11 @@ void RandomSearch(std::vector<std::string> (*diffeq)(Board&), const Eigen::Matri
             }
 //            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
 //            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
-
+//            if (Board::expression_dict.size() > n_count)
+//            {
+//                std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+//                n_count += 1000000;
+//            }
             if (score > max_score)
             {
                 max_score = score;
@@ -5460,18 +5488,18 @@ int main()
     constexpr double time = 100000;
     
     //Case 1
-    auto data1 = createMeshgridWithLambda(10, 3, {0.1f, -1.1f, 0.1f}, {2.1f, 1.1f, 20.0f},
-    [&](const Eigen::VectorXf& row) -> float
-    {
-        //2D-Gaussian
-        float x = row(0);
-        float y = row(1);
-        Board::AdvectionDiffusion2DVars::x_0 = 1.1f;
-        Board::AdvectionDiffusion2DVars::y_0 = 0.0f;
-        Board::AdvectionDiffusion2DVars::sigma = 0.2f;
-        return std::exp(-(std::pow(x - Board::AdvectionDiffusion2DVars::x_0, 2) + std::pow(y - Board::AdvectionDiffusion2DVars::y_0, 2))) / (2 * std::pow(Board::AdvectionDiffusion2DVars::sigma, 2));
-    });
-    
+//    auto data1 = createMeshgridWithLambda(10, 3, {0.1f, -1.1f, 0.1f}, {2.1f, 1.1f, 20.0f},
+//    [&](const Eigen::VectorXf& row) -> float
+//    {
+//        //2D-Gaussian
+//        float x = row(0);
+//        float y = row(1);
+//        Board::AdvectionDiffusion2DVars::x_0 = 1.1f;
+//        Board::AdvectionDiffusion2DVars::y_0 = 0.0f;
+//        Board::AdvectionDiffusion2DVars::sigma = 0.2f;
+//        return std::exp(-(std::pow(x - Board::AdvectionDiffusion2DVars::x_0, 2) + std::pow(y - Board::AdvectionDiffusion2DVars::y_0, 2))) / (2 * std::pow(Board::AdvectionDiffusion2DVars::sigma, 2));
+//    });
+//    
 //    GP(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data1 /*data used to solve differential equation*/, 6 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
 
     //Case 2
@@ -5486,8 +5514,8 @@ int main()
         Board::AdvectionDiffusion2DVars::sigma = 0.2f;
         return std::exp(-(std::pow(x - Board::AdvectionDiffusion2DVars::x_0, 2) + std::pow(y - Board::AdvectionDiffusion2DVars::y_0, 2))) / (2 * std::pow(Board::AdvectionDiffusion2DVars::sigma, 2));
     });
-            
-    MCTS(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data2 /*data used to solve differential equation*/, 3 /*fixed depth of generated solutions*/, "prefix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_2" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
+//            
+    GP(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data2 /*data used to solve differential equation*/, 5 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_2" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
     
     return 0;
 }
