@@ -370,6 +370,7 @@ namespace InvertedPendulum
     float x_0 = 1.0f;      // Initial position
     float v_0 = 0.0f;       // Initial velocity
     float dt_over_6 = dt/6.0f;
+    float xi_deriv_th = 0.01;
     
     int steps = static_cast<int>(T / dt);
 
@@ -817,6 +818,23 @@ struct Board
         this->MSE_curr += diff_xi_T*diff_xi_T;
         float diff_xi_0 = expression_evaluator(params, this->pieces, 0.0f);
         this->MSE_curr += diff_xi_0*diff_xi_0;
+        //Take the derivative of xi wrt to t
+        std::vector<int> grasp;
+        grasp.reserve(100);
+        if (this->expression_type == "prefix")
+        {
+            this->derivePrefix(0, this->pieces.size() - 1, "x0", this->pieces, grasp);
+        }
+        else //postfix
+        {
+            this->derivePostfix(0, this->pieces.size() - 1, "x0", this->pieces, grasp);
+        }
+        //Evaluate
+        float xi_deriv_Norm = this->expression_evaluator(params, this->derivat).norm();
+        if (xi_deriv_Norm > xi_deriv_th)
+        {
+            this->MSE_curr += (xi_deriv_Norm - xi_deriv_th)*(xi_deriv_Norm - xi_deriv_th);
+        }
         
         return (1.0f / (1.0f + this->MSE_curr));
     }
@@ -847,6 +865,23 @@ struct Board
         this->MSE_curr += diff_xi_T*diff_xi_T;
         float diff_xi_0 = expression_evaluator(params, this->pieces, 0.0f);
         this->MSE_curr += diff_xi_0*diff_xi_0;
+        //Take the derivative of xi wrt to t
+        std::vector<int> grasp;
+        grasp.reserve(100);
+        if (this->expression_type == "prefix")
+        {
+            this->derivePrefix(0, this->pieces.size() - 1, "x0", this->pieces, grasp);
+        }
+        else //postfix
+        {
+            this->derivePostfix(0, this->pieces.size() - 1, "x0", this->pieces, grasp);
+        }
+        //Evaluate
+        float xi_deriv_Norm = this->expression_evaluator(params, this->derivat).norm();
+        if (xi_deriv_Norm > xi_deriv_th)
+        {
+            this->MSE_curr += (xi_deriv_Norm - xi_deriv_th)*(xi_deriv_Norm - xi_deriv_th);
+        }
         
         return (1.0f / (1.0f + this->MSE_curr));
     }
@@ -5575,6 +5610,7 @@ void MCTS(std::vector<std::string> (*diffeq)(Board&), const Eigen::MatrixXf& dat
                 best_expression = x._to_infix();
                 orig_expression = x.expression();
                 std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+                std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
                 std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
                 std::cout << "Best expression = " << best_expression << '\n';
                 std::cout << "Best expression (original format) = " << orig_expression << '\n';
@@ -5661,6 +5697,7 @@ void RandomSearch(std::vector<std::string> (*diffeq)(Board&), const Eigen::Matri
                 best_expression = x._to_infix();
                 orig_expression = x.expression();
                 std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+                std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
                 std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
                 std::cout << "Best expression = " << best_expression << '\n';
                 std::cout << "Best expression (original format) = " << orig_expression << '\n';
@@ -5720,7 +5757,7 @@ int main()
         
 //    SimulatedAnnealing(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data2 /*data used to solve differential equation*/, 13 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, true /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_2" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
         
-    GP(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, createLinspaceMatrix(10, 1, {0.0f}, {InvertedPendulum::T}) /*data used to solve differential equation*/, 5 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, true /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "none" /*boundary condition type*/, "none" /*initial condition type*/);
+    MCTS(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, createLinspaceMatrix(100, 1, {0.0f}, {InvertedPendulum::T}) /*data used to solve differential equation*/, 4 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, true /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "none" /*boundary condition type*/, "none" /*initial condition type*/);
     
     return 0;
 }
