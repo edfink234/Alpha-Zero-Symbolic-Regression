@@ -5,7 +5,7 @@ from os import system
 from matplotlib.colors import LinearSegmentedColormap, ListedColormap
 import matplotlib.cm as cm
 import matplotlib.colors
-from numpy import tanh, sin, cos
+from numpy import tanh, sin, cos, sqrt
 
 sech = lambda x: 1/np.cosh(x)
 
@@ -19,14 +19,11 @@ def T(x, y, t):
     
     sigma = 0.2
 
-    test = lambda x, y, t, I_val: ((x3 ^ (tanh(x3) ^ sqrt(x2))) - (sech((x3 + (x2 / (AdvectionDiffusion2DVars::sigma * x1)))) * sech((x0 + (x1 + (2 ^ x3))))))
     
-    
-    print(np.sum((test(x, y, 0, I_val)-I_val)**2))
     
     
 
-    return test(x, y, t, I_val)
+    return ((I_val ** (tanh(I_val) ** sqrt(t))) - (sech((I_val + (t / (sigma * y)))) * sech((x + (y + (2 ** I_val))))))
     
     return
 
@@ -49,6 +46,7 @@ inverse_blue_color = [1-i for i in blue_color]  # Example color for inverse blue
 # Create a custom colormap that starts with the grey color
 #cmap_ = LinearSegmentedColormap.from_list("", [grey_color, "violet", "blue"])
 cmap_="coolwarm"
+z_limits = [0, 14]
 
 # Loop over time values and generate the plots
 for t in time_values:
@@ -63,10 +61,12 @@ for t in time_values:
     ax1.set_xlabel('$x$')
     ax1.set_ylabel('$y$')
     ax1.set_zlabel('$T(x, y)$')
+    ax1.set_zlim(z_limits)  # Matching the zlim from MATLAB
+    surf.set_clim(z_limits)  # Setting color limits
     
     # Right subplot: heatmap
     ax2 = fig.add_subplot(122)
-    contour = ax2.contourf(x, y, T_vals, levels=100, cmap=cmap_)
+    contour = ax2.contourf(x, y, T_vals, levels = np.linspace(z_limits[0], z_limits[1], 100), cmap=cmap_)
     fig.colorbar(contour, ax=ax2, label='$T(x, y)$')
     ax2.set_title(f'Heatmap of $T(x, y)$ for $t = {t}$')
     ax2.set_xlabel('$x$')
@@ -78,7 +78,7 @@ for t in time_values:
     plt.savefig(f'T_plot_t{t_}_Case1.svg', format='svg')
     system(f"rsvg-convert -f pdf -o T_plot_t{t_}_Case1.pdf T_plot_t{t_}_Case1.svg")
     system(f"rm T_plot_t{t_}_Case1.svg")
-
+    print(f"T_plot_t{t_}_Case1.pdf saved")
     # Close the figure to free up memory
     plt.close(fig)
 

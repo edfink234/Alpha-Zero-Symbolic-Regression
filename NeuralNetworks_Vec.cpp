@@ -1,7 +1,6 @@
 // NeuralNetworks.cpp : This file contains the 'main' function. Program execution begins and ends there.//
 //g++ -Wall -std=c++20 -o NeuralNetworks_Vec NeuralNetworks_Vec.cpp MLP_Vec.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/username/LBFGSpp -ffast-math -ftree-vectorize -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
 
-
 #include <iostream>
 #include <memory>
 #include <float.h>
@@ -27,51 +26,18 @@ float example_func_2(const Eigen::VectorXf& x)
     return x[0]*x[0]*x[0]*(x[0]-1.0f) + x[1]*(x[1]/2.0f - 1.0f);
 }
 
-std::vector<Eigen::VectorXf> generateNNData(int numRows, int numCols, float (*func)(const Eigen::VectorXf&), float min = -3.0f, float max = 3.0f)
+Eigen::MatrixXf createLinspaceMatrix(int rows, int cols, std::vector<float> min_vec, std::vector<float> max_vec)
 {
-    assert(numCols >= 2);
-    // Initialize random number generator
-    std::random_device rd;
-    std::mt19937 thread_local gen(rd());
-    std::uniform_real_distribution<float> distribution(min, max);
-
-    // Create the matrix
-    std::vector<Eigen::VectorXf> matrix(numRows);
-
-    for (int i = 0; i < numRows; i++)
+    assert((cols == static_cast<int>(min_vec.size())) && (cols == static_cast<int>(max_vec.size())));
+    Eigen::MatrixXf mat(rows, cols);
+    for (int col = 0; col < cols; ++col)
     {
-        matrix[i].resize(numCols);
-        for (int j = 0; j < numCols - 1; j++)
+        for (int row = 0; row < rows; ++row)
         {
-            matrix[i][j] = distribution(gen);
+            mat(row, col) = min_vec[col] + (max_vec[col] - min_vec[col]) * row / (rows - 1);
         }
-        matrix[i][numCols - 1] = func(matrix[i].head(numCols-1));
     }
-
-    return matrix;
-}
-
-std::vector<Eigen::VectorXf> leftCols(const std::vector<Eigen::VectorXf>& data, int numCols)
-{
-    std::vector<Eigen::VectorXf> temp;
-    temp.reserve(data.size());
-    for (const auto& row: data)
-    {
-        temp.push_back(row.head(numCols));
-    }
-    return temp;
-}
-                       
-std::vector<Eigen::VectorXf> rightCols(const std::vector<Eigen::VectorXf>& data, int numCols)
-{
-    std::vector<Eigen::VectorXf> temp;
-    assert(data.size() > 0 && data[0].size() >= numCols);
-    temp.reserve(data.size());
-    for (const auto& row: data)
-    {
-        temp.push_back(row.tail(numCols));
-    }
-    return temp;
+    return mat;
 }
 
 //Returns the number of seconds since `start_time`
@@ -79,190 +45,6 @@ template <typename T>
 double timeElapsedSince(T start_time)
 {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9;
-}
-
-int getNum(const Eigen::VectorXf& results)
-{
-    if (results.size() == 1)
-    {
-        return static_cast<int>(results[0]*10);
-    }
-    else if (results.size() == 10)
-    {
-        return std::distance(results.begin(), std::max_element(results.begin(), results.end()));
-    }
-    else
-    {
-        Eigen::Matrix<float, 10, 7> number_vecs
-        {
-            {1,1,1,1,1,1,0},
-            {0,1,1,0,0,0,0},
-            {1,1,0,1,1,0,1},
-            {1,1,1,1,0,0,1},
-            {0,1,1,0,0,1,1},
-            {1,0,1,1,0,1,1},
-            {1,0,1,1,1,1,1},
-            {1,1,1,0,0,0,0},
-            {1,1,1,1,1,1,1},
-            {1,1,1,1,0,1,1},
-        };
-        
-        int idx = 0;
-        float mse_val = DBL_MAX, temp_mse_val;
-        
-        for (size_t i = 0; i < number_vecs.rows(); i++)
-        {
-            temp_mse_val = MultiLayerPerceptron::mse(results, number_vecs.row(i));
-            if (temp_mse_val == 0)
-            {
-                return i;
-            }
-            else if (temp_mse_val < mse_val)
-            {
-                idx = i;
-                mse_val = temp_mse_val;
-            }
-        }
-        return idx;
-    }
-}
-
-/*
-    ===========================
-    Segment Display Recognition
-    ===========================
- 
-                a
-             |-----|
-            f|  g  |b
-             |-----|
-            e|     |c
-             |-----|
-                d
-
-    Possible Patterns
-    -----------------
- 
-    {1,1,1,1,1,1,0} //0 pattern
- 
-            a
-         |-----|
-        f|     |b
-         |     |
-        e|     |c
-         |-----|
-            d
- 
- 
-    {0,1,1,0,0,0,0} //1 pattern
- 
-               |
-               |b
-               |
-               |c
-               |
- 
-    {1,1,0,1,1,0,1} //2 pattern
-            
-            a
-         |-----|
-            g  |b
-         |-----|
-        e|
-         |-----|
-            d
- 
-    {1,1,1,1,0,0,1} //3 pattern
- 
-            a
-         |-----|
-            g  |b
-         |-----|
-               |c
-         |-----|
-            d
- 
-    {0,1,1,0,0,1,1} //4 pattern
-            
-         |     |
-        f|  g  |b
-         |-----|
-               |c
-               |
-
-    {1,0,1,1,0,1,1} //5 pattern
- 
-            a
-         |-----|
-        f|  g
-         |-----|
-               |c
-         |-----|
-            d
- 
-    {1,0,1,1,1,1,1} //6 pattern
- 
-            a
-         |-----|
-        f|  g
-         |-----|
-        e|     |c
-         |-----|
-            d
- 
-    {1,1,1,0,0,0,0} //7 pattern
- 
-            a
-         |-----|
-               |b
-               |
-               |c
-               |
-
-    {1,1,1,1,1,1,1} //8 pattern
- 
-            a
-         |-----|
-        f|  g  |b
-         |-----|
-        e|     |c
-         |-----|
-            d
- 
-    {1,1,1,1,0,1,1} //9 pattern
- 
-            a
-         |-----|
-        f|  g  |b
-         |-----|
-               |c
-         |-----|
-            d
- */
-
-void GetData(int numInputs, MultiLayerPerceptron& sdrnn)
-{
-    char ans;
-    int numOutputs = sdrnn.layers.back();
-    printf("Would you like to test your SDR neural network with %d inputs and %d outputs (y/n)? ", numInputs, numOutputs);
-    std::cin >> ans;
-    if (ans != 'y')
-    {
-        return;
-    }
-    while (ans == 'y')
-    {
-        puts("Time to enter your test case!");
-        Eigen::VectorXf inputs(numInputs);
-        for (int i = 0; i < numInputs; i++)
-        {
-            printf("Enter input %d of %d: ", i+1, numInputs);
-            std::cin >> inputs[i];
-        }
-        printf("Your SDR neural network's prediction is %d\n", getNum(sdrnn.run(inputs)));
-        printf("Would you like to test your SDR neural network with %d inputs and %d outputs again (y/n)? ", numInputs, numOutputs);
-        std::cin >> ans;
-    }
 }
 
 std::ostream& operator<<(std::ostream& out, const std::vector<Eigen::VectorXf>& data)

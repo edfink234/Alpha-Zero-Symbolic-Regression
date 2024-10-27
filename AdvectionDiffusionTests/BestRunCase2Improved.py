@@ -22,10 +22,10 @@ T0 = np.exp(-((x - x0)**2 + (y - y0)**2)) / (2 * sigma**2)
 
 # Define the function for T at a given time t
 def T_func(T0, t):
-    return T0 ** ((0.2 ** t) / (sech(np.log(np.log(np.pi))) + 0.2))
+#    return T0 ** ((0.2 ** t) / (sech(np.log(np.log(np.pi))) + 0.2))
 #    return (T0 * (0.100000 ** (t * (T0 + np.exp(T0)))));
     
-#    return ((T0) + sech((((2 / 6.283185) + (x + y)) / ((t * 20.000000) * (t + 0)))))
+    return ((T0) + sech((((2 / 6.283185) + (x + y)) / ((t * 20.000000) * (t + 0)))))
     
 
 # Time values to generate plots for
@@ -33,7 +33,7 @@ time_values = [0.1, 3.4, 20]
 print(time_values)
 
 # Set limits for the plot (matching MATLAB)
-z_limits = [0, 7]  # Equivalent to 'limits = [0, 7]' in MATLAB
+z_limits = [0, 14]  # Equivalent to 'limits = [0, 7]' in MATLAB
 
 # Loop over time values and generate the plots
 for t in time_values:
@@ -65,10 +65,10 @@ for t in time_values:
     # Save the figure as an SVG file (and optionally convert to PDF)
     plt.tight_layout()
     t_ = str(t).replace(".", "_")
-    plt.savefig(f'T_plot_t{t_}_Case2.svg', format='svg')
-    system(f"rsvg-convert -f pdf -o T_plot_t{t_}_Case2.pdf T_plot_t{t_}_Case2.svg")
-    system(f"rm T_plot_t{t_}_Case2.svg")
-    print(f"T_plot_t{t_}_Case2.pdf saved")
+    plt.savefig(f'T_plot_t{t_}_Case2_improved.svg', format='svg')
+    system(f"rsvg-convert -f pdf -o T_plot_t{t_}_Case2_improved.pdf T_plot_t{t_}_Case2_improved.svg")
+    system(f"rm T_plot_t{t_}_Case2_improved.svg")
+    print(f"T_plot_t{t_}_Case2_improved.pdf saved")
     # Close the figure to free up memory
     plt.close(fig)
 

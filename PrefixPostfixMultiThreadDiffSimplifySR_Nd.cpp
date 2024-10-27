@@ -358,41 +358,54 @@ struct Board
     
     size_t reserve_amount;
     int num_fit_iter;
+    int num_objectives;
     float MSE_curr;
     std::string fit_method;
     std::string fit_grad_method;
     
     bool cache;
     bool const_token;
-    std::vector<int> stack;
-    int depth = 0, num_binary = 0, num_leaves = 0, idx = 0;
+    std::vector<std::vector<int>> stack;
+    std::vector<int> depth, num_binary, num_leaves, idx;
     static std::unordered_map<bool, std::unordered_map<bool, std::unordered_map<bool, std::vector<std::string>>>> inline una_bin_leaf_legal_moves_dict;
     
-    int n; //depth of RPN/PN tree
+    std::vector<int> n; //depth of RPN/PN trees
     std::string expression_type, expression_string;
     static std::mutex inline thread_locker; //static because it needs to protect static members
-    std::vector<std::string> pieces; // Create the empty expression list.
+    std::vector<std::vector<std::string>> pieces; // Create the empty expression list.
     std::vector<std::string> derivat;// Vector to store the derivative.
     bool visualize_exploration, is_primary;
     std::vector<std::string> (*diffeq)(Board&); //differential equation we want to solve
-    std::vector<std::string> diffeq_result;
+    std::vector<std::vector<std::string>> diffeq_result;
     float isConstTol;
     static std::string inline boundary_condition_type;
     static std::string inline initial_condition_type;
     
-    Board(std::vector<std::string> (*diffeq)(Board&), bool primary = true, int n = 3, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, is_primary{primary}
+    Board(std::vector<std::string> (*diffeq)(Board&), bool primary = true, const std::vector<int>& n = {}, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, is_primary{primary}
     {
-        if (n > 30)
+        assert(n.size());
+        this->num_objectives = n.size();
+        size_t max_n = n[0];
+        for (int i: n)
         {
-            throw(std::runtime_error("Complexity cannot be larger than 30, sorry!"));
+            if (i > 30)
+            {
+                throw(std::runtime_error("Complexity cannot be larger than 30, sorry!"));
+            }
+            this->n.push_back(i);
+            this->pieces.emplace_back();
+            this->pieces[i].reserve(2*std::pow(2,i)-1);
+            if (i > max_n)
+            {
+                max_n = i;
+            }
         }
         
-        this->n = n;
         this->expression_type = expression_type;
-        this->pieces = {};
+        
         this->visualize_exploration = visualize_exploration;
-        this->reserve_amount = 2*std::pow(2,this->n)-1;
-        this->pieces.reserve(this->reserve_amount);
+        this->reserve_amount = 2*std::pow(2,max_n)-1;
+        
         this->cache = cache;
         this->diffeq = diffeq;
         this->isConstTol = isConstTol;
@@ -506,10 +519,10 @@ struct Board
         throw std::out_of_range("Index out of range");
     }
     
-    int __num_binary_ops() const
+    int __num_binary_ops(int i) const
     {
         int count = 0;
-        for (const std::string& token : pieces)
+        for (const std::string& token : pieces[i])
         {
             if (std::find(Board::__binary_operators.begin(), Board::__binary_operators.end(), token) != Board::__binary_operators.end())
             {
@@ -519,10 +532,10 @@ struct Board
         return count;
     }
     
-    int __num_unary_ops() const
+    int __num_unary_ops(int i) const
     {
         int count = 0;
-        for (const std::string& token : pieces)
+        for (const std::string& token : pieces[i])
         {
             if (std::find(Board::__unary_operators.begin(), Board::__unary_operators.end(), token) != Board::__unary_operators.end())
             {
@@ -532,11 +545,11 @@ struct Board
         return count;
     }
     
-    int __num_leaves() const
+    int __num_leaves(int i) const
     {
         int count = 0;
         
-        for (const std::string& token : pieces)
+        for (const std::string& token : pieces[i])
         {
             if (!is_unary(token) && !is_binary(token))
             {
@@ -546,7 +559,7 @@ struct Board
         return count;
     }
     
-    int __num_consts() const
+    int __num_consts(int i) const
     {
         if (!this->const_token)
         {
@@ -554,7 +567,7 @@ struct Board
         }
         int count = 0;
         
-        for (const std::string& token : pieces)
+        for (const std::string& token : pieces[i])
         {
             if (token.substr(0,5) == "const")
             {
@@ -564,7 +577,7 @@ struct Board
         return count;
     }
     
-    int __num_consts_diff() const
+    int __num_consts_diff(int i) const
     {
         if (!this->const_token)
         {
@@ -572,7 +585,7 @@ struct Board
         }
         int count = 0;
         
-        for (const std::string& token : diffeq_result)
+        for (const std::string& token : diffeq_result[i])
         {
             if (token.substr(0,5) == "const")
             {
@@ -601,7 +614,7 @@ struct Board
      Returns a pair containing the depth of the sub-expression from start to stop, and whether or not it's complete
      Algorithm adopted from here: https://stackoverflow.com/a/77180279
      */
-    std::pair<int, bool> getPNdepth(const std::vector<std::string>& expression, size_t start = 0, size_t stop = 0, bool cache = false, bool modify = false, bool binary = false, bool unary = false, bool leaf = false)
+    std::pair<int, bool> getPNdepth(const std::vector<std::string>& expression, int idx, size_t start = 0, size_t stop = 0, bool cache = false, bool modify = false, bool binary = false, bool unary = false, bool leaf = false)
     {
         if (expression.empty())
         {
@@ -615,32 +628,32 @@ struct Board
         
         if (!cache)
         {
-            this->stack.clear();
-            this->depth = 0, this->num_binary = 0, this->num_leaves = 0;
+            this->stack[idx].clear();
+            this->depth[idx] = 0, this->num_binary[idx] = 0, this->num_leaves[idx] = 0;
             for (size_t i = start; i < stop; i++)
             {
                 if (is_binary(expression[i]))
                 {
-                    this->stack.push_back(2);  // Number of operands
-                    this->num_binary++;
+                    this->stack[idx].push_back(2);  // Number of operands
+                    this->num_binary[idx]++;
                 }
                 else if (is_unary(expression[i]))
                 {
-                    this->stack.push_back(1);
+                    this->stack[idx].push_back(1);
                 }
                 else
                 {
-                    this->num_leaves++;
-                    while (!this->stack.empty() && this->stack.back() == 1) //so the this->stack will shrink one by one from the back until it's empty and/or the last element is NOT 1
+                    this->num_leaves[idx]++;
+                    while (!this->stack[idx].empty() && this->stack[idx].back() == 1) //so the this->stack will shrink one by one from the back until it's empty and/or the last element is NOT 1
                     {
-                        this->stack.pop_back();  // Remove fulfilled operators
+                        this->stack[idx].pop_back();  // Remove fulfilled operators
                     }
-                    if (!this->stack.empty())
+                    if (!this->stack[idx].empty())
                     {
-                        this->stack.back()--;  // Indicate an operand is consumed
+                        this->stack[idx].back()--;  // Indicate an operand is consumed
                     }
                 }
-                this->depth = std::max(this->depth, static_cast<int>(this->stack.size()) + 1);
+                this->depth[idx] = std::max(this->depth[idx], static_cast<int>(this->stack[idx].size()) + 1);
             }
         }
         else //optimize with caching
@@ -649,53 +662,53 @@ struct Board
             {
                 if (binary) //Gives the this->depth and completeness of the current PN expression + a binary operator
                 {
-                    return std::make_pair(std::max(this->depth, static_cast<int>(this->stack.size()) + 2) - 1, this->num_leaves == this->num_binary + 2);
+                    return std::make_pair(std::max(this->depth[idx], static_cast<int>(this->stack[idx].size()) + 2) - 1, this->num_leaves[idx] == this->num_binary[idx] + 2);
                 }
                 else if (unary) //Gives the this->depth and completeness of the current PN expression + a unary operator
                 {
-                    return std::make_pair(std::max(this->depth, static_cast<int>(this->stack.size()) + 2) - 1, this->num_leaves == this->num_binary + 1);
+                    return std::make_pair(std::max(this->depth[idx], static_cast<int>(this->stack[idx].size()) + 2) - 1, this->num_leaves[idx] == this->num_binary[idx] + 1);
                 }
                 else if (leaf) //Gives the this->depth and completeness of the current PN expression + a leaf node
                 {
-                    auto last_filled_op_it = std::find_if(this->stack.rbegin(), this->stack.rend(), [](int i){return i != 1;}); //Find the first element from the back that's not 1
-                    return std::make_pair(std::max(this->depth, static_cast<int>(this->stack.rend() - last_filled_op_it) /* this->stack.size() */ + 1) - 1, this->num_leaves == this->num_binary);
+                    auto last_filled_op_it = std::find_if(this->stack[idx].rbegin(), this->stack[idx].rend(), [](int i){return i != 1;}); //Find the first element from the back that's not 1
+                    return std::make_pair(std::max(this->depth[idx], static_cast<int>(this->stack[idx].rend() - last_filled_op_it) /* this->stack.size() */ + 1) - 1, this->num_leaves[idx] == this->num_binary[idx]);
                 }
             }
             else //modify -> complete_status()
             {
-                if (is_binary(expression[this->idx]))
+                if (is_binary(expression[this->idx[idx]]))
                 {
-                    this->stack.push_back(2);  // Number of operands
-                    this->num_binary++;
+                    this->stack[idx].push_back(2);  // Number of operands
+                    this->num_binary[idx]++;
                 }
-                else if (is_unary(expression[this->idx]))
+                else if (is_unary(expression[this->idx[idx]]))
                 {
-                    this->stack.push_back(1);
+                    this->stack[idx].push_back(1);
                 }
                 else
                 {
-                    this->num_leaves++;
-                    while (!this->stack.empty() && this->stack.back() == 1) //so the this->stack will shrink one-by-one from the back until it's empty and/or the last element is NOT 1
+                    this->num_leaves[idx]++;
+                    while (!this->stack[idx].empty() && this->stack[idx].back() == 1) //so the this->stack will shrink one-by-one from the back until it's empty and/or the last element is NOT 1
                     {
-                        this->stack.pop_back();  // Remove fulfilled operators
+                        this->stack[idx].pop_back();  // Remove fulfilled operators
                     }
-                    if (!this->stack.empty())
+                    if (!this->stack[idx].empty())
                     {
-                        this->stack.back()--;  // Indicate an operand is consumed
+                        this->stack[idx].back()--;  // Indicate an operand is consumed
                     }
                 }
-                this->depth = std::max(this->depth, static_cast<int>(this->stack.size()) + 1);
-                this->idx++;
+                this->depth[idx] = std::max(this->depth[idx], static_cast<int>(this->stack[idx].size()) + 1);
+                this->idx[idx]++;
             }
         }
-        return std::make_pair(this->depth - 1, this->num_leaves == this->num_binary + 1);
+        return std::make_pair(this->depth[idx] - 1, this->num_leaves[idx] == this->num_binary[idx] + 1);
     }
     
     /*
      Returns a pair containing the depth of the sub-expression from start to stop, and whether or not it's complete
      Algorithm adopted from here: https://stackoverflow.com/a/77128902
      */
-    std::pair<int, bool> getRPNdepth(const std::vector<std::string>& expression, size_t start = 0, size_t stop = 0, bool cache = false, bool modify = false, bool unary = false, bool leaf = false)
+    std::pair<int, bool> getRPNdepth(const std::vector<std::string>& expression, int idx, size_t start = 0, size_t stop = 0, bool cache = false, bool modify = false, bool unary = false, bool leaf = false)
     {
         if (expression.empty())
         {
@@ -709,36 +722,36 @@ struct Board
         
         if (!cache)
         {
-            this->stack.clear();
+            this->stack[idx].clear();
             bool complete = true;
             
             for (size_t i = start; i < stop; i++)
             {
                 if (is_unary(expression[i]))
                 {
-                    this->stack.back() += 1;
+                    this->stack[idx].back() += 1;
                 }
                 else if (is_binary(expression[i]))
                 {
-                    int op2 = this->stack.back();
-                    this->stack.pop_back();
-                    int op1 = this->stack.back();
-                    this->stack.pop_back();
-                    this->stack.push_back(std::max(op1, op2) + 1);
+                    int op2 = this->stack[idx].back();
+                    this->stack[idx].pop_back();
+                    int op1 = this->stack[idx].back();
+                    this->stack[idx].pop_back();
+                    this->stack[idx].push_back(std::max(op1, op2) + 1);
                 }
                 else //leaf
                 {
-                    this->stack.push_back(1);
+                    this->stack[idx].push_back(1);
                 }
             }
             
-            while (this->stack.size() > 1)
+            while (this->stack[idx].size() > 1)
             {
-                int op2 = this->stack.back();
-                this->stack.pop_back();
-                int op1 = this->stack.back();
-                this->stack.pop_back();
-                this->stack.push_back(std::max(op1, op2) + 1);
+                int op2 = this->stack[idx].back();
+                this->stack[idx].pop_back();
+                int op1 = this->stack[idx].back();
+                this->stack[idx].pop_back();
+                this->stack[idx].push_back(std::max(op1, op2) + 1);
                 complete = false;
             }
             
@@ -751,7 +764,7 @@ struct Board
              {9}
              */
             
-            return std::make_pair(this->stack.back() - 1, complete);
+            return std::make_pair(this->stack[idx].back() - 1, complete);
         }
         else //optimize with caching
         {
@@ -759,16 +772,16 @@ struct Board
             {
                 if (unary) //Gives the this->depth and completeness of the current RPN expression + a unary operator
                 {
-                    if (this->stack.size() == 1)
+                    if (this->stack[idx].size() == 1)
                     {
-                        return std::make_pair(this->stack.back(), true);
+                        return std::make_pair(this->stack[idx].back(), true);
                     }
                     else
                     {
-                        int curr_max = std::max(this->stack.back()+1, *(this->stack.end()-2))+1;
-                        for (int i = this->stack.size() - 2; i >= 1; i--)
+                        int curr_max = std::max(this->stack[idx].back()+1, *(this->stack[idx].end()-2))+1;
+                        for (int i = this->stack[idx].size() - 2; i >= 1; i--)
                         {
-                            curr_max = std::max(curr_max, this->stack[i-1])+1;
+                            curr_max = std::max(curr_max, this->stack[idx][i-1])+1;
                         }
                         
                         /*
@@ -790,10 +803,10 @@ struct Board
                     }
                     else
                     {
-                        int curr_max = std::max(this->stack.back(), 1)+1;
-                        for (int i = this->stack.size() - 1; i >= 1; i--)
+                        int curr_max = std::max(this->stack[idx].back(), 1)+1;
+                        for (int i = this->stack[idx].size() - 1; i >= 1; i--)
                         {
-                            curr_max = std::max(curr_max, this->stack[i-1])+1;
+                            curr_max = std::max(curr_max, this->stack[idx][i-1])+1;
                         }
                         /*
                          e.g., assume this->stack = {1, 2, 3, 4, 5}, then:
@@ -809,51 +822,51 @@ struct Board
             }
             else //modify -> complete_status()
             {
-                if (is_binary(expression[this->idx]))
+                if (is_binary(expression[this->idx[idx]]))
                 {
-                    int op2 = this->stack.back();
-                    this->stack.pop_back();
-                    int op1 = this->stack.back();
-                    this->stack.pop_back();
-                    this->stack.push_back(std::max(op1, op2) + 1);
+                    int op2 = this->stack[idx].back();
+                    this->stack[idx].pop_back();
+                    int op1 = this->stack[idx].back();
+                    this->stack[idx].pop_back();
+                    this->stack[idx].push_back(std::max(op1, op2) + 1);
                 }
-                else if (is_unary(expression[this->idx]))
+                else if (is_unary(expression[this->idx[idx]]))
                 {
-                    this->stack.back() += 1;
+                    this->stack[idx].back() += 1;
                 }
                 else //leaf
                 {
-                    this->stack.push_back(1);
+                    this->stack[idx].push_back(1);
                 }
                 
-                this->idx++;
-                if (this->stack.size() == 1)
+                this->idx[idx]++;
+                if (this->stack[idx].size() == 1)
                 {
-                    return std::make_pair(this->stack.back() - 1, true);
+                    return std::make_pair(this->stack[idx].back() - 1, true);
                 }
                 
                 else
                 {
-                    int curr_max = std::max(this->stack.back(), *(this->stack.end()-2))+1;
-                    for (int i = this->stack.size() - 2; i >= 1; i--)
+                    int curr_max = std::max(this->stack[idx].back(), *(this->stack[idx].end()-2))+1;
+                    for (int i = this->stack[idx].size() - 2; i >= 1; i--)
                     {
-                        curr_max = std::max(curr_max, this->stack[i-1])+1;
+                        curr_max = std::max(curr_max, this->stack[idx][i-1])+1;
                     }
                     return std::make_pair(curr_max - 1, false);
                 }
             }
             
-            return std::make_pair(this->stack.back() - 1, true);
+            return std::make_pair(this->stack[idx].back() - 1, true);
         }
     }
     
-    std::vector<std::string> get_legal_moves()
+    std::vector<std::string> get_legal_moves(int idx)
     {
         if (this->expression_type == "prefix")
         {
-            if (this->pieces.empty()) //At the beginning, self.pieces is empty, so the only legal moves are the operators...
+            if (this->pieces[idx].empty()) //At the beginning, self.pieces[idx] is empty, so the only legal moves are the operators...
             {
-                if (this->n != 0) // if the depth is not 0
+                if (this->n[idx] != 0) // if the depth is not 0
                 {
                     return Board::__operators;
                 }
@@ -862,26 +875,26 @@ struct Board
                     return Board::una_bin_leaf_legal_moves_dict[false][false][true];
                 }
             }
-            int num_binary = this->__num_binary_ops();
-            int num_leaves = this->__num_leaves();
+            int num_binary = this->__num_binary_ops(idx);
+            int num_leaves = this->__num_leaves(idx);
             
             if (this->cache)
             {
                 //basic constraints for depth
-                bool una_allowed = (getPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, false /*binary*/, true /*unary*/, false /*leaf*/).first <= this->n);
-                bool bin_allowed = (getPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, true /*binary*/, false /*unary*/, false /*leaf*/).first <= this->n);
-                bool leaf_allowed = (!((num_leaves == num_binary + 1) || (getPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, false /*binary*/, false /*unary*/, true /*leaf*/).first < this->n && (num_leaves == num_binary))));
+                bool una_allowed = (getPNdepth(pieces[idx], idx, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, false /*binary*/, true /*unary*/, false /*leaf*/).first <= this->n[idx]);
+                bool bin_allowed = (getPNdepth(pieces[idx], idx, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, true /*binary*/, false /*unary*/, false /*leaf*/).first <= this->n[idx]);
+                bool leaf_allowed = (!((num_leaves == num_binary + 1) || (getPNdepth(pieces[idx], idx, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, false /*binary*/, false /*unary*/, true /*leaf*/).first < this->n[idx] && (num_leaves == num_binary))));
                 std::vector<std::string> legal_moves = Board::una_bin_leaf_legal_moves_dict[una_allowed][bin_allowed][leaf_allowed];
                 
                 //more complicated constraints for simplification
                 if (leaf_allowed)
                 {
-                    size_t pcs_sz = pieces.size();
-                    if (pcs_sz >= 2 && pieces[pcs_sz-2] == "/") // "/ x{i}" should not result in "/ x{i} x{i}" as that is 1
+                    size_t pcs_sz = pieces[idx].size();
+                    if (pcs_sz >= 2 && pieces[idx][pcs_sz-2] == "/") // "/ x{i}" should not result in "/ x{i} x{i}" as that is 1
                     {
                         for (const std::string& i: Board::__input_vars)
                         {
-                            if (pieces.back() == i)
+                            if (pieces[idx].back() == i)
                             {
                                 if (legal_moves.size() > 1)
                                 {
@@ -891,7 +904,7 @@ struct Board
                                 {
                                     std::vector<std::string> sub_bin_ops = {"*", "+", "^"};
                                     std::uniform_int_distribution<int> distribution(0, 2);
-                                    pieces[pcs_sz-2] = sub_bin_ops[distribution(gen)];
+                                    pieces[idx][pcs_sz-2] = sub_bin_ops[distribution(gen)];
                                 }
                                 break;
                             }
@@ -908,17 +921,17 @@ struct Board
                 bool una_allowed = false, bin_allowed = false, leaf_allowed = false;
                 if (Board::__binary_operators.size() > 0)
                 {
-                    pieces.push_back(Board::__binary_operators[0]);
-                    bin_allowed = (getPNdepth(pieces).first <= this->n);
+                    pieces[idx].push_back(Board::__binary_operators[0]);
+                    bin_allowed = (getPNdepth(pieces[idx], idx).first <= this->n[idx]);
                 }
                 if (Board::__unary_operators.size() > 0)
                 {
-                    pieces[pieces.size() - 1] = Board::__unary_operators[0];
-                    una_allowed = (getPNdepth(pieces).first <= this->n);
+                    pieces[idx][pieces[idx].size() - 1] = Board::__unary_operators[0];
+                    una_allowed = (getPNdepth(pieces[idx], idx).first <= this->n[idx]);
                 }
-                pieces[pieces.size() - 1] = Board::__input_vars[0];
-                leaf_allowed = (!((num_leaves == num_binary + 1) || (getPNdepth(pieces).first < this->n && (num_leaves == num_binary))));
-                pieces.pop_back();
+                pieces[idx][pieces[idx].size() - 1] = Board::__input_vars[0];
+                leaf_allowed = (!((num_leaves == num_binary + 1) || (getPNdepth(pieces[idx], idx).first < this->n[idx] && (num_leaves == num_binary))));
+                pieces[idx].pop_back();
                 assert(!(!una_allowed && !bin_allowed && !leaf_allowed));
                 
                 return Board::una_bin_leaf_legal_moves_dict[una_allowed][bin_allowed][leaf_allowed];
@@ -927,16 +940,16 @@ struct Board
         
         else //postfix
         {
-            if (this->pieces.empty()) //At the beginning, self.pieces is empty, so the only legal moves are the features and const
+            if (this->pieces[idx].empty()) //At the beginning, self.pieces[idx] is empty, so the only legal moves are the features and const
             {
                 return Board::una_bin_leaf_legal_moves_dict[false][false][true];
             }
-            int num_binary = this->__num_binary_ops();
-            int num_leaves = this->__num_leaves();
+            int num_binary = this->__num_binary_ops(idx);
+            int num_leaves = this->__num_leaves(idx);
             
             if (this->cache)
             {
-                return Board::una_bin_leaf_legal_moves_dict[((num_leaves >= 1) && (getRPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, true /*unary*/, false /*leaf*/).first <= this->n))][(num_binary != num_leaves - 1)][(getRPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, false /*unary*/, true /*leaf*/).first <= this->n)];
+                return Board::una_bin_leaf_legal_moves_dict[((num_leaves >= 1) && (getRPNdepth(pieces[idx], idx, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, true /*unary*/, false /*leaf*/).first <= this->n[idx]))][(num_binary != num_leaves - 1)][(getRPNdepth(pieces[idx], idx, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, false /*unary*/, true /*leaf*/).first <= this->n[idx])];
             }
             
             else
@@ -944,14 +957,14 @@ struct Board
                 bool una_allowed = false, bin_allowed = (num_binary != num_leaves - 1), leaf_allowed = false;
                 if (Board::__unary_operators.size() > 0)
                 {
-                    pieces.push_back(Board::__unary_operators[0]);
-                    una_allowed = ((num_leaves >= 1) && (getRPNdepth(pieces).first <= this->n));
+                    pieces[idx].push_back(Board::__unary_operators[0]);
+                    una_allowed = ((num_leaves >= 1) && (getRPNdepth(pieces[idx], idx).first <= this->n[idx]));
                 }
                 
-                pieces[pieces.size() - 1] = Board::__input_vars[0];
-                leaf_allowed = (getRPNdepth(pieces).first <= this->n);
+                pieces[idx][pieces[idx].size() - 1] = Board::__input_vars[0];
+                leaf_allowed = (getRPNdepth(pieces[idx], idx).first <= this->n[idx]);
                 
-                pieces.pop_back();
+                pieces[idx].pop_back();
                 //                assert(!(!una_allowed && !bin_allowed && !leaf_allowed));
                 
                 return Board::una_bin_leaf_legal_moves_dict[una_allowed][bin_allowed][leaf_allowed];
@@ -961,27 +974,18 @@ struct Board
     }
     
     //Returns the `expression_type` string form of the expression stored in the vector<std::string> attribute pieces
-    std::string expression()
+    std::string expression(int idx)
     {
         std::string temp, token;
-        temp.reserve(2*pieces.size());
-        size_t sz = pieces.size() - 1;
-//        int const_index = ((expression_type == "postfix") ? 0 : this->params.size()-1);
+        temp.reserve(2*pieces[idx].size());
+        size_t sz = pieces[idx].size() - 1;
         for (size_t i = 0; i <= sz; i++)
         {
-            token = pieces[i];
+            token = pieces[idx][i];
             
             if (token.substr(0,5) == "const")
             {
                 temp += ((i!=sz) ? std::to_string((this->params)(std::stoi(token.substr(5)))) + " " : std::to_string((this->params)(std::stoi(token.substr(5)))));
-//                if (expression_type == "postfix")
-//                {
-//                    const_index++;
-//                }
-//                else
-//                {
-//                    const_index--;
-//                }
             }
             else
             {
@@ -991,15 +995,15 @@ struct Board
         return temp;
     }
     
-    std::string _to_infix(bool show_consts = true)
+    std::string _to_infix(int idx, bool show_consts = true)
     {
         std::stack<std::string> stack;
         bool is_prefix = (expression_type == "prefix");
         std::string result, token;
         
-        for (int i = (is_prefix ? (static_cast<int>(pieces.size()) - 1) : 0); (is_prefix ? (i >= 0) : (i < static_cast<int>(pieces.size()))); (is_prefix ? (i--) : (i++)))
+        for (int i = (is_prefix ? (static_cast<int>(pieces[idx].size()) - 1) : 0); (is_prefix ? (i >= 0) : (i < static_cast<int>(pieces[idx].size()))); (is_prefix ? (i--) : (i++)))
         {
-            token = pieces[i];
+            token = pieces[idx][i];
             
             if (std::find(Board::__operators.begin(), Board::__operators.end(), token) == Board::__operators.end()) // leaf
             {
@@ -1012,7 +1016,7 @@ struct Board
                     stack.push(token);
                 }
             }
-            else if (std::find(Board::__unary_operators.begin(), Board::__unary_operators.end(), pieces[i]) != Board::__unary_operators.end()) // Unary operator
+            else if (std::find(Board::__unary_operators.begin(), Board::__unary_operators.end(), pieces[idx][i]) != Board::__unary_operators.end()) // Unary operator
             {
                 std::string operand = stack.top();
                 stack.pop();
@@ -1041,28 +1045,18 @@ struct Board
     }
     
     //Returns the `expression_type` string form of the expression stored in the vector<std::string> parameter pieces
-    std::string expression(const std::vector<std::string>& pieces)
+    std::string expression(int idx, const std::vector<std::string>& pieces)
     {
         std::string temp, token;
-        temp.reserve(2*pieces.size());
-        size_t sz = pieces.size() - 1;
-//        int const_index = ((expression_type == "postfix") ? 0 : this->params.size()-1);
+        temp.reserve(2*pieces[idx].size());
+        size_t sz = pieces[idx].size() - 1;
         for (size_t i = 0; i <= sz; i++)
         {
-            token = pieces[i];
+            token = pieces[idx][i];
             
             if (token.substr(0,5) == "const")
             {
                 temp += ((i!=sz) ? std::to_string((this->params)(std::stoi(token.substr(5)))) + " " : std::to_string((this->params)(std::stoi(token.substr(5)))));
-//                temp += ((i!=sz) ? std::to_string((this->params)(const_index)) + " " : std::to_string((this->params)(const_index)));
-//                if (expression_type == "postfix")
-//                {
-//                    const_index++;
-//                }
-//                else
-//                {
-//                    const_index--;
-//                }
             }
             else
             {
@@ -1810,19 +1804,19 @@ struct Board
      where 0 <= score <= 1 and -1 if not complete or if
      the desired depth has not been reached.
      */
-    float complete_status(bool cache = true)
+    float complete_status(int idx, bool cache = true)
     {
-        if (this->pieces.empty())
+        if (this->pieces[idx].empty())
         {
-            this->stack.clear();
+            this->stack[idx].clear();
             this->idx = 0;
             if (this->expression_type == "prefix")
             {
-                this->depth = 0, this->num_binary = 0, this->num_leaves = 0;
+                this->depth[idx] = 0, this->num_binary[idx] = 0, this->num_leaves[idx] = 0;
             }
         }
-        auto [depth, complete] =  ((this->expression_type == "prefix") ? getPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/) : getRPNdepth(pieces, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/)); //structured binding :)
-        if (!complete || depth < this->n) //Expression not complete
+        auto [depth, complete] =  ((this->expression_type == "prefix") ? getPNdepth(pieces[idx], 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/) : getRPNdepth(pieces[idx], 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/)); //structured binding :)
+        if (!complete || depth < this->n[idx]) //Expression not complete
         {
             return -1;
         }

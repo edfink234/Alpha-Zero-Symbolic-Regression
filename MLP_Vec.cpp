@@ -210,7 +210,7 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
 //                = d (y_{k} - (x_k*w_k + b_k))^2) / d w_k
 //                = 2 * (y_{k} - (x_k*w_k + b_k)) * d (- (x_k*w_k + b_k)) / d w_k
 //                = -2 * (y_k - (x_k*w_k + b_k)) * x_k
-
+            
     //Calculate the error terms for the output layer
     for (int i = 0; i < this->layers.back(); i++) //each neuron in the last layer
     {
