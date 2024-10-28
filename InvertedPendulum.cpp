@@ -399,18 +399,15 @@ namespace InvertedPendulum
     }
     
     // RK4 step for updating state
-    State rk4_step(const State& state, float xi, float dt)
+    void rk4_step(State& state, float xi, float dt)
     {
         State k1 = derivative(state, xi);
         State k2 = derivative({state.x + 0.5f * dt * k1.x, state.v + 0.5f * dt * k1.v}, xi);
         State k3 = derivative({state.x + 0.5f * dt * k2.x, state.v + 0.5f * dt * k2.v}, xi);
         State k4 = derivative({state.x + dt * k3.x, state.v + dt * k3.v}, xi);
 
-        State new_state;
-        new_state.x = state.x + dt_over_6 * (k1.x + 2.0f * k2.x + 2.0f * k3.x + k4.x);
-        new_state.v = state.v + dt_over_6 * (k1.v + 2.0f * k2.v + 2.0f * k3.v + k4.v);
-
-        return new_state;
+        state.x = state.x + dt_over_6 * (k1.x + 2.0f * k2.x + 2.0f * k3.x + k4.x);
+        state.v = state.v + dt_over_6 * (k1.v + 2.0f * k2.v + 2.0f * k3.v + k4.v);
     }
 }
 
@@ -806,7 +803,7 @@ struct Board
         {
             float t = step * dt;
             // Update the state using RK4
-            state = rk4_step(state, expression_evaluator(this->params, this->pieces, t), dt);
+            rk4_step(state, expression_evaluator(this->params, this->pieces, t), dt);
         }
         
         this->MSE_curr = (x_star - state.x)*(x_star - state.x);
@@ -820,40 +817,59 @@ struct Board
         float diff_xi_0 = expression_evaluator(params, this->pieces, 0.0f);
         this->MSE_curr += diff_xi_0*diff_xi_0;
         //Take the first derivative of xi wrt to t
-        std::vector<std::string> result;
-        result.reserve(100);
-        std::vector<int> grasp;
-        grasp.reserve(100);
-        if (this->expression_type == "prefix")
+//        std::vector<std::string> result;
+//        result.reserve(100);
+//        std::vector<int> grasp;
+//        grasp.reserve(100);
+//        if (this->expression_type == "prefix")
+//        {
+//            this->derivePrefix(0, this->pieces.size() - 1, "x0", this->pieces, grasp);
+//        }
+//        else //postfix
+//        {
+//            this->derivePostfix(0, this->pieces.size() - 1, "x0", this->pieces, grasp);
+//        }
+//        //Evaluate
+//        float xi_deriv_Norm = this->expression_evaluator(params, this->derivat).norm();
+//        if (xi_deriv_Norm > xi_deriv_th)
+//        {
+//            this->MSE_curr += (xi_deriv_Norm - xi_deriv_th)*(xi_deriv_Norm - xi_deriv_th);
+//        }
+//        //Take the second derivative of xi wrt to t
+//        result = this->derivat;
+//        if (this->expression_type == "prefix")
+//        {
+//            this->derivePrefix(0, result.size() - 1, "x0", result, grasp);
+//        }
+//        else //postfix
+//        {
+//            this->derivePostfix(0, result.size() - 1, "x0", result, grasp);
+//        }
+//        //Evaluate
+//        float xi_deriv_2_Norm = this->expression_evaluator(params, this->derivat).norm();
+//        if (xi_deriv_2_Norm > xi_deriv_th_2)
+//        {
+//            this->MSE_curr += (xi_deriv_2_Norm - xi_deriv_th_2)*(xi_deriv_2_Norm - xi_deriv_th_2);
+//        }
+        float smoothness_penalty = 0.0f;
+        float delta_xi, delta_t;
+        Eigen::VectorXf xi_deriv = this->expression_evaluator(params, this->pieces);
+        for (int i = 1; i < xi_deriv.size(); i++)
         {
-            this->derivePrefix(0, this->pieces.size() - 1, "x0", this->pieces, grasp);
+            delta_xi = std::abs(xi_deriv[i] - xi_deriv[i-1]);
+            delta_t = Board::data["x0"][i] - Board::data["x0"][i-1];
+            if (delta_t > 0)
+            {
+                smoothness_penalty += delta_xi/delta_t;
+            }
         }
-        else //postfix
-        {
-            this->derivePostfix(0, this->pieces.size() - 1, "x0", this->pieces, grasp);
-        }
-        //Evaluate
-        float xi_deriv_Norm = this->expression_evaluator(params, this->derivat).norm();
-        if (xi_deriv_Norm > xi_deriv_th)
-        {
-            this->MSE_curr += (xi_deriv_Norm - xi_deriv_th)*(xi_deriv_Norm - xi_deriv_th);
-        }
-        //Take the second derivative of xi wrt to t
-        result = this->derivat;
-        if (this->expression_type == "prefix")
-        {
-            this->derivePrefix(0, result.size() - 1, "x0", result, grasp);
-        }
-        else //postfix
-        {
-            this->derivePostfix(0, result.size() - 1, "x0", result, grasp);
-        }
-        //Evaluate
-        float xi_deriv_2_Norm = this->expression_evaluator(params, this->derivat).norm();
-        if (xi_deriv_2_Norm > xi_deriv_th_2)
-        {
-            this->MSE_curr += (xi_deriv_2_Norm - xi_deriv_th_2)*(xi_deriv_2_Norm - xi_deriv_th_2);
-        }
+        this->MSE_curr += 0.01f*smoothness_penalty;
+//        xi_deriv = xi_deriv.tail(xi_deriv.size() - 1) - xi_deriv.head(xi_deriv.size() - 1);
+//        float xi_deriv_Norm = xi_deriv.norm();
+//        if (xi_deriv_Norm > xi_deriv_th)
+//        {
+//            this->MSE_curr += (xi_deriv_Norm - xi_deriv_th)*(xi_deriv_Norm - xi_deriv_th);
+//        }
         
         return (1.0f / (1.0f + this->MSE_curr));
     }
@@ -871,7 +887,7 @@ struct Board
         {
             float t = step * dt;
             // Update the state using RK4
-            state = rk4_step(state, expression_evaluator(params, this->pieces, t), dt);
+            rk4_step(state, expression_evaluator(params, this->pieces, t), dt);
         }
         
         this->MSE_curr = (x_star - state.x)*(x_star - state.x);
@@ -885,40 +901,59 @@ struct Board
         float diff_xi_0 = expression_evaluator(params, this->pieces, 0.0f);
         this->MSE_curr += diff_xi_0*diff_xi_0;
         //Take the first derivative of xi wrt to t
-        std::vector<std::string> result;
-        result.reserve(100);
-        std::vector<int> grasp;
-        grasp.reserve(100);
-        if (this->expression_type == "prefix")
+//        std::vector<std::string> result;
+//        result.reserve(100);
+//        std::vector<int> grasp;
+//        grasp.reserve(100);
+//        if (this->expression_type == "prefix")
+//        {
+//            this->derivePrefix(0, this->pieces.size() - 1, "x0", this->pieces, grasp);
+//        }
+//        else //postfix
+//        {
+//            this->derivePostfix(0, this->pieces.size() - 1, "x0", this->pieces, grasp);
+//        }
+//        //Evaluate
+//        float xi_deriv_Norm = this->expression_evaluator(params, this->derivat).norm();
+//        if (xi_deriv_Norm > xi_deriv_th)
+//        {
+//            this->MSE_curr += (xi_deriv_Norm - xi_deriv_th)*(xi_deriv_Norm - xi_deriv_th);
+//        }
+//        //Take the second derivative of xi wrt to t
+//        result = this->derivat;
+//        if (this->expression_type == "prefix")
+//        {
+//            this->derivePrefix(0, result.size() - 1, "x0", result, grasp);
+//        }
+//        else //postfix
+//        {
+//            this->derivePostfix(0, result.size() - 1, "x0", result, grasp);
+//        }
+//        //Evaluate
+//        float xi_deriv_2_Norm = this->expression_evaluator(params, this->derivat).norm();
+//        if (xi_deriv_2_Norm > xi_deriv_th_2)
+//        {
+//            this->MSE_curr += (xi_deriv_2_Norm - xi_deriv_th_2)*(xi_deriv_2_Norm - xi_deriv_th_2);
+//        }
+        float smoothness_penalty = 0.0f;
+        float delta_xi, delta_t;
+        Eigen::VectorXf xi_deriv = this->expression_evaluator(params, this->pieces);
+        for (int i = 1; i < xi_deriv.size(); i++)
         {
-            this->derivePrefix(0, this->pieces.size() - 1, "x0", this->pieces, grasp);
+            delta_xi = xi_deriv[i] - xi_deriv[i-1];
+            delta_t = Board::data["x0"][i] - Board::data["x0"][i-1];
+            if (delta_t > 0)
+            {
+                smoothness_penalty += delta_xi/delta_t;
+            }
         }
-        else //postfix
-        {
-            this->derivePostfix(0, this->pieces.size() - 1, "x0", this->pieces, grasp);
-        }
-        //Evaluate
-        float xi_deriv_Norm = this->expression_evaluator(params, this->derivat).norm();
-        if (xi_deriv_Norm > xi_deriv_th)
-        {
-            this->MSE_curr += (xi_deriv_Norm - xi_deriv_th)*(xi_deriv_Norm - xi_deriv_th);
-        }
-        //Take the second derivative of xi wrt to t
-        result = this->derivat;
-        if (this->expression_type == "prefix")
-        {
-            this->derivePrefix(0, result.size() - 1, "x0", result, grasp);
-        }
-        else //postfix
-        {
-            this->derivePostfix(0, result.size() - 1, "x0", result, grasp);
-        }
-        //Evaluate
-        float xi_deriv_2_Norm = this->expression_evaluator(params, this->derivat).norm();
-        if (xi_deriv_2_Norm > xi_deriv_th_2)
-        {
-            this->MSE_curr += (xi_deriv_2_Norm - xi_deriv_th_2)*(xi_deriv_2_Norm - xi_deriv_th_2);
-        }
+        this->MSE_curr += 0.01f*smoothness_penalty;
+//        xi_deriv = xi_deriv.tail(xi_deriv.size() - 1) - xi_deriv.head(xi_deriv.size() - 1);
+//        float xi_deriv_Norm = xi_deriv.norm();
+//        if (xi_deriv_Norm > xi_deriv_th)
+//        {
+//            this->MSE_curr += (xi_deriv_Norm - xi_deriv_th)*(xi_deriv_Norm - xi_deriv_th);
+//        }
         
         return (1.0f / (1.0f + this->MSE_curr));
     }
@@ -1501,7 +1536,7 @@ struct Board
     
     Eigen::VectorXf expression_evaluator(const Eigen::VectorXf& params, const std::vector<std::string>& pieces) const
     {
-        std::stack<const Eigen::VectorXf> stack;
+        std::vector<Eigen::VectorXf> stack;
         std::string token;
         bool is_prefix = (expression_type == "prefix");
         for (int i = (is_prefix ? (static_cast<int>(pieces.size()) - 1) : 0); (is_prefix ? (i >= 0) : (i < static_cast<int>(pieces.size()))); (is_prefix ? (i--) : (i++)))
@@ -1515,145 +1550,203 @@ struct Board
                 {
                     int temp_idx = std::stoi(token.substr(5));
                     assert(temp_idx < params.size());
-                    stack.push(Eigen::VectorXf::Ones(Board::data.numRows())*params(temp_idx));
+                    stack.push_back(Eigen::VectorXf::Ones(Board::data.numRows())*params(temp_idx));
                 }
                 else if (token == "0")
                 {
-                    stack.push(Eigen::VectorXf::Zero(Board::data.numRows()));
+                    stack.push_back(Eigen::VectorXf::Zero(Board::data.numRows()));
                 }
                 else if (token == "1")
                 {
-                    stack.push(Eigen::VectorXf::Ones(Board::data.numRows()));
+                    stack.push_back(Eigen::VectorXf::Ones(Board::data.numRows()));
                 }
                 else if (token == "2")
                 {
-                    stack.push(Eigen::VectorXf::Ones(Board::data.numRows())*2.0f);
+                    stack.push_back(Eigen::VectorXf::Ones(Board::data.numRows())*2.0f);
                 }
                 else if (token == "4")
                 {
-                    stack.push(Eigen::VectorXf::Ones(Board::data.numRows())*4.0f);
+                    stack.push_back(Eigen::VectorXf::Ones(Board::data.numRows())*4.0f);
                 }
                 else if (isFloat(token))
                 {
-                    stack.push(Eigen::VectorXf::Ones(Board::data.numRows())*std::stof(token));
+                    stack.push_back(Eigen::VectorXf::Ones(Board::data.numRows())*std::stof(token));
                 }
                 else if (Board::initial_condition_type == "AdvectionDiffusion2D")
                 {
                     if (token == "AdvectionDiffusion2DVars::x_0")
                     {
-                        stack.push(Eigen::VectorXf::Ones(Board::data.numRows())*Board::AdvectionDiffusion2DVars::x_0);
+                        stack.push_back(Eigen::VectorXf::Ones(Board::data.numRows())*Board::AdvectionDiffusion2DVars::x_0);
                     }
                     else if (token == "AdvectionDiffusion2DVars::y_0")
                     {
-                        stack.push(Eigen::VectorXf::Ones(Board::data.numRows())*Board::AdvectionDiffusion2DVars::y_0);
+                        stack.push_back(Eigen::VectorXf::Ones(Board::data.numRows())*Board::AdvectionDiffusion2DVars::y_0);
                     }
                     else if (token == "AdvectionDiffusion2DVars::sigma")
                     {
-                        stack.push(Eigen::VectorXf::Ones(Board::data.numRows())*Board::AdvectionDiffusion2DVars::sigma);
+                        stack.push_back(Eigen::VectorXf::Ones(Board::data.numRows())*Board::AdvectionDiffusion2DVars::sigma);
                     }
                     else
                     {
-                        stack.push(Board::data[token]);
+                        stack.push_back(Board::data[token]);
                     }
                 }
                 else
                 {
-                    stack.push(Board::data[token]);
+                    stack.push_back(Board::data[token]);
                 }
             }
             else if (std::find(Board::__unary_operators.begin(), Board::__unary_operators.end(), token) != Board::__unary_operators.end()) // Unary operator
             {
                 if (token == "cos")
                 {
-                    Eigen::VectorXf temp = stack.top();
-                    stack.pop();
-                    stack.push(temp.array().cos());
+//                    Eigen::VectorXf temp = stack.back();
+//                    stack.pop_back();
+//                    stack.push_back(temp.array().cos());
+                    
+                    (*(stack.end() - 1)).array() = (*(stack.end() - 1)).array().cos();
                 }
                 else if (token == "exp")
                 {
-                    Eigen::VectorXf temp = stack.top();
-                    stack.pop();
-                    stack.push(temp.array().exp());
+//                    Eigen::VectorXf temp = stack.back();
+//                    stack.pop_back();
+//                    stack.push_back(temp.array().exp());
+                    
+                    (*(stack.end() - 1)).array() = (*(stack.end() - 1)).array().exp();
                 }
                 else if (token == "sqrt")
                 {
-                    Eigen::VectorXf temp = stack.top();
-                    stack.pop();
-                    stack.push(temp.array().sqrt());
+//                    Eigen::VectorXf temp = stack.back();
+//                    stack.pop_back();
+//                    stack.push_back(temp.array().sqrt());
+                    
+                    (*(stack.end() - 1)).array() = (*(stack.end() - 1)).array().sqrt();
                 }
                 else if (token == "sin")
                 {
-                    Eigen::VectorXf temp = stack.top();
-                    stack.pop();
-                    stack.push(temp.array().sin());
+//                    Eigen::VectorXf temp = stack.back();
+//                    stack.pop_back();
+//                    stack.push_back(temp.array().sin());
+                    
+                    (*(stack.end() - 1)).array() = (*(stack.end() - 1)).array().sin();
                 }
                 else if (token == "asin" || token == "arcsin")
                 {
-                    Eigen::VectorXf temp = stack.top();
-                    stack.pop();
-                    stack.push(temp.array().asin());
+//                    Eigen::VectorXf temp = stack.back();
+//                    stack.pop_back();
+//                    stack.push_back(temp.array().asin());
+                    
+                    (*(stack.end() - 1)).array() = (*(stack.end() - 1)).array().asin();
                 }
                 else if (token == "log" || token == "ln")
                 {
-                    Eigen::VectorXf temp = stack.top();
-                    stack.pop();
-                    stack.push(temp.array().log());
+//                    Eigen::VectorXf temp = stack.back();
+//                    stack.pop_back();
+//                    stack.push_back(temp.array().log());
+                    
+                    (*(stack.end() - 1)).array() = (*(stack.end() - 1)).array().log();
                 }
                 else if (token == "tanh")
                 {
-                    Eigen::VectorXf temp = stack.top();
-                    stack.pop();
-                    stack.push(temp.array().tanh());
+//                    Eigen::VectorXf temp = stack.back();
+//                    stack.pop_back();
+//                    stack.push_back(temp.array().tanh());
+                    
+                    (*(stack.end() - 1)).array() = (*(stack.end() - 1)).array().tanh();
                 }
                 else if (token == "sech")
                 {
-                    Eigen::VectorXf temp = stack.top();
-                    stack.pop();
-                    stack.push(1/temp.array().cosh());
+//                    Eigen::VectorXf temp = stack.back();
+//                    stack.pop_back();
+//                    stack.push_back(1/temp.array().cosh());
+                    
+                    (*(stack.end() - 1)).array() = (*(stack.end() - 1)).array().cosh();
                 }
                 else if (token == "acos" || token == "arccos")
                 {
-                    Eigen::VectorXf temp = stack.top();
-                    stack.pop();
-                    stack.push(temp.array().acos());
+//                    Eigen::VectorXf temp = stack.back();
+//                    stack.pop_back();
+//                    stack.push_back(temp.array().acos());
+                    
+                    (*(stack.end() - 1)).array() = (*(stack.end() - 1)).array().acos();
                 }
                 else if (token == "~") //unary minus
                 {
-                    Eigen::VectorXf temp = stack.top();
-                    stack.pop();
-                    stack.push(-temp.array());
+//                    Eigen::VectorXf temp = stack.back();
+//                    stack.pop_back();
+//                    stack.push_back(-temp.array());
+                    
+                    (*(stack.end() - 1)).array() *= -1;
                 }
             }
             else // binary operator
             {
-                Eigen::VectorXf left_operand = stack.top();
-                stack.pop();
-                Eigen::VectorXf right_operand = stack.top();
-                stack.pop();
+    //                Eigen::VectorXf left_operand = stack.back();
+    //                stack.pop_back();
+    //                Eigen::VectorXf right_operand = stack.back();
+    //                stack.pop_back();
                 if (token == "+")
                 {
-                    stack.push(((expression_type == "postfix") ? (right_operand.array() + left_operand.array()) : (left_operand.array() + right_operand.array())));
+                    (*(stack.end() - 2)).array() += stack.back().array();
+                    stack.pop_back();  // Remove the now-unused last element
+//                    stack.push_back(((expression_type == "postfix") ? (right_operand.array() + left_operand.array()) : (left_operand.array() + right_operand.array())));
                 }
                 else if (token == "-")
                 {
-                    stack.push(((expression_type == "postfix") ? (right_operand.array() - left_operand.array()) : (left_operand.array() - right_operand.array())));
+                    if (expression_type == "postfix")
+                    {
+                        (*(stack.end() - 2)).array() -= stack.back().array();
+                    }
+                    else
+                    {
+                        (*(stack.end() - 2)).array() = stack.back().array() - (*(stack.end() - 2)).array();
+                    }
+                    stack.pop_back();
+//                    stack.push_back(((expression_type == "postfix") ? (right_operand.array() - left_operand.array()) : (left_operand.array() - right_operand.array())));
                 }
                 else if (token == "*")
                 {
-                    stack.push(((expression_type == "postfix") ? (right_operand.array() * left_operand.array()) : (left_operand.array() * right_operand.array())));
+                    (*(stack.end() - 2)).array() *= stack.back().array();
+                    stack.pop_back();
+//                    stack.push_back(((expression_type == "postfix") ? (right_operand.array() * left_operand.array()) : (left_operand.array() * right_operand.array())));
                 }
                 else if (token == "/")
                 {
-                    stack.push(((expression_type == "postfix") ? (right_operand.array() / left_operand.array()) : (left_operand.array() / right_operand.array())));
+                    if (expression_type == "postfix")
+                    {
+                        // Divide *(stack.end() - 2) by stack.back() and replace with result
+                        (*(stack.end() - 2)).array() /= stack.back().array();
+                        
+                    }
+                    else
+                    {
+                        // Divide stack.back() by *(stack.end() - 2) and replace with result
+                        (*(stack.end() - 2)).array() = stack.back().array() / (*(stack.end() - 2)).array();
+                    }
+                    stack.pop_back();  // Remove the now-unused back element
+//                    stack.push_back(((expression_type == "postfix") ? (right_operand.array() / left_operand.array()) : (left_operand.array() / right_operand.array())));
                 }
                 else if (token == "^")
                 {
-                    stack.push(((expression_type == "postfix") ? (right_operand.array().pow(left_operand.array())) : (left_operand.array().pow(right_operand.array()))));
+                    if (expression_type == "postfix")
+                    {
+                        // Divide *(stack.end() - 2) by stack.back() and replace with result
+                        (*(stack.end() - 2)).array() = (*(stack.end() - 2)).array().pow(stack.back().array());
+                    }
+                    else
+                    {
+                        // Divide stack.back() by *(stack.end() - 2) and replace with result
+                        (*(stack.end() - 2)).array() = stack.back().array().pow((*(stack.end() - 2)).array());
+                        
+                    }
+                    stack.pop_back();  // Remove the now-unused second-to-last element
+//                    stack.push_back(((expression_type == "postfix") ? (right_operand.array().pow(left_operand.array())) : (left_operand.array().pow(right_operand.array()))));
                 }
             }
         }
-        return stack.top();
+        return stack.back();
     }
+
     
     Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> expression_evaluator(const std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& parameters, const std::vector<std::string>& pieces) const
     {
@@ -2030,7 +2123,7 @@ struct Board
             for (int step = 0; step < steps; ++step)
             {
                 float t = step * dt;
-                state = rk4_step(state, expression_evaluator(x, this->pieces, t), dt); 
+                rk4_step(state, expression_evaluator(x, this->pieces, t), dt);
             }
             
             // fvec(0): Final position error
@@ -2054,6 +2147,20 @@ struct Board
             // fvec(3): Initial condition on xi(0)
             float diff_xi_0 = expression_evaluator(x, this->pieces, 0.0f);
             grad(3) = diff_xi_0;
+            
+            // fvec(4): Constraint on "derivative"
+            Eigen::VectorXf xi_deriv = this->expression_evaluator(x, this->pieces);
+            xi_deriv = xi_deriv.tail(xi_deriv.size() - 1) - xi_deriv.head(xi_deriv.size() - 1);
+            float xi_deriv_Norm = xi_deriv.norm();
+            if (xi_deriv_Norm > xi_deriv_th)
+            {
+                grad(4) = (xi_deriv_Norm - xi_deriv_th)*(xi_deriv_Norm - xi_deriv_th);
+            }
+            else
+            {
+                grad(4) = 0.0f;  // No penalty if difference is within the threshold
+            }
+            
         }
         return 0.0f; // Return 0 for successful execution
     }
@@ -2528,31 +2635,31 @@ struct Board
     {
         float score = 0.0f;
         Eigen::VectorXf expression_eval = expression_evaluator(this->params, this->pieces);
-        if ((Board::__num_features == 1) && isConstant(expression_eval, sqrt(this->isConstTol))) //Ignore the trivial solution (1-d functions)!
-        {
-            this->MSE_curr = FLT_MAX;
-            return score;
-        }
-        else if (Board::__num_features > 1)
-        {
-            std::vector<int> grasp;
-            for (const std::string& i: Board::__input_vars)
-            {
-                if (this->expression_type == "prefix")
-                {
-                    this->derivePrefix(0, this->pieces.size() - 1, i, this->pieces, grasp);
-                }
-                else //postfix
-                {
-                    this->derivePostfix(0, this->pieces.size() - 1, i, this->pieces, grasp);
-                }
-                if (isZero(expression_evaluator(this->params, this->derivat), sqrt(this->isConstTol))) //Ignore the trivial solution (N-d functions)!
-                {
-                    this->MSE_curr = FLT_MAX;
-                    return score;
-                }
-            }
-        }
+//        if ((Board::__num_features == 1) && isConstant(expression_eval, sqrt(this->isConstTol))) //Ignore the trivial solution (1-d functions)!
+//        {
+//            this->MSE_curr = FLT_MAX;
+//            return score;
+//        }
+//        else if (Board::__num_features > 1)
+//        {
+//            std::vector<int> grasp;
+//            for (const std::string& i: Board::__input_vars)
+//            {
+//                if (this->expression_type == "prefix")
+//                {
+//                    this->derivePrefix(0, this->pieces.size() - 1, i, this->pieces, grasp);
+//                }
+//                else //postfix
+//                {
+//                    this->derivePostfix(0, this->pieces.size() - 1, i, this->pieces, grasp);
+//                }
+//                if (isZero(expression_evaluator(this->params, this->derivat), sqrt(this->isConstTol))) //Ignore the trivial solution (N-d functions)!
+//                {
+//                    this->MSE_curr = FLT_MAX;
+//                    return score;
+//                }
+//            }
+//        }
         if (this->params.size())
         {
             bool improved = true;
@@ -4652,7 +4759,7 @@ void SimulatedAnnealing(std::vector<std::string> (*diffeq)(Board&), const Eigen:
      Inside of thread:
      */
     
-    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token, &best_MSE, &boundary_condition_type, &initial_condition_type]()
+    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression/*, &best_expr_result, &orig_expr_result*/, &const_tokens, &isConstTol, &const_token, &best_MSE, &boundary_condition_type, &initial_condition_type]()
     {
         std::random_device rand_dev;
         std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
@@ -4692,14 +4799,14 @@ void SimulatedAnnealing(std::vector<std::string> (*diffeq)(Board&), const Eigen:
                     best_MSE = x.MSE_curr;
                     best_expression = x._to_infix();
                     orig_expression = x.expression();
-                    best_expr_result = x._to_infix(x.diffeq_result);
-                    orig_expr_result = x.expression(x.diffeq_result);
+//                    best_expr_result = x._to_infix(x.diffeq_result);
+//                    orig_expr_result = x.expression(x.diffeq_result);
                     std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
                     std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
                     std::cout << "Best expression = " << best_expression << '\n';
                     std::cout << "Best expression (original format) = " << orig_expression << '\n';
-                    std::cout << "Best diff result = " << best_expr_result << '\n';
-                    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
+//                    std::cout << "Best diff result = " << best_expr_result << '\n';
+//                    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
                 }
             }
             else
@@ -4811,8 +4918,8 @@ void SimulatedAnnealing(std::vector<std::string> (*diffeq)(Board&), const Eigen:
     std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
     std::cout << "Best expression = " << best_expression << '\n';
     std::cout << "Best expression (original format) = " << orig_expression << '\n';
-    std::cout << "Best diff result = " << best_expr_result << '\n';
-    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
+//    std::cout << "Best diff result = " << best_expr_result << '\n';
+//    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
 }
 //
 ////https://arxiv.org/abs/2310.06609
@@ -4877,7 +4984,7 @@ void GP(std::vector<std::string> (*diffeq)(Board&), const Eigen::MatrixXf& data,
                 std::cout << "Best expression = " << best_expression << '\n';
                 std::cout << "Best expression (original format) = " << orig_expression << '\n';
                 
-                std::cout << "Derivative = " << x._to_infix(x.derivat) << '\n';
+//                std::cout << "Derivative = " << x._to_infix(x.derivat) << '\n';
             }
         };
         
@@ -5121,7 +5228,7 @@ void PSO(std::vector<std::string> (*diffeq)(Board&), const Eigen::MatrixXf& data
      Inside of thread:
      */
     
-    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token, &best_MSE, &boundary_condition_type, &initial_condition_type]()
+    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, /*&best_expr_result, &orig_expr_result,*/ &const_tokens, &isConstTol, &const_token, &best_MSE, &boundary_condition_type, &initial_condition_type]()
     {
         std::random_device rand_dev;
         std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
@@ -5233,13 +5340,14 @@ void PSO(std::vector<std::string> (*diffeq)(Board&), const Eigen::MatrixXf& data
                 best_MSE = x.MSE_curr;
                 best_expression = x._to_infix();
                 orig_expression = x.expression();
-                best_expr_result = x._to_infix(x.diffeq_result);
-                orig_expr_result = x.expression(x.diffeq_result);
+//                best_expr_result = x._to_infix(x.diffeq_result);
+//                orig_expr_result = x.expression(x.diffeq_result);
+                std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
                 std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
                 std::cout << "Best expression = " << best_expression << '\n';
                 std::cout << "Best expression (original format) = " << orig_expression << '\n';
-                std::cout << "Best diff result = " << best_expr_result << '\n';
-                std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
+//                std::cout << "Best diff result = " << best_expr_result << '\n';
+//                std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
             }
             x.pieces.clear();
             curr_positions.clear();
@@ -5261,8 +5369,8 @@ void PSO(std::vector<std::string> (*diffeq)(Board&), const Eigen::MatrixXf& data
     std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
     std::cout << "Best expression = " << best_expression << '\n';
     std::cout << "Best expression (original format) = " << orig_expression << '\n';
-    std::cout << "Best diff result = " << best_expr_result << '\n';
-    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
+//    std::cout << "Best diff result = " << best_expr_result << '\n';
+//    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
 }
 
 //https://arxiv.org/abs/2205.13134
@@ -5797,7 +5905,7 @@ int main()
         
 //    SimulatedAnnealing(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data2 /*data used to solve differential equation*/, 13 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, true /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_2" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
         
-    GP(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, createLinspaceMatrix(100000, 1, {0.0f}, {InvertedPendulum::T}) /*data used to solve differential equation*/, 7 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, true /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "none" /*boundary condition type*/, "none" /*initial condition type*/);
+    RandomSearch(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, createLinspaceMatrix(100, 1, {0.0f}, {InvertedPendulum::T}) /*data used to solve differential equation*/, 5 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, 1.0e-8 /*threshold for which solutions cannot be constant*/, true /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "none" /*boundary condition type*/, "none" /*initial condition type*/);
     
     return 0;
 }
