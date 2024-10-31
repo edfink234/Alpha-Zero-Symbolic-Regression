@@ -852,18 +852,18 @@ struct Board
 //            this->MSE_curr += (xi_deriv_2_Norm - xi_deriv_th_2)*(xi_deriv_2_Norm - xi_deriv_th_2);
 //        }
         float smoothness_penalty = 0.0f;
-        float delta_xi, delta_t;
+        float delta_xi/*, delta_t*/;
         Eigen::VectorXf xi_deriv = this->expression_evaluator(params, this->pieces);
         for (int i = 1; i < xi_deriv.size(); i++)
         {
             delta_xi = std::abs(xi_deriv[i] - xi_deriv[i-1]);
-            delta_t = Board::data["x0"][i] - Board::data["x0"][i-1];
-            if (delta_t > 0)
+//            delta_t = Board::data["x0"][i] - Board::data["x0"][i-1];
+//            if (delta_t > 0)
             {
-                smoothness_penalty += delta_xi/delta_t;
+                smoothness_penalty += (xi_deriv.size() - i) * ((delta_xi*delta_xi)/*/(delta_t*delta_t)*/);
             }
         }
-        this->MSE_curr += 0.01f*smoothness_penalty;
+        this->MSE_curr += 0.005f*smoothness_penalty;
 //        xi_deriv = xi_deriv.tail(xi_deriv.size() - 1) - xi_deriv.head(xi_deriv.size() - 1);
 //        float xi_deriv_Norm = xi_deriv.norm();
 //        if (xi_deriv_Norm > xi_deriv_th)
@@ -936,18 +936,18 @@ struct Board
 //            this->MSE_curr += (xi_deriv_2_Norm - xi_deriv_th_2)*(xi_deriv_2_Norm - xi_deriv_th_2);
 //        }
         float smoothness_penalty = 0.0f;
-        float delta_xi, delta_t;
+        float delta_xi/*, delta_t*/;
         Eigen::VectorXf xi_deriv = this->expression_evaluator(params, this->pieces);
         for (int i = 1; i < xi_deriv.size(); i++)
         {
-            delta_xi = xi_deriv[i] - xi_deriv[i-1];
-            delta_t = Board::data["x0"][i] - Board::data["x0"][i-1];
-            if (delta_t > 0)
+            delta_xi = std::abs(xi_deriv[i] - xi_deriv[i-1]);
+//            delta_t = Board::data["x0"][i] - Board::data["x0"][i-1];
+//            if (delta_t > 0)
             {
-                smoothness_penalty += delta_xi/delta_t;
+                smoothness_penalty += delta_xi;//(xi_deriv.size() - i) * ((delta_xi*delta_xi)/*/(delta_t*delta_t)*/);
             }
         }
-        this->MSE_curr += 0.01f*smoothness_penalty;
+        this->MSE_curr += 0.005f*smoothness_penalty;
 //        xi_deriv = xi_deriv.tail(xi_deriv.size() - 1) - xi_deriv.head(xi_deriv.size() - 1);
 //        float xi_deriv_Norm = xi_deriv.norm();
 //        if (xi_deriv_Norm > xi_deriv_th)
@@ -5905,7 +5905,7 @@ int main()
         
 //    SimulatedAnnealing(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data2 /*data used to solve differential equation*/, 13 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, 5.0e-1 /*threshold for which solutions cannot be constant*/, true /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_2" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
         
-    RandomSearch(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, createLinspaceMatrix(100, 1, {0.0f}, {InvertedPendulum::T}) /*data used to solve differential equation*/, 5 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, 1.0e-8 /*threshold for which solutions cannot be constant*/, true /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "none" /*boundary condition type*/, "none" /*initial condition type*/);
+    GP(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, createLinspaceMatrix(1000, 1, {0.0f}, {InvertedPendulum::T}) /*data used to solve differential equation*/, 5 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, 1.0e-8 /*threshold for which solutions cannot be constant*/, true /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "none" /*boundary condition type*/, "none" /*initial condition type*/);
     
     return 0;
 }

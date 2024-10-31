@@ -5485,7 +5485,7 @@ void RandomSearch(std::vector<std::string> (*diffeq)(Board&), const Eigen::Matri
 
 int main()
 {
-    constexpr double time = 90000;
+    constexpr double time = 100000;
     float threshhold = 9e-1;
     
     //Case 1
@@ -5502,7 +5502,7 @@ int main()
         return std::exp(-(std::pow(x - Board::AdvectionDiffusion2DVars::x_0, 2) + std::pow(y - Board::AdvectionDiffusion2DVars::y_0, 2))) / (2 * std::pow(Board::AdvectionDiffusion2DVars::sigma, 2));
     });
     
-    GP(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data1 /*data used to solve differential equation*/, 6 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshhold /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
+    GP(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data1 /*data used to solve differential equation*/, 5 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshhold /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
 
     //Case 2
 //    puts("Case 2");
