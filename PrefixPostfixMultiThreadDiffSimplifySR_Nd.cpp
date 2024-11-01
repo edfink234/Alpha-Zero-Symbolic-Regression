@@ -338,7 +338,7 @@ struct Board
     static constexpr float phi_1 = 2.8f;
     static constexpr float phi_2 = 1.3f;
     static int inline __num_features;
-    //TODO: Maybe change to unordered_set
+    //TODO: Add unordered_sets to use in num_binary, num_unary, and num_leaf functions
     static std::vector<std::string> inline __input_vars;
     static std::vector<std::string> inline __unary_operators;
     static std::vector<std::string> inline __binary_operators;
@@ -371,6 +371,7 @@ struct Board
     
     std::vector<int> n; //depth of RPN/PN trees
     std::string expression_type, expression_string;
+    size_t num_consts;
     static std::mutex inline thread_locker; //static because it needs to protect static members
     std::vector<std::vector<std::string>> pieces; // Create the empty expression list.
     std::vector<std::string> derivat;// Vector to store the derivative.
@@ -381,7 +382,7 @@ struct Board
     static std::string inline boundary_condition_type;
     static std::string inline initial_condition_type;
     
-    Board(std::vector<std::vector<std::string>> (*diffeq)(Board&), bool primary = true, const std::vector<int>& n = {}, const std::string& expression_type = "prefix", std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, is_primary{primary}
+    Board(std::vector<std::vector<std::string>> (*diffeq)(Board&), bool primary = true, const std::vector<int>& n = {}, const std::string& expression_type = "prefix", size_t num_consts = 4, std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, is_primary{primary}
     {
         assert(n.size());
         this->num_objectives = n.size();
@@ -408,10 +409,9 @@ struct Board
         }
         
         this->expression_type = expression_type;
-        
+        this->num_consts = num_consts;
         this->visualize_exploration = visualize_exploration;
         this->reserve_amount = 2*std::pow(2,max_n)-1;
-        
         this->cache = cache;
         this->diffeq = diffeq;
         this->isConstTol = isConstTol;
@@ -1822,71 +1822,71 @@ struct Board
                 }
             }
         }
-//        if (this->params.size())
-//        {
-//            this->diffeq_result = diffeq(*this);
-//            if (this->__num_consts_diff())
-//            {
-//                bool improved = true;
-//                if (this->fit_method == "PSO")
-//                {
-//                    improved = PSO();
-//                }
-//                else if (this->fit_method == "AsyncPSO")
-//                {
-//                    improved = AsyncPSO();
-//                }
-//                else if (this->fit_method == "LBFGS")
-//                {
-//                    improved = LBFGS();
-//                }
-//                else if (this->fit_method == "LBFGSB")
-//                {
-//                    improved = LBFGSB();
-//                }
-//                else if (this->fit_method == "LevenbergMarquardt")
-//                {
-//                    improved = LevenbergMarquardt();
-//                }
-//                Eigen::VectorXf temp_vec;
-//                
-//                if (improved) //If improved, update the expression_dict with this->params
-//                {
-//                    if (Board::expression_dict.contains(this->expression_string))
-//                    {
-//                        Board::expression_dict.visit(this->expression_string, [&](auto& x)
-//                        {
-//                            x.second = this->params;
-//                        });
-//                    }
-//                    else
-//                    {
-//                        Board::expression_dict.insert_or_assign(this->expression_string, this->params);
-//                    }
-//                }
-//                Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
-//                {
-//                    temp_vec = x.second;
-//                });
-//                
-//                expression_eval = expression_evaluator(temp_vec, this->diffeq_result);
-//                if (isConstant(expression_eval, sqrt(this->isConstTol)))
-//                {
-//                    this->MSE_curr = FLT_MAX;
-//                    return score;
-//                }
-//                score = loss_func(expression_eval);
-//                this->MSE_curr = (1.0f/score) - 1.0f;
-//
-//            }
-//            else
-//            {
-//                score = loss_func(expression_evaluator(this->params, this->diffeq_result));
-//                this->MSE_curr = (1.0f/score) - 1.0f;
-//
-//            }
-//        }
-//        else
+        if (this->params.size())
+        {
+            this->diffeq_result = diffeq(*this);
+            if (this->__num_consts_diff())
+            {
+                bool improved = true;
+                if (this->fit_method == "PSO")
+                {
+                    improved = PSO();
+                }
+                else if (this->fit_method == "AsyncPSO")
+                {
+                    improved = AsyncPSO();
+                }
+                else if (this->fit_method == "LBFGS")
+                {
+                    improved = LBFGS();
+                }
+                else if (this->fit_method == "LBFGSB")
+                {
+                    improved = LBFGSB();
+                }
+                else if (this->fit_method == "LevenbergMarquardt")
+                {
+                    improved = LevenbergMarquardt();
+                }
+                Eigen::VectorXf temp_vec;
+                
+                if (improved) //If improved, update the expression_dict with this->params
+                {
+                    if (Board::expression_dict.contains(this->expression_string))
+                    {
+                        Board::expression_dict.visit(this->expression_string, [&](auto& x)
+                        {
+                            x.second = this->params;
+                        });
+                    }
+                    else
+                    {
+                        Board::expression_dict.insert_or_assign(this->expression_string, this->params);
+                    }
+                }
+                Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
+                {
+                    temp_vec = x.second;
+                });
+                
+                expression_eval = expression_evaluator(temp_vec, this->diffeq_result);
+                if (isConstant(expression_eval, sqrt(this->isConstTol)))
+                {
+                    this->MSE_curr = FLT_MAX;
+                    return score;
+                }
+                score = loss_func(expression_eval);
+                this->MSE_curr = (1.0f/score) - 1.0f;
+
+            }
+            else
+            {
+                score = loss_func(expression_evaluator(this->params, this->diffeq_result));
+                this->MSE_curr = (1.0f/score) - 1.0f;
+
+            }
+        }
+        else
         {
             this->diffeq_result = diffeq(*this);
             score = 0.0f;
@@ -1940,7 +1940,7 @@ struct Board
             
             if (is_primary)
             {
-                if (this->const_token)
+                if (this->num_consts)
                 {
                     this->expression_string.clear();
                     this->expression_string.reserve(8*pieces.size());
@@ -1972,7 +1972,7 @@ struct Board
                     
                     if (!this->params.size())
                     {
-                        this->params.setOnes(this->__num_consts_diff());
+                        this->params.setOnes(this->num_consts);
                         Board::expression_dict.insert_or_assign(this->expression_string, this->params);
                     }
                 }
@@ -4843,7 +4843,7 @@ std::vector<std::vector<std::string>> TwoDAdvectionDiffusion_2(Board& x)
 //    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
 //}
 
-void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), const Eigen::MatrixXf& data, const std::vector<int>& depth, const std::string expression_type = "prefix", const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
+void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), const Eigen::MatrixXf& data, const std::vector<int>& depth, const std::string expression_type = "prefix", size_t num_consts = 4, const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
 {
     if (num_threads == 0)
     {
@@ -4868,12 +4868,12 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), const
      Inside of thread:
      */
     
-    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token, &best_MSE]()
+    auto func = [&diffeq, &depth, &expression_type, &num_consts, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token, &best_MSE]()
     {
         std::random_device rand_dev;
         std::mt19937 thread_local generator(rand_dev()); // Mersenne Twister random number generator
 
-        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token);
+        Board x(diffeq, true, depth, expression_type, num_consts, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token);
         
         sync_point.arrive_and_wait();
         float score = 0.0f;
@@ -4954,7 +4954,7 @@ int main()
     float threshold = 9.0e-2f;
     
     auto data1 = createMeshgridVectors(10, 3, {0.1f, -1.1f, 0.1f}, {2.1f, 1.1f, 20.0f});
-    RandomSearch(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data1 /*data used to solve differential equation*/, std::vector<int>{5} /*fixed depth of generated solutions*/, "prefix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/);
+    RandomSearch(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data1 /*data used to solve differential equation*/, std::vector<int>{5} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 4 /*num_consts: number of constants in differential equation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
                 
 //    auto data2 = createMeshgridVectors(10, 3, {0.1f, 0.1f, 0.1f}, {2.0f*std::numbers::pi_v<float>, 2.0f*std::numbers::pi_v<float>, 20.0f});
 //    GP(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data2 /*data used to solve differential equation*/, 5 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/);
