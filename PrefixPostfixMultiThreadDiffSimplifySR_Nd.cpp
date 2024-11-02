@@ -305,6 +305,17 @@ float MSE(const Eigen::VectorXf& actual)
     return actual.squaredNorm() / actual.size();
 }
 
+float MSE(const std::vector<Eigen::VectorXf>& actual)
+{
+    float temp = 0.0f;
+    for (size_t i = 0; i < actual.size(); i++)
+    {
+        temp += actual[i].squaredNorm();
+    }
+    
+    return temp / actual.size();
+}
+
 float MSE(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
 {
     if (actual.size() != predicted.size())
@@ -322,6 +333,16 @@ Eigen::AutoDiffScalar<Eigen::VectorXf> MSE(const Eigen::Vector<Eigen::AutoDiffSc
 float loss_func(const Eigen::VectorXf& actual)
 {
     return (1.0f/(1.0f+MSE(actual)));
+}
+
+float loss_func(const std::vector<Eigen::VectorXf>& actual)
+{
+    float mse = 0.0f;
+    for (size_t i = 0; i < actual.size(); i++)
+    {
+        mse += MSE(actual[i]);
+    }
+    return (1.0f/(1.0f+mse));
 }
 
 float loss_func(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
@@ -453,7 +474,10 @@ struct Board
                 }
                 if (const_token)
                 {
-                    Board::__other_tokens.push_back("const");
+                    for (size_t i = 0; i < this->num_consts; i++)
+                    {
+                        Board::__other_tokens.push_back("const"+std::to_string(i));
+                    }
                 }
                 Board::__tokens = Board::__operators;
                 
@@ -1490,164 +1514,59 @@ struct Board
         return stack.top();
     }
     
-//    bool AsyncPSO()
-//    {
-//        bool improved = false;
-//        auto start_time = Clock::now();
-//        Eigen::VectorXf particle_positions(this->params.size()), x(this->params.size());
-//        Eigen::VectorXf v(this->params.size());
-//        float rp, rg;
-//        
-//        for (long i = 0; i < this->params.size(); i++)
-//        {
-//            particle_positions(i) = x(i) = pos_dist(gen);
-//            v(i) = vel_dist(gen);
-//        }
-//        
-//        float swarm_best_score = loss_func(expression_evaluator(this->params, this->diffeq_result));
-//        
-//        float fpi = loss_func(expression_evaluator(particle_positions, this->diffeq_result));
-//        this->MSE_curr = (1.0f/fpi) - 1.0f;
-//        
-//        float temp, fxi;
-//        
-//        if (fpi > swarm_best_score)
-//        {
-//            this->params = particle_positions;
-//            swarm_best_score = fpi;
-//            improved = true;
-//        }
-//        
-//        auto UpdateParticle = [&](int i)
-//        {
-//            for (int j = 0; j < this->num_fit_iter; j++)
-//            {
-//                rp = pos_dist(gen), rg = pos_dist(gen);
-//                v(i) = K*(v(i) + phi_1*rp*(particle_positions(i) - x(i)) + phi_2*rg*((this->params)(i) - x(i)));
-//                x(i) += v(i);
-//                
-//                fpi = loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //current score
-//                this->MSE_curr = (1.0f/fpi) - 1.0f;
-//                
-//                temp = particle_positions(i); //save old position of particle i
-//                particle_positions(i) = x(i); //update old position to new position
-//                fxi = loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //calculate the score with the new position
-//                
-//                if (fxi < fpi) //if the new vector is worse:
-//                {
-//                    particle_positions(i) = temp; //reset particle_positions[i]
-//                }
-//                else if (fpi > swarm_best_score)
-//                {
-//                    (this->params)(i) = particle_positions(i);
-//                    improved = true;
-//                    swarm_best_score = fpi;
-//                }
-//            }
-//        };
-//        
-//        std::vector<std::future<void>> particles;
-//        particles.reserve(this->params.size());
-//        for (int i = 0; i < this->params.size(); i++)
-//        {
-//            particles.push_back(std::async(std::launch::async | std::launch::deferred, UpdateParticle, i));
-//        }
-//        for (auto& i: particles)
-//        {
-//            i.get();
-//        }
-//        Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
-//        return improved;
-//    }
-//    
-//    bool PSO()
-//    {
-//        bool improved = false;
-//        auto start_time = Clock::now();
-//        Eigen::VectorXf particle_positions(this->params.size()), x(this->params.size());
-//        Eigen::VectorXf v(this->params.size());
-//        float rp, rg;
-//        
-//        for (long i = 0; i < this->params.size(); i++)
-//        {
-//            particle_positions(i) = x(i) = pos_dist(gen);
-//            v(i) = vel_dist(gen);
-//        }
-//        
-//        float swarm_best_score = loss_func(expression_evaluator(this->params, this->diffeq_result));
-//    
-//        float fpi = loss_func(expression_evaluator(particle_positions, this->diffeq_result));
-//        this->MSE_curr = (1.0f/fpi) - 1.0f;
-//        
-//        float temp, fxi;
-//        
-//        if (fpi > swarm_best_score)
-//        {
-//            this->params = particle_positions;
-//            improved = true;
-//            swarm_best_score = fpi;
-//        }
-//        
-//        for (int j = 0; j < this->num_fit_iter; j++)
-//        {
-//            for (unsigned short i = 0; i < this->params.size(); i++) //number of particles
-//            {
-//                rp = pos_dist(gen), rg = pos_dist(gen);
-//                v(i) = K*(v(i) + phi_1*rp*(particle_positions(i) - x(i)) + phi_2*rg*((this->params)(i) - x(i)));
-//                x(i) += v(i);
-//                
-//                fpi = loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //current score
-//                this->MSE_curr = (1.0f/fpi) - 1.0f;
-//                
-//                temp = particle_positions(i); //save old position of particle i
-//                particle_positions(i) = x(i); //update old position to new position
-//                fxi = loss_func(expression_evaluator(particle_positions, this->diffeq_result)); //calculate the score with the new position
-//                
-//                if (fxi < fpi) //if the new vector is worse:
-//                {
-//                    particle_positions(i) = temp; //reset particle_positions[i]
-//                }
-//                else if (fpi > swarm_best_score)
-//                {
-//                    (this->params)(i) = particle_positions(i);
-//                    improved = true;
-//                    swarm_best_score = fpi;
-//                }
-//            }
-//        }
-//        Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
-//        return improved;
-//    }
+    std::vector<Eigen::VectorXf> expression_evaluator(const Eigen::VectorXf& params, const std::vector<std::vector<std::string>>& pieces) const
+    {
+        std::vector<Eigen::VectorXf> temp;
+        size_t sz = pieces.size();
+        temp.reserve(sz);
+        for (size_t idx = 0; idx < sz; idx++)
+        {
+            temp.push_back(expression_evaluator(params, pieces[idx]));
+        }
+        return temp;
+    }
     
-//    Eigen::AutoDiffScalar<Eigen::VectorXf> grad_func(std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& inputs)
-//    {
-//        return MSE(expression_evaluator(inputs, this->diffeq_result));
-//    }
+    std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>> expression_evaluator(const std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& params, const std::vector<std::vector<std::string>>& pieces) const
+    {
+        std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>> temp;
+        size_t sz = pieces.size();
+        temp.reserve(sz);
+        for (size_t idx = 0; idx < sz; idx++)
+        {
+            temp.push_back(expression_evaluator(params, pieces[idx]));
+        }
+        return temp;
+    }
+    
+    Eigen::AutoDiffScalar<Eigen::VectorXf> grad_func(std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& inputs)
+    {
+        return MSE(expression_evaluator(inputs, this->diffeq_result));
+    }
     
     /*
      x: parameter vector: (x_0, x_1, ..., x_{x.size()-1})
      g: gradient evaluated at x: (g_0(x_0), g_1(x_1), ..., g_{g.size()-1}(x_{x.size()-1}))
      */
-//    float operator()(Eigen::VectorXf& x, Eigen::VectorXf& grad)
-//    {
-//        if (this->fit_method == "LBFGS" || this->fit_method == "LBFGSB")
-//        {
-//            float mse = MSE(expression_evaluator(x, this->diffeq_result));
-//            if (this->fit_grad_method == "naive_numerical")
-//            {
-//                float low_b, temp;
-//                for (int i = 0; i < x.size(); i++) //finite differences wrt x evaluated at the current values x(i)
-//                {
-//                    //https://stackoverflow.com/a/38855586/18255427
-//                    temp = x(i);
-//                    x(i) -= 0.00001f;
-//                    low_b = MSE(expression_evaluator(x, this->diffeq_result));
-//                    x(i) = temp + 0.00001f;
-//                    grad(i) = (MSE(expression_evaluator(x, this->diffeq_result)) - low_b) / 0.00002f ;
-//                    x(i) = temp;
-//                }
-//            }
-//            
+    float operator()(Eigen::VectorXf& x, Eigen::VectorXf& grad)
+    {
+        if (this->fit_method == "LBFGS" || this->fit_method == "LBFGSB")
+        {
+            float mse = MSE(expression_evaluator(x, this->diffeq_result));
+            if (this->fit_grad_method == "naive_numerical")
+            {
+                float low_b, temp;
+                for (int i = 0; i < x.size(); i++) //finite differences wrt x evaluated at the current values x(i)
+                {
+                    //https://stackoverflow.com/a/38855586/18255427
+                    temp = x(i);
+                    x(i) -= 0.00001f;
+                    low_b = MSE(expression_evaluator(x, this->diffeq_result));
+                    x(i) = temp + 0.00001f;
+                    grad(i) = (MSE(expression_evaluator(x, this->diffeq_result)) - low_b) / 0.00002f ;
+                    x(i) = temp;
+                }
+            }
+            
 //            else if (this->fit_grad_method == "autodiff")
 //            {
 //                size_t sz = x.size();
@@ -1660,135 +1579,157 @@ struct Board
 //                }
 //                grad = grad_func(inputs).derivatives();
 //            }
-//            return mse;
-//        }
-//        else if (this->fit_method == "LevenbergMarquardt")
-//        {
-//            grad = (this->expression_evaluator(x, this->diffeq_result));
-//        }
-//        return 0.f;
-//    }
+            return mse;
+        }
+        else if (this->fit_method == "LevenbergMarquardt")
+        {
+//            grad = (this->expression_evaluator(x, this->diffeq_result[0]));
+//            std::vector<float> temp(grad.data(), grad.data() + grad.size());
+//
+//            for (size_t jdx = 1; jdx < this->diffeq_result.size(); jdx++)
+//            {
+//                Eigen::VectorXf temp = (this->expression_evaluator(x, this->diffeq_result[jdx]));
+//                for (float kdx: temp)
+//                {
+//                    grad.push_back(kdx);
+//                }
+//            }
+            //have to flatten the std::vector<Eigen::VectorXf> into an std::vector
+            auto temp = this->expression_evaluator(x, this->diffeq_result);
+            std::vector<float> temp_vec;
+            temp_vec.reserve(temp.size() * temp[0].size());
+            for (size_t kdx = 0; kdx < temp.size(); kdx++)
+            {
+                for (size_t ldx = 0; ldx < temp[kdx].size(); ldx++)
+                {
+                    temp_vec.push_back(temp[kdx][ldx]);
+                }
+            }
+            grad = Eigen::Map<Eigen::VectorXf>(temp_vec.data(), temp_vec.size());
+        }
+        return 0.0f;
+    }
 //    
-//    bool LBFGS()
-//    {
-//        bool improved = false;
-//        auto start_time = Clock::now();
-//        LBFGSpp::LBFGSParam<float> param;
-//        param.epsilon = 1e-6;
-//        param.max_iterations = this->num_fit_iter;
-//        //https://lbfgspp.statr.me/doc/LineSearchBacktracking_8h_source.html
-//        LBFGSpp::LBFGSSolver<float, LBFGSpp::LineSearchMoreThuente> solver(param); //LineSearchBacktracking, LineSearchBracketing, LineSearchMoreThuente, LineSearchNocedalWright
-//        float fx;
-//        
-//        Eigen::VectorXf eigenVec = this->params;
-//        float mse = MSE(expression_evaluator(this->params, this->diffeq_result));
-//        try
-//        {
-//            solver.minimize((*this), eigenVec, fx);
-//        }
-//        catch (std::runtime_error& e){}
-//        catch (std::invalid_argument& e){}
-//        
-//        //        printf("mse = %f -> fx = %f\n", mse, fx);
-//        if (fx < mse)
-//        {
-//            //            printf("mse = %f -> fx = %f\n", mse, fx);
-//            this->params = eigenVec;
-//            improved = true;
-//        }
-//        Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
-//        return improved;
-//    }
-//    
-//    bool LBFGSB()
-//    {
-//        bool improved = false;
-//        auto start_time = Clock::now();
-//        LBFGSpp::LBFGSBParam<float> param;
-//        param.epsilon = 1e-6;
-//        param.max_iterations = this->num_fit_iter;
-//        //https://lbfgspp.statr.me/doc/LineSearchBacktracking_8h_source.html
-//        LBFGSpp::LBFGSBSolver<float> solver(param); //LineSearchBacktracking, LineSearchBracketing, LineSearchMoreThuente, LineSearchNocedalWright
-//        float fx;
-//        
-//        Eigen::VectorXf eigenVec = this->params;
-//        float mse = MSE(expression_evaluator(this->params, this->diffeq_result));
-//        try
-//        {
-//            solver.minimize((*this), eigenVec, fx, Eigen::VectorXf::Constant(eigenVec.size(), -std::numeric_limits<float>::infinity()), Eigen::VectorXf::Constant(eigenVec.size(), std::numeric_limits<float>::infinity()));
-//            //            solver.minimize((*this), eigenVec, fx, Eigen::VectorXf::Constant(eigenVec.size(), -10.f), Eigen::VectorXf::Constant(eigenVec.size(), 10.f));
-//        }
-//        catch (std::runtime_error& e){}
-//        catch (std::invalid_argument& e){}
-//        catch (std::logic_error& e){}
-//        
-//        //        printf("mse = %f -> fx = %f\n", mse, fx);
-//        if (fx < mse)
-//        {
-//            //            printf("mse = %f -> fx = %f\n", mse, fx);
-//            this->params = eigenVec;
-//            improved = true;
-//        }
-//        Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
-//        return improved;
-//    }
+    bool LBFGS()
+    {
+        bool improved = false;
+        auto start_time = Clock::now();
+        LBFGSpp::LBFGSParam<float> param;
+        param.epsilon = 1e-6;
+        param.max_iterations = this->num_fit_iter;
+        //https://lbfgspp.statr.me/doc/LineSearchBacktracking_8h_source.html
+        LBFGSpp::LBFGSSolver<float, LBFGSpp::LineSearchMoreThuente> solver(param); //LineSearchBacktracking, LineSearchBracketing, LineSearchMoreThuente, LineSearchNocedalWright
+        float fx;
+        
+        Eigen::VectorXf eigenVec = this->params;
+        float mse = MSE(expression_evaluator(this->params, this->diffeq_result));
+        try
+        {
+            solver.minimize((*this), eigenVec, fx);
+        }
+        catch (std::runtime_error& e){}
+        catch (std::invalid_argument& e){}
+        
+        //        printf("mse = %f -> fx = %f\n", mse, fx);
+        if (fx < mse)
+        {
+            //            printf("mse = %f -> fx = %f\n", mse, fx);
+            this->params = eigenVec;
+            improved = true;
+        }
+        Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
+        return improved;
+    }
+    
+    bool LBFGSB()
+    {
+        bool improved = false;
+        auto start_time = Clock::now();
+        LBFGSpp::LBFGSBParam<float> param;
+        param.epsilon = 1e-6;
+        param.max_iterations = this->num_fit_iter;
+        //https://lbfgspp.statr.me/doc/LineSearchBacktracking_8h_source.html
+        LBFGSpp::LBFGSBSolver<float> solver(param); //LineSearchBacktracking, LineSearchBracketing, LineSearchMoreThuente, LineSearchNocedalWright
+        float fx;
+        
+        Eigen::VectorXf eigenVec = this->params;
+        float mse = MSE(expression_evaluator(this->params, this->diffeq_result));
+        try
+        {
+            solver.minimize((*this), eigenVec, fx, Eigen::VectorXf::Constant(eigenVec.size(), -std::numeric_limits<float>::infinity()), Eigen::VectorXf::Constant(eigenVec.size(), std::numeric_limits<float>::infinity()));
+            //            solver.minimize((*this), eigenVec, fx, Eigen::VectorXf::Constant(eigenVec.size(), -10.f), Eigen::VectorXf::Constant(eigenVec.size(), 10.f));
+        }
+        catch (std::runtime_error& e){}
+        catch (std::invalid_argument& e){}
+        catch (std::logic_error& e){}
+        
+        //        printf("mse = %f -> fx = %f\n", mse, fx);
+        if (fx < mse)
+        {
+            //            printf("mse = %f -> fx = %f\n", mse, fx);
+            this->params = eigenVec;
+            improved = true;
+        }
+        Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
+        return improved;
+    }
     
     int values() const
     {
         return Board::data.numRows();
     }
     
-//    int df(Eigen::VectorXf &x, Eigen::MatrixXf &fjac)
-//    {
-//        float epsilon, temp;
-//        epsilon = 1e-5f;
-//        
-//        for (int i = 0; i < x.size(); i++)
-//        {
-//            //            Eigen::VectorXf xPlus(x);
-//            //            xPlus(i) += epsilon;
-//            //
-//            //            Eigen::VectorXf xMinus(x);
-//            //            xMinus(i) -= epsilon;
-//            //            x(i) -= epsilon;
-//            
-//            temp = x(i);
-//            
-//            x(i) = temp + epsilon;
-//            Eigen::VectorXf fvecPlus(values());
-//            operator()(x, fvecPlus);
-//            
-//            x(i) = temp - epsilon;
-//            Eigen::VectorXf fvecMinus(values());
-//            operator()(x, fvecMinus);
-//            
-//            fjac.block(0, i, values(), 1) = std::move((fvecPlus - fvecMinus) / (2.0f * epsilon));
-//            
-//            x(i) = temp;
-//        }
-//        return 0;
-//    }
+    int df(Eigen::VectorXf &x, Eigen::MatrixXf &fjac)
+    {
+        float epsilon, temp;
+        epsilon = 1e-5f;
+        
+        for (int i = 0; i < x.size(); i++)
+        {
+            //            Eigen::VectorXf xPlus(x);
+            //            xPlus(i) += epsilon;
+            //
+            //            Eigen::VectorXf xMinus(x);
+            //            xMinus(i) -= epsilon;
+            //            x(i) -= epsilon;
+            
+            temp = x(i);
+            
+            x(i) = temp + epsilon;
+            Eigen::VectorXf fvecPlus(values());
+            operator()(x, fvecPlus);
+            
+            x(i) = temp - epsilon;
+            Eigen::VectorXf fvecMinus(values());
+            operator()(x, fvecMinus);
+            
+            fjac.block(0, i, values(), 1) = std::move((fvecPlus - fvecMinus) / (2.0f * epsilon));
+            
+            x(i) = temp;
+        }
+        return 0;
+    }
     
-//    bool LevenbergMarquardt()
-//    {
-//        bool improved = false;
-//        auto start_time = Clock::now();
-//        Eigen::LevenbergMarquardt<decltype(*this), float> lm(*this);
-//        float score_before = MSE(expression_evaluator(this->params, this->diffeq_result));
-//        lm.parameters.maxfev = this->num_fit_iter;
-//        //        std::cout << "ftol (Cost function change) = " << lm.parameters.ftol << '\n';
-//        //        std::cout << "xtol (Parameters change) = " << lm.parameters.xtol << '\n';
-//        
-//        lm.minimize(this->params);
-//        if (MSE(expression_evaluator(this->params, this->diffeq_result)) < score_before)
-//        {
-//            improved = true;
-//        }
-//        
-//        //        std::cout << "Iterations = " << lm.nfev << '\n';
-//        Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
-//        return improved;
-//    }
+    bool LevenbergMarquardt()
+    {
+        bool improved = false;
+        auto start_time = Clock::now();
+        Eigen::LevenbergMarquardt<decltype(*this), float> lm(*this);
+        float score_before = MSE(expression_evaluator(this->params, this->diffeq_result));
+        lm.parameters.maxfev = this->num_fit_iter;
+        //        std::cout << "ftol (Cost function change) = " << lm.parameters.ftol << '\n';
+        //        std::cout << "xtol (Parameters change) = " << lm.parameters.xtol << '\n';
+        
+        lm.minimize(this->params);
+        if (MSE(expression_evaluator(this->params, this->diffeq_result)) < score_before)
+        {
+            improved = true;
+        }
+        
+        //        std::cout << "Iterations = " << lm.nfev << '\n';
+        Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
+        return improved;
+    }
     
     float fitFunctionToData()
     {
@@ -1825,18 +1766,18 @@ struct Board
         if (this->params.size())
         {
             this->diffeq_result = diffeq(*this);
-            if (this->__num_consts_diff())
+            if (this->num_consts)
             {
                 bool improved = true;
-                if (this->fit_method == "PSO")
-                {
-                    improved = PSO();
-                }
-                else if (this->fit_method == "AsyncPSO")
-                {
-                    improved = AsyncPSO();
-                }
-                else if (this->fit_method == "LBFGS")
+//                if (this->fit_method == "PSO")
+//                {
+//                    improved = PSO();
+//                }
+//                else if (this->fit_method == "AsyncPSO")
+//                {
+//                    improved = AsyncPSO();
+//                }
+                /*else */if (this->fit_method == "LBFGS")
                 {
                     improved = LBFGS();
                 }
@@ -1868,15 +1809,23 @@ struct Board
                 {
                     temp_vec = x.second;
                 });
-                
-                expression_eval = expression_evaluator(temp_vec, this->diffeq_result);
-                if (isConstant(expression_eval, sqrt(this->isConstTol)))
+                std::vector<Eigen::VectorXf> expression_eval = expression_evaluator(temp_vec, this->diffeq_result);
+                for (size_t jdx = 0; jdx < expression_eval.size(); ++jdx)
                 {
-                    this->MSE_curr = FLT_MAX;
-                    return score;
+                    if (isConstant(expression_eval[jdx], sqrt(this->isConstTol)))
+                    {
+                        this->MSE_curr = FLT_MAX;
+                        return score;
+                    }
                 }
-                score = loss_func(expression_eval);
+                score = loss_func(expression_eval[0]);
                 this->MSE_curr = (1.0f/score) - 1.0f;
+                
+                for (size_t jdx = 1; jdx < expression_eval.size(); ++jdx)
+                {
+                    score += loss_func(expression_eval[jdx]);
+                    this->MSE_curr += (1.0f/score) - 1.0f;
+                }
 
             }
             else
@@ -3573,7 +3522,7 @@ std::vector<std::vector<std::string>> TwoDAdvectionDiffusion_1(Board& x)
     grasp.reserve(100);
     std::vector<std::string> temp;
     temp.reserve(50);
-    std::string kappa = "1";
+    std::string kappa = "const0";
     if (x.expression_type == "prefix")
     {
         //- + T_t * - 1 * y y T_x * kappa + T_{xx} T_{yy}
@@ -4916,6 +4865,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), const
                 best_expr_result = x._to_infix(x.diffeq_result);
                 orig_expr_result = x.expression(x.diffeq_result);
                 std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+                std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
                 std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
                 std::cout << "Best expression = " << best_expression << '\n';
                 std::cout << "Best expression (original format) = " << orig_expression << '\n';
@@ -4954,7 +4904,7 @@ int main()
     float threshold = 9.0e-2f;
     
     auto data1 = createMeshgridVectors(10, 3, {0.1f, -1.1f, 0.1f}, {2.1f, 1.1f, 20.0f});
-    RandomSearch(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data1 /*data used to solve differential equation*/, std::vector<int>{5} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 4 /*num_consts: number of constants in differential equation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
+    RandomSearch(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data1 /*data used to solve differential equation*/, std::vector<int>{5} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 1 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
                 
 //    auto data2 = createMeshgridVectors(10, 3, {0.1f, 0.1f, 0.1f}, {2.0f*std::numbers::pi_v<float>, 2.0f*std::numbers::pi_v<float>, 20.0f});
 //    GP(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data2 /*data used to solve differential equation*/, 5 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/);
