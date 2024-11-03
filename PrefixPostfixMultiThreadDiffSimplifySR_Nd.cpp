@@ -316,6 +316,25 @@ float MSE(const std::vector<Eigen::VectorXf>& actual)
     return temp / actual.size();
 }
 
+float MSE(const std::vector<Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>>& actual)
+{
+    float temp = 0.0f;
+    size_t count = 0;
+
+    for (const auto& vec : actual)
+    {
+        for (int i = 0; i < vec.size(); ++i)
+        {
+            // Access the value of the AutoDiffScalar element
+            temp += vec[i].value() * vec[i].value();
+            ++count;
+        }
+    }
+
+    return count > 0 ? temp / count : 0.0f;
+}
+
+
 float MSE(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
 {
     if (actual.size() != predicted.size())
@@ -1025,28 +1044,6 @@ struct Board
         
     }
     
-    //Returns the `expression_type` string form of the expression stored in the vector<std::string> attribute pieces
-    std::string expression(int idx)
-    {
-        std::string temp, token;
-        temp.reserve(2*pieces[idx].size());
-        size_t sz = pieces[idx].size() - 1;
-        for (size_t i = 0; i <= sz; i++)
-        {
-            token = pieces[idx][i];
-            
-            if (token.substr(0,5) == "const")
-            {
-                temp += ((i!=sz) ? std::to_string((this->params)(std::stoi(token.substr(5)))) + " " : std::to_string((this->params)(std::stoi(token.substr(5)))));
-            }
-            else
-            {
-                temp += ((i!=sz) ? token + " " : token);
-            }
-        }
-        return temp;
-    }
-    
     std::string _to_infix(int idx, bool show_consts = true)
     {
         std::stack<std::string> stack;
@@ -1059,7 +1056,7 @@ struct Board
             
             if (std::find(Board::__operators.begin(), Board::__operators.end(), token) == Board::__operators.end()) // leaf
             {
-                if (token.substr(0,5) == "const")
+                if (token.substr(0,5) == "const" && show_consts)
                 {
                     stack.push(std::to_string((this->params)(std::stoi(token.substr(5)))));
                 }
@@ -1175,7 +1172,7 @@ struct Board
             
             if (std::find(Board::__operators.begin(), Board::__operators.end(), token) == Board::__operators.end()) // leaf
             {
-                if (token.substr(0,5) == "const")
+                if (token.substr(0,5) == "const" && show_consts)
                 {
                     stack.push(std::to_string((this->params)(std::stoi(token.substr(5)))));
                 }
@@ -1239,7 +1236,7 @@ struct Board
     
     Eigen::VectorXf expression_evaluator(const Eigen::VectorXf& params, const std::vector<std::string>& pieces) const
     {
-        std::stack<const Eigen::VectorXf> stack;
+        std::stack<Eigen::VectorXf> stack;
         std::string token;
         bool is_prefix = (expression_type == "prefix");
         for (int i = (is_prefix ? (static_cast<int>(pieces.size()) - 1) : 0); (is_prefix ? (i >= 0) : (i < static_cast<int>(pieces.size()))); (is_prefix ? (i--) : (i++)))
@@ -1526,9 +1523,9 @@ struct Board
         return temp;
     }
     
-    std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>> expression_evaluator(const std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& params, const std::vector<std::vector<std::string>>& pieces) const
+    std::vector<Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>> expression_evaluator(const std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& params, const std::vector<std::vector<std::string>>& pieces) const
     {
-        std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>> temp;
+        std::vector<Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>> temp;
         size_t sz = pieces.size();
         temp.reserve(sz);
         for (size_t idx = 0; idx < sz; idx++)
@@ -3616,7 +3613,7 @@ std::vector<std::vector<std::string>> TwoDAdvectionDiffusion_2(Board& x)
     grasp.reserve(100);
     std::vector<std::string> temp;
     temp.reserve(50);
-    std::string kappa = "1";
+    std::string kappa = "const0";
     if (x.expression_type == "prefix")
     {
         //- + + T_t * sin * 4 y T_x * cos * 4 x T_y * kappa + T_{xx} T_{yy}
@@ -4903,11 +4900,11 @@ int main()
     constexpr double time = 1000;
     float threshold = 9.0e-2f;
     
-    auto data1 = createMeshgridVectors(10, 3, {0.1f, -1.1f, 0.1f}, {2.1f, 1.1f, 20.0f});
-    RandomSearch(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data1 /*data used to solve differential equation*/, std::vector<int>{5} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 1 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
+//    auto data1 = createMeshgridVectors(10, 3, {0.1f, -1.1f, 0.1f}, {2.1f, 1.1f, 20.0f});
+//    RandomSearch(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data1 /*data used to solve differential equation*/, std::vector<int>{5} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 1 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
                 
-//    auto data2 = createMeshgridVectors(10, 3, {0.1f, 0.1f, 0.1f}, {2.0f*std::numbers::pi_v<float>, 2.0f*std::numbers::pi_v<float>, 20.0f});
-//    GP(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data2 /*data used to solve differential equation*/, 5 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/);
+    auto data2 = createMeshgridVectors(10, 3, {0.1f, 0.1f, 0.1f}, {2.0f*std::numbers::pi_v<float>, 2.0f*std::numbers::pi_v<float>, 20.0f});
+    RandomSearch(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data2 /*data used to solve differential equation*/, std::vector<int>{5} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 1 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
     
     return 0;
 }

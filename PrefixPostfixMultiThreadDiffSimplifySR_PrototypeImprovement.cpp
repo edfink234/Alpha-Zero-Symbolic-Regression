@@ -54,6 +54,18 @@ bool isFloat(const std::string& x)
     }
 }
 
+std::vector<std::string> split(const std::string& str)
+{
+    std::vector<std::string> result;
+    std::istringstream iss(str);
+    std::string word;
+    while (iss >> word)
+    {
+        result.push_back(word);
+    }
+    return result;
+}
+
 // Function to create a matrix with linspace columns. std::vector<float> min and
 // std::vector<float> max must have size == cols
 Eigen::MatrixXf createLinspaceMatrix(int rows, int cols, std::vector<float> min_vec, std::vector<float> max_vec)
@@ -4118,7 +4130,7 @@ std::vector<std::string> TwoDAdvectionDiffusion_1(Board& x)
     grasp.reserve(100);
     std::vector<std::string> temp;
     temp.reserve(50);
-    std::string kappa = "0.01";
+    std::string kappa = "1";
     if (x.expression_type == "prefix")
     {
         //- + T_t * - 1 * y y T_x * kappa + T_{xx} T_{yy}
@@ -4210,7 +4222,7 @@ std::vector<std::string> TwoDAdvectionDiffusion_2(Board& x)
     grasp.reserve(100);
     std::vector<std::string> temp;
     temp.reserve(50);
-    std::string kappa = "0.01";
+    std::string kappa = "1";
     if (x.expression_type == "prefix")
     {
         //- + + T_t * sin * 4 y T_x * cos * 4 x T_y * kappa + T_{xx} T_{yy}
@@ -4321,7 +4333,7 @@ std::vector<std::string> TwoDAdvectionDiffusion_2(Board& x)
 
 //https://dl.acm.org/doi/pdf/10.1145/3449639.3459345?casa_token=Np-_TMqxeJEAAAAA:8u-d6UyINV6Ex02kG9LthsQHAXMh2oxx3M4FG8ioP0hGgstIW45X8b709XOuaif5D_DVOm_FwFo
 //https://core.ac.uk/download/pdf/6651886.pdf
-void SimulatedAnnealing(std::vector<std::string> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false, std::string boundary_condition_type = "none", std::string initial_condition_type = "none")
+void SimulatedAnnealing(std::vector<std::string> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false, std::string boundary_condition_type = "none", std::string initial_condition_type = "none", const std::vector<std::string>& seed_expression = {})
 {
     
     if (num_threads == 0)
@@ -4346,7 +4358,7 @@ void SimulatedAnnealing(std::vector<std::string> (*diffeq)(Board&), const Eigen:
      Inside of thread:
      */
     
-    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token, &best_MSE, &boundary_condition_type, &initial_condition_type]()
+    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token, &best_MSE, &boundary_condition_type, &initial_condition_type, &seed_expression]()
     {
         std::random_device rand_dev;
         std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
@@ -4460,13 +4472,25 @@ void SimulatedAnnealing(std::vector<std::string> (*diffeq)(Board&), const Eigen:
         };
 
         //Step 1: generate a random expression
-        while ((score = x.complete_status()) == -1)
+        if (seed_expression.empty())
         {
-            temp_legal_moves = x.get_legal_moves(); //the legal moves
-            temp_sz = temp_legal_moves.size(); //the number of legal moves
-            std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
-            x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
-            current.push_back(x.pieces.back());
+            while ((score = x.complete_status()) == -1)
+            {
+                temp_legal_moves = x.get_legal_moves(); //the legal moves
+                temp_sz = temp_legal_moves.size(); //the number of legal moves
+                std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
+                x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
+                current.push_back(x.pieces.back());
+            }
+        }
+        else
+        {
+            assert(((x.expression_type == "prefix") ? x.getPNdepth(seed_expression) : x.getRPNdepth(seed_expression)).first == x.n);
+            assert(((x.expression_type == "prefix") ? x.getPNdepth(seed_expression) : x.getRPNdepth(seed_expression)).second);
+            x.pieces = seed_expression;
+            current = x.pieces;
+            score = x.complete_status(false);
+            assert(score > 0);
         }
         updateScore();
         
@@ -5490,7 +5514,7 @@ int main()
     
     //Case 1
     puts("Case 1");
-    auto data1 = createMeshgridWithLambda(100, 3, {0.1f, -1.1f, 0.1f}, {2.1f, 1.1f, 2.1f},
+    auto data1 = createMeshgridWithLambda(10, 3, {0.1f, -1.1f, 0.1f}, {2.1f, 1.1f, 20.1f},
     [&](const Eigen::VectorXf& row) -> float
     {
         //2D-Gaussian
@@ -5502,7 +5526,8 @@ int main()
         return std::exp(-(std::pow(x - Board::AdvectionDiffusion2DVars::x_0, 2) + std::pow(y - Board::AdvectionDiffusion2DVars::y_0, 2))) / (2 * std::pow(Board::AdvectionDiffusion2DVars::sigma, 2));
     });
     
-    GP(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data1 /*data used to solve differential equation*/, 5 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshhold /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
+//    GP(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data1 /*data used to solve differential equation*/, 5 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshhold /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
+    SimulatedAnnealing(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data1 /*data used to solve differential equation*/, 5 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshhold /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/, split("2 4 + 0.100000 x3 ln 1.100000 - + ^ x0 x3 2.100000 ^ ~ x2 0.100000 x1 + + - / -") /*seed expression for simulated annealing*/);
 
     //Case 2
 //    puts("Case 2");

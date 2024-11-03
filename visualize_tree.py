@@ -267,7 +267,7 @@ def plot_rpn_expression_tree(expression: list[str], block = False, save = False,
 # Example usage:
 def test_visualize():
 #    # Example usage:
-    save = True
+    save = False
     
     if save:
 #        plot_pn_expression_tree("- + + - + - + / * 30 ^ x 2 * - 10 x y ^ x 4 * / 4 5 ^ x 3 / ^ y 2 2 * 2 y / 8 + + 2 ^ x 2 ^ y 2 / ^ y 3 2 x", block=False, save = save)
@@ -321,7 +321,7 @@ def test_visualize():
 #                plot_rpn_expression_tree("T_t 4 y * sin T_x * + 4 x * cos T_y * + kappa T_{xx} T_{yy} + * -".split(), block=True, save = save)
 #                plot_pn_expression_tree(("- + + T_t * sin * 4 y T_x * cos * 4 x T_y * kappa + T_{xx} T_{yy}").split(), block=True, save = save)
 #                plot_rpn_expression_tree("I I ^ y cos x tanh - + t I I ^ + I I tanh ^ / /".split(), block=True, save = save)
-                plot_rpn_expression_tree("x3 0.02 x2 x3 1.371258 * ^ ^ ^ 12.163561 0.100000 x3 ^ * 0.100000 x0 - * x1 x2 - exp 2.100000 sin 0.100000 x2 / x0 + + / * -".split(), block=True, save = save)
+                plot_rpn_expression_tree("6.283185 0.100000 * 0.100000 20.000000 x1 x2 x0 - - + + ^".split(), block=True, save = save)
 
 
         except KeyboardInterrupt:
