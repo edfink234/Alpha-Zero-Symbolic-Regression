@@ -321,8 +321,10 @@ def test_visualize():
 #                plot_rpn_expression_tree("T_t 4 y * sin T_x * + 4 x * cos T_y * + kappa T_{xx} T_{yy} + * -".split(), block=True, save = save)
 #                plot_pn_expression_tree(("- + + T_t * sin * 4 y T_x * cos * 4 x T_y * kappa + T_{xx} T_{yy}").split(), block=True, save = save)
 #                plot_rpn_expression_tree("I I ^ y cos x tanh - + t I I ^ + I I tanh ^ / /".split(), block=True, save = save)
-                plot_rpn_expression_tree("6.283185 0.100000 * 0.100000 20.000000 x1 x2 x0 - - + + ^".split(), block=True, save = save)
-
+#                plot_rpn_expression_tree("6.283185 0.100000 * 0.100000 20.000000 x1 x2 x0 - - + + ^".split(), block=True, save = save)
+#                plot_pn_expression_tree(("- f_hat' * * sech - A * ϵ x sech - A * ϵ x * sech - B * D x sech - B * D x").split(), block=True, save = save)
+                plot_rpn_expression_tree("f_hat' A ϵ x * - sech A ϵ x * - sech * B D x * - sech B D x * - sech * * -".split(), block=True, save = save)
+ 
 
         except KeyboardInterrupt:
             plt.close()
@@ -335,3 +337,6 @@ if __name__ == "__main__":
 
 #-((x - x_0)*(x - x_0)) = -(x^2 - 2*x*x_0 + x_0^2)
 #(x - x_0)*(x_0 - x) = x*x_0 - x^2 - x_0^2 + x*x_0 = -(x^2 - 2*x*x_0 + x_0^2)
+
+
+        

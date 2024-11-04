@@ -310,7 +310,7 @@ float MSE(const std::vector<Eigen::VectorXf>& actual)
     float temp = 0.0f;
     for (size_t i = 0; i < actual.size(); i++)
     {
-        temp += actual[i].squaredNorm();
+        temp += actual[i].squaredNorm() / actual[i].size();
     }
     
     return temp / actual.size();
@@ -510,7 +510,7 @@ struct Board
                 }
                 if (const_token)
                 {
-                    assert(Board::__tokens.back() == "const");
+                    assert(Board::__tokens.back().substr(0, 5) == "const");
                 }
                 Board::action_size = Board::__tokens.size();
                 
@@ -1755,6 +1755,7 @@ struct Board
                     if (isZero(expression_evaluator(this->params, this->derivat), sqrt(this->isConstTol))) //Ignore the trivial solution (N-d functions)!
                     {
                         this->MSE_curr = FLT_MAX;
+//                        puts("hi");
                         return score;
                     }
                 }
@@ -1763,74 +1764,66 @@ struct Board
         if (this->params.size())
         {
             this->diffeq_result = diffeq(*this);
-            if (this->num_consts)
+//            if (this->num_consts)
+//            {
+            bool improved = true;
+            if (this->fit_method == "LBFGS")
             {
-                bool improved = true;
-//                if (this->fit_method == "PSO")
-//                {
-//                    improved = PSO();
-//                }
-//                else if (this->fit_method == "AsyncPSO")
-//                {
-//                    improved = AsyncPSO();
-//                }
-                /*else */if (this->fit_method == "LBFGS")
-                {
-                    improved = LBFGS();
-                }
-                else if (this->fit_method == "LBFGSB")
-                {
-                    improved = LBFGSB();
-                }
-                else if (this->fit_method == "LevenbergMarquardt")
-                {
-                    improved = LevenbergMarquardt();
-                }
-                Eigen::VectorXf temp_vec;
-                
-                if (improved) //If improved, update the expression_dict with this->params
-                {
-                    if (Board::expression_dict.contains(this->expression_string))
-                    {
-                        Board::expression_dict.visit(this->expression_string, [&](auto& x)
-                        {
-                            x.second = this->params;
-                        });
-                    }
-                    else
-                    {
-                        Board::expression_dict.insert_or_assign(this->expression_string, this->params);
-                    }
-                }
-                Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
-                {
-                    temp_vec = x.second;
-                });
-                std::vector<Eigen::VectorXf> expression_eval = expression_evaluator(temp_vec, this->diffeq_result);
-                for (size_t jdx = 0; jdx < expression_eval.size(); ++jdx)
-                {
-                    if (isConstant(expression_eval[jdx], sqrt(this->isConstTol)))
-                    {
-                        this->MSE_curr = FLT_MAX;
-                        return score;
-                    }
-                }
-                score = loss_func(expression_eval[0]);
-                this->MSE_curr = (1.0f/score) - 1.0f;
-                
-                for (size_t jdx = 1; jdx < expression_eval.size(); ++jdx)
-                {
-                    score += loss_func(expression_eval[jdx]);
-                    this->MSE_curr += (1.0f/score) - 1.0f;
-                }
-
+                improved = LBFGS();
             }
-            else
+            else if (this->fit_method == "LBFGSB")
             {
-                score = loss_func(expression_evaluator(this->params, this->diffeq_result));
-                this->MSE_curr = (1.0f/score) - 1.0f;
-
+                improved = LBFGSB();
             }
+            else if (this->fit_method == "LevenbergMarquardt")
+            {
+                improved = LevenbergMarquardt();
+            }
+            Eigen::VectorXf temp_vec;
+            
+            if (improved) //If improved, update the expression_dict with this->params
+            {
+                if (Board::expression_dict.contains(this->expression_string))
+                {
+                    Board::expression_dict.visit(this->expression_string, [&](auto& x)
+                    {
+                        x.second = this->params;
+                    });
+                }
+                else
+                {
+                    Board::expression_dict.insert_or_assign(this->expression_string, this->params);
+                }
+            }
+            Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
+            {
+                temp_vec = x.second;
+            });
+            std::vector<Eigen::VectorXf> expression_eval = expression_evaluator(temp_vec, this->diffeq_result);
+            for (size_t jdx = 0; jdx < expression_eval.size(); ++jdx)
+            {
+                if (isConstant(expression_eval[jdx], sqrt(this->isConstTol)))
+                {
+                    this->MSE_curr = FLT_MAX;
+                    return score;
+                }
+            }
+            score = loss_func(expression_eval[0]);
+            this->MSE_curr = (1.0f/score) - 1.0f;
+            
+            for (size_t jdx = 1; jdx < expression_eval.size(); ++jdx)
+            {
+                score += loss_func(expression_eval[jdx]);
+                this->MSE_curr += (1.0f/score) - 1.0f;
+            }
+
+//            }
+//            else
+//            {
+//                score = loss_func(expression_evaluator(this->params, this->diffeq_result));
+//                this->MSE_curr = (1.0f/score) - 1.0f;
+//
+//            }
         }
         else
         {
@@ -1841,11 +1834,16 @@ struct Board
             for (int jdx = 0; jdx < this->diffeq_result.size(); jdx++)
             {
                 temp = loss_func(expression_evaluator(this->params, this->diffeq_result[jdx]));
+                if std::isnan(temp)
+                {
+                    return 0.0f;
+                }
                 score += temp;
                 this->MSE_curr += ((1.0f/temp) - 1.0f);
             }
 
         }
+
         return score;
     }
     
@@ -1890,17 +1888,11 @@ struct Board
                 {
                     this->expression_string.clear();
                     this->expression_string.reserve(8*pieces.size());
-                    size_t const_count = 0;
                     
                     for (int jdx = 0; jdx < this->pieces.size(); jdx++)
                     {
                         for (std::string& token: this->pieces[jdx])
                         {
-                            if (token.substr(0,5) == "const")
-                            {
-                                token = "const" + std::to_string(const_count++);
-                                assert(isFloat(token.substr(5)));
-                            }
                             this->expression_string += token+" ";
                         }
                         this->expression_string += ((jdx < this->pieces.size() - 1) ? ", " : "");
@@ -1922,7 +1914,6 @@ struct Board
                         Board::expression_dict.insert_or_assign(this->expression_string, this->params);
                     }
                 }
-                
                 return fitFunctionToData();
             }
             return 0.0f;
@@ -3723,6 +3714,144 @@ std::vector<std::vector<std::string>> TwoDAdvectionDiffusion_2(Board& x)
     return results;
 }
 
+//x0 -> x, x1 -> y, x2 -> t
+std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
+{
+    std::vector<std::vector<std::string>> results;
+    std::vector<std::string> result;
+    result.reserve(100);
+    std::vector<int> grasp;
+    grasp.reserve(100);
+    std::vector<std::string> temp;
+    temp.reserve(50);
+    if (x.expression_type == "prefix")
+    {
+        //- f_hat' * * sech - A * ϵ x sech - A * ϵ x * sech - B * D x sech - B * D x
+        result.push_back("-"); // -
+        x.derivePrefix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
+        for (const std::string& i: x.derivat) // f_hat'
+        {
+            result.push_back(i);
+        }
+        
+        //* * sech - A * ϵ x sech - A * ϵ x * sech - B * D x sech - B * D x
+        result.push_back("*"); //*
+        result.push_back("*"); //*
+        result.push_back("sech"); //sech
+        result.push_back("-"); //-
+        for (const std::string& i: x.pieces[1]) //A
+        {
+            result.push_back(i);
+        }
+        result.push_back("*"); //*
+        for (const std::string& i: x.pieces[4]) //ϵ
+        {
+            result.push_back(i);
+        }
+        result.push_back("x0"); //x
+        result.push_back("sech"); //sech
+        result.push_back("-"); //-
+        for (const std::string& i: x.pieces[1]) //A
+        {
+            result.push_back(i);
+        }
+        result.push_back("*"); //*
+        for (const std::string& i: x.pieces[4]) //ϵ
+        {
+            result.push_back(i);
+        }
+        result.push_back("x0"); //x
+        result.push_back("*"); //*
+        result.push_back("sech"); //sech
+        result.push_back("-"); //-
+        for (const std::string& i: x.pieces[2]) //B
+        {
+            result.push_back(i);
+        }
+        result.push_back("*"); //*
+        for (const std::string& i: x.pieces[3]) //D
+        {
+            result.push_back(i);
+        }
+        result.push_back("x0"); //x
+        result.push_back("sech"); //sech
+        result.push_back("-"); //-
+        for (const std::string& i: x.pieces[2]) //B
+        {
+            result.push_back(i);
+        }
+        result.push_back("*"); //*
+        for (const std::string& i: x.pieces[3]) //D
+        {
+            result.push_back(i);
+        }
+        result.push_back("x0"); //x
+    }
+    else if (x.expression_type == "postfix")
+    {
+        //f_hat' A ϵ x * - sech A ϵ x * - sech * B D x * - sech B D x * - sech * * -
+        x.derivePostfix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
+        for (const std::string& i: x.derivat) // f_hat'
+        {
+            result.push_back(i);
+        }
+        for (const std::string& i: x.pieces[1]) //A
+        {
+            result.push_back(i);
+        }
+        for (const std::string& i: x.pieces[4]) //ϵ
+        {
+            result.push_back(i);
+        }
+        result.push_back("x0"); //x
+        result.push_back("*"); //*
+        result.push_back("-"); //-
+        result.push_back("sech"); //sech
+        for (const std::string& i: x.pieces[1]) //A
+        {
+            result.push_back(i);
+        }
+        for (const std::string& i: x.pieces[4]) //ϵ
+        {
+            result.push_back(i);
+        }
+        result.push_back("x0"); //x
+        result.push_back("*"); //*
+        result.push_back("-"); //-
+        result.push_back("sech"); //sech
+        result.push_back("*"); //*
+        for (const std::string& i: x.pieces[2]) //B
+        {
+            result.push_back(i);
+        }
+        for (const std::string& i: x.pieces[3]) //D
+        {
+            result.push_back(i);
+        }
+        result.push_back("x0"); //x
+        result.push_back("*"); //*
+        result.push_back("-"); //-
+        result.push_back("sech"); //sech
+        for (const std::string& i: x.pieces[2]) //B
+        {
+            result.push_back(i);
+        }
+        for (const std::string& i: x.pieces[3]) //D
+        {
+            result.push_back(i);
+        }
+        result.push_back("x0"); //x
+        result.push_back("*"); //*
+        result.push_back("-"); //-
+        result.push_back("sech"); //sech
+        result.push_back("*"); //*
+        result.push_back("*"); //*
+        result.push_back("-"); //-
+    }
+    results.push_back(result);
+    return results;
+}
+
 //https://dl.acm.org/doi/pdf/10.1145/3449639.3459345?casa_token=Np-_TMqxeJEAAAAA:8u-d6UyINV6Ex02kG9LthsQHAXMh2oxx3M4FG8ioP0hGgstIW45X8b709XOuaif5D_DVOm_FwFo
 //https://core.ac.uk/download/pdf/6651886.pdf
 //void SimulatedAnnealing(std::vector<std::string> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
@@ -4903,8 +5032,11 @@ int main()
 //    auto data1 = createMeshgridVectors(10, 3, {0.1f, -1.1f, 0.1f}, {2.1f, 1.1f, 20.0f});
 //    RandomSearch(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data1 /*data used to solve differential equation*/, std::vector<int>{5} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 1 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
                 
-    auto data2 = createMeshgridVectors(10, 3, {0.1f, 0.1f, 0.1f}, {2.0f*std::numbers::pi_v<float>, 2.0f*std::numbers::pi_v<float>, 20.0f});
-    RandomSearch(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data2 /*data used to solve differential equation*/, std::vector<int>{5} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 1 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
+//    auto data2 = createMeshgridVectors(10, 3, {0.1f, 0.1f, 0.1f}, {2.0f*std::numbers::pi_v<float>, 2.0f*std::numbers::pi_v<float>, 20.0f});
+//    RandomSearch(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data2 /*data used to solve differential equation*/, std::vector<int>{5} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 1 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
+    
+    auto data = createMeshgridVectors(32, 2, {-100.0f, 0.0f}, {100.0f, 20.0f});
+    RandomSearch(sech_squared_trial /*differential equation to solve*/, data /*data used to solve differential equation*/, std::vector<int>{5, 3, 3, 3, 3} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
     
     return 0;
 }
