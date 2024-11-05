@@ -1850,7 +1850,7 @@ struct Board
                     return 0.0f;
                 }
                 score += temp;
-                this->MSE_curr += (1.0f/score) - 1.0f;
+                this->MSE_curr += (1.0f/temp) - 1.0f;
             }
         }
         else
@@ -4726,6 +4726,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), const
                 std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
                 std::cout << "Best expression = " << best_expression << '\n';
                 std::cout << "Best expression (original format) = " << orig_expression << '\n';
+                std::cout << "Best parameters = " << x.params << '\n';
                 std::cout << "Best diff result = " << best_expr_result << '\n';
                 std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
             }
@@ -4761,7 +4762,7 @@ int main()
     float threshold = 9.0e-2f;
     
     auto data = createMeshgridVectors(32, 2, {0, 0.0f}, {20.0f, 20.0f});
-    RandomSearch(NaveenNanoMedicine /*differential equation to solve*/, data /*data used to solve differential equation*/, std::vector<int>{3, 3} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 5 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 1 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
+    RandomSearch(NaveenNanoMedicine /*differential equation to solve*/, data /*data used to solve differential equation*/, std::vector<int>{3, 3} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 5 /*num_consts: number of constants in differential equation*/, "LBFGS" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 1 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
     
     return 0;
 }
