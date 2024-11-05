@@ -322,8 +322,13 @@ def test_visualize():
 #                plot_pn_expression_tree(("- + + T_t * sin * 4 y T_x * cos * 4 x T_y * kappa + T_{xx} T_{yy}").split(), block=True, save = save)
 #                plot_rpn_expression_tree("I I ^ y cos x tanh - + t I I ^ + I I tanh ^ / /".split(), block=True, save = save)
 #                plot_rpn_expression_tree("6.283185 0.100000 * 0.100000 20.000000 x1 x2 x0 - - + + ^".split(), block=True, save = save)
-#                plot_pn_expression_tree(("- f_hat' * * sech - A * ϵ x sech - A * ϵ x * sech - B * D x sech - B * D x").split(), block=True, save = save)
-                plot_rpn_expression_tree("f_hat' A ϵ x * - sech A ϵ x * - sech * B D x * - sech B D x * - sech * * -".split(), block=True, save = save)
+#                plot_pn_expression_tree(("+ + - V_t * const0 V_x / * const1 V + const2 V * * const3 V C").split(), block=True, save = save)
+#                plot_pn_expression_tree(("+ - C_t * const4 C_x * * const3 V C").split(), block=True, save = save)
+#                plot_rpn_expression_tree("V_t const0 V_x * - const1 V * const2 V + / const3 V C * * + +".split(), block=True, save = save)
+                plot_rpn_expression_tree("C_t const4 C_x * - const3 V C * * +".split(), block=True, save = save)
+
+
+#                plot_rpn_expression_tree("f_hat' A ϵ x * - sech A ϵ x * - sech * B D x * - sech B D x * - sech * * -".split(), block=True, save = save)
  
 
         except KeyboardInterrupt:

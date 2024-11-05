@@ -213,6 +213,10 @@ bool isZero(const Eigen::VectorXf& vec, float tolerance = 1e-5f)
     {
         return true; // A vector with 0 or 1 element is trivially constant
     }
+    if (vec.array().isNaN().any())
+    {
+        return true; // Return true if any NaN is present so it'll be weeded out
+    }
     return (((vec.array()).abs().maxCoeff()) <= tolerance);
 }
 
@@ -221,6 +225,13 @@ bool isZero(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::D
     if (vec.size() <= 1)
     {
         return true; // A vector with 0 or 1 element is trivially constant
+    }
+    for (size_t i = 0; i < vec.size(); ++i)
+    {
+        if (std::isnan(vec[i].value()))
+        {
+            return true; // Return true if any NaN is present in values
+        }
     }
     return (((vec.array()).abs().maxCoeff()) <= tolerance);
 }
@@ -231,6 +242,10 @@ bool isConstant(const Eigen::VectorXf& vec, float tolerance = 1e-5f)
     {
         return true; // A vector with 0 or 1 element is trivially constant
     }
+    if (vec.array().isNaN().any())
+    {
+        return true; // Return true if any NaN is present so it'll be weeded out
+    }
     float firstElement = vec(0);
     return (vec.array() - firstElement).abs().maxCoeff() <= tolerance;
 }
@@ -240,6 +255,13 @@ bool isConstant(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eige
     if (vec.size() <= 1)
     {
         return true; // A vector with 0 or 1 element is trivially constant
+    }
+    for (size_t i = 0; i < vec.size(); ++i)
+    {
+        if (std::isnan(vec[i].value()))
+        {
+            return true; // Return true if any NaN is present in values
+        }
     }
     auto firstElement = vec(0);
     return (vec.array() - firstElement).abs().maxCoeff() <= tolerance;
@@ -422,7 +444,7 @@ struct Board
     static std::string inline boundary_condition_type;
     static std::string inline initial_condition_type;
     
-    Board(std::vector<std::vector<std::string>> (*diffeq)(Board&), bool primary = true, const std::vector<int>& n = {}, const std::string& expression_type = "prefix", size_t num_consts = 4, std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, is_primary{primary}
+    Board(std::vector<std::vector<std::string>> (*diffeq)(Board&), bool primary = true, const std::vector<int>& n = {}, const std::string& expression_type = "prefix", size_t num_consts = 0, std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, is_primary{primary}
     {
         assert(n.size());
         this->num_objectives = n.size();
@@ -958,30 +980,30 @@ struct Board
                 std::vector<std::string> legal_moves = Board::una_bin_leaf_legal_moves_dict[una_allowed][bin_allowed][leaf_allowed];
                 
                 //more complicated constraints for simplification
-                if (leaf_allowed)
-                {
-                    size_t pcs_sz = pieces[idx].size();
-                    if (pcs_sz >= 2 && pieces[idx][pcs_sz-2] == "/") // "/ x{i}" should not result in "/ x{i} x{i}" as that is 1
-                    {
-                        for (const std::string& i: Board::__input_vars)
-                        {
-                            if (pieces[idx].back() == i)
-                            {
-                                if (legal_moves.size() > 1)
-                                {
-                                    legal_moves.erase(std::remove(legal_moves.begin(), legal_moves.end(), i), legal_moves.end()); //remove "x{i}" from legal_moves
-                                }
-                                else //if x{i} is the only legal move, then we'll change "/" to another binary operator, like "+", "*", or "^"
-                                {
-                                    std::vector<std::string> sub_bin_ops = {"*", "+", "^"};
-                                    std::uniform_int_distribution<int> distribution(0, 2);
-                                    pieces[idx][pcs_sz-2] = sub_bin_ops[distribution(gen)];
-                                }
-                                break;
-                            }
-                        }
-                    }
-                }
+//                if (leaf_allowed)
+//                {
+//                    size_t pcs_sz = pieces[idx].size();
+//                    if (pcs_sz >= 2 && pieces[idx][pcs_sz-2] == "/") // "/ x{i}" should not result in "/ x{i} x{i}" as that is 1
+//                    {
+//                        for (const std::string& i: Board::__input_vars)
+//                        {
+//                            if (pieces[idx].back() == i)
+//                            {
+//                                if (legal_moves.size() > 1)
+//                                {
+//                                    legal_moves.erase(std::remove(legal_moves.begin(), legal_moves.end(), i), legal_moves.end()); //remove "x{i}" from legal_moves
+//                                }
+//                                else //if x{i} is the only legal move, then we'll change "/" to another binary operator, like "+", "*", or "^"
+//                                {
+//                                    std::vector<std::string> sub_bin_ops = {"*", "+", "^"};
+//                                    std::uniform_int_distribution<int> distribution(0, 2);
+//                                    pieces[idx][pcs_sz-2] = sub_bin_ops[distribution(gen)];
+//                                }
+//                                break;
+//                            }
+//                        }
+//                    }
+//                }
                 assert(legal_moves.size());
                 return legal_moves;
                 
@@ -1826,11 +1848,23 @@ struct Board
                 }
             }
             score = loss_func(expression_eval[0]);
-            this->MSE_curr = (1.0f/score) - 1.0f;
+            if (std::isnan(score))
+            {
+                this->MSE_curr = FLT_MAX;
+                return 0.0f;
+            }
             
+            this->MSE_curr = (1.0f/score) - 1.0f;
+            float temp;
             for (size_t jdx = 1; jdx < expression_eval.size(); ++jdx)
             {
-                score += loss_func(expression_eval[jdx]);
+                temp = loss_func(expression_eval[jdx]);
+                if (std::isnan(temp))
+                {
+                    this->MSE_curr = FLT_MAX;
+                    return 0.0f;
+                }
+                score += temp;
                 this->MSE_curr += (1.0f/score) - 1.0f;
             }
         }
@@ -1847,12 +1881,12 @@ struct Board
                 temp = loss_func(expression_evaluator(this->params, this->diffeq_result[jdx]));
                 if (std::isnan(temp))
                 {
+                    this->MSE_curr = FLT_MAX;
                     return 0.0f;
                 }
                 score += temp;
                 this->MSE_curr += ((1.0f/temp) - 1.0f);
             }
-
         }
 
         return score;
@@ -3381,350 +3415,6 @@ struct Board
     }
 };
 
-std::vector<std::vector<std::string>> VortexRadialProfile(Board& x)
-{
-    std::vector<std::vector<std::string>> results;
-    std::vector<std::string> result;
-    result.reserve(100);
-    std::vector<int> grasp;
-    std::vector<std::string> R_prime;
-    std::string mu = "1";
-    std::string S = "1";
-    if (x.expression_type == "prefix")
-    {
-        //- + + * / 1 2 R'' * / 1 * 2 r R' * - mu / * S S * * 2 r r R * * R R R
-        result.push_back("-");
-        result.push_back("+");
-        result.push_back("+");
-        result.push_back("*");
-        result.push_back("/");
-        result.push_back("1");
-        result.push_back("2");
-        x.derivePrefix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
-        R_prime = x.derivat;
-        x.derivePrefix(0, R_prime.size()-1, "x0", R_prime, grasp); //derivat will store second derivative of R_prime
-        for (const std::string& i: x.derivat) //R''
-        {
-            result.push_back(i);
-        }
-        result.push_back("*");
-        result.push_back("/");
-        result.push_back("1");
-        result.push_back("*");
-        result.push_back("2");
-        result.push_back("x0"); //r
-        for (const std::string& i: R_prime) //R'
-        {
-            result.push_back(i);
-        }
-        result.push_back("*");
-        result.push_back("-");
-        result.push_back(mu);
-        result.push_back("/");
-        result.push_back("*");
-        result.push_back(S);
-        result.push_back(S);
-        result.push_back("*");
-        result.push_back("*");
-        result.push_back("2");
-        result.push_back("x0"); //r
-        result.push_back("x0"); //r
-        for (const std::string& i: x.pieces[0]) //R
-        {
-            result.push_back(i);
-        }
-        result.push_back("*");
-        result.push_back("*");
-        for (const std::string& i: x.pieces[0]) //R
-        {
-            result.push_back(i);
-        }
-        for (const std::string& i: x.pieces[0]) //R
-        {
-            result.push_back(i);
-        }
-        for (const std::string& i: x.pieces[0]) //R
-        {
-            result.push_back(i);
-        }
-    }
-    else if (x.expression_type == "postfix")
-    {
-        //1 2 / R'' * 1 2 r * / R' * + mu S S * 2 r r * * / - R * + R R * R * -
-        result.push_back("1");
-        result.push_back("2");
-        result.push_back("/");
-        x.derivePostfix(0, x.pieces.size()-1, "x0", x.pieces[0], grasp);
-        R_prime = x.derivat;
-        x.derivePostfix(0, R_prime.size()-1, "x0", R_prime, grasp); //derivat will store second derivative of R_prime
-        for (const std::string& i: x.derivat) //R''
-        {
-            result.push_back(i);
-        }
-        result.push_back("*");
-        result.push_back("1");
-        result.push_back("2");
-        result.push_back("x0"); //r
-        result.push_back("*");
-        result.push_back("/");
-        for (const std::string& i: R_prime) //R'
-        {
-            result.push_back(i);
-        }
-        result.push_back("*");
-        result.push_back("+");
-        result.push_back(mu);
-        result.push_back(S);
-        result.push_back(S);
-        result.push_back("*");
-        result.push_back("2");
-        result.push_back("x0"); //r
-        result.push_back("x0"); //r
-        result.push_back("*");
-        result.push_back("*");
-        result.push_back("/");
-        result.push_back("-");
-        for (const std::string& i: x.pieces[0]) //R
-        {
-            result.push_back(i);
-        }
-        result.push_back("*");
-        result.push_back("+");
-        for (const std::string& i: x.pieces[0]) //R
-        {
-            result.push_back(i);
-        }
-        for (const std::string& i: x.pieces[0]) //R
-        {
-            result.push_back(i);
-        }
-        result.push_back("*");
-        for (const std::string& i: x.pieces[0]) //R
-        {
-            result.push_back(i);
-        }
-        result.push_back("*");
-        result.push_back("-");
-
-    }
-    results.push_back(result);
-    return results;
-}
-
-//x0 -> x, x1 -> y, x2 -> t
-std::vector<std::vector<std::string>> TwoDAdvectionDiffusion_1(Board& x)
-{
-    std::vector<std::vector<std::string>> results;
-    std::vector<std::string> result;
-    result.reserve(100);
-    std::vector<int> grasp;
-    grasp.reserve(100);
-    std::vector<std::string> temp;
-    temp.reserve(50);
-    std::string kappa = "const0";
-    if (x.expression_type == "prefix")
-    {
-        //- + T_t * - 1 * y y T_x * kappa + T_{xx} T_{yy}
-        result.push_back("-"); //-
-        result.push_back("+"); //+
-        x.derivePrefix(0, x.pieces[0].size()-1, "x2", x.pieces[0], grasp);
-        for (const std::string& i: x.derivat) //T_t
-        {
-            result.push_back(i);
-        }
-        result.push_back("*");
-        result.push_back("-");
-        result.push_back("1");
-        result.push_back("*");
-        result.push_back("x1");
-        result.push_back("x1");
-        x.derivePrefix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
-        for (const std::string& i: x.derivat) //T_x
-        {
-            result.push_back(i);
-        }
-        result.push_back("*"); //*
-        result.push_back(kappa); //kappa
-        result.push_back("+"); //+
-        x.derivePrefix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
-        temp = x.derivat;
-        x.derivePrefix(0, temp.size()-1, "x0", temp, grasp);
-        for (const std::string& i: x.derivat) //T_xx
-        {
-            result.push_back(i);
-        }
-        x.derivePrefix(0, x.pieces[0].size()-1, "x1", x.pieces[0], grasp);
-        temp = x.derivat;
-        x.derivePrefix(0, temp.size()-1, "x1", temp, grasp);
-        for (const std::string& i: x.derivat) //T_yy
-        {
-            result.push_back(i);
-        }
-    }
-    else if (x.expression_type == "postfix")
-    {
-        //T_t 1 y y * - T_x * + kappa T_{xx} T_{yy} + * -
-        x.derivePostfix(0, x.pieces[0].size()-1, "x2", x.pieces[0], grasp);
-        for (const std::string& i: x.derivat) //T_t
-        {
-            result.push_back(i);
-        }
-        result.push_back("1");
-        result.push_back("x1");
-        result.push_back("x1");
-        result.push_back("*");
-        result.push_back("-");
-        x.derivePostfix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
-        for (const std::string& i: x.derivat) //T_x
-        {
-            result.push_back(i);
-        }
-        result.push_back("*");
-        result.push_back("+"); //+
-        result.push_back(kappa); //kappa
-        x.derivePostfix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
-        temp = x.derivat;
-        x.derivePostfix(0, temp.size()-1, "x0", temp, grasp);
-        for (const std::string& i: x.derivat) //T_xx
-        {
-            result.push_back(i);
-        }
-        
-        x.derivePostfix(0, x.pieces[0].size()-1, "x1", x.pieces[0], grasp);
-        temp = x.derivat;
-        x.derivePostfix(0, temp.size()-1, "x1", temp, grasp);
-        for (const std::string& i: x.derivat) //T_yy
-        {
-            result.push_back(i);
-        }
-        result.push_back("+"); //+
-        result.push_back("*"); //*
-        result.push_back("-"); //-
-    }
-    results.push_back(result);
-    return results;
-}
-
-//x0 -> x, x1 -> y, x2 -> t
-std::vector<std::vector<std::string>> TwoDAdvectionDiffusion_2(Board& x)
-{
-    std::vector<std::vector<std::string>> results;
-    std::vector<std::string> result;
-    result.reserve(100);
-    std::vector<int> grasp;
-    grasp.reserve(100);
-    std::vector<std::string> temp;
-    temp.reserve(50);
-    std::string kappa = "const0";
-    if (x.expression_type == "prefix")
-    {
-        //- + + T_t * sin * 4 y T_x * cos * 4 x T_y * kappa + T_{xx} T_{yy}
-        result.push_back("-"); //-
-        result.push_back("+"); //+
-        result.push_back("+"); //+
-        
-        x.derivePrefix(0, x.pieces[0].size()-1, "x2", x.pieces[0], grasp);
-        for (const std::string& i: x.derivat) //T_t
-        {
-            result.push_back(i);
-        }
-        result.push_back("*");
-        result.push_back("sin");
-        result.push_back("*");
-        result.push_back("4");
-        result.push_back("x1");
-        
-        x.derivePrefix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
-        for (const std::string& i: x.derivat) //T_x
-        {
-            result.push_back(i);
-        }
-        
-        result.push_back("*");
-        result.push_back("cos");
-        result.push_back("*");
-        result.push_back("4");
-        result.push_back("x0");
-        
-        x.derivePrefix(0, x.pieces[0].size()-1, "x1", x.pieces[0], grasp);
-        for (const std::string& i: x.derivat) //T_y
-        {
-            result.push_back(i);
-        }
-        
-        result.push_back("*"); //*
-        result.push_back(kappa); //kappa
-        result.push_back("+"); //+
-        x.derivePrefix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
-        temp = x.derivat;
-        x.derivePrefix(0, temp.size()-1, "x0", temp, grasp);
-        for (const std::string& i: x.derivat) //T_xx
-        {
-            result.push_back(i);
-        }
-        
-        x.derivePrefix(0, x.pieces[0].size()-1, "x1", x.pieces[0], grasp);
-        temp = x.derivat;
-        x.derivePrefix(0, temp.size()-1, "x1", temp, grasp);
-        for (const std::string& i: x.derivat) //T_yy
-        {
-            result.push_back(i);
-        }
-        
-    }
-    else if (x.expression_type == "postfix")
-    {
-        //T_t 4 y * sin T_x * + 4 x * cos T_y * + kappa T_{xx} T_{yy} + * -
-        x.derivePostfix(0, x.pieces[0].size()-1, "x2", x.pieces[0], grasp);
-        for (const std::string& i: x.derivat) //T_t
-        {
-            result.push_back(i);
-        }
-        result.push_back("4");
-        result.push_back("x1");
-        result.push_back("*");
-        result.push_back("sin");
-        x.derivePostfix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp); //derivat will store first derivative of temp wrt x
-        for (const std::string& i: x.derivat) //T_x
-        {
-            result.push_back(i);
-        }
-        result.push_back("*"); //*
-        result.push_back("+"); //+
-        result.push_back("4");
-        result.push_back("x0");
-        result.push_back("*");
-        result.push_back("cos");
-        x.derivePostfix(0, x.pieces[0].size()-1, "x1", x.pieces[0], grasp);
-        for (const std::string& i: x.derivat) //T_y
-        {
-            result.push_back(i);
-        }
-        result.push_back("*"); //*
-        result.push_back("+"); //+
-        result.push_back(kappa); //kappa
-        x.derivePostfix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
-        temp = x.derivat;
-        x.derivePostfix(0, temp.size()-1, "x0", temp, grasp);
-        for (const std::string& i: x.derivat) //T_xx
-        {
-            result.push_back(i);
-        }
-        x.derivePostfix(0, x.pieces[0].size()-1, "x1", x.pieces[0], grasp);
-        temp = x.derivat;
-        x.derivePostfix(0, temp.size()-1, "x1", temp, grasp);
-        for (const std::string& i: x.derivat) //T_yy
-        {
-            result.push_back(i);
-        }
-        result.push_back("+"); //+
-        result.push_back("*"); //*
-        result.push_back("-"); //-
-    }
-    results.push_back(result);
-    return results;
-}
-
 //x0 -> x, x1 -> y, x2 -> t
 std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 {
@@ -4976,7 +4666,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), const
                 {
                     
                     temp_legal_moves = x.get_legal_moves(jdx); //the legal moves
-                    for (const std::string& temp_legal_move: temp_legal_moves){std::cout << temp_legal_move << ' ';}puts("");
+//                    for (const std::string& temp_legal_move: temp_legal_moves){std::cout << temp_legal_move << ' ';}puts("");
                     if (jdx == 0)
                     {
                         temp_legal_moves.erase(
@@ -4993,7 +4683,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), const
                     }
                     
                     temp_sz = temp_legal_moves.size(); //the number of legal moves
-                    printf("jdx = %d\n",jdx);
+//                    printf("jdx = %d\n",jdx);
                     assert(temp_sz);
                     std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
                     {
@@ -5062,8 +4752,8 @@ int main()
 //    auto data2 = createMeshgridVectors(10, 3, {0.1f, 0.1f, 0.1f}, {2.0f*std::numbers::pi_v<float>, 2.0f*std::numbers::pi_v<float>, 20.0f});
 //    RandomSearch(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data2 /*data used to solve differential equation*/, std::vector<int>{5} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 1 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
     
-    auto data = createMeshgridVectors(32, 2, {-100.0f, 0.0f}, {100.0f, 20.0f});
-    RandomSearch(sech_squared_trial /*differential equation to solve*/, data /*data used to solve differential equation*/, std::vector<int>{5, 3, 3, 3, 3} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 1 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
+    auto data = createMeshgridVectors(32, 2, {-10.0f, 0.0f}, {10.0f, 20.0f});
+    RandomSearch(sech_squared_trial /*differential equation to solve*/, data /*data used to solve differential equation*/, std::vector<int>{4, 2, 2, 2, 2} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 1 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 1 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
     
     return 0;
 }
@@ -5073,7 +4763,6 @@ int main()
 //g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd_sechTrial PrefixPostfixMultiThreadDiffSimplifySR_Nd_sechTrial.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -ffast-math -ftree-vectorize -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
 
 //g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd_sechTrial PrefixPostfixMultiThreadDiffSimplifySR_Nd_sechTrial.cpp -g -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
-
 
 
 
