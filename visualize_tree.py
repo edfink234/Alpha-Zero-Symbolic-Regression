@@ -273,7 +273,7 @@ def test_visualize():
 #        plot_pn_expression_tree("- + + - + - + / * 30 ^ x 2 * - 10 x y ^ x 4 * / 4 5 ^ x 3 / ^ y 2 2 * 2 y / 8 + + 2 ^ x 2 ^ y 2 / ^ y 3 2 x", block=False, save = save)
 #        os.system("rsvg-convert -f pdf -o expression_tree_PN_Hemberg2008_expr_5.pdf expression_tree_PN_Hemberg2008_expr_5.svg")
         
-#        plot_rpn_expression_tree("I I tanh t sqrt ^ ^ I t 0.2 y * / + sech x y 2 I ^ + + sech * -", block=False, save = save, filename = "/Users/edwardfinkelstein/AIFeynmanExpressionTrees/AE601/Case1BestTree.svg", title = r"((I ^ (tanh(I) ^ sqrt(t))) - (sech((I + (t / (0.2 * y)))) * sech((x + (y + (2 ^ I)))))), depth = 6")
+        plot_rpn_expression_tree("I I tanh t sqrt ^ ^ I t 0.2 y * / + sech x y 2 I ^ + + sech * -", block=False, save = save, filename = "/Users/edwardfinkelstein/AIFeynmanExpressionTrees/AE601/Case1BestTree.svg", title = r"((I ^ (tanh(I) ^ sqrt(t))) - (sech((I + (t / (0.2 * y)))) * sech((x + (y + (2 ^ I)))))), depth = 6")
         plot_rpn_expression_tree("I 1 I sqrt asin ^ ^ 2 6.283185 / x y + + t 20.000000 * t 0 + * / sech +", block=False, save = save, filename = "/Users/edwardfinkelstein/AIFeynmanExpressionTrees/AE601/Case2ImprovedTree.svg", title = r"((I ^ (1 ^ asin(sqrt(I)))) + sech((((2 / 6.283185) + (x + y)) / ((t * 20.000000) * (t + 0))))), depth = 5")
 #        os.system("rsvg-convert -f pdf -o /Users/edwardfinkelstein/AIFeynmanExpressionTrees/AE601/Case1BestTree.pdf Case1BestTree.svg")
 #        plot_rpn_expression_tree("I 0.2 t ^ π log log sech 0.2 0.0 x y 0.1 + / / + + / ^", block=False, save = save, filename = "/Users/edwardfinkelstein/AIFeynmanExpressionTrees/AE601/Case2BestTree.svg", title = r"(I ^ ((0.2 ^ t) / (sech(log(log(π))) + (0.2 + (0.000000 / (x / (y + 0.100000))))))), depth = 7")
@@ -325,13 +325,16 @@ def test_visualize():
 #                plot_pn_expression_tree(("+ + - V_t * const0 V_x / * const1 V + const2 V * * const3 V C").split(), block=True, save = save)
 #                plot_pn_expression_tree(("+ - C_t * const4 C_x * * const3 V C").split(), block=True, save = save)
 #                plot_rpn_expression_tree("V_t const0 V_x * - const1 V * const2 V + / const3 V C * * + +".split(), block=True, save = save)
-                plot_rpn_expression_tree("C_t const4 C_x * - const3 V C * * +".split(), block=True, save = save)
+#                plot_rpn_expression_tree("C_t const4 C_x * - const3 V C * * +".split(), block=True, save = save)
 
-
+                while True:
 #                plot_rpn_expression_tree("f_hat' A ϵ x * - sech A ϵ x * - sech * B D x * - sech B D x * - sech * * -".split(), block=True, save = save)
- 
-
+#                plot_rpn_expression_tree("I I tanh t sqrt ^ ^ I t 0.2 y * / + sech x y 2 I ^ + + sech * -", block=True, save = save, title = r"((I ^ (tanh(I) ^ sqrt(t))) - (sech((I + (t / (0.2 * y)))) * sech((x + (y + (2 ^ I)))))), depth = 6")
+                    plot_pn_expression_tree(("+", "+", "-", "*", "^", "exp", "log", "20.000000", "/", "x1", "-", "~", "0", "exp", "x0", "*", "ln", "exp", "log", "20.000000", "/", "-", "-", "~", "0", "exp", "x0", "*", "x1", "~", "0", "*", "-", "~", "0", "exp", "x0", "-", "~", "0", "exp", "x0", "*", "-0.214359", "*", "^", "exp", "log", "20.000000", "/", "x1", "-", "~", "0", "exp", "x0", "*", "ln", "exp", "log", "20.000000", "/", "~", "*", "x1", "-", "~", "0", "exp", "x0", "*", "-", "~", "0", "exp", "x0", "-", "~", "0", "exp", "x0", "/", "*", "0.001370", "^", "exp", "log", "20.000000", "/", "x1", "-", "~", "0", "exp", "x0", "+", "1.244282", "^", "exp", "log", "20.000000", "/", "x1", "-", "~", "0", "exp", "x0", "*", "*", "1.238819", "^", "exp", "log", "20.000000", "/", "x1", "-", "~", "0", "exp", "x0", "sech", "exp", "*", "0.805109", "+", "x0", "x1"), block=True, save = save)
+                    plot_pn_expression_tree(("+ + - * ^ 19.999996 / x1 ~ exp x0 * 2.995732 / - ~ exp x0 * x1 -0.000000 * ~ exp x0 ~ exp x0 * -0.214359 * ^ 19.999996 / x1 ~ exp x0 * 2.995732 / ~ * x1 ~ exp x0 * ~ exp x0 ~ exp x0 / * 0.001370 ^ 19.999996 / x1 ~ exp x0 + 1.244282 ^ 19.999996 / x1 ~ exp x0 * * 1.238819 ^ 19.999996 / x1 ~ exp x0 sech exp * 0.805109 + x0 x1 ").split(), block=True, save = save)
+                
         except KeyboardInterrupt:
+#            
             plt.close()
             exit()
 

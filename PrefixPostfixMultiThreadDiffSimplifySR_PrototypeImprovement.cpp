@@ -6,6 +6,7 @@
 #include <utility>
 #include <algorithm>
 #include <future>         // std::async, std::future
+#include <unordered_set>
 #include <unordered_map>
 #include <map>
 #include <ctime>
@@ -246,7 +247,14 @@ bool isZero(const Eigen::VectorXf& vec, float tolerance = 1e-5f)
     {
         return true; // A vector with 0 or 1 element is trivially constant
     }
+//    float zeroness = ((vec.array()).abs().maxCoeff());
+//    std::cout << "zeroness = " << zeroness << '\n';
     return (((vec.array()).abs().maxCoeff()) <= tolerance);
+}
+
+float nonZeroness(const Eigen::VectorXf& vec)
+{
+    return ((vec.array()).abs().maxCoeff());
 }
 
 bool isZero(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>& vec, float tolerance = 1e-5f)
@@ -335,7 +343,7 @@ public:
 
 float MSE(const Eigen::VectorXf& actual)
 {
-    return actual.squaredNorm() / actual.size();
+    return actual.squaredNorm();// / actual.size();
 }
 
 float MSE(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
@@ -344,7 +352,7 @@ float MSE(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
     {
         throw std::invalid_argument("Vectors must be of the same size");
     }
-    return (actual - predicted).squaredNorm() / actual.size();
+    return (actual - predicted).squaredNorm();// / actual.size();
 }
 
 Eigen::AutoDiffScalar<Eigen::VectorXf> MSE(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>& actual)
@@ -375,6 +383,8 @@ struct Board
     static std::vector<std::string> inline __input_vars;
     static std::vector<std::string> inline __unary_operators;
     static std::vector<std::string> inline __binary_operators;
+    static std::unordered_set<std::string> inline __unary_operators_uset;
+    static std::unordered_set<std::string> inline __binary_operators_uset;
     static std::vector<std::string> inline __operators;
     static std::vector<std::string> inline __other_tokens;
     static std::vector<std::string> inline __tokens;
@@ -461,6 +471,8 @@ struct Board
                 }
                 Board::__unary_operators = {"~", "log", "ln", "exp", "cos", "sin", "sqrt", "asin", "arcsin", "acos", "arccos", "tanh", "sech"};
                 Board::__binary_operators = {"+", "-", "*", "/", "^"};
+                std::copy(Board::__unary_operators.begin(), Board::__unary_operators.end(), std::inserter(Board::__unary_operators_uset, Board::__unary_operators_uset.end()));
+                std::copy(Board::__binary_operators.begin(), Board::__binary_operators.end(), std::inserter(Board::__binary_operators_uset, Board::__binary_operators_uset.end()));
                 Board::__operators.clear();
                 for (std::string& i: Board::__unary_operators)
                 {
@@ -638,12 +650,12 @@ struct Board
     
     bool is_unary(const std::string& token) const
     {
-        return (std::find(__unary_operators.begin(), __unary_operators.end(), token) != __unary_operators.end());
+        return (Board::__unary_operators_uset.find(token) != Board::__unary_operators_uset.end());
     }
     
     bool is_binary(const std::string& token) const
     {
-        return (std::find(__binary_operators.begin(), __binary_operators.end(), token) != __binary_operators.end());
+        return (Board::__binary_operators_uset.find(token) != Board::__binary_operators_uset.end());
     }
     
     bool is_operator(const std::string& token) const
@@ -5510,11 +5522,11 @@ void RandomSearch(std::vector<std::string> (*diffeq)(Board&), const Eigen::Matri
 int main()
 {
     constexpr double time = 100000;
-    float threshhold = 9e-1;
+    float threshhold = 0.f;
     
     //Case 1
     puts("Case 1");
-    auto data1 = createMeshgridWithLambda(10, 3, {0.1f, -1.1f, 0.1f}, {2.1f, 1.1f, 20.1f},
+    auto data1 = createMeshgridWithLambda(464, 3, {0.1f, -1.1f, 0.0f}, {2.1f, 1.1f, 20.1f},
     [&](const Eigen::VectorXf& row) -> float
     {
         //2D-Gaussian
@@ -5526,10 +5538,15 @@ int main()
         return std::exp(-(std::pow(x - Board::AdvectionDiffusion2DVars::x_0, 2) + std::pow(y - Board::AdvectionDiffusion2DVars::y_0, 2))) / (2 * std::pow(Board::AdvectionDiffusion2DVars::sigma, 2));
     });
     
-//    GP(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data1 /*data used to solve differential equation*/, 5 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshhold /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
-    SimulatedAnnealing(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data1 /*data used to solve differential equation*/, 5 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshhold /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/, split("x3 0.100000 0 ^ ^ 0.100000 x3 * x0 x1 + * x2 2 - x3 sin x3 4 ^ - * / -") /*seed expression for simulated annealing*/);
+//    RandomSearch(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data1 /*data used to solve differential equation*/, 5 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshhold /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
+//    SimulatedAnnealing(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data1 /*data used to solve differential equation*/, 6 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshhold /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/, split("0 x3 20.100000 tanh ^ 20.100000 log sech x0 x1 - x2 1.371258 * 12.163561 4 ^ - - / - +") /*seed expression for simulated annealing*/);
+    SimulatedAnnealing(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data1 /*data used to solve differential equation*/, 6 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshhold /*threshold for which solutions cannot be constant*/, true /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_1" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/, split("x3 AdvectionDiffusion2DVars::y_0 sech 0.100000 arcsin ^ ^ x1 x0 - 0.103287 sech 0.100000 x3 ^ / - sech x2 1.100000 sech sin / x2 0.100000 0.100000 -1.100000 - ^ - / * -") /*seed expression for simulated annealing*/);
+    
+    
+    
+    
 
-    //Case 2
+//    Case 2
 //    puts("Case 2");
 //    auto data2 = createMeshgridWithLambda(10, 3, {0.1f, 0.1f, 0.1f}, {2.0f*std::numbers::pi_v<float>, 2.0f*std::numbers::pi_v<float>, 20.0f},
 //    [&](const Eigen::VectorXf& row) -> float
@@ -5543,7 +5560,10 @@ int main()
 //        return std::exp(-(std::pow(x - Board::AdvectionDiffusion2DVars::x_0, 2) + std::pow(y - Board::AdvectionDiffusion2DVars::y_0, 2))) / (2 * std::pow(Board::AdvectionDiffusion2DVars::sigma, 2));
 //    });
 ////            
-//    GP(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data2 /*data used to solve differential equation*/, 5 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshhold /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_2" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
+////    GP(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data2 /*data used to solve differential equation*/, 5 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshhold /*threshold for which solutions cannot be constant*/, false /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_2" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/);
+//    SimulatedAnnealing(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data2 /*data used to solve differential equation*/, 5 /*fixed depth of generated solutions*/, "postfix" /*expression representation*/, "PSO" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "autodiff" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshhold /*threshold for which solutions cannot be constant*/, true /*whether to include "const" token to be optimized, though `const_tokens` must be true as well*/, "AdvectionDiffusion2D_2" /*boundary condition type*/, "AdvectionDiffusion2D" /*initial condition type*/, split("x3 AdvectionDiffusion2DVars::y_0 6.283185 6.283185 / log ^ ^ 0.819757 arccos x0 x1 + + x2 20.000000 * x2 2 ^ * / sech +") /*seed expression for simulated annealing*/);
+
+    
     
     return 0;
 }

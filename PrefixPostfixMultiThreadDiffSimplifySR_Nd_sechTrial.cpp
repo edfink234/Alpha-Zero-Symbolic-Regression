@@ -6,6 +6,7 @@
 #include <utility>
 #include <algorithm>
 #include <future>         // std::async, std::future
+#include <unordered_set>
 #include <unordered_map>
 #include <map>
 #include <ctime>
@@ -404,6 +405,8 @@ struct Board
     static std::vector<std::string> inline __input_vars;
     static std::vector<std::string> inline __unary_operators;
     static std::vector<std::string> inline __binary_operators;
+    static std::unordered_set<std::string> inline __unary_operators_uset;
+    static std::unordered_set<std::string> inline __binary_operators_uset;
     static std::vector<std::string> inline __operators;
     static std::vector<std::string> inline __other_tokens;
     static std::vector<std::string> inline __tokens;
@@ -495,6 +498,8 @@ struct Board
                 }
                 Board::__unary_operators = {"~", "log", "ln", "exp", "cos", "sin", "sqrt", "asin", "arcsin", "acos", "arccos", "tanh", "sech"};
                 Board::__binary_operators = {"+", "-", "*", "/", "^"};
+                std::copy(Board::__unary_operators.begin(), Board::__unary_operators.end(), std::inserter(Board::__unary_operators_uset, Board::__unary_operators_uset.end()));
+                std::copy(Board::__binary_operators.begin(), Board::__binary_operators.end(), std::inserter(Board::__binary_operators_uset, Board::__binary_operators_uset.end()));
                 Board::__operators.clear();
                 for (std::string& i: Board::__unary_operators)
                 {
@@ -690,12 +695,12 @@ struct Board
     
     bool is_unary(const std::string& token) const
     {
-        return (std::find(__unary_operators.begin(), __unary_operators.end(), token) != __unary_operators.end());
+        return (Board::__unary_operators_uset.find(token) != Board::__unary_operators_uset.end());
     }
     
     bool is_binary(const std::string& token) const
     {
-        return (std::find(__binary_operators.begin(), __binary_operators.end(), token) != __binary_operators.end());
+        return (Board::__binary_operators_uset.find(token) != Board::__binary_operators_uset.end());
     }
     
     bool is_operator(const std::string& token) const
@@ -4753,7 +4758,7 @@ int main()
 //    RandomSearch(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data2 /*data used to solve differential equation*/, std::vector<int>{5} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 1 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
     
     auto data = createMeshgridVectors(32, 2, {-10.0f, 0.0f}, {10.0f, 20.0f});
-    RandomSearch(sech_squared_trial /*differential equation to solve*/, data /*data used to solve differential equation*/, std::vector<int>{4, 2, 2, 2, 2} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 1 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 1 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
+    RandomSearch(sech_squared_trial /*differential equation to solve*/, data /*data used to solve differential equation*/, std::vector<int>{4, 2, 2, 2, 2} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 1 /*num_consts: number of constants in differential equation*/, "LBFGS" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 1 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
     
     return 0;
 }

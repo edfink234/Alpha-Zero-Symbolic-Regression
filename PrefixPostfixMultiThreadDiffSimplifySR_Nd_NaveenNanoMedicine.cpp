@@ -6,6 +6,7 @@
 #include <utility>
 #include <algorithm>
 #include <future>         // std::async, std::future
+#include <unordered_set>
 #include <unordered_map>
 #include <map>
 #include <ctime>
@@ -404,6 +405,8 @@ struct Board
     static std::vector<std::string> inline __input_vars;
     static std::vector<std::string> inline __unary_operators;
     static std::vector<std::string> inline __binary_operators;
+    static std::unordered_set<std::string> inline __unary_operators_uset;
+    static std::unordered_set<std::string> inline __binary_operators_uset;
     static std::vector<std::string> inline __operators;
     static std::vector<std::string> inline __other_tokens;
     static std::vector<std::string> inline __tokens;
@@ -495,6 +498,11 @@ struct Board
                 }
                 Board::__unary_operators = {"~", "log", "ln", "exp", "cos", "sin", "sqrt", "asin", "arcsin", "acos", "arccos", "tanh", "sech"};
                 Board::__binary_operators = {"+", "-", "*", "/", "^"};
+                std::copy(Board::__unary_operators.begin(), Board::__unary_operators.end(), std::inserter(Board::__unary_operators_uset, Board::__unary_operators_uset.end()));
+                std::copy(Board::__binary_operators.begin(), Board::__binary_operators.end(), std::inserter(Board::__binary_operators_uset, Board::__binary_operators_uset.end()));
+//                for (const std::string& i: Board::__unary_operators_uset) {std::cout << i << ' ';}puts("");
+//                for (const std::string& i: Board::__binary_operators_uset) {std::cout << i << ' ';}puts("");
+                
                 Board::__operators.clear();
                 for (std::string& i: Board::__unary_operators)
                 {
@@ -690,12 +698,12 @@ struct Board
     
     bool is_unary(const std::string& token) const
     {
-        return (std::find(__unary_operators.begin(), __unary_operators.end(), token) != __unary_operators.end());
+        return (Board::__unary_operators_uset.find(token) != Board::__unary_operators_uset.end());
     }
     
     bool is_binary(const std::string& token) const
     {
-        return (std::find(__binary_operators.begin(), __binary_operators.end(), token) != __binary_operators.end());
+        return (Board::__binary_operators_uset.find(token) != Board::__binary_operators_uset.end());
     }
     
     bool is_operator(const std::string& token) const
@@ -4725,6 +4733,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), const
                 std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
                 std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
                 std::cout << "Best expression = " << best_expression << '\n';
+                std::cout << "Best expression parameter = " << x._to_infix(false) << '\n';
                 std::cout << "Best expression (original format) = " << orig_expression << '\n';
                 std::cout << "Best parameters = " << x.params << '\n';
                 std::cout << "Best diff result = " << best_expr_result << '\n';
@@ -4758,11 +4767,11 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), const
 
 int main()
 {
-    constexpr double time = 1000;
+    constexpr double time = 100000;
     float threshold = 9.0e-2f;
     
     auto data = createMeshgridVectors(32, 2, {0, 0.0f}, {20.0f, 20.0f});
-    RandomSearch(NaveenNanoMedicine /*differential equation to solve*/, data /*data used to solve differential equation*/, std::vector<int>{3, 3} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 5 /*num_consts: number of constants in differential equation*/, "LBFGS" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 1 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
+    RandomSearch(NaveenNanoMedicine /*differential equation to solve*/, data /*data used to solve differential equation*/, std::vector<int>{4, 4} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 5 /*num_consts: number of constants in differential equation*/, "LBFGS" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 1 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
     
     return 0;
 }
@@ -4774,5 +4783,18 @@ int main()
 //g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd_NaveenNanoMedicine PrefixPostfixMultiThreadDiffSimplifySR_Nd_NaveenNanoMedicine.cpp -g -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
 
 
+//x0 -> x, x1 -> t, const0 -> D_V, const1 -> m, const2 -> ϕ, const3 -> ξ, const4 -> D_N, x.pieces[0] -> V, x.pieces[1] -> C
+//
+//Unique expressions = 138046499
+//Time spent fitting = 145.224 seconds
+//Best score = 1.99903, MSE = 0.000973225
+//Best expression = V(x,t) = tanh(tanh(((t + x)))), C(x,t) = -(acos(tanh((t + x))))
+//Best expression parameter = V(x,t) = tanh(tanh(((t + x)))), C(x,t) = -(acos(tanh((t + x))))
+//Best expression (original format) = tanh tanh + + x1 x0 0.000000, ~ acos tanh + x1 x0
+//Best parameters =   0.916554 -> D_V
+//-0.0344659 -> m
+//   1.48794 -> ϕ
+//  0.717456 -> ξ
+//  0.787006 -> D_N
 
     
