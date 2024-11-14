@@ -44,6 +44,33 @@ bool isFloat(const std::string& x)
     }
 }
 
+std::string simplifyString(const std::string& x)
+{
+    if ((x.size() == 2) && (x[0] == '-') && (x[1] == '0'))
+    {
+        return "0";
+    }
+    unsigned long jdx = x.find(".");
+    if (jdx == std::string::npos)
+    {
+        return x;
+    }
+    for (unsigned long i = jdx + 1; i < x.size(); i++)
+    {
+        if (x[i] != '0')
+        {
+            return x;
+        }
+    }
+    std::string temp = x.substr(0, jdx);
+    if ((temp.size() == 2) && (temp[0] == '-') && (temp[1] == '0'))
+    {
+        return "0";
+    }
+    
+    return temp;
+}
+
 void simplifyPN(std::vector<std::string>& expression)
 {
     bool simplified = true;
@@ -64,35 +91,35 @@ void simplifyPN(std::vector<std::string>& expression)
                     {
                         if (expression[i] == "+")
                         {
-                            expression[i] = std::to_string(std::stof(expression[i+1]) + std::stof(expression[i+2]));
+                            expression[i] = simplifyString(std::to_string(std::stof(expression[i+1]) + std::stof(expression[i+2])));
                             expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "-")
                         {
-                            expression[i] = std::to_string(std::stof(expression[i+1]) - std::stof(expression[i+2]));
+                            expression[i] = simplifyString(std::to_string(std::stof(expression[i+1]) - std::stof(expression[i+2])));
                             expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "*")
                         {
-                            expression[i] = std::to_string(std::stof(expression[i+1]) * std::stof(expression[i+2]));
+                            expression[i] = simplifyString(std::to_string(std::stof(expression[i+1]) * std::stof(expression[i+2])));
                             expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "/")
                         {
-                            expression[i] = std::to_string(std::stof(expression[i+1]) / std::stof(expression[i+2]));
+                            expression[i] = simplifyString(std::to_string(std::stof(expression[i+1]) / std::stof(expression[i+2])));
                             expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "^")
                         {
-                            expression[i] = std::to_string(std::powf(std::stof(expression[i+1]), std::stof(expression[i+2])));
+                            expression[i] = simplifyString(std::to_string(std::powf(std::stof(expression[i+1]), std::stof(expression[i+2]))));
                             expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                             simplified = true;
                             break;
@@ -250,70 +277,70 @@ void simplifyPN(std::vector<std::string>& expression)
                 {
                     if (expression[i] == "cos")
                     {
-                        expression[i] = std::to_string(cos(std::stof(expression[i+1])));
+                        expression[i] = simplifyString(std::to_string(cos(std::stof(expression[i+1]))));
                         expression.erase(expression.begin() + i + 1);
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "~")
                     {
-                        expression[i] = std::to_string(-(std::stof(expression[i+1])));
+                        expression[i] = simplifyString(std::to_string(-(std::stof(expression[i+1]))));
                         expression.erase(expression.begin() + i + 1);
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "sin")
                     {
-                        expression[i] = std::to_string(sin(std::stof(expression[i+1])));
+                        expression[i] = simplifyString(std::to_string(sin(std::stof(expression[i+1]))));
                         expression.erase(expression.begin() + i + 1);
                         simplified = true;
                         break;
                     }
                     else if ((expression[i] == "ln") || (expression[i] == "log"))
                     {
-                        expression[i] = std::to_string(log(std::stof(expression[i+1]))); // Natural log (ln)
+                        expression[i] = simplifyString(std::to_string(log(std::stof(expression[i+1])))); // Natural log (ln)
                         expression.erase(expression.begin() + i + 1);
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "asin" || expression[i] == "arcsin")
                     {
-                        expression[i] = std::to_string(asin(std::stof(expression[i+1])));
+                        expression[i] = simplifyString(std::to_string(asin(std::stof(expression[i+1]))));
                         expression.erase(expression.begin() + i + 1);
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "acos" || expression[i] == "arccos")
                     {
-                        expression[i] = std::to_string(acos(std::stof(expression[i+1])));
+                        expression[i] = simplifyString(std::to_string(acos(std::stof(expression[i+1]))));
                         expression.erase(expression.begin() + i + 1);
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "exp")
                     {
-                        expression[i] = std::to_string(exp(std::stof(expression[i+1])));
+                        expression[i] = simplifyString(std::to_string(exp(std::stof(expression[i+1]))));
                         expression.erase(expression.begin() + i + 1);
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "sech")
                     {
-                        expression[i] = std::to_string(1 / cosh(std::stof(expression[i+1]))); // sech(x) = 1 / cosh(x)
+                        expression[i] = simplifyString(std::to_string(1 / cosh(std::stof(expression[i+1])))); // sech(x) = 1 / cosh(x)
                         expression.erase(expression.begin() + i + 1);
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "tanh")
                     {
-                        expression[i] = std::to_string(tanh(std::stof(expression[i+1])));
+                        expression[i] = simplifyString(std::to_string(tanh(std::stof(expression[i+1]))));
                         expression.erase(expression.begin() + i + 1);
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "sqrt")
                     {
-                        expression[i] = std::to_string(sqrt(std::stof(expression[i+1])));
+                        expression[i] = simplifyString(std::to_string(sqrt(std::stof(expression[i+1]))));
                         expression.erase(expression.begin() + i + 1);
                         simplified = true;
                         break;
