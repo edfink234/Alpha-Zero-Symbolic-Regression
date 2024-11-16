@@ -1,4 +1,4 @@
-module timing_module
+module function_space
     use, intrinsic :: iso_c_binding
     implicit none
 
@@ -45,18 +45,64 @@ contains
         elapsed_time = get_time() - start_time
     end function time_elapsed
 
-end module timing_module
+    function linspace(min_val, max_val, num_points) result(linspaced)
+        implicit none
+        real, intent(in) :: min_val   ! Minimum value of the range
+        real, intent(in) :: max_val   ! Maximum value of the range
+        integer, intent(in) :: num_points ! Number of points
+        real, dimension(:), allocatable :: linspaced ! Resulting array
+        real :: step
+        integer :: i
+
+        ! Allocate the resulting array
+        allocate(linspaced(num_points))
+
+        ! Compute the step size
+        step = (max_val - min_val) / real(num_points - 1)
+
+        ! Fill the array with linearly spaced values
+        do i = 1, num_points
+            linspaced(i) = min_val + (i - 1) * step
+        end do
+    end function linspace
+
+    function trueMod(N, M) result(modulo)
+        implicit none
+        integer, intent(in) :: N  ! Numerator
+        integer, intent(in) :: M  ! Denominator
+        integer :: modulo          ! Result of the modulo operation
+
+        ! Calculate true modulo
+        modulo = mod(mod(N, M) + M, M)
+    end function trueMod
+
+
+end module function_space
 
 program main
-    use timing_module
+    use function_space
     implicit none
     real(8) :: start_time, elapsed_time
+    real, dimension(:), allocatable :: result
+    integer :: i
 
     ! Capture start time
     start_time = get_time()
 
-    ! Add some delay for demonstration
-    call sleep(1)
+    ! Call the linspace function
+    result = linspace(0.0, 10.0, 5)
+
+    ! Print the result
+    do i = 1, size(result)
+        print *, result(i)
+    end do
+
+    ! Deallocate the array
+    deallocate(result)
+
+    i = trueMod(-7, 5)
+
+    print *, "trueMod(-7, 5) = ", i  ! Expected output: 3
 
     ! Calculate elapsed time
     elapsed_time = time_elapsed(start_time)
@@ -65,3 +111,6 @@ program main
     print *, "Elapsed time (in seconds): ", elapsed_time
 
 end program main
+
+
+!gfortran PrefixPostfixMultiThreadDiffSimplifySR.f90 -o PrefixPostfixMultiThreadDiffSimplifySR
