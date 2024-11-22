@@ -3620,7 +3620,7 @@ int main()
 //    MCTS(generateData(100000, 7, 1.0f, 5.0f), 8 /*fixed depth*/, "postfix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, 4 /*time to run the algorithm in seconds*/, 2 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/);
     auto data = createLinspaceMatrix(1000, 1, {0.1f}, {15.0f});
     
-    GP(VortexRadialProfile, data, 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, false /*const_tokens*/, 1e-1f /*isConstTol*/, 1000 /*time to run the algorithm in seconds*/, 0 /*num threads, 0 == std::thread::hardware_concurrency()*/);
+    GP(VortexRadialProfile, data, 4 /*fixed depth*/, "prefix", "LevenbergMarquardt", 5, "naive_numerical", true /*cache*/, true /*const_tokens*/, 1e-1f /*isConstTol*/, 4 /*time to run the algorithm in seconds*/, 0 /*num threads, 0 == std::thread::hardware_concurrency()*/);
 
     return 0;
 }

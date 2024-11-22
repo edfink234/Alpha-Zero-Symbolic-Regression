@@ -401,7 +401,6 @@ struct Board
     static constexpr float phi_1 = 2.8f;
     static constexpr float phi_2 = 1.3f;
     static int inline __num_features;
-    //TODO: Add unordered_sets to use in num_binary, num_unary, and num_leaf functions
     static std::vector<std::string> inline __input_vars;
     static std::vector<std::string> inline __unary_operators;
     static std::vector<std::string> inline __binary_operators;
@@ -1879,8 +1878,6 @@ struct Board
             score = 0.0f;
             float temp;
             this->MSE_curr = 0.0f;
-//            score = loss_func(expression_evaluator(this->params, this->diffeq_result));
-//            this->MSE_curr = (1.0f/score) - 1.0f;
             for (int jdx = 0; jdx < this->diffeq_result.size(); jdx++)
             {
                 temp = loss_func(expression_evaluator(this->params, this->diffeq_result[jdx]));

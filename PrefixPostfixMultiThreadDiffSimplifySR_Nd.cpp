@@ -6,6 +6,7 @@
 #include <utility>
 #include <algorithm>
 #include <future>         // std::async, std::future
+#include <unordered_set>
 #include <unordered_map>
 #include <map>
 #include <ctime>
@@ -207,13 +208,27 @@ int trueMod(int N, int M)
     return ((N % M) + M) % M;
 };
 
+bool isInvalid(float x)
+{
+    return (std::isnan(x) || std::isinf(x));
+}
+
+float Variance(const Eigen::VectorXf& vec)
+{
+    return (vec.array() - vec.mean()).square().sum() / vec.size();
+}
+
 bool isZero(const Eigen::VectorXf& vec, float tolerance = 1e-5f)
 {
     if (vec.size() <= 1)
     {
         return true; // A vector with 0 or 1 element is trivially constant
     }
-    return (((vec.array()).abs().maxCoeff()) <= tolerance);
+    if (vec.array().isNaN().any() || vec.array().isInf().any())
+    {
+        return true; // Return true if any NaN is present so it'll be weeded out
+    }
+    return ((vec.array().abs().maxCoeff() <= tolerance) || Variance(vec) < 0.25);
 }
 
 bool isZero(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>& vec, float tolerance = 1e-5f)
@@ -221,6 +236,13 @@ bool isZero(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::D
     if (vec.size() <= 1)
     {
         return true; // A vector with 0 or 1 element is trivially constant
+    }
+    for (size_t i = 0; i < vec.size(); ++i)
+    {
+        if (isInvalid(vec[i].value()))
+        {
+            return true; // Return true if any NaN is present in values
+        }
     }
     return (((vec.array()).abs().maxCoeff()) <= tolerance);
 }
@@ -231,8 +253,12 @@ bool isConstant(const Eigen::VectorXf& vec, float tolerance = 1e-5f)
     {
         return true; // A vector with 0 or 1 element is trivially constant
     }
+    if (vec.array().isNaN().any() || vec.array().isInf().any())
+    {
+        return true; // Return true if any NaN is present so it'll be weeded out
+    }
     float firstElement = vec(0);
-    return (vec.array() - firstElement).abs().maxCoeff() <= tolerance;
+    return (((vec.array() - firstElement).abs().maxCoeff() <= tolerance) || (Variance(vec) < 0.25));
 }
 
 bool isConstant(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>& vec, float tolerance = 1e-5f)
@@ -240,6 +266,13 @@ bool isConstant(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eige
     if (vec.size() <= 1)
     {
         return true; // A vector with 0 or 1 element is trivially constant
+    }
+    for (size_t i = 0; i < vec.size(); ++i)
+    {
+        if (isInvalid(vec[i].value()))
+        {
+            return true; // Return true if any NaN is present in values
+        }
     }
     auto firstElement = vec(0);
     return (vec.array() - firstElement).abs().maxCoeff() <= tolerance;
@@ -378,10 +411,11 @@ struct Board
     static constexpr float phi_1 = 2.8f;
     static constexpr float phi_2 = 1.3f;
     static int inline __num_features;
-    //TODO: Add unordered_sets to use in num_binary, num_unary, and num_leaf functions
     static std::vector<std::string> inline __input_vars;
     static std::vector<std::string> inline __unary_operators;
     static std::vector<std::string> inline __binary_operators;
+    static std::unordered_set<std::string> inline __unary_operators_uset;
+    static std::unordered_set<std::string> inline __binary_operators_uset;
     static std::vector<std::string> inline __operators;
     static std::vector<std::string> inline __other_tokens;
     static std::vector<std::string> inline __tokens;
@@ -422,7 +456,7 @@ struct Board
     static std::string inline boundary_condition_type;
     static std::string inline initial_condition_type;
     
-    Board(std::vector<std::vector<std::string>> (*diffeq)(Board&), bool primary = true, const std::vector<int>& n = {}, const std::string& expression_type = "prefix", size_t num_consts = 4, std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, is_primary{primary}
+    Board(std::vector<std::vector<std::string>> (*diffeq)(Board&), bool primary = true, const std::vector<int>& n = {}, const std::string& expression_type = "prefix", size_t num_consts = 0, std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, is_primary{primary}
     {
         assert(n.size());
         this->num_objectives = n.size();
@@ -473,6 +507,10 @@ struct Board
                 }
                 Board::__unary_operators = {"~", "log", "ln", "exp", "cos", "sin", "sqrt", "asin", "arcsin", "acos", "arccos", "tanh", "sech"};
                 Board::__binary_operators = {"+", "-", "*", "/", "^"};
+                std::copy(Board::__unary_operators.begin(), Board::__unary_operators.end(), std::inserter(Board::__unary_operators_uset, Board::__unary_operators_uset.end()));
+                std::copy(Board::__binary_operators.begin(), Board::__binary_operators.end(), std::inserter(Board::__binary_operators_uset, Board::__binary_operators_uset.end()));
+//                for (const std::string& i: Board::__unary_operators_uset) {std::cout << i << ' ';}puts("");
+//                for (const std::string& i: Board::__binary_operators_uset) {std::cout << i << ' ';}puts("");
                 Board::__operators.clear();
                 for (std::string& i: Board::__unary_operators)
                 {
@@ -668,12 +706,12 @@ struct Board
     
     bool is_unary(const std::string& token) const
     {
-        return (std::find(__unary_operators.begin(), __unary_operators.end(), token) != __unary_operators.end());
+        return (Board::__unary_operators_uset.find(token) != Board::__unary_operators_uset.end());
     }
     
     bool is_binary(const std::string& token) const
     {
-        return (std::find(__binary_operators.begin(), __binary_operators.end(), token) != __binary_operators.end());
+        return (Board::__binary_operators_uset.find(token) != Board::__binary_operators_uset.end());
     }
     
     bool is_operator(const std::string& token) const
@@ -958,30 +996,30 @@ struct Board
                 std::vector<std::string> legal_moves = Board::una_bin_leaf_legal_moves_dict[una_allowed][bin_allowed][leaf_allowed];
                 
                 //more complicated constraints for simplification
-                if (leaf_allowed)
-                {
-                    size_t pcs_sz = pieces[idx].size();
-                    if (pcs_sz >= 2 && pieces[idx][pcs_sz-2] == "/") // "/ x{i}" should not result in "/ x{i} x{i}" as that is 1
-                    {
-                        for (const std::string& i: Board::__input_vars)
-                        {
-                            if (pieces[idx].back() == i)
-                            {
-                                if (legal_moves.size() > 1)
-                                {
-                                    legal_moves.erase(std::remove(legal_moves.begin(), legal_moves.end(), i), legal_moves.end()); //remove "x{i}" from legal_moves
-                                }
-                                else //if x{i} is the only legal move, then we'll change "/" to another binary operator, like "+", "*", or "^"
-                                {
-                                    std::vector<std::string> sub_bin_ops = {"*", "+", "^"};
-                                    std::uniform_int_distribution<int> distribution(0, 2);
-                                    pieces[idx][pcs_sz-2] = sub_bin_ops[distribution(gen)];
-                                }
-                                break;
-                            }
-                        }
-                    }
-                }
+//                if (leaf_allowed)
+//                {
+//                    size_t pcs_sz = pieces[idx].size();
+//                    if (pcs_sz >= 2 && pieces[idx][pcs_sz-2] == "/") // "/ x{i}" should not result in "/ x{i} x{i}" as that is 1
+//                    {
+//                        for (const std::string& i: Board::__input_vars)
+//                        {
+//                            if (pieces[idx].back() == i)
+//                            {
+//                                if (legal_moves.size() > 1)
+//                                {
+//                                    legal_moves.erase(std::remove(legal_moves.begin(), legal_moves.end(), i), legal_moves.end()); //remove "x{i}" from legal_moves
+//                                }
+//                                else //if x{i} is the only legal move, then we'll change "/" to another binary operator, like "+", "*", or "^"
+//                                {
+//                                    std::vector<std::string> sub_bin_ops = {"*", "+", "^"};
+//                                    std::uniform_int_distribution<int> distribution(0, 2);
+//                                    pieces[idx][pcs_sz-2] = sub_bin_ops[distribution(gen)];
+//                                }
+//                                break;
+//                            }
+//                        }
+//                    }
+//                }
                 assert(legal_moves.size());
                 return legal_moves;
                 
@@ -1602,6 +1640,8 @@ struct Board
                     temp_vec.push_back(temp[kdx][ldx]);
                 }
             }
+            // Resize `grad` to match the size of `temp_vec`
+            grad.resize(temp_vec.size());
             grad = Eigen::Map<Eigen::VectorXf>(temp_vec.data(), temp_vec.size());
         }
         return 0.0f;
@@ -1809,21 +1849,25 @@ struct Board
                 }
             }
             score = loss_func(expression_eval[0]);
-            this->MSE_curr = (1.0f/score) - 1.0f;
+            if (isInvalid(score))
+            {
+                this->MSE_curr = FLT_MAX;
+                return 0.0f;
+            }
             
+            this->MSE_curr = (1.0f/score) - 1.0f;
+            float temp;
             for (size_t jdx = 1; jdx < expression_eval.size(); ++jdx)
             {
-                score += loss_func(expression_eval[jdx]);
-                this->MSE_curr += (1.0f/score) - 1.0f;
+                temp = loss_func(expression_eval[jdx]);
+                if (isInvalid(temp))
+                {
+                    this->MSE_curr = FLT_MAX;
+                    return 0.0f;
+                }
+                score += temp;
+                this->MSE_curr += (1.0f/temp) - 1.0f;
             }
-
-//            }
-//            else
-//            {
-//                score = loss_func(expression_evaluator(this->params, this->diffeq_result));
-//                this->MSE_curr = (1.0f/score) - 1.0f;
-//
-//            }
         }
         else
         {
@@ -1834,14 +1878,14 @@ struct Board
             for (int jdx = 0; jdx < this->diffeq_result.size(); jdx++)
             {
                 temp = loss_func(expression_evaluator(this->params, this->diffeq_result[jdx]));
-                if (std::isnan(temp))
+                if (isInvalid(temp))
                 {
+                    this->MSE_curr = FLT_MAX;
                     return 0.0f;
                 }
                 score += temp;
                 this->MSE_curr += ((1.0f/temp) - 1.0f);
             }
-
         }
 
         return score;
@@ -3379,6 +3423,8 @@ std::vector<std::vector<std::string>> VortexRadialProfile(Board& x)
     std::vector<std::string> R_prime;
     std::string mu = "1";
     std::string S = "1";
+    std::string infty = std::to_string(FLT_MAX);
+
     if (x.expression_type == "prefix")
     {
         //- + + * / 1 2 R'' * / 1 * 2 r R' * - mu / * S S * * 2 r r R * * R R R
@@ -3436,6 +3482,40 @@ std::vector<std::vector<std::string>> VortexRadialProfile(Board& x)
         {
             result.push_back(i);
         }
+        results.push_back(result);
+
+        //R(0)
+        result.clear();
+        for (size_t i = 0; i < x.pieces[0].size(); i++)
+        {
+            if (x.pieces[0][i] == "x0")
+            {
+                result.push_back("0");
+            }
+            else
+            {
+                result.push_back(x.pieces[0][i]);
+            }
+        }
+        results.push_back(result);
+        
+        //- R(∞) sqrt mu
+        result.clear();
+        result.push_back("-");
+        for (size_t i = 0; i < x.pieces[0].size(); i++)
+        {
+            if (x.pieces[0][i] == "x0")
+            {
+                result.push_back(infty);
+            }
+            else
+            {
+                result.push_back(x.pieces[0][i]);
+            }
+        }
+        result.push_back("sqrt");
+        result.push_back(mu);
+        results.push_back(result);
     }
     else if (x.expression_type == "postfix")
     {
@@ -3494,9 +3574,46 @@ std::vector<std::vector<std::string>> VortexRadialProfile(Board& x)
         }
         result.push_back("*");
         result.push_back("-");
+        results.push_back(result);
+
+        //R(0)
+        result.clear();
+        for (size_t i = 0; i < x.pieces[0].size(); i++)
+        {
+            if (x.pieces[0][i] == "x0")
+            {
+                result.push_back("0");
+            }
+            else
+            {
+                result.push_back(x.pieces[0][i]);
+            }
+        }
+        results.push_back(result);
+        
+        //R(∞) mu sqrt -
+        result.clear();
+        
+        for (size_t i = 0; i < x.pieces[0].size(); i++)
+        {
+            if (x.pieces[0][i] == "x0")
+            {
+                result.push_back(infty);
+            }
+            else
+            {
+                result.push_back(x.pieces[0][i]);
+            }
+        }
+        
+        result.push_back(mu);
+        result.push_back("sqrt");
+        result.push_back("-");
+        results.push_back(result);
+
+        
 
     }
-    results.push_back(result);
     return results;
 }
 
@@ -5027,7 +5144,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), const
 int main()
 {
     constexpr double time = 1000;
-    float threshold = 9.0e-2f;
+    float threshold = 9.0e-1f;
     
 //    auto data1 = createMeshgridVectors(10, 3, {0.1f, -1.1f, 0.1f}, {2.1f, 1.1f, 20.0f});
 //    RandomSearch(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data1 /*data used to solve differential equation*/, std::vector<int>{5} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 1 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
@@ -5035,19 +5152,18 @@ int main()
 //    auto data2 = createMeshgridVectors(10, 3, {0.1f, 0.1f, 0.1f}, {2.0f*std::numbers::pi_v<float>, 2.0f*std::numbers::pi_v<float>, 20.0f});
 //    RandomSearch(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data2 /*data used to solve differential equation*/, std::vector<int>{5} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 1 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
     
-    auto data = createMeshgridVectors(32, 2, {-100.0f, 0.0f}, {100.0f, 20.0f});
-    RandomSearch(sech_squared_trial /*differential equation to solve*/, data /*data used to solve differential equation*/, std::vector<int>{5, 3, 3, 3, 3} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
+    auto data = createMeshgridVectors(1000, 1, {-10.0f}, {10.0f});
+    
+    std::cout<<data << '\n' << Eigen::VectorXf::Zero(5).array().pow(Eigen::VectorXf::Ones(5).array()) << '\n';
+    
+    RandomSearch(VortexRadialProfile /*differential equation to solve*/, data /*data used to solve differential equation*/, std::vector<int>{5} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
     
     return 0;
 }
 
 //git push --set-upstream origin PrefixPostfixSymbolicDifferentiator
 
-//g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd PrefixPostfixMultiThreadDiffSimplifySR_Nd.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -ffast-math -ftree-vectorize -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
+//g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd PrefixPostfixMultiThreadDiffSimplifySR_Nd.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
 
 //g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd PrefixPostfixMultiThreadDiffSimplifySR_Nd.cpp -g -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
-
-
-
-
-    
+//(((((1 / 2) * 0) + ((1 / (2 * x0)) * 0)) + ((1 - ((1 * 1) / (2 * (x0 * x0)))) * ((sech((-10.100000 - x0)) ** (np.inf)) - (9.999999 * sech(exp(exp(4))))))) - ((((sech((-10.100000 - x0)) ** (np.inf)) - (9.999999 * sech(exp(exp(4))))) * ((sech((-10.100000 - x0)) ** (np.inf)) - (9.999999 * sech(exp(exp(4)))))) * ((sech((-10.100000 - x0)) ** (np.inf)) - (9.999999 * sech(exp(exp(4)))))))

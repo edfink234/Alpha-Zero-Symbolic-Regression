@@ -208,13 +208,18 @@ int trueMod(int N, int M)
     return ((N % M) + M) % M;
 };
 
+bool isInvalid(float x)
+{
+    return (std::isnan(x) || std::isinf(x));
+}
+
 bool isZero(const Eigen::VectorXf& vec, float tolerance = 1e-5f)
 {
     if (vec.size() <= 1)
     {
         return true; // A vector with 0 or 1 element is trivially constant
     }
-    if (vec.array().isNaN().any())
+    if (vec.array().isNaN().any() || vec.array().isInf().any())
     {
         return true; // Return true if any NaN is present so it'll be weeded out
     }
@@ -229,7 +234,7 @@ bool isZero(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::D
     }
     for (size_t i = 0; i < vec.size(); ++i)
     {
-        if (std::isnan(vec[i].value()))
+        if (std::isInvalid(vec[i].value()))
         {
             return true; // Return true if any NaN is present in values
         }
@@ -243,7 +248,7 @@ bool isConstant(const Eigen::VectorXf& vec, float tolerance = 1e-5f)
     {
         return true; // A vector with 0 or 1 element is trivially constant
     }
-    if (vec.array().isNaN().any())
+    if (vec.array().isNaN().any() || vec.array().isInf().any())
     {
         return true; // Return true if any NaN is present so it'll be weeded out
     }
@@ -259,7 +264,7 @@ bool isConstant(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eige
     }
     for (size_t i = 0; i < vec.size(); ++i)
     {
-        if (std::isnan(vec[i].value()))
+        if (std::isInvalid(vec[i].value()))
         {
             return true; // Return true if any NaN is present in values
         }
@@ -401,7 +406,6 @@ struct Board
     static constexpr float phi_1 = 2.8f;
     static constexpr float phi_2 = 1.3f;
     static int inline __num_features;
-    //TODO: Add unordered_sets to use in num_binary, num_unary, and num_leaf functions
     static std::vector<std::string> inline __input_vars;
     static std::vector<std::string> inline __unary_operators;
     static std::vector<std::string> inline __binary_operators;
@@ -1841,7 +1845,7 @@ struct Board
                 }
             }
             score = loss_func(expression_eval[0]);
-            if (std::isnan(score))
+            if (std::isInvalid(score))
             {
                 this->MSE_curr = FLT_MAX;
                 return 0.0f;
@@ -1852,7 +1856,7 @@ struct Board
             for (size_t jdx = 1; jdx < expression_eval.size(); ++jdx)
             {
                 temp = loss_func(expression_eval[jdx]);
-                if (std::isnan(temp))
+                if (std::isInvalid(temp))
                 {
                     this->MSE_curr = FLT_MAX;
                     return 0.0f;
@@ -1872,7 +1876,7 @@ struct Board
             for (int jdx = 0; jdx < this->diffeq_result.size(); jdx++)
             {
                 temp = loss_func(expression_evaluator(this->params, this->diffeq_result[jdx]));
-                if (std::isnan(temp))
+                if (std::isInvalid(temp))
                 {
                     this->MSE_curr = FLT_MAX;
                     return 0.0f;
