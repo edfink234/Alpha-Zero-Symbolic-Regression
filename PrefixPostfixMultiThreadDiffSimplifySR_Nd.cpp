@@ -1812,7 +1812,6 @@ struct Board
                     if (isZero(expression_evaluator(this->params, this->derivat), sqrt(this->isConstTol))) //Ignore the trivial solution (N-d functions)!
                     {
                         this->MSE_curr = FLT_MAX;
-//                        puts("hi");
                         return score;
                     }
                 }
@@ -1898,6 +1897,7 @@ struct Board
                 if (isInvalid(temp))
                 {
                     this->MSE_curr = FLT_MAX;
+//                    puts("hi");
                     return 0.0f;
                 }
                 score += temp;
@@ -3596,39 +3596,39 @@ std::vector<std::vector<std::string>> VortexRadialProfile(Board& x)
         results.push_back(result);
 
         //R(0)
-        result.clear();
-        for (size_t i = 0; i < x.pieces[0].size(); i++)
-        {
-            if (x.pieces[0][i] == "x0")
-            {
-                result.push_back("0");
-            }
-            else
-            {
-                result.push_back(x.pieces[0][i]);
-            }
-        }
-        results.push_back(result);
-        
-        //R(∞) mu sqrt -
-        result.clear();
-        
-        for (size_t i = 0; i < x.pieces[0].size(); i++)
-        {
-            if (x.pieces[0][i] == "x0")
-            {
-                result.push_back(infty);
-            }
-            else
-            {
-                result.push_back(x.pieces[0][i]);
-            }
-        }
-        
-        result.push_back(mu);
-        result.push_back("sqrt");
-        result.push_back("-");
-        results.push_back(result);
+//        result.clear();
+//        for (size_t i = 0; i < x.pieces[0].size(); i++)
+//        {
+//            if (x.pieces[0][i] == "x0")
+//            {
+//                result.push_back("0");
+//            }
+//            else
+//            {
+//                result.push_back(x.pieces[0][i]);
+//            }
+//        }
+//        results.push_back(result);
+//        
+//        //R(∞) mu sqrt -
+//        result.clear();
+//        
+//        for (size_t i = 0; i < x.pieces[0].size(); i++)
+//        {
+//            if (x.pieces[0][i] == "x0")
+//            {
+//                result.push_back(infty);
+//            }
+//            else
+//            {
+//                result.push_back(x.pieces[0][i]);
+//            }
+//        }
+//        
+//        result.push_back(mu);
+//        result.push_back("sqrt");
+//        result.push_back("-");
+//        results.push_back(result);
 
         
 
@@ -5099,7 +5099,6 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), const
             {
                 while ((score = x.complete_status(jdx)) == -1)
                 {
-                    
                     temp_legal_moves = x.get_legal_moves(jdx); //the legal moves
                     temp_sz = temp_legal_moves.size(); //the number of legal moves
                     
@@ -5109,9 +5108,11 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), const
                         x.pieces[jdx].emplace_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
                     }
                 }
+                assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces[jdx], jdx) : x.getRPNdepth(x.pieces[jdx], jdx)).first == x.n[jdx]);
+                assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces[jdx], jdx) : x.getRPNdepth(x.pieces[jdx], jdx)).second);
             }
-//            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
-//            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
+//            printf("score = %f\n", score);
+            
 //            if (Board::expression_dict.size() > n_count)
 //            {
 //                std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
@@ -5175,7 +5176,7 @@ int main()
     
 //    std::cout<<data << '\n' << Eigen::VectorXf::Zero(5).array().pow(Eigen::VectorXf::Ones(5).array()) << '\n';
     
-    RandomSearch(VortexRadialProfile /*differential equation to solve*/, data /*data used to solve differential equation*/, std::vector<int>{5} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
+    RandomSearch(VortexRadialProfile /*differential equation to solve*/, data /*data used to solve differential equation*/, std::vector<int>{1} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
     
     return 0;
 }
