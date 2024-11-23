@@ -257,6 +257,14 @@ bool isConstant(const Eigen::VectorXf& vec, float tolerance = 1e-5f)
     {
         return true; // Return true if any NaN is present so it'll be weeded out
     }
+//    TODO: Add invalid check
+    for (size_t i = 0; i < vec.size(); ++i)
+    {
+        if (isInvalid(vec[i]))
+        {
+            return true; // Return true if any NaN is present in values
+        }
+    }
     float firstElement = vec(0);
     return (((vec.array() - firstElement).abs().maxCoeff() <= tolerance) || (Variance(vec) < 0.25));
 }
@@ -335,7 +343,7 @@ public:
 
 float MSE(const Eigen::VectorXf& actual)
 {
-    return actual.squaredNorm() / actual.size();
+    return actual.squaredNorm();
 }
 
 float MSE(const std::vector<Eigen::VectorXf>& actual)
@@ -343,10 +351,10 @@ float MSE(const std::vector<Eigen::VectorXf>& actual)
     float temp = 0.0f;
     for (size_t i = 0; i < actual.size(); i++)
     {
-        temp += actual[i].squaredNorm() / actual[i].size();
+        temp += actual[i].squaredNorm();
     }
     
-    return temp / actual.size();
+    return temp;
 }
 
 float MSE(const std::vector<Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>>& actual)
@@ -360,11 +368,11 @@ float MSE(const std::vector<Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>
         {
             // Access the value of the AutoDiffScalar element
             temp += vec[i].value() * vec[i].value();
-            ++count;
         }
+        ++count;
     }
 
-    return count > 0 ? temp / count : 0.0f;
+    return count > 0 ? temp / count : FLT_MAX;
 }
 
 
@@ -374,12 +382,12 @@ float MSE(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
     {
         throw std::invalid_argument("Vectors must be of the same size");
     }
-    return (actual - predicted).squaredNorm() / actual.size();
+    return (actual - predicted).squaredNorm();
 }
 
 Eigen::AutoDiffScalar<Eigen::VectorXf> MSE(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>& actual)
 {
-    return actual.squaredNorm() / actual.size();
+    return actual.squaredNorm();
 }
 
 float loss_func(const Eigen::VectorXf& actual)
@@ -461,6 +469,7 @@ struct Board
         assert(n.size());
         this->num_objectives = n.size();
         size_t max_n = n[0];
+        int counter = 0;
         for (int i: n)
         {
             if (i > 30)
@@ -480,6 +489,9 @@ struct Board
             {
                 max_n = i;
             }
+            
+            this->stack[counter++].reserve(i);
+            
         }
         
         this->expression_type = expression_type;
@@ -828,6 +840,7 @@ struct Board
         {
             stop = expression.size();
         }
+        assert(this->stack.size() > idx);
         
         if (!cache)
         {
@@ -887,6 +900,7 @@ struct Board
                     }
                     else
                     {
+                        assert(this->stack[idx].size() >= 2);
                         int curr_max = std::max(this->stack[idx].back()+1, *(this->stack[idx].end()-2))+1;
                         for (int i = this->stack[idx].size() - 2; i >= 1; i--)
                         {
@@ -912,6 +926,7 @@ struct Board
                     }
                     else
                     {
+                        assert(this->stack[idx].size() >= 1);
                         int curr_max = std::max(this->stack[idx].back(), 1)+1;
                         for (int i = this->stack[idx].size() - 1; i >= 1; i--)
                         {
@@ -945,6 +960,8 @@ struct Board
                 }
                 else //leaf
                 {
+                    assert(this->stack.size() > idx);
+//                    std::cout << "this->stack.size() = " << this->stack.size() << '\n';
                     this->stack[idx].push_back(1);
                 }
                 
@@ -1901,15 +1918,17 @@ struct Board
      */
     float complete_status(int idx, bool cache = true)
     {
+        assert(this->stack.size() > idx);
         if (this->pieces[idx].empty())
         {
-            this->stack[idx].clear();
+            this->stack[idx] = std::vector<int>();
             this->idx[idx] = 0;
             if (this->expression_type == "prefix")
             {
                 this->depth[idx] = 0, this->num_binary[idx] = 0, this->num_leaves[idx] = 0;
             }
         }
+        assert(this->stack.size() > idx);
         auto [depth, complete] =  ((this->expression_type == "prefix") ? getPNdepth(pieces[idx], idx, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/) : getRPNdepth(pieces[idx], idx, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/)); //structured binding :)
         if (!complete || depth < this->n[idx]) //Expression not complete
         {
@@ -3523,7 +3542,7 @@ std::vector<std::vector<std::string>> VortexRadialProfile(Board& x)
         result.push_back("1");
         result.push_back("2");
         result.push_back("/");
-        x.derivePostfix(0, x.pieces.size()-1, "x0", x.pieces[0], grasp);
+        x.derivePostfix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
         R_prime = x.derivat;
         x.derivePostfix(0, R_prime.size()-1, "x0", R_prime, grasp); //derivat will store second derivative of R_prime
         for (const std::string& i: x.derivat) //R''
@@ -5152,9 +5171,9 @@ int main()
 //    auto data2 = createMeshgridVectors(10, 3, {0.1f, 0.1f, 0.1f}, {2.0f*std::numbers::pi_v<float>, 2.0f*std::numbers::pi_v<float>, 20.0f});
 //    RandomSearch(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data2 /*data used to solve differential equation*/, std::vector<int>{5} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 1 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
     
-    auto data = createMeshgridVectors(1000, 1, {-10.0f}, {10.0f});
+    auto data = createMeshgridVectors(101, 1, {0.0f}, {10.0f});
     
-    std::cout<<data << '\n' << Eigen::VectorXf::Zero(5).array().pow(Eigen::VectorXf::Ones(5).array()) << '\n';
+//    std::cout<<data << '\n' << Eigen::VectorXf::Zero(5).array().pow(Eigen::VectorXf::Ones(5).array()) << '\n';
     
     RandomSearch(VortexRadialProfile /*differential equation to solve*/, data /*data used to solve differential equation*/, std::vector<int>{5} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
     
@@ -5166,4 +5185,6 @@ int main()
 //g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd PrefixPostfixMultiThreadDiffSimplifySR_Nd.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
 
 //g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd PrefixPostfixMultiThreadDiffSimplifySR_Nd.cpp -g -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
-//(((((1 / 2) * 0) + ((1 / (2 * x0)) * 0)) + ((1 - ((1 * 1) / (2 * (x0 * x0)))) * ((sech((-10.100000 - x0)) ** (np.inf)) - (9.999999 * sech(exp(exp(4))))))) - ((((sech((-10.100000 - x0)) ** (np.inf)) - (9.999999 * sech(exp(exp(4))))) * ((sech((-10.100000 - x0)) ** (np.inf)) - (9.999999 * sech(exp(exp(4)))))) * ((sech((-10.100000 - x0)) ** (np.inf)) - (9.999999 * sech(exp(exp(4)))))))
+
+
+

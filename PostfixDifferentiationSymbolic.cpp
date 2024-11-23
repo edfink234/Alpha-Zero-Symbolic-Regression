@@ -772,7 +772,7 @@ void derivePostfix(int low, int up, const std::string& dx, const std::vector<std
 
 int main()
 {
-    std::vector<std::string> postfix; //array of postfix expression elements read from left to right
+    std::vector<std::string> postfix, temp; //array of postfix expression elements read from left to right
     std::vector<int> grasp;
     
     postfix = {"x","x","+"}; // x+x
@@ -1425,6 +1425,15 @@ int main()
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
+    postfix = {"x0", "x0", "cos", "/", "tanh", "acos", "cos"};
+    derivePostfix(0, postfix.size()-1, "x0", postfix, grasp);
+    std::cout << grasp << '\n';
+    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    
+    postfix = derivat;
+    derivePostfix(0, postfix.size()-1, "x0", postfix, grasp);
+    std::cout << grasp << '\n';
+    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     return 0;
 }
