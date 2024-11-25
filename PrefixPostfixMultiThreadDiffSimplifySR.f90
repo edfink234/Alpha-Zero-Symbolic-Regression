@@ -76,6 +76,23 @@ contains
         modulo = mod(mod(N, M) + M, M)
     end function trueMod
 
+    function Variance(vec) result(var)
+        real, dimension(:), intent(in) :: vec
+        real :: var
+        real :: mean_val
+        integer :: n, i
+
+        n = size(vec)
+        mean_val = sum(vec) / real(n)
+        var = 0.0
+
+        do i = 1, n
+            var = var + (vec(i) - mean_val)**2
+        end do
+
+        var = var / real(n)
+    end function Variance
+
 
 end module function_space
 
@@ -97,6 +114,8 @@ program main
         print *, result(i)
     end do
 
+    print *, "Variance =", Variance(result)
+
     ! Deallocate the array
     deallocate(result)
 
@@ -112,5 +131,6 @@ program main
 
 end program main
 
-
 !gfortran PrefixPostfixMultiThreadDiffSimplifySR.f90 -o PrefixPostfixMultiThreadDiffSimplifySR
+
+
