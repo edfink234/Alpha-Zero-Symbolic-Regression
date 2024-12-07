@@ -76,6 +76,32 @@ contains
         modulo = mod(mod(N, M) + M, M)
     end function trueMod
 
+    logical function isInvalid(x)
+        implicit none
+        real :: x
+        real, parameter :: huge_value = 1.0e30 ! Replace with a large value representing infinity
+
+        ! Check for NaN (x is not equal to itself) and infinity (absolute value is too large)
+        isInvalid = (x /= x) .or. (abs(x) > huge_value)
+    end function isInvalid
+
+    logical function areAllBelow(arr, til)
+        implicit none
+        real, dimension(:), intent(in) :: arr  ! Input array
+        real, intent(in) :: til                ! Threshold value
+        integer :: i                           ! Loop index
+
+        areAllBelow = .true.                   ! Assume all values are below initially
+
+        ! Check each element in the array
+        do i = 1, size(arr)
+            if (arr(i) >= til) then
+                areAllBelow = .false.          ! If any value is above or equal to the threshold
+                exit                           ! Exit loop early
+            end if
+        end do
+    end function areAllBelow
+
     function Variance(vec) result(var)
         real, dimension(:), intent(in) :: vec
         real :: var
@@ -93,6 +119,26 @@ contains
         var = var / real(n)
     end function Variance
 
+    logical function areAllSimilar(arr, tol)
+        implicit none
+        real, dimension(:), intent(in) :: arr  ! Input array
+        real, intent(in) :: tol                ! Tolerance value
+        integer :: i, j                        ! Loop indices
+
+        areAllSimilar = .true.                 ! Assume all values are similar initially
+
+        ! Compare each pair of elements
+        do i = 1, size(arr) - 1
+            do j = i + 1, size(arr)
+                if (abs(arr(i) - arr(j)) > tol) then
+                    areAllSimilar = .false.    ! If difference exceeds tolerance
+                    exit                       ! Exit early
+                end if
+            end do
+            if (.not. areAllSimilar) exit      ! Exit outer loop if already false
+        end do
+    end function areAllSimilar
+
 
 end module function_space
 
@@ -100,6 +146,8 @@ program main
     use function_space
     implicit none
     real(8) :: start_time, elapsed_time
+    real :: Val
+    logical(4) :: resultVal
     real, dimension(:), allocatable :: result
     integer :: i
 
@@ -116,12 +164,25 @@ program main
 
     print *, "Variance =", Variance(result)
 
+    print *, "All below 1e5?", areAllBelow(result, 1e5)
+
+    print *, "Are all the same?", areAllSimilar(result, 1e-5)
+
     ! Deallocate the array
     deallocate(result)
 
     i = trueMod(-7, 5)
 
     print *, "trueMod(-7, 5) = ", i  ! Expected output: 3
+
+    ! Example values to test
+    Val = 1e31         ! NaN
+    resultVal = isInvalid(Val)
+    print *, "Value: ", Val, " isInvalid: ", resultVal
+
+    Val = (1.0 / 1e-40)         ! Infinity
+    resultVal = isInvalid(Val)
+    print *, "Value: ", Val, " isInvalid: ", resultVal
 
     ! Calculate elapsed time
     elapsed_time = time_elapsed(start_time)
