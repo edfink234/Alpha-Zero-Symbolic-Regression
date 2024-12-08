@@ -469,8 +469,6 @@ struct Board
     std::vector<std::vector<std::string>> (*diffeq)(Board&); //differential equation we want to solve
     std::vector<std::vector<std::string>> diffeq_result;
     float isConstTol;
-    static std::string inline boundary_condition_type;
-    static std::string inline initial_condition_type;
     
     Board(std::vector<std::vector<std::string>> (*diffeq)(Board&), bool primary = true, const std::vector<int>& depth = {}, const std::string& expression_type = "prefix", size_t num_consts = 0, std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, n{depth}, is_primary{primary}
     {
