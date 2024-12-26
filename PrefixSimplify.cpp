@@ -364,6 +364,7 @@ void simplifyPN(std::vector<std::string>& expression)
                         simplified = true;
                         break;
                     }
+                    //TODO: Need to add ln(exp(x)) here and a corresponding test case:
                 }
             }
         }
@@ -961,8 +962,11 @@ int main()
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
+    
+    
+    
 
-    test_expr = {"+", "~", "*", "0", "tanh", "tanh", "x"};
+    test_expr = {"+", "~", "*", "0", "tanh", "tanh", "x", "x"};
     printf("before: ");print_container(test_expr);
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
