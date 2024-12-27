@@ -30,18 +30,44 @@ void print_container(const std::vector<std::string>& c)
     std::cout << '\n';
 }
 
-bool isFloat(const std::string& x)
+//https://medium.com/@ryan_forrester_/c-check-if-string-is-number-practical-guide-c7ba6db2febf
+bool isFloat(const std::string& s) //TODO: Fortran
 {
-//    std::cout << x << '\n';
-    try
+    enum State { START, INT, FRAC, EXP, EXP_NUM };
+    State state = START;
+    bool has_digits = false;
+
+    for (char c : s)
     {
-        std::stof(x);
-        return true;
+        switch (state)
+        {
+            case START:
+                if (c == '+' || c == '-') state = INT;
+                else if (std::isdigit(c)) { state = INT; has_digits = true; }
+                else if (c == '.') state = FRAC;
+                else return false;
+                break;
+            case INT:
+                if (std::isdigit(c)) has_digits = true;
+                else if (c == '.') state = FRAC;
+                else if (c == 'e' || c == 'E') state = EXP;
+                else return false;
+                break;
+            case FRAC:
+                if (std::isdigit(c)) has_digits = true;
+                else if (c == 'e' || c == 'E') state = EXP;
+                else return false;
+                break;
+            case EXP:
+                if (c == '+' || c == '-' || std::isdigit(c)) state = EXP_NUM;
+                else return false;
+                break;
+            case EXP_NUM:
+                if (!std::isdigit(c)) return false;
+                break;
+        }
     }
-    catch (std::invalid_argument& e)
-    {
-        return false;
-    }
+    return has_digits && (state == INT || state == FRAC || state == EXP_NUM);
 }
 
 std::string simplifyString(const std::string& x)
