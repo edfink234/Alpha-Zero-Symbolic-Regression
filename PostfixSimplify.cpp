@@ -277,70 +277,70 @@ void simplifyRPN(std::vector<std::string>& expression)
                     if (expression[i] == "cos")
                     {
                         expression[i] = simplifyString(std::to_string(cos(std::stof(expression[i-1]))));
-                        expression.erase(expression.begin() + i + 1);
+                        expression.erase(expression.begin() + i - 1);
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "~")
                     {
                         expression[i] = simplifyString(std::to_string(-(std::stof(expression[i-1]))));
-                        expression.erase(expression.begin() + i + 1);
+                        expression.erase(expression.begin() + i - 1);
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "sin")
                     {
                         expression[i] = simplifyString(std::to_string(sin(std::stof(expression[i-1]))));
-                        expression.erase(expression.begin() + i + 1);
+                        expression.erase(expression.begin() + i - 1);
                         simplified = true;
                         break;
                     }
                     else if ((expression[i] == "ln") || (expression[i] == "log"))
                     {
                         expression[i] = simplifyString(std::to_string(log(std::stof(expression[i-1])))); // Natural log (ln)
-                        expression.erase(expression.begin() + i + 1);
+                        expression.erase(expression.begin() + i - 1);
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "asin" || expression[i] == "arcsin")
                     {
                         expression[i] = simplifyString(std::to_string(asin(std::stof(expression[i-1]))));
-                        expression.erase(expression.begin() + i + 1);
+                        expression.erase(expression.begin() + i - 1);
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "acos" || expression[i] == "arccos")
                     {
                         expression[i] = simplifyString(std::to_string(acos(std::stof(expression[i-1]))));
-                        expression.erase(expression.begin() + i + 1);
+                        expression.erase(expression.begin() + i - 1);
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "exp")
                     {
                         expression[i] = simplifyString(std::to_string(exp(std::stof(expression[i-1]))));
-                        expression.erase(expression.begin() + i + 1);
+                        expression.erase(expression.begin() + i - 1);
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "sech")
                     {
                         expression[i] = simplifyString(std::to_string(1 / cosh(std::stof(expression[i-1])))); // sech(x) = 1 / cosh(x)
-                        expression.erase(expression.begin() + i + 1);
+                        expression.erase(expression.begin() + i - 1);
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "tanh")
                     {
                         expression[i] = simplifyString(std::to_string(tanh(std::stof(expression[i-1]))));
-                        expression.erase(expression.begin() + i + 1);
+                        expression.erase(expression.begin() + i - 1);
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "sqrt")
                     {
                         expression[i] = simplifyString(std::to_string(sqrt(std::stof(expression[i-1]))));
-                        expression.erase(expression.begin() + i + 1);
+                        expression.erase(expression.begin() + i - 1);
                         simplified = true;
                         break;
                     }
@@ -357,13 +357,20 @@ void simplifyRPN(std::vector<std::string>& expression)
                     }
                     else if (expression[i] == "exp" && (expression[i-1] == "ln" || expression[i-1] == "log"))
                     {
-                        puts("hi 361");
+                        puts("hi 360");
                         expression[i] = expression[i-2];
                         expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                         simplified = true;
                         break;
                     }
-                    //TODO: Need to add ln(exp(x)) here and a corresponding test case:
+                    else if (expression[i-1] == "exp" && (expression[i] == "ln" || expression[i] == "log"))
+                    {
+                        puts("hi 368");
+                        expression[i] = expression[i-2];
+                        expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                        simplified = true;
+                        break;
+                    }
                 }
             }
         }
@@ -1013,6 +1020,12 @@ int main()
     puts("");
     
     test_expr = {"0", "w", "/", "y", "1", "/", "/"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "w", "/", "y", "1", "/", "/", "exp", "ln", "ln", "exp", "ln", "ln", "exp"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);

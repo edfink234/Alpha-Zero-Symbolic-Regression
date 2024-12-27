@@ -364,7 +364,14 @@ void simplifyPN(std::vector<std::string>& expression)
                         simplified = true;
                         break;
                     }
-                    //TODO: Need to add ln(exp(x)) here and a corresponding test case:
+                    else if (expression[i+1] == "exp" && (expression[i] == "ln" || expression[i] == "log"))
+                    {
+                        puts("hi 369");
+                        expression[i] = expression[i+2];
+                        expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                        simplified = true;
+                        break;
+                    }
                 }
             }
         }
