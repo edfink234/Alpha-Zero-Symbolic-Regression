@@ -44,6 +44,12 @@ bool isFloat(const std::string& x)
     }
 }
 
+/*
+ Converts:
+  - "-0" -> "0"
+  - "x.000000" (repeating) -> "x"
+  - "-0.0000" (repeating) -. "0"
+ */
 std::string simplifyString(const std::string& x)
 {
     if ((x.size() == 2) && (x[0] == '-') && (x[1] == '0')) //"-0" -> "0"

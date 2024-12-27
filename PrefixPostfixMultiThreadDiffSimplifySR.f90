@@ -4,6 +4,10 @@ module function_space
 
     ! Define constants for clock_gettime
     integer(c_int), parameter :: CLOCK_REALTIME = 0
+    character(len=10), parameter :: unary_operators(13) = &
+    ["cos       ", "~         ", "sin       ", "log       ", "ln        ", "asin      ", "arcsin    ", &
+     "acos      ", "arccos    ", "exp       ", "sech      ", "tanh      ", "sqrt      "]
+    character(len=*), parameter :: binary_operators(5) = ["+", "-", "*", "/", "^"]
 
     type, bind(c) :: timespec
         integer(c_long) :: tv_sec  ! seconds
@@ -19,7 +23,40 @@ module function_space
         end function clock_gettime
     end interface
 
+
 contains
+
+    logical function is_unary(token) result(isUnary)
+        implicit none
+        character(len=*), intent(in) :: token
+        integer :: i
+        isUnary = .false.
+        do i = 1, size(unary_operators)
+            if (trim(token) == trim(unary_operators(i))) then
+                isUnary = .true.
+                exit
+            end if
+        end do
+    end function is_unary
+
+    logical function is_binary(token) result(isBinary)
+        implicit none
+        character(len=*), intent(in) :: token
+        integer :: i
+        isBinary = .false.
+        do i = 1, size(binary_operators)
+            if (token == binary_operators(i)) then
+                isBinary = .true.
+                exit
+            end if
+        end do
+    end function is_binary
+
+    logical function is_const(token) result(isConst)
+        implicit none
+        character(len=*), intent(in) :: token
+        isConst = .not. is_unary(token) .and. .not. is_binary(token)
+    end function is_const
 
     function get_time() result(time)
         type(timespec) :: tp
@@ -65,6 +102,54 @@ contains
             linspaced(i) = min_val + (i - 1) * step
         end do
     end function linspace
+
+    function simplifyString(x) result(simplified)
+        implicit none
+        character(len=*), intent(in) :: x
+        character(len=len(x)) :: simplified
+        integer :: dotPos, i
+        logical :: allZerosAfterDot
+
+        ! Handle the case "-0" -> "0"
+        if (len(x) == 2 .and. x(1:1) == '-' .and. x(2:2) == '0') then
+            simplified = "0"
+            return
+        end if
+
+        ! Find the position of the decimal point
+        dotPos = index(x, '.')
+
+        ! If there is no decimal point, return the input as is
+        if (dotPos == 0) then
+            simplified = x
+            return
+        end if
+
+        ! Check if all characters after the decimal point are '0'
+        allZerosAfterDot = .true.
+        do i = dotPos + 1, len(x)
+            if (x(i:i) /= '0') then
+                allZerosAfterDot = .false.
+                exit
+            end if
+        end do
+
+        ! If there are non-zero characters after the decimal, return the input as is
+        if (.not. allZerosAfterDot) then
+            simplified = x
+            return
+        end if
+
+        ! Extract the part before the decimal point
+        simplified = x(1:dotPos - 1)
+
+        ! Handle the case "-0.0000" -> "0"
+        if (len(simplified) == 2 .and. simplified(1:1) == '-' .and. simplified(2:2) == '0') then
+            simplified = "0"
+        end if
+
+    end function simplifyString
+
 
     function trueMod(N, M) result(modulo)
         implicit none
@@ -150,6 +235,8 @@ program main
     logical(4) :: resultVal
     real, dimension(:), allocatable :: result
     integer :: i
+    character(len=100) :: string_result
+    character(len=15) :: token
 
     ! Capture start time
     start_time = get_time()
@@ -183,6 +270,58 @@ program main
     Val = (1.0 / 1e-40)         ! Infinity
     resultVal = isInvalid(Val)
     print *, "Value: ", Val, " isInvalid: ", resultVal
+
+    ! Test cases
+    string_result = simplifyString("-0")
+    print *, "Input: '-0', Output: ", trim(string_result), " Expected: '0'"
+
+    string_result = simplifyString("123.000000")
+    print *, "Input: '123.000000', Output: ", trim(string_result), " Expected: '123'"
+
+    string_result = simplifyString("0.1")
+    print *, "Input: '0.1', Output: ", trim(string_result), " Expected: '0.1'"
+
+    string_result = simplifyString("123.004500")
+    print *, "Input: '123.004500', Output: ", trim(string_result), " Expected: '123.004500'"
+
+    string_result = simplifyString("0.000000")
+    print *, "Input: '0.000000', Output: ", trim(string_result), " Expected: '0'"
+
+    string_result = simplifyString("-123.0045")
+    print *, "Input: '-123.0045', Output: ", trim(string_result), " Expected: '-123.0045'"
+
+
+
+    ! Test cases for is_unary
+    print *, "Testing is_unary function:"
+    do i = 1, size(unary_operators)
+        token = trim(unary_operators(i))  ! Use a valid unary operator
+        resultVal = is_unary(token)
+        print *, "Input:", token, "-> is_unary:", resultVal
+    end do
+
+    token = "invalid"
+    resultVal = is_unary(token)
+    print *, "Input: 'invalid' -> is_unary:", resultVal
+
+    ! Test cases for is_binary
+    print *, "Testing is_binary function:"
+    do i = 1, size(binary_operators)
+        token = trim(binary_operators(i))  ! Use a valid binary operator
+        resultVal = is_binary(token)
+        print *, "Input:", token, "-> is_binary:", resultVal
+    end do
+
+    token = "amp"
+    resultVal = is_binary(token)
+    print *, "Input: 'amp' -> is_binary:", resultVal
+
+    print *, "Testing is_const function:"
+    print *, "Input: 'cos' -> is_const:", is_const("cos")       ! Expected: F
+    print *, "Input: '+'   -> is_const:", is_const("+")         ! Expected: F
+    print *, "Input: '123' -> is_const:", is_const("123")       ! Expected: T
+    print *, "Input: 'log' -> is_const:", is_const("log")       ! Expected: F
+    print *, "Input: 'xyz' -> is_const:", is_const("xyz")       ! Expected: T
 
     ! Calculate elapsed time
     elapsed_time = time_elapsed(start_time)
