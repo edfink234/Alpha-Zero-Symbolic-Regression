@@ -30,8 +30,9 @@ void print_container(const std::vector<std::string>& c)
     std::cout << '\n';
 }
 
+//TODO: Fortran
 //https://medium.com/@ryan_forrester_/c-check-if-string-is-number-practical-guide-c7ba6db2febf
-bool isFloat(const std::string& s) //TODO: Fortran
+bool isFloat(const std::string& s)
 {
     enum State { START, INT, FRAC, EXP, EXP_NUM };
     State state = START;
@@ -393,6 +394,38 @@ void simplifyPN(std::vector<std::string>& expression)
                     else if (expression[i+1] == "exp" && (expression[i] == "ln" || expression[i] == "log"))
                     {
                         puts("hi 369");
+                        expression[i] = expression[i+2];
+                        expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                        simplified = true;
+                        break;
+                    }
+                    else if (expression[i] == "cos" && (expression[i+1] == "acos" || expression[i+1] == "arccos"))
+                    {
+                        puts("hi 403");
+                        expression[i] = expression[i+2];
+                        expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                        simplified = true;
+                        break;
+                    }
+                    else if (expression[i+1] == "cos" && (expression[i] == "acos" || expression[i] == "arccos"))
+                    {
+                        puts("hi 411");
+                        expression[i] = expression[i+2];
+                        expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                        simplified = true;
+                        break;
+                    }
+                    else if (expression[i] == "sin" && (expression[i+1] == "asin" || expression[i+1] == "arcsin"))
+                    {
+                        puts("hi 419");
+                        expression[i] = expression[i+2];
+                        expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                        simplified = true;
+                        break;
+                    }
+                    else if (expression[i+1] == "sin" && (expression[i] == "asin" || expression[i] == "arcsin"))
+                    {
+                        puts("hi 427");
                         expression[i] = expression[i+2];
                         expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                         simplified = true;
@@ -1040,6 +1073,55 @@ int main()
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
+    
+    test_expr = {"cos", "acos", "*", "y", "y"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+
+    test_expr = {"ln", "exp", "*", "cos", "arccos", "y", "y"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+
+    test_expr = {"arccos", "cos", "*", "y", "y"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+
+    test_expr = {"ln", "exp", "*", "arccos", "cos", "y", "y"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+
+    test_expr = {"sin", "arcsin", "*", "y", "y"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+
+    test_expr = {"ln", "exp", "*", "sin", "asin", "y", "y"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+
+    test_expr = {"arcsin", "sin", "*", "y", "y"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+
+    test_expr = {"ln", "exp", "*", "asin", "sin", "y", "y"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+
     
 }
 
