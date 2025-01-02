@@ -453,6 +453,8 @@ struct Board
     static constexpr float K = 0.0884956f;
     static constexpr float phi_1 = 2.8f;
     static constexpr float phi_2 = 1.3f;
+    static constexpr double rescale_a = 1.0f/FLT_MAX;
+    static constexpr float rescale_b = 1.0f;
     static int inline __num_features;
     static std::vector<std::string> inline __input_vars;
     static std::vector<std::string> inline __unary_operators;
@@ -539,8 +541,8 @@ struct Board
                 Board::data = theData;
                 Board::__num_features = Board::data[0].size();
                 printf("Number of features = %d\n", Board::__num_features);
-                Board::__input_vars.clear();
-                Board::expression_dict.clear();
+//                Board::__input_vars.clear();
+//                Board::expression_dict.clear();
                 Board::__input_vars.reserve(Board::__num_features);
                 for (auto i = 0; i < Board::__num_features; i++)
                 {
@@ -552,7 +554,7 @@ struct Board
                 std::copy(Board::__binary_operators.begin(), Board::__binary_operators.end(), std::inserter(Board::__binary_operators_uset, Board::__binary_operators_uset.end()));
 //                for (const std::string& i: Board::__unary_operators_uset) {std::cout << i << ' ';}puts("");
 //                for (const std::string& i: Board::__binary_operators_uset) {std::cout << i << ' ';}puts("");
-                Board::__operators.clear();
+//                Board::__operators.clear();
                 for (std::string& i: Board::__unary_operators)
                 {
                     Board::__operators.push_back(i);
@@ -561,14 +563,20 @@ struct Board
                 {
                     Board::__operators.push_back(i);
                 }
-                Board::__other_tokens = {"0", "1", "2", "4"};
-                for (const std::string& i: Board::__input_vars)
+                Board::__other_tokens.push_back("0");
+                Board::__other_tokens.push_back("1");
+                Board::__other_tokens.push_back("2");
+                Board::__other_tokens.push_back("4");
+                if (this->num_consts)
                 {
-                    std::string minCoeff_i = std::to_string(Board::data[i].minCoeff());
-                    std::string maxCoeff_i = std::to_string(Board::data[i].maxCoeff());
-                    Board::__other_tokens.push_back(minCoeff_i); //add smallest element
-                    Board::__other_tokens.push_back(maxCoeff_i); //add largest element
-                    feature_mins_maxes[i] = std::make_pair(minCoeff_i, maxCoeff_i);
+                    for (const std::string& i: Board::__input_vars)
+                    {
+                        std::string minCoeff_i = std::to_string(Board::data[i].minCoeff());
+                        std::string maxCoeff_i = std::to_string(Board::data[i].maxCoeff());
+                        Board::__other_tokens.push_back(minCoeff_i); //add smallest element
+                        Board::__other_tokens.push_back(maxCoeff_i); //add largest element
+                        feature_mins_maxes[i] = std::make_pair(minCoeff_i, maxCoeff_i);
+                    }
                 }
                 if (const_token)
                 {
@@ -594,7 +602,7 @@ struct Board
                 }
                 Board::action_size = Board::__tokens.size();
                 
-                Board::una_bin_leaf_legal_moves_dict.clear();
+//                Board::una_bin_leaf_legal_moves_dict.clear();
                 if (const_tokens)
                 {
                     Board::una_bin_leaf_legal_moves_dict[true][true][true] = Board::__tokens;
@@ -633,6 +641,7 @@ struct Board
                 std::cout << "Board::__unary_operators.size() = " << Board::__unary_operators.size() << '\n';
                 std::cout << "Board::__binary_operators.size() = " << Board::__binary_operators.size() << '\n';
                 std::cout << "Board::__tokens.size() = " << Board::__tokens.size() << '\n';
+                for (const std::string& i: Board::__other_tokens) {std::cout << i << ' ';}puts("");
 
             });
             
@@ -872,7 +881,7 @@ struct Board
                         {
                             if (expression[i+1] == "0" && is_const(expression[i+2])) //* 0 x -> 0
                             {
-                                puts("hi 131");
+                                //puts("hi 131");
                                 expression[i] = "0";
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                                 simplified = true;
@@ -880,7 +889,7 @@ struct Board
                             }
                             else if (expression[i+2] == "0" && is_const(expression[i+1])) //* x 0 -> 0
                             {
-                                puts("hi 139");
+                                //puts("hi 139");
                                 expression[i] = "0";
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                                 simplified = true;
@@ -888,7 +897,7 @@ struct Board
                             }
                             else if (expression[i+1] == "1" && is_const(expression[i+2])) //* 1 x -> x
                             {
-                                puts("hi 147");
+                                //puts("hi 147");
                                 expression[i] = expression[i+2];
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                                 simplified = true;
@@ -896,7 +905,7 @@ struct Board
                             }
                             else if (expression[i+2] == "1" && is_const(expression[i+1])) //* x 1 -> x
                             {
-                                puts("hi 155");
+                                //puts("hi 155");
                                 expression[i] = expression[i+1];
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                                 simplified = true;
@@ -908,7 +917,7 @@ struct Board
                         {
                             if (expression[i+1] == "0" && is_const(expression[i+2])) //+ 0 x -> x
                             {
-                                puts("hi 167");
+                                //puts("hi 167");
                                 expression[i] = expression[i+2];
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                                 simplified = true;
@@ -916,7 +925,7 @@ struct Board
                             }
                             else if (expression[i+2] == "0" && is_const(expression[i+1])) //+ x 0 -> x
                             {
-                                puts("hi 175");
+                                //puts("hi 175");
                                 expression[i] = expression[i+1];
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                                 simplified = true;
@@ -928,7 +937,7 @@ struct Board
                         {
                             if (expression[i+1] == "0" && is_const(expression[i+2])) // / 0 x -> 0
                             {
-                                puts("hi 187");
+                                //puts("hi 187");
                                 expression[i] = "0";
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                                 simplified = true;
@@ -936,7 +945,7 @@ struct Board
                             }
                             else if (expression[i+2] == "1" && is_const(expression[i+1])) // / x 1 -> x
                             {
-                                puts("hi 195");
+                                //puts("hi 195");
                                 expression[i] = expression[i+1];
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                                 simplified = true;
@@ -944,7 +953,7 @@ struct Board
                             }
                             else if (is_const(expression[i+1]) && is_const(expression[i+2]) && (expression[i+1] == expression[i+2])) // / x x -> 1
                             {
-                                puts("hi 203");
+                                //puts("hi 203");
                                 expression[i] = "1";
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                                 simplified = true;
@@ -956,7 +965,7 @@ struct Board
                         {
                             if (expression[i+1] == "0" && is_const(expression[i+2])) // ^ 0 x -> 0
                             {
-                                puts("hi 215");
+                                //puts("hi 215");
                                 expression[i] = "0";
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                                 simplified = true;
@@ -964,7 +973,7 @@ struct Board
                             }
                             else if (expression[i+2] == "0" && is_const(expression[i+1])) // ^ x 0 -> 1
                             {
-                                puts("hi 223");
+                                //puts("hi 223");
                                 expression[i] = "1";
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                                 simplified = true;
@@ -972,7 +981,7 @@ struct Board
                             }
                             else if (expression[i+1] == "1" && is_const(expression[i+2])) // ^ 1 x -> 1
                             {
-                                puts("hi 231");
+                                //puts("hi 231");
                                 expression[i] = "1";
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                                 simplified = true;
@@ -980,7 +989,7 @@ struct Board
                             }
                             else if (expression[i+2] == "1" && is_const(expression[i+1])) // ^ x 1 -> x
                             {
-                                puts("hi 239");
+                                //puts("hi 239");
                                 expression[i] = expression[i+1];
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                                 simplified = true;
@@ -1075,7 +1084,7 @@ struct Board
                         }
                         else if (expression[i] == "exp" && (expression[i+1] == "ln" || expression[i+1] == "log"))
                         {
-                            puts("hi 361");
+                            //puts("hi 361");
                             expression[i] = expression[i+2];
                             expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                             simplified = true;
@@ -1083,7 +1092,7 @@ struct Board
                         }
                         else if (expression[i+1] == "exp" && (expression[i] == "ln" || expression[i] == "log"))
                         {
-                            puts("hi 369");
+                            //puts("hi 369");
                             expression[i] = expression[i+2];
                             expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                             simplified = true;
@@ -1091,7 +1100,7 @@ struct Board
                         }
                         else if (expression[i] == "cos" && (expression[i+1] == "acos" || expression[i+1] == "arccos"))
                         {
-                            puts("hi 403");
+                            //puts("hi 403");
                             expression[i] = expression[i+2];
                             expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                             simplified = true;
@@ -1099,7 +1108,7 @@ struct Board
                         }
                         else if (expression[i+1] == "cos" && (expression[i] == "acos" || expression[i] == "arccos"))
                         {
-                            puts("hi 411");
+                            //puts("hi 411");
                             expression[i] = expression[i+2];
                             expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                             simplified = true;
@@ -1107,7 +1116,7 @@ struct Board
                         }
                         else if (expression[i] == "sin" && (expression[i+1] == "asin" || expression[i+1] == "arcsin"))
                         {
-                            puts("hi 419");
+                            //puts("hi 419");
                             expression[i] = expression[i+2];
                             expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                             simplified = true;
@@ -1115,7 +1124,7 @@ struct Board
                         }
                         else if (expression[i+1] == "sin" && (expression[i] == "asin" || expression[i] == "arcsin"))
                         {
-                            puts("hi 427");
+                            //puts("hi 427");
                             expression[i] = expression[i+2];
                             expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                             simplified = true;
@@ -1211,7 +1220,7 @@ struct Board
                         {
                             if (expression[i-2] == "0" && is_const(expression[i-1])) //"0 x *" -> "0"
                             {
-                                puts("hi 131");
+                                //puts("hi 131");
                                 expression[i] = "0";
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
@@ -1219,7 +1228,7 @@ struct Board
                             }
                             else if (expression[i-1] == "0" && is_const(expression[i-2])) //"x 0 *" -> "0"
                             {
-                                puts("hi 139");
+                                //puts("hi 139");
                                 expression[i] = "0";
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
@@ -1227,7 +1236,7 @@ struct Board
                             }
                             else if (expression[i-2] == "1" && is_const(expression[i-1])) //"1 x *" -> "x"
                             {
-                                puts("hi 147");
+                                //puts("hi 147");
                                 expression[i] = expression[i-1];
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
@@ -1235,7 +1244,7 @@ struct Board
                             }
                             else if (expression[i-1] == "1" && is_const(expression[i-2])) //"x 1 *" -> "x"
                             {
-                                puts("hi 155");
+                                //puts("hi 155");
                                 expression[i] = expression[i-2];
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
@@ -1247,7 +1256,7 @@ struct Board
                         {
                             if (expression[i-2] == "0" && is_const(expression[i-1])) //"0 x +" -> "x"
                             {
-                                puts("hi 167");
+                                //puts("hi 167");
                                 expression[i] = expression[i-1];
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
@@ -1255,7 +1264,7 @@ struct Board
                             }
                             else if (expression[i-1] == "0" && is_const(expression[i-2])) //"x 0 +" -> "x"
                             {
-                                puts("hi 175");
+                                //puts("hi 175");
                                 expression[i] = expression[i-2];
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
@@ -1267,7 +1276,7 @@ struct Board
                         {
                             if (expression[i-2] == "0" && is_const(expression[i-1])) // "0 x /" -> "0"
                             {
-                                puts("hi 187");
+                                //puts("hi 187");
                                 expression[i] = "0";
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
@@ -1275,7 +1284,7 @@ struct Board
                             }
                             else if (expression[i-1] == "1" && is_const(expression[i-2])) // "x 1 /" -> "x"
                             {
-                                puts("hi 195");
+                                //puts("hi 195");
                                 expression[i] = expression[i-2];
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
@@ -1283,7 +1292,7 @@ struct Board
                             }
                             else if (is_const(expression[i-1]) && is_const(expression[i-2]) && (expression[i-1] == expression[i-2])) // "x x /" -> "1"
                             {
-                                puts("hi 203");
+                                //puts("hi 203");
                                 expression[i] = "1";
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
@@ -1295,7 +1304,7 @@ struct Board
                         {
                             if (expression[i-2] == "0" && is_const(expression[i-1])) // "0 x ^" -> "0"
                             {
-                                puts("hi 215");
+                                //puts("hi 215");
                                 expression[i] = "0";
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
@@ -1303,7 +1312,7 @@ struct Board
                             }
                             else if (expression[i-1] == "0" && is_const(expression[i-2])) // "x 0 ^" -> "1"
                             {
-                                puts("hi 223");
+                                //puts("hi 223");
                                 expression[i] = "1";
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
@@ -1311,7 +1320,7 @@ struct Board
                             }
                             else if (expression[i-2] == "1" && is_const(expression[i-1])) // "1 x ^" -> "1"
                             {
-                                puts("hi 231");
+                                //puts("hi 231");
                                 expression[i] = "1";
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
@@ -1319,7 +1328,7 @@ struct Board
                             }
                             else if (expression[i-1] == "1" && is_const(expression[i-2])) // "x 1 ^" -> "x"
                             {
-                                puts("hi 239");
+                                //puts("hi 239");
                                 expression[i] = expression[i-2];
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
@@ -1413,7 +1422,7 @@ struct Board
                         }
                         else if (expression[i] == "exp" && (expression[i-1] == "ln" || expression[i-1] == "log"))
                         {
-                            puts("hi 360");
+                            //puts("hi 360");
                             expression[i] = expression[i-2];
                             expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                             simplified = true;
@@ -1421,7 +1430,7 @@ struct Board
                         }
                         else if (expression[i-1] == "exp" && (expression[i] == "ln" || expression[i] == "log"))
                         {
-                            puts("hi 368");
+                            //puts("hi 368");
                             expression[i] = expression[i-2];
                             expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                             simplified = true;
@@ -1429,7 +1438,7 @@ struct Board
                         }
                         else if (expression[i] == "cos" && (expression[i-1] == "acos" || expression[i-1] == "arccos"))
                         {
-                            puts("hi 408");
+                            //puts("hi 408");
                             expression[i] = expression[i-2];
                             expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                             simplified = true;
@@ -1437,7 +1446,7 @@ struct Board
                         }
                         else if (expression[i-1] == "cos" && (expression[i] == "acos" || expression[i] == "arccos"))
                         {
-                            puts("hi 416");
+                            //puts("hi 416");
                             expression[i] = expression[i-2];
                             expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                             simplified = true;
@@ -1445,7 +1454,7 @@ struct Board
                         }
                         else if (expression[i] == "sin" && (expression[i-1] == "asin" || expression[i-1] == "arcsin"))
                         {
-                            puts("hi 424");
+                            //puts("hi 424");
                             expression[i] = expression[i-2];
                             expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                             simplified = true;
@@ -1453,7 +1462,7 @@ struct Board
                         }
                         else if (expression[i-1] == "sin" && (expression[i] == "asin" || expression[i] == "arcsin"))
                         {
-                            puts("hi 432");
+                            //puts("hi 432");
                             expression[i] = expression[i-2];
                             expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                             simplified = true;
@@ -2673,28 +2682,33 @@ struct Board
     float fitFunctionToData()
     {
         float score = 0.0f;
-        for (int jdx = 0; jdx < this->pieces.size(); jdx++)
+        for (int jdx = 0; jdx < this->pieces.size(); jdx++) //For each expression, make sure it is not trivial.
         {
-            Eigen::VectorXf expression_eval = expression_evaluator(this->params, this->pieces[jdx]);
-            if ((Board::__num_features == 1) && isConstant(expression_eval, sqrt(this->isConstTol))) //Ignore the trivial solution (1-d functions)!
+            if (Board::__num_features == 1)
             {
-                this->MSE_curr = FLT_MAX;
-                return score;
+                if (std::find(this->pieces[jdx].begin(), this->pieces[jdx].end(), Board::__input_vars[0]) == this->pieces[jdx].end())
+                {
+                    this->MSE_curr = FLT_MAX;
+                    return score;
+                }
+                ((this->expression_type == "prefix") ? simplifyPN(this->pieces[jdx]) : simplifyRPN(this->pieces[jdx]));
+                if (std::find(this->pieces[jdx].begin(), this->pieces[jdx].end(), Board::__input_vars[0]) == this->pieces[jdx].end())
+                {
+                    this->MSE_curr = FLT_MAX;
+                    return score;
+                }
             }
             else if (Board::__num_features > 1)
             {
-                std::vector<int> grasp;
                 for (const std::string& i: Board::__input_vars)
                 {
-                    if (this->expression_type == "prefix")
+                    if (std::find(this->pieces[jdx].begin(), this->pieces[jdx].end(), i) == this->pieces[jdx].end())
                     {
-                        this->derivePrefix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
+                        this->MSE_curr = FLT_MAX;
+                        return score;
                     }
-                    else //postfix
-                    {
-                        this->derivePostfix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
-                    }
-                    if (isZero(expression_evaluator(this->params, this->derivat), sqrt(this->isConstTol))) //Ignore the trivial solution (N-d functions)!
+                    ((this->expression_type == "prefix") ? simplifyPN(this->pieces[jdx]) : simplifyRPN(this->pieces[jdx]));
+                    if (std::find(this->pieces[jdx].begin(), this->pieces[jdx].end(), i) == this->pieces[jdx].end())
                     {
                         this->MSE_curr = FLT_MAX;
                         return score;
@@ -2702,6 +2716,7 @@ struct Board
                 }
             }
         }
+        //Then, if the expression(s) is/are not trivial, compute the score
         if (this->params.size())
         {
             this->diffeq_result = diffeq(*this);
@@ -2778,34 +2793,34 @@ struct Board
             this->MSE_curr = 0.0f;
             for (int jdx = 0; jdx < this->diffeq_result.size(); jdx++)
             {
-//                puts("hi");
-                auto temp_data = expression_evaluator(this->params, this->diffeq_result[jdx]);
-//                std::cout << Board::data << '\n';
-//                for (const std::string& jd: this->diffeq_result[jdx]){std::cout << jd << ' ';}puts("");
-//                for (int i = 0; i < temp_data.size(); i++){std::cout << ((i == temp_data.size() - 1) ? std::to_string(temp_data[i]) : std::to_string(temp_data[i]) + ", ");}puts("");
-//                std::cout << "result with x0 = 1.49012e-07 is " << expression_evaluator(this->params, this->diffeq_result[jdx], 1.49012e-07) << '\n';
-//                exit(1);
-                temp = loss_func(temp_data);
-                if (isInvalid(temp))
+                //First, simplify the result
+                ((this->expression_type == "prefix") ? simplifyPN(this->diffeq_result[jdx]) : simplifyRPN(this->diffeq_result[jdx]));
+                //Then, compute the MSE
+                if (this->diffeq_result[jdx].size() > 1)
                 {
-                    this->MSE_curr = FLT_MAX;
-//                    puts("hi");
-                    return 0.0f;
+                    this->MSE_curr += this->diffeq_result[jdx].size();
                 }
-                score += temp;
-                this->MSE_curr += ((1.0f/temp) - 1.0f);
+                else if (isFloat(this->diffeq_result[jdx][0]))
+                {
+                    temp = std::stof(this->diffeq_result[jdx][0]);
+                    if (isInvalid(temp))
+                    {
+                        this->MSE_curr += 1.0f;
+                    }
+                    else
+                    {
+                        //rescale float value from (0, FLT_MAX) to (0, 1)
+                        this->MSE_curr += (Board::rescale_a * (temp - FLT_MAX) + Board::rescale_b);
+                    }
+                }
+                else
+                {
+                    //Assume the leaf is on average halfway between 0 and FLT_MAX
+                    this->MSE_curr += 0.5f;
+                }
             }
-//            if (score > 2.9f)
-//            {
-//                std::cout << Board::data << '\n';
-//                auto temp_data = expression_evaluator(this->params, this->diffeq_result[0]);
-//                for (const std::string& jd: this->diffeq_result[0]){std::cout << jd << ' ';}puts("");
-//                for (int i = 0; i < temp_data.size(); i++){std::cout << ((i == temp_data.size() - 1) ? std::to_string(temp_data[i]) : std::to_string(temp_data[i]) + ", ");}puts("");
-//                std::cout << "result with x0 = 0.0001f is " << expression_evaluator(this->params, this->diffeq_result[0], 0.0001f) << '\n';
-//                exit(1);
-//            }
+            score = (1.0f / (1.0f + this->MSE_curr));
         }
-
         return score;
     }
     
@@ -3067,7 +3082,7 @@ struct Board
             
             if (derivat[x_prime_high] == "0") //1.) +/- x' 0 -> x'
             {
-                //            puts("hi 147");
+                //            //puts("hi 147");
                 //remove y'
                 if (x_prime_high == static_cast<int>(derivat.size()) - 1)
                 {
@@ -3082,21 +3097,21 @@ struct Board
             
             else if (derivat[x_prime_low] == "0") //2.) and 3.)
             {
-                //            puts("hi 162");
+                //            //puts("hi 162");
                 if (prefix[low] == "+") //2.) + 0 y' -> y'
                 {
                     derivat.erase(derivat.begin() + op_idx, derivat.begin() + x_prime_high); //remove "+" and "x'"
                 }
                 else //3.) prefix[low] == "-", - 0 y' -> ~ y'
                 {
-                    //                puts("hi 170");
+                    //                //puts("hi 170");
                     derivat[op_idx] = "~"; //change binary minus to unary minus
                     derivat.erase(derivat.begin() + x_prime_low); //remove x'
                 }
             }
             else if ((prefix[low] == "-") && ((step = (y_prime_high - x_prime_high)) == (x_prime_high - x_prime_low)) && (areDerivatRangesEqual(x_prime_low, x_prime_high, step)))
             {
-                //                puts("hi 194");
+                //                //puts("hi 194");
                 assert(derivat[op_idx] == prefix[low]);
                 derivat[op_idx] = "0"; //change "-" to "0";
                 derivat.erase(derivat.begin() + op_idx + 1, derivat.begin() + y_prime_high);
@@ -3114,7 +3129,7 @@ struct Board
             }
             if (derivat[x_low] == "0") //* 0 y' -> 0
             {
-                //            puts("hi 187");
+                //            //puts("hi 187");
                 derivat[x_low - 1] = "0"; //change "*" to "0"
                 derivat.erase(derivat.begin() + x_low); //erase x
             }
@@ -3124,18 +3139,18 @@ struct Board
                 derivePrefixHelper(temp+1, temp+1+grasp[temp+1], dx, prefix, grasp, true); /* + * x y' */
                 if (derivat[y_prime_low] == "0") //* x 0 -> 0
                 {
-                    //                puts("hi 197");
+                    //                //puts("hi 197");
                     derivat[x_low - 1] = "0"; //change "*" to "0"
                     derivat.erase(derivat.begin() + x_low, derivat.end()); //erase x and y'
                 }
                 else if (derivat[x_low] == "1") //* 1 y' -> y'
                 {
-                    //                puts("hi 203");
+                    //                //puts("hi 203");
                     derivat.erase(derivat.begin() + x_low - 1, derivat.begin() + x_low + 1); //erase "*" and "1"
                 }
                 else if (derivat[y_prime_low] == "1") //* x 1 -> x
                 {
-                    //                puts("hi 208");
+                    //                //puts("hi 208");
                     derivat.pop_back(); //remove "1"
                     derivat.erase(derivat.begin() + x_low - 1); //remove "*"
                 }
@@ -3145,7 +3160,7 @@ struct Board
             derivePrefixHelper(low+1, temp, dx, prefix, grasp, true); /* + * x y' * x' */
             if (derivat[x_prime_low] == "0") //* 0 y -> 0
             {
-                //            puts("hi 218");
+                //            //puts("hi 218");
                 derivat[x_prime_low - 1] = "0"; //change "*" to "0"
                 derivat.erase(derivat.begin() + x_prime_low); //erase x'
             }
@@ -3158,18 +3173,18 @@ struct Board
                 }
                 if (derivat[y_low] == "0") //* x' 0 -> 0
                 {
-                    //                puts("hi 231");
+                    //                //puts("hi 231");
                     derivat[x_prime_low - 1] = "0"; //change "*" to "0"
                     derivat.erase(derivat.begin() + x_prime_low, derivat.end()); //erase x' and y
                 }
                 else if (derivat[x_prime_low] == "1") //* 1 y -> y
                 {
-                    //                puts("hi 237");
+                    //                //puts("hi 237");
                     derivat.erase(derivat.begin() + x_prime_low - 1, derivat.begin() + x_prime_low + 1); //erase "*" and "1"
                 }
                 else if (derivat[y_low] == "1") //* x' 1 -> x'
                 {
-                    //                puts("hi 242");
+                    //                //puts("hi 242");
                     derivat.pop_back(); //remove "1"
                     assert(derivat[x_prime_low - 1] == "*");
                     derivat.erase(derivat.begin() + x_prime_low - 1); //remove "*"
@@ -3177,12 +3192,12 @@ struct Board
             }
             if (derivat[x_low - 1] == "0") //+ 0 * x' y -> * x' y
             {
-                //            puts("hi 249");
+                //            //puts("hi 249");
                 derivat.erase(derivat.begin() + x_low - 2, derivat.begin() + x_low); //remove "+" and "0"
             }
             else if (derivat[x_prime_low - 1] == "0") //+ * x y' 0 -> * x y'
             {
-                //            puts("hi 254");
+                //            //puts("hi 254");
                 assert(static_cast<int>(derivat.size()) == x_prime_low);
                 derivat.erase(derivat.begin() + x_low - 2); //erase "+"
                 derivat.pop_back(); //remove "0"
@@ -3201,7 +3216,7 @@ struct Board
             derivePrefixHelper(low+1, temp, dx, prefix, grasp, true); /* / - * x' */
             if (derivat[x_prime_low] == "0") //* 0 y -> 0
             {
-                //            puts("hi 297");
+                //            //puts("hi 297");
                 derivat[x_prime_low - 1] = "0"; //change "*" to "0"
                 assert(x_prime_low + 1 == static_cast<int>(derivat.size()));
                 derivat.pop_back(); //remove x', which is 0
@@ -3215,20 +3230,20 @@ struct Board
                 }
                 if (derivat[y_low] == "0") //* x' 0 -> 0
                 {
-                    //                puts("hi 312");
+                    //                //puts("hi 312");
                     derivat[x_prime_low - 1] = "0"; //change "*" to "0"
                     derivat.erase(derivat.begin() + x_prime_low, derivat.end()); //remove x' and 0
                 }
                 else if (derivat[y_low] == "1") //* x' 1 -> x'
                 {
-                    //                puts("hi 318");
+                    //                //puts("hi 318");
                     assert(y_low == static_cast<int>(derivat.size()) - 1);
                     derivat.erase(derivat.begin() + x_prime_low - 1); //erase "*"
                     derivat.pop_back(); //erase the "1"
                 }
                 else if (derivat[x_prime_low] == "1") //* 1 y -> y
                 {
-                    //                    puts("hi 326");
+                    //                    //puts("hi 326");
                     derivat.erase(derivat.begin() + x_prime_low - 1, derivat.begin() + x_prime_low + 1); //erase "*" and "1"
                 }
             }
@@ -3240,7 +3255,7 @@ struct Board
             }
             if (derivat[x_low] == "0") //* 0 y' -> 0
             {
-                //            puts("hi 338");
+                //            //puts("hi 338");
                 derivat.erase(derivat.begin() + x_low - 1); //erase "*"
             }
             else
@@ -3249,18 +3264,18 @@ struct Board
                 derivePrefixHelper(temp+1, temp+1+grasp[temp+1], dx, prefix, grasp, true); /* / - * x' y * x y' */
                 if (derivat[y_prime_low] == "0") //* x 0 -> 0
                 {
-                    //                puts("hi 347");
+                    //                //puts("hi 347");
                     assert(y_prime_low == static_cast<int>(derivat.size()) - 1);
                     derivat.erase(derivat.begin() + x_low - 1, derivat.begin() + y_prime_low); //erase * and x
                 }
                 else if (derivat[x_low] == "1") //* 1 y' -> y'
                 {
-                    //                puts("hi 352");
+                    //                //puts("hi 352");
                     derivat.erase(derivat.begin() + x_low - 1, derivat.begin() + y_prime_low); //erase * and 1
                 }
                 else if (derivat[y_prime_low] == "1") //* x 1 -> x
                 {
-                    //                puts("hi 357");
+                    //                //puts("hi 357");
                     assert(y_prime_low == static_cast<int>(derivat.size()) - 1);
                     derivat.erase(derivat.begin() + x_low - 1); //erase "*"
                     derivat.pop_back(); //remove the "1"
@@ -3269,7 +3284,7 @@ struct Board
             
             if (((k = (x_low - x_prime_low)) == (static_cast<int>(derivat.size()) - (x_low - 1))) && (areDerivatRangesEqual(x_prime_low - 1, x_low - 1, k))) //- thing1 thing1 -> 0
             {
-                //            puts("hi 367");
+                //            //puts("hi 367");
                 derivat[div_idx] = "0";
                 derivat.erase(derivat.begin() + div_idx + 1, derivat.end()); //erase everything else
             }
@@ -3277,13 +3292,13 @@ struct Board
             {
                 if (derivat[x_prime_low - 1] == "0") //- 0 * x y' -> ~ * x y'
                 {
-                    //                puts("hi 375");
+                    //                //puts("hi 375");
                     derivat[x_prime_low - 2] = "~"; //change "-" to "~"
                     derivat.erase(derivat.begin() + x_prime_low - 1); //erase "0"
                 }
                 else if (derivat[x_low - 1] == "0") //- * x' y 0 -> * x' y
                 {
-                    //                    puts("hi 381");
+                    //                    //puts("hi 381");
                     assert(static_cast<int>(derivat.size()) == x_low);
                     derivat.erase(derivat.begin() + x_prime_low - 2); //erase the "-"
                     derivat.pop_back(); //erase the "0"
@@ -3296,7 +3311,7 @@ struct Board
                 }
                 if (derivat[y_low] == "1") // / - * x' y * x y' * 1 1 ->  - * x' y * x y'
                 {
-                    //                puts("hi 381");
+                    //                //puts("hi 381");
                     assert(y_low == static_cast<int>(derivat.size()) - 1);
                     derivat.erase(derivat.begin() + y_low - 1); //erase "*"
                     derivat.erase(derivat.begin() + div_idx); //erase "/"
@@ -3325,14 +3340,14 @@ struct Board
             }
             if (derivat[x_low] == "0") //* ^ 0 y (* ln 0 y)' -> 0 (maybe problematic for y < 0, but oh well 😮‍💨)
             {
-                //            puts("hi 454");
+                //            //puts("hi 454");
                 assert(x_low == static_cast<int>(derivat.size()) - 1);
                 derivat.erase(derivat.begin() + x_low - 2, derivat.begin() + x_low); //erase "*" and "^"
                 return;
             }
             else if (derivat[x_low] == "1") //* ^ 1 y (* ln 1 y)' -> 0 (because ln(1) is 0)
             {
-                //            puts("hi 461");
+                //            //puts("hi 461");
                 assert(x_low == static_cast<int>(derivat.size()) - 1);
                 derivat[x_low] = "0"; //change "1" to "0"
                 derivat.erase(derivat.begin() + x_low - 2, derivat.begin() + x_low); //erase "*" and "^"
@@ -3346,7 +3361,7 @@ struct Board
             if (derivat[y_low] == "0") //* ^ x 0 (* ln x 0)' -> 0
             {
                 assert(y_low == static_cast<int>(derivat.size()) - 1);
-                //            puts("hi 474");
+                //            //puts("hi 474");
                 derivat[x_low - 2] = "0"; //change "*" to "0)
                 derivat.erase(derivat.begin() + x_low - 1, derivat.end()); //erase the rest
                 return;
@@ -3356,7 +3371,7 @@ struct Board
                 assert(y_low == static_cast<int>(derivat.size()) - 1);
                 derivat.pop_back(); //erase the "1"
                 derivat.erase(derivat.begin() + x_low - 1); //erase the "*"
-                //            puts("hi 485");
+                //            //puts("hi 485");
             }
             std::vector<std::string> prefix_temp;
             std::vector<int> grasp_temp;
@@ -3377,7 +3392,7 @@ struct Board
             }
             if (prefix_temp[y_low] == "1") //* ln x 1 -> ln x
             {
-                //            puts("hi 506");
+                //            //puts("hi 506");
                 assert(y_low == static_cast<int>(prefix_temp.size()) - 1);
                 prefix_temp.pop_back(); //remove the "1"
                 prefix_temp.erase(prefix_temp.begin() + x_temp_low - 2); //erase the "*"
@@ -3388,13 +3403,13 @@ struct Board
             derivePrefixHelper(0, prefix_temp.size() - 1, dx, prefix_temp, grasp_temp, true); /* * ^ x y (* ln x y)' */
             if (derivat[temp_term_low] == "0") //* ^ x y 0 -> 0
             {
-                //            puts("hi 516");
+                //            //puts("hi 516");
                 derivat[x_low - 2] = "0"; //changing "*" to "0"
                 derivat.erase(derivat.begin() + x_low - 1, derivat.end()); //erase the rest
             }
             else if (derivat[temp_term_low] == "1") //* ^ x y 1 -> ^ x y
             {
-                //            puts("hi 522");
+                //            //puts("hi 522");
                 assert(temp_term_low == static_cast<int>(derivat.size()) - 1);
                 derivat.erase(derivat.begin() + x_low - 2); //erasing "*"
                 derivat.pop_back(); //erasing the "1"
@@ -3409,7 +3424,7 @@ struct Board
             derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* * x' */
             if (derivat[x_prime_low] == "0") //* 0 ~ sin x -> 0
             {
-                //                puts("hi 538");
+                //                //puts("hi 538");
                 assert(static_cast<int>(derivat.size() - 1) == x_prime_low);
                 derivat.erase(derivat.begin() + x_prime_low - 1); //erase "*"
                 return;
@@ -3422,7 +3437,7 @@ struct Board
             }
             if (derivat[x_prime_low] == "1") //* 1 ~ sin x -> ~ sin x
             {
-                //                puts("hi 551");
+                //                //puts("hi 551");
                 derivat.erase(derivat.begin() + x_prime_low - 1, derivat.begin() + x_prime_low + 1); //erase "*" and "1"
             }
         }
@@ -3435,7 +3450,7 @@ struct Board
             derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* * x' */
             if (derivat[x_prime_low] == "0") //* 0 cos x -> 0
             {
-                //                puts("hi 565");
+                //                //puts("hi 565");
                 assert(static_cast<int>(derivat.size() - 1) == x_prime_low);
                 derivat.erase(derivat.begin() + x_prime_low - 1); //erase "*"
                 return;
@@ -3447,7 +3462,7 @@ struct Board
             }
             if (derivat[x_prime_low] == "1") //* 1 cos x -> cos x
             {
-                //                puts("hi 577");
+                //                //puts("hi 577");
                 derivat.erase(derivat.begin() + x_prime_low - 1, derivat.begin() + x_prime_low + 1); //erase "*" and "1"
             }
         }
@@ -3460,7 +3475,7 @@ struct Board
             derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* / x' */
             if (derivat[x_prime_low] == "0")
             {
-                //            puts("hi 590");
+                //            //puts("hi 590");
                 assert(x_prime_low == static_cast<int>(derivat.size() - 1));
                 derivat.erase(derivat.begin() + x_prime_low - 1); //erase the "/"
                 return;
@@ -3482,7 +3497,7 @@ struct Board
             derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* / x' */
             if (derivat[x_prime_low] == "0") // / 0 x -> 0
             {
-                //                puts("hi 578");
+                //                //puts("hi 578");
                 assert(static_cast<int>(derivat.size()) - 1 == x_prime_low);
                 derivat[x_prime_low - 1] = "0"; //change "/" to 0
                 derivat.erase(derivat.begin() + x_prime_low, derivat.end()); //delete the rest
@@ -3496,7 +3511,7 @@ struct Board
             int step = derivat.size() - x_low;
             if ((step == (x_low - x_prime_low)) && areDerivatRangesEqual(x_prime_low, x_low, step)) // / something something -> 1
             {
-                //                puts("hi 591");
+                //                //puts("hi 591");
                 derivat[x_prime_low - 1] = "1"; //change "/" to 0
                 derivat.erase(derivat.begin() + x_prime_low, derivat.end()); //delete the rest
             }
@@ -3510,7 +3525,7 @@ struct Board
             derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* / x' */
             if (derivat[x_prime_low] == "0")
             {
-                //                puts("hi 640");
+                //                //puts("hi 640");
                 assert(x_prime_low == static_cast<int>(derivat.size()) - 1);
                 derivat.erase(derivat.begin() + x_prime_low - 1); //erase "/"
                 return;
@@ -3538,7 +3553,7 @@ struct Board
             derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* ~ / x' */
             if (derivat[x_prime_low] == "0")
             {
-                //            puts("hi 668");
+                //            //puts("hi 668");
                 assert(x_prime_low == static_cast<int>(derivat.size()) - 1);
                 derivat.erase(derivat.begin() + x_prime_low - 2, derivat.begin() + x_prime_low); //erase "~" and "/"
                 return;
@@ -3565,7 +3580,7 @@ struct Board
             derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); //* x'
             if (derivat[x_prime_low] == "0")
             {
-                //                puts("hi 696");
+                //                //puts("hi 696");
                 assert(x_prime_low == static_cast<int>(derivat.size()) - 1);
                 derivat.erase(derivat.begin() + x_prime_low - 1); //delete the "*"
                 return;
@@ -3583,7 +3598,7 @@ struct Board
             }
             if (derivat[x_prime_low] == "1") //* 1 * sech x sech x -> * sech x sech x
             {
-                //                puts("hi 715");
+                //                //puts("hi 715");
                 derivat.erase(derivat.begin() + x_prime_low - 1, derivat.begin() + x_prime_low + 1); //erase "*" and "1"
             }
         }
@@ -3596,7 +3611,7 @@ struct Board
             derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); //* x'
             if (derivat[x_prime_low] == "0") //* 0 * ~ sech x tanh x -> 0
             {
-                //                puts("hi 722");
+                //                //puts("hi 722");
                 assert(x_prime_low == static_cast<int>(derivat.size()) - 1);
                 derivat.erase(derivat.begin() + x_prime_low - 1); //erase the "*"
                 return;
@@ -3615,7 +3630,7 @@ struct Board
             }
             if (derivat[x_prime_low] == "1") //* 1 exp x -> exp x
             {
-                //                puts("hi 742");
+                //                //puts("hi 742");
                 derivat.erase(derivat.begin() + x_prime_low - 1, derivat.begin() + x_prime_low + 1); //erase "*" and "1"
             }
         }
@@ -3628,7 +3643,7 @@ struct Board
             derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); //* x'
             if (derivat[x_prime_low] == "0") //* 0 exp x -> 0
             {
-                //            puts("hi 682");
+                //            //puts("hi 682");
                 assert(static_cast<int>(derivat.size() - 1) == x_prime_low);
                 derivat.erase(derivat.begin() + x_prime_low - 1); //erase "*"
                 return;
@@ -3640,7 +3655,7 @@ struct Board
             }
             if (derivat[x_prime_low] == "1") //* 1 exp x -> exp x
             {
-                //                puts("hi 694");
+                //                //puts("hi 694");
                 derivat.erase(derivat.begin() + x_prime_low - 1, derivat.begin() + x_prime_low + 1); //erase "*" and "1"
             }
         }
@@ -3654,7 +3669,7 @@ struct Board
             derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* ~ x' */
             if (derivat[x_prime_low] == "~")
             {
-                //                puts("hi 590");
+                //                //puts("hi 590");
                 derivat.erase(derivat.begin() + un_minus_idx, derivat.begin() + x_prime_low + 1); //erase the two "~"
             }
         }
@@ -3759,25 +3774,25 @@ struct Board
             
             if (derivat.back() == "0") //1.) x' 0 + -> x'
             {
-                //            puts("hi 145");
+                //            //puts("hi 145");
                 derivat.pop_back();
             }
             
             else if (derivat[x_prime_high - 1] == "0")
             {
-                //            puts("hi 151");
+                //            //puts("hi 151");
                 //erase elements from derivat[x_prime_low] to derivat[x_prime_high-1] inclusive
                 derivat.erase(derivat.begin() + x_prime_low, derivat.begin() + x_prime_high); //0 y + -> y
                 if (postfix[up] == "-") //3.)
                 {
-                    //                puts("hi 156");
+                    //                //puts("hi 156");
                     derivat.push_back("~"); //0 y - -> y ~
                 }
             }
             
             else if ((postfix[up] == "-") && ((step = (x_prime_high - x_prime_low)) == (y_prime_high - x_prime_high)) && (areDerivatRangesEqual(x_prime_low, x_prime_high, step)))
             {
-                //                puts("hi 180");
+                //                //puts("hi 180");
                 derivat[x_prime_low] = "0"; //change first symbol of x' to 0
                 derivat.erase(derivat.begin() + x_prime_low + 1, derivat.begin() + y_prime_high); //erase the rest of x' and y'
             }
@@ -3796,7 +3811,7 @@ struct Board
             }
             if (derivat.back() == "0") //0 y' * -> 0
             {
-                //            puts("hi 176");
+                //            //puts("hi 176");
             }
             else
             {
@@ -3804,19 +3819,19 @@ struct Board
                 derivePostfixHelper(up-1-grasp[up-1], up-1, dx, postfix, grasp, true); /* x y' */
                 if (derivat.back() == "0") //x 0 * -> 0
                 {
-                    //                puts("hi 184");
+                    //                //puts("hi 184");
                     derivat[x_low] = "0"; //change first symbol of x to 0
                     derivat.erase(derivat.begin() + x_low + 1, derivat.end()); //erase rest of x and y'
                 }
                 else if (derivat[x_high - 1] == "1") //1 y' * -> y'
                 {
-                    //                puts("hi 190");
+                    //                //puts("hi 190");
                     assert(x_low == x_high - 1);
                     derivat.erase(derivat.begin() + x_low); //erase the x since it's 1
                 }
                 else if (derivat.back() == "1") //x 1 * -> x
                 {
-                    //                puts("hi 196");
+                    //                //puts("hi 196");
                     derivat.pop_back(); //remove the y' since it's 1
                 }
                 else
@@ -3829,7 +3844,7 @@ struct Board
             derivePostfixHelper(low, up-2-grasp[up-1], dx, postfix, grasp, true); /* x y' "*" x' */
             if (derivat.back() == "0") //0 y * -> 0
             {
-                //            puts("hi 209");
+                //            //puts("hi 209");
             }
             else
             {
@@ -3840,18 +3855,18 @@ struct Board
                 }
                 if (derivat.back() == "0") //x' 0 * -> 0
                 {
-                    //                puts("hi 220");
+                    //                //puts("hi 220");
                     derivat.erase(derivat.begin() + x_prime_low, derivat.begin() + y_low); //erase x'
                 }
                 else if (derivat[y_low - 1] == "1") //1 y * -> y
                 {
-                    //                puts("hi 225");
+                    //                //puts("hi 225");
                     assert(y_low - 1 == x_prime_low);
                     derivat.erase(derivat.begin() + x_prime_low); //remove the 1
                 }
                 else if (derivat.back() == "1") //x' 1 * -> x'
                 {
-                    //                puts("hi 231");
+                    //                //puts("hi 231");
                     derivat.pop_back(); //remove the "1"
                 }
                 else
@@ -3861,12 +3876,12 @@ struct Board
             }
             if (derivat[x_prime_low - 1] == "0") // 0 x' y "*" + -> x' y "*"
             {
-                //                puts("hi 236");
+                //                //puts("hi 236");
                 derivat.erase(derivat.begin() + x_prime_low - 1); //erase 0
             }
             else if (derivat.back() == "0") //x y' "*" 0 + -> x y' "*"
             {
-                //                puts("hi 241");
+                //                //puts("hi 241");
                 derivat.pop_back();
             }
             else
@@ -3882,7 +3897,7 @@ struct Board
             int k;
             if (derivat.back() == "0") //0 y * -> 0
             {
-                //            puts("hi 286");
+                //            //puts("hi 286");
             }
             else
             {
@@ -3893,17 +3908,17 @@ struct Board
                 }
                 if (derivat.back() == "0") //x' 0 * -> 0
                 {
-                    //                puts("hi 297");
+                    //                //puts("hi 297");
                     derivat.erase(derivat.begin() + x_prime_low, derivat.end() - 1); //erase x'
                 }
                 else if (derivat.back() == "1") //x' 1 * -> x'
                 {
-                    //                puts("hi 302");
+                    //                //puts("hi 302");
                     derivat.pop_back(); //remove the "1"
                 }
                 else if (derivat[y_low-1] == "1") //1 y * -> y
                 {
-                    //                puts("hi 307");
+                    //                //puts("hi 307");
                     derivat.erase(derivat.begin() + y_low - 1); //erase the "1"
                 }
                 else
@@ -3918,7 +3933,7 @@ struct Board
             }
             if (derivat.back() == "0") //0 y' * -> 0
             {
-                //            puts("hi 322");
+                //            //puts("hi 322");
             }
             else
             {
@@ -3926,17 +3941,17 @@ struct Board
                 derivePostfixHelper(up-1-grasp[up-1], up-1, dx, postfix, grasp, true); /* x' y * x y' */
                 if (derivat.back() == "0") //x 0 * -> 0
                 {
-                    //                puts("hi 330");
+                    //                //puts("hi 330");
                     derivat.erase(derivat.begin() + x_low, derivat.begin() + y_prime_low); //erase x
                 }
                 else if (derivat.back() == "1") //x 1 * -> x
                 {
-                    //                puts("hi 335");
+                    //                //puts("hi 335");
                     derivat.pop_back(); //erase the 1
                 }
                 else if (derivat[y_prime_low - 1] == "1") //1 y' * -> y'
                 {
-                    //                puts("hi 340");
+                    //                //puts("hi 340");
                     derivat.erase(derivat.begin() + y_prime_low - 1); //erase the "1"
                 }
                 else
@@ -3946,7 +3961,7 @@ struct Board
             }
             if (((k = (x_low - x_prime_low)) == (static_cast<int>(derivat.size()) - x_low)) && (areDerivatRangesEqual(x_prime_low, x_low, k))) //thing1 thing1 - -> 0
             {
-                //            puts("hi 350");
+                //            //puts("hi 350");
                 derivat[x_prime_low] = "0"; //change first symbol of x' to 0
                 derivat.erase(derivat.begin() + x_prime_low + 1, derivat.end()); //erase the rest of x' y * and x y' *
             }
@@ -3954,13 +3969,13 @@ struct Board
             {
                 if (derivat[x_low - 1] == "0") //0 x y' * - -> x y' * ~
                 {
-                    //                puts("hi 358");
+                    //                //puts("hi 358");
                     derivat.erase(derivat.begin() + x_low - 1); //remove "0"
                     derivat.push_back("~"); //add "~" at the end
                 }
                 else if (derivat.back() == "0") //x' y * 0 - -> x' y *
                 {
-                    //                puts("hi 364");
+                    //                //puts("hi 364");
                     derivat.pop_back(); //remove "0"
                 }
                 else
@@ -3973,7 +3988,7 @@ struct Board
                 }
                 if (derivat.back() == "1") //"1 1 * /" -> ""
                 {
-                    //                puts("hi 377");
+                    //                //puts("hi 377");
                     derivat.pop_back(); //remove the "1"
                 }
                 else
@@ -3998,13 +4013,13 @@ struct Board
             }
             if (derivat.back() == "0") //0 y ^ (0 ln y *)' * -> 0 (maybe problematic for y < 0, but oh well 😮‍💨)
             {
-                //            puts("hi 402");
+                //            //puts("hi 402");
                 return;
             }
             else if (derivat.back() == "1") //1 y ^ (1 ln y *)' * -> 0 (because ln(1) is 0)
             {
                 derivat.back() = "0";
-                //            puts("hi 407");
+                //            //puts("hi 407");
                 return;
             }
             else
@@ -4015,14 +4030,14 @@ struct Board
                 }
                 if (derivat.back() == "0") //x 0 ^ (x ln 0 *)' * -> 0
                 {
-                    //                puts("hi 419");
+                    //                //puts("hi 419");
                     derivat[x_low] = "0"; //change the first symbol of x to "0"
                     derivat.erase(derivat.begin() + x_low + 1, derivat.end()); //erase the rest
                     return;
                 }
                 else if (derivat.back() == "1") //x 1 ^ -> x
                 {
-                    //                    puts("hi 426");
+                    //                    //puts("hi 426");
                     derivat.pop_back(); //erase the 1
                 }
                 else
@@ -4047,7 +4062,7 @@ struct Board
             }
             if (postfix_temp.back() == "1") //x ln 1 * -> x ln
             {
-                //            puts("hi 452");
+                //            //puts("hi 452");
                 postfix_temp.pop_back();
             }
             else
@@ -4058,13 +4073,13 @@ struct Board
             derivePostfixHelper(0, postfix_temp.size() - 1, dx, postfix_temp, grasp_temp, true); /* x y ^ (x ln y *)' */
             if (derivat.back() == "0") //x y ^ 0 * -> 0
             {
-                //            puts("hi 455");
+                //            //puts("hi 455");
                 derivat[x_low] = "0"; //change the first symbol of x to "0"
                 derivat.erase(derivat.begin() + x_low + 1, derivat.end()); //erase the rest
             }
             else if (derivat.back() == "1") //x y ^ 1 * -> x y ^
             {
-                //            puts("hi 460");
+                //            //puts("hi 460");
                 derivat.pop_back(); //erase (x ln y *)'
             }
             else
@@ -4078,7 +4093,7 @@ struct Board
             derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
             if (derivat.back() == "0") //0 x sin ~ * -> 0
             {
-                //            puts("hi 514");
+                //            //puts("hi 514");
                 return;
             }
             int x_low = derivat.size();
@@ -4090,7 +4105,7 @@ struct Board
             derivat.push_back("~"); /* x' x sin ~ */
             if (derivat[x_low - 1] == "1") //1 x sin ~ * -> x sin ~
             {
-                //            puts("hi 526");
+                //            //puts("hi 526");
                 derivat.erase(derivat.begin() + x_low - 1); //erase the "1"
             }
             else
@@ -4104,7 +4119,7 @@ struct Board
             derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
             if (derivat.back() == "0") //0 x cos * -> 0
             {
-                //                puts("hi 540");
+                //                //puts("hi 540");
                 return;
             }
             int x_low = derivat.size();
@@ -4115,7 +4130,7 @@ struct Board
             derivat.push_back("cos"); /* x' x cos */
             if (derivat[x_low - 1] == "1") //1 x cos * -> x cos
             {
-                //                puts("hi 551");
+                //                //puts("hi 551");
                 derivat.erase(derivat.begin() + x_low - 1); //erase the "1"
             }
             else
@@ -4129,7 +4144,7 @@ struct Board
             derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
             if (derivat.back() == "0") //0 2 x sqrt * / -> 0
             {
-                //                puts("hi 565");
+                //                //puts("hi 565");
                 return;
             }
             derivat.push_back("2"); /* x' 2 */
@@ -4148,7 +4163,7 @@ struct Board
             derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
             if (derivat.back() == "0") //0 x / -> 0
             {
-                //            puts("hi 551");
+                //            //puts("hi 551");
                 assert(x_prime_low == static_cast<int>(derivat.size()) - 1);
                 return;
             }
@@ -4160,7 +4175,7 @@ struct Board
             int step = derivat.size() - x_low;
             if ((step == (x_low - x_prime_low)) && areDerivatRangesEqual(x_prime_low, x_low, step)) //something something / -> 1
             {
-                //                puts("hi 563");
+                //                //puts("hi 563");
                 derivat[x_prime_low] = "1"; //replace first symbol of x' with "1"
                 derivat.erase(derivat.begin() + x_prime_low + 1, derivat.end()); //erase the rest
                 return;
@@ -4174,7 +4189,7 @@ struct Board
             derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
             if (derivat.back() == "0") //0 1 x x * - sqrt / -> 0
             {
-                //                puts("hi 610");
+                //                //puts("hi 610");
                 return;
             }
             derivat.push_back("1"); /* x' 1 */
@@ -4197,7 +4212,7 @@ struct Board
             derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
             if (derivat.back() == "0") //0 1 x x * - sqrt / ~ -> 0
             {
-                //            puts("hi 633");
+                //            //puts("hi 633");
                 return;
             }
             derivat.push_back("1"); /* x' 1 */
@@ -4221,7 +4236,7 @@ struct Board
             derivePostfixHelper(low, up-1, dx, postfix, grasp, true); //x'
             if (derivat.back() == "0") //0 x sech x sech * * -> 0
             {
-                //                puts("hi 657");
+                //                //puts("hi 657");
                 return;
             }
             int x_low = derivat.size();
@@ -4238,7 +4253,7 @@ struct Board
             derivat.push_back("*"); //x' x sech x sech *
             if (derivat[x_low - 1] == "1") //1 x sech x sech * * -> x sech x sech * *
             {
-                //                puts("hi 676");
+                //                //puts("hi 676");
                 derivat.erase(derivat.begin() + x_low - 1); //erase the "1"
             }
             else
@@ -4252,7 +4267,7 @@ struct Board
             derivePostfixHelper(low, up-1, dx, postfix, grasp, true); //x'
             if (derivat.back() == "0") //0 x sech ~ x tanh * * -> 0
             {
-                //                puts("hi 681");
+                //                //puts("hi 681");
                 return;
             }
             int x_low = derivat.size();
@@ -4270,7 +4285,7 @@ struct Board
             derivat.push_back("*");      //x' x sech ~ x tanh *
             if (derivat[x_low - 1] == "1") //1 x sech ~ x tanh * * -> x sech ~ x tanh *
             {
-                //                puts("hi 699");
+                //                //puts("hi 699");
                 derivat.erase(derivat.begin() + x_low - 1); //erase the "1"
             }
             else
@@ -4284,7 +4299,7 @@ struct Board
             derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
             if (derivat.back() == "0") //0 x exp * -> 0
             {
-                //            puts("hi 649");
+                //            //puts("hi 649");
                 return;
             }
             int x_low = derivat.size();
@@ -4295,7 +4310,7 @@ struct Board
             derivat.push_back("exp");               /* x' x exp */
             if (derivat[x_low - 1] == "1") //1 x exp * -> x exp
             {
-                //                puts("hi 660");
+                //                //puts("hi 660");
                 derivat.erase(derivat.begin() + x_low - 1); //erase the "1"
             }
             else
@@ -4336,6 +4351,12 @@ struct Board
     }
 };
 
+void VortexRadialProfileSetter()
+{
+    Board::__other_tokens.push_back("S");
+    Board::__other_tokens.push_back("mu");
+}
+
 std::vector<std::vector<std::string>> VortexRadialProfile(Board& x)
 {
     std::vector<std::vector<std::string>> results;
@@ -4343,8 +4364,6 @@ std::vector<std::vector<std::string>> VortexRadialProfile(Board& x)
     result.reserve(100);
     std::vector<int> grasp;
     std::vector<std::string> R_prime;
-    std::string mu = "1";
-    std::string S = "1";
     std::string infty = std::to_string(FLT_MAX);
 
     if (x.expression_type == "prefix")
@@ -4376,11 +4395,11 @@ std::vector<std::vector<std::string>> VortexRadialProfile(Board& x)
         }
         result.push_back("*");
         result.push_back("-");
-        result.push_back(mu);
+        result.push_back("mu");
         result.push_back("/");
         result.push_back("*");
-        result.push_back(S);
-        result.push_back(S);
+        result.push_back("S");
+        result.push_back("S");
         result.push_back("*");
         result.push_back("*");
         result.push_back("2");
@@ -4436,7 +4455,7 @@ std::vector<std::vector<std::string>> VortexRadialProfile(Board& x)
             }
         }
         result.push_back("sqrt");
-        result.push_back(mu);
+        result.push_back("mu");
         results.push_back(result);
     }
     else if (x.expression_type == "postfix")
@@ -4464,9 +4483,9 @@ std::vector<std::vector<std::string>> VortexRadialProfile(Board& x)
         }
         result.push_back("*");
         result.push_back("+");
-        result.push_back(mu);
-        result.push_back(S);
-        result.push_back(S);
+        result.push_back("mu");
+        result.push_back("S");
+        result.push_back("S");
         result.push_back("*");
         result.push_back("2");
         result.push_back("x0"); //r
@@ -4528,7 +4547,7 @@ std::vector<std::vector<std::string>> VortexRadialProfile(Board& x)
             }
         }
         
-        result.push_back(mu);
+        result.push_back("mu");
         result.push_back("sqrt");
         result.push_back("-");
         results.push_back(result);
@@ -5957,14 +5976,14 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
 //}
 
-void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), const Eigen::MatrixXf& data, const std::vector<int>& depth, const std::string expression_type = "prefix", size_t num_consts = 4, const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
+void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), void (*constSetter)(), const Eigen::MatrixXf& data, const std::vector<int>& depth, const std::string expression_type = "prefix", size_t num_consts = 4, const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
 {
+    constSetter();
     if (num_threads == 0)
     {
         unsigned int temp = std::thread::hardware_concurrency();
         num_threads = ((temp <= 1) ? 1 : temp);
     }
-    
     std::vector<std::thread> threads(num_threads);
     std::latch sync_point(num_threads);
 
@@ -6012,8 +6031,11 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), const
                         x.pieces[jdx].emplace_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
                     }
                 }
-                assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces[jdx], jdx) : x.getRPNdepth(x.pieces[jdx], jdx)).first == x.n[jdx]);
-                assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces[jdx], jdx) : x.getRPNdepth(x.pieces[jdx], jdx)).second);
+                if (jdx < x.num_objectives - 1)
+                {
+                    assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces[jdx], jdx) : x.getRPNdepth(x.pieces[jdx], jdx)).first == x.n[jdx]);
+                    assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces[jdx], jdx) : x.getRPNdepth(x.pieces[jdx], jdx)).second);
+                }
             }
 //            printf("score = %f\n", score);
             
@@ -6082,7 +6104,9 @@ int main()
     
 //    std::cout<<data << '\n' << (Eigen::VectorXf::Ones(5).array() / Eigen::VectorXf::Zero(5).array()).cos() /*Eigen::VectorXf::Zero(5).array().pow(Eigen::VectorXf::Ones(5).array())*/ << '\n';
     
-    RandomSearch(VortexRadialProfile /*differential equation to solve*/, data /*data used to solve differential equation*/, std::vector<int>{7} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
+    RandomSearch(VortexRadialProfile /*differential equation to solve*/, VortexRadialProfileSetter /*helper function to set constants that the solution may contain*/,  data /*data used to solve differential equation*/, std::vector<int>{7} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
+    
+    
     
     return 0;
 }
