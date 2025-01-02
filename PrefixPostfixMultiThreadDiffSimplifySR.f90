@@ -58,6 +58,74 @@ contains
         isConst = .not. is_unary(token) .and. .not. is_binary(token)
     end function is_const
 
+    logical function isFloat(s)
+        implicit none
+        character(len=*), intent(in) :: s
+        integer :: i, len, state
+        logical :: has_digits
+
+        ! Define states
+        integer, parameter :: START = 0, INT = 1, FRAC = 2, EXP = 3, EXP_NUM = 4
+
+        ! Initialization
+        len = len_trim(s)
+        state = START
+        has_digits = .false.
+
+        do i = 1, len
+            select case (state)
+                case (START)
+                    if (s(i:i) == '+' .or. s(i:i) == '-') then
+                        state = INT
+                    else if (s(i:i) >= '0' .and. s(i:i) <= '9') then
+                        state = INT
+                        has_digits = .true.
+                    else if (s(i:i) == '.') then
+                        state = FRAC
+                    else
+                        isFloat = .false.
+                        return
+                    end if
+                case (INT)
+                    if (s(i:i) >= '0' .and. s(i:i) <= '9') then
+                        has_digits = .true.
+                    else if (s(i:i) == '.') then
+                        state = FRAC
+                    else if (s(i:i) == 'e' .or. s(i:i) == 'E') then
+                        state = EXP
+                    else
+                        isFloat = .false.
+                        return
+                    end if
+                case (FRAC)
+                    if (s(i:i) >= '0' .and. s(i:i) <= '9') then
+                        has_digits = .true.
+                    else if (s(i:i) == 'e' .or. s(i:i) == 'E') then
+                        state = EXP
+                    else
+                        isFloat = .false.
+                        return
+                    end if
+                case (EXP)
+                    if (s(i:i) == '+' .or. s(i:i) == '-') then
+                        state = EXP_NUM
+                    else if (s(i:i) >= '0' .and. s(i:i) <= '9') then
+                        state = EXP_NUM
+                    else
+                        isFloat = .false.
+                        return
+                    end if
+                case (EXP_NUM)
+                    if (s(i:i) < '0' .or. s(i:i) > '9') then
+                        isFloat = .false.
+                        return
+                    end if
+            end select
+        end do
+
+        isFloat = has_digits .and. (state == INT .or. state == FRAC .or. state == EXP_NUM)
+    end function isFloat
+
     function get_time() result(time)
         type(timespec) :: tp
         real(8) :: time
@@ -322,6 +390,11 @@ program main
     print *, "Input: '123' -> is_const:", is_const("123")       ! Expected: T
     print *, "Input: 'log' -> is_const:", is_const("log")       ! Expected: F
     print *, "Input: 'xyz' -> is_const:", is_const("xyz")       ! Expected: T
+
+    print *, isFloat("123.45")
+    print *, isFloat("1.2e3")
+    print *, isFloat("abc")
+    print *, isFloat(".5")
 
     ! Calculate elapsed time
     elapsed_time = time_elapsed(start_time)

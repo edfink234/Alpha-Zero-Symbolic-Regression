@@ -30,7 +30,6 @@ void print_container(const std::vector<std::string>& c)
     std::cout << '\n';
 }
 
-//TODO: Fortran
 //https://medium.com/@ryan_forrester_/c-check-if-string-is-number-practical-guide-c7ba6db2febf
 bool isFloat(const std::string& s)
 {
