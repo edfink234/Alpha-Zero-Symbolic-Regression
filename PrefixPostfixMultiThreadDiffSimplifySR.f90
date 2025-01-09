@@ -218,6 +218,16 @@ contains
 
     end function simplifyString
 
+    subroutine print_container(c)
+        implicit none
+        character(len=*), dimension(:), intent(in) :: c
+        integer :: i
+
+        do i = 1, size(c)
+            write(*, '(A,1X)', advance="no") trim(c(i))
+        end do
+        write(*, *)  ! Newline after printing all elements
+    end subroutine print_container
 
     function trueMod(N, M) result(modulo)
         implicit none
@@ -395,6 +405,9 @@ program main
     print *, isFloat("1.2e3")
     print *, isFloat("abc")
     print *, isFloat(".5")
+
+    call print_container(unary_operators)
+    call print_container(binary_operators)
 
     ! Calculate elapsed time
     elapsed_time = time_elapsed(start_time)

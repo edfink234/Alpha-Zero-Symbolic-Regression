@@ -26,6 +26,7 @@ bool is_const(const std::string& token)
     return ((!is_unary(token)) && (!is_binary(token)));
 }
 
+//TODO: Fortran
 void print_container(const std::vector<std::string>& c)
 {
     for (const std::string& i : c)
@@ -142,7 +143,6 @@ int GR(size_t i, const std::vector<std::string>& individual)
     return ((expression_type == "prefix") ? ( ptr_lgb - i) : (i - ptr_lgb));
 }
 
-//TODO: Fortran
 void print_container(const std::vector<std::string>& c, int low, int up)
 {
     for (int i = low; i <= up; i++)
@@ -1236,7 +1236,7 @@ int main()
     
 }
 
-//g++ -std=c++20 -o PostfixSimplify PostfixSimplify.cpp
+//g++ -std=c++20 -o PostfixSimplifyPrev PostfixSimplifyPrev.cpp
 
 
 //https://stackoverflow.com/questions/20153412/simplification-algorithm-for-reverse-polish-notation

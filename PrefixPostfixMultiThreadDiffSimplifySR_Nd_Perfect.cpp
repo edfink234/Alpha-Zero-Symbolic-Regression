@@ -487,6 +487,7 @@ struct Board
     std::vector<std::vector<int>> stack;
     std::vector<int> depth, num_binary, num_leaves, idx;
     static std::unordered_map<bool, std::unordered_map<bool, std::unordered_map<bool, std::vector<std::string>>>> inline una_bin_leaf_legal_moves_dict;
+    std::vector<int> simplify_grasp;
     
     const std::vector<int> n; //depth of RPN/PN trees
     std::string expression_type, expression_string;
@@ -795,6 +796,49 @@ struct Board
         }
         
         return temp; //"x.0000000" (repeating) -> "x"
+    }
+    
+    void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, int up, std::vector<int>& grasp, std::vector<std::string>& new_expression, bool setGRvar = false)
+    {
+        if (!setGRvar)
+        {
+            grasp.clear();
+            setPrefixGR(expression, grasp);
+        }
+    //    print_container(expression, low, up);
+        if (expression[low] == "+")
+        {
+            int op_idx = new_expression.size();
+            new_expression.push_back(expression[low]);
+            int temp = low+1+grasp[low+1];
+            int first_arg_idx_low = new_expression.size();
+            graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true);
+            int first_arg_idx_high = new_expression.size();
+            graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true);
+            //int second_arg_idx_high = new_expression.size();
+            
+            if (new_expression[first_arg_idx_low] == "0") //+ 0 y' -> y'
+            {
+                //puts("hi 176");
+                new_expression.erase(new_expression.begin() + op_idx, new_expression.begin() + first_arg_idx_high); //remove '+' and '0'
+            }
+        }
+        else
+        {
+            for (int i = low; i <= up; i++)
+            {
+                assert(i < expression.size() && i >= 0);
+                new_expression.push_back(expression[i]);
+            }
+        }
+    }
+
+    void graspSimplifyPrefix(std::vector<std::string>& expression, int low, int up, std::vector<int>& grasp)
+    {
+        std::vector<std::string> new_expression;
+        new_expression.reserve(expression.size());
+        graspSimplifyPrefixHelper(expression, low, up, grasp, new_expression, false);
+        expression = new_expression;
     }
     
     void simplifyPN(std::vector<std::string>& expression)
@@ -1134,6 +1178,57 @@ struct Board
                 }
             }
         }
+        
+        if (expression.size() > 3)
+        {
+            this->simplify_grasp.reserve(expression.size());
+            graspSimplifyPrefix(expression, 0, expression.size() - 1, this->simplify_grasp);
+        }
+    }
+    
+    void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, int up, std::vector<int>& grasp, std::vector<std::string>& new_expression, bool setGRvar = false)
+    {
+        if (!setGRvar)
+        {
+            grasp.clear();
+            setPostfixGR(expression, grasp);
+        }
+    //    print_container(expression, low, up);
+        if (expression[up] == "+")
+        {
+            int first_arg_idx_low = new_expression.size();
+            graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true);
+            int first_arg_idx_high = new_expression.size();
+            graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true);
+            //int second_arg_idx_high = new_expression.size();
+            
+            if (new_expression[first_arg_idx_high - 1] == "0")
+            {
+                //puts("hi 184");
+                //erase elements from new_expression[first_arg_idx_low] to new_expression[first_arg_idx_high-1] inclusive
+                new_expression.erase(new_expression.begin() + first_arg_idx_low, new_expression.begin() + first_arg_idx_high); //0 y + -> y
+            }
+            else
+            {
+                new_expression.push_back(expression[up]);
+            }
+        }
+        else
+        {
+            for (int i = low; i <= up; i++)
+            {
+                assert(i < expression.size() && i >= 0);
+                new_expression.push_back(expression[i]);
+            }
+        }
+    }
+    
+    void graspSimplifyPostfix(std::vector<std::string>& expression, int low, int up, std::vector<int>& grasp)
+    {
+        std::vector<std::string> new_expression;
+        new_expression.reserve(expression.size());
+        graspSimplifyPostfixHelper(expression, low, up, grasp, new_expression, false);
+        expression = new_expression;
     }
 
     void simplifyRPN(std::vector<std::string>& expression)
@@ -1471,6 +1566,12 @@ struct Board
                     }
                 }
             }
+        }
+        
+        if (expression.size() > 3)
+        {
+            this->simplify_grasp.reserve(expression.size());
+            graspSimplifyPostfix(expression, 0, expression.size() - 1, this->simplify_grasp);
         }
     }
     
@@ -6105,8 +6206,6 @@ int main()
 //    std::cout<<data << '\n' << (Eigen::VectorXf::Ones(5).array() / Eigen::VectorXf::Zero(5).array()).cos() /*Eigen::VectorXf::Zero(5).array().pow(Eigen::VectorXf::Ones(5).array())*/ << '\n';
     
     RandomSearch(VortexRadialProfile /*differential equation to solve*/, VortexRadialProfileSetter /*helper function to set constants that the solution may contain*/,  data /*data used to solve differential equation*/, std::vector<int>{7} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
-    
-    
     
     return 0;
 }
