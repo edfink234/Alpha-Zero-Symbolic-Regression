@@ -4,12 +4,9 @@
 #include <unordered_set>
 #include <string>
 #include <cmath>
-#include <cassert>
 
 const std::unordered_set<std::string> unary_operators = {"cos", "~", "sin", "log", "ln", "asin", "arcsin", "acos", "arccos", "exp", "sech", "tanh", "sqrt"};
 const std::unordered_set<std::string> binary_operators = {"+", "-", "*", "/", "^"};
-const std::string expression_type = "postfix";
-std::vector<int> grasp;
 
 bool is_unary(const std::string& token)
 {
@@ -105,105 +102,6 @@ std::string simplifyString(const std::string& x)
     }
     
     return temp; //"x.0000000" (repeating) -> "x"
-}
-
-//Function to compute the LGB or RGB, from https://www.jstor.org/stable/43998756
-//(top of pg. 165)
-void GB(size_t z, size_t& ind, const std::vector<std::string>& individual)
-{
-    do
-    {
-        ind = ((expression_type == "prefix") ? ind+1 : ind-1);
-        if (is_unary(individual[ind]))
-        {
-            GB(1, ind, individual);
-        }
-        else if (is_binary(individual[ind]))
-        {
-            GB(2, ind, individual);
-        }
-        --z;
-    } while (z);
-}
-
-//Computes the grasp of an arbitrary element pieces[i],
-//from https://www.jstor.org/stable/43998756 (bottom of pg. 165)
-int GR(size_t i, const std::vector<std::string>& individual)
-{
-    size_t start = i;
-    size_t& ptr_lgb = start;
-    if (is_unary(individual[i]))
-    {
-        GB(1, ptr_lgb, individual);
-    }
-    else if (is_binary(individual[i]))
-    {
-        GB(2, ptr_lgb, individual);
-    }
-    return ((expression_type == "prefix") ? ( ptr_lgb - i) : (i - ptr_lgb));
-}
-
-void print_container(const std::vector<std::string>& c, int low, int up)
-{
-    for (int i = low; i <= up; i++)
-        std::cout << c[i] << ' ';
-    std::cout << '\n';
-}
-
-void setPostfixGR(const std::vector<std::string>& postfix, std::vector<int>& grasp)
-{
-    grasp.reserve(postfix.size()); //grasp[k] = GR( postfix[k]), k = 1, ... ,i.
-    //In the paper they do `k = 1;` instead of `k = 0;`, presumably because GR(postfix[0]) always is 0, but it works
-    //if you set k = 0 too.
-    for (size_t k = 0; k < postfix.size(); ++k)
-    {
-        grasp.push_back(GR(k, postfix));
-    }
-}
-
-void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, int up, std::vector<int>& grasp, std::vector<std::string>& new_expression, bool setGRvar = false)
-{
-    if (!setGRvar)
-    {
-        grasp.clear();
-        setPostfixGR(expression, grasp);
-    }
-//    print_container(expression, low, up);
-    if (expression[up] == "+")
-    {
-        int first_arg_idx_low = new_expression.size();
-        graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true);
-        int first_arg_idx_high = new_expression.size();
-        graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true);
-        int second_arg_idx_high = new_expression.size();
-        
-        if (new_expression[first_arg_idx_high - 1] == "0")
-        {
-            puts("hi 184");
-            //erase elements from new_expression[first_arg_idx_low] to new_expression[first_arg_idx_high-1] inclusive
-            new_expression.erase(new_expression.begin() + first_arg_idx_low, new_expression.begin() + first_arg_idx_high); //0 y + -> y
-        }
-        else
-        {
-            new_expression.push_back(expression[up]);
-        }
-    }
-    else
-    {
-        for (int i = low; i <= up; i++)
-        {
-            assert(i < expression.size() && i >= 0);
-            new_expression.push_back(expression[i]);
-        }
-    }
-}
-
-void graspSimplifyPostfix(std::vector<std::string>& expression, int low, int up, std::vector<int>& grasp)
-{
-    std::vector<std::string> new_expression;
-    new_expression.reserve(expression.size());
-    graspSimplifyPostfixHelper(expression, low, up, grasp, new_expression, false);
-    expression = new_expression;
 }
 
 void simplifyRPN(std::vector<std::string>& expression)
@@ -542,12 +440,6 @@ void simplifyRPN(std::vector<std::string>& expression)
             }
         }
     }
-    
-    if (expression.size() > 3)
-    {
-        graspSimplifyPostfix(expression, 0, expression.size() - 1, grasp);
-    }
-    
 }
 
 int main()
@@ -1228,16 +1120,9 @@ int main()
     printf("after: ");print_container(test_expr);
     puts("");
     
-    test_expr = {"0", "x", "0", "x", "x", "x", "+", "+", "+", "+", "+"};
-    printf("before: ");print_container(test_expr);
-    simplifyRPN(test_expr);
-    printf("after: ");print_container(test_expr);
-    puts("");
-    
 }
 
-//g++ -std=c++20 -o PostfixSimplify PostfixSimplify.cpp
-
+//g++ -std=c++20 -o PostfixSimplifySimple PostfixSimplifySimple.cpp
 
 //https://stackoverflow.com/questions/20153412/simplification-algorithm-for-reverse-polish-notation
 //https://dl.acm.org/
