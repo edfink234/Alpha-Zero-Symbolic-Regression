@@ -229,6 +229,18 @@ contains
         write(*, *)  ! Newline after printing all elements
     end subroutine print_container
 
+    subroutine print_range_of_container(c, low, up)
+        character(len=*), dimension(:), intent(in) :: c
+        integer, intent(in) :: low, up
+        integer :: i
+
+        do i = low, up
+            write(*, '(A)', advance='no') trim(c(i))
+            write(*, '(A)', advance='no') ' '
+        end do
+        write(*, *)  ! Print newline
+    end subroutine print_range_of_container
+
     function trueMod(N, M) result(modulo)
         implicit none
         integer, intent(in) :: N  ! Numerator
@@ -312,7 +324,7 @@ program main
     real :: Val
     logical(4) :: resultVal
     real, dimension(:), allocatable :: result
-    integer :: i
+    integer :: i, low, up
     character(len=100) :: string_result
     character(len=15) :: token
 
@@ -408,6 +420,14 @@ program main
 
     call print_container(unary_operators)
     call print_container(binary_operators)
+
+    ! Define the range to print
+    low = 2
+    up = 4
+
+    ! Call the subroutine to print the specified range
+    call print_range_of_container(unary_operators, low, up)
+    call print_range_of_container(binary_operators, low, up)
 
     ! Calculate elapsed time
     elapsed_time = time_elapsed(start_time)

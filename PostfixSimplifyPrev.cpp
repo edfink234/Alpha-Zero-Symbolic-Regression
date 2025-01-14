@@ -26,7 +26,6 @@ bool is_const(const std::string& token)
     return ((!is_unary(token)) && (!is_binary(token)));
 }
 
-//TODO: Fortran
 void print_container(const std::vector<std::string>& c)
 {
     for (const std::string& i : c)
@@ -143,6 +142,7 @@ int GR(size_t i, const std::vector<std::string>& individual)
     return ((expression_type == "prefix") ? ( ptr_lgb - i) : (i - ptr_lgb));
 }
 
+//TODO: Fortran
 void print_container(const std::vector<std::string>& c, int low, int up)
 {
     for (int i = low; i <= up; i++)
@@ -169,7 +169,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         setPostfixGR(expression, grasp);
     }
 //    print_container(expression, low, up);
-    if (expression[up] == "+")
+    if (expression[up] == "+" || expression[up] == "-")
     {
         int first_arg_idx_low = new_expression.size();
         graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true);
@@ -182,7 +182,13 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             //puts("hi 184");
             //erase elements from new_expression[first_arg_idx_low] to new_expression[first_arg_idx_high-1] inclusive
             new_expression.erase(new_expression.begin() + first_arg_idx_low, new_expression.begin() + first_arg_idx_high); //0 y + -> y
+            if (expression[up] == "-")
+            {
+                //puts("hi 187");
+                new_expression.push_back("~"); //0 y - -> y ~
+            }
         }
+        
         else
         {
             new_expression.push_back(expression[up]);
@@ -206,7 +212,7 @@ void graspSimplifyPostfix(std::vector<std::string>& expression, int low, int up,
     expression = new_expression;
 }
 
-void simplifyRPN(std::vector<std::string>& expression)
+void simplifyRPN_Helper(std::vector<std::string>& expression)
 {
     bool simplified = true;
     bool isFloat1, isFloat2;
@@ -542,12 +548,13 @@ void simplifyRPN(std::vector<std::string>& expression)
             }
         }
     }
-    
-    if (expression.size() > 3)
-    {
-        graspSimplifyPostfix(expression, 0, expression.size() - 1, grasp);
-    }
-    
+}
+
+void simplifyRPN(std::vector<std::string>& expression)
+{
+    simplifyRPN_Helper(expression);
+    graspSimplifyPostfix(expression, 0, expression.size() - 1, grasp);
+    simplifyRPN_Helper(expression);
 }
 
 int main()
@@ -582,7 +589,7 @@ int main()
     printf("after: ");print_container(test_expr);
     puts("");
     
-    test_expr = {"x0", "cos", "x0", "x0", "sin", "~", "*", "-", "x0", "cos", "x0", "cos", "*", "/", "x0", "x0", "cos", "/", "sech", "x0", "x0", "cos", "/", "sech", "*", "*", "1", "x0", "x0", "cos", "/", "tanh", "x0", "x0", "cos", "/", "tanh", "*", "-", "sqrt", "/", "~", "x0", "x0", "cos", "/", "tanh", "acos", "sin", "~", "*"}; //TODO: check if equal
+    test_expr = {"x0", "cos", "x0", "x0", "sin", "~", "*", "-", "x0", "cos", "x0", "cos", "*", "/", "x0", "x0", "cos", "/", "sech", "x0", "x0", "cos", "/", "sech", "*", "*", "1", "x0", "x0", "cos", "/", "tanh", "x0", "x0", "cos", "/", "tanh", "*", "-", "sqrt", "/", "~", "x0", "x0", "cos", "/", "tanh", "acos", "sin", "~", "*"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);

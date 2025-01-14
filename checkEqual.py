@@ -1,373 +1,687 @@
-new = '''before: * * x x 1 
-after: * * x x 1 
+prev='''before: x1 x1 - 0 - x1 x1 + - 
+hi 187
+after: x1 x1 + ~ 
 
-before: * + sin x x 1 
-after: * + sin x x 1 
+before: 2.33 1.222 - 0 - x1 - 
+after: 1.108000 x1 - 
 
-before: + ~ tanh * x 1 * 1 1 
-after: + ~ tanh x 1 
+before: 0 x - 0 0 y - - + 
+hi 187
+after: x ~ y + 
 
-before: + - sin x sin x sin x 
-after: + - sin x sin x sin x 
+before: x 0 - 0 y 0 - - + 
+after: x y ~ + 
 
-before: / x 1 
+before: 3 0 - 0 4 0 - - + cos 
+after: 0.540302 
+
+before: x0 cos x0 x0 sin ~ * - x0 cos x0 cos * / x0 x0 cos / sech x0 x0 cos / sech * * 1 x0 x0 cos / tanh x0 x0 cos / tanh * - sqrt / ~ x0 x0 cos / tanh acos sin ~ * 
+after: x0 cos x0 x0 sin ~ * - x0 cos x0 cos * / x0 x0 cos / sech x0 x0 cos / sech * * 1 x0 x0 cos / tanh x0 x0 cos / tanh * - sqrt / ~ x0 x0 cos / tanh acos sin ~ * 
+
+before: x x + 
+after: x x + 
+
+before: x x x - + 
 after: x 
 
-before: / * x x 1 
-after: / * x x 1 
+before: x x - x - y + 
+after: x ~ y + 
 
-before: / * x cos x 1 
-after: / * x cos x 1 
+before: y y x / * cos y + 
+after: y y x / * cos y + 
 
-before: / 0 * x x 
-after: / 0 * x x 
+before: y y x * * cos y + 
+after: y y x * * cos y + 
 
-before: / 0 * x cos x 
-after: / 0 * x cos x 
+before: y x x * + 
+after: y x x * + 
 
-before: / 0 * sin x sech x 
-after: / 0 * sin x sech x 
+before: y x x + + 
+after: y x x + + 
 
-before: / 1 * x x 
-after: / 1 * x x 
+before: y x cos x + + 
+after: y x cos x + + 
 
-before: / 1 cos x 
-after: / 1 cos x 
+before: y x cos x + - 
+after: y x cos x + - 
 
-before: / 1 * cos x sin x 
-after: / 1 * cos x sin x 
+before: y x - 
+after: y x - 
 
-before: + x sin ~ ~ x 
-after: + x sin x 
+before: x y x - cos cos * 
+after: x y x - cos cos * 
 
-before: - tanh ~ ~ x x 
-after: - tanh x x 
+before: x x y x - sin / + 
+after: x x y x - sin / + 
 
-before: + ^ 0 x x 
-after: x 
+before: x x y y sin cos * / / 
+after: x x y y sin cos * / / 
 
-before: - ^ 0 x x 
-after: ^ x x 
+before: x ~ ~ sin y / 
+after: x sin y / 
 
-before: - cos x ^ 0 x 
-after: - cos x 0 
+before: x sqrt 
+after: x sqrt 
 
-before: + x ^ x 0 
-after: + x 1 
+before: x sqrt y * 
+after: x sqrt y * 
 
-before: - ^ x 0 x 
-after: - 1 x 
+before: x ln y * 
+after: x ln y * 
 
-before: - cos x ^ x 0 
-after: - cos x 1 
+before: x ~ ln x * 
+after: x ~ ln x * 
 
-before: + x ^ 1 x 
-after: + x 1 
+before: x sqrt ln y * 
+after: x sqrt ln y * 
 
-before: - ^ 1 x x 
-after: - 1 x 
+before: x x * asin 
+after: x x * asin 
 
-before: - cos x ^ 1 x 
-after: - cos x 1 
+before: x ln y * asin 
+after: x ln y * asin 
 
-before: + x ^ x 1 
-after: + x x 
+before: x ln y * asin 
+after: x ln y * asin 
 
-before: - ^ x 1 x 
+before: x acos y / asin 
+after: x acos y / asin 
+
+before: x ln y * asin y acos + 
+after: x ln y * asin y acos + 
+
+before: x acos acos x ~ * acos 
+after: x acos acos x ~ * acos 
+
+before: x exp x cos exp / 
+after: x exp x cos exp / 
+
+before: x ~ exp x x y * * + 
+after: x ~ exp x x y * * + 
+
+before: y arcsin exp x ~ * acos 
+after: y arcsin exp x ~ * acos 
+
+before: x y ^ 
+after: x y ^ 
+
+before: x cos y cos ^ x * 
+after: x cos y cos ^ x * 
+
+before: x cos y cos ^ x * 
+after: x cos y cos ^ x * 
+
+before: x x ^ x ^ y * 
+after: x x ^ x ^ y * 
+
+before: x x ^ x ^ y * 
+after: x x ^ x ^ y * 
+
+before: x sech tanh x ^ y * 
+after: x sech tanh x ^ y * 
+
+before: x y / tanh x sin ^ x * 
+after: x y / tanh x sin ^ x * 
+
+before: x sin sech x y * ^ sin sin sech 
+after: x sin sech x y * ^ sin sin sech 
+
+before: x ln arccos x y * / sech ~ sin 
+after: x ln arccos x y * / sech ~ sin 
+
+before: 0 x * 
 after: 0 
 
-before: - cos x ^ x 1 
-after: - cos x x 
+before: 0 x * x x sin + - 
+hi 187
+after: x x sin + ~ 
 
-before: ln * 1 exp x 
-after: ln * 1 exp x 
+before: 0 x * ~ x tanh + 
+after: x tanh 
 
-before: - x ln * 1 exp x 
-after: - x ln * 1 exp x 
+before: 1 x * 
+after: x 
 
-before: cos - x ln * 1 exp x 
-after: cos - x ln * 1 exp x 
+before: 1 x * x x sin + - 
+after: x x x sin + - 
 
-before: ln exp * y y 
-after: * y y 
+before: 1 x * ~ x tanh + 
+after: x ~ x tanh + 
 
-before: * exp * x x ln y 
-after: * exp * x x ln y 
+before: x 0 * 
+after: 0 
 
-before: + exp exp - y y sin x 
-after: + 2.718282 sin x 
+before: x 0 * x x sin + - 
+hi 187
+after: x x sin + ~ 
 
-before: / sin * x x y 
-after: / sin * x x y 
+before: x 0 * ~ x tanh + 
+after: x tanh 
 
-before: / sin cos x y 
-after: / sin cos x y 
+before: x x * 1 * 
+after: x x * 1 * 
 
-before: cos sqrt - x x 
+before: x x sin + 1 * 
+after: x x sin + 1 * 
+
+before: x 1 * tanh ~ 1 * 1 + 
+after: x tanh ~ 1 * 1 + 
+
+before: x sin x sin - x sin + 
+after: x sin x sin - x sin + 
+
+before: x 1 / 
+after: x 
+
+before: x x * 1 / 
+after: x x * 1 / 
+
+before: x x cos * 1 / 
+after: x x cos * 1 / 
+
+before: 0 x x * / 
+after: 0 x x * / 
+
+before: 0 x x cos * / 
+after: 0 x x cos * / 
+
+before: 0 x sin x sech * / 
+after: 0 x sin x sech * / 
+
+before: 1 x x * / 
+after: 1 x x * / 
+
+before: 1 x cos / 
+after: 1 x cos / 
+
+before: 1 x cos x sin * / 
+after: 1 x cos x sin * / 
+
+before: x x ~ ~ sin + 
+after: x x sin + 
+
+before: x ~ ~ tanh x - 
+after: x tanh x - 
+
+before: x 0 x ^ + 
+after: x 
+
+before: 0 x ^ x - 
+after: x ~ 
+
+before: x cos 0 x ^ - 
+after: x cos 
+
+before: x x 0 ^ + 
+after: x 1 + 
+
+before: x 0 ^ x - 
+after: 1 x - 
+
+before: x cos x 0 ^ - 
+after: x cos 1 - 
+
+before: x 1 x ^ + 
+after: x 1 + 
+
+before: 1 x ^ x - 
+after: 1 x - 
+
+before: x cos 1 x ^ - 
+after: x cos 1 - 
+
+before: x x 1 ^ + 
+after: x x + 
+
+before: x 1 ^ x - 
+after: 0 
+
+before: x cos x 1 ^ - 
+after: x cos x - 
+
+before: 1 x exp * ln 
+after: 1 x exp * ln 
+
+before: x 1 x exp * ln - 
+after: x 1 x exp * ln - 
+
+before: x 1 x exp * ln - cos 
+after: x 1 x exp * ln - cos 
+
+before: y y * exp ln 
+after: y y * 
+
+before: x x * exp y ln * 
+after: x x * exp y ln * 
+
+before: y y - exp exp x sin + 
+after: 2.718282 x sin + 
+
+before: x x * sin y / 
+after: x x * sin y / 
+
+before: x cos sin y / 
+after: x cos sin y / 
+
+before: x x - sqrt cos 
 after: 1 
 
-before: sin tanh sqrt - * x x * x x 
-after: sin tanh sqrt - * x x * x x 
+before: x x * x x * - sqrt tanh sin 
+after: x x * x x * - sqrt tanh sin 
 
-before: sqrt sqrt - * x cos x * x cos x 
-after: sqrt sqrt - * x cos x * x cos x 
+before: x x cos * x x cos * - sqrt sqrt 
+after: x x cos * x x cos * - sqrt sqrt 
 
-before: cos arcsin - x x 
+before: x x - arcsin cos 
 after: 1 
 
-before: sin tanh asin - ^ x x ^ x x 
-after: sin tanh asin - ^ x x ^ x x 
+before: x x ^ x x ^ - asin tanh sin 
+after: x x ^ x x ^ - asin tanh sin 
 
-before: asin arcsin - * x sin x * x sin x 
-after: asin arcsin - * x sin x * x sin x 
+before: x x sin * x x sin * - arcsin asin 
+after: x x sin * x x sin * - arcsin asin 
 
-before: exp acos - tanh x tanh x 
-after: exp acos - tanh x tanh x 
+before: x tanh x tanh - acos exp 
+after: x tanh x tanh - acos exp 
 
-before: sech sech arccos - / x x / x x 
+before: x x / x x / - arccos sech sech 
 after: 0.925521 
 
-before: acos arccos - - x sech x - x sech x 
-after: acos arccos - - x sech x - x sech x 
+before: x x sech - x x sech - - arccos acos 
+after: x x sech - x x sech - - arccos acos 
 
-before: acos tanh - * x exp x * x exp x 
-after: acos tanh - * x exp x * x exp x 
+before: x x exp * x x exp * - tanh acos 
+after: x x exp * x x exp * - tanh acos 
 
-before: asin sech - * x exp x * x exp x 
-after: asin sech - * x exp x * x exp x 
+before: x x exp * x x exp * - sech asin 
+after: x x exp * x x exp * - sech asin 
 
-before: acos sech - - x sech x - x sech x 
-after: acos sech - - x sech x - x sech x 
+before: x x sech - x x sech - - sech acos 
+after: x x sech - x x sech - - sech acos 
 
-before: + ~ * 0 tanh tanh x x 
-after: + ~ * 0 tanh tanh x x 
+before: x0 x0 cos / tanh acos cos 
+after: x0 x0 cos / tanh 
 
-before: * * y 1 * x2 1 
-after: * y x2 
+before: 0 x tanh tanh * ~ x + 
+after: 0 x tanh tanh * ~ x + 
 
-before: * + 0 y + 0 x2 
-after: * y x2 
+before: y 1 * x2 1 * * 
+after: y x2 * 
 
-before: * + x 0 + 0 y 
-after: * x y 
+before: 0 y + 0 x2 + * 
+after: y x2 * 
 
-before: / + x3 0 + 0 y 
-after: / x3 y 
+before: x 0 + 0 y + * 
+after: x y * 
 
-before: / / 0 x3 / 1 y 
-after: / 0 / 1 y 
+before: x3 0 + 0 y + / 
+after: x3 y / 
 
-before: / / 0 w / y 1 
+before: 0 x3 / 1 y / / 
+after: 0 1 y / / 
+
+before: 0 w / y 1 / / 
 after: 0 
 
-before: cos acos * y y 
-after: * y y 
+before: 1 w / y 1 / / exp ln ln exp ln ln exp 
+after: 1 w / y / ln 
 
-before: ln exp * cos arccos y y 
-after: * y y 
+before: 1 w / y 1 / / asin sin sin asin sin sin arcsin 
+after: 1 w / y / sin 
 
-before: arccos cos * y y 
-after: * y y 
+before: 1 w / y 1 / / arccos cos cos acos cos cos acos 
+after: 1 w / y / cos 
 
-before: ln exp * arccos cos y y 
-after: * y y 
+before: 1 w / y 1 / / sin asin asin sin asin asin sin 
+after: 1 w / y / asin 
 
-before: sin arcsin * y y 
-after: * y y 
+before: 1 w / y 1 / / cos acos acos cos acos arccos cos 
+after: 1 w / y / acos 
 
-before: ln exp * sin asin y y 
-after: * y y 
-
-before: arcsin sin * y y 
-after: * y y 
-
-before: ln exp * asin sin y y 
-after: * y y 
+before: 0 x 0 x x x + + + + + 
+after: x x x x + + + 
 '''
-old = '''before: * * x x 1 
-after: * * x x 1 
+after='''before: x1 x1 - 0 - x1 x1 + - 
+hi 187
+after: x1 x1 + ~ 
 
-before: * + sin x x 1 
-after: * + sin x x 1 
+before: 2.33 1.222 - 0 - x1 - 
+after: 1.108000 x1 - 
 
-before: + ~ tanh * x 1 * 1 1 
-after: + ~ tanh x 1 
+before: 0 x - 0 0 y - - + 
+hi 187
+after: x ~ y + 
 
-before: + - sin x sin x sin x 
-after: + - sin x sin x sin x 
+before: x 0 - 0 y 0 - - + 
+after: x y ~ + 
 
-before: / x 1 
+before: 3 0 - 0 4 0 - - + cos 
+after: 0.540302 
+
+before: x0 cos x0 x0 sin ~ * - x0 cos x0 cos * / x0 x0 cos / sech x0 x0 cos / sech * * 1 x0 x0 cos / tanh x0 x0 cos / tanh * - sqrt / ~ x0 x0 cos / tanh acos sin ~ * 
+after: x0 cos x0 x0 sin ~ * - x0 cos x0 cos * / x0 x0 cos / sech x0 x0 cos / sech * * 1 x0 x0 cos / tanh x0 x0 cos / tanh * - sqrt / ~ x0 x0 cos / tanh acos sin ~ * 
+
+before: x x + 
+after: x x + 
+
+before: x x x - + 
 after: x 
 
-before: / * x x 1 
-after: / * x x 1 
+before: x x - x - y + 
+after: x ~ y + 
 
-before: / * x cos x 1 
-after: / * x cos x 1 
+before: y y x / * cos y + 
+after: y y x / * cos y + 
 
-before: / 0 * x x 
-after: / 0 * x x 
+before: y y x * * cos y + 
+after: y y x * * cos y + 
 
-before: / 0 * x cos x 
-after: / 0 * x cos x 
+before: y x x * + 
+after: y x x * + 
 
-before: / 0 * sin x sech x 
-after: / 0 * sin x sech x 
+before: y x x + + 
+after: y x x + + 
 
-before: / 1 * x x 
-after: / 1 * x x 
+before: y x cos x + + 
+after: y x cos x + + 
 
-before: / 1 cos x 
-after: / 1 cos x 
+before: y x cos x + - 
+after: y x cos x + - 
 
-before: / 1 * cos x sin x 
-after: / 1 * cos x sin x 
+before: y x - 
+after: y x - 
 
-before: + x sin ~ ~ x 
-after: + x sin x 
+before: x y x - cos cos * 
+after: x y x - cos cos * 
 
-before: - tanh ~ ~ x x 
-after: - tanh x x 
+before: x x y x - sin / + 
+after: x x y x - sin / + 
 
-before: + ^ 0 x x 
-after: x 
+before: x x y y sin cos * / / 
+after: x x y y sin cos * / / 
 
-before: - ^ 0 x x 
-after: ^ x x 
+before: x ~ ~ sin y / 
+after: x sin y / 
 
-before: - cos x ^ 0 x 
-after: - cos x 0 
+before: x sqrt 
+after: x sqrt 
 
-before: + x ^ x 0 
-after: + x 1 
+before: x sqrt y * 
+after: x sqrt y * 
 
-before: - ^ x 0 x 
-after: - 1 x 
+before: x ln y * 
+after: x ln y * 
 
-before: - cos x ^ x 0 
-after: - cos x 1 
+before: x ~ ln x * 
+after: x ~ ln x * 
 
-before: + x ^ 1 x 
-after: + x 1 
+before: x sqrt ln y * 
+after: x sqrt ln y * 
 
-before: - ^ 1 x x 
-after: - 1 x 
+before: x x * asin 
+after: x x * asin 
 
-before: - cos x ^ 1 x 
-after: - cos x 1 
+before: x ln y * asin 
+after: x ln y * asin 
 
-before: + x ^ x 1 
-after: + x x 
+before: x ln y * asin 
+after: x ln y * asin 
 
-before: - ^ x 1 x 
+before: x acos y / asin 
+after: x acos y / asin 
+
+before: x ln y * asin y acos + 
+after: x ln y * asin y acos + 
+
+before: x acos acos x ~ * acos 
+after: x acos acos x ~ * acos 
+
+before: x exp x cos exp / 
+after: x exp x cos exp / 
+
+before: x ~ exp x x y * * + 
+after: x ~ exp x x y * * + 
+
+before: y arcsin exp x ~ * acos 
+after: y arcsin exp x ~ * acos 
+
+before: x y ^ 
+after: x y ^ 
+
+before: x cos y cos ^ x * 
+after: x cos y cos ^ x * 
+
+before: x cos y cos ^ x * 
+after: x cos y cos ^ x * 
+
+before: x x ^ x ^ y * 
+after: x x ^ x ^ y * 
+
+before: x x ^ x ^ y * 
+after: x x ^ x ^ y * 
+
+before: x sech tanh x ^ y * 
+after: x sech tanh x ^ y * 
+
+before: x y / tanh x sin ^ x * 
+after: x y / tanh x sin ^ x * 
+
+before: x sin sech x y * ^ sin sin sech 
+after: x sin sech x y * ^ sin sin sech 
+
+before: x ln arccos x y * / sech ~ sin 
+after: x ln arccos x y * / sech ~ sin 
+
+before: 0 x * 
 after: 0 
 
-before: - cos x ^ x 1 
-after: - cos x x 
+before: 0 x * x x sin + - 
+hi 187
+after: x x sin + ~ 
 
-before: ln * 1 exp x 
-after: ln * 1 exp x 
+before: 0 x * ~ x tanh + 
+after: x tanh 
 
-before: - x ln * 1 exp x 
-after: - x ln * 1 exp x 
+before: 1 x * 
+after: x 
 
-before: cos - x ln * 1 exp x 
-after: cos - x ln * 1 exp x 
+before: 1 x * x x sin + - 
+after: x x x sin + - 
 
-before: ln exp * y y 
-after: * y y 
+before: 1 x * ~ x tanh + 
+after: x ~ x tanh + 
 
-before: * exp * x x ln y 
-after: * exp * x x ln y 
+before: x 0 * 
+after: 0 
 
-before: + exp exp - y y sin x 
-after: + 2.718282 sin x 
+before: x 0 * x x sin + - 
+hi 187
+after: x x sin + ~ 
 
-before: / sin * x x y 
-after: / sin * x x y 
+before: x 0 * ~ x tanh + 
+after: x tanh 
 
-before: / sin cos x y 
-after: / sin cos x y 
+before: x x * 1 * 
+after: x x * 1 * 
 
-before: cos sqrt - x x 
+before: x x sin + 1 * 
+after: x x sin + 1 * 
+
+before: x 1 * tanh ~ 1 * 1 + 
+after: x tanh ~ 1 * 1 + 
+
+before: x sin x sin - x sin + 
+after: x sin x sin - x sin + 
+
+before: x 1 / 
+after: x 
+
+before: x x * 1 / 
+after: x x * 1 / 
+
+before: x x cos * 1 / 
+after: x x cos * 1 / 
+
+before: 0 x x * / 
+after: 0 x x * / 
+
+before: 0 x x cos * / 
+after: 0 x x cos * / 
+
+before: 0 x sin x sech * / 
+after: 0 x sin x sech * / 
+
+before: 1 x x * / 
+after: 1 x x * / 
+
+before: 1 x cos / 
+after: 1 x cos / 
+
+before: 1 x cos x sin * / 
+after: 1 x cos x sin * / 
+
+before: x x ~ ~ sin + 
+after: x x sin + 
+
+before: x ~ ~ tanh x - 
+after: x tanh x - 
+
+before: x 0 x ^ + 
+after: x 
+
+before: 0 x ^ x - 
+after: x ~ 
+
+before: x cos 0 x ^ - 
+after: x cos 
+
+before: x x 0 ^ + 
+after: x 1 + 
+
+before: x 0 ^ x - 
+after: 1 x - 
+
+before: x cos x 0 ^ - 
+after: x cos 1 - 
+
+before: x 1 x ^ + 
+after: x 1 + 
+
+before: 1 x ^ x - 
+after: 1 x - 
+
+before: x cos 1 x ^ - 
+after: x cos 1 - 
+
+before: x x 1 ^ + 
+after: x x + 
+
+before: x 1 ^ x - 
+after: 0 
+
+before: x cos x 1 ^ - 
+after: x cos x - 
+
+before: 1 x exp * ln 
+after: 1 x exp * ln 
+
+before: x 1 x exp * ln - 
+after: x 1 x exp * ln - 
+
+before: x 1 x exp * ln - cos 
+after: x 1 x exp * ln - cos 
+
+before: y y * exp ln 
+after: y y * 
+
+before: x x * exp y ln * 
+after: x x * exp y ln * 
+
+before: y y - exp exp x sin + 
+after: 2.718282 x sin + 
+
+before: x x * sin y / 
+after: x x * sin y / 
+
+before: x cos sin y / 
+after: x cos sin y / 
+
+before: x x - sqrt cos 
 after: 1 
 
-before: sin tanh sqrt - * x x * x x 
-after: sin tanh sqrt - * x x * x x 
+before: x x * x x * - sqrt tanh sin 
+after: x x * x x * - sqrt tanh sin 
 
-before: sqrt sqrt - * x cos x * x cos x 
-after: sqrt sqrt - * x cos x * x cos x 
+before: x x cos * x x cos * - sqrt sqrt 
+after: x x cos * x x cos * - sqrt sqrt 
 
-before: cos arcsin - x x 
+before: x x - arcsin cos 
 after: 1 
 
-before: sin tanh asin - ^ x x ^ x x 
-after: sin tanh asin - ^ x x ^ x x 
+before: x x ^ x x ^ - asin tanh sin 
+after: x x ^ x x ^ - asin tanh sin 
 
-before: asin arcsin - * x sin x * x sin x 
-after: asin arcsin - * x sin x * x sin x 
+before: x x sin * x x sin * - arcsin asin 
+after: x x sin * x x sin * - arcsin asin 
 
-before: exp acos - tanh x tanh x 
-after: exp acos - tanh x tanh x 
+before: x tanh x tanh - acos exp 
+after: x tanh x tanh - acos exp 
 
-before: sech sech arccos - / x x / x x 
+before: x x / x x / - arccos sech sech 
 after: 0.925521 
 
-before: acos arccos - - x sech x - x sech x 
-after: acos arccos - - x sech x - x sech x 
+before: x x sech - x x sech - - arccos acos 
+after: x x sech - x x sech - - arccos acos 
 
-before: acos tanh - * x exp x * x exp x 
-after: acos tanh - * x exp x * x exp x 
+before: x x exp * x x exp * - tanh acos 
+after: x x exp * x x exp * - tanh acos 
 
-before: asin sech - * x exp x * x exp x 
-after: asin sech - * x exp x * x exp x 
+before: x x exp * x x exp * - sech asin 
+after: x x exp * x x exp * - sech asin 
 
-before: acos sech - - x sech x - x sech x 
-after: acos sech - - x sech x - x sech x 
+before: x x sech - x x sech - - sech acos 
+after: x x sech - x x sech - - sech acos 
 
-before: + ~ * 0 tanh tanh x x 
-after: + ~ * 0 tanh tanh x x 
+before: x0 x0 cos / tanh acos cos 
+after: x0 x0 cos / tanh 
 
-before: * * y 1 * x2 1 
-after: * y x2 
+before: 0 x tanh tanh * ~ x + 
+after: 0 x tanh tanh * ~ x + 
 
-before: * + 0 y + 0 x2 
-after: * y x2 
+before: y 1 * x2 1 * * 
+after: y x2 * 
 
-before: * + x 0 + 0 y 
-after: * x y 
+before: 0 y + 0 x2 + * 
+after: y x2 * 
 
-before: / + x3 0 + 0 y 
-after: / x3 y 
+before: x 0 + 0 y + * 
+after: x y * 
 
-before: / / 0 x3 / 1 y 
-after: / 0 / 1 y 
+before: x3 0 + 0 y + / 
+after: x3 y / 
 
-before: / / 0 w / y 1 
+before: 0 x3 / 1 y / / 
+after: 0 1 y / / 
+
+before: 0 w / y 1 / / 
 after: 0 
 
-before: cos acos * y y 
-after: * y y 
+before: 1 w / y 1 / / exp ln ln exp ln ln exp 
+after: 1 w / y / ln 
 
-before: ln exp * cos arccos y y 
-after: * y y 
+before: 1 w / y 1 / / asin sin sin asin sin sin arcsin 
+after: 1 w / y / sin 
 
-before: arccos cos * y y 
-after: * y y 
+before: 1 w / y 1 / / arccos cos cos acos cos cos acos 
+after: 1 w / y / cos 
 
-before: ln exp * arccos cos y y 
-after: * y y 
+before: 1 w / y 1 / / sin asin asin sin asin asin sin 
+after: 1 w / y / asin 
 
-before: sin arcsin * y y 
-after: * y y 
+before: 1 w / y 1 / / cos acos acos cos acos arccos cos 
+after: 1 w / y / acos 
 
-before: ln exp * sin asin y y 
-after: * y y 
-
-before: arcsin sin * y y 
-after: * y y 
-
-before: ln exp * asin sin y y 
-after: * y y 
+before: 0 x 0 x x x + + + + + 
+after: x x x x + + + 
 '''
-print(old==new)
+print(prev==after)

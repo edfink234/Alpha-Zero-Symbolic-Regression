@@ -806,7 +806,7 @@ struct Board
             setPrefixGR(expression, grasp);
         }
     //    print_container(expression, low, up);
-        if (expression[low] == "+")
+        if (expression[low] == "+" || expression[low] == "-")
         {
             int op_idx = new_expression.size();
             new_expression.push_back(expression[low]);
@@ -817,10 +817,20 @@ struct Board
             graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true);
             //int second_arg_idx_high = new_expression.size();
             
-            if (new_expression[first_arg_idx_low] == "0") //+ 0 y' -> y'
+            if (new_expression[first_arg_idx_low] == "0")
             {
-                //puts("hi 176");
-                new_expression.erase(new_expression.begin() + op_idx, new_expression.begin() + first_arg_idx_high); //remove '+' and '0'
+                if (expression[low] == "+") //+ 0 y -> y
+                {
+                    //puts("hi 176");
+                    new_expression.erase(new_expression.begin() + op_idx, new_expression.begin() + first_arg_idx_high); //remove '+' and '0'
+                }
+                else //- 0 y -> ~ y
+                {
+                    //puts("hi 184");
+                    new_expression[op_idx] = "~";
+                    new_expression.erase(new_expression.begin() + first_arg_idx_low); //'0'
+                }
+                
             }
         }
         else
@@ -841,7 +851,7 @@ struct Board
         expression = new_expression;
     }
     
-    void simplifyPN(std::vector<std::string>& expression)
+    void simplifyPN_Helper(std::vector<std::string>& expression)
     {
         bool simplified = true;
         bool isFloat1, isFloat2;
@@ -1178,13 +1188,16 @@ struct Board
                 }
             }
         }
-        
-        if (expression.size() > 3)
-        {
-            this->simplify_grasp.reserve(expression.size());
-            graspSimplifyPrefix(expression, 0, expression.size() - 1, this->simplify_grasp);
-        }
     }
+    
+    void simplifyPN(std::vector<std::string>& expression)
+    {
+        simplifyPN_Helper(expression);
+        this->simplify_grasp.reserve(expression.size());
+        graspSimplifyPrefix(expression, 0, expression.size() - 1, this->simplify_grasp);
+        simplifyPN_Helper(expression);
+    }
+    
     
     void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, int up, std::vector<int>& grasp, std::vector<std::string>& new_expression, bool setGRvar = false)
     {
@@ -1194,7 +1207,7 @@ struct Board
             setPostfixGR(expression, grasp);
         }
     //    print_container(expression, low, up);
-        if (expression[up] == "+")
+        if (expression[up] == "+" || expression[up] == "-")
         {
             int first_arg_idx_low = new_expression.size();
             graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true);
@@ -1207,7 +1220,13 @@ struct Board
                 //puts("hi 184");
                 //erase elements from new_expression[first_arg_idx_low] to new_expression[first_arg_idx_high-1] inclusive
                 new_expression.erase(new_expression.begin() + first_arg_idx_low, new_expression.begin() + first_arg_idx_high); //0 y + -> y
+                if (expression[up] == "-")
+                {
+                    //puts("hi 187");
+                    new_expression.push_back("~"); //0 y - -> y ~
+                }
             }
+            
             else
             {
                 new_expression.push_back(expression[up]);
@@ -1231,7 +1250,7 @@ struct Board
         expression = new_expression;
     }
 
-    void simplifyRPN(std::vector<std::string>& expression)
+    void simplifyRPN_Helper(std::vector<std::string>& expression)
     {
         bool simplified = true;
         bool isFloat1, isFloat2;
@@ -1567,12 +1586,14 @@ struct Board
                 }
             }
         }
-        
-        if (expression.size() > 3)
-        {
-            this->simplify_grasp.reserve(expression.size());
-            graspSimplifyPostfix(expression, 0, expression.size() - 1, this->simplify_grasp);
-        }
+    }
+    
+    void simplifyRPN(std::vector<std::string>& expression)
+    {
+        simplifyRPN_Helper(expression);
+        this->simplify_grasp.reserve(expression.size());
+        graspSimplifyPostfix(expression, 0, expression.size() - 1, this->simplify_grasp);
+        simplifyRPN_Helper(expression);
     }
     
     /*
@@ -6205,7 +6226,7 @@ int main()
     
 //    std::cout<<data << '\n' << (Eigen::VectorXf::Ones(5).array() / Eigen::VectorXf::Zero(5).array()).cos() /*Eigen::VectorXf::Zero(5).array().pow(Eigen::VectorXf::Ones(5).array())*/ << '\n';
     
-    RandomSearch(VortexRadialProfile /*differential equation to solve*/, VortexRadialProfileSetter /*helper function to set constants that the solution may contain*/,  data /*data used to solve differential equation*/, std::vector<int>{7} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
+    RandomSearch(VortexRadialProfile /*differential equation to solve*/, VortexRadialProfileSetter /*helper function to set constants that the solution may contain*/,  data /*data used to solve differential equation*/, std::vector<int>{3} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
     
     return 0;
 }

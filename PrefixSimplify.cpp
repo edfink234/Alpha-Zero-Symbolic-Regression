@@ -136,7 +136,6 @@ int GR(size_t i, const std::vector<std::string>& individual)
     return ((expression_type == "prefix") ? ( ptr_lgb - i) : (i - ptr_lgb));
 }
 
-//TODO: Fortran
 void print_container(const std::vector<std::string>& c, int low, int up)
 {
     for (int i = low; i <= up; i++)
@@ -161,7 +160,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         setPrefixGR(expression, grasp);
     }
 //    print_container(expression, low, up);
-    if (expression[low] == "+")
+    if (expression[low] == "+" || expression[low] == "-")
     {
         int op_idx = new_expression.size();
         new_expression.push_back(expression[low]);
@@ -172,10 +171,20 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true);
         int second_arg_idx_high = new_expression.size();
         
-        if (new_expression[first_arg_idx_low] == "0") //+ 0 y' -> y'
+        if (new_expression[first_arg_idx_low] == "0") 
         {
-            //puts("hi 176");
-            new_expression.erase(new_expression.begin() + op_idx, new_expression.begin() + first_arg_idx_high); //remove '+' and '0'
+            if (expression[low] == "+") //+ 0 y -> y
+            {
+                //puts("hi 176");
+                new_expression.erase(new_expression.begin() + op_idx, new_expression.begin() + first_arg_idx_high); //remove '+' and '0'
+            }
+            else //- 0 y -> ~ y
+            {
+                //puts("hi 184");
+                new_expression[op_idx] = "~";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low); //'0'
+            }
+            
         }
     }
     else
@@ -196,7 +205,7 @@ void graspSimplifyPrefix(std::vector<std::string>& expression, int low, int up, 
     expression = new_expression;
 }
 
-void simplifyPN(std::vector<std::string>& expression)
+void simplifyPN_Helper(std::vector<std::string>& expression)
 {
     bool simplified = true;
     bool isFloat1, isFloat2;
@@ -533,11 +542,13 @@ void simplifyPN(std::vector<std::string>& expression)
             }
         }
     }
-    
-    if (expression.size() > 3)
-    {
-        graspSimplifyPrefix(expression, 0, expression.size() - 1, grasp);
-    }
+}
+
+void simplifyPN(std::vector<std::string>& expression)
+{
+    simplifyPN_Helper(expression);
+    graspSimplifyPrefix(expression, 0, expression.size() - 1, grasp);
+    simplifyPN_Helper(expression);
 }
 
 int main()
@@ -1232,6 +1243,11 @@ int main()
     printf("after: ");print_container(test_expr);
     puts("");
     
+    test_expr = {"-", "0", "+", "x", "-", "0", "+", "x", "+", "x", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
     
 }
 
