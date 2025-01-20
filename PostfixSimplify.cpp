@@ -176,9 +176,15 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true);
         int second_arg_idx_high = new_expression.size();
         
-        if (new_expression[first_arg_idx_high - 1] == "0")
+        if (new_expression.back() == "0") // x 0 +/- -> x
         {
-            //puts("hi 184");
+            //puts("hi 181");
+            new_expression.pop_back();
+        }
+        
+        else if (new_expression[first_arg_idx_high - 1] == "0")
+        {
+//            puts("hi 184");
             //erase elements from new_expression[first_arg_idx_low] to new_expression[first_arg_idx_high-1] inclusive
             new_expression.erase(new_expression.begin() + first_arg_idx_low, new_expression.begin() + first_arg_idx_high); //0 y + -> y
             if (expression[up] == "-")
@@ -275,7 +281,7 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i-2] == "0") //"0 x -" -> "x ~"
+                        else if (expression[i-2] == "0" && is_const(expression[i-1])) //"0 x -" -> "x ~"
                         {
                             expression[i] = "~";
                             expression.erase(expression.begin() + i - 2);
@@ -1235,6 +1241,12 @@ int main()
     puts("");
     
     test_expr = {"0", "x", "0", "x", "x", "x", "+", "+", "+", "+", "+"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "x", "+", "cos", "cos", "sin", "tanh", "0", "-"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);

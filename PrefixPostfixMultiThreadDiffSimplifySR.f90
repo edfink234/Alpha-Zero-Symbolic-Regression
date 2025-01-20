@@ -241,6 +241,35 @@ contains
         write(*, *)  ! Print newline
     end subroutine print_range_of_container
 
+    RECURSIVE SUBROUTINE GB(z, ind, individual, expression_type)
+        IMPLICIT NONE
+        INTEGER, INTENT(INOUT) :: ind
+        INTEGER, INTENT(IN) :: z
+        CHARACTER(LEN=*), DIMENSION(:), INTENT(IN) :: individual
+        CHARACTER(LEN=*), INTENT(IN) :: expression_type
+
+        INTEGER :: remaining_z
+
+        remaining_z = z
+        DO WHILE (remaining_z > 0)
+           ! Update `ind` based on the expression type
+           IF (TRIM(expression_type) == "prefix") THEN
+              ind = ind + 1
+           ELSE
+              ind = ind - 1
+           END IF
+
+           ! Check if the current token is unary or binary
+           IF (is_unary(individual(ind))) THEN
+              CALL GB(1, ind, individual, expression_type)
+           ELSE IF (is_binary(individual(ind))) THEN
+              CALL GB(2, ind, individual, expression_type)
+           END IF
+
+           remaining_z = remaining_z - 1
+        END DO
+    END SUBROUTINE GB
+
     function trueMod(N, M) result(modulo)
         implicit none
         integer, intent(in) :: N  ! Numerator
@@ -327,6 +356,9 @@ program main
     integer :: i, low, up
     character(len=100) :: string_result
     character(len=15) :: token
+    CHARACTER(LEN=10), DIMENSION(:), ALLOCATABLE :: individual
+    CHARACTER(LEN=10) :: expression_type
+    INTEGER :: ind, z
 
     ! Capture start time
     start_time = get_time()
@@ -428,6 +460,31 @@ program main
     ! Call the subroutine to print the specified range
     call print_range_of_container(unary_operators, low, up)
     call print_range_of_container(binary_operators, low, up)
+
+    ! Test Case 1: Prefix expression
+    PRINT *, "Running Test Case 1: Prefix Expression"
+    ALLOCATE(individual(7))
+    individual = (/"+   ", "tanh", "cos ", "x   ", "^   ", "0   ", "x   "/)
+    expression_type = "prefix"
+    ind = 1  ! Initial index (Fortran is 1-based)
+    z = 2    ! Start with a single expression
+
+    CALL GB(z, ind, individual, expression_type)
+    PRINT *, "Final index (ind) after processing: ", ind
+    DEALLOCATE(individual)
+
+    ! Test Case 2: Postfix expression
+    PRINT *, "Running Test Case 2: Postfix Expression"
+    ALLOCATE(individual(9))
+    individual = (/"x   ", "x   ", "+   ", "cos ", "cos ", "sin ", "tanh", "0   ", "-   " /)
+    expression_type = "postfix"
+    ind = 4  ! Initial index for postfix (processing starts at the end)
+    z = 1    ! Start with a single expression
+
+    CALL GB(z, ind, individual, expression_type)
+    PRINT *, "Final index (ind) after processing: ", ind
+    DEALLOCATE(individual)
+
 
     ! Calculate elapsed time
     elapsed_time = time_elapsed(start_time)
