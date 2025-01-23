@@ -815,7 +815,8 @@ struct Board
             graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true);
             int first_arg_idx_high = new_expression.size();
             graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true);
-            //int second_arg_idx_high = new_expression.size();
+            int second_arg_idx_high = new_expression.size();
+            int step;
             
             if (new_expression[first_arg_idx_high] == "0") //+/- x 0 -> x
             {
@@ -844,6 +845,14 @@ struct Board
                     new_expression[op_idx] = "~";
                     new_expression.erase(new_expression.begin() + first_arg_idx_low); //'0'
                 }
+            }
+            
+            else if ((expression[low] == "-") && ((step = (second_arg_idx_high - first_arg_idx_high)) == (first_arg_idx_high - first_arg_idx_low)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression)))
+            {
+                //puts("hi 221");
+                assert(new_expression[op_idx] == expression[low]);
+                new_expression[op_idx] = "0"; //change "-" to "0";
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.begin() + second_arg_idx_high);
             }
         }
         else
@@ -1226,7 +1235,8 @@ struct Board
             graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true);
             int first_arg_idx_high = new_expression.size();
             graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true);
-            //int second_arg_idx_high = new_expression.size();
+            int second_arg_idx_high = new_expression.size();
+            int step;
             
             if (new_expression.back() == "0") // x 0 +/- -> x
             {
@@ -1244,6 +1254,13 @@ struct Board
                     //puts("hi 187");
                     new_expression.push_back("~"); //0 y - -> y ~
                 }
+            }
+            
+            else if ((expression[up] == "-") && ((step = (first_arg_idx_high - first_arg_idx_low)) == (second_arg_idx_high - first_arg_idx_high)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression)))
+            {
+                //puts("hi 215");
+                new_expression[first_arg_idx_low] = "0"; //change first symbol of x' to 0
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.begin() + second_arg_idx_high); //erase the rest of x' and y'
             }
             
             else
@@ -3133,6 +3150,20 @@ struct Board
         for (int i = start_idx_1, j = start_idx_2; i < stop_idx_1; i++, j++)
         {
             if (derivat[i] != derivat[j])
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    bool areExpressionRangesEqual(int start_idx_1, int start_idx_2, int num_steps, const std::vector<std::string>& expression)
+    {
+        int stop_idx_1 = start_idx_1 + num_steps;
+        
+        for (int i = start_idx_1, j = start_idx_2; i < stop_idx_1; i++, j++)
+        {
+            if (expression[i] != expression[j])
             {
                 return false;
             }
@@ -6245,7 +6276,7 @@ int main()
     
 //    std::cout<<data << '\n' << (Eigen::VectorXf::Ones(5).array() / Eigen::VectorXf::Zero(5).array()).cos() /*Eigen::VectorXf::Zero(5).array().pow(Eigen::VectorXf::Ones(5).array())*/ << '\n';
     
-    RandomSearch(VortexRadialProfile /*differential equation to solve*/, VortexRadialProfileSetter /*helper function to set constants that the solution may contain*/,  data /*data used to solve differential equation*/, std::vector<int>{10} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
+    RandomSearch(VortexRadialProfile /*differential equation to solve*/, VortexRadialProfileSetter /*helper function to set constants that the solution may contain*/,  data /*data used to solve differential equation*/, std::vector<int>{6} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
     
     return 0;
 }

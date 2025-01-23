@@ -106,6 +106,21 @@ std::string simplifyString(const std::string& x)
     return temp; //"x.0000000" (repeating) -> "x"
 }
 
+//TODO: Fortran
+bool areExpressionRangesEqual(int start_idx_1, int start_idx_2, int num_steps, const std::vector<std::string>& expression)
+{
+    int stop_idx_1 = start_idx_1 + num_steps;
+    
+    for (int i = start_idx_1, j = start_idx_2; i < stop_idx_1; i++, j++)
+    {
+        if (expression[i] != expression[j])
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 //Function to compute the LGB or RGB, from https://www.jstor.org/stable/43998756
 //(top of pg. 165)
 void GB(size_t z, size_t& ind, const std::vector<std::string>& individual)
@@ -175,6 +190,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         int first_arg_idx_high = new_expression.size();
         graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true);
         int second_arg_idx_high = new_expression.size();
+        int step;
         
         if (new_expression.back() == "0") // x 0 +/- -> x
         {
@@ -192,6 +208,13 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
                 //puts("hi 187");
                 new_expression.push_back("~"); //0 y - -> y ~
             }
+        }
+        
+        else if ((expression[up] == "-") && ((step = (first_arg_idx_high - first_arg_idx_low)) == (second_arg_idx_high - first_arg_idx_high)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression)))
+        {
+            puts("hi 215");
+            new_expression[first_arg_idx_low] = "0"; //change first symbol of x' to 0
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.begin() + second_arg_idx_high); //erase the rest of x' and y'
         }
         
         else
@@ -1247,6 +1270,12 @@ int main()
     puts("");
     
     test_expr = {"x", "x", "+", "cos", "cos", "sin", "tanh", "0", "-"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "x", "+", "cos", "cos", "sin", "tanh", "x", "x", "+", "cos", "cos", "sin", "tanh", "-"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);

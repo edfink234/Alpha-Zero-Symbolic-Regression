@@ -100,6 +100,21 @@ std::string simplifyString(const std::string& x)
     return temp;
 }
 
+//TODO: Fortran
+bool areExpressionRangesEqual(int start_idx_1, int start_idx_2, int num_steps, const std::vector<std::string>& expression)
+{
+    int stop_idx_1 = start_idx_1 + num_steps;
+    
+    for (int i = start_idx_1, j = start_idx_2; i < stop_idx_1; i++, j++)
+    {
+        if (expression[i] != expression[j])
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 //Function to compute the LGB or RGB, from https://www.jstor.org/stable/43998756
 //(top of pg. 165)
 void GB(size_t z, size_t& ind, const std::vector<std::string>& individual)
@@ -170,6 +185,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         int first_arg_idx_high = new_expression.size();
         graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true);
         int second_arg_idx_high = new_expression.size();
+        int step;
         
         if (new_expression[first_arg_idx_high] == "0") //+/- x 0 -> x
         {
@@ -198,6 +214,14 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
                 new_expression[op_idx] = "~";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low); //'0'
             }
+        }
+        
+        else if ((expression[low] == "-") && ((step = (second_arg_idx_high - first_arg_idx_high)) == (first_arg_idx_high - first_arg_idx_low)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression)))
+        {
+            puts("hi 221");
+            assert(new_expression[op_idx] == expression[low]);
+            new_expression[op_idx] = "0"; //change "-" to "0";
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.begin() + second_arg_idx_high);
         }
     }
     else
@@ -1263,6 +1287,12 @@ int main()
     puts("");
     
     test_expr = {"+", "tanh", "cos", "x", "^", "0", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"-", "tanh", "cos", "x", "tanh", "cos", "x"};
     printf("before: ");print_container(test_expr);
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
