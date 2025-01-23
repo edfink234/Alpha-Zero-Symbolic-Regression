@@ -270,6 +270,25 @@ contains
         END DO
     END SUBROUTINE GB
 
+    function areExpressionRangesEqual(start_idx_1, start_idx_2, num_steps, expression) result(is_equal)
+        implicit none
+        integer, intent(in) :: start_idx_1, start_idx_2, num_steps
+        character(len=*), intent(in) :: expression(:)
+        logical :: is_equal
+        integer :: i, j, stop_idx_1
+
+        stop_idx_1 = start_idx_1 + num_steps - 1
+        is_equal = .true.
+
+        do i = start_idx_1, stop_idx_1
+            j = start_idx_2 + (i - start_idx_1)
+            if (expression(i) /= expression(j)) then
+                is_equal = .false.
+                return
+            end if
+        end do
+    end function areExpressionRangesEqual
+
     function trueMod(N, M) result(modulo)
         implicit none
         integer, intent(in) :: N  ! Numerator
@@ -356,7 +375,7 @@ program main
     integer :: i, low, up
     character(len=100) :: string_result
     character(len=15) :: token
-    CHARACTER(LEN=10), DIMENSION(:), ALLOCATABLE :: individual
+    CHARACTER(LEN=15), DIMENSION(:), ALLOCATABLE :: individual
     CHARACTER(LEN=10) :: expression_type
     INTEGER :: ind, z
 
@@ -484,7 +503,12 @@ program main
     CALL GB(z, ind, individual, expression_type)
     PRINT *, "Final index (ind) after processing: ", ind
     DEALLOCATE(individual)
+    ALLOCATE(individual(15))
+    individual = (/"x   ", "x   ", "+   ", "cos ", "cos ", "sin ", "tanh", "x   ", "x   ", "+   ", "cos ", "cos ", "sin ", "tanh", "-   " /)
 
+    PRINT *, "Expression: "
+    call print_container(individual)
+    PRINT *, "areExpressionRangesEqual(1, 8, 6, individual) = ", areExpressionRangesEqual(1, 8, 6, individual)
 
     ! Calculate elapsed time
     elapsed_time = time_elapsed(start_time)

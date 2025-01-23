@@ -106,7 +106,6 @@ std::string simplifyString(const std::string& x)
     return temp; //"x.0000000" (repeating) -> "x"
 }
 
-//TODO: Fortran
 bool areExpressionRangesEqual(int start_idx_1, int start_idx_2, int num_steps, const std::vector<std::string>& expression)
 {
     int stop_idx_1 = start_idx_1 + num_steps;
