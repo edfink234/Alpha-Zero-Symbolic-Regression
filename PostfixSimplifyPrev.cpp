@@ -212,7 +212,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         
         else if ((expression[up] == "-") && ((step = (first_arg_idx_high - first_arg_idx_low)) == (second_arg_idx_high - first_arg_idx_high)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression)))
         {
-            puts("hi 215");
+            //puts("hi 215");
             new_expression[first_arg_idx_low] = "0"; //change first symbol of x' to 0
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.begin() + second_arg_idx_high); //erase the rest of x' and y'
         }

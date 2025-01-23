@@ -217,7 +217,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         
         else if ((expression[low] == "-") && ((step = (second_arg_idx_high - first_arg_idx_high)) == (first_arg_idx_high - first_arg_idx_low)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression)))
         {
-            puts("hi 221");
+            //puts("hi 221");
             assert(new_expression[op_idx] == expression[low]);
             new_expression[op_idx] = "0"; //change "-" to "0";
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.begin() + second_arg_idx_high);
