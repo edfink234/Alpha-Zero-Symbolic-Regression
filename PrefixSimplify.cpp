@@ -223,6 +223,13 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.begin() + second_arg_idx_high);
         }
     }
+    else if (expression[low] == "*")
+    {
+        new_expression.push_back(expression[low]);
+        int op_idx_plus_1 = new_expression.size();
+        int temp = low+1+grasp[low+1];
+        
+    }
     else
     {
         for (int i = low; i <= up; i++)
