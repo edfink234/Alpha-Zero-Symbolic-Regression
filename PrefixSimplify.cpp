@@ -174,7 +174,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         setPrefixGR(expression, grasp);
     }
 //    print_container(expression, low, up);
-    if (expression[low] == "+" || expression[low] == "-")
+    if (expression[low] == "+" || expression[low] == "-") // +/- x y
     {
         int op_idx = new_expression.size();
         new_expression.push_back(expression[low]);
@@ -223,18 +223,30 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.begin() + second_arg_idx_high);
         }
     }
-    else if (expression[low] == "*")
+    else if (expression[low] == "*") //* x y
     {
-        new_expression.push_back(expression[low]);
-        int op_idx_plus_1 = new_expression.size();
+        int op_idx = new_expression.size();
+        new_expression.push_back(expression[low]); //*
         int temp = low+1+grasp[low+1];
+        int first_arg_idx_low = new_expression.size();
+        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); //* x
+        int first_arg_idx_high = new_expression.size();
+        graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); //* x y
+        int second_arg_idx_high = new_expression.size();
+        int step;
+        if (new_expression[first_arg_idx_high] == "0") //* x 0 -> 0
+        {
+            //puts("hi 239");
+            new_expression[op_idx] = "0"; //change '*' to '0'
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
         
     }
     else
     {
         for (int i = low; i <= up; i++)
         {
-            assert(i < expression.size() && i >= 0);
+            //assert(i < expression.size() && i >= 0);
             new_expression.push_back(expression[i]);
         }
     }
@@ -1303,6 +1315,19 @@ int main()
     puts("");
     
     test_expr = {"-", "tanh", "cos", "x", "tanh", "cos", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    
+    test_expr = {"*", "tanh", "cos", "x", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"*", "+", "tanh", "cos", "x", "0", "0"};
     printf("before: ");print_container(test_expr);
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
