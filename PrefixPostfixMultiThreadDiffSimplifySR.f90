@@ -58,6 +58,21 @@ contains
         isConst = .not. is_unary(token) .and. .not. is_binary(token)
     end function is_const
 
+    function create_linspace_matrix(rows, cols, min_vec, max_vec) result(mat)
+        implicit none
+        integer, intent(in) :: rows, cols
+        real(8), intent(in) :: min_vec(cols), max_vec(cols)
+        real(8) :: mat(rows, cols)
+        integer :: row, col
+
+        do col = 1, cols
+            do row = 1, rows
+                mat(row, col) = min_vec(col) + (max_vec(col) - min_vec(col)) * (row - 1) / real(rows - 1, 8)
+            end do
+        end do
+
+    end function create_linspace_matrix
+
     logical function isFloat(s)
         implicit none
         character(len=*), intent(in) :: s
@@ -372,12 +387,13 @@ program main
     real :: Val
     logical(4) :: resultVal
     real, dimension(:), allocatable :: result
-    integer :: i, low, up
+    integer :: i, j, low, up, rows, cols
     character(len=100) :: string_result
     character(len=15) :: token
     CHARACTER(LEN=15), DIMENSION(:), ALLOCATABLE :: individual
     CHARACTER(LEN=10) :: expression_type
     INTEGER :: ind, z
+    real(8), allocatable :: mat(:, :), min_vec(:), max_vec(:)
 
     ! Capture start time
     start_time = get_time()
@@ -510,6 +526,22 @@ program main
     call print_container(individual)
     PRINT *, "areExpressionRangesEqual(1, 8, 6, individual) = ", areExpressionRangesEqual(1, 8, 6, individual)
 
+    rows = 5
+    cols = 3
+    allocate(min_vec(cols), max_vec(cols), mat(rows, cols))
+
+    min_vec = (/ 0.0d0, 1.0d0, 2.0d0 /)
+    max_vec = (/ 10.0d0, 5.0d0, 8.0d0 /)
+
+    mat = create_linspace_matrix(rows, cols, min_vec, max_vec)
+
+    ! Print matrix
+    do i = 1, rows
+        write(*, '(3F10.3)') (mat(i, j), j = 1, cols)
+    end do
+
+    deallocate(min_vec, max_vec, mat)
+
     ! Calculate elapsed time
     elapsed_time = time_elapsed(start_time)
 
@@ -519,5 +551,3 @@ program main
 end program main
 
 !gfortran PrefixPostfixMultiThreadDiffSimplifySR.f90 -o PrefixPostfixMultiThreadDiffSimplifySR
-
-

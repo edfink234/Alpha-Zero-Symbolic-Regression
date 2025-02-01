@@ -481,6 +481,7 @@ struct Board
     float MSE_curr;
     std::string fit_method;
     std::string fit_grad_method;
+    std::string unsimplified_expression;
     
     bool cache;
     bool const_token;
@@ -1232,10 +1233,16 @@ struct Board
     
     void simplifyPN(std::vector<std::string>& expression)
     {
-        simplifyPN_Helper(expression);
-        this->simplify_grasp.reserve(expression.size());
-        graspSimplifyPrefix(expression, 0, expression.size() - 1, this->simplify_grasp);
-        simplifyPN_Helper(expression);
+        size_t size_before, size_after;
+        do
+        {
+            size_before = expression.size();
+            simplifyPN_Helper(expression);
+            this->simplify_grasp.reserve(expression.size());
+            graspSimplifyPrefix(expression, 0, expression.size() - 1, this->simplify_grasp);
+            simplifyPN_Helper(expression);
+            size_after = expression.size();
+        } while (size_before != size_after);
     }
     
     
@@ -1664,10 +1671,18 @@ struct Board
     
     void simplifyRPN(std::vector<std::string>& expression)
     {
-        simplifyRPN_Helper(expression);
-        this->simplify_grasp.reserve(expression.size());
-        graspSimplifyPostfix(expression, 0, expression.size() - 1, this->simplify_grasp);
-        simplifyRPN_Helper(expression);
+        size_t size_before, size_after;
+        do
+        {
+            size_before = expression.size();
+            simplifyRPN_Helper(expression);
+            this->simplify_grasp.reserve(expression.size());
+            graspSimplifyPostfix(expression, 0, expression.size() - 1, this->simplify_grasp);
+            simplifyRPN_Helper(expression);
+            size_after = expression.size();
+        } while (size_before != size_after);
+        
+        
     }
     
     /*
@@ -2878,6 +2893,7 @@ struct Board
     float fitFunctionToData()
     {
         float score = 0.0f;
+        this->unsimplified_expression = this->expression(this->pieces);
         for (int jdx = 0; jdx < this->pieces.size(); jdx++) //For each expression, make sure it is not trivial.
         {
             if (Board::__num_features == 1)
@@ -2887,18 +2903,10 @@ struct Board
                     this->MSE_curr = FLT_MAX;
                     return score;
                 }
-                ((this->expression_type == "prefix") ? simplifyPN(this->pieces[jdx]) : simplifyRPN(this->pieces[jdx])); //TODO: Figure out why this is not simplifying when it should
-                //E.g. buggy behaviour:
-//                Unique expressions = 0
-//                Time spent fitting = 0 seconds
-//                Best score = 0.25, MSE = 3
-//                Best expression = ((0 * sech(arcsin(x0))) * 0)
-//                Best expression (original format) = * * 0 sech arcsin x0 0
-//                Best diff result = 0, 0, ~(sqrt(mu))
-//                Best expression (original format) = 0, 0, ~ sqrt mu
-                //It simplifies in `Best diff result` but not in `Best expression`
+                ((this->expression_type == "prefix") ? simplifyPN(this->pieces[jdx]) : simplifyRPN(this->pieces[jdx]));
                 if (std::find(this->pieces[jdx].begin(), this->pieces[jdx].end(), Board::__input_vars[0]) == this->pieces[jdx].end())
                 {
+                    
                     this->MSE_curr = FLT_MAX;
                     return score;
                 }
@@ -6277,7 +6285,8 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), void 
                 std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
                 std::cout << "Best score = " << score << ", MSE = " << best_MSE << '\n';
                 std::cout << "Best expression = " << best_expression << '\n';
-                std::cout << "Best expression (original format) = " << orig_expression << '\n';
+                std::cout << "Best expression (original format simplified) = " << orig_expression << '\n';
+                std::cout << "Best expression (original format un-simplified) = " << x.unsimplified_expression << '\n';
                 std::cout << "Best diff result = " << best_expr_result << '\n';
                 std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
             }
@@ -6323,7 +6332,7 @@ int main()
     
 //    std::cout<<data << '\n' << (Eigen::VectorXf::Ones(5).array() / Eigen::VectorXf::Zero(5).array()).cos() /*Eigen::VectorXf::Zero(5).array().pow(Eigen::VectorXf::Ones(5).array())*/ << '\n';
     
-    RandomSearch(VortexRadialProfile /*differential equation to solve*/, VortexRadialProfileSetter /*helper function to set constants that the solution may contain*/,  data /*data used to solve differential equation*/, std::vector<int>{4} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
+    RandomSearch(VortexRadialProfile /*differential equation to solve*/, VortexRadialProfileSetter /*helper function to set constants that the solution may contain*/,  data /*data used to solve differential equation*/, std::vector<int>{3} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
     
     return 0;
 }
@@ -6333,5 +6342,3 @@ int main()
 //g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd_Perfect PrefixPostfixMultiThreadDiffSimplifySR_Nd_Perfect.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
 
 //g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd_Perfect PrefixPostfixMultiThreadDiffSimplifySR_Nd_Perfect.cpp -g -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
-
-((ln(arcsin(x0)) + (cos(x0) / (x0 * x0))) * 0)
