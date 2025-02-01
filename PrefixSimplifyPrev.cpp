@@ -100,7 +100,6 @@ std::string simplifyString(const std::string& x)
     return temp;
 }
 
-//TODO: Fortran
 bool areExpressionRangesEqual(int start_idx_1, int start_idx_2, int num_steps, const std::vector<std::string>& expression)
 {
     int stop_idx_1 = start_idx_1 + num_steps;
@@ -175,7 +174,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         setPrefixGR(expression, grasp);
     }
 //    print_container(expression, low, up);
-    if (expression[low] == "+" || expression[low] == "-")
+    if (expression[low] == "+" || expression[low] == "-") // +/- x y
     {
         int op_idx = new_expression.size();
         new_expression.push_back(expression[low]);
@@ -224,11 +223,29 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.begin() + second_arg_idx_high);
         }
     }
+    else if (expression[low] == "*") //* x y
+    {
+        int op_idx = new_expression.size();
+        new_expression.push_back(expression[low]); //*
+        int temp = low+1+grasp[low+1];
+        int first_arg_idx_low = new_expression.size();
+        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); //* x
+        int first_arg_idx_high = new_expression.size();
+        graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); //* x y
+        int second_arg_idx_high = new_expression.size();
+        int step;
+        if (new_expression[first_arg_idx_high] == "0") //* x 0 -> 0 (because, since prefix operators come at the beginning, if the beginning of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 *, which is 0)
+        {
+            //puts("hi 239");
+            new_expression[op_idx] = "0"; //change '*' to '0'
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
+    }
     else
     {
         for (int i = low; i <= up; i++)
         {
-            assert(i < expression.size() && i >= 0);
+            //assert(i < expression.size() && i >= 0);
             new_expression.push_back(expression[i]);
         }
     }
@@ -595,32 +612,36 @@ int main()
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
+    
     test_expr = {"-", "-", "-", "2.33", "1.222", "0", "x1"};
     printf("before: ");print_container(test_expr);
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
+    
     test_expr = {"+", "-", "0", "x", "-", "0", "-", "0", "y"};
     printf("before: ");print_container(test_expr);
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
+    
     test_expr = {"+", "-", "x", "0", "-", "0", "-", "y", "0"};
     printf("before: ");print_container(test_expr);
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
+    
     test_expr = {"cos", "+", "-", "3", "0", "-", "0", "-", "4", "0"};
     printf("before: ");print_container(test_expr);
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-    test_expr = {"+", "+", "-", "*", "^", "exp", "log", "20.000000", "/", "x1", "-", "~", "0", "exp", "x0", "*", "ln", "exp", "log", "20.000000", "/", "-", "-", "~", "0", "exp", "x0", "*", "x1", "~", "0", "*", "-", "~", "0", "exp", "x0", "-", "~", "0", "exp", "x0", "*", "-0.214359", "*", "^", "exp", "log", "20.000000", "/", "x1", "-", "~", "0", "exp", "x0", "*", "ln", "exp", "log", "20.000000", "/", "~", "*", "x1", "-", "~", "0", "exp", "x0", "*", "-", "~", "0", "exp", "x0", "-", "~", "0", "exp", "x0", "/", "*", "0.001370", "^", "exp", "log", "20.000000", "/", "x1", "-", "~", "0", "exp", "x0", "+", "1.244282", "^", "exp", "log", "20.000000", "/", "x1", "-", "~", "0", "exp", "x0", "*", "*", "1.238819", "^", "exp", "log", "20.000000", "/", "x1", "-", "~", "0", "exp", "x0", "sech", "exp", "*", "0.805109", "+", "x0", "x1"}; //TODO: check if equal
+    
+    test_expr = {"+", "+", "-", "*", "^", "exp", "log", "20.000000", "/", "x1", "-", "~", "0", "exp", "x0", "*", "ln", "exp", "log", "20.000000", "/", "-", "-", "~", "0", "exp", "x0", "*", "x1", "~", "0", "*", "-", "~", "0", "exp", "x0", "-", "~", "0", "exp", "x0", "*", "-0.214359", "*", "^", "exp", "log", "20.000000", "/", "x1", "-", "~", "0", "exp", "x0", "*", "ln", "exp", "log", "20.000000", "/", "~", "*", "x1", "-", "~", "0", "exp", "x0", "*", "-", "~", "0", "exp", "x0", "-", "~", "0", "exp", "x0", "/", "*", "0.001370", "^", "exp", "log", "20.000000", "/", "x1", "-", "~", "0", "exp", "x0", "+", "1.244282", "^", "exp", "log", "20.000000", "/", "x1", "-", "~", "0", "exp", "x0", "*", "*", "1.238819", "^", "exp", "log", "20.000000", "/", "x1", "-", "~", "0", "exp", "x0", "sech", "exp", "*", "0.805109", "+", "x0", "x1"};
     printf("before: ");print_container(test_expr);
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-    
     
     test_expr = {"+","x","x"};
     printf("before: ");print_container(test_expr);
@@ -1293,6 +1314,18 @@ int main()
     puts("");
     
     test_expr = {"-", "tanh", "cos", "x", "tanh", "cos", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"*", "tanh", "cos", "x", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"*", "+", "tanh", "cos", "x", "0", "0"};
     printf("before: ");print_container(test_expr);
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);

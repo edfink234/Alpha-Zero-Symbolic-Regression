@@ -106,7 +106,6 @@ std::string simplifyString(const std::string& x)
     return temp; //"x.0000000" (repeating) -> "x"
 }
 
-//TODO: Fortran
 bool areExpressionRangesEqual(int start_idx_1, int start_idx_2, int num_steps, const std::vector<std::string>& expression)
 {
     int stop_idx_1 = start_idx_1 + num_steps;
@@ -183,7 +182,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         setPostfixGR(expression, grasp);
     }
 //    print_container(expression, low, up);
-    if (expression[up] == "+" || expression[up] == "-")
+    if (expression[up] == "+" || expression[up] == "-") // x y +/-
     {
         int first_arg_idx_low = new_expression.size();
         graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true);
@@ -213,10 +212,30 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         else if ((expression[up] == "-") && ((step = (first_arg_idx_high - first_arg_idx_low)) == (second_arg_idx_high - first_arg_idx_high)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression)))
         {
             //puts("hi 215");
-            new_expression[first_arg_idx_low] = "0"; //change first symbol of x' to 0
-            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.begin() + second_arg_idx_high); //erase the rest of x' and y'
+            new_expression[first_arg_idx_low] = "0"; //change first symbol of x to 0
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.begin() + second_arg_idx_high); //erase the rest of x and y
         }
         
+        else
+        {
+            new_expression.push_back(expression[up]);
+        }
+    }
+    else if (expression[up] == "*") //x y *
+    {
+        int first_arg_idx_low = new_expression.size();
+        graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true); //x
+        int first_arg_idx_high = new_expression.size();
+        graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
+        int second_arg_idx_high = new_expression.size();
+        int step;
+        
+        if (new_expression.back() == "0") // x 0 * -> 0 (because, since postfix operators come at the end, if the end of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 *, which is 0)
+        {
+            //puts("hi 235");
+            new_expression[first_arg_idx_low] = "0";
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+        }
         else
         {
             new_expression.push_back(expression[up]);
@@ -226,7 +245,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
     {
         for (int i = low; i <= up; i++)
         {
-            assert(i < expression.size() && i >= 0);
+            //assert(i < expression.size() && i >= 0);
             new_expression.push_back(expression[i]);
         }
     }
@@ -1276,6 +1295,18 @@ int main()
     puts("");
     
     test_expr = {"x", "x", "+", "cos", "cos", "sin", "tanh", "x", "x", "+", "cos", "cos", "sin", "tanh", "-"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "w", "/", "y", "1", "/", "/", "cos", "acos", "acos", "cos", "acos", "arccos", "cos", "0", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "x", "^", "x", "x", "^", "-", "asin", "tanh", "sin", "x", "x", "-", "*"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
