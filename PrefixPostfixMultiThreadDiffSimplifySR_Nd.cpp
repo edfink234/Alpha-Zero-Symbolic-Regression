@@ -485,6 +485,7 @@ struct Board
     std::vector<std::vector<int>> stack;
     std::vector<int> depth, num_binary, num_leaves, idx;
     static std::unordered_map<bool, std::unordered_map<bool, std::unordered_map<bool, std::vector<std::string>>>> inline una_bin_leaf_legal_moves_dict;
+    std::vector<int> simplify_grasp;
     
     const std::vector<int> n; //depth of RPN/PN trees
     std::string expression_type, expression_string;
@@ -590,7 +591,7 @@ struct Board
                 if (const_token)
                 {
                     std::cout << Board::__tokens.back() << '\n';
-                    assert(Board::__tokens.back().substr(0, 5) == "const");
+                    assert(Board::__tokens.back().substr(0, 5) == "const" || !this->num_consts);
                 }
                 Board::action_size = Board::__tokens.size();
                 
@@ -759,6 +760,922 @@ struct Board
     bool is_operator(const std::string& token) const
     {
         return (is_binary(token) || is_unary(token));
+    }
+    
+    bool is_const(const std::string& token) const
+    {
+        return ((!is_unary(token)) && (!is_binary(token)));
+    }
+    
+    std::string simplifyString(const std::string& x)
+    {
+        if ((x.size() == 2) && (x[0] == '-') && (x[1] == '0')) //"-0" -> "0"
+        {
+            return "0";
+        }
+        unsigned long jdx = x.find(".");
+        if (jdx == std::string::npos) //if there's no '.' in x
+        {
+            return x;
+        }
+        for (unsigned long i = jdx + 1; i < x.size(); i++) //checking if all the characters after the decimal in x are 0; if not, then return x
+        {
+            if (x[i] != '0')
+            {
+                return x;
+            }
+        }
+        std::string temp = x.substr(0, jdx);
+        if ((temp.size() == 2) && (temp[0] == '-') && (temp[1] == '0')) //"-0.0000" (repeating) -> "0"
+        {
+            return "0";
+        }
+        
+        return temp; //"x.0000000" (repeating) -> "x"
+    }
+    
+    void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, int up, std::vector<int>& grasp, std::vector<std::string>& new_expression, bool setGRvar = false)
+    {
+        if (!setGRvar)
+        {
+            grasp.clear();
+            setPrefixGR(expression, grasp);
+        }
+    //    print_container(expression, low, up);
+        if (expression[low] == "+" || expression[low] == "-")
+        {
+            int op_idx = new_expression.size();
+            new_expression.push_back(expression[low]);
+            int temp = low+1+grasp[low+1];
+            int first_arg_idx_low = new_expression.size();
+            graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true);
+            int first_arg_idx_high = new_expression.size();
+            graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true);
+            int second_arg_idx_high = new_expression.size();
+            int step;
+            
+            if (new_expression[first_arg_idx_high] == "0") //+/- x 0 -> x
+            {
+                //puts("hi 177");
+                if (first_arg_idx_high == static_cast<int>(new_expression.size()) - 1)
+                {
+                    new_expression.pop_back();
+                }
+                else
+                {
+                    new_expression.erase(new_expression.begin() + first_arg_idx_high, new_expression.end());
+                }
+                new_expression.erase(new_expression.begin() + op_idx); //remove +/- operator at beginning
+            }
+            
+            else if (new_expression[first_arg_idx_low] == "0")
+            {
+                if (expression[low] == "+") //+ 0 y -> y
+                {
+                    //puts("hi 176");
+                    new_expression.erase(new_expression.begin() + op_idx, new_expression.begin() + first_arg_idx_high); //remove '+' and '0'
+                }
+                else //- 0 y -> ~ y
+                {
+                    //puts("hi 184");
+                    new_expression[op_idx] = "~";
+                    new_expression.erase(new_expression.begin() + first_arg_idx_low); //'0'
+                }
+            }
+            
+            else if ((expression[low] == "-") && ((step = (second_arg_idx_high - first_arg_idx_high)) == (first_arg_idx_high - first_arg_idx_low)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression)))
+            {
+                //puts("hi 221");
+                assert(new_expression[op_idx] == expression[low]);
+                new_expression[op_idx] = "0"; //change "-" to "0";
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.begin() + second_arg_idx_high);
+            }
+        }
+        else if (expression[low] == "*") //* x y
+        {
+            int op_idx = new_expression.size();
+            new_expression.push_back(expression[low]); //*
+            int temp = low+1+grasp[low+1];
+            //int first_arg_idx_low = new_expression.size();
+            graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); //* x
+            int first_arg_idx_high = new_expression.size();
+            graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); //* x y
+            //int second_arg_idx_high = new_expression.size();
+            //int step;
+            if (new_expression[first_arg_idx_high] == "0") //* x 0 -> 0 (because, since prefix operators come at the beginning, if the beginning of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 *, which is 0)
+            {
+                //puts("hi 239");
+                new_expression[op_idx] = "0"; //change '*' to '0'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+        }
+        else
+        {
+            for (int i = low; i <= up; i++)
+            {
+                assert(i < expression.size() && i >= 0);
+                new_expression.push_back(expression[i]);
+            }
+        }
+    }
+
+    void graspSimplifyPrefix(std::vector<std::string>& expression, int low, int up, std::vector<int>& grasp)
+    {
+        std::vector<std::string> new_expression;
+        new_expression.reserve(expression.size());
+        graspSimplifyPrefixHelper(expression, low, up, grasp, new_expression, false);
+        expression = new_expression;
+    }
+    
+    void simplifyPN_Helper(std::vector<std::string>& expression)
+    {
+        bool simplified = true;
+        bool isFloat1, isFloat2;
+        while (simplified)
+        {
+            simplified = false;
+            if (expression.size() > 1)
+            {
+                for (size_t i = 0; i < expression.size() - 1; i++)
+                {
+                    if (is_binary(expression[i]))
+                    {
+                        isFloat1 = isFloat(expression[i+1]);
+                        isFloat2 = isFloat(expression[i+2]);
+                        
+                        if (isFloat1 && isFloat2)
+                        {
+                            if (expression[i] == "+")
+                            {
+                                expression[i] = simplifyString(std::to_string(std::stof(expression[i+1]) + std::stof(expression[i+2])));
+                                expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i] == "-")
+                            {
+                                expression[i] = simplifyString(std::to_string(std::stof(expression[i+1]) - std::stof(expression[i+2])));
+                                expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i] == "*")
+                            {
+                                expression[i] = simplifyString(std::to_string(std::stof(expression[i+1]) * std::stof(expression[i+2])));
+                                expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i] == "/")
+                            {
+                                expression[i] = simplifyString(std::to_string(std::stof(expression[i+1]) / std::stof(expression[i+2])));
+                                expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i] == "^")
+                            {
+                                expression[i] = simplifyString(std::to_string(std::powf(std::stof(expression[i+1]), std::stof(expression[i+2]))));
+                                expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                                simplified = true;
+                                break;
+                            }
+                        }
+                        
+                        else if (expression[i] == "-")
+                        {
+                            if ((is_const(expression[i+1]) && is_const(expression[i+2])) && (expression[i+1] == expression[i+2])) //- x x => 0
+                            {
+                                expression[i] = "0";
+                                expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i+1] == "0") //- 0 x -> ~ x
+                            {
+                                expression[i] = "~";
+                                expression.erase(expression.begin() + i + 1);
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i+2] == "0" && is_const(expression[i+1])) //- x 0 -> x
+                            {
+                                expression[i] = expression[i+1];
+                                expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                                simplified = true;
+                                break;
+                            }
+                        }
+                        
+                        else if (expression[i] == "*")
+                        {
+                            if (expression[i+1] == "0" && is_const(expression[i+2])) //* 0 x -> 0
+                            {
+                                //puts("hi 131");
+                                expression[i] = "0";
+                                expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i+2] == "0" && is_const(expression[i+1])) //* x 0 -> 0
+                            {
+                                //puts("hi 139");
+                                expression[i] = "0";
+                                expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i+1] == "1" && is_const(expression[i+2])) //* 1 x -> x
+                            {
+                                //puts("hi 147");
+                                expression[i] = expression[i+2];
+                                expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i+2] == "1" && is_const(expression[i+1])) //* x 1 -> x
+                            {
+                                //puts("hi 155");
+                                expression[i] = expression[i+1];
+                                expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                                simplified = true;
+                                break;
+                            }
+                        }
+                        
+                        else if (expression[i] == "+")
+                        {
+                            if (expression[i+1] == "0" && is_const(expression[i+2])) //+ 0 x -> x
+                            {
+                                //puts("hi 167");
+                                expression[i] = expression[i+2];
+                                expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i+2] == "0" && is_const(expression[i+1])) //+ x 0 -> x
+                            {
+                                //puts("hi 175");
+                                expression[i] = expression[i+1];
+                                expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                                simplified = true;
+                                break;
+                            }
+                        }
+                        
+                        else if (expression[i] == "/")
+                        {
+                            if (expression[i+1] == "0" && is_const(expression[i+2])) // / 0 x -> 0
+                            {
+                                //puts("hi 187");
+                                expression[i] = "0";
+                                expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i+2] == "1" && is_const(expression[i+1])) // / x 1 -> x
+                            {
+                                //puts("hi 195");
+                                expression[i] = expression[i+1];
+                                expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (is_const(expression[i+1]) && is_const(expression[i+2]) && (expression[i+1] == expression[i+2])) // / x x -> 1
+                            {
+                                //puts("hi 203");
+                                expression[i] = "1";
+                                expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                                simplified = true;
+                                break;
+                            }
+                        }
+                        
+                        else if (expression[i] == "^")
+                        {
+                            if (expression[i+1] == "0" && is_const(expression[i+2])) // ^ 0 x -> 0
+                            {
+                                //puts("hi 215");
+                                expression[i] = "0";
+                                expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i+2] == "0" && is_const(expression[i+1])) // ^ x 0 -> 1
+                            {
+                                //puts("hi 223");
+                                expression[i] = "1";
+                                expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i+1] == "1" && is_const(expression[i+2])) // ^ 1 x -> 1
+                            {
+                                //puts("hi 231");
+                                expression[i] = "1";
+                                expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i+2] == "1" && is_const(expression[i+1])) // ^ x 1 -> x
+                            {
+                                //puts("hi 239");
+                                expression[i] = expression[i+1];
+                                expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                                simplified = true;
+                                break;
+                            }
+                        }
+                        
+                    }
+                    
+                    else if (is_unary(expression[i]) && isFloat(expression[i+1]))
+                    {
+                        if (expression[i] == "cos")
+                        {
+                            expression[i] = simplifyString(std::to_string(cos(std::stof(expression[i+1]))));
+                            expression.erase(expression.begin() + i + 1);
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i] == "~")
+                        {
+                            expression[i] = simplifyString(std::to_string(-(std::stof(expression[i+1]))));
+                            expression.erase(expression.begin() + i + 1);
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i] == "sin")
+                        {
+                            expression[i] = simplifyString(std::to_string(sin(std::stof(expression[i+1]))));
+                            expression.erase(expression.begin() + i + 1);
+                            simplified = true;
+                            break;
+                        }
+                        else if ((expression[i] == "ln") || (expression[i] == "log"))
+                        {
+                            expression[i] = simplifyString(std::to_string(log(std::stof(expression[i+1])))); // Natural log (ln)
+                            expression.erase(expression.begin() + i + 1);
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i] == "asin" || expression[i] == "arcsin")
+                        {
+                            expression[i] = simplifyString(std::to_string(asin(std::stof(expression[i+1]))));
+                            expression.erase(expression.begin() + i + 1);
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i] == "acos" || expression[i] == "arccos")
+                        {
+                            expression[i] = simplifyString(std::to_string(acos(std::stof(expression[i+1]))));
+                            expression.erase(expression.begin() + i + 1);
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i] == "exp")
+                        {
+                            expression[i] = simplifyString(std::to_string(exp(std::stof(expression[i+1]))));
+                            expression.erase(expression.begin() + i + 1);
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i] == "sech")
+                        {
+                            expression[i] = simplifyString(std::to_string(1 / cosh(std::stof(expression[i+1])))); // sech(x) = 1 / cosh(x)
+                            expression.erase(expression.begin() + i + 1);
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i] == "tanh")
+                        {
+                            expression[i] = simplifyString(std::to_string(tanh(std::stof(expression[i+1]))));
+                            expression.erase(expression.begin() + i + 1);
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i] == "sqrt")
+                        {
+                            expression[i] = simplifyString(std::to_string(sqrt(std::stof(expression[i+1]))));
+                            expression.erase(expression.begin() + i + 1);
+                            simplified = true;
+                            break;
+                        }
+                    }
+                    
+                    else if (is_unary(expression[i]))
+                    {
+                        if (expression[i] == "~" && expression[i+1] == "~")
+                        {
+                            expression[i] = expression[i+2];
+                            expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i] == "exp" && (expression[i+1] == "ln" || expression[i+1] == "log"))
+                        {
+                            //puts("hi 361");
+                            expression[i] = expression[i+2];
+                            expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i+1] == "exp" && (expression[i] == "ln" || expression[i] == "log"))
+                        {
+                            //puts("hi 369");
+                            expression[i] = expression[i+2];
+                            expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i] == "cos" && (expression[i+1] == "acos" || expression[i+1] == "arccos"))
+                        {
+                            //puts("hi 403");
+                            expression[i] = expression[i+2];
+                            expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i+1] == "cos" && (expression[i] == "acos" || expression[i] == "arccos"))
+                        {
+                            //puts("hi 411");
+                            expression[i] = expression[i+2];
+                            expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i] == "sin" && (expression[i+1] == "asin" || expression[i+1] == "arcsin"))
+                        {
+                            //puts("hi 419");
+                            expression[i] = expression[i+2];
+                            expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i+1] == "sin" && (expression[i] == "asin" || expression[i] == "arcsin"))
+                        {
+                            //puts("hi 427");
+                            expression[i] = expression[i+2];
+                            expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                            simplified = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    void simplifyPN(std::vector<std::string>& expression)
+    {
+        size_t size_before, size_after;
+        do
+        {
+            size_before = expression.size();
+            simplifyPN_Helper(expression);
+            this->simplify_grasp.reserve(expression.size());
+            graspSimplifyPrefix(expression, 0, expression.size() - 1, this->simplify_grasp);
+            simplifyPN_Helper(expression);
+            size_after = expression.size();
+        } while (size_before != size_after);
+    }
+    
+    
+    void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, int up, std::vector<int>& grasp, std::vector<std::string>& new_expression, bool setGRvar = false)
+    {
+        if (!setGRvar)
+        {
+            grasp.clear();
+            setPostfixGR(expression, grasp);
+        }
+    //    print_container(expression, low, up);
+        if (expression[up] == "+" || expression[up] == "-")
+        {
+            int first_arg_idx_low = new_expression.size();
+            graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true);
+            int first_arg_idx_high = new_expression.size();
+            graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true);
+            int second_arg_idx_high = new_expression.size();
+            int step;
+            
+            if (new_expression.back() == "0") // x 0 +/- -> x
+            {
+                //puts("hi 181");
+                new_expression.pop_back();
+            }
+            
+            else if (new_expression[first_arg_idx_high - 1] == "0")
+            {
+                //puts("hi 184");
+                //erase elements from new_expression[first_arg_idx_low] to new_expression[first_arg_idx_high-1] inclusive
+                new_expression.erase(new_expression.begin() + first_arg_idx_low, new_expression.begin() + first_arg_idx_high); //0 y + -> y
+                if (expression[up] == "-")
+                {
+                    //puts("hi 187");
+                    new_expression.push_back("~"); //0 y - -> y ~
+                }
+            }
+            
+            else if ((expression[up] == "-") && ((step = (first_arg_idx_high - first_arg_idx_low)) == (second_arg_idx_high - first_arg_idx_high)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression)))
+            {
+                //puts("hi 215");
+                new_expression[first_arg_idx_low] = "0"; //change first symbol of x' to 0
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.begin() + second_arg_idx_high); //erase the rest of x' and y'
+            }
+            
+            else
+            {
+                new_expression.push_back(expression[up]);
+            }
+        }
+        else if (expression[up] == "*") //x y *
+        {
+            int first_arg_idx_low = new_expression.size();
+            graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true); //x
+            //int first_arg_idx_high = new_expression.size();
+            graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
+            //int second_arg_idx_high = new_expression.size();
+            //int step;
+            
+            if (new_expression.back() == "0") // x 0 * -> 0 (because, since postfix operators come at the end, if the end of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 *, which is 0)
+            {
+                //puts("hi 235");
+                new_expression[first_arg_idx_low] = "0";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            }
+            else
+            {
+                new_expression.push_back(expression[up]);
+            }
+        }
+        else
+        {
+            for (int i = low; i <= up; i++)
+            {
+                assert(i < expression.size() && i >= 0);
+                new_expression.push_back(expression[i]);
+            }
+        }
+    }
+    
+    void graspSimplifyPostfix(std::vector<std::string>& expression, int low, int up, std::vector<int>& grasp)
+    {
+        std::vector<std::string> new_expression;
+        new_expression.reserve(expression.size());
+        graspSimplifyPostfixHelper(expression, low, up, grasp, new_expression, false);
+        expression = new_expression;
+    }
+
+    void simplifyRPN_Helper(std::vector<std::string>& expression)
+    {
+        bool simplified = true;
+        bool isFloat1, isFloat2;
+        while (simplified)
+        {
+            simplified = false;
+            if (expression.size() > 1)
+            {
+                for (size_t i = 1; i < expression.size(); i++)
+                {
+                    if (is_binary(expression[i]))
+                    {
+                        isFloat1 = isFloat(expression[i-1]);
+                        isFloat2 = isFloat(expression[i-2]);
+                        
+                        if (isFloat1 && isFloat2)
+                        {
+                            if (expression[i] == "+")
+                            {
+                                expression[i] = simplifyString(std::to_string(std::stof(expression[i-2]) + std::stof(expression[i-1])));
+                                expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i] == "-")
+                            {
+                                expression[i] = simplifyString(std::to_string(std::stof(expression[i-2]) - std::stof(expression[i-1])));
+                                expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i] == "*")
+                            {
+                                expression[i] = simplifyString(std::to_string(std::stof(expression[i-2]) * std::stof(expression[i-1])));
+                                expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i] == "/")
+                            {
+                                expression[i] = simplifyString(std::to_string(std::stof(expression[i-2]) / std::stof(expression[i-1])));
+                                expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i] == "^")
+                            {
+                                expression[i] = simplifyString(std::to_string(std::powf(std::stof(expression[i-2]), std::stof(expression[i-1]))));
+                                expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                                simplified = true;
+                                break;
+                            }
+                        }
+                        
+                        else if (expression[i] == "-")
+                        {
+                            if ((is_const(expression[i-1]) && is_const(expression[i-2])) && (expression[i-1] == expression[i-2])) //x x - => 0
+                            {
+                                expression[i] = "0";
+                                expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i-2] == "0" && is_const(expression[i-1])) //"0 x -" -> "x ~"
+                            {
+                                expression[i] = "~";
+                                expression.erase(expression.begin() + i - 2);
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i-1] == "0") //"x 0 -" -> "x"
+                            {
+                                expression[i] = expression[i-2];
+                                expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                                simplified = true;
+                                break;
+                            }
+                        }
+                        
+                        else if (expression[i] == "*")
+                        {
+                            if (expression[i-2] == "0" && is_const(expression[i-1])) //"0 x *" -> "0"
+                            {
+                                //puts("hi 131");
+                                expression[i] = "0";
+                                expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i-1] == "0" && is_const(expression[i-2])) //"x 0 *" -> "0"
+                            {
+                                //puts("hi 139");
+                                expression[i] = "0";
+                                expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i-2] == "1" && is_const(expression[i-1])) //"1 x *" -> "x"
+                            {
+                                //puts("hi 147");
+                                expression[i] = expression[i-1];
+                                expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i-1] == "1" && is_const(expression[i-2])) //"x 1 *" -> "x"
+                            {
+                                //puts("hi 155");
+                                expression[i] = expression[i-2];
+                                expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                                simplified = true;
+                                break;
+                            }
+                        }
+                        
+                        else if (expression[i] == "+")
+                        {
+                            if (expression[i-2] == "0" && is_const(expression[i-1])) //"0 x +" -> "x"
+                            {
+                                //puts("hi 167");
+                                expression[i] = expression[i-1];
+                                expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i-1] == "0" && is_const(expression[i-2])) //"x 0 +" -> "x"
+                            {
+                                //puts("hi 175");
+                                expression[i] = expression[i-2];
+                                expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                                simplified = true;
+                                break;
+                            }
+                        }
+                        
+                        else if (expression[i] == "/")
+                        {
+                            if (expression[i-2] == "0" && is_const(expression[i-1])) // "0 x /" -> "0"
+                            {
+                                //puts("hi 187");
+                                expression[i] = "0";
+                                expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i-1] == "1" && is_const(expression[i-2])) // "x 1 /" -> "x"
+                            {
+                                //puts("hi 195");
+                                expression[i] = expression[i-2];
+                                expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (is_const(expression[i-1]) && is_const(expression[i-2]) && (expression[i-1] == expression[i-2])) // "x x /" -> "1"
+                            {
+                                //puts("hi 203");
+                                expression[i] = "1";
+                                expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                                simplified = true;
+                                break;
+                            }
+                        }
+                        
+                        else if (expression[i] == "^")
+                        {
+                            if (expression[i-2] == "0" && is_const(expression[i-1])) // "0 x ^" -> "0"
+                            {
+                                //puts("hi 215");
+                                expression[i] = "0";
+                                expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i-1] == "0" && is_const(expression[i-2])) // "x 0 ^" -> "1"
+                            {
+                                //puts("hi 223");
+                                expression[i] = "1";
+                                expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i-2] == "1" && is_const(expression[i-1])) // "1 x ^" -> "1"
+                            {
+                                //puts("hi 231");
+                                expression[i] = "1";
+                                expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                                simplified = true;
+                                break;
+                            }
+                            else if (expression[i-1] == "1" && is_const(expression[i-2])) // "x 1 ^" -> "x"
+                            {
+                                //puts("hi 239");
+                                expression[i] = expression[i-2];
+                                expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                                simplified = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    else if (is_unary(expression[i]) && isFloat(expression[i-1]))
+                    {
+                        if (expression[i] == "cos")
+                        {
+                            expression[i] = simplifyString(std::to_string(cos(std::stof(expression[i-1]))));
+                            expression.erase(expression.begin() + i - 1);
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i] == "~")
+                        {
+                            expression[i] = simplifyString(std::to_string(-(std::stof(expression[i-1]))));
+                            expression.erase(expression.begin() + i - 1);
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i] == "sin")
+                        {
+                            expression[i] = simplifyString(std::to_string(sin(std::stof(expression[i-1]))));
+                            expression.erase(expression.begin() + i - 1);
+                            simplified = true;
+                            break;
+                        }
+                        else if ((expression[i] == "ln") || (expression[i] == "log"))
+                        {
+                            expression[i] = simplifyString(std::to_string(log(std::stof(expression[i-1])))); // Natural log (ln)
+                            expression.erase(expression.begin() + i - 1);
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i] == "asin" || expression[i] == "arcsin")
+                        {
+                            expression[i] = simplifyString(std::to_string(asin(std::stof(expression[i-1]))));
+                            expression.erase(expression.begin() + i - 1);
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i] == "acos" || expression[i] == "arccos")
+                        {
+                            expression[i] = simplifyString(std::to_string(acos(std::stof(expression[i-1]))));
+                            expression.erase(expression.begin() + i - 1);
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i] == "exp")
+                        {
+                            expression[i] = simplifyString(std::to_string(exp(std::stof(expression[i-1]))));
+                            expression.erase(expression.begin() + i - 1);
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i] == "sech")
+                        {
+                            expression[i] = simplifyString(std::to_string(1 / cosh(std::stof(expression[i-1])))); // sech(x) = 1 / cosh(x)
+                            expression.erase(expression.begin() + i - 1);
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i] == "tanh")
+                        {
+                            expression[i] = simplifyString(std::to_string(tanh(std::stof(expression[i-1]))));
+                            expression.erase(expression.begin() + i - 1);
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i] == "sqrt")
+                        {
+                            expression[i] = simplifyString(std::to_string(sqrt(std::stof(expression[i-1]))));
+                            expression.erase(expression.begin() + i - 1);
+                            simplified = true;
+                            break;
+                        }
+                    }
+                    
+                    else if (is_unary(expression[i]))
+                    {
+                        if (expression[i] == "~" && expression[i-1] == "~")
+                        {
+                            expression[i] = expression[i-2];
+                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i] == "exp" && (expression[i-1] == "ln" || expression[i-1] == "log"))
+                        {
+                            //puts("hi 360");
+                            expression[i] = expression[i-2];
+                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i-1] == "exp" && (expression[i] == "ln" || expression[i] == "log"))
+                        {
+                            //puts("hi 368");
+                            expression[i] = expression[i-2];
+                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i] == "cos" && (expression[i-1] == "acos" || expression[i-1] == "arccos"))
+                        {
+                            //puts("hi 408");
+                            expression[i] = expression[i-2];
+                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i-1] == "cos" && (expression[i] == "acos" || expression[i] == "arccos"))
+                        {
+                            //puts("hi 416");
+                            expression[i] = expression[i-2];
+                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i] == "sin" && (expression[i-1] == "asin" || expression[i-1] == "arcsin"))
+                        {
+                            //puts("hi 424");
+                            expression[i] = expression[i-2];
+                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i-1] == "sin" && (expression[i] == "asin" || expression[i] == "arcsin"))
+                        {
+                            //puts("hi 432");
+                            expression[i] = expression[i-2];
+                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                            simplified = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    void simplifyRPN(std::vector<std::string>& expression)
+    {
+        size_t size_before, size_after;
+        do
+        {
+            size_before = expression.size();
+            simplifyRPN_Helper(expression);
+            this->simplify_grasp.reserve(expression.size());
+            graspSimplifyPostfix(expression, 0, expression.size() - 1, this->simplify_grasp);
+            simplifyRPN_Helper(expression);
+            size_after = expression.size();
+        } while (size_before != size_after);
     }
     
     /*
@@ -1480,7 +2397,7 @@ struct Board
                     assert(temp_idx < params.size());
                     stack.push(Eigen::VectorXf::Ones(Board::data.numRows())*params(temp_idx));
                 }
-                else if (token == "0")
+                else if (token == "0" || token == "nan" || token == "inf" || token == "-inf")
                 {
                     stack.push(Eigen::VectorXf::Zero(Board::data.numRows()));
                 }
@@ -1971,6 +2888,8 @@ struct Board
         float score = 0.0f;
         for (int jdx = 0; jdx < this->pieces.size(); jdx++)
         {
+            ((this->expression_type == "prefix") ? simplifyPN(this->pieces[jdx]) : simplifyRPN(this->pieces[jdx]));
+            //for(const auto& i: this->pieces[jdx]) {std::cout << i << ' ';}puts("");
             Eigen::VectorXf expression_eval = expression_evaluator(this->params, this->pieces[jdx]);
             if ((Board::__num_features == 1) && isConstant(expression_eval, sqrt(this->isConstTol))) //Ignore the trivial solution (1-d functions)!
             {
@@ -2273,6 +3192,20 @@ struct Board
         for (int i = start_idx_1, j = start_idx_2; i < stop_idx_1; i++, j++)
         {
             if (derivat[i] != derivat[j])
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    bool areExpressionRangesEqual(int start_idx_1, int start_idx_2, int num_steps, const std::vector<std::string>& expression)
+    {
+        int stop_idx_1 = start_idx_1 + num_steps;
+        
+        for (int i = start_idx_1, j = start_idx_2; i < stop_idx_1; i++, j++)
+        {
+            if (expression[i] != expression[j])
             {
                 return false;
             }
@@ -5308,8 +6241,11 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), const
                         x.pieces[jdx].emplace_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
                     }
                 }
-                assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces[jdx], jdx) : x.getRPNdepth(x.pieces[jdx], jdx)).first == x.n[jdx]);
-                assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces[jdx], jdx) : x.getRPNdepth(x.pieces[jdx], jdx)).second);
+                if (jdx < x.num_objectives - 1)
+                {
+                    assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces[jdx], jdx) : x.getRPNdepth(x.pieces[jdx], jdx)).first == x.n[jdx]);
+                    assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces[jdx], jdx) : x.getRPNdepth(x.pieces[jdx], jdx)).second);
+                }
             }
 //            printf("score = %f\n", score);
             
@@ -5378,7 +6314,7 @@ int main()
     
 //    std::cout<<data << '\n' << (Eigen::VectorXf::Ones(5).array() / Eigen::VectorXf::Zero(5).array()).cos() /*Eigen::VectorXf::Zero(5).array().pow(Eigen::VectorXf::Ones(5).array())*/ << '\n';
     
-    RandomSearch(VortexRadialProfile /*differential equation to solve*/, data /*data used to solve differential equation*/, std::vector<int>{7} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
+    RandomSearch(VortexRadialProfile /*differential equation to solve*/, data /*data used to solve differential equation*/, std::vector<int>{7} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
     
     return 0;
 }

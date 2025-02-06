@@ -1681,8 +1681,6 @@ struct Board
             simplifyRPN_Helper(expression);
             size_after = expression.size();
         } while (size_before != size_after);
-        
-        
     }
     
     /*
@@ -2906,7 +2904,6 @@ struct Board
                 ((this->expression_type == "prefix") ? simplifyPN(this->pieces[jdx]) : simplifyRPN(this->pieces[jdx]));
                 if (std::find(this->pieces[jdx].begin(), this->pieces[jdx].end(), Board::__input_vars[0]) == this->pieces[jdx].end())
                 {
-                    
                     this->MSE_curr = FLT_MAX;
                     return score;
                 }
