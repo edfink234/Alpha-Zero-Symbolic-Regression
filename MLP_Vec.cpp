@@ -636,24 +636,3 @@ float MultiLayerPerceptron::expression_evaluator(float w_k, float d_ij, float va
     }
     return stack.top();
 }
-
-/*
- Adagrad:
- 
- Each neuron has an $n \times n$ matrix called $G_t$, where $n$ is the number of (inputs?) of that neuron. $w_{t+1}$ is the new vector of weights for that neuron, $w_t$ is the current (at time $t$) vector of weights for that neuron. For a neuron in layer $i$, $g_t$ is $\propto $d_{i+1}$...?
- 
- AdaGrad modifies the learning rate dynamically based on the gradients acquired in previous rounds. The updated formulas are as follows:
- 
- $$w_{t+1} = w_{t} - \frac{\eta}{\sqrt{G_t + \epsilon}}\cdot g_t$$
- 
- where $\eta$ is a default value of 0.01 and $g_t$ is the gradient. $G_t$ here is a diagonal matrix where each diagonal element is the sum of the squares of the past gradients. We take an example to explain how to compute $G_t$:
- 
- Given $g_1 = (1, 0, 2)^T$, $g_2 = (3, 4, 0)^T$, and $g_3 = (0, 5, 6)^T$, we have:
- 
- \begin{align}
- \sqrt{G_t + \epsilon} &= \begin{pmatrix} \sqrt{1^2 + 3^2 + \epsilon} & 0 & 0 \\ 0 & \sqrt{4^2 + 5^2 + \epsilon} & 0 \\ 0 & 0 & \sqrt{2^2 + 6^2 + \epsilon} \end{pmatrix} \\
-    &= \begin{pmatrix} \sqrt{10+\epsilon} & 0 & 0 \\ 0 & \sqrt{41+\epsilon} & 0 \\ 0 & 0 & \sqrt{40+\epsilon} \end{pmatrix}
- \end{align}
- 
- Can you explain what $g_t$ is in the context of fully feed-forward neural netowrks with sigmoid activation exclusively? Is it a vector of the same size as $w_t$, and if so, how?
- */
