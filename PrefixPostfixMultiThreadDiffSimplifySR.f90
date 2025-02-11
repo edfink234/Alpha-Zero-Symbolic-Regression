@@ -314,6 +314,14 @@ contains
         modulo = mod(mod(N, M) + M, M)
     end function trueMod
 
+    function MSE(actual) result(mse_value)
+        implicit none
+        real, intent(in) :: actual(:)
+        real :: mse_value
+
+        mse_value = sum(actual**2)
+    end function MSE
+
     logical function isInvalid(x)
         implicit none
         real :: x
@@ -402,6 +410,7 @@ program main
     result = linspace(0.0, 10.0, 5)
 
     ! Print the result
+    print *, "Result ="
     do i = 1, size(result)
         print *, result(i)
     end do
@@ -411,9 +420,6 @@ program main
     print *, "All below 1e5?", areAllBelow(result, 1e5)
 
     print *, "Are all the same?", areAllSimilar(result, 1e-5)
-
-    ! Deallocate the array
-    deallocate(result)
 
     i = trueMod(-7, 5)
 
@@ -542,11 +548,17 @@ program main
 
     deallocate(min_vec, max_vec, mat)
 
+    print *, "MSE(result): ", MSE(result)
+    ! Deallocate the array
+    deallocate(result)
+
     ! Calculate elapsed time
     elapsed_time = time_elapsed(start_time)
 
     ! Output the elapsed time
     print *, "Elapsed time (in seconds): ", elapsed_time
+
+
 
 end program main
 

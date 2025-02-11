@@ -856,15 +856,21 @@ struct Board
             int op_idx = new_expression.size();
             new_expression.push_back(expression[low]); //*
             int temp = low+1+grasp[low+1];
-            //int first_arg_idx_low = new_expression.size();
+            int first_arg_idx_low = new_expression.size();
             graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); //* x
             int first_arg_idx_high = new_expression.size();
             graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); //* x y
             //int second_arg_idx_high = new_expression.size();
             //int step;
-            if (new_expression[first_arg_idx_high] == "0") //* x 0 -> 0 (because, since prefix operators come at the beginning, if the beginning of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 *, which is 0)
+            if (new_expression[first_arg_idx_high] == "0") //* x 0 -> 0 (because, since prefix operators come at the beginning, if the beginning of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to * x 0, which is 0)
             {
                 //puts("hi 239");
+                new_expression[op_idx] = "0"; //change '*' to '0'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression[first_arg_idx_low] == "0") //* 0 x -> 0
+            {
+                //puts("hi 245");
                 new_expression[op_idx] = "0"; //change '*' to '0'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
@@ -1292,7 +1298,7 @@ struct Board
         {
             int first_arg_idx_low = new_expression.size();
             graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true); //x
-            //int first_arg_idx_high = new_expression.size();
+            int first_arg_idx_high = new_expression.size();
             graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
             //int second_arg_idx_high = new_expression.size();
             //int step;
@@ -1300,6 +1306,12 @@ struct Board
             if (new_expression.back() == "0") // x 0 * -> 0 (because, since postfix operators come at the end, if the end of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 *, which is 0)
             {
                 //puts("hi 235");
+                new_expression[first_arg_idx_low] = "0";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            }
+            else if (new_expression[first_arg_idx_high - 1] == "0") //0 x * -> 0 (because, since postfix operators come at the end, if the end of the first argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to 0 x *, which is 0)
+            {
+                //puts("hi 241");
                 new_expression[first_arg_idx_low] = "0";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
             }
