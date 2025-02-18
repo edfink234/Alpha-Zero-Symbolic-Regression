@@ -234,11 +234,31 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); //* x y
         int second_arg_idx_high = new_expression.size();
         int step;
-        if (new_expression[first_arg_idx_high] == "0") //* x 0 -> 0 (because, since prefix operators come at the beginning, if the beginning of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 *, which is 0)
+        if (new_expression[first_arg_idx_high] == "0") //* x 0 -> 0 (because, since prefix operators come at the beginning, if the beginning of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to * x 0, which is 0)
         {
             //puts("hi 239");
             new_expression[op_idx] = "0"; //change '*' to '0'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
+        else if (new_expression[first_arg_idx_low] == "0") //* 0 x -> 0
+        {
+            //puts("hi 245");
+            new_expression[op_idx] = "0"; //change '*' to '0'
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
+        else if (new_expression[first_arg_idx_high] == "1") //* x 1 -> x (because, since prefix operators come at the beginning, if the beginning of the second argument of '*' is 1, then the whole second argument MUST be 1, therefore the expression reduces to * x 1, which is 1)
+        {
+            //puts("hi 251");
+            //erase the '1' at the end
+            if (first_arg_idx_high == static_cast<int>(new_expression.size()) - 1)
+            {
+                new_expression.pop_back();
+            }
+            else
+            {
+                new_expression.erase(new_expression.begin() + first_arg_idx_high, new_expression.end());
+            }
+            new_expression.erase(new_expression.begin() + op_idx); //erase the '*'
         }
     }
     else
@@ -1200,9 +1220,6 @@ int main()
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-    
-    
-    
 
     test_expr = {"+", "~", "*", "0", "tanh", "tanh", "x", "x"};
     printf("before: ");print_container(test_expr);
@@ -1326,6 +1343,18 @@ int main()
     puts("");
     
     test_expr = {"*", "+", "tanh", "cos", "x", "0", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"*", "0", "tanh", "tanh", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"+", "0", "*", "0", "cos", "tanh", "x"};
     printf("before: ");print_container(test_expr);
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);

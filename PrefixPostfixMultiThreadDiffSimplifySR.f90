@@ -61,8 +61,8 @@ contains
     function create_linspace_matrix(rows, cols, min_vec, max_vec) result(mat)
         implicit none
         integer, intent(in) :: rows, cols
-        real(8), intent(in) :: min_vec(cols), max_vec(cols)
-        real(8) :: mat(rows, cols)
+        real(4), intent(in) :: min_vec(cols), max_vec(cols)
+        real(4) :: mat(rows, cols)
         integer :: row, col
 
         do col = 1, cols
@@ -141,9 +141,46 @@ contains
         isFloat = has_digits .and. (state == INT .or. state == FRAC .or. state == EXP_NUM)
     end function isFloat
 
+    FUNCTION isConstant(vec, sz, tolerance) RESULT(res)
+        IMPLICIT NONE
+        INTEGER, INTENT(IN) :: sz
+        REAL(4), INTENT(IN) :: vec(sz)
+        REAL(4), INTENT(IN), OPTIONAL :: tolerance
+        REAL(4) :: tol, mean_val, var
+        INTEGER :: i
+        LOGICAL :: res
+    
+        ! Set default tolerance if not provided
+        tol = 1.0E-5
+        IF (PRESENT(tolerance)) THEN
+            tol = tolerance
+        END IF
+
+        ! A vector with 0 or 1 element is trivially constant
+        IF (sz <= 1) THEN
+            res = .TRUE.
+            RETURN
+        END IF
+
+        ! Check for NaN or Inf values
+        DO i = 1, sz-2
+            IF (isInvalid(vec(i))) THEN
+                res = .TRUE.
+                RETURN
+            END IF
+        END DO
+
+        ! Compute variance
+        mean_val = SUM(vec) / REAL(sz)
+        var = SUM((vec - mean_val)**2) / REAL(sz)
+
+        ! Check if variance is within tolerance
+        res = (var <= tol)
+    END FUNCTION isConstant
+
     function get_time() result(time)
         type(timespec) :: tp
-        real(8) :: time
+        real(4) :: time
         integer(c_int) :: ierr
 
         ! Get current time with nanosecond precision
@@ -158,8 +195,8 @@ contains
     end function get_time
 
     function time_elapsed(start_time) result(elapsed_time)
-        real(8), intent(in) :: start_time
-        real(8) :: elapsed_time
+        real(4), intent(in) :: start_time
+        real(4) :: elapsed_time
 
         ! Calculate elapsed time as difference in seconds
         elapsed_time = get_time() - start_time
@@ -391,7 +428,7 @@ end module function_space
 program main
     use function_space
     implicit none
-    real(8) :: start_time, elapsed_time
+    real(4) :: start_time, elapsed_time
     real :: Val
     logical(4) :: resultVal
     real, dimension(:), allocatable :: result
@@ -401,7 +438,7 @@ program main
     CHARACTER(LEN=15), DIMENSION(:), ALLOCATABLE :: individual
     CHARACTER(LEN=10) :: expression_type
     INTEGER :: ind, z
-    real(8), allocatable :: mat(:, :), min_vec(:), max_vec(:)
+    real(4), allocatable :: mat(:, :), min_vec(:), max_vec(:)
 
     ! Capture start time
     start_time = get_time()
@@ -546,11 +583,18 @@ program main
         write(*, '(3F10.3)') (mat(i, j), j = 1, cols)
     end do
 
+    print *, "isConstant(min_vec) = ", isConstant(min_vec, 3)
+    do i = 1, size(min_vec)
+        min_vec(i) = 3
+    end do
+    print *, "isConstant(min_vec) = ", isConstant(min_vec, 3)
+
     deallocate(min_vec, max_vec, mat)
 
     print *, "MSE(result): ", MSE(result)
     ! Deallocate the array
     deallocate(result)
+
 
     ! Calculate elapsed time
     elapsed_time = time_elapsed(start_time)
