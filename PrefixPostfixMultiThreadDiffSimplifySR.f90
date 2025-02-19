@@ -359,6 +359,19 @@ contains
         mse_value = sum(actual**2)
     end function MSE
 
+    function MSE_MATRIX(actual, n) result(mse)
+        implicit none
+        integer, intent(in) :: n  ! Number of vectors
+        real, intent(in) :: actual(:,:)  ! 2D array where each column is a vector
+        real :: mse
+        integer :: i
+
+        mse = 0.0
+        do i = 1, n
+            mse = mse + sum(actual(:, i) ** 2)
+        end do
+    end function MSE_MATRIX
+
     logical function isInvalid(x)
         implicit none
         real :: x
@@ -579,9 +592,12 @@ program main
     mat = create_linspace_matrix(rows, cols, min_vec, max_vec)
 
     ! Print matrix
+    print *, "mat = "
     do i = 1, rows
         write(*, '(3F10.3)') (mat(i, j), j = 1, cols)
     end do
+
+    print *, "MSE(mat) = ", MSE_MATRIX(mat, rows)
 
     print *, "isConstant(min_vec) = ", isConstant(min_vec, 3)
     do i = 1, size(min_vec)

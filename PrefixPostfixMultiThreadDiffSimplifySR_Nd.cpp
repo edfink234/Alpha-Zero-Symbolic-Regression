@@ -888,6 +888,11 @@ struct Board
                 }
                 new_expression.erase(new_expression.begin() + op_idx); //erase the '*'
             }
+            else if (new_expression[first_arg_idx_low] == "1") //* 1 x -> x
+            {
+                //puts("hi 265");
+                new_expression.erase(new_expression.begin() + op_idx, new_expression.begin() + op_idx + 2); //erase the '*' and the '1'
+            }
         }
         else
         {
@@ -1333,6 +1338,11 @@ struct Board
             {
                 //puts("hi 247");
                 new_expression.pop_back(); //erase the '1'
+            }
+            else if (new_expression[first_arg_idx_high - 1] == "1") //1 x * -> x (because, since postfix operators come at the end, if the end of the first argument of '*' is 1, then the whole first argument MUST be 1, therefore the expression reduces to 1 x *, which is x)
+            {
+                //puts("hi 252");
+                new_expression.erase(new_expression.begin() + first_arg_idx_high - 1); //erase the '1'
             }
             else
             {
@@ -6345,7 +6355,7 @@ int main()
     
 //    std::cout<<data << '\n' << (Eigen::VectorXf::Ones(5).array() / Eigen::VectorXf::Zero(5).array()).cos() /*Eigen::VectorXf::Zero(5).array().pow(Eigen::VectorXf::Ones(5).array())*/ << '\n';
     
-    RandomSearch(VortexRadialProfile /*differential equation to solve*/, data /*data used to solve differential equation*/, std::vector<int>{8} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
+    RandomSearch(VortexRadialProfile /*differential equation to solve*/, data /*data used to solve differential equation*/, std::vector<int>{18} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
     
     return 0;
 }

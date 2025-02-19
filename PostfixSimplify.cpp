@@ -247,6 +247,11 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             //puts("hi 247");
             new_expression.pop_back(); //erase the '1'
         }
+        else if (new_expression[first_arg_idx_high - 1] == "1") //1 x * -> x (because, since postfix operators come at the end, if the end of the first argument of '*' is 1, then the whole first argument MUST be 1, therefore the expression reduces to 1 x *, which is x)
+        {
+            //puts("hi 252");
+            new_expression.erase(new_expression.begin() + first_arg_idx_high - 1); //erase the '1'
+        }
         else
         {
             new_expression.push_back(expression[up]);
@@ -1330,6 +1335,18 @@ int main()
     puts("");
     
     test_expr = {"0", "y", "x", "x", "+", "tanh", "-", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "x", "x", "+", "tanh", "x", "*", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "1", "x", "x", "+", "asin", "x", "*", "*", "*"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
