@@ -1,0 +1,48 @@
+\documentclass{article}
+\usepackage[x11names, svgnames, rgb]{xcolor}
+\usepackage[utf8]{inputenc}
+\usepackage{tikz}
+\usetikzlibrary{snakes,arrows,shapes}
+\usepackage{amsmath}
+%
+%
+
+\usepackage[active,tightpage]{preview}
+\PreviewEnvironment{tikzpicture}
+\setlength\PreviewBorder{0pt}%
+
+%
+
+\begin{document}
+\pagestyle{empty}
+%
+%
+%
+
+\enlargethispage{100cm}
+% Start of code
+\begin{tikzpicture}[>=latex',line join=bevel,]
+%%
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (120.1bp,192.25bp) node {$w_{j,m,t=\tau} + \eta*g_j$};
+\end{scope}
+  \node (5) at (121.19bp,162.0bp) [draw,ellipse] {$+$};
+  \node (1) at (66.194bp,90.0bp) [draw,ellipse] {$w_{j,m,t=\tau}$};
+  \node (4) at (177.19bp,90.0bp) [draw,ellipse] {$*$};
+  \node (2) at (141.19bp,18.0bp) [draw,ellipse] {$\eta$};
+  \node (3) at (213.19bp,18.0bp) [draw,ellipse] {$g_j$};
+  \draw [] (5) ..controls (100.25bp,134.35bp) and (88.5bp,119.39bp)  .. (1);
+  \draw [] (5) ..controls (142.74bp,134.07bp) and (155.68bp,117.89bp)  .. (4);
+  \draw [] (4) ..controls (163.03bp,61.456bp) and (155.3bp,46.437bp)  .. (2);
+  \draw [] (4) ..controls (191.36bp,61.456bp) and (199.08bp,46.437bp)  .. (3);
+%
+\end{tikzpicture}
+% End of code
+
+%
+\end{document}
+%
+
+
