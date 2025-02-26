@@ -335,9 +335,10 @@ def test_visualize():
 #                    plot_pn_expression_tree(("+ + - * ^ 19.999996 / x1 ~ exp x0 * 2.995732 / - ~ exp x0 * x1 -0.000000 * ~ exp x0 ~ exp x0 * -0.214359 * ^ 19.999996 / x1 ~ exp x0 * 2.995732 / ~ * x1 ~ exp x0 * ~ exp x0 ~ exp x0 / * 0.001370 ^ 19.999996 / x1 ~ exp x0 + 1.244282 ^ 19.999996 / x1 ~ exp x0 * * 1.238819 ^ 19.999996 / x1 ~ exp x0 sech exp * 0.805109 + x0 x1 ").split(), block=True, save = save)
 #                plot_pn_expression_tree(("+ + - * ^ exp log 20.000000 / x1 - ~ 0 exp x0 * ln exp log 20.000000 / - - ~ 0 exp x0 * x1 ~ 0 * - ~ 0 exp x0 - ~ 0 exp x0 * -0.214359 * ^ exp log 20.000000 / x1 - ~ 0 exp x0 * ln exp log 20.000000 / ~ * x1 - ~ 0 exp x0 * - ~ 0 exp x0 - ~ 0 exp x0 / * 0.001370 ^ exp log 20.000000 / x1 - ~ 0 exp x0 + 1.244282 ^ exp log 20.000000 / x1 - ~ 0 exp x0 * * 1.238819 ^ exp log 20.000000 / x1 - ~ 0 exp x0 sech exp * 0.805109 + x0 x1 ").split(), block=True, save = save)
 #                plot_rpn_expression_tree(["x0", "cos", "x0", "x0", "sin", "~", "*", "-", "x0", "cos", "x0", "cos", "*", "/", "x0", "x0", "cos", "/", "sech", "x0", "x0", "cos", "/", "sech", "*", "*", "1", "x0", "x0", "cos", "/", "tanh", "x0", "x0", "cos", "/", "tanh", "*", "-", "sqrt", "/", "~", "x0", "x0", "cos", "/", "tanh", "acos", "sin", "~", "*"], block=True, save = save)
-                plot_rpn_expression_tree(['x0', 'tanh', '4', '*', 'cos'], block=True, save = save)
-#                plot_pn_expression_tree("- + * / 1 * 2 x0 1 * - mu / * S S * * 2 x0 x0 x0 * * x0 x0 x0".split(), block=True, save = save)
-
+#                plot_rpn_expression_tree(['x0', 'tanh', '4', '*', 'cos'], block=True, save = save)
+#                plot_pn_expression_tree("+ + - * ^ 20.000000 / x1 ~ exp x0 * 2.995732 / ~ exp x0 * ~ exp x0 ~ exp x0 * -0.214359 * ^ 20.000000 / x1 ~ exp x0 * 2.995732 / ~ * x1 ~ exp x0 * ~ exp x0 ~ exp x0 / * 0.001370 ^ 20.000000 / x1 ~ exp x0 + 1.244282 ^ 20.000000 / x1 ~ exp x0 * * 1.238819 ^ 20.000000 / x1 ~ exp x0 sech exp * 0.805109 + x0 x1".split(), block=True, save = save)
+                plot_pn_expression_tree("+ + - * ^ 20.000000 / x1 ~ exp x0 * 2.995732 / - ~ exp x0 0 * ~ exp x0 ~ exp x0 * -0.214359 * ^ 20.000000 / x1 ~ exp x0 * 2.995732 / ~ * x1 ~ exp x0 * ~ exp x0 ~ exp x0 / * 0.001370 ^ 20.000000 / x1 ~ exp x0 + 1.244282 ^ 20.000000 / x1 ~ exp x0 * * 1.238819 ^ 20.000000 / x1 ~ exp x0 sech exp * 0.805109 + x0 x1".split(), block=True, save = save)
+                
 
         except KeyboardInterrupt:
 #            

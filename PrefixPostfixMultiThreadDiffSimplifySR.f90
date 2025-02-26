@@ -359,6 +359,14 @@ contains
         mse_value = sum(actual**2)
     end function MSE
 
+    function loss_func(actual) result(loss_value)
+        implicit none
+        real, intent(in) :: actual(:)
+        real :: loss_value
+
+        loss_value = 1.0/(1.0 + MSE(actual))
+    end function loss_func
+
     function MSE_MATRIX(actual, n) result(mse)
         implicit none
         integer, intent(in) :: n  ! Number of vectors
@@ -608,6 +616,7 @@ program main
     deallocate(min_vec, max_vec, mat)
 
     print *, "MSE(result): ", MSE(result)
+    print *, "loss_func(result): ", loss_func(result)
     ! Deallocate the array
     deallocate(result)
 

@@ -39,6 +39,13 @@ bool isFloat(const std::string& s)
     enum State { START, INT, FRAC, EXP, EXP_NUM };
     State state = START;
     bool has_digits = false;
+    
+    if ((s.rfind("nan", 0) != std::string::npos)
+        || (s.rfind("inf", 0) != std::string::npos)
+        || (s.rfind("-inf", 0) != std::string::npos))
+    {
+        return true;
+    }
 
     for (char c : s)
     {
@@ -252,6 +259,29 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             //puts("hi 252");
             new_expression.erase(new_expression.begin() + first_arg_idx_high - 1); //erase the '1'
         }
+        else
+        {
+            new_expression.push_back(expression[up]);
+        }
+    }
+    else if (expression[up] == "/") //x y /
+    {
+        int first_arg_idx_low = new_expression.size();
+        graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true); //x
+        int first_arg_idx_high = new_expression.size();
+        graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
+        int second_arg_idx_high = new_expression.size();
+        int step;
+        
+         //x 0 /
+        
+        if (new_expression.back() == "0") // x 0 / -> inf (because, since postfix operators come at the end, if the end of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 /, which is inf)
+        {
+            //puts("hi 280");
+            new_expression[first_arg_idx_low] = (new_expression[first_arg_idx_high - 1] == "~") ? "-inf" : "inf";
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+        }
+        
         else
         {
             new_expression.push_back(expression[up]);
@@ -1347,6 +1377,18 @@ int main()
     puts("");
     
     test_expr = {"x", "1", "x", "x", "+", "asin", "x", "*", "*", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "1", "x", "x", "+", "asin", "x", "*", "*", "*", "~", "0", "/"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "x", "^", "x", "x", "^", "-", "asin", "tanh", "sin", "x", "x", "-", "*", "0", "/"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);

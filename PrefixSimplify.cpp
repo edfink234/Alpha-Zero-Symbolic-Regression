@@ -39,6 +39,13 @@ bool isFloat(const std::string& s)
     enum State { START, INT, FRAC, EXP, EXP_NUM };
     State state = START;
     bool has_digits = false;
+    
+    if ((s.rfind("nan", 0) != std::string::npos)
+        || (s.rfind("inf", 0) != std::string::npos)
+        || (s.rfind("-inf", 0) != std::string::npos))
+    {
+        return true;
+    }
 
     for (char c : s)
     {
@@ -266,6 +273,25 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression.erase(new_expression.begin() + op_idx, new_expression.begin() + op_idx + 2); //erase the '*' and the '1'
         }
     }
+    else if (expression[low] == "/") // / x y
+    {
+        int op_idx = new_expression.size();
+        new_expression.push_back(expression[low]); // /
+        int temp = low+1+grasp[low+1];
+        int first_arg_idx_low = new_expression.size();
+        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // / x
+        int first_arg_idx_high = new_expression.size();
+        graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); // / x y
+        int second_arg_idx_high = new_expression.size();
+        int step;
+        if (new_expression[first_arg_idx_high] == "0") // / x 0 -> inf (because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to / x 0, which is 0)
+        {
+            //puts("hi 282");
+            new_expression[op_idx] = (new_expression[first_arg_idx_low] != "~") ? "inf": "-inf"; //change '/' to 'inf' or '-inf'
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
+    }
+    
     else
     {
         for (int i = low; i <= up; i++)
@@ -1372,6 +1398,18 @@ int main()
     puts("");
     
     test_expr = {"+", "0", "*", "1", "+", "tanh", "x", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"/", "tanh", "cos", "x", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"sin", "arcsin", "/", "~", "*", "y", "y", "0"};
     printf("before: ");print_container(test_expr);
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);

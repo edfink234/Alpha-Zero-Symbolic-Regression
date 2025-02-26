@@ -48,6 +48,13 @@ bool isFloat(const std::string& s)
     enum State { START, INT, FRAC, EXP, EXP_NUM };
     State state = START;
     bool has_digits = false;
+    
+    if ((s.rfind("nan", 0) != std::string::npos)
+        || (s.rfind("inf", 0) != std::string::npos)
+        || (s.rfind("-inf", 0) != std::string::npos))
+    {
+        return true;
+    }
 
     for (char c : s)
     {
@@ -894,6 +901,24 @@ struct Board
                 new_expression.erase(new_expression.begin() + op_idx, new_expression.begin() + op_idx + 2); //erase the '*' and the '1'
             }
         }
+        else if (expression[low] == "/") // / x y
+        {
+            int op_idx = new_expression.size();
+            new_expression.push_back(expression[low]); // /
+            int temp = low+1+grasp[low+1];
+            int first_arg_idx_low = new_expression.size();
+            graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // / x
+            int first_arg_idx_high = new_expression.size();
+            graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); // / x y
+            //int second_arg_idx_high = new_expression.size();
+            //int step;
+            if (new_expression[first_arg_idx_high] == "0") // / x 0 -> inf (because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to / x 0, which is 0)
+            {
+                //puts("hi 282");
+                new_expression[op_idx] = (new_expression[first_arg_idx_low] != "~") ? "inf": "-inf"; //change '/' to 'inf' or '-inf'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+        }
         else
         {
             for (int i = low; i <= up; i++)
@@ -1344,6 +1369,29 @@ struct Board
                 //puts("hi 252");
                 new_expression.erase(new_expression.begin() + first_arg_idx_high - 1); //erase the '1'
             }
+            else
+            {
+                new_expression.push_back(expression[up]);
+            }
+        }
+        else if (expression[up] == "/") //x y /
+        {
+            int first_arg_idx_low = new_expression.size();
+            graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true); //x
+            int first_arg_idx_high = new_expression.size();
+            graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
+            //int second_arg_idx_high = new_expression.size();
+            //int step;
+            
+             //x 0 /
+            
+            if (new_expression.back() == "0") // x 0 / -> inf (because, since postfix operators come at the end, if the end of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 /, which is inf)
+            {
+                //puts("hi 280");
+                new_expression[first_arg_idx_low] = (new_expression[first_arg_idx_high - 1] == "~") ? "-inf" : "inf";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            }
+            
             else
             {
                 new_expression.push_back(expression[up]);
@@ -6355,7 +6403,7 @@ int main()
     
 //    std::cout<<data << '\n' << (Eigen::VectorXf::Ones(5).array() / Eigen::VectorXf::Zero(5).array()).cos() /*Eigen::VectorXf::Zero(5).array().pow(Eigen::VectorXf::Ones(5).array())*/ << '\n';
     
-    RandomSearch(VortexRadialProfile /*differential equation to solve*/, data /*data used to solve differential equation*/, std::vector<int>{18} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
+    RandomSearch(VortexRadialProfile /*differential equation to solve*/, data /*data used to solve differential equation*/, std::vector<int>{5} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
     
     return 0;
 }
