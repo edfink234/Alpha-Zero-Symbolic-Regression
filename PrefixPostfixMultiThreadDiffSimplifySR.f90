@@ -23,7 +23,6 @@ module function_space
         end function clock_gettime
     end interface
 
-
 contains
 
     logical function is_unary(token) result(isUnary)
@@ -38,6 +37,8 @@ contains
             end if
         end do
     end function is_unary
+
+
 
     logical function is_binary(token) result(isBinary)
         implicit none
@@ -180,7 +181,7 @@ contains
 
     function get_time() result(time)
         type(timespec) :: tp
-        real(4) :: time
+        real(8) :: time
         integer(c_int) :: ierr
 
         ! Get current time with nanosecond precision
@@ -195,8 +196,8 @@ contains
     end function get_time
 
     function time_elapsed(start_time) result(elapsed_time)
-        real(4), intent(in) :: start_time
-        real(4) :: elapsed_time
+        real(8), intent(in) :: start_time
+        real(8) :: elapsed_time
 
         ! Calculate elapsed time as difference in seconds
         elapsed_time = get_time() - start_time
@@ -443,13 +444,53 @@ contains
         end do
     end function areAllSimilar
 
+    real function sum_row(row)
+        real, intent(in) :: row(:)
+        sum_row = sum(row)
+    end function sum_row
+
 
 end module function_space
 
+module matrix_utils
+    implicit none
+
+    interface
+        real function row_function(row)
+            real, intent(in) :: row(:)
+        end function row_function
+    end interface
+
+contains
+
+    function add_column_with_lambda(matrix, lambda) result(new_matrix)
+        real, intent(in) :: matrix(:, :)
+        procedure(row_function) :: lambda
+        real, allocatable :: new_matrix(:, :)
+        integer :: rows, cols, i
+
+        rows = size(matrix, 1)
+        cols = size(matrix, 2)
+
+        ! Allocate new matrix with an additional column
+        allocate(new_matrix(rows, cols + 1))
+
+        ! Copy the original matrix into the new matrix (without the last column)
+        new_matrix(:, 1:cols) = matrix
+
+        ! Apply the lambda function to each row and store the result in the last column
+        do i = 1, rows
+            new_matrix(i, cols + 1) = lambda(matrix(i, :))
+        end do
+    end function add_column_with_lambda
+
+end module matrix_utils
+
 program main
     use function_space
+    use matrix_utils
     implicit none
-    real(4) :: start_time, elapsed_time
+    real(8) :: start_time, elapsed_time
     real :: Val
     logical(4) :: resultVal
     real, dimension(:), allocatable :: result
@@ -460,9 +501,13 @@ program main
     CHARACTER(LEN=10) :: expression_type
     INTEGER :: ind, z
     real(4), allocatable :: mat(:, :), min_vec(:), max_vec(:)
+    real :: matrix(3, 2)
+    real, allocatable :: new_matrix(:, :)
+
 
     ! Capture start time
     start_time = get_time()
+    print *, "Start time =", start_time
 
     ! Call the linspace function
     result = linspace(0.0, 10.0, 5)
@@ -510,8 +555,6 @@ program main
 
     string_result = simplifyString("-123.0045")
     print *, "Input: '-123.0045', Output: ", trim(string_result), " Expected: '-123.0045'"
-
-
 
     ! Test cases for is_unary
     print *, "Testing is_unary function:"
@@ -620,9 +663,27 @@ program main
     ! Deallocate the array
     deallocate(result)
 
+    ! Initialize the matrix with some values
+    matrix = reshape([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], [3, 2])
+
+    ! Print the original matrix
+    print *, "Original Matrix:"
+    do i = 1, size(matrix, 1)
+        print *, matrix(i, :)
+    end do
+
+    ! Call the function to add a new column
+    new_matrix = add_column_with_lambda(matrix, sum_row)
+
+    ! Print the new matrix with the added column
+    print *, "New Matrix with Added Column:"
+    do i = 1, size(new_matrix, 1)
+        print *, new_matrix(i, :)
+    end do
 
     ! Calculate elapsed time
     elapsed_time = time_elapsed(start_time)
+    print *, "End time =", get_time()
 
     ! Output the elapsed time
     print *, "Elapsed time (in seconds): ", elapsed_time

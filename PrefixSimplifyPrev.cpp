@@ -290,6 +290,12 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = (new_expression[first_arg_idx_low] != "~") ? "inf": "-inf"; //change '/' to 'inf' or '-inf'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
+        else if (new_expression[first_arg_idx_low] == "0") // / 0 x -> 0
+        {
+            //puts("hi 295");
+            new_expression[op_idx] = "0"; //change '/' to '0'
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
     }
     
     else
