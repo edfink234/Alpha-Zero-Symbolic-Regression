@@ -25,9 +25,9 @@ class UnaryNode(Node):
         self.child = None
         
 def is_operator(token):
-    return token in {"cos", "exp", "sqrt", "sin", "asin", "arcsin", "log", "tanh", "acos", "arccos", "~", "+", "-", "*", "/", "^", "ln"}
+    return is_binary_operator(token) or is_unary_operator(token)
 def is_binary_operator(token):
-    return token in {'+', '-', '*', '/', '^'}
+    return token in {'+', '-', '*', '/', '^', 'MYCDOT'}
 def is_unary_operator(token):
     return token in {"cos", "exp", "sqrt", "sin", "asin", "arcsin", "log", "tanh", "acos", "arccos", "~", "ln"}
 
@@ -200,7 +200,7 @@ def plot_pn_expression_tree(expression: list[str], block = False, save = False):
         plt.show(block = block)
         plt.pause(0.01)
 
-def plot_rpn_expression_tree(expression: list[str], block = False, save = False, filename = "", title = "", tolatex = False):
+def plot_rpn_expression_tree(expression: list[str], block = False, save = False, filename = "", title = "", tolatex = False, to_pdf = False):
     global called, implot
 
     def build_tree(expression_tokens):
@@ -258,7 +258,7 @@ def plot_rpn_expression_tree(expression: list[str], block = False, save = False,
         print(f"Image file saved as {filename}")
         if tolatex:
             # Export to tex
-            replace_dict = {"tau": r"\tau", "eta": r"\eta"}
+            replace_dict = {"MYTAU": r"\tau", "MYTHETA": r"\theta", "MYETA": r"\eta", "MYCDOT": r"\cdot"}
             texcode = dot2tex.dot2tex(graph.to_string(),format='tikz',texmode='math',crop=True)
             for replacement in replace_dict:
                 texcode = texcode.replace(replacement, replace_dict[replacement])
@@ -266,6 +266,10 @@ def plot_rpn_expression_tree(expression: list[str], block = False, save = False,
             with open(f"{filename}", "w") as f:
                 f.write(texcode)
             print(f"Latex file saved as {filename}")
+            if to_pdf:
+                status = os.system(f"/Library/TeX/texbin/pdflatex {filename}")
+                if not status:
+                    print(f"Pdf file saved as {filename.replace('.tex','.pdf')}")
     else:
         graph.write_png('expression_tree.png')
         if called == False or block == True:
@@ -320,8 +324,14 @@ def test_visualize():
     else:
 #        print(pn_to_infix(" - - + / ^ x 3 5 / ^ y 3 2 y x".split()))
 #        print(rpn_to_infix("y y x * * cos y +"))
-        plot_rpn_expression_tree(expression = r"w_{j,m,t=tau} eta g_j * +", block = False, save = True, filename = "GradientDescent.svg", title = r"w_{j,m,t=tau} + eta*g_j", tolatex=True)
-        os.system(r"open -a Google\ Chrome GradientDescent.svg")
+        file_names = ("GradientDescent", "HeavyBall")
+        
+        expressions = (r"w_{j,m,t=MYTAU-1} MYETA g_{j,m,t=MYTAU} MYCDOT +", r"w_{j,m,t=MYTAU} MYTHETA v_{j,m,t=MYTAU-1} MYCDOT MYETA g_{j,m,t=MYTAU} MYCDOT + +")
+        titles = (r"w_{j,m,t=MYTAU} = w_{j,m,t=MYTAU-1} + MYETA MYCDOT g_{j,m,t=MYTAU}", r"w_{j,m,t=MYTAU} = w_{j,m,t=MYTAU-1} + MYTHETA MYCDOT v_{j,m,t=MYTAU-1} + MYETA MYCDOT g_{j,m,t=MYTAU} ")
+        for file_name, expression, title in zip(file_names, expressions, titles):
+            plot_rpn_expression_tree(expression = expression, block = False, save = True, filename = f"{file_name}.svg", title = title, tolatex=True, to_pdf=True)
+            os.system(f"open -a Xcode {file_name}.tex")
+            os.system(f"open -a Safari {file_name}.pdf")
         return
         while True:
             try:

@@ -26,17 +26,17 @@
 \begin{scope}
   \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
   \pgfsetstrokecolor{strokecol}
-  \draw (120.1bp,192.25bp) node {$w_{j,m,t=\tau} + \eta*g_j$};
+  \draw (256.62bp,192.25bp) node {$w_{j,m,t=\tau} = w_{j,m,t=\tau-1} + \eta \cdot g_{j,m,t=\tau}$};
 \end{scope}
-  \node (5) at (121.19bp,162.0bp) [draw,ellipse] {$+$};
-  \node (1) at (66.194bp,90.0bp) [draw,ellipse] {$w_{j,m,t=\tau}$};
-  \node (4) at (177.19bp,90.0bp) [draw,ellipse] {$*$};
-  \node (2) at (141.19bp,18.0bp) [draw,ellipse] {$\eta$};
-  \node (3) at (213.19bp,18.0bp) [draw,ellipse] {$g_j$};
-  \draw [] (5) ..controls (100.25bp,134.35bp) and (88.5bp,119.39bp)  .. (1);
-  \draw [] (5) ..controls (142.74bp,134.07bp) and (155.68bp,117.89bp)  .. (4);
-  \draw [] (4) ..controls (163.03bp,61.456bp) and (155.3bp,46.437bp)  .. (2);
-  \draw [] (4) ..controls (191.36bp,61.456bp) and (199.08bp,46.437bp)  .. (3);
+  \node (5) at (224.49bp,162.0bp) [draw,ellipse] {$+$};
+  \node (1) at (141.49bp,90.0bp) [draw,ellipse] {$w_{j,m,t=\tau-1}$};
+  \node (4) at (307.49bp,90.0bp) [draw,ellipse] {$\cdot$};
+  \node (2) at (232.49bp,18.0bp) [draw,ellipse] {$\eta$};
+  \node (3) at (381.49bp,18.0bp) [draw,ellipse] {$g_{j,m,t=\tau}$};
+  \draw [] (5) ..controls (194.77bp,135.93bp) and (175.92bp,120.04bp)  .. (1);
+  \draw [] (5) ..controls (254.59bp,135.62bp) and (274.13bp,119.13bp)  .. (4);
+  \draw [] (4) ..controls (277.89bp,61.375bp) and (261.65bp,46.222bp)  .. (2);
+  \draw [] (4) ..controls (336.35bp,61.698bp) and (351.8bp,47.079bp)  .. (3);
 %
 \end{tikzpicture}
 % End of code

@@ -1,0 +1,56 @@
+\documentclass{article}
+\usepackage[x11names, svgnames, rgb]{xcolor}
+\usepackage[utf8]{inputenc}
+\usepackage{tikz}
+\usetikzlibrary{snakes,arrows,shapes}
+\usepackage{amsmath}
+%
+%
+
+\usepackage[active,tightpage]{preview}
+\PreviewEnvironment{tikzpicture}
+\setlength\PreviewBorder{0pt}%
+
+%
+
+\begin{document}
+\pagestyle{empty}
+%
+%
+%
+
+\enlargethispage{100cm}
+% Start of code
+\begin{tikzpicture}[>=latex',line join=bevel,]
+%%
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (393.5bp,264.25bp) node {$w_{j,m,t=\tau} = w_{j,m,t=\tau-1} + \theta \cdot v_{j,m,t=\tau-1} + \eta \cdot g_{j,m,t=\tau}$};
+\end{scope}
+  \node (9) at (321.65bp,234.0bp) [draw,ellipse] {$+$};
+  \node (1) at (254.65bp,162.0bp) [draw,ellipse] {$w_{j,m,t=\tau}$};
+  \node (8) at (388.65bp,162.0bp) [draw,ellipse] {$+$};
+  \node (4) at (309.65bp,90.0bp) [draw,ellipse] {$\cdot$};
+  \node (7) at (466.65bp,90.0bp) [draw,ellipse] {$\cdot$};
+  \node (2) at (140.65bp,18.0bp) [draw,ellipse] {$\theta$};
+  \node (3) at (309.65bp,18.0bp) [draw,ellipse] {$v_{j,m,t=\tau-1}$};
+  \node (5) at (466.65bp,18.0bp) [draw,ellipse] {$\eta$};
+  \node (6) at (615.65bp,18.0bp) [draw,ellipse] {$g_{j,m,t=\tau}$};
+  \draw [] (9) ..controls (297.03bp,207.28bp) and (282.15bp,191.74bp)  .. (1);
+  \draw [] (9) ..controls (347.03bp,206.48bp) and (363.29bp,189.49bp)  .. (8);
+  \draw [] (8) ..controls (360.09bp,135.7bp) and (341.65bp,119.36bp)  .. (4);
+  \draw [] (8) ..controls (416.84bp,135.7bp) and (435.05bp,119.36bp)  .. (7);
+  \draw [] (4) ..controls (247.87bp,63.411bp) and (204.16bp,45.309bp)  .. (2);
+  \draw [] (4) ..controls (309.65bp,60.846bp) and (309.65bp,46.917bp)  .. (3);
+  \draw [] (7) ..controls (466.65bp,60.846bp) and (466.65bp,46.917bp)  .. (5);
+  \draw [] (7) ..controls (521.07bp,63.432bp) and (556.04bp,47.002bp)  .. (6);
+%
+\end{tikzpicture}
+% End of code
+
+%
+\end{document}
+%
+
+

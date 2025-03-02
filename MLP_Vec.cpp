@@ -226,7 +226,7 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
         this->d_nest.back() = this->d.back();
     }
     
-    // STEP 4: Calculate the error term of each unit on each layer
+    // STEP 4: Calculate the error term of each unit on each layer -> backpropagation
     for (int i = network.size()-2; i > 0; i--) //for each layer (starting from the one before the output layer and ending at and including the layer right before the input layer)
     {
         for (int h = 0; h < layers[i]; h++) //for each neuron in layer i
@@ -292,6 +292,10 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
                 {
                     this->network[i][j].velocities[k] = this->theta*this->network[i][j].velocities[k] + this->eta*this->d[i][j]*this->values[i-1][k]; //step 1 & then 3 in NAG: compute momentum
                     this->network[i][j].weights[k] = this->network[i][j].weights[k] + this->network[i][j].velocities[k];
+                    
+                    
+                    //Effectively:
+                    //this->network[i][j].weights[k] = this->network[i][j].weights[k] + this->theta*this->network[i][j].velocities[k] + this->eta*this->d[i][j]*this->values[i-1][k];
                 }
                 else if (this->weight_update == "SR") //symbolic regression
                 {
