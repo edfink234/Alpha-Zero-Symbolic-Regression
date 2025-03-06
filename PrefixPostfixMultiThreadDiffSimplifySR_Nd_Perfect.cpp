@@ -929,6 +929,20 @@ struct Board
                 new_expression[op_idx] = "0"; //change '/' to '0'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
+            else if (new_expression[first_arg_idx_high] == "1") // / x 1 -> x (because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 1, then the whole second argument MUST be 1, therefore the expression reduces to / x 1, which is 1)
+            {
+                //puts("hi 301");
+                //erase the '1' at the end
+                if (first_arg_idx_high == static_cast<int>(new_expression.size()) - 1)
+                {
+                    new_expression.pop_back();
+                }
+                else
+                {
+                    new_expression.erase(new_expression.begin() + first_arg_idx_high, new_expression.end());
+                }
+                new_expression.erase(new_expression.begin() + op_idx); //erase the '*'
+            }
         }
         else
         {
@@ -1407,6 +1421,11 @@ struct Board
                 //puts("hi 286");
                 new_expression[first_arg_idx_low] = "0";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            }
+            else if (new_expression.back() == "1") // x 1 / -> x (because, since postfix operators come at the end, if the end of the second argument of '/' is 1, then the whole second argument MUST be 1, therefore the expression reduces to x 1 /, which is x)
+            {
+                //puts("hi 292");
+                new_expression.pop_back(); //erase the '1'
             }
             
             else
@@ -3026,6 +3045,7 @@ struct Board
                     }
                 }
             }
+            for (const auto& piece: this->pieces[jdx]){if (piece.find("nan") != std::string::npos) return score;}
         }
         //Then, if the expression(s) is/are not trivial, compute the score
         if (this->params.size())

@@ -224,6 +224,53 @@ contains
         end do
     end function linspace
 
+    function createMeshgridVectors(rows, cols, min_vec, max_vec) result(matrix)
+        implicit none
+        integer, intent(in) :: rows, cols
+        real, intent(in) :: min_vec(cols), max_vec(cols)
+        real, allocatable :: matrix(:,:)
+        real, allocatable :: linspaces(:,:)
+        integer, allocatable :: repeat_count(:)
+        integer :: total_combinations, col, i, j, repeat, index, num_repeats
+
+        ! Compute total number of combinations
+        total_combinations = rows**cols
+
+        ! Allocate matrix for output
+        allocate(matrix(total_combinations, cols))
+        allocate(linspaces(rows, cols))
+        allocate(repeat_count(cols))
+
+        ! Generate linspaces
+        do col = 1, cols
+            linspaces(:, col) = linspace(min_vec(col), max_vec(col), rows)
+        end do
+
+        ! Compute repeat_count for each column
+        repeat_count(cols) = 1
+        do col = cols - 1, 1, -1
+            repeat_count(col) = repeat_count(col + 1) * rows
+        end do
+
+        ! Fill the matrix
+        do col = 1, cols
+            num_repeats = total_combinations / (repeat_count(col) * rows)
+            index = 1
+            do repeat = 1, num_repeats
+                do i = 1, rows
+                    do j = 1, repeat_count(col)
+                        matrix(index, col) = linspaces(i, col)
+                        index = index + 1
+                    end do
+                end do
+            end do
+        end do
+
+        ! Clean up
+        deallocate(linspaces, repeat_count)
+
+    end function createMeshgridVectors
+
     function simplifyString(x) result(simplified)
         implicit none
         character(len=*), intent(in) :: x
@@ -655,6 +702,16 @@ program main
         min_vec(i) = 3
     end do
     print *, "isConstant(min_vec) = ", isConstant(min_vec, 3)
+
+
+    !TODO: createMeshgridVectors(10, 3, {0.1f, -1.1f, 0.1f}, {2.1f, 1.1f, 20.0f})
+    min_vec = (/ 0.0d0, 1.0d0, 2.0d0 /)
+    max_vec = (/ 10.0d0, 5.0d0, 8.0d0 /)
+    mat = createMeshgridVectors(10, 3, min_vec, max_vec);
+    print *, "createMeshgridVectors mat = "
+    do i = 1, size(mat, 1)
+        print *, mat(i, :)
+    end do
 
     deallocate(min_vec, max_vec, mat)
 
