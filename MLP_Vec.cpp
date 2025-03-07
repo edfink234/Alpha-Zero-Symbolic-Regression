@@ -282,7 +282,7 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
         for (int j = 0; j < layers[i]; j++) //for each neuron
         {
             //else...
-            for (int k = 0; k < layers[i-1]; k++) //weights
+            for (int k = 0; k < layers[i-1]; k++) //weights (number of neurons in previous layer i-1
             {
                 if (this->weight_update == "basic")
                 {

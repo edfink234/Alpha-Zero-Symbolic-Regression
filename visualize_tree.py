@@ -258,7 +258,7 @@ def plot_rpn_expression_tree(expression: list[str], block = False, save = False,
         print(f"Image file saved as {filename}")
         if tolatex:
             # Export to tex
-            replace_dict = {"MYTAU": r"\tau", "MYTHETA": r"\theta", "MYETA": r"\eta", "MYCDOT": r"\cdot"}
+            replace_dict = {"MYTAU": r"\tau", "MYTHETA": r"\theta", "MYETA": r"\eta", "MYCDOT": r"\cdot", "MYNESTEROV": r"\text{Nesterov}"}
             texcode = dot2tex.dot2tex(graph.to_string(),format='tikz',texmode='math',crop=True)
             for replacement in replace_dict:
                 texcode = texcode.replace(replacement, replace_dict[replacement])
@@ -324,10 +324,11 @@ def test_visualize():
     else:
 #        print(pn_to_infix(" - - + / ^ x 3 5 / ^ y 3 2 y x".split()))
 #        print(rpn_to_infix("y y x * * cos y +"))
-        file_names = ("GradientDescent", "HeavyBall")
+        file_names = ("GradientDescent", "HeavyBall", "Nesterov")
         
-        expressions = (r"w_{j,m,t=MYTAU-1} MYETA g_{j,m,t=MYTAU} MYCDOT +", r"w_{j,m,t=MYTAU} MYTHETA v_{j,m,t=MYTAU-1} MYCDOT MYETA g_{j,m,t=MYTAU} MYCDOT + +")
-        titles = (r"w_{j,m,t=MYTAU} = w_{j,m,t=MYTAU-1} + MYETA MYCDOT g_{j,m,t=MYTAU}", r"w_{j,m,t=MYTAU} = w_{j,m,t=MYTAU-1} + MYTHETA MYCDOT v_{j,m,t=MYTAU-1} + MYETA MYCDOT g_{j,m,t=MYTAU} ")
+        expressions = (r"w_{j,m,t=MYTAU-1} MYETA g_{j,m,t=MYTAU} MYCDOT +", r"w_{j,m,t=MYTAU} MYTHETA v_{j,m,t=MYTAU-1} MYCDOT MYETA g_{j,m,t=MYTAU} MYCDOT + +", r"w_{j,m,t=MYTAU} MYTHETA v_{j,m,t=MYTAU-1} MYCDOT MYETA d_{j}^{MYNESTEROV} y_{i,m,t=MYTAU} MYCDOT MYCDOT + +")
+        titles = (r"w_{j,m,t=MYTAU} = w_{j,m,t=MYTAU-1} + MYETA MYCDOT g_{j,m,t=MYTAU}", r"w_{j,m,t=MYTAU} = w_{j,m,t=MYTAU-1} + MYTHETA MYCDOT v_{j,m,t=MYTAU-1} + MYETA MYCDOT g_{j,m,t=MYTAU}", r"w_{j,m,t=MYTAU} = w_{j,m,t=MYTAU-1} + MYTHETA MYCDOT v_{j,m,t=MYTAU-1} + MYETA MYCDOT d_{j}^{MYNESTEROV} MYCDOT y_{i,m,t=MYTAU}")
+
         for file_name, expression, title in zip(file_names, expressions, titles):
             plot_rpn_expression_tree(expression = expression, block = False, save = True, filename = f"{file_name}.svg", title = title, tolatex=True, to_pdf=True)
             os.system(f"open -a Xcode {file_name}.tex")
