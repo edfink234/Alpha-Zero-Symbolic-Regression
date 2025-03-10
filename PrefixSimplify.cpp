@@ -222,7 +222,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             }
         }
         
-        else if ((expression[low] == "-") && ((step = (second_arg_idx_high - first_arg_idx_high)) == (first_arg_idx_high - first_arg_idx_low)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression)))
+        else if ((expression[low] == "-") && ((step = (second_arg_idx_high - first_arg_idx_high)) == (first_arg_idx_high - first_arg_idx_low)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) //- x x
         {
             //puts("hi 221");
             assert(new_expression[op_idx] == expression[low]);
@@ -309,6 +309,13 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
                 new_expression.erase(new_expression.begin() + first_arg_idx_high, new_expression.end());
             }
             new_expression.erase(new_expression.begin() + op_idx); //erase the '*'
+        }
+        else if ((expression[low] == "/") && ((step = (second_arg_idx_high - first_arg_idx_high)) == (first_arg_idx_high - first_arg_idx_low)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) // / x x
+        {
+            //puts("hi 315");
+            assert(new_expression[op_idx] == expression[low]);
+            new_expression[op_idx] = "1"; //change "-" to "1";
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.begin() + second_arg_idx_high);
         }
     }
     
@@ -1430,6 +1437,18 @@ int main()
     puts("");
     
     test_expr = {"sin", "arcsin", "/", "~", "*", "y", "y", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"/", "sin", "arcsin", "/", "~", "*", "y", "y", "x", "sin", "arcsin", "/", "~", "*", "y", "y", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"+", "*", "x", "x", "/", "sin", "arcsin", "/", "~", "*", "y", "y", "x", "sin", "arcsin", "/", "~", "*", "y", "y", "x"};
     printf("before: ");print_container(test_expr);
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);

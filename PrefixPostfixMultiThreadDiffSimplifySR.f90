@@ -415,6 +415,32 @@ contains
         loss_value = 1.0/(1.0 + MSE(actual))
     end function loss_func
 
+    function MSE_actual_predicted(actual, predicted, n) result(mse_value)
+        implicit none
+        integer, intent(in) :: n
+        real, intent(in) :: actual(n), predicted(n)
+        real :: mse_value
+
+        ! Compute Mean Squared Error (MSE)
+        mse_value = sum((actual - predicted) ** 2) / dble(n)
+
+    end function MSE_actual_predicted
+
+!    function loss_func_actual_predicted(actual, predicted, n) result(loss) !TODO: Uncomment
+!        implicit none
+!        integer, intent(in) :: n
+!        real, intent(in) :: actual(n), predicted(n)
+!        real :: loss
+!
+!        ! Compute Mean Squared Error (MSE)
+!        real :: mse
+!        mse = sum((actual - predicted) ** 2) / n
+!
+!        ! Compute the loss function
+!        loss = 1.0d0 / (1.0d0 + mse)
+!
+!    end function loss_func_actual_predicted
+
     function MSE_MATRIX(actual, n) result(mse)
         implicit none
         integer, intent(in) :: n  ! Number of vectors
@@ -737,6 +763,13 @@ program main
     do i = 1, size(new_matrix, 1)
         print *, new_matrix(i, :)
     end do
+
+    print *, "new_matrix(0, :)"
+    print *, new_matrix(0, :)
+    print *, "new_matrix(1, :)"
+    print *, new_matrix(1, :)
+    ! (1^2 + 1^2 + 1^2)/3 = 3/3 = 1
+    print *, "MSE_actual_predicted(new_matrix(0, :), new_matrix(1, :), 3):", MSE_actual_predicted(new_matrix(0, :), new_matrix(1, :), 3)
 
     ! Calculate elapsed time
     elapsed_time = time_elapsed(start_time)
