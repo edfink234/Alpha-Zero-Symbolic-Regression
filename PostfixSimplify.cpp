@@ -304,6 +304,27 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             new_expression.push_back(expression[up]);
         }
     }
+    else if (expression[up] == "^") //x y ^
+    {
+        int first_arg_idx_low = new_expression.size();
+        graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true); //x
+        int first_arg_idx_high = new_expression.size();
+        graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
+        int second_arg_idx_high = new_expression.size();
+        int step;
+        
+        if (new_expression.back() == "0") // x 0 ^ -> 1 (because, since postfix operators come at the end, if the end of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 ^, which is 1)
+        {
+            puts("hi 318");
+            new_expression[first_arg_idx_low] = "1";
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+        }
+        
+        else
+        {
+            new_expression.push_back(expression[up]);
+        }
+    }
     else
     {
         for (int i = low; i <= up; i++)
