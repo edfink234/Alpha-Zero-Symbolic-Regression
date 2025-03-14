@@ -1,0 +1,58 @@
+\documentclass{article}
+\usepackage[x11names, svgnames, rgb]{xcolor}
+\usepackage[utf8]{inputenc}
+\usepackage{tikz}
+\usetikzlibrary{snakes,arrows,shapes}
+\usepackage{amsmath}
+%
+%
+
+\usepackage[active,tightpage]{preview}
+\PreviewEnvironment{tikzpicture}
+\setlength\PreviewBorder{0pt}%
+
+%
+
+\begin{document}
+\pagestyle{empty}
+%
+%
+%
+
+\enlargethispage{100cm}
+% Start of code
+\begin{tikzpicture}[>=latex',line join=bevel,]
+%%
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (519.88bp,336.25bp) node {$w_{j,m,t=\tau} = w_{j,m,t=\tau-1} + \frac{\eta \cdot g_{j,m,t=\tau}}{\sqrt{E\left[g_{j,m}^2\right]_{t=\tau} + \epsilon}}$};
+\end{scope}
+  \node (10) at (435.95bp,306.0bp) [draw,ellipse] {$+$};
+  \node (1) at (364.95bp,234.0bp) [draw,ellipse] {$w_{j,m,t=\tau-1}$};
+  \node (9) at (506.95bp,234.0bp) [draw,ellipse] {$/$};
+  \node (4) at (425.95bp,162.0bp) [draw,ellipse] {$\cdot$};
+  \node (8) at (587.95bp,162.0bp) [draw,ellipse] {$\sqrt{}$};
+  \node (2) at (291.95bp,90.0bp) [draw,ellipse] {$\eta$};
+  \node (3) at (440.95bp,90.0bp) [draw,ellipse] {$g_{j,m,t=\tau}$};
+  \node (7) at (587.95bp,90.0bp) [draw,ellipse] {$+$};
+  \node (5) at (446.95bp,18.0bp) [draw,ellipse] {$E\left[g_{j,m}^2\right]_{t=\tau}$};
+  \node (6) at (728.95bp,18.0bp) [draw,ellipse] {$\epsilon$};
+  \draw [] (10) ..controls (409.86bp,279.28bp) and (394.09bp,263.74bp)  .. (1);
+  \draw [] (10) ..controls (462.84bp,278.48bp) and (480.07bp,261.49bp)  .. (9);
+  \draw [] (9) ..controls (477.57bp,207.62bp) and (458.5bp,191.13bp)  .. (4);
+  \draw [] (9) ..controls (535.95bp,207.93bp) and (554.35bp,192.04bp)  .. (8);
+  \draw [] (4) ..controls (374.72bp,134.24bp) and (341.36bp,116.81bp)  .. (2);
+  \draw [] (4) ..controls (431.98bp,132.85bp) and (434.96bp,118.92bp)  .. (3);
+  \draw [] (8) ..controls (587.95bp,132.85bp) and (587.95bp,118.92bp)  .. (7);
+  \draw [] (7) ..controls (544.33bp,67.345bp) and (508.32bp,49.468bp)  .. (5);
+  \draw [] (7) ..controls (632.72bp,66.773bp) and (671.3bp,47.62bp)  .. (6);
+%
+\end{tikzpicture}
+% End of code
+
+%
+\end{document}
+%
+
+

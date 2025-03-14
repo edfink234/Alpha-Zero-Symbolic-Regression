@@ -1,0 +1,44 @@
+\documentclass{article}
+\usepackage[x11names, svgnames, rgb]{xcolor}
+\usepackage[utf8]{inputenc}
+\usepackage{tikz}
+\usetikzlibrary{snakes,arrows,shapes}
+\usepackage{amsmath}
+%
+%
+
+\usepackage[active,tightpage]{preview}
+\PreviewEnvironment{tikzpicture}
+\setlength\PreviewBorder{0pt}%
+
+%
+
+\begin{document}
+\pagestyle{empty}
+%
+%
+%
+
+\enlargethispage{100cm}
+% Start of code
+\begin{tikzpicture}[>=latex',line join=bevel,]
+%%
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (472.01bp,120.25bp) node {$w_{j,m,t=\tau} = w_{j,m,t=\tau-1} - \Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j,m,t=\tau}$};
+\end{scope}
+  \node (3) at (336.9bp,90.0bp) [draw,ellipse] {$-$};
+  \node (1) at (96.902bp,18.0bp) [draw,ellipse] {$w_{j,m,t=\tau-1}$};
+  \node (2) at (577.9bp,18.0bp) [draw,ellipse] {$\Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j,m,t=\tau}$};
+  \draw [] (3) ..controls (273.96bp,70.641bp) and (197.85bp,48.443bp)  .. (1);
+  \draw [] (3) ..controls (397.95bp,71.267bp) and (468.16bp,50.876bp)  .. (2);
+%
+\end{tikzpicture}
+% End of code
+
+%
+\end{document}
+%
+
+
