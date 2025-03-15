@@ -426,20 +426,20 @@ contains
 
     end function MSE_actual_predicted
 
-!    function loss_func_actual_predicted(actual, predicted, n) result(loss) !TODO: Uncomment
-!        implicit none
-!        integer, intent(in) :: n
-!        real, intent(in) :: actual(n), predicted(n)
-!        real :: loss
-!
-!        ! Compute Mean Squared Error (MSE)
-!        real :: mse
-!        mse = sum((actual - predicted) ** 2) / n
-!
-!        ! Compute the loss function
-!        loss = 1.0d0 / (1.0d0 + mse)
-!
-!    end function loss_func_actual_predicted
+    function loss_func_actual_predicted(actual, predicted, n) result(loss) !TODO: Uncomment
+        implicit none
+        integer, intent(in) :: n
+        real, intent(in) :: actual(n), predicted(n)
+        real :: loss
+
+        ! Compute Mean Squared Error (MSE)
+        real :: mse
+        mse = sum((actual - predicted) ** 2) / n
+
+        ! Compute the loss function
+        loss = 1.0d0 / (1.0d0 + mse)
+
+    end function loss_func_actual_predicted
 
     function MSE_MATRIX(actual, n) result(mse)
         implicit none
@@ -729,8 +729,6 @@ program main
     end do
     print *, "isConstant(min_vec) = ", isConstant(min_vec, 3)
 
-
-    !TODO: createMeshgridVectors(10, 3, {0.1f, -1.1f, 0.1f}, {2.1f, 1.1f, 20.0f})
     min_vec = (/ 0.0d0, 1.0d0, 2.0d0 /)
     max_vec = (/ 10.0d0, 5.0d0, 8.0d0 /)
     mat = createMeshgridVectors(10, 3, min_vec, max_vec);
@@ -770,6 +768,7 @@ program main
     print *, new_matrix(1, :)
     ! (1^2 + 1^2 + 1^2)/3 = 3/3 = 1
     print *, "MSE_actual_predicted(new_matrix(0, :), new_matrix(1, :), 3):", MSE_actual_predicted(new_matrix(0, :), new_matrix(1, :), 3)
+    print *, "loss_func_actual_predicted(new_matrix(0, :), new_matrix(1, :), 3):", loss_func_actual_predicted(new_matrix(0, :), new_matrix(1, :), 3)
 
     ! Calculate elapsed time
     elapsed_time = time_elapsed(start_time)

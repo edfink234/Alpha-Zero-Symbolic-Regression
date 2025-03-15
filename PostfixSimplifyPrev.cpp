@@ -216,7 +216,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             }
         }
         
-        else if ((expression[up] == "-") && ((step = (first_arg_idx_high - first_arg_idx_low)) == (second_arg_idx_high - first_arg_idx_high)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression)))
+        else if ((expression[up] == "-") && ((step = (first_arg_idx_high - first_arg_idx_low)) == (second_arg_idx_high - first_arg_idx_high)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) //- x x -> 0
         {
             //puts("hi 215");
             new_expression[first_arg_idx_low] = "0"; //change first symbol of x to 0
@@ -291,6 +291,33 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         {
             //puts("hi 292");
             new_expression.pop_back(); //erase the '1'
+        }
+        else if ((expression[up] == "/") && ((step = (first_arg_idx_high - first_arg_idx_low)) == (second_arg_idx_high - first_arg_idx_high)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) // / x x -> 1
+        {
+            //puts("hi 297");
+            new_expression[first_arg_idx_low] = "1"; //change first symbol of x to 1
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.begin() + second_arg_idx_high); //erase the rest of x and y
+        }
+        
+        else
+        {
+            new_expression.push_back(expression[up]);
+        }
+    }
+    else if (expression[up] == "^") //x y ^
+    {
+        int first_arg_idx_low = new_expression.size();
+        graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true); //x
+        int first_arg_idx_high = new_expression.size();
+        graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
+        int second_arg_idx_high = new_expression.size();
+        int step;
+        
+        if (new_expression.back() == "0") // x 0 ^ -> 1 (because, since postfix operators come at the end, if the end of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 ^, which is 1)
+        {
+            //puts("hi 318");
+            new_expression[first_arg_idx_low] = "1";
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
         }
         
         else
@@ -1405,10 +1432,32 @@ int main()
     printf("after: ");print_container(test_expr);
     puts("");
     
+    test_expr = {"1", "x", "x", "+", "tanh", "x", "*", "*", "1", "x", "x", "+", "tanh", "x", "*", "*", "/"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "x", "*", "1", "x", "x", "+", "tanh", "x", "*", "*", "1", "x", "x", "+", "tanh", "x", "*", "*", "/", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "1", "x", "x", "+", "asin", "x", "*", "*", "*", "0", "^"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "x", "*", "1", "x", "x", "+", "tanh", "0", "^", "x", "*", "*", "1", "x", "x", "+", "tanh", "x", "*", "*", "/", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
 }
 
 //g++ -std=c++20 -o PostfixSimplifyPrev PostfixSimplifyPrev.cpp
-
 
 //https://stackoverflow.com/questions/20153412/simplification-algorithm-for-reverse-polish-notation
 //https://dl.acm.org/

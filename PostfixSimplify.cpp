@@ -315,7 +315,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         
         if (new_expression.back() == "0") // x 0 ^ -> 1 (because, since postfix operators come at the end, if the end of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 ^, which is 1)
         {
-            puts("hi 318");
+            //puts("hi 318");
             new_expression[first_arg_idx_low] = "1";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
         }
@@ -1438,8 +1438,19 @@ int main()
     printf("after: ");print_container(test_expr);
     puts("");
     
-    
     test_expr = {"x", "x", "*", "1", "x", "x", "+", "tanh", "x", "*", "*", "1", "x", "x", "+", "tanh", "x", "*", "*", "/", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "1", "x", "x", "+", "asin", "x", "*", "*", "*", "0", "^"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "x", "*", "1", "x", "x", "+", "tanh", "0", "^", "x", "*", "*", "1", "x", "x", "+", "tanh", "x", "*", "*", "/", "*"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
@@ -1447,7 +1458,6 @@ int main()
 }
 
 //g++ -std=c++20 -o PostfixSimplify PostfixSimplify.cpp
-
 
 //https://stackoverflow.com/questions/20153412/simplification-algorithm-for-reverse-polish-notation
 //https://dl.acm.org/

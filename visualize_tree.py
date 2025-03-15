@@ -338,7 +338,7 @@ def test_visualize():
 #                plot_rpn_expression_tree(['x0', 'tanh', '4', '*', 'cos'], block=True, save = save)
 #                plot_rpn_expression_tree(['x0', '0.999487', '+', '4.176018', '4', 'sech', '-', '^'], block=True, save = save)
 #                plot_pn_expression_tree("^ + x0 0.999487 - 4.176018 sech 4".split(), block=True, save = save)
-#                plot_pn_expression_tree("+ + - * ^ 20.000000 / x1 ~ exp x0 * 2.995732 / - ~ exp x0 0 * ~ exp x0 ~ exp x0 * -0.214359 * ^ 20.000000 / x1 ~ exp x0 * 2.995732 / ~ * x1 ~ exp x0 * ~ exp x0 ~ exp x0 / * 0.001370 ^ 20.000000 / x1 ~ exp x0 + 1.244282 ^ 20.000000 / x1 ~ exp x0 * * 1.238819 ^ 20.000000 / x1 ~ exp x0 sech exp * 0.805109 + x0 x1".split(), block=True, save = save)
+                plot_rpn_expression_tree("x x * 1 x x + tanh 0 ^ x * * 1 x x + tanh x * * / * ".split(), block=True, save = save)
                 
     
 
