@@ -335,6 +335,12 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "1"; //change '^' to '1'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
+        else if (new_expression[first_arg_idx_low] == "0") // ^ 0 x -> 0 (x > 0 assumed)
+        {
+            puts("hi 340");
+            new_expression[op_idx] = "0"; //change '^' to '0'
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
         
     }
     
@@ -522,18 +528,18 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                     
                     else if (expression[i] == "^")
                     {
-                        if (expression[i+1] == "0" && is_const(expression[i+2])) // ^ 0 x -> 0
+                        if (expression[i+2] == "0" && is_const(expression[i+1])) // ^ x 0 -> 1
                         {
-                            //puts("hi 215");
-                            expression[i] = "0";
+                            //puts("hi 223");
+                            expression[i] = "1";
                             expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+2] == "0" && is_const(expression[i+1])) // ^ x 0 -> 1
+                        else if (expression[i+1] == "0" && is_const(expression[i+2])) // ^ 0 x -> 0 (x > 0)
                         {
-                            //puts("hi 223");
-                            expression[i] = "1";
+                            //puts("hi 215");
+                            expression[i] = "0";
                             expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                             simplified = true;
                             break;
@@ -1480,6 +1486,18 @@ int main()
     puts("");
     
     test_expr = {"^", "*", "1", "+", "tanh", "x", "x", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"^", "0", "*", "tanh", "cos", "x", "1"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"sin", "arcsin", "^", "0", "*", "y", "y"};
     printf("before: ");print_container(test_expr);
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);

@@ -426,7 +426,7 @@ contains
 
     end function MSE_actual_predicted
 
-    function loss_func_actual_predicted(actual, predicted, n) result(loss) !TODO: Uncomment
+    function loss_func_actual_predicted(actual, predicted, n) result(loss) 
         implicit none
         integer, intent(in) :: n
         real, intent(in) :: actual(n), predicted(n)
