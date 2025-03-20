@@ -344,7 +344,7 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
                     this->network[i][j].v[k] = this->beta_2*this->network[i][j].v[k] + (1-this->beta_2)*g_t_k*g_t_k;
                     float m_t_k_hat = this->network[i][j].m[k]/(1-pow(this->beta_1, t));
                     float v_t_k_hat = this->network[i][j].v[k]/(1-pow(this->beta_2, t));
-                    this->network[i][j].weights[k] = this->network[i][j].weights[k] + (this->eta * m_t_k_hat) / (sqrt(v_t_k_hat) + this->epsilon);
+                    this->network[i][j].weights[k] = this->network[i][j].weights[k] + (this->eta * m_t_k_hat) / (sqrt(v_t_k_hat + this->epsilon));
                 }
                 else if (this->weight_update == "AdamW")
                 {
@@ -354,7 +354,7 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
                     float m_t_k_hat = this->network[i][j].m[k]/(1-pow(this->beta_1, t));
                     float v_t_k_hat = this->network[i][j].v[k]/(1-pow(this->beta_2, t));
                     float temp_weight_k = this->network[i][j].weights[k] + this->eta*((this->network[i][j].prev_weights[k]/this->t) +
-                    ((m_t_k_hat) / (sqrt(v_t_k_hat) + this->epsilon))); //the updated weight, setting weight decay to 1/\tau_{\mathrm{iter}} (sort of) as in https://arxiv.org/html/2405.13698v1
+                    ((m_t_k_hat) / (sqrt(v_t_k_hat + this->epsilon)))); //the updated weight, setting weight decay to 1/\tau_{\mathrm{iter}} (sort of) as in https://arxiv.org/html/2405.13698v1
                     this->network[i][j].prev_weights[k] = this->network[i][j].weights[k];
                     this->network[i][j].weights[k] = temp_weight_k;
                 }

@@ -1,0 +1,58 @@
+\documentclass{article}
+\usepackage[x11names, svgnames, rgb]{xcolor}
+\usepackage[utf8]{inputenc}
+\usepackage{tikz}
+\usetikzlibrary{snakes,arrows,shapes}
+\usepackage{amsmath}
+%
+%
+
+\usepackage[active,tightpage]{preview}
+\PreviewEnvironment{tikzpicture}
+\setlength\PreviewBorder{0pt}%
+
+%
+
+\begin{document}
+\pagestyle{empty}
+%
+%
+%
+
+\enlargethispage{100cm}
+% Start of code
+\begin{tikzpicture}[>=latex',line join=bevel,]
+%%
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (410.75bp,336.25bp) node {$w_{j,m,t=\tau} = w_{j,m,t=\tau-1} + \frac{\eta \cdot \widehat{\mu}_{j,m,t=\tau}}{\sqrt{\widehat{\nu}_{j,m,t=\tau} + \epsilon}}$};
+\end{scope}
+  \node (10) at (349.13bp,306.0bp) [draw,ellipse] {$+$};
+  \node (1) at (278.13bp,234.0bp) [draw,ellipse] {$w_{j,m,t=\tau-1}$};
+  \node (9) at (420.13bp,234.0bp) [draw,ellipse] {$/$};
+  \node (4) at (339.13bp,162.0bp) [draw,ellipse] {$\cdot$};
+  \node (8) at (501.13bp,162.0bp) [draw,ellipse] {$\sqrt{}$};
+  \node (2) at (231.13bp,90.0bp) [draw,ellipse] {$\eta$};
+  \node (3) at (363.13bp,90.0bp) [draw,ellipse] {$\widehat{\mu}_{j,m,t=\tau}$};
+  \node (7) at (501.13bp,90.0bp) [draw,ellipse] {$+$};
+  \node (5) at (426.13bp,18.0bp) [draw,ellipse] {$\widehat{\nu}_{j,m,t=\tau}$};
+  \node (6) at (576.13bp,18.0bp) [draw,ellipse] {$\epsilon$};
+  \draw [] (10) ..controls (323.04bp,279.28bp) and (307.28bp,263.74bp)  .. (1);
+  \draw [] (10) ..controls (376.02bp,278.48bp) and (393.26bp,261.49bp)  .. (9);
+  \draw [] (9) ..controls (390.75bp,207.62bp) and (371.68bp,191.13bp)  .. (4);
+  \draw [] (9) ..controls (449.13bp,207.93bp) and (467.53bp,192.04bp)  .. (8);
+  \draw [] (4) ..controls (297.17bp,133.81bp) and (272.09bp,117.55bp)  .. (2);
+  \draw [] (4) ..controls (348.78bp,132.85bp) and (353.56bp,118.92bp)  .. (3);
+  \draw [] (8) ..controls (501.13bp,132.85bp) and (501.13bp,118.92bp)  .. (7);
+  \draw [] (7) ..controls (473.79bp,63.489bp) and (456.72bp,47.551bp)  .. (5);
+  \draw [] (7) ..controls (528.46bp,63.489bp) and (545.54bp,47.551bp)  .. (6);
+%
+\end{tikzpicture}
+% End of code
+
+%
+\end{document}
+%
+
+

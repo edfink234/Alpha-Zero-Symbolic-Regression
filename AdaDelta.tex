@@ -26,13 +26,25 @@
 \begin{scope}
   \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
   \pgfsetstrokecolor{strokecol}
-  \draw (472.01bp,120.25bp) node {$w_{j,m,t=\tau} = w_{j,m,t=\tau-1} - \Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j,m,t=\tau}$};
+  \draw (402.5bp,264.25bp) node {$w_{j,m,t=\tau} = w_{j,m,t=\tau-1} - \Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j,m,t=\tau}$};
 \end{scope}
-  \node (3) at (336.9bp,90.0bp) [draw,ellipse] {$-$};
-  \node (1) at (96.902bp,18.0bp) [draw,ellipse] {$w_{j,m,t=\tau-1}$};
-  \node (2) at (577.9bp,18.0bp) [draw,ellipse] {$\Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j,m,t=\tau}$};
-  \draw [] (3) ..controls (273.96bp,70.641bp) and (197.85bp,48.443bp)  .. (1);
-  \draw [] (3) ..controls (397.95bp,71.267bp) and (468.16bp,50.876bp)  .. (2);
+  \node (12) at (403.69bp,234.0bp) [draw,ellipse] {$+$};
+  \node (6) at (355.69bp,162.0bp) [draw,ellipse] {$\cdot$};
+  \node (11) at (451.69bp,162.0bp) [draw,ellipse] {$/$};
+  \node (4) at (254.69bp,90.0bp) [draw,ellipse] {$\eta$};
+  \node (5) at (358.69bp,90.0bp) [draw,ellipse] {$MYMU$};
+  \node (9) at (449.69bp,90.0bp) [draw,ellipse] {$+$};
+  \node (10) at (544.69bp,90.0bp) [draw,ellipse] {$\sqrt$};
+  \node (7) at (388.69bp,18.0bp) [draw,ellipse] {$MYNU$};
+  \node (8) at (510.69bp,18.0bp) [draw,ellipse] {$\epsilon$};
+  \draw [] (12) ..controls (385.16bp,205.98bp) and (374.97bp,191.13bp)  .. (6);
+  \draw [] (12) ..controls (422.43bp,205.66bp) and (432.99bp,190.26bp)  .. (11);
+  \draw [] (6) ..controls (316.3bp,133.7bp) and (293.13bp,117.64bp)  .. (4);
+  \draw [] (6) ..controls (356.89bp,132.85bp) and (357.49bp,118.92bp)  .. (5);
+  \draw [] (11) ..controls (450.88bp,132.85bp) and (450.48bp,118.92bp)  .. (9);
+  \draw [] (11) ..controls (484.65bp,136.19bp) and (507.25bp,119.18bp)  .. (10);
+  \draw [] (9) ..controls (426.5bp,62.391bp) and (412.89bp,46.776bp)  .. (7);
+  \draw [] (9) ..controls (472.73bp,62.552bp) and (486.1bp,47.215bp)  .. (8);
 %
 \end{tikzpicture}
 % End of code
