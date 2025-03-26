@@ -968,7 +968,12 @@ struct Board
                 new_expression[op_idx] = "1"; //change '^' to '1'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
-            
+            else if (new_expression[first_arg_idx_low] == "0") // ^ 0 x -> 0 (x > 0 assumed)
+            {
+                //puts("hi 340");
+                new_expression[op_idx] = "0"; //change '^' to '0'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
         }
         else
         {
@@ -1154,18 +1159,18 @@ struct Board
                         
                         else if (expression[i] == "^")
                         {
-                            if (expression[i+1] == "0" && is_const(expression[i+2])) // ^ 0 x -> 0
+                            if (expression[i+2] == "0" && is_const(expression[i+1])) // ^ x 0 -> 1
                             {
-                                //puts("hi 215");
-                                expression[i] = "0";
+                                //puts("hi 223");
+                                expression[i] = "1";
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i+2] == "0" && is_const(expression[i+1])) // ^ x 0 -> 1
+                            else if (expression[i+1] == "0" && is_const(expression[i+2])) // ^ 0 x -> 0 (x > 0)
                             {
-                                //puts("hi 223");
-                                expression[i] = "1";
+                                //puts("hi 215");
+                                expression[i] = "0";
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                                 simplified = true;
                                 break;
@@ -1479,7 +1484,12 @@ struct Board
                 new_expression[first_arg_idx_low] = "1";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
             }
-            
+            else if (new_expression[first_arg_idx_high - 1] == "0") //0 x ^ -> 0 (because, since postfix operators come at the end, if the end of the first argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to 0 x ^, which is 0) (assume x > 0)
+            {
+                //puts("hi 324");
+                new_expression[first_arg_idx_low] = "0";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            }
             else
             {
                 new_expression.push_back(expression[up]);
@@ -1669,18 +1679,18 @@ struct Board
                         
                         else if (expression[i] == "^")
                         {
-                            if (expression[i-2] == "0" && is_const(expression[i-1])) // "0 x ^" -> "0"
+                            if (expression[i-1] == "0" && is_const(expression[i-2])) // "x 0 ^" -> "1"
                             {
-                                //puts("hi 215");
-                                expression[i] = "0";
+                                //puts("hi 223");
+                                expression[i] = "1";
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i-1] == "0" && is_const(expression[i-2])) // "x 0 ^" -> "1"
+                            else if (expression[i-2] == "0" && is_const(expression[i-1])) // "0 x ^" -> "0" (x > 0)
                             {
-                                //puts("hi 223");
-                                expression[i] = "1";
+                                //puts("hi 215");
+                                expression[i] = "0";
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
                                 break;
@@ -6502,7 +6512,7 @@ int main()
     
 //    std::cout<<data << '\n' << (Eigen::VectorXf::Ones(5).array() / Eigen::VectorXf::Zero(5).array()).cos() /*Eigen::VectorXf::Zero(5).array().pow(Eigen::VectorXf::Ones(5).array())*/ << '\n';
     
-    RandomSearch(VortexRadialProfile /*differential equation to solve*/, VortexRadialProfileSetter /*helper function to set constants that the solution may contain*/,  data /*data used to solve differential equation*/, std::vector<int>{20} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
+    RandomSearch(VortexRadialProfile /*differential equation to solve*/, VortexRadialProfileSetter /*helper function to set constants that the solution may contain*/,  data /*data used to solve differential equation*/, std::vector<int>{10} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
     
     return 0;
 }

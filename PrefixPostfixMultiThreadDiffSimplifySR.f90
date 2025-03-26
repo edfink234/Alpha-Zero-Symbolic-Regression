@@ -370,6 +370,63 @@ contains
         END DO
     END SUBROUTINE GB
 
+!    RECURSIVE subroutine GB(z, ind, individual, n, expression_type)
+!        implicit none
+!        integer, intent(inout) :: ind
+!        integer, intent(in)    :: z, n
+!        character(len=*), intent(in) :: individual(n)
+!        character(len=*), intent(in) :: expression_type
+!        INTEGER :: remaining_z
+!
+!        do while (remaining_z > 0)
+!            ! Move forward for prefix, backward for postfix
+!            if (expression_type == 'prefix') then
+!                ind = ind + 1
+!            else if (expression_type == 'postfix') then
+!                ind = ind - 1
+!            end if
+!
+!            ! Recurse if the current symbol is unary or binary
+!            if (is_unary(individual(ind))) then
+!                call GB(1, ind, individual, n, expression_type)
+!            else if (is_binary(individual(ind))) then
+!                call GB(2, ind, individual, n, expression_type)
+!            end if
+!
+!            remaining_z = remaining_z - 1
+!        end do
+!    end subroutine GB
+
+    integer function GR(i, individual, expression_type) result(gr_value)
+        implicit none
+        integer, intent(in)    :: i
+        character(len=*), dimension(:), intent(in) :: individual
+        character(len=*), intent(in) :: expression_type
+
+        integer :: start, ptr_lgb
+
+        start   = i
+        ptr_lgb = start
+
+        ! If current symbol is unary, parse 1 operand; if binary, parse 2 operands
+        if (is_unary(individual(i))) then
+            call GB(1, ptr_lgb, individual, expression_type)
+        else if (is_binary(individual(i))) then
+            call GB(2, ptr_lgb, individual, expression_type)
+        end if
+
+        ! For prefix, final difference is (ptr_lgb - i)
+        ! For postfix, final difference is (i - ptr_lgb)
+        if (expression_type == 'prefix') then
+            gr_value = ptr_lgb - i
+        else if (expression_type == 'postfix') then
+            gr_value = i - ptr_lgb
+        else
+            gr_value = 0
+        end if
+
+    end function GR
+
     function areExpressionRangesEqual(start_idx_1, start_idx_2, num_steps, expression) result(is_equal)
         implicit none
         integer, intent(in) :: start_idx_1, start_idx_2, num_steps
@@ -705,6 +762,7 @@ program main
     PRINT *, "Expression: "
     call print_container(individual)
     PRINT *, "areExpressionRangesEqual(1, 8, 6, individual) = ", areExpressionRangesEqual(1, 8, 6, individual)
+    DEALLOCATE(individual)
 
     rows = 5
     cols = 3
@@ -769,6 +827,35 @@ program main
     ! (1^2 + 1^2 + 1^2)/3 = 3/3 = 1
     print *, "MSE_actual_predicted(new_matrix(0, :), new_matrix(1, :), 3):", MSE_actual_predicted(new_matrix(0, :), new_matrix(1, :), 3)
     print *, "loss_func_actual_predicted(new_matrix(0, :), new_matrix(1, :), 3):", loss_func_actual_predicted(new_matrix(0, :), new_matrix(1, :), 3)
+
+    ALLOCATE(individual(12))
+
+    individual = [ &
+        '+  ', &
+        '-  ', '+  ', 'x  ', 'y  ', 'z  ', &
+        'cos', '-  ', '+  ', 'x  ', 'y  ', 'z  ' &
+    ]
+
+    print *, ""
+    print *, "=== Test: Prefix expression (+ - + x y z cos - + x y z) ==="
+    do i = 1, 12
+        print *, "Element: ", individual(i), "  GR(i): ", GR(i, individual, 'prefix')
+    end do
+
+    individual = [&
+        'x  ', 'y  ', '+  ', 'z  ', '-  ', &
+        'x  ', 'y  ', '+  ', 'z  ', '-  ', 'cos', &
+        '+  ' &
+    ]
+
+    print *, ""
+    print *, "=== Test: Postfix expression (x y + z - x y + z - cos +) ==="
+    do i = 1, 12
+        print *, "Element: ", individual(i), "  GR(i): ", GR(i, individual, 'postfix')
+    end do
+
+
+    DEALLOCATE(individual)
 
     ! Calculate elapsed time
     elapsed_time = time_elapsed(start_time)
