@@ -308,7 +308,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             {
                 new_expression.erase(new_expression.begin() + first_arg_idx_high, new_expression.end());
             }
-            new_expression.erase(new_expression.begin() + op_idx); //erase the '*'
+            new_expression.erase(new_expression.begin() + op_idx); //erase the '/'
         }
         else if ((expression[low] == "/") && ((step = (second_arg_idx_high - first_arg_idx_high)) == (first_arg_idx_high - first_arg_idx_low)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) // / x x
         {
@@ -340,6 +340,20 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             //puts("hi 340");
             new_expression[op_idx] = "0"; //change '^' to '0'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
+        else if (new_expression[first_arg_idx_high] == "1") // ^ x 1 -> x (because, since prefix operators come at the beginning, if the beginning of the second argument of '^' is 1, then the whole second argument MUST be 1, therefore the expression reduces to ^ x 1, which is 1)
+        {
+            puts("hi 346");
+            //erase the '1' at the end
+            if (first_arg_idx_high == static_cast<int>(new_expression.size()) - 1)
+            {
+                new_expression.pop_back();
+            }
+            else
+            {
+                new_expression.erase(new_expression.begin() + first_arg_idx_high, new_expression.end());
+            }
+            new_expression.erase(new_expression.begin() + op_idx); //erase the '^'
         }
     }
     
@@ -1500,6 +1514,18 @@ int main()
     printf("before: ");print_container(test_expr);
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"^", "sin", "arcsin", "^", "x", "*", "y", "y", "1"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"^", "+", "x", "-", "0", "+", "x", "+", "x", "x", "1"}; //(x + (0 - (x+x+x))) ^ 1 = (-2x)
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr); //+ x ~ + x + x x = -(x+x+x)+x = (-2x)
     puts("");
 }
 
