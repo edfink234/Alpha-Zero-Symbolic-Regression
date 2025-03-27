@@ -13,7 +13,6 @@ Perceptron::Perceptron(int inputs, float bias, const std::string& output_type)
 
     // Use Eigen's random number generation to initialize the weights
     this->weights = Eigen::VectorXf::Random(inputs);
-    this->prev_weights = Eigen::VectorXf::Zero(inputs); //Used for AdamW
     this->velocities = Eigen::VectorXf::Random(inputs);
     this->v = Eigen::VectorXf::Zero(inputs); //2nd moment vector for Adam
     this->m = Eigen::VectorXf::Zero(inputs); //1st moment vector for Adam
@@ -62,7 +61,7 @@ float Perceptron::scale_between(float unscaled_num, float min, float max, float 
 
 
 // Return a new MultiLayerPerceptron object with the specified parameters.
-MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, std::deque<std::string> layer_types, float bias, float eta, float theta, float gamma, const std::string& weight_update, const std::string& expression_type, float epsilon, float beta_1, float beta_2)
+MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, std::deque<std::string> layer_types, float bias, float eta, float theta, float gamma, const std::string& weight_update, const std::string& expression_type, float epsilon, float beta_1, float beta_2, float lambda)
 {
     // Set up the signal handler
     signal(SIGINT, signalHandler);
@@ -84,6 +83,7 @@ MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, std::deque<s
     this->gamma = gamma;
     this->beta_1 = beta_1;
     this->beta_2 = beta_2;
+    this->lambda = lambda;
     this->t = 0; //used in Adam
 
     size_t mlp_sz = this->layers.size();
@@ -311,10 +311,7 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
                     float m_t_k_hat = this->network[i][j].m[k]/(1-pow(this->beta_1, t));
                     float v_t_k_hat = this->network[i][j].v[k]/(1-pow(this->beta_2, t));
                     
-                    float temp_weight_k = this->expression_evaluator(this->network[i][j].weights[k], this->d[i][j], this->values[i-1][k], this->d_nest[i][j], this->network[i][j].velocities[k], this->network[i][j].gradients[k], g_t_k, this->network[i][j].expt_grad_squared[k], delta_w_t_k, this->network[i][j].expt_weight_squared[k], delta_w_t_k_ada_delta, this->network[i][j].m[k], this->network[i][j].v[k], m_t_k_hat, v_t_k_hat, this->network[i][j].prev_weights[k]);
-                    
-                    this->network[i][j].prev_weights[k] = this->network[i][j].weights[k];
-                    this->network[i][j].weights[k] = temp_weight_k;
+                    this->network[i][j].weights[k] = this->expression_evaluator(this->network[i][j].weights[k], this->d[i][j], this->values[i-1][k], this->d_nest[i][j], this->network[i][j].velocities[k], this->network[i][j].gradients[k], g_t_k, this->network[i][j].expt_grad_squared[k], delta_w_t_k, this->network[i][j].expt_weight_squared[k], delta_w_t_k_ada_delta, this->network[i][j].m[k], this->network[i][j].v[k], m_t_k_hat, v_t_k_hat);
                 }
                 else if (this->weight_update == "AdaGrad")
                 {
@@ -344,7 +341,7 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
                     this->network[i][j].v[k] = this->beta_2*this->network[i][j].v[k] + (1-this->beta_2)*g_t_k*g_t_k;
                     float m_t_k_hat = this->network[i][j].m[k]/(1-pow(this->beta_1, t));
                     float v_t_k_hat = this->network[i][j].v[k]/(1-pow(this->beta_2, t));
-                    this->network[i][j].weights[k] = this->network[i][j].weights[k] + (this->eta * m_t_k_hat) / (sqrt(v_t_k_hat + this->epsilon));
+                    this->network[i][j].weights[k] = this->network[i][j].weights[k] + (this->eta * m_t_k_hat) / (sqrt(v_t_k_hat) + this->epsilon);
                 }
                 else if (this->weight_update == "AdamW")
                 {
@@ -353,10 +350,8 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
                     this->network[i][j].v[k] = this->beta_2*this->network[i][j].v[k] + (1-this->beta_2)*g_t_k*g_t_k;
                     float m_t_k_hat = this->network[i][j].m[k]/(1-pow(this->beta_1, t));
                     float v_t_k_hat = this->network[i][j].v[k]/(1-pow(this->beta_2, t));
-                    float temp_weight_k = this->network[i][j].weights[k] + this->eta*((this->network[i][j].prev_weights[k]/this->t) +
-                    ((m_t_k_hat) / (sqrt(v_t_k_hat + this->epsilon)))); //the updated weight, setting weight decay to 1/\tau_{\mathrm{iter}} (sort of) as in https://arxiv.org/html/2405.13698v1
-                    this->network[i][j].prev_weights[k] = this->network[i][j].weights[k];
-                    this->network[i][j].weights[k] = temp_weight_k;
+                    this->network[i][j].weights[k] = this->network[i][j].weights[k] + this->eta*((this->network[i][j].weights[k]*this->lambda) +
+                    (m_t_k_hat / (sqrt(v_t_k_hat) + this->epsilon))); //see https://arxiv.org/html/2405.13698v1 for some discussion on how to set the weight decay lambda
                 }
 
             }
@@ -443,7 +438,7 @@ std::vector<Eigen::VectorXf> MultiLayerPerceptron::sigmoid(const std::vector<Eig
     return result;
 }
 
-float MultiLayerPerceptron::expression_evaluator(float w_k, float d_ij, float value, float d_ij_nest, float velocity_k, float gradient_k, float g_t_k, float expt_grad_squared_k, float delta_w_t_k, float expt_weight_squared_k, float delta_w_t_k_ada_delta, float m_t_k, float v_t_k, float m_t_k_hat, float v_t_k_hat, float prev_w_k, const Eigen::VectorXf& params)
+float MultiLayerPerceptron::expression_evaluator(float w_k, float d_ij, float value, float d_ij_nest, float velocity_k, float gradient_k, float g_t_k, float expt_grad_squared_k, float delta_w_t_k, float expt_weight_squared_k, float delta_w_t_k_ada_delta, float m_t_k, float v_t_k, float m_t_k_hat, float v_t_k_hat, const Eigen::VectorXf& params)
 {
     std::stack<float> stack;
     bool is_prefix = (expression_type == "prefix");
@@ -535,10 +530,6 @@ float MultiLayerPerceptron::expression_evaluator(float w_k, float d_ij, float va
             else if (token == "v_t_k_hat")
             {
                 stack.push(v_t_k_hat);
-            }
-            else if (token == "prev_w_k")
-            {
-                stack.push(prev_w_k);
             }
             else if (token == "t")
             {

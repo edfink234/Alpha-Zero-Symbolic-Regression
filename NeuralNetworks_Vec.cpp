@@ -510,7 +510,7 @@ int main()
     //test code - Segment Display Recognition System
     int epochs = 10000;
     
-    std::unique_ptr<MultiLayerPerceptron> sdrnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{7,7,1} /*number of neurons in each layer*/, std::deque<std::string>(2, "sigmoid") /*layer types*/, 1.0f /*bias*/, 0.001f /*eta*/, 0.9f /*theta*/, 0.01 /*gamma*/, "sigmoid" /*output_type*/ "NAG" /*weight update rule*/);
+    std::unique_ptr<MultiLayerPerceptron> sdrnn = std::make_unique<MultiLayerPerceptron>(std::vector<int>{7,7,1} /*number of neurons in each layer*/, std::deque<std::string>(2, "sigmoid") /*layer types*/, 1.0f /*bias*/, 0.0001f /*eta*/, 0.9f /*theta*/, 0.01 /*gamma*/, "sigmoid" /*output_type*/ "AdamW" /*weight update rule*/);
     x_train.resize(7);
     x_train_data.clear();
     y_train_data.clear();

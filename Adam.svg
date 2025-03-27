@@ -9,7 +9,7 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 352.5)">
 <title>G</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-352.5 825.5,-352.5 825.5,4 -4,4"/>
-<text text-anchor="middle" x="410.75" y="-331.2" font-family="Times,serif" font-size="14.00">w_{j,m,t=MYTAU} = w_{j,m,t=MYTAU&#45;1} + MYFRAC{MYETA MYCDOT MYMUADAM}{MYSQRT{MYNUADAM + MYEPSILON}}</text>
+<text text-anchor="middle" x="410.75" y="-331.2" font-family="Times,serif" font-size="14.00">w_{j,m,t=MYTAU} = w_{j,m,t=MYTAU&#45;1} + MYFRAC{MYETA MYCDOT MYMUADAM}{MYSQRT{MYNUADAM} + MYEPSILON}</text>
 <!-- 10 -->
 <g id="node1" class="node">
 <title>10</title>
