@@ -1,0 +1,64 @@
+\documentclass{article}
+\usepackage[x11names, svgnames, rgb]{xcolor}
+\usepackage[utf8]{inputenc}
+\usepackage{tikz}
+\usetikzlibrary{snakes,arrows,shapes}
+\usepackage{amsmath}
+%
+%
+
+\usepackage[active,tightpage]{preview}
+\PreviewEnvironment{tikzpicture}
+\setlength\PreviewBorder{0pt}%
+
+%
+
+\begin{document}
+\pagestyle{empty}
+%
+%
+%
+
+\enlargethispage{100cm}
+% Start of code
+\begin{tikzpicture}[>=latex',line join=bevel,]
+%%
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (249.88bp,624.25bp) node {$f(x) = \sin(\sin(\tan(x+3 \cdot (\cos(x) - \sin(\sin(x)))))$};
+\end{scope}
+  \node (13) at (199.32bp,594.0bp) [draw,ellipse] {$\sin$};
+  \node (12) at (199.32bp,522.0bp) [draw,ellipse] {$\cos$};
+  \node (11) at (199.32bp,450.0bp) [draw,ellipse] {$\tan$};
+  \node (10) at (199.32bp,378.0bp) [draw,ellipse] {$+$};
+  \node (1) at (151.32bp,306.0bp) [draw,ellipse] {$x$};
+  \node (9) at (247.32bp,306.0bp) [draw,ellipse] {$\cdot$};
+  \node (2) at (211.32bp,234.0bp) [draw,ellipse] {$3$};
+  \node (8) at (283.32bp,234.0bp) [draw,ellipse] {$-$};
+  \node (4) at (231.32bp,162.0bp) [draw,ellipse] {$\cos$};
+  \node (7) at (334.32bp,162.0bp) [draw,ellipse] {$\sin$};
+  \node (3) at (231.32bp,90.0bp) [draw,ellipse] {$x$};
+  \node (6) at (334.32bp,90.0bp) [draw,ellipse] {$\sin$};
+  \node (5) at (334.32bp,18.0bp) [draw,ellipse] {$x$};
+  \draw [] (13) ..controls (199.32bp,564.85bp) and (199.32bp,550.92bp)  .. (12);
+  \draw [] (12) ..controls (199.32bp,492.85bp) and (199.32bp,478.92bp)  .. (11);
+  \draw [] (11) ..controls (199.32bp,420.85bp) and (199.32bp,406.92bp)  .. (10);
+  \draw [] (10) ..controls (180.57bp,349.66bp) and (170.01bp,334.26bp)  .. (1);
+  \draw [] (10) ..controls (217.84bp,349.98bp) and (228.03bp,335.13bp)  .. (9);
+  \draw [] (9) ..controls (232.86bp,276.89bp) and (225.38bp,262.34bp)  .. (2);
+  \draw [] (9) ..controls (261.78bp,276.89bp) and (269.26bp,262.34bp)  .. (8);
+  \draw [] (8) ..controls (263.4bp,206.19bp) and (252.08bp,190.96bp)  .. (4);
+  \draw [] (8) ..controls (302.85bp,206.19bp) and (313.95bp,190.96bp)  .. (7);
+  \draw [] (4) ..controls (231.32bp,132.85bp) and (231.32bp,118.92bp)  .. (3);
+  \draw [] (7) ..controls (334.32bp,132.85bp) and (334.32bp,118.92bp)  .. (6);
+  \draw [] (6) ..controls (334.32bp,60.846bp) and (334.32bp,46.917bp)  .. (5);
+%
+\end{tikzpicture}
+% End of code
+
+%
+\end{document}
+%
+
+
