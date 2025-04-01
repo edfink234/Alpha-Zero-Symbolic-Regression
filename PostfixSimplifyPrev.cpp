@@ -319,7 +319,12 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             new_expression[first_arg_idx_low] = "1";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
         }
-        
+        else if (new_expression[first_arg_idx_high - 1] == "0") //0 x ^ -> 0 (because, since postfix operators come at the end, if the end of the first argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to 0 x ^, which is 0) (assume x > 0)
+        {
+            //puts("hi 324");
+            new_expression[first_arg_idx_low] = "0";
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+        }
         else
         {
             new_expression.push_back(expression[up]);
@@ -509,18 +514,18 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
                     
                     else if (expression[i] == "^")
                     {
-                        if (expression[i-2] == "0" && is_const(expression[i-1])) // "0 x ^" -> "0"
+                        if (expression[i-1] == "0" && is_const(expression[i-2])) // "x 0 ^" -> "1"
                         {
-                            //puts("hi 215");
-                            expression[i] = "0";
+                            //puts("hi 223");
+                            expression[i] = "1";
                             expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                             simplified = true;
                             break;
                         }
-                        else if (expression[i-1] == "0" && is_const(expression[i-2])) // "x 0 ^" -> "1"
+                        else if (expression[i-2] == "0" && is_const(expression[i-1])) // "0 x ^" -> "0" (x > 0)
                         {
-                            //puts("hi 223");
-                            expression[i] = "1";
+                            //puts("hi 215");
+                            expression[i] = "0";
                             expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                             simplified = true;
                             break;
@@ -1451,6 +1456,18 @@ int main()
     puts("");
     
     test_expr = {"x", "x", "*", "1", "x", "x", "+", "tanh", "0", "^", "x", "*", "*", "1", "x", "x", "+", "tanh", "x", "*", "*", "/", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"0", "x", "x", "*", "1", "x", "x", "+", "tanh", "0", "^", "x", "*", "*", "1", "x", "x", "+", "tanh", "x", "*", "*", "/", "*", "^"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"0", "x", "x", "^", "x", "x", "^", "-", "asin", "tanh", "sin", "x", "x", "-", "*", "0", "/", "^"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);

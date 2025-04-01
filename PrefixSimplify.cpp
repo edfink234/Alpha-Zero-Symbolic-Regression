@@ -343,7 +343,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         }
         else if (new_expression[first_arg_idx_high] == "1") // ^ x 1 -> x (because, since prefix operators come at the beginning, if the beginning of the second argument of '^' is 1, then the whole second argument MUST be 1, therefore the expression reduces to ^ x 1, which is 1)
         {
-            puts("hi 346");
+            //puts("hi 346");
             //erase the '1' at the end
             if (first_arg_idx_high == static_cast<int>(new_expression.size()) - 1)
             {
