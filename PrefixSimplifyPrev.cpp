@@ -308,7 +308,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             {
                 new_expression.erase(new_expression.begin() + first_arg_idx_high, new_expression.end());
             }
-            new_expression.erase(new_expression.begin() + op_idx); //erase the '*'
+            new_expression.erase(new_expression.begin() + op_idx); //erase the '/'
         }
         else if ((expression[low] == "/") && ((step = (second_arg_idx_high - first_arg_idx_high)) == (first_arg_idx_high - first_arg_idx_low)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) // / x x
         {
@@ -341,7 +341,20 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "0"; //change '^' to '0'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        
+        else if (new_expression[first_arg_idx_high] == "1") // ^ x 1 -> x (because, since prefix operators come at the beginning, if the beginning of the second argument of '^' is 1, then the whole second argument MUST be 1, therefore the expression reduces to ^ x 1, which is 1)
+        {
+            //puts("hi 346");
+            //erase the '1' at the end
+            if (first_arg_idx_high == static_cast<int>(new_expression.size()) - 1)
+            {
+                new_expression.pop_back();
+            }
+            else
+            {
+                new_expression.erase(new_expression.begin() + first_arg_idx_high, new_expression.end());
+            }
+            new_expression.erase(new_expression.begin() + op_idx); //erase the '^'
+        }
     }
     
     else
@@ -528,18 +541,18 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                     
                     else if (expression[i] == "^")
                     {
-                        if (expression[i+1] == "0" && is_const(expression[i+2])) // ^ 0 x -> 0
+                        if (expression[i+2] == "0" && is_const(expression[i+1])) // ^ x 0 -> 1
                         {
-                            //puts("hi 215");
-                            expression[i] = "0";
+                            //puts("hi 223");
+                            expression[i] = "1";
                             expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+2] == "0" && is_const(expression[i+1])) // ^ x 0 -> 1
+                        else if (expression[i+1] == "0" && is_const(expression[i+2])) // ^ 0 x -> 0 (x > 0)
                         {
-                            //puts("hi 223");
-                            expression[i] = "1";
+                            //puts("hi 215");
+                            expression[i] = "0";
                             expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                             simplified = true;
                             break;
@@ -1502,11 +1515,23 @@ int main()
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
+    
+    test_expr = {"^", "sin", "arcsin", "^", "x", "*", "y", "y", "1"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"^", "+", "x", "-", "0", "+", "x", "+", "x", "x", "1"}; //(x + (0 - (x+x+x))) ^ 1 = (-2x)
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr); //+ x ~ + x + x x = -(x+x+x)+x = (-2x)
+    puts("");
 }
 
-//g++ -std=c++20 -o PrefixSimplifyPrev PrefixSimplifyPrev.cpp
+//g++ -std=c++20 -o PrefixSimplify_Prev PrefixSimplify_Prev.cpp
 
 //https://stackoverflow.com/questions/20153412/simplification-algorithm-for-reverse-polish-notation
 //https://dl.acm.org/
 //simplification of polish notation expressions articles
-// ! objdump -d -M intel PrefixSimplify
+// ! objdump -d -M intel PrefixSimplify_Prev

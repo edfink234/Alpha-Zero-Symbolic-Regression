@@ -327,7 +327,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         }
         else if (new_expression.back() == "1") // x 1 ^ -> x (because, since postfix operators come at the end, if the end of the second argument of '^' is 1, then the whole second argument MUST be 1, therefore the expression reduces to x 1 ^, which is x)
         {
-            puts("hi 330");
+            //puts("hi 330");
             new_expression.pop_back(); //erase the '1'
         }
         else

@@ -38,8 +38,6 @@ contains
         end do
     end function is_unary
 
-
-
     logical function is_binary(token) result(isBinary)
         implicit none
         character(len=*), intent(in) :: token
@@ -370,33 +368,6 @@ contains
         END DO
     END SUBROUTINE GB
 
-!    RECURSIVE subroutine GB(z, ind, individual, n, expression_type)
-!        implicit none
-!        integer, intent(inout) :: ind
-!        integer, intent(in)    :: z, n
-!        character(len=*), intent(in) :: individual(n)
-!        character(len=*), intent(in) :: expression_type
-!        INTEGER :: remaining_z
-!
-!        do while (remaining_z > 0)
-!            ! Move forward for prefix, backward for postfix
-!            if (expression_type == 'prefix') then
-!                ind = ind + 1
-!            else if (expression_type == 'postfix') then
-!                ind = ind - 1
-!            end if
-!
-!            ! Recurse if the current symbol is unary or binary
-!            if (is_unary(individual(ind))) then
-!                call GB(1, ind, individual, n, expression_type)
-!            else if (is_binary(individual(ind))) then
-!                call GB(2, ind, individual, n, expression_type)
-!            end if
-!
-!            remaining_z = remaining_z - 1
-!        end do
-!    end subroutine GB
-
     integer function GR(i, individual, expression_type) result(gr_value)
         implicit none
         integer, intent(in)    :: i
@@ -426,6 +397,59 @@ contains
         end if
 
     end function GR
+
+!    using the above fortran function that computes the grasp (number of child nodes in the tree representation of `individual` which is a prefix or postfix expression depending on `expression_type`) of an element of an `expression_type == prefix` or `expression_type == postfix` algebraic expression, please convert the following C++ function to Fortran90.
+!
+!    void setPrefixGR(const std::vector<std::string>& prefix, std::vector<int>& grasp)
+!    {
+!        grasp.reserve(prefix.size());
+!        for (size_t k = 0; k < prefix.size(); ++k)
+!        {
+!            grasp.push_back(GR(k, prefix));
+!        }
+!    }
+!
+!    void setPostfixGR(const std::vector<std::string>& postfix, std::vector<int>& grasp)
+!    {
+!        grasp.reserve(postfix.size()); //grasp[k] = GR( postfix[k]), k = 1, ... ,i.
+!        //In the paper they do `k = 1;` instead of `k = 0;`, presumably because GR(postfix[0]) always is 0, but it works
+!        //if you set k = 0 too.
+!        for (size_t k = 0; k < postfix.size(); ++k)
+!        {
+!            grasp.push_back(GR(k, postfix));
+!        }
+!    }
+
+    subroutine setPrefixGR(prefix, grasp)
+        implicit none
+        character(len=*), dimension(:), intent(in)  :: prefix
+        integer, allocatable, dimension(:), intent(out) :: grasp
+
+        integer :: k, n
+
+        n = size(prefix)
+        allocate(grasp(n))
+
+        do k = 1, n
+            grasp(k) = GR(k, prefix, 'prefix')
+        end do
+    end subroutine setPrefixGR
+
+!    TODO: uncomment for next week push!
+!        subroutine setPostfixGR(postfix, grasp)
+!            implicit none
+!            character(len=*), dimension(:), intent(in)  :: postfix
+!            integer, allocatable, dimension(:), intent(out) :: grasp
+!
+!            integer :: k, n
+!
+!            n = size(postfix)
+!            allocate(grasp(n))
+!
+!            do k = 1, n
+!                grasp(k) = GR(k, postfix, 'postfix')
+!            end do
+!        end subroutine setPostfixGR
 
     function areExpressionRangesEqual(start_idx_1, start_idx_2, num_steps, expression) result(is_equal)
         implicit none
@@ -633,7 +657,7 @@ program main
     real(4), allocatable :: mat(:, :), min_vec(:), max_vec(:)
     real :: matrix(3, 2)
     real, allocatable :: new_matrix(:, :)
-
+    integer, allocatable, dimension(:) :: grasp
 
     ! Capture start time
     start_time = get_time()
@@ -835,12 +859,16 @@ program main
         '-  ', '+  ', 'x  ', 'y  ', 'z  ', &
         'cos', '-  ', '+  ', 'x  ', 'y  ', 'z  ' &
     ]
+    allocate(grasp(size(individual)))
+    call setPrefixGR(individual, grasp)
 
     print *, ""
     print *, "=== Test: Prefix expression (+ - + x y z cos - + x y z) ==="
     do i = 1, 12
-        print *, "Element: ", individual(i), "  GR(i): ", GR(i, individual, 'prefix')
+        print *, "Element: ", individual(i), "  GR(", i, "): ", GR(i, individual, 'prefix'), " grasp(", i, "): ", grasp(i)
     end do
+
+
 
     individual = [&
         'x  ', 'y  ', '+  ', 'z  ', '-  ', &
@@ -854,6 +882,7 @@ program main
         print *, "Element: ", individual(i), "  GR(i): ", GR(i, individual, 'postfix')
     end do
 
+    !TODO: Test setPostfixGR and setPrefixGR functions here!
 
     DEALLOCATE(individual)
 
