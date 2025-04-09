@@ -355,6 +355,12 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             }
             new_expression.erase(new_expression.begin() + op_idx); //erase the '^'
         }
+        else if (new_expression[first_arg_idx_low] == "1") // ^ 0 x -> 0 (x > 0 assumed) TODO: 
+        {
+            //puts("hi 340");
+            new_expression[op_idx] = "0"; //change '^' to '0'
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
     }
     
     else
