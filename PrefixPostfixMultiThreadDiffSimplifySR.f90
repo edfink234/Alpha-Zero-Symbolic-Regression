@@ -398,28 +398,6 @@ contains
 
     end function GR
 
-!    using the above fortran function that computes the grasp (number of child nodes in the tree representation of `individual` which is a prefix or postfix expression depending on `expression_type`) of an element of an `expression_type == prefix` or `expression_type == postfix` algebraic expression, please convert the following C++ function to Fortran90.
-!
-!    void setPrefixGR(const std::vector<std::string>& prefix, std::vector<int>& grasp)
-!    {
-!        grasp.reserve(prefix.size());
-!        for (size_t k = 0; k < prefix.size(); ++k)
-!        {
-!            grasp.push_back(GR(k, prefix));
-!        }
-!    }
-!
-!    void setPostfixGR(const std::vector<std::string>& postfix, std::vector<int>& grasp)
-!    {
-!        grasp.reserve(postfix.size()); //grasp[k] = GR( postfix[k]), k = 1, ... ,i.
-!        //In the paper they do `k = 1;` instead of `k = 0;`, presumably because GR(postfix[0]) always is 0, but it works
-!        //if you set k = 0 too.
-!        for (size_t k = 0; k < postfix.size(); ++k)
-!        {
-!            grasp.push_back(GR(k, postfix));
-!        }
-!    }
-
     subroutine setPrefixGR(prefix, grasp)
         implicit none
         character(len=*), dimension(:), intent(in)  :: prefix
@@ -435,21 +413,20 @@ contains
         end do
     end subroutine setPrefixGR
 
-!    TODO: uncomment for next week push!
-!        subroutine setPostfixGR(postfix, grasp)
-!            implicit none
-!            character(len=*), dimension(:), intent(in)  :: postfix
-!            integer, allocatable, dimension(:), intent(out) :: grasp
-!
-!            integer :: k, n
-!
-!            n = size(postfix)
-!            allocate(grasp(n))
-!
-!            do k = 1, n
-!                grasp(k) = GR(k, postfix, 'postfix')
-!            end do
-!        end subroutine setPostfixGR
+    subroutine setPostfixGR(postfix, grasp)
+        implicit none
+        character(len=*), dimension(:), intent(in)  :: postfix
+        integer, allocatable, dimension(:), intent(out) :: grasp
+
+        integer :: k, n
+
+        n = size(postfix)
+        allocate(grasp(n))
+
+        do k = 1, n
+            grasp(k) = GR(k, postfix, 'postfix')
+        end do
+    end subroutine setPostfixGR
 
     function areExpressionRangesEqual(start_idx_1, start_idx_2, num_steps, expression) result(is_equal)
         implicit none
@@ -868,21 +845,20 @@ program main
         print *, "Element: ", individual(i), "  GR(", i, "): ", GR(i, individual, 'prefix'), " grasp(", i, "): ", grasp(i)
     end do
 
-
-
     individual = [&
         'x  ', 'y  ', '+  ', 'z  ', '-  ', &
         'x  ', 'y  ', '+  ', 'z  ', '-  ', 'cos', &
         '+  ' &
     ]
 
+    DEALLOCATE(grasp)
+    allocate(grasp(size(individual)))
+    call setPostfixGR(individual, grasp)
     print *, ""
     print *, "=== Test: Postfix expression (x y + z - x y + z - cos +) ==="
     do i = 1, 12
-        print *, "Element: ", individual(i), "  GR(i): ", GR(i, individual, 'postfix')
+        print *, "Element: ", individual(i), "  GR(i): ", GR(i, individual, 'postfix'), " grasp(", i, "): ", grasp(i)
     end do
-
-    !TODO: Test setPostfixGR and setPrefixGR functions here!
 
     DEALLOCATE(individual)
 
@@ -892,8 +868,6 @@ program main
 
     ! Output the elapsed time
     print *, "Elapsed time (in seconds): ", elapsed_time
-
-
 
 end program main
 

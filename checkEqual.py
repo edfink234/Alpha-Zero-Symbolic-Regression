@@ -384,6 +384,12 @@ after: 0
 
 before: 0 x x ^ x x ^ - asin tanh sin x x - * 0 / ^ 
 after: 0 
+
+before: 0 x 0 x x x + + + + + 1 ^ 
+after: x x x x + + + 
+
+before: x x ^ x x ^ - asin tanh sin x x - * 0 / 1 ^ 
+after: inf 
 '''
 before='''before: x1 x1 - 0 - x1 x1 + - 
 after: x1 x1 + ~ 
@@ -771,5 +777,11 @@ after: 0
 
 before: 0 x x ^ x x ^ - asin tanh sin x x - * 0 / ^ 
 after: 0 
+
+before: 0 x 0 x x x + + + + + 1 ^ 
+after: x x x x + + + 
+
+before: x x ^ x x ^ - asin tanh sin x x - * 0 / 1 ^ 
+after: inf 
 '''
 print(after==before)

@@ -1529,7 +1529,7 @@ int main()
     puts("");
 }
 
-//g++ -std=c++20 -o PrefixSimplify_Prev PrefixSimplify_Prev.cpp
+//g++ -std=c++20 -o PrefixSimplifyPrev PrefixSimplifyPrev.cpp
 
 //https://stackoverflow.com/questions/20153412/simplification-algorithm-for-reverse-polish-notation
 //https://dl.acm.org/
