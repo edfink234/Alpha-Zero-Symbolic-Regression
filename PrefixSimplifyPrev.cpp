@@ -327,7 +327,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // / x
         int first_arg_idx_high = new_expression.size();
         graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); // / x y
-        int second_arg_idx_high = new_expression.size();
+        //int second_arg_idx_high = new_expression.size();
         int step;
         if (new_expression[first_arg_idx_high] == "0") //^ x 0 -> 1 (because, since prefix operators come at the beginning, if the beginning of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to ^ x 0, which is 1)
         {
@@ -355,8 +355,27 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             }
             new_expression.erase(new_expression.begin() + op_idx); //erase the '^'
         }
+        else if (new_expression[first_arg_idx_low] == "1") // ^ 1 x -> 1
+        {
+            //puts("hi 360");
+            new_expression[op_idx] = "1"; //change '^' to '1'
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
     }
-    
+    else if (expression[low] == "cos") // cos x
+    {
+        int op_idx = new_expression.size();
+        new_expression.push_back(expression[low]); // cos
+        int temp = low+1+grasp[low+1];
+        int first_arg_idx_low = new_expression.size();
+        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // cos x
+        if (new_expression[first_arg_idx_low] == "0") // cos 0 -> 1
+        {
+            //puts("hi 374");
+            new_expression[op_idx] = "1"; //change 'cos' to '1'
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
+    }
     else
     {
         for (int i = low; i <= up; i++)
@@ -1527,6 +1546,30 @@ int main()
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr); //+ x ~ + x + x x = -(x+x+x)+x = (-2x)
     puts("");
+    
+    test_expr = {"^", "1", "+", "*", "x", "x", "/", "sin", "arcsin", "/", "~", "*", "y", "y", "x", "sin", "arcsin", "/", "~", "*", "y", "y", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"+", "^", "1", "sin", "arcsin", "^", "x", "*", "y", "y", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"cos", "sin", "arcsin", "^", "0", "*", "y", "y"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = { "^", "0", "*", "tanh", "cos", "x", "1"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
 }
 
 //g++ -std=c++20 -o PrefixSimplifyPrev PrefixSimplifyPrev.cpp
@@ -1534,4 +1577,4 @@ int main()
 //https://stackoverflow.com/questions/20153412/simplification-algorithm-for-reverse-polish-notation
 //https://dl.acm.org/
 //simplification of polish notation expressions articles
-// ! objdump -d -M intel PrefixSimplify_Prev
+// ! objdump -d -M intel PrefixSimplify

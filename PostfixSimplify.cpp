@@ -341,6 +341,21 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             new_expression.push_back(expression[up]);
         }
     }
+    else if (expression[up] == "cos") //x cos
+    {
+        int first_arg_idx_low = new_expression.size();
+        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
+        if (new_expression.back() == "0") // 0 cos -> 1 (because, since postfix operators come at the end, if the end of the argument of 'cos' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 cos, which is 1)
+        {
+            //puts("hi 350");
+            new_expression[first_arg_idx_low] = "1";
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+        }
+        else
+        {
+            new_expression.push_back(expression[up]);
+        }
+    }
     else
     {
         for (int i = low; i <= up; i++)
@@ -1508,6 +1523,17 @@ int main()
     printf("after: ");print_container(test_expr);
     puts("");
     
+    test_expr = {"0", "x", "x", "^", "x", "x", "^", "-", "asin", "tanh", "sin", "x", "x", "-", "*", "0", "/", "^", "cos"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"0", "x", "x", "*", "1", "x", "x", "+", "tanh", "0", "^", "x", "*", "*", "1", "x", "x", "+", "tanh", "x", "*", "*", "/", "*", "^", "cos"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
 }
 
 //g++ -std=c++20 -o PostfixSimplify PostfixSimplify.cpp

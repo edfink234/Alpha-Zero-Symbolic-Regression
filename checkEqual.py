@@ -390,6 +390,12 @@ after: x x x x + + +
 
 before: x x ^ x x ^ - asin tanh sin x x - * 0 / 1 ^ 
 after: inf 
+
+before: 1 x 1 x x + asin x * * * ^ 
+after: 1 
+
+before: 1 1 w / y 1 / / cos acos acos cos acos arccos cos ^ 
+after: 1 
 '''
 before='''before: x1 x1 - 0 - x1 x1 + - 
 after: x1 x1 + ~ 
@@ -783,5 +789,11 @@ after: x x x x + + +
 
 before: x x ^ x x ^ - asin tanh sin x x - * 0 / 1 ^ 
 after: inf 
+
+before: 1 x 1 x x + asin x * * * ^ 
+after: 1 
+
+before: 1 1 w / y 1 / / cos acos acos cos acos arccos cos ^ 
+after: 1 
 '''
-print(after==before)
+print(before==after)

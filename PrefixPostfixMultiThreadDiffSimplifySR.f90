@@ -428,6 +428,39 @@ contains
         end do
     end subroutine setPostfixGR
 
+    function expression(pieces, show_consts, params) result(temp)
+        implicit none
+        character(len=*), dimension(:), intent(in) :: pieces
+        logical, intent(in), optional :: show_consts
+        real, dimension(:), intent(in) :: params
+        character(len=:), allocatable :: temp
+        character(len=100) :: token, value_str
+        integer :: i, idx
+        logical :: show_constants
+
+        ! Default behavior if show_consts is not provided
+        show_constants = .true.
+        if (present(show_consts)) then
+            show_constants = show_consts
+        end if
+
+        temp = ""
+        do i = 1, size(pieces)
+            token = trim(pieces(i))
+            if (len(token) >= 5 .and. token(1:5) == "const" .and. show_constants) then
+                read(token(6:), *) idx
+                write(value_str, '(F8.5)') params(idx + 1)  ! Fortran is 1-indexed
+                temp = trim(temp) // trim(adjustl(value_str))
+            else
+                temp = trim(temp) // token
+            end if
+
+            if (i /= size(pieces)) then
+                temp = trim(temp)
+            end if
+        end do
+    end function expression
+
     function areExpressionRangesEqual(start_idx_1, start_idx_2, num_steps, expression) result(is_equal)
         implicit none
         integer, intent(in) :: start_idx_1, start_idx_2, num_steps
@@ -635,6 +668,7 @@ program main
     real :: matrix(3, 2)
     real, allocatable :: new_matrix(:, :)
     integer, allocatable, dimension(:) :: grasp
+    real, allocatable, dimension(:) :: params
 
     ! Capture start time
     start_time = get_time()
@@ -860,6 +894,24 @@ program main
         print *, "Element: ", individual(i), "  GR(i): ", GR(i, individual, 'postfix'), " grasp(", i, "): ", grasp(i)
     end do
 
+
+    allocate(params(0))
+
+    print *, "expression = ", expression(individual, .false., params)
+
+    individual = [&
+        'x     ', 'y     ', '+     ', 'const0', '-     ', &
+        'x     ', 'const1', '+     ', 'z     ', '-     ', 'cos   ', &
+        '+     ' &
+    ]
+
+    DEALLOCATE(params)
+    allocate(params(2))
+    params = [1.2, 2.]
+    print *, "expression = ", expression(individual, .false., params)
+    print *, "expression = ", expression(individual, .true., params)
+    
+    DEALLOCATE(params)
     DEALLOCATE(individual)
 
     ! Calculate elapsed time

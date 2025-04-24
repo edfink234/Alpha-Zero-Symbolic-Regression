@@ -330,6 +330,27 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             //puts("hi 330");
             new_expression.pop_back(); //erase the '1'
         }
+        else if (new_expression[first_arg_idx_high - 1] == "1") //1 x ^ -> 1 (because, since postfix operators come at the end, if the end of the first argument of '^' is 1, then the whole second argument MUST be 1, therefore the expression reduces to 1 x ^, which is 1)
+        {
+            //puts("hi 335");
+            new_expression[first_arg_idx_low] = "1";
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+        }
+        else
+        {
+            new_expression.push_back(expression[up]);
+        }
+    }
+    else if (expression[up] == "cos") //x cos
+    {
+        int first_arg_idx_low = new_expression.size();
+        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
+        if (new_expression.back() == "0") // 0 cos -> 1 (because, since postfix operators come at the end, if the end of the argument of 'cos' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 cos, which is 1)
+        {
+            //puts("hi 350");
+            new_expression[first_arg_idx_low] = "1";
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+        }
         else
         {
             new_expression.push_back(expression[up]);
@@ -743,559 +764,559 @@ int main()
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x","x","x","-","+"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x","x","-","x","-","y","+"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"y","y","x","/","*","cos", "y", "+"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"y","y","x","*","*","cos", "y", "+"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"y","x","x","*","+"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"y","x","x","+","+"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"y","x","cos","x","+","+"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"y","x","cos","x","+","-"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"y","x","-"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "y","x","-", "cos", "cos", "*"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "x", "y", "x", "-", "sin", "/", "+"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "x", "y", "y", "sin", "cos", "*", "/", "/"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "~", "~", "sin", "y", "/"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "sqrt"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "sqrt", "y", "*"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "ln", "y", "*"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "~", "ln", "x", "*"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "sqrt", "ln", "y", "*"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "x", "*", "asin"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "ln", "y", "*", "asin"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "ln", "y", "*", "asin"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "acos", "y", "/", "asin"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "ln", "y", "*", "asin", "y", "acos", "+"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "acos", "acos", "x", "~", "*", "acos"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "exp", "x", "cos", "exp", "/"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "~", "exp", "x", "x", "y", "*", "*", "+"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"y", "arcsin", "exp", "x", "~", "*", "acos"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "y", "^"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "cos", "y", "cos", "^", "x", "*"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "cos", "y", "cos", "^", "x", "*"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "x", "^", "x", "^", "y", "*"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "x", "^", "x", "^", "y", "*"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "sech", "tanh", "x", "^", "y", "*"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "y", "/", "tanh", "x", "sin", "^", "x", "*"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "sin", "sech", "x", "y", "*", "^", "sin", "sin", "sech"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "ln", "arccos", "x", "y", "*", "/", "sech", "~", "sin"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"0", "x", "*"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"0", "x", "*", "x", "x", "sin", "+", "-"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"0", "x", "*", "~", "x", "tanh", "+"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"1", "x", "*"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"1", "x", "*", "x", "x", "sin", "+", "-"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"1", "x", "*", "~", "x", "tanh", "+"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "0", "*"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "0", "*", "x", "x", "sin", "+", "-"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "0", "*", "~", "x", "tanh", "+"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "x", "*", "1", "*"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "x", "sin", "+", "1", "*"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "1", "*", "tanh", "~", "1", "*", "1", "+"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "sin", "x", "sin", "-", "x", "sin", "+"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "1", "/"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "x", "*", "1", "/"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "x", "cos", "*", "1", "/"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"0", "x", "x", "*", "/"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"0", "x", "x", "cos", "*", "/"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"0", "x", "sin", "x", "sech", "*", "/"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"1", "x", "x", "*", "/"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"1", "x", "cos", "/"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"1", "x", "cos", "x", "sin", "*", "/"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "x", "~", "~", "sin", "+"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "~", "~", "tanh", "x", "-"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "0", "x", "^", "+"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"0", "x", "^", "x", "-"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "cos", "0", "x", "^", "-"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "x", "0", "^", "+"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "0", "^", "x", "-"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "cos", "x", "0", "^", "-"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "1", "x", "^", "+"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"1", "x", "^", "x", "-"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "cos", "1", "x", "^", "-"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "x", "1", "^", "+"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "1", "^", "x", "-"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "cos", "x", "1", "^", "-"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"1", "x", "exp", "*", "ln"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "1", "x", "exp", "*", "ln", "-"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "1", "x", "exp", "*", "ln", "-", "cos"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"y", "y", "*", "exp", "ln"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "x", "*", "exp", "y", "ln", "*"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"y", "y", "-", "exp", "exp", "x", "sin", "+"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "x", "*", "sin", "y", "/"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "cos", "sin", "y", "/"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "x", "-", "sqrt", "cos"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "x", "*", "x", "x", "*", "-", "sqrt", "tanh", "sin"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "x", "cos", "*", "x", "x", "cos", "*", "-", "sqrt", "sqrt"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "x", "-", "arcsin", "cos"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "x", "^", "x", "x", "^", "-", "asin", "tanh", "sin"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "x", "sin", "*", "x", "x", "sin", "*", "-", "arcsin", "asin"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "tanh", "x", "tanh", "-", "acos", "exp"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "x", "/", "x", "x", "/", "-", "arccos", "sech", "sech"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "x", "sech", "-", "x", "x", "sech", "-", "-", "arccos", "acos"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "x", "exp", "*", "x", "x", "exp", "*", "-", "tanh", "acos"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "x", "exp", "*", "x", "x", "exp", "*", "-", "sech", "asin"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x", "x", "sech", "-", "x", "x", "sech", "-", "-", "sech", "acos"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"x0", "x0", "cos", "/", "tanh", "acos", "cos"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
@@ -1315,7 +1336,7 @@ int main()
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-
+    
     test_expr = {"0", "y", "+", "0", "x2", "+", "*"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
@@ -1485,6 +1506,30 @@ int main()
     puts("");
     
     test_expr = {"x", "x", "^", "x", "x", "^", "-", "asin", "tanh", "sin", "x", "x", "-", "*", "0", "/", "1", "^"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "x", "1", "x", "x", "+", "asin", "x", "*", "*", "*", "^"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "1", "w", "/", "y", "1", "/", "/", "cos", "acos", "acos", "cos", "acos", "arccos", "cos", "^"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"0", "x", "x", "^", "x", "x", "^", "-", "asin", "tanh", "sin", "x", "x", "-", "*", "0", "/", "^", "cos"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"0", "x", "x", "*", "1", "x", "x", "+", "tanh", "0", "^", "x", "*", "*", "1", "x", "x", "+", "tanh", "x", "*", "*", "/", "*", "^", "cos"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
