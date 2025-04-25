@@ -65,8 +65,8 @@ class MultiLayerPerceptron
         float gamma; //used in AdaDelta, called $\rho$ in the original paper: https://arxiv.org/pdf/1212.5701
         float beta_1; //used in Adam, Algorithm 1: https://arxiv.org/pdf/1412.6980
         float beta_2; //used in Adam, Algorithm 1: https://arxiv.org/pdf/1412.6980
-        unsigned int t; //used in Adam, Algorithm 1: https://arxiv.org/pdf/1412.6980
         float lambda; //used in AdamW, Algorithm 2: https://arxiv.org/pdf/1711.05101
+        unsigned int t; //used in Adam, Algorithm 1: https://arxiv.org/pdf/1412.6980
         std::vector<std::vector<Perceptron> > network; //the actual network
         std::vector<Eigen::VectorXf> values; //holds output values of the neurons
         std::vector<Eigen::VectorXf> d; //contains error terms for neurons: one error term for each neuron of each layer
