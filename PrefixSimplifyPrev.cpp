@@ -1565,7 +1565,7 @@ int main()
     printf("after: ");print_container(test_expr);
     puts("");
     
-    test_expr = { "^", "0", "*", "tanh", "cos", "x", "1"};
+    test_expr = {"cos", "^", "0", "*", "tanh", "cos", "x", "1"};
     printf("before: ");print_container(test_expr);
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);

@@ -653,56 +653,56 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
                 {
                     if (expression[i] == "~" && expression[i-1] == "~")
                     {
-                        expression[i] = expression[i-2];
-                        expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                        expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "exp" && (expression[i-1] == "ln" || expression[i-1] == "log"))
                     {
                         //puts("hi 360");
-                        expression[i] = expression[i-2];
-                        expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                        expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
                         simplified = true;
                         break;
                     }
                     else if (expression[i-1] == "exp" && (expression[i] == "ln" || expression[i] == "log"))
                     {
                         //puts("hi 368");
-                        expression[i] = expression[i-2];
-                        expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                        expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "cos" && (expression[i-1] == "acos" || expression[i-1] == "arccos"))
                     {
                         //puts("hi 408");
-                        expression[i] = expression[i-2];
-                        expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                        expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
+                        simplified = true;
+                        break;
+                    }
+                    else if (expression[i] == "cos" && expression[i-1] == "~") //cos(-x) -> cos(x)
+                    {
+                        //puts("hi 688");
+                        expression.erase(expression.begin() + i - 1); // Remove the '~'
                         simplified = true;
                         break;
                     }
                     else if (expression[i-1] == "cos" && (expression[i] == "acos" || expression[i] == "arccos"))
                     {
                         //puts("hi 416");
-                        expression[i] = expression[i-2];
-                        expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                        expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "sin" && (expression[i-1] == "asin" || expression[i-1] == "arcsin"))
                     {
                         //puts("hi 424");
-                        expression[i] = expression[i-2];
-                        expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                        expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
                         simplified = true;
                         break;
                     }
                     else if (expression[i-1] == "sin" && (expression[i] == "asin" || expression[i] == "arcsin"))
                     {
                         //puts("hi 432");
-                        expression[i] = expression[i-2];
-                        expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                        expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
                         simplified = true;
                         break;
                     }
@@ -1530,6 +1530,18 @@ int main()
     puts("");
     
     test_expr = {"0", "x", "x", "*", "1", "x", "x", "+", "tanh", "0", "^", "x", "*", "*", "1", "x", "x", "+", "tanh", "x", "*", "*", "/", "*", "^", "cos"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "x", "x", "*", "1", "x", "x", "+", "tanh", "0", "^", "x", "*", "*", "1", "x", "x", "+", "tanh", "x", "*", "*", "/", "*", "^", "~", "cos"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "x", "x", "^", "x", "x", "^", "-", "asin", "tanh", "~", "cos", "x", "x", "-", "*", "0", "/", "^", "cos"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);

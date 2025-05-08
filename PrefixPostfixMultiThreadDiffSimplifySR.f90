@@ -25,6 +25,20 @@ module function_space
 
 contains
 
+    subroutine assert(condition, message)
+        logical, intent(in) :: condition
+        character(len=*), intent(in), optional :: message
+
+        if (.not. condition) then
+            if (present(message)) then
+                print *, "Assertion failed: ", trim(message)
+            else
+                print *, "Assertion failed."
+            end if
+            stop 1
+        end if
+    end subroutine assert
+
     logical function is_unary(token) result(isUnary)
         implicit none
         character(len=*), intent(in) :: token
@@ -461,6 +475,25 @@ contains
         end do
     end function expression
 
+    function expression_vec(pieces_vec, show_consts, params) result(results)
+        implicit none
+        character(len=*), dimension(:,:), intent(in) :: pieces_vec
+        logical, intent(in), optional :: show_consts
+        real, dimension(:), intent(in) :: params
+        character(len=:), allocatable, dimension(:) :: results
+        character(len=:), allocatable :: temp
+
+        integer :: i, n
+
+        n = size(pieces_vec, dim=1)
+        allocate(character(len=100) :: results(n))  ! initially length-100 strings
+        do i = 1, n
+            temp = trim(expression(pieces_vec(i,:), show_consts, params))
+            call ASSERT(len(temp) < 100, "len(temp) >= 100 in expression_vec")
+            results(i) = temp
+        end do
+    end function expression_vec
+
     function areExpressionRangesEqual(start_idx_1, start_idx_2, num_steps, expression) result(is_equal)
         implicit none
         integer, intent(in) :: start_idx_1, start_idx_2, num_steps
@@ -661,8 +694,10 @@ program main
     integer :: i, j, low, up, rows, cols
     character(len=100) :: string_result
     character(len=15) :: token
-    CHARACTER(LEN=15), DIMENSION(:), ALLOCATABLE :: individual
+    CHARACTER(LEN=15), DIMENSION(:), ALLOCATABLE :: individual, individual_2
+    CHARACTER(LEN=15), DIMENSION(2, 4) :: pieces_vec
     CHARACTER(LEN=10) :: expression_type
+    character(len=:), allocatable, dimension(:) :: results
     INTEGER :: ind, z
     real(4), allocatable :: mat(:, :), min_vec(:), max_vec(:)
     real :: matrix(3, 2)
@@ -914,6 +949,27 @@ program main
     DEALLOCATE(params)
     DEALLOCATE(individual)
 
+    pieces_vec = transpose(reshape([&
+         'const0', 'x     ', '*     ', 'cos   ', &
+         'const0', 'const1', '+     ', 'sin   ' &
+    ], shape = [4, 2]))
+
+    print *, "pieces_vec has", size(pieces_vec, dim=1), "rows."
+    print *, "pieces_vec has", size(pieces_vec, dim=2), "colums."
+
+    ! Print pieces_vec
+    do i = 1, size(pieces_vec, dim=1)
+        print *, "pieces_vec(", i, "): ", pieces_vec(i, :)
+    end do
+
+    allocate(params(2))
+    params = [1.2, 2.]
+    results = expression_vec(pieces_vec, .true., params)
+    do i = 1, size(pieces_vec, dim=1)
+        print *, "results(", i, "): ", results(i)
+    end do
+
+
     ! Calculate elapsed time
     elapsed_time = time_elapsed(start_time)
     print *, "End time =", get_time()
@@ -924,3 +980,33 @@ program main
 end program main
 
 !gfortran PrefixPostfixMultiThreadDiffSimplifySR.f90 -o PrefixPostfixMultiThreadDiffSimplifySR
+
+
+
+!program test_expression_vec
+!    use your_module_with_expression  ! Replace with actual module name
+!    implicit none
+!
+!    character(len=20), dimension(2, 4) :: pieces_vec
+!    real, dimension(3) :: params
+!    character(len=:), allocatable, dimension(:) :: results
+!    integer :: i
+!
+!    ! Define params: e.g., const0 = 1.23, const1 = 4.56, const2 = 7.89
+!    params = [1.23, 4.56, 7.89]
+!
+!    ! Each row of pieces_vec is one expression
+!    pieces_vec = reshape([ &
+!        'const0', '+', 'x', '*',         &
+!        'x', '*', 'const1', '-',         &
+!        'y', '+', 'const2', '/'          &
+!    ], shape=[2, 4])
+!
+!    ! Call expression_vec with show_consts = .true.
+!    results = expression_vec(pieces_vec, .true., params)
+!
+!    ! Print results
+!    do i = 1, size(results)
+!        print *, "Result(", i, "): ", trim(results(i))
+!    end do
+!end program test_expression_vec
