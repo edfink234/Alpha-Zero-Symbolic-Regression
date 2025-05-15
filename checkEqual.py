@@ -402,6 +402,12 @@ after: 1
 
 before: 0 x x * 1 x x + tanh 0 ^ x * * 1 x x + tanh x * * / * ^ cos 
 after: 1 
+
+before: 1 x x * 1 x x + tanh 0 ^ x * * 1 x x + tanh x * * / * ^ ~ cos 
+after: 0.540302 
+
+before: 1 x x ^ x x ^ - asin tanh ~ cos x x - * 0 / ^ cos 
+after: 0.540302 
 '''
 after='''before: x1 x1 - 0 - x1 x1 + - 
 after: x1 x1 + ~ 
@@ -807,5 +813,11 @@ after: 1
 
 before: 0 x x * 1 x x + tanh 0 ^ x * * 1 x x + tanh x * * / * ^ cos 
 after: 1 
+
+before: 1 x x * 1 x x + tanh 0 ^ x * * 1 x x + tanh x * * / * ^ ~ cos 
+after: 0.540302 
+
+before: 1 x x ^ x x ^ - asin tanh ~ cos x x - * 0 / ^ cos 
+after: 0.540302 
 '''
-print(before==after)
+print(after==before)

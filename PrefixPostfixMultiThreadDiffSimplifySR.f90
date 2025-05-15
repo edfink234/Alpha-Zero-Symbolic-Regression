@@ -71,6 +71,26 @@ contains
         isConst = .not. is_unary(token) .and. .not. is_binary(token)
     end function is_const
 
+    function num_leaves(pieces_vec, i) result(count)
+        implicit none
+        character(len=*), dimension(:,:), intent(in) :: pieces_vec
+        integer, intent(in) :: i
+        integer :: count
+        integer :: j
+        character(len=100) :: token  ! Adjust length as needed
+
+        ! Assume pieces is declared elsewhere, e.g.: character(len=100), dimension(:,:) :: pieces
+        ! Also assume num_tokens is declared: integer, dimension(:) :: num_tokens
+
+        count = 0
+        do j = 1, size(pieces_vec(i, :))
+            token = pieces_vec(i, j)
+            if (.not. is_unary(token) .and. .not. is_binary(token)) then
+                count = count + 1
+            end if
+        end do
+    end function num_leaves
+
     function create_linspace_matrix(rows, cols, min_vec, max_vec) result(mat)
         implicit none
         integer, intent(in) :: rows, cols
@@ -951,7 +971,7 @@ program main
 
     pieces_vec = transpose(reshape([&
          'const0', 'x     ', '*     ', 'cos   ', &
-         'const0', 'const1', '+     ', 'sin   ' &
+         'const0', 'cos   ', 'sin   ', 'sin   ' &
     ], shape = [4, 2]))
 
     print *, "pieces_vec has", size(pieces_vec, dim=1), "rows."
@@ -969,6 +989,9 @@ program main
         print *, "results(", i, "): ", results(i)
     end do
 
+    do i = 1, size(pieces_vec, dim=1)
+        print *, "num_leaves(results(", i, ")): ", num_leaves(pieces_vec, i)
+    end do
 
     ! Calculate elapsed time
     elapsed_time = time_elapsed(start_time)
@@ -980,33 +1003,3 @@ program main
 end program main
 
 !gfortran PrefixPostfixMultiThreadDiffSimplifySR.f90 -o PrefixPostfixMultiThreadDiffSimplifySR
-
-
-
-!program test_expression_vec
-!    use your_module_with_expression  ! Replace with actual module name
-!    implicit none
-!
-!    character(len=20), dimension(2, 4) :: pieces_vec
-!    real, dimension(3) :: params
-!    character(len=:), allocatable, dimension(:) :: results
-!    integer :: i
-!
-!    ! Define params: e.g., const0 = 1.23, const1 = 4.56, const2 = 7.89
-!    params = [1.23, 4.56, 7.89]
-!
-!    ! Each row of pieces_vec is one expression
-!    pieces_vec = reshape([ &
-!        'const0', '+', 'x', '*',         &
-!        'x', '*', 'const1', '-',         &
-!        'y', '+', 'const2', '/'          &
-!    ], shape=[2, 4])
-!
-!    ! Call expression_vec with show_consts = .true.
-!    results = expression_vec(pieces_vec, .true., params)
-!
-!    ! Print results
-!    do i = 1, size(results)
-!        print *, "Result(", i, "): ", trim(results(i))
-!    end do
-!end program test_expression_vec

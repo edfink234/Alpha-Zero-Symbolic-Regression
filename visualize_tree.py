@@ -337,8 +337,10 @@ def test_visualize():
 #                plot_rpn_expression_tree(["x0", "cos", "x0", "x0", "sin", "~", "*", "-", "x0", "cos", "x0", "cos", "*", "/", "x0", "x0", "cos", "/", "sech", "x0", "x0", "cos", "/", "sech", "*", "*", "1", "x0", "x0", "cos", "/", "tanh", "x0", "x0", "cos", "/", "tanh", "*", "-", "sqrt", "/", "~", "x0", "x0", "cos", "/", "tanh", "acos", "sin", "~", "*"], block=True, save = save)
 #                plot_rpn_expression_tree(['x0', 'tanh', '4', '*', 'cos'], block=True, save = save)
 #                plot_rpn_expression_tree(['x0', '0.999487', '+', '4.176018', '4', 'sech', '-', '^'], block=True, save = save)
-                plot_pn_expression_tree("ln cos tanh - 4 / x0 0.648054".split(), block=True, save = save)
-#                plot_rpn_expression_tree("1.414214 x0 100.000000 * cos cos ~ acos /".split(), block=True, save = save)
+#                plot_pn_expression_tree("ln cos tanh - 4 / x0 0.648054".split(), block=True, save = save)
+                plot_rpn_expression_tree("0 x x * 1 x x + tanh 0 ^ x * * 1 x x + tanh x * * / * ^ cos 1 - sin".split(), block=True, save = save)
+#                plot_pn_expression_tree(["sin", "sin", "arcsin", "^", "0", "*", "y", "y"], block=True, save = save)
+
                 
     
 
