@@ -408,6 +408,12 @@ after: 0.540302
 
 before: 1 x x ^ x x ^ - asin tanh ~ cos x x - * 0 / ^ cos 
 after: 0.540302 
+
+before: 1 x x ^ x x ^ - asin tanh ~ cos x x - * 0 / ^ 1 - sin 
+after: 0 
+
+before: 0 x x * 1 x x + tanh 0 ^ x * * 1 x x + tanh x * * / * ^ cos 1 - sin 
+after: 0 
 '''
 after='''before: x1 x1 - 0 - x1 x1 + - 
 after: x1 x1 + ~ 
@@ -819,5 +825,11 @@ after: 0.540302
 
 before: 1 x x ^ x x ^ - asin tanh ~ cos x x - * 0 / ^ cos 
 after: 0.540302 
+
+before: 1 x x ^ x x ^ - asin tanh ~ cos x x - * 0 / ^ 1 - sin 
+after: 0 
+
+before: 0 x x * 1 x x + tanh 0 ^ x * * 1 x x + tanh x * * / * ^ cos 1 - sin 
+after: 0 
 '''
-print(after==before)
+print(before==after)
