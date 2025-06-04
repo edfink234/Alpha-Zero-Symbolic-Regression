@@ -214,7 +214,7 @@ struct Board
             throw(std::runtime_error("Complexity cannot be larger than 30, sorry!"));
         }
         
-        this->n = n;
+        this->n = n; //depth of expression
         this->expression_type = expression_type;
         srnn.pieces = {};
         this->visualize_exploration = visualize_exploration;
@@ -1281,7 +1281,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                 //Step 1: Generate a random depth-n sub-expression `secondary_one.srnn.pieces`
                 secondary_one.srnn.pieces.clear();
                 sub_exprs_1.clear();
-                secondary_one.n = n;
+                secondary_one.n = n; //set the depth of `secondary_one.srnn.pieces` to the argument `n`
                 while (secondary_one.complete_status() == -1)
                 {
                     temp_legal_moves = secondary_one.get_legal_moves();
@@ -1449,7 +1449,6 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         std::cout << "Best expression (original format) = " << orig_expression << '\n';
         
     }
-    
     
     std::ofstream out(filename);
     for (auto& i: scores)
@@ -1976,7 +1975,7 @@ int main()
 //...
 //-1.3 -2.2 Hemberg_2(-1.3, -2.2)
     
-    GP(generateData(20 /*rows*/, 3 /*columns*/, Hemberg_2 /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", true /*cache*/, 1 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 1 /*num threads*/, {2,10,5,5,1} /*Neural Network number of perceptrons in i'th layers */, std::deque<std::string>{"sigmoid", "sigmoid", "none", "none"}, 10 /*num_epochs*/,/* bias = */ 1.0f, /*eta = */ 0.5f, /*theta = */ 0.01f, /*gamma = */ 0.9f, /*epsilon = */ 0.1f, /*beta_1 = */ 0.9f, /*beta_2 = */ 0.999f);
+    GP(generateData(20 /*rows*/, 3 /*columns*/, Hemberg_2 /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", true /*cache*/, 1 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 1 /*num threads*/, {2,10,5,5,1} /*Neural Network number of perceptrons in i'th layers */, std::deque<std::string>{"sigmoid", "sigmoid", "none", "none"}, 10 /*num_epochs*/,/* bias = */ 1.0f, /*eta = */ 0.5f, /*theta = */ 0.01f, /*gamma = */ 0.9f, /*beta_1 = */ 0.9f, /*beta_2 = */ 0.999f);
     
 
     return 0;
@@ -1985,17 +1984,44 @@ int main()
 /*
  Outline for NeuralNetworkWeightUpdate
  
- 1. Pick test SR function
+ 1. For each benchmark
  2. Pick a Neural network architecture with N inputs, 1-10 hidden layers with 1 - 10 neurons each, output_type = "none", learning_rate in {1e-1, 1e-2, 1e-3, 1e-4, 1e-5}
     - Fixed at start
  3. Test baseline weight-update rule and set to `best-expression`
- 4. While some_condition:
-    - Test SR update rule for some number of epochs
+ 4. Until we have "enough" (say initial pop. `N_init` := 2000 in GP) competitive symbolic expressions:
+    - Test SR update rule for some number of epochs (fix the number of epochs for all benchmarks based on literature suggested values)
         - Get score
-            - Fitting -> 
+            - Fitting -> ❌
         - Update `best-expression` if needed
-    
+
+ Outline for hyperparameter tuning
+ 
+ 1. For each algorithm:
+    a. Define a grid of hyperparameters that we will scan
+    b. Scan them
+    c.
+ 
+ η          β_1         β_2
+ 
+ 0.0001     0.9         0.9
+ 0.001      0.92        ...
+ 0.01       0.94        ...
+ 0.1        ...         ...
+ 0.5        ...         ...
+ 1          ...         ...
+ 
+ 
+ Depths of Algorithms: {1, 2, 3, 4, 5}
+ 
+ Option 1 (Key: Depth, Value: NumThreads): {1: 1, 5: 1, 2: 2, 4: 2, 3: 2}
+ Option 2 (Fix Depth to 5): `std::thread::hardware_concurrency()` threads on depth 5 and simplify all expressions => leaning towards this option
  
  */
 
 //g++ -Wall -std=c++20 -o NeuralNetworks_VecSR NeuralNetworks_VecSR.cpp MLP_Vec.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -ffast-math -ftree-vectorize -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
+
+
+//1                  1         0
+//
+//x x - => x-x                 0
+//x x + => x+x     x x +

@@ -16,15 +16,15 @@ class Perceptron
         Eigen::VectorXf weights;
 		float bias;
 		Perceptron(int inputs, float bias=1.0);
-        float run(const Eigen::VectorXf& x);
-		void set_weights(const Eigen::VectorXf& w_init);
-		float sigmoid(float x);
+        float run(const Eigen::VectorXf& x); //runs input `x` through perceptron and returns output as a float
+		void set_weights(const Eigen::VectorXf& w_init); //sets `weights` attribute of perceptron to `w_init`
+		float sigmoid(float x); //helper function to compute sigmoid(x)
 };
 
 class PerceptronLayer
 {
     public:
-        Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> weights;
+        Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> weights; //TODO: Maybe can change to 
         Eigen::VectorXf biases;
         PerceptronLayer(int inputs, int num_neurons, std::vector<float>&& bias_vec = {});
         Eigen::VectorXf run(const Eigen::VectorXf& x);
