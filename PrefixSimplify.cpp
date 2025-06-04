@@ -399,8 +399,23 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // tanh x
         if (new_expression[first_arg_idx_low] == "0") // tanh 0 -> 0
         {
-            puts("hi 402");
+            //puts("hi 402");
             new_expression[op_idx] = "0"; //change 'tanh' to '0'
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
+        //TODO: can add inf and -inf
+    }
+    else if (expression[low] == "sech") // sech x
+    {
+        int op_idx = new_expression.size();
+        new_expression.push_back(expression[low]); // sech
+        int temp = low+1+grasp[low+1];
+        int first_arg_idx_low = new_expression.size();
+        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // sech x
+        if (new_expression[first_arg_idx_low] == "0") // sech 0 -> 1
+        {
+            puts("hi 416");
+            new_expression[op_idx] = "1"; //change 'sech' to '1'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
     }
