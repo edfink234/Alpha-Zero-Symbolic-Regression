@@ -111,6 +111,26 @@ contains
         end do
     end function num_binary_ops
 
+    function num_unary_ops(pieces_vec, i) result(count)
+        implicit none
+        character(len=*), dimension(:,:), intent(in) :: pieces_vec
+        integer, intent(in) :: i
+        integer :: count
+        integer :: j
+        character(len=100) :: token  ! Adjust length as needed
+
+        ! Assume pieces is declared elsewhere, e.g.: character(len=100), dimension(:,:) :: pieces
+        ! Also assume num_tokens is declared: integer, dimension(:) :: num_tokens
+
+        count = 0
+        do j = 1, size(pieces_vec(i, :))
+            token = pieces_vec(i, j)
+            if (is_unary(token)) then
+                count = count + 1
+            end if
+        end do
+    end function num_unary_ops
+
     function create_linspace_matrix(rows, cols, min_vec, max_vec) result(mat)
         implicit none
         integer, intent(in) :: rows, cols
@@ -1015,6 +1035,10 @@ program main
 
     do i = 1, size(pieces_vec, dim=1)
         print *, "num_binary_ops(results(", i, ")): ", num_binary_ops(pieces_vec, i)
+    end do
+
+    do i = 1, size(pieces_vec, dim=1)
+        print *, "num_unary_ops(results(", i, ")): ", num_unary_ops(pieces_vec, i)
     end do
 
     ! Calculate elapsed time

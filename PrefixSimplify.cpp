@@ -414,7 +414,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // sech x
         if (new_expression[first_arg_idx_low] == "0") // sech 0 -> 1
         {
-            puts("hi 416");
+            //puts("hi 416");
             new_expression[op_idx] = "1"; //change 'sech' to '1'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
@@ -1645,6 +1645,18 @@ int main()
     puts("");
     
     test_expr = {"tanh", "^", "sin", "sin", "arcsin", "^", "0", "*", "y", "y", "1"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"sech", "tanh", "^", "sin", "sin", "arcsin", "^", "0", "*", "y", "y", "1"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"sech", "sin", "sin", "arcsin", "^", "0", "*", "y", "y"};
     printf("before: ");print_container(test_expr);
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
