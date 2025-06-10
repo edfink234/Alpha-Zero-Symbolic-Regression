@@ -111,6 +111,89 @@ contains
         end do
     end function num_binary_ops
 
+    function to_infix(pieces, show_consts, params, expression_type) result(temp)
+        implicit none
+        character(len=*), dimension(:), intent(in) :: pieces
+        logical, intent(in), optional :: show_consts
+        real, dimension(:), intent(in) :: params
+        character(len=*), intent(in) :: expression_type
+        character(len=:), allocatable :: temp
+        character(len=100) :: token, value_str, result_str
+        integer :: i, idx, n, stack_top
+        logical :: show_constants
+        character(len=100), dimension(100) :: stack  ! stack emulation
+        character(len=100) :: left_operand, right_operand, operand
+
+        show_constants = .true.
+        if (present(show_consts)) show_constants = show_consts
+
+        n = size(pieces)
+        stack_top = 0
+
+        if (trim(expression_type) == "prefix") then
+            do i = n, 1, -1
+                token = pieces(i)
+                if (is_const(token)) then
+                    if (token(1:5) == "const" .and. show_constants) then
+                        read(token(6:), *) idx
+                        write(value_str, '(F10.4)') params(idx + 1)  ! Fortran arrays are 1-based
+                        stack_top = stack_top + 1
+                        stack(stack_top) = adjustl(trim(value_str))
+                    else
+                        stack_top = stack_top + 1
+                        stack(stack_top) = token
+                    end if
+                else if (is_unary(token)) then
+                    operand = stack(stack_top)
+                    stack_top = stack_top - 1
+                    result_str = trim(token) // "(" // trim(operand) // ")"
+                    stack_top = stack_top + 1
+                    stack(stack_top) = result_str
+                else
+                    right_operand = stack(stack_top)
+                    stack_top = stack_top - 1
+                    left_operand = stack(stack_top)
+                    stack_top = stack_top - 1
+                    result_str = "(" // trim(right_operand) // " " // trim(token) // " " // trim(left_operand) // ")"
+                    stack_top = stack_top + 1
+                    stack(stack_top) = result_str
+                end if
+            end do
+        else
+            do i = 1, n
+                token = pieces(i)
+                if (is_const(token)) then
+                    if (token(1:5) == "const" .and. show_constants) then
+                        read(token(6:), *) idx
+                        write(value_str, '(F10.4)') params(idx + 1)
+                        stack_top = stack_top + 1
+                        stack(stack_top) = adjustl(trim(value_str))
+                    else
+                        stack_top = stack_top + 1
+                        stack(stack_top) = token
+                    end if
+                else if (is_unary(token)) then
+                    operand = stack(stack_top)
+                    stack_top = stack_top - 1
+                    result_str = trim(token) // "(" // trim(operand) // ")"
+                    stack_top = stack_top + 1
+                    stack(stack_top) = result_str
+                else
+                    right_operand = stack(stack_top)
+                    stack_top = stack_top - 1
+                    left_operand = stack(stack_top)
+                    stack_top = stack_top - 1
+                    result_str = "(" // trim(left_operand) // " " // trim(token) // " " // trim(right_operand) // ")"
+                    stack_top = stack_top + 1
+                    stack(stack_top) = result_str
+                end if
+            end do
+        end if
+
+        temp = trim(stack(stack_top))
+    end function to_infix
+
+
     function num_unary_ops(pieces_vec, i) result(count)
         implicit none
         character(len=*), dimension(:,:), intent(in) :: pieces_vec
@@ -1005,6 +1088,22 @@ program main
     params = [1.2, 2.]
     print *, "expression = ", expression(individual, .false., params)
     print *, "expression = ", expression(individual, .true., params)
+    print *, "to_infix(expression) = ", to_infix(individual, .false., params, "postfix")
+    print *, "to_infix(expression) = ", to_infix(individual, .true., params, "postfix")
+
+    individual = [ &
+        '+     ', &
+        '-     ', '+     ', 'const1', 'y     ', 'const0', &
+        'cos   ', '-     ', '+     ', 'const1', 'y     ', 'z     ' &
+    ]
+
+    print *, "expression = ", expression(individual, .false., params)
+    print *, "expression = ", expression(individual, .true., params)
+    print *, "to_infix(expression) = ", to_infix(individual, .false., params, "prefix")
+    print *, "to_infix(expression) = ", to_infix(individual, .true., params, "prefix")
+
+
+!(pieces, show_consts, params, expression_type)
     
     DEALLOCATE(params)
     DEALLOCATE(individual)
