@@ -195,7 +195,7 @@ struct Board
     MultiLayerPerceptron srnn;
     const unsigned long epochs;
     
-//    Board(bool primary = true /*only relevant for GP and SimulatedAnnealing*/, int n = 3, const std::string& expression_type = "prefix", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false, std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, const unsigned long num_epochs = 1000, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f)
+//    Board(bool primary = true /*only relevant for GP and SimulatedAnnealing*/, int n = 3, const std::string& expression_type = "prefix", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false, std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, const unsigned long num_epochs = 1000, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f, float lambda = 0.01f /*weight decay AdamW*/)
     Board(int n, const std::string& expression_type, bool cache) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, is_primary{false}, srnn{}, epochs{0}
     {
         this->n = n;
@@ -206,8 +206,8 @@ struct Board
         this->cache = cache;
     }
     
-    Board(int n, const std::string& expression_type, const Eigen::MatrixXf& theData, bool visualize_exploration, bool cache, std::vector<int> layers, std::deque<std::string> layer_types, const unsigned long num_epochs, float bias, float eta, float theta, float gamma, float epsilon, float beta_1, float beta_2)
-        : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, is_primary{true}, srnn{layers, layer_types, bias, eta, theta, gamma, "SR", expression_type, epsilon, beta_1, beta_2}, epochs{num_epochs}
+    Board(int n, const std::string& expression_type, const Eigen::MatrixXf& theData, bool visualize_exploration, bool cache, std::vector<int> layers, std::deque<std::string> layer_types, const unsigned long num_epochs, float bias, float eta, float theta, float gamma, float epsilon, float beta_1, float beta_2, float lambda)
+        : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, is_primary{true}, srnn{layers, layer_types, bias, eta, theta, gamma, "SR", expression_type, epsilon, beta_1, beta_2, lambda}, epochs{num_epochs}
     {
         if (n > 30)
         {
@@ -978,7 +978,7 @@ float Feynman_5(const Eigen::VectorXf& x)
 
 //https://dl.acm.org/doi/pdf/10.1145/3449639.3459345?casa_token=Np-_TMqxeJEAAAAA:8u-d6UyINV6Ex02kG9LthsQHAXMh2oxx3M4FG8ioP0hGgstIW45X8b709XOuaif5D_DVOm_FwFo
 //https://core.ac.uk/download/pdf/6651886.pdf
-void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, const unsigned long num_epochs = 1000, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f)
+void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, const unsigned long num_epochs = 1000, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f, float lambda = 0.01f /*weight decay AdamW*/)
 {
     std::map<int, std::vector<float>> scores; //map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
@@ -1015,11 +1015,11 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
          Inside of thread:
          */
         
-        auto func = [&depth, &expression_type, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &layer_types, &num_epochs, &bias, &eta, &theta, &gamma, &epsilon, &beta_1, &beta_2, &best_expression, &orig_expression]()
+        auto func = [&depth, &expression_type, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &layer_types, &num_epochs, &bias, &eta, &theta, &gamma, &epsilon, &beta_1, &beta_2, &lambda, &best_expression, &orig_expression]()
         {
             std::random_device rand_dev;
             std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-            Board x(depth, expression_type, data, false, cache, layers, layer_types, num_epochs, bias, eta, theta, gamma, epsilon, beta_1, beta_2);
+            Board x(depth, expression_type, data, false, cache, layers, layer_types, num_epochs, bias, eta, theta, gamma, epsilon, beta_1, beta_2, lambda);
             sync_point.arrive_and_wait();
             Board secondary(depth, expression_type, cache); //For perturbations
 
@@ -1183,7 +1183,7 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
 }
 
 //https://arxiv.org/abs/2310.06609
-void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, const unsigned long num_epochs = 1000, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f)
+void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, const unsigned long num_epochs = 1000, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f, float lambda = 0.01f /*weight decay AdamW*/)
 {
     std::map<int, std::vector<float>> scores; //map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
@@ -1202,7 +1202,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         /*
          Outside of thread:
          */
-        std::atomic<float> max_score{0.0};
+        std::atomic<float> max_score{0.0}; //an atomic float variable called `max_score` that's initialized to 0
         std::vector<std::pair<int, float>> temp_scores;
         std::string best_expression, orig_expression;
         
@@ -1211,8 +1211,8 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         {
             while (timeElapsedSince(start_time) < time)
             {
-                std::this_thread::sleep_for(std::chrono::seconds(measure_period));
-                temp_scores.push_back(std::make_pair(static_cast<size_t>(timeElapsedSince(start_time)), max_score.load()));
+                std::this_thread::sleep_for(std::chrono::seconds(measure_period)); //waits for `measure_period` seconds
+                temp_scores.push_back(std::make_pair(static_cast<size_t>(timeElapsedSince(start_time)), max_score.load())); //`pushes back the current time elapsed and max score achieved thus far to `temp_scores`
             }
         });
         
@@ -1220,11 +1220,20 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
          Inside of thread:
          */
         
-        auto func = [&depth, &expression_type, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &layer_types, &num_epochs, &bias, &eta, &theta, &gamma, &epsilon, &beta_1, &beta_2, &best_expression, &orig_expression]()
+        auto func = [&depth, &expression_type, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &layer_types, &num_epochs, &bias, &eta, &theta, &gamma, &epsilon, &beta_1, &beta_2, &lambda, &best_expression, &orig_expression]()
         {
             std::random_device rand_dev;
             std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-            Board x(depth, expression_type, data, false, cache, layers, layer_types, num_epochs, bias, eta, theta, gamma, epsilon, beta_1, beta_2);
+            Board x(depth, expression_type, data, false, cache, layers, layer_types, num_epochs, bias, eta, theta, gamma, epsilon, beta_1, beta_2, lambda);
+            
+            
+//            Board(int n, const std::string& expression_type, const Eigen::MatrixXf& theData, bool visualize_exploration, bool cache, std::vector<int> layers, std::deque<std::string> layer_types, const unsigned long num_epochs, float bias, float eta, float theta, float gamma, float epsilon, float beta_1, float beta_2)
+//                : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, is_primary{true},
+//            
+//            srnn{layers, layer_types, bias, eta, theta, gamma, "SR", expression_type, epsilon, beta_1, beta_2}//, epochs{num_epochs}
+//            
+//            MultiLayerPerceptron(std::vector<int> layers, std::deque<std::string> layer_types, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, const std::string& weight_update = "basic", const std::string& expression_type = "prefix", float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f, float lambda = 0.01f /*weight decay AdamW*/);
+            
             sync_point.arrive_and_wait();
             Board secondary_one((depth > 0) ? depth-1 : 0, expression_type, cache), secondary_two((depth > 0) ? depth-1 : 0, expression_type, cache); //For crossover and mutations
             float score = 0.0f, mut_prob = 0.8f, rand_mut_cross;
@@ -1263,7 +1272,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
             for (int i = 0; i < init_population; i++)
             {
 //                puts("hi");
-                while ((score = x.complete_status()) == -1)
+                while ((score = x.complete_status()) == -1) //this while-loop generates one weight-update-rule expression
                 {
                     temp_legal_moves = x.get_legal_moves(); //the legal moves
                     temp_sz = temp_legal_moves.size(); //the number of legal moves
@@ -1316,19 +1325,21 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                 individuals.push_back(std::make_pair(x.srnn.pieces, score));
             };
             
-            auto Crossover = [&](int n)
+            auto Crossover = [&](int n) //depth-n trees to swap between secondary_one and secondary_two
             {
-                sub_exprs_1.clear();
-                sub_exprs_2.clear();
+                sub_exprs_1.clear(); //stores all depth-n subtrees in secondary_one
+                sub_exprs_2.clear(); //stores all depth-n subtrees in secondary_two
                 secondary_one.n = n;
                 secondary_two.n = n;
                 
+                //Picks the first random expression in the population of expressions called `individuals`
                 rand_individual_idx_1 = selector_dist(generator);
                 individual_1 = individuals[rand_individual_idx_1];
                 
+                //Picks the second random expression in the population of expressions called `individuals`
                 do {
                     rand_individual_idx_2 = selector_dist(generator);
-                } while (rand_individual_idx_2 == rand_individual_idx_1);
+                } while (rand_individual_idx_2 == rand_individual_idx_1); //Make sure we don't pick the same expression
                 individual_2 = individuals[rand_individual_idx_2];
             
                 //Step 1: Identify the starting and stopping index pairs of all depth-n sub-expressions
@@ -1377,17 +1388,15 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                     std::swap_ranges(start_1, end_1+1, start_2);
                 }
 
-                x.srnn.pieces = individual_1.first;
-                score = x.complete_status(false);
-                updateScore();
+                x.srnn.pieces = individual_1.first; //assigning the first cross-over'd individual to the primary Board object's pieces vector
+                score = x.complete_status(false); //getting the score of the first cross-over'd individual
+                updateScore(); //updating the best score achieved thus far
+                individuals.push_back(std::make_pair(x.srnn.pieces, score)); //adding the first cross-over'd individual to the expression population
                 
-                individuals.push_back(std::make_pair(x.srnn.pieces, score));
-                
-                x.srnn.pieces = individual_2.first;
-                score = x.complete_status(false);
-                updateScore();
-                
-                individuals.push_back(std::make_pair(x.srnn.pieces, score));
+                x.srnn.pieces = individual_2.first; //assigning the second cross-over'd individual to the primary Board object's pieces vector
+                score = x.complete_status (false); //getting the score of the second cross-over'd individual
+                updateScore(); //updating the best score achieved thus far
+                individuals.push_back(std::make_pair(x.srnn.pieces, score)); //adding the first cross-over'd individual to the expression population
             };
 
             for (/*int ngen = 0*/; (timeElapsedSince(start_time) < time); /*ngen++*/)
@@ -1397,13 +1406,13 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
     //                std::cout << "Unique expressions = " << Board::expression_set.size() << '\n';
     //            }
                 //Produce N additional individuals through crossover and mutation
-                for (int n = 0; n < init_population; n++)
+                for (int n = 0; n < init_population /*size of initial population*/; n++)
                 {
                     //Step 1: Generate a random number between 0 and 1 called `rand_mut_cross`
                     rand_mut_cross = rand_mut_cross_dist(generator);
                     
                     //Step 2: Generate a random uniform int from 0 to x.n - 1 called `rand_depth`
-                    rand_depth = rand_depth_dist(generator);
+                    rand_depth = rand_depth_dist(generator); //depth of expression(s) to perform mutation or crossover with
                     
                     //Step 4: Call Mutation function if 0 <= rand_mut_cross <= mut_prob, else select Crossover
                     if (rand_mut_cross <= mut_prob)
@@ -1416,11 +1425,11 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                     }
                 }
                 std::sort(individuals.begin(), individuals.end(),
-                [](std::pair<std::vector<float>, float>& individual_1, std::pair<std::vector<float>, float>& individual_2)
+                [](std::pair<std::vector<float>, float>& individual_1, std::pair<std::vector<float>, float>& individual_2) //TODO: might need to change vector<float> to vector<string> for list of expression tokens?!
                 {
                     return individual_1.second > individual_2.second;
-                });
-                individuals.resize(init_population);
+                }); //sorts the individuals in the population from highest to lowest score (so highest score -> first element, second highest score -> second element, etc.)
+                individuals.resize(init_population); //keep only the best `init_population` individuals.
             }
         };
         
@@ -1462,7 +1471,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
     out.close();
 }
 
-void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, const unsigned long num_epochs = 1000, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f)
+void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, const unsigned long num_epochs = 1000, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f, float lambda = 0.01f /*weight decay AdamW*/)
 {
     std::map<int, std::vector<float>> scores; //map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
@@ -1500,11 +1509,11 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
          Inside of thread:
          */
         
-        auto func = [&depth, &expression_type, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &layer_types, &num_epochs, &bias, &eta, &theta, &gamma, &epsilon, &beta_1, &beta_2, &best_expression, &orig_expression]()
+        auto func = [&depth, &expression_type, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &layer_types, &num_epochs, &bias, &eta, &theta, &gamma, &epsilon, &beta_1, &beta_2, &lambda, &best_expression, &orig_expression]()
         {
             std::random_device rand_dev;
             std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-            Board x(depth, expression_type, data, false, cache, layers, layer_types, num_epochs, bias, eta, theta, gamma, epsilon, beta_1, beta_2);
+            Board x(depth, expression_type, data, false, cache, layers, layer_types, num_epochs, bias, eta, theta, gamma, epsilon, beta_1, beta_2, lambda);
             sync_point.arrive_and_wait();
             float score = 0, check_point_score = 0;
             std::vector<float> temp_legal_moves;
@@ -1659,7 +1668,7 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
 }
 
 //https://arxiv.org/abs/2205.13134
-void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, const unsigned long num_epochs = 1000, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f)
+void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, const unsigned long num_epochs = 1000, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f, float lambda = 0.01f /*weight decay AdamW*/)
 {
     std::map<int, std::vector<float>> scores; //map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
@@ -1696,11 +1705,11 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
          Inside of thread:
          */
         
-        auto func = [&depth, &expression_type, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &layer_types, &num_epochs, &bias, &eta, &theta, &gamma, &epsilon, &beta_1, &beta_2, &best_expression, &orig_expression]()
+        auto func = [&depth, &expression_type, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &layer_types, &num_epochs, &bias, &eta, &theta, &gamma, &epsilon, &beta_1, &beta_2, &lambda, &best_expression, &orig_expression]()
         {
             std::random_device rand_dev;
             std::mt19937 thread_local generator(rand_dev());
-            Board x(depth, expression_type, data, false, cache, layers, layer_types, num_epochs, bias, eta, theta, gamma, epsilon, beta_1, beta_2);
+            Board x(depth, expression_type, data, false, cache, layers, layer_types, num_epochs, bias, eta, theta, gamma, epsilon, beta_1, beta_2, lambda);
             sync_point.arrive_and_wait();
             float score = 0.0f, check_point_score = 0.0f, UCT, best_act, UCT_best;
             
@@ -1841,7 +1850,7 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
     out.close();
 }
 
-void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::string expression_type = "prefix", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, const int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, const int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, const unsigned long num_epochs = 1000, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f)
+void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::string expression_type = "prefix", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, const int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, const int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, const unsigned long num_epochs = 1000, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f, float lambda = 0.01f /*weight decay AdamW*/)
 {
     std::map<int, std::vector<float>> scores; //map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
@@ -1880,11 +1889,11 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
          Inside of thread:
          */
         
-        auto func = [&depth, &expression_type, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &layer_types, &num_epochs, &bias, &eta, &theta, &gamma, &epsilon, &beta_1, &beta_2, &best_expression, &orig_expression]()
+        auto func = [&depth, &expression_type, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &layer_types, &num_epochs, &bias, &eta, &theta, &gamma, &epsilon, &beta_1, &beta_2, &lambda, &best_expression, &orig_expression]()
         {
             std::random_device rand_dev;
             std::mt19937 thread_local generator(rand_dev()); // Mersenne Twister random number generator
-            Board x(depth, expression_type, data, false, cache, layers, layer_types, num_epochs, bias, eta, theta, gamma, epsilon, beta_1, beta_2);
+            Board x(depth, expression_type, data, false, cache, layers, layer_types, num_epochs, bias, eta, theta, gamma, epsilon, beta_1, beta_2, lambda);
             sync_point.arrive_and_wait();
             float score = 0.0f;
             std::vector<float> temp_legal_moves;
@@ -1975,7 +1984,7 @@ int main()
 //...
 //-1.3 -2.2 Hemberg_2(-1.3, -2.2)
     
-    GP(generateData(20 /*rows*/, 3 /*columns*/, Hemberg_2 /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", true /*cache*/, 1 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 1 /*num threads*/, {2,10,5,5,1} /*Neural Network number of perceptrons in i'th layers */, std::deque<std::string>{"sigmoid", "sigmoid", "none", "none"}, 10 /*num_epochs*/,/* bias = */ 1.0f, /*eta = */ 0.5f, /*theta = */ 0.01f, /*gamma = */ 0.9f, /*beta_1 = */ 0.9f, /*beta_2 = */ 0.999f);
+    GP(generateData(20 /*rows*/, 3 /*columns*/, Hemberg_2 /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", true /*cache*/, 1 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 1 /*num threads*/, {2,10,5,5,1} /*Neural Network number of perceptrons in i'th layers */, std::deque<std::string>{"sigmoid", "sigmoid", "none", "none"}, 10 /*num_epochs*/,/* bias = */ 1.0f, /*eta = */ 0.5f, /*theta = */ 0.01f, /*gamma = */ 0.9f, /*beta_1 = */ 0.9f, /*beta_2 = */ 0.999f, /*lambda = */ 0.01f);
     
 
     return 0;
@@ -2018,7 +2027,10 @@ int main()
  
  */
 
-//g++ -Wall -std=c++20 -o NeuralNetworks_VecSR NeuralNetworks_VecSR.cpp MLP_Vec.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -ffast-math -ftree-vectorize -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
+//g++ -Wall -std=c++20 -o NeuralNetworks_VecSR NeuralNetworks_VecSR.cpp MLP_Vec.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -ftree-vectorize -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
+
+//g++ -Wall -std=c++20 -o NeuralNetworks_VecSR NeuralNetworks_VecSR.cpp MLP_Vec.cpp -g -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
+
 
 
 //1                  1         0
