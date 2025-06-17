@@ -5126,6 +5126,220 @@ std::vector<std::vector<std::string>> VortexRadialProfile(Board& x)
     }
     return results;
 }
+/*
+ Equation from here: https://en.wikipedia.org/wiki/Navier%E2%80%93Stokes_existence_and_smoothness#The_Navier%E2%80%93Stokes_equations
+ 
+ ∂v_x/∂t + (∂v_x/∂x)*v_x + (∂v_x/∂y)*v_y + (∂v_x/∂z)*v_z + (1/ρ)*(∂p/∂x) - (ν)*(∂^2v_x/∂x^2 + ∂^2v_x/∂y^2 + ∂^2v_x/∂z^2) - f_x
+ 
+ ∂v_x/∂t (∂v_x/∂x) v_x * + (∂v_x/∂y) v_y * + (∂v_x/∂z) v_z * +
+ 
+ ∂v_y/∂t + (∂v_y/∂x)*v_x + (∂v_y/∂y)*v_y + (∂v_y/∂z)*v_z + (1/ρ)*(∂p/∂y) - (ν)*(∂^2v_y/∂x^2 + ∂^2v_y/∂y^2 + ∂^2v_y/∂z^2) - f_y
+ 
+ ∂v_z/∂t + (∂v_z/∂x)*v_x + (∂v_z/∂y)*v_y + (∂v_z/∂z)*v_z + (1/ρ)*(∂p/∂z) - (ν)*(∂^2v_z/∂x^2 + ∂^2v_z/∂y^2 + ∂^2v_z/∂z^2) - f_z
+ 
+ ∂v_x/∂x + ∂v_y/∂y + ∂v_z/∂z
+ 
+ */
+
+std::vector<std::vector<std::string>> NavierStokes3D(Board& x)
+{
+    std::vector<std::vector<std::string>> results(7); //7 unknowns: v_x, v_y, v_z, f_x, f_y, f_z, p
+    for (int i = 0; i < 7; i++){results[i].reserve(100);}
+    std::vector<int> grasp;
+    std::vector<std::string> R_prime;
+    std::string infty = std::to_string(FLT_MAX);
+
+    if (x.expression_type == "prefix")
+    {
+        //- + + * / 1 2 R'' * / 1 * 2 r R' * - mu / * S S * * 2 r r R * * R R R
+        result.push_back("-");
+        result.push_back("+");
+        result.push_back("+");
+        result.push_back("*");
+        result.push_back("/");
+        result.push_back("1");
+        result.push_back("2");
+        x.derivePrefix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
+        R_prime = x.derivat;
+        x.derivePrefix(0, R_prime.size()-1, "x0", R_prime, grasp); //derivat will store second derivative of R_prime
+        for (const std::string& i: x.derivat) //R''
+        {
+            result.push_back(i);
+        }
+        result.push_back("*");
+        result.push_back("/");
+        result.push_back("1");
+        result.push_back("*");
+        result.push_back("2");
+        result.push_back("x0"); //r
+        for (const std::string& i: R_prime) //R'
+        {
+            result.push_back(i);
+        }
+        result.push_back("*");
+        result.push_back("-");
+        result.push_back("mu");
+        result.push_back("/");
+        result.push_back("*");
+        result.push_back("S");
+        result.push_back("S");
+        result.push_back("*");
+        result.push_back("*");
+        result.push_back("2");
+        result.push_back("x0"); //r
+        result.push_back("x0"); //r
+        for (const std::string& i: x.pieces[0]) //R
+        {
+            result.push_back(i);
+        }
+        result.push_back("*");
+        result.push_back("*");
+        for (const std::string& i: x.pieces[0]) //R
+        {
+            result.push_back(i);
+        }
+        for (const std::string& i: x.pieces[0]) //R
+        {
+            result.push_back(i);
+        }
+        for (const std::string& i: x.pieces[0]) //R
+        {
+            result.push_back(i);
+        }
+        results.push_back(result);
+
+        //R(0)
+        result.clear();
+        for (size_t i = 0; i < x.pieces[0].size(); i++)
+        {
+            if (x.pieces[0][i] == "x0")
+            {
+                result.push_back("0");
+            }
+            else
+            {
+                result.push_back(x.pieces[0][i]);
+            }
+        }
+        results.push_back(result);
+        
+        //- R(∞) sqrt mu
+        result.clear();
+        result.push_back("-");
+        for (size_t i = 0; i < x.pieces[0].size(); i++)
+        {
+            if (x.pieces[0][i] == "x0")
+            {
+                result.push_back(infty);
+            }
+            else
+            {
+                result.push_back(x.pieces[0][i]);
+            }
+        }
+        result.push_back("sqrt");
+        result.push_back("mu");
+        results.push_back(result);
+    }
+    else if (x.expression_type == "postfix")
+    {
+        //1 2 / R'' * 1 2 r * / R' * + mu S S * 2 r r * * / - R * + R R * R * -
+        result.push_back("1");
+        result.push_back("2");
+        result.push_back("/");
+        x.derivePostfix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
+        R_prime = x.derivat;
+        x.derivePostfix(0, R_prime.size()-1, "x0", R_prime, grasp); //derivat will store second derivative of R_prime
+        for (const std::string& i: x.derivat) //R''
+        {
+            result.push_back(i);
+        }
+        result.push_back("*");
+        result.push_back("1");
+        result.push_back("2");
+        result.push_back("x0"); //r
+        result.push_back("*");
+        result.push_back("/");
+        for (const std::string& i: R_prime) //R'
+        {
+            result.push_back(i);
+        }
+        result.push_back("*");
+        result.push_back("+");
+        result.push_back("mu");
+        result.push_back("S");
+        result.push_back("S");
+        result.push_back("*");
+        result.push_back("2");
+        result.push_back("x0"); //r
+        result.push_back("x0"); //r
+        result.push_back("*");
+        result.push_back("*");
+        result.push_back("/");
+        result.push_back("-");
+        for (const std::string& i: x.pieces[0]) //R
+        {
+            result.push_back(i);
+        }
+        result.push_back("*");
+        result.push_back("+");
+        for (const std::string& i: x.pieces[0]) //R
+        {
+            result.push_back(i);
+        }
+        for (const std::string& i: x.pieces[0]) //R
+        {
+            result.push_back(i);
+        }
+        result.push_back("*");
+        for (const std::string& i: x.pieces[0]) //R
+        {
+            result.push_back(i);
+        }
+        result.push_back("*");
+        result.push_back("-");
+        results.push_back(result);
+
+        //R(0)
+        result.clear();
+        for (size_t i = 0; i < x.pieces[0].size(); i++)
+        {
+            if (x.pieces[0][i] == "x0")
+            {
+                result.push_back("0");
+            }
+            else
+            {
+                result.push_back(x.pieces[0][i]);
+            }
+        }
+        results.push_back(result);
+        
+        //R(∞) mu sqrt -
+        result.clear();
+        
+        for (size_t i = 0; i < x.pieces[0].size(); i++)
+        {
+            if (x.pieces[0][i] == "x0")
+            {
+                result.push_back(infty);
+            }
+            else
+            {
+                result.push_back(x.pieces[0][i]);
+            }
+        }
+        
+        result.push_back("mu");
+        result.push_back("sqrt");
+        result.push_back("-");
+        results.push_back(result);
+
+        
+
+    }
+    return results;
+}
 
 //x0 -> x, x1 -> y, x2 -> t
 std::vector<std::vector<std::string>> TwoDAdvectionDiffusion_1(Board& x)
@@ -6674,7 +6888,7 @@ int main()
     
 //    std::cout<<data << '\n' << (Eigen::VectorXf::Ones(5).array() / Eigen::VectorXf::Zero(5).array()).cos() /*Eigen::VectorXf::Zero(5).array().pow(Eigen::VectorXf::Ones(5).array())*/ << '\n';
     
-    RandomSearch(VortexRadialProfile /*differential equation to solve*/, VortexRadialProfileSetter /*helper function to set constants that the solution may contain*/,  data /*data used to solve differential equation*/, std::vector<int>{20} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
+    RandomSearch(VortexRadialProfile /*differential equation to solve*/, VortexRadialProfileSetter /*helper function to set constants that the solution may contain*/,  data /*data used to solve differential equation*/, std::vector<int>{20} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
     
     return 0;
 }
