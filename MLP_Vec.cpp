@@ -438,14 +438,15 @@ std::vector<Eigen::VectorXf> MultiLayerPerceptron::sigmoid(const std::vector<Eig
     return result;
 }
 
+
 float MultiLayerPerceptron::expression_evaluator(float w_k, float d_ij, float value, float d_ij_nest, float velocity_k, float gradient_k, float g_t_k, float expt_grad_squared_k, float delta_w_t_k, float expt_weight_squared_k, float delta_w_t_k_ada_delta, float m_t_k, float v_t_k, float m_t_k_hat, float v_t_k_hat, const Eigen::VectorXf& params)
 {
     std::stack<float> stack;
     bool is_prefix = (expression_type == "prefix");
     for (int i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
     {
-        std::string token = MultiLayerPerceptron::__tokens_dict[pieces[i]];
-        if (std::find(MultiLayerPerceptron::__operators_float.begin(), MultiLayerPerceptron::__operators_float.end(), pieces[i]) == MultiLayerPerceptron::__operators_float.end()) // leaf
+        std::string token = pieces[i];
+        if (std::find(MultiLayerPerceptron::__operators.begin(), MultiLayerPerceptron::__operators.end(), pieces[i]) == MultiLayerPerceptron::__operators.end()) // leaf
         {
             if (token == "w_k")
             {
@@ -535,8 +536,12 @@ float MultiLayerPerceptron::expression_evaluator(float w_k, float d_ij, float va
             {
                 stack.push(this->t);
             }
+            else
+            {
+                std::runtime_error(std::string("Error in MultiLayerPerceptron::expression_evaluator, trying to push token ")+token+", token.size() = "+std::to_string(token.size()));
+            }
         }
-        else if (std::find(MultiLayerPerceptron::__unary_operators_float.begin(), MultiLayerPerceptron::__unary_operators_float.end(), pieces[i]) != MultiLayerPerceptron::__unary_operators_float.end()) // Unary operator
+        else if (std::find(MultiLayerPerceptron::__unary_operators.begin(), MultiLayerPerceptron::__unary_operators.end(), pieces[i]) != MultiLayerPerceptron::__unary_operators.end()) // Unary operator
         {
             if (token == "cos")
             {
@@ -592,13 +597,26 @@ float MultiLayerPerceptron::expression_evaluator(float w_k, float d_ij, float va
                 stack.pop();
                 stack.push(-temp);
             }
+            else
+            {
+                std::runtime_error(std::string("Error in MultiLayerPerceptron::expression_evaluator, trying to push token ")+token+", token.size() = "+std::to_string(token.size()));
+            }
         }
         else // binary operator
         {
             float left_operand = stack.top();
             stack.pop();
+            if (stack.size() == 0)
+            {
+                std::runtime_error(std::string("Error in MultiLayerPerceptron::expression_evaluator, trying to access element that doesn't exist, token = ")+token+", token.size() = "+std::to_string(token.size()));
+            }
+            else
+            {
+                printf("stack.size() = %lu\n", stack.size());
+            }
             float right_operand = stack.top();
             stack.pop();
+            
             if (token == "+")
             {
                 stack.push(((expression_type == "postfix") ? (right_operand + left_operand) : (left_operand + right_operand)));
@@ -619,7 +637,19 @@ float MultiLayerPerceptron::expression_evaluator(float w_k, float d_ij, float va
             {
                 stack.push(((expression_type == "postfix") ? (/*right_operand.pow(left_operand) */pow(right_operand, left_operand)) : (/*left_operand.pow(right_operand)*/pow(left_operand, right_operand))));
             }
+            else
+            {
+                std::runtime_error(std::string("Error in MultiLayerPerceptron::expression_evaluator, trying to push token ")+token+", token.size() = "+std::to_string(token.size()));
+            }
         }
+    }
+    if (stack.size() == 0)
+    {
+        std::runtime_error(std::string("Error in MultiLayerPerceptron::expression_evaluator, trying to access element that doesn't exist"));
+    }
+    else
+    {
+        printf("stack.size() = %lu\n", stack.size());
     }
     return stack.top();
 }

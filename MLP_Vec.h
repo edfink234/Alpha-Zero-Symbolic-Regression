@@ -35,10 +35,9 @@ class Perceptron
 class MultiLayerPerceptron
 {
     public:
-        static std::unordered_map<float, std::string> inline __tokens_dict; //Converts number to string
-        static std::vector<float> inline __operators_float;
-        static std::vector<float> inline __unary_operators_float;
-        std::vector<float> pieces; //expression list for Symbolic Regressor
+        static std::vector<std::string> inline __operators;
+        static std::vector<std::string> inline __unary_operators;
+        std::vector<std::string> pieces; //expression list for Symbolic Regressor
 
     MultiLayerPerceptron() = default;
     MultiLayerPerceptron(std::vector<int> layers, std::deque<std::string> layer_types, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, const std::string& weight_update = "basic", const std::string& expression_type = "prefix", float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f, float lambda = 0.01f /*weight decay AdamW*/);

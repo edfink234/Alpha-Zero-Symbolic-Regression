@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <future>         // std::async, std::future
 #include <unordered_map>
+#include <unordered_set>
 #include <map>
 #include <ctime>
 #include <cstdlib>
@@ -163,17 +164,13 @@ struct Board
     static std::vector<std::string> inline __input_vars;
     static std::vector<std::string> inline __unary_operators;
     static std::vector<std::string> inline __binary_operators;
+    static std::unordered_set<std::string> inline __unary_operators_uset;
+    static std::unordered_set<std::string> inline __binary_operators_uset;
     static std::vector<std::string> inline __operators;
     static std::vector<std::string> inline __other_tokens;
     static std::vector<std::string> inline __tokens;
-    static std::vector<float> inline __tokens_float;
     static Data inline data;
     static std::mutex inline thread_locker;
-    static std::vector<float> inline __operators_float;
-    static std::vector<float> inline __unary_operators_float;
-    static std::vector<float> inline __binary_operators_float;
-    static std::vector<float> inline __input_vars_float;
-    static std::vector<float> inline __other_tokens_float;
     
     std::random_device rd;
     std::mt19937 gen;
@@ -185,9 +182,7 @@ struct Board
     bool cache;
     std::vector<int> stack;
     int depth = 0, num_binary = 0, num_leaves = 0, idx = 0;
-    static std::unordered_map<float, std::string> inline __tokens_dict; //Converts number to string
-    static std::unordered_map<std::string, float> inline __tokens_inv_dict; //Converts string to number
-    static std::unordered_map<bool, std::unordered_map<bool, std::unordered_map<bool, std::vector<float>>>> inline una_bin_leaf_legal_moves_dict;
+    static std::unordered_map<bool, std::unordered_map<bool, std::unordered_map<bool, std::vector<std::string>>>> inline una_bin_leaf_legal_moves_dict;
 
     int n; //depth of RPN/PN tree
     std::string expression_type, expression_string;
@@ -213,7 +208,7 @@ struct Board
         {
             throw(std::runtime_error("Complexity cannot be larger than 30, sorry!"));
         }
-        
+        puts("here at 211");
         this->n = n; //depth of expression
         this->expression_type = expression_type;
         srnn.pieces = {};
@@ -221,19 +216,24 @@ struct Board
         this->reserve_amount = 2*std::pow(2,this->n)-1;
         srnn.pieces.reserve(this->reserve_amount);
         this->cache = cache;
-        
+        puts("here at 219");
         if (is_primary)
         {
             std::call_once(initialization_flag, [&]()
             {
+                puts("here at 224");
                 Board::data = theData;
                 
                 Board::__num_features = data[0].size() - 1;
                 Board::__input_vars.clear();
                 Board::expression_set.clear();
-                Board::__input_vars = {"w_k", "eta", "theta", "gamma", "epsilon", "beta_1", "beta_2", "d_ij", "value", "theta", "d_ij_nest", "velocity_k", "gradient_k", "g_t_k", "expt_grad_squared_k", "delta_w_t_k", "expt_weight_squared_k", "delta_w_t_k_ada_delta", "m_t_k", "v_t_k", "m_t_k_hat", "v_t_k_hat", "prev_w_k", "t"};
+                Board::__input_vars = {"w_k", "eta", "theta", "gamma", "epsilon", "beta_1", "beta_2", "d_ij", "value", "d_ij_nest", "velocity_k", "gradient_k", "g_t_k", "expt_grad_squared_k", "delta_w_t_k", "expt_weight_squared_k", "delta_w_t_k_ada_delta", "m_t_k", "v_t_k", "m_t_k_hat", "v_t_k_hat", "prev_w_k", "t"};
                 Board::__unary_operators = {"cos", "exp", "sqrt", "sin", "asin", "ln", "tanh", "acos", "~"};
                 Board::__binary_operators = {"+", "-", "*", "/", "^"};
+                std::copy(Board::__unary_operators.begin(), Board::__unary_operators.end(), std::inserter(Board::__unary_operators_uset, Board::__unary_operators_uset.end()));
+                std::copy(Board::__binary_operators.begin(), Board::__binary_operators.end(), std::inserter(Board::__binary_operators_uset, Board::__binary_operators_uset.end()));
+                for (const std::string& i: Board::__unary_operators_uset) {std::cout << i << ' ';}puts("");
+                for (const std::string& i: Board::__binary_operators_uset) {std::cout << i << ' ';}puts("");
                 Board::__operators.clear();
                 for (std::string& i: Board::__unary_operators)
                 {
@@ -255,79 +255,40 @@ struct Board
                     Board::__tokens.push_back(i);
                 }
                 Board::action_size = Board::__tokens.size();
-                Board::__tokens_float.clear();
-                Board::__tokens_float.reserve(Board::action_size);
-                for (int i = 1; i <= Board::action_size; ++i)
-                {
-                    Board::__tokens_float.push_back(i);
-                }
-                int num_operators = Board::__operators.size();
-                Board::__operators_float.clear();
-                MultiLayerPerceptron::__operators_float.clear();
-                for (int i = 1; i <= num_operators; i++)
-                {
-                    Board::__operators_float.push_back(i);
-                    MultiLayerPerceptron::__operators_float.push_back(i);
-                }
-                int num_unary_operators = Board::__unary_operators.size();
-                Board::__unary_operators_float.clear();
-                MultiLayerPerceptron::__unary_operators_float.clear();
-                for (int i = 1; i <= num_unary_operators; i++)
-                {
-                    Board::__unary_operators_float.push_back(i);
-                    MultiLayerPerceptron::__unary_operators_float.push_back(i);
-                }
-                Board::__binary_operators_float.clear();
-                for (int i = num_unary_operators + 1; i <= num_operators; i++)
-                {
-                    Board::__binary_operators_float.push_back(i);
-                }
-                int ops_plus_features = num_operators + Board::__num_features;
-                Board::__input_vars_float.clear();
-                for (int i = num_operators + 1; i <= ops_plus_features; i++)
-                {
-                    Board::__input_vars_float.push_back(i);
-                }
-                Board::__other_tokens_float.clear();
-                for (int i = ops_plus_features + 1; i <= ops_plus_features + Board::__other_tokens.size(); i++)
-                {
-                    Board::__other_tokens_float.push_back(i);
-                }
-                for (int i = 0; i < Board::action_size; i++)
-                {
-                    Board::__tokens_dict[Board::__tokens_float[i]] = Board::__tokens[i];
-                    MultiLayerPerceptron::__tokens_dict[Board::__tokens_float[i]] = Board::__tokens[i];
-                    Board::__tokens_inv_dict[Board::__tokens[i]] = Board::__tokens_float[i];
-                }
+                puts("here at 257");
+                Board::una_bin_leaf_legal_moves_dict[true][true][true] = Board::__tokens;
+                Board::una_bin_leaf_legal_moves_dict[true][true][false] = Board::__operators;
+                Board::una_bin_leaf_legal_moves_dict[true][false][true] = Board::__unary_operators; //1
+                Board::una_bin_leaf_legal_moves_dict[true][false][false] = Board::__unary_operators;
+                Board::una_bin_leaf_legal_moves_dict[false][true][true] = Board::__binary_operators; //2
+                Board::una_bin_leaf_legal_moves_dict[false][true][false] = Board::__binary_operators;
                 
-                Board::una_bin_leaf_legal_moves_dict[true][true][true] = Board::__tokens_float;
-                Board::una_bin_leaf_legal_moves_dict[true][true][false] = Board::__operators_float;
-                Board::una_bin_leaf_legal_moves_dict[true][false][true] = Board::__unary_operators_float; //1
-                Board::una_bin_leaf_legal_moves_dict[true][false][false] = Board::__unary_operators_float;
-                Board::una_bin_leaf_legal_moves_dict[false][true][true] = Board::__binary_operators_float; //2
-                Board::una_bin_leaf_legal_moves_dict[false][true][false] = Board::__binary_operators_float;
-                
-                for (float i: Board::__input_vars_float)
+                for (const std::string &i: Board::__input_vars)
                 {
                     Board::una_bin_leaf_legal_moves_dict[true][false][true].push_back(i); //1
                     Board::una_bin_leaf_legal_moves_dict[false][true][true].push_back(i); //2
                     Board::una_bin_leaf_legal_moves_dict[false][false][true].push_back(i); //3
                 }
-                for (float i: Board::__other_tokens_float)
+                for (const std::string& i: Board::__other_tokens)
                 {
                     Board::una_bin_leaf_legal_moves_dict[true][false][true].push_back(i); //1
                     Board::una_bin_leaf_legal_moves_dict[false][true][true].push_back(i); //2
                     Board::una_bin_leaf_legal_moves_dict[false][false][true].push_back(i); //3
                 }
+                std::cout << "Board::__unary_operators.size() = " << Board::__unary_operators.size() << '\n';
+                std::cout << "Board::__binary_operators.size() = " << Board::__binary_operators.size() << '\n';
+                std::cout << "Board::__tokens.size() = " << Board::__tokens.size() << '\n';
+
             });
         }
+        exit(1);
     }
     
-    float operator[](size_t index) const
+    std::string operator[](size_t index) const
     {
-        if (index < Board::__tokens_float.size())
+        if (index < Board::__tokens.size())
         {
-            return Board::__tokens_float[index];
+            return Board::__tokens[index];
         }
         throw std::out_of_range("Index out of range");
     }
@@ -335,9 +296,9 @@ struct Board
     int __num_binary_ops() const
     {
         int count = 0;
-        for (float token : srnn.pieces)
+        for (const std::string& token : srnn.pieces)
         {
-            if (std::find(Board::__binary_operators_float.begin(), Board::__binary_operators_float.end(), token) != Board::__binary_operators_float.end())
+            if (std::find(Board::__binary_operators.begin(), Board::__binary_operators.end(), token) != Board::__binary_operators.end())
             {
                 count++;
             }
@@ -348,9 +309,9 @@ struct Board
     int __num_unary_ops() const
     {
         int count = 0;
-        for (float token : srnn.pieces)
+        for (const std::string& token : srnn.pieces)
         {
-            if (std::find(Board::__unary_operators_float.begin(), Board::__unary_operators_float.end(), token) != Board::__unary_operators_float.end())
+            if (std::find(Board::__unary_operators.begin(), Board::__unary_operators.end(), token) != Board::__unary_operators.end())
             {
                 count++;
             }
@@ -362,7 +323,7 @@ struct Board
     {
         int count = 0;
 
-        for (float token : srnn.pieces)
+        for (const std::string& token : srnn.pieces)
         {
             if (!is_unary(token) && !is_binary(token))
             {
@@ -376,9 +337,9 @@ struct Board
     {
         int count = 0;
 
-        for (float token : srnn.pieces)
+        for (const std::string& token : srnn.pieces)
         {
-            if (__tokens_dict[token] == "const")
+            if (token.substr(0,5) == "const")
             {
                 count++;
             }
@@ -386,17 +347,17 @@ struct Board
         return count;
     }
     
-    bool is_unary(float token) const
+    bool is_unary(const std::string& token) const
     {
-        return (std::find(__unary_operators_float.begin(), __unary_operators_float.end(), token) != __unary_operators_float.end());
-    }
-
-    bool is_binary(float token) const
-    {
-        return (std::find(__binary_operators_float.begin(), __binary_operators_float.end(), token) != __binary_operators_float.end());
+        return (Board::__unary_operators_uset.find(token) != Board::__unary_operators_uset.end());
     }
     
-    bool is_operator(float token) const
+    bool is_binary(const std::string& token) const
+    {
+        return (Board::__binary_operators_uset.find(token) != Board::__binary_operators_uset.end());
+    }
+    
+    bool is_operator(const std::string& token) const
     {
         return (is_binary(token) || is_unary(token));
     }
@@ -405,7 +366,7 @@ struct Board
      Returns a pair containing the depth of the sub-expression from start to stop, and whether or not it's complete
      Algorithm adopted from here: https://stackoverflow.com/a/77180279
      */
-    std::pair<int, bool> getPNdepth(const std::vector<float>& expression, size_t start = 0, size_t stop = 0, bool cache = false, bool modify = false, bool binary = false, bool unary = false, bool leaf = false)
+    std::pair<int, bool> getPNdepth(const std::vector<std::string>& expression, size_t start = 0, size_t stop = 0, bool cache = false, bool modify = false, bool binary = false, bool unary = false, bool leaf = false)
     {
         if (expression.empty())
         {
@@ -499,7 +460,7 @@ struct Board
      Returns a pair containing the depth of the sub-expression from start to stop, and whether or not it's complete
      Algorithm adopted from here: https://stackoverflow.com/a/77128902
      */
-    std::pair<int, bool> getRPNdepth(const std::vector<float>& expression, size_t start = 0, size_t stop = 0, bool cache = false, bool modify = false, bool unary = false, bool leaf = false)
+    std::pair<int, bool> getRPNdepth(const std::vector<std::string>& expression, size_t start = 0, size_t stop = 0, bool cache = false, bool modify = false, bool unary = false, bool leaf = false)
     {
         if (expression.empty())
         {
@@ -651,7 +612,7 @@ struct Board
         }
     }
     
-    std::vector<float> get_legal_moves()
+    std::vector<std::string> get_legal_moves()
     {
         if (this->expression_type == "prefix")
         {
@@ -659,7 +620,7 @@ struct Board
             {
                 if (this->n != 0) // if the depth is not 0
                 {
-                    return Board::__operators_float;
+                    return Board::__operators;
                 }
                 else // else it's the leaves
                 {
@@ -677,17 +638,17 @@ struct Board
             else
             {
                 bool una_allowed = false, bin_allowed = false, leaf_allowed = false;
-                if (Board::__binary_operators_float.size() > 0)
+                if (Board::__binary_operators.size() > 0)
                 {
-                    srnn.pieces.push_back(Board::__binary_operators_float[0]);
+                    srnn.pieces.push_back(Board::__binary_operators[0]);
                     bin_allowed = (getPNdepth(srnn.pieces).first <= this->n);
                 }
-                if (Board::__unary_operators_float.size() > 0)
+                if (Board::__unary_operators.size() > 0)
                 {
-                    srnn.pieces[srnn.pieces.size() - 1] = Board::__unary_operators_float[0];
+                    srnn.pieces[srnn.pieces.size() - 1] = Board::__unary_operators[0];
                     una_allowed = (getPNdepth(srnn.pieces).first <= this->n);
                 }
-                srnn.pieces[srnn.pieces.size() - 1] = Board::__input_vars_float[0];
+                srnn.pieces[srnn.pieces.size() - 1] = Board::__input_vars[0];
                 leaf_allowed = (!((num_leaves == num_binary + 1) || (getPNdepth(srnn.pieces).first < this->n && (num_leaves == num_binary))));
                 srnn.pieces.pop_back();
 //                assert(!(!una_allowed && !bin_allowed && !leaf_allowed));
@@ -712,13 +673,13 @@ struct Board
             else
             {
                 bool una_allowed = false, bin_allowed = (num_binary != num_leaves - 1), leaf_allowed = false;
-                if (Board::__unary_operators_float.size() > 0)
+                if (Board::__unary_operators.size() > 0)
                 {
-                    srnn.pieces.push_back(Board::__unary_operators_float[0]);
+                    srnn.pieces.push_back(Board::__unary_operators[0]);
                     una_allowed = ((num_leaves >= 1) && (getRPNdepth(srnn.pieces).first <= this->n));
                 }
                 
-                srnn.pieces[srnn.pieces.size() - 1] = Board::__input_vars_float[0];
+                srnn.pieces[srnn.pieces.size() - 1] = Board::__input_vars[0];
                 leaf_allowed = (getRPNdepth(srnn.pieces).first <= this->n);
 
                 srnn.pieces.pop_back();
@@ -738,7 +699,7 @@ struct Board
         size_t sz = srnn.pieces.size() - 1;
         for (size_t i = 0; i <= sz; i++)
         {
-            temp += ((i!=sz) ? Board::__tokens_dict[srnn.pieces[i]] + " " : Board::__tokens_dict[srnn.pieces[i]]);
+            temp += ((i!=sz) ? srnn.pieces[i] + " " : srnn.pieces[i]);
         }
         return temp;
     }
@@ -747,17 +708,17 @@ struct Board
     {
         std::stack<std::string> stack;
         bool is_prefix = (expression_type == "prefix");
-        std::string result;
+        std::string result, token;
         
         for (int i = (is_prefix ? (srnn.pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < srnn.pieces.size())); (is_prefix ? (i--) : (i++)))
         {
-            std::string token = Board::__tokens_dict[srnn.pieces[i]];
+            token = srnn.pieces[i];
 
-            if (std::find(Board::__operators_float.begin(), Board::__operators_float.end(), srnn.pieces[i]) == Board::__operators_float.end()) // leaf
+            if (std::find(Board::__operators.begin(), Board::__operators.end(), token) == Board::__operators.end()) // leaf
             {
                 stack.push(token);
             }
-            else if (std::find(Board::__unary_operators_float.begin(), Board::__unary_operators_float.end(), srnn.pieces[i]) != Board::__unary_operators_float.end()) // Unary operator
+            else if (std::find(Board::__unary_operators.begin(), Board::__unary_operators.end(), token) != Board::__unary_operators.end()) // Unary operator
             {
                 std::string operand = stack.top();
                 stack.pop();
@@ -819,7 +780,7 @@ struct Board
             {
                 this->expression_string.clear();
                 this->expression_string.reserve(8*srnn.pieces.size());
-                for (float i: srnn.pieces){this->expression_string += std::to_string(i)+" ";}
+                for (const std::string& i: srnn.pieces){this->expression_string += i+" ";}
                 Board::expression_set.insert(this->expression_string);
 
                 return (1.0f/(1.0f+this->srnn.train(data.rows, data.labels, this->epochs, false))); //"fitFunctionToData"
@@ -843,7 +804,7 @@ struct Board
     
     //Function to compute the LGB or RGB, from https://www.jstor.org/stable/43998756
     //(top of pg. 165)
-    void GB(size_t z, size_t& ind, const std::vector<float>& individual)
+    void GB(size_t z, size_t& ind, const std::vector<std::string>& individual)
     {
         do
         {
@@ -862,7 +823,7 @@ struct Board
     
     //Computes the grasp of an arbitrary element srnn.pieces[i],
     //from https://www.jstor.org/stable/43998756 (bottom of pg. 165)
-    int GR(size_t i, const std::vector<float>& individual)
+    int GR(size_t i, const std::vector<std::string>& individual)
     {
         size_t start = i;
         size_t& ptr_lgb = start;
@@ -879,7 +840,7 @@ struct Board
     
     //Adds pairs containing the starting and stopping indices for each
     //depth-n sub-expression in the expression individual
-    void get_indices(std::vector<std::pair<int, int>>& sub_exprs, std::vector<float>& individual)
+    void get_indices(std::vector<std::pair<int, int>>& sub_exprs, std::vector<std::string>& individual)
     {
         size_t temp;
         for (size_t k = 0; k < individual.size(); k++)
@@ -1025,9 +986,9 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
 
             float score = 0.0f, check_point_score = 0.0f;
             
-            std::vector<float> current;
+            std::vector<std::string> current;
             std::vector<std::pair<int, int>> sub_exprs;
-            std::vector<float> temp_legal_moves;
+            std::vector<std::string> temp_legal_moves;
             std::uniform_int_distribution<int> rand_depth_dist(0, x.n);
             size_t temp_sz;
     //        std::string expression, orig_expression, best_expression;
@@ -1225,7 +1186,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
             std::random_device rand_dev;
             std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
             Board x(depth, expression_type, data, false, cache, layers, layer_types, num_epochs, bias, eta, theta, gamma, epsilon, beta_1, beta_2, lambda);
-            
+            puts("here at 1185");
             
 //            Board(int n, const std::string& expression_type, const Eigen::MatrixXf& theData, bool visualize_exploration, bool cache, std::vector<int> layers, std::deque<std::string> layer_types, const unsigned long num_epochs, float bias, float eta, float theta, float gamma, float epsilon, float beta_1, float beta_2)
 //                : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, is_primary{true},
@@ -1238,15 +1199,17 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
             Board secondary_one((depth > 0) ? depth-1 : 0, expression_type, cache), secondary_two((depth > 0) ? depth-1 : 0, expression_type, cache); //For crossover and mutations
             float score = 0.0f, mut_prob = 0.8f, rand_mut_cross;
             constexpr int init_population = 5;
-            std::vector<std::pair<std::vector<float>, float>> individuals;
-            std::pair<std::vector<float>, float> individual_1, individual_2;
+            std::vector<std::pair<std::vector<std::string>, float>> individuals;
+            std::pair<std::vector<std::string>, float> individual_1, individual_2;
             std::vector<std::pair<int, int>> sub_exprs_1, sub_exprs_2;
             individuals.reserve(2*init_population);
-            std::vector<float> temp_legal_moves;
+            std::vector<std::string> temp_legal_moves;
             std::uniform_int_distribution<int> rand_depth_dist(0, x.n - 1), selector_dist(0, init_population - 1);
             int rand_depth, rand_individual_idx_1, rand_individual_idx_2;
             std::uniform_real_distribution<float> rand_mut_cross_dist(0.0f, 1.0f);
             size_t temp_sz;
+            puts("here at 1207");
+
         //    std::string expression, orig_expression, best_expression;
             
             auto updateScore = [&]()
@@ -1272,20 +1235,25 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
             for (int i = 0; i < init_population; i++)
             {
 //                puts("hi");
+                puts("here at 1234");
+
                 while ((score = x.complete_status()) == -1) //this while-loop generates one weight-update-rule expression
                 {
                     temp_legal_moves = x.get_legal_moves(); //the legal moves
+                    assert (temp_legal_moves.size() > 0), "Line 1278, temp_legal_moves.size() = "+std::to_string(temp_legal_moves.size());
                     temp_sz = temp_legal_moves.size(); //the number of legal moves
                     std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
                     x.srnn.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
                 }
+                puts("here at 1244");
+
                 
                 updateScore();
                 individuals.push_back(std::make_pair(x.srnn.pieces, score));
                 x.srnn.pieces.clear();
             }
             
-            auto Mutation = [&](int n)
+            auto Mutation = [&](int n) //TODO: This is the function that is causing the error.
             {
                 //Step 1: Generate a random depth-n sub-expression `secondary_one.srnn.pieces`
                 secondary_one.srnn.pieces.clear();
@@ -1294,6 +1262,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                 while (secondary_one.complete_status() == -1)
                 {
                     temp_legal_moves = secondary_one.get_legal_moves();
+                    assert (temp_legal_moves.size() > 0), "Line 1298, temp_legal_moves.size() = "+std::to_string(temp_legal_moves.size());
                     std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
                     secondary_one.srnn.pieces.push_back(temp_legal_moves[distribution(generator)]);
                 }
@@ -1425,7 +1394,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                     }
                 }
                 std::sort(individuals.begin(), individuals.end(),
-                [](std::pair<std::vector<float>, float>& individual_1, std::pair<std::vector<float>, float>& individual_2) //TODO: might need to change vector<float> to vector<string> for list of expression tokens?!
+                [](std::pair<std::vector<std::string>, float>& individual_1, std::pair<std::vector<std::string>, float>& individual_2) //TODO: might need to change vector<float> to vector<string> for list of expression tokens?!
                 {
                     return individual_1.second > individual_2.second;
                 }); //sorts the individuals in the population from highest to lowest score (so highest score -> first element, second highest score -> second element, etc.)
@@ -1516,7 +1485,7 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
             Board x(depth, expression_type, data, false, cache, layers, layer_types, num_epochs, bias, eta, theta, gamma, epsilon, beta_1, beta_2, lambda);
             sync_point.arrive_and_wait();
             float score = 0, check_point_score = 0;
-            std::vector<float> temp_legal_moves;
+            std::vector<std::string> temp_legal_moves;
             
             size_t temp_sz;
         //    std::string expression, orig_expression, best_expression;
@@ -1711,15 +1680,16 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
             std::mt19937 thread_local generator(rand_dev());
             Board x(depth, expression_type, data, false, cache, layers, layer_types, num_epochs, bias, eta, theta, gamma, epsilon, beta_1, beta_2, lambda);
             sync_point.arrive_and_wait();
-            float score = 0.0f, check_point_score = 0.0f, UCT, best_act, UCT_best;
+            std::string best_act;
+            float score = 0.0f, check_point_score = 0.0f, UCT, UCT_best;
             
-            std::vector<float> temp_legal_moves;
-            std::unordered_map<std::string, std::unordered_map<float, float>> Qsa, Nsa;
+            std::vector<std::string> temp_legal_moves;
+            std::unordered_map<std::string, std::unordered_map<std::string, float>> Qsa, Nsa;
             std::unordered_map<std::string, float> Ns;
             std::string state;
             
             float c = 1.4f; //"controls the balance between exploration and exploitation", see equation 2 here: https://web.engr.oregonstate.edu/~afern/classes/cs533/notes/uct.pdf, top of page 8 here: https://arxiv.org/pdf/1402.6028.pdf, first formula in section 4. Experiments here: https://cesa-bianchi.di.unimi.it/Pubblicazioni/ml-02.pdf
-            std::vector<std::pair<std::string, float>> moveTracker;
+            std::vector<std::pair<std::string, std::string>> moveTracker;
             moveTracker.reserve(x.reserve_amount);
             temp_legal_moves.reserve(x.reserve_amount);
             state.reserve(2*x.reserve_amount);
@@ -1728,7 +1698,7 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
             {
                 if (!x.srnn.pieces.empty())
                 {
-                    state += std::to_string(x.srnn.pieces[x.srnn.pieces.size()-1]) + " ";
+                    state += x.srnn.pieces[x.srnn.pieces.size()-1] + " ";
                 }
             };
             
@@ -1762,11 +1732,11 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
 //                    str_convert_time += timeElapsedSince(start_time);
                     UCT = 0.0f;
                     UCT_best = -FLT_MAX;
-                    best_act = -1.0f;
-                    std::vector<float> best_acts;
+                    best_act = "-1";
+                    std::vector<std::string> best_acts;
                     best_acts.reserve(temp_legal_moves.size());
                     
-                    for (float a : temp_legal_moves)
+                    for (const std::string& a: temp_legal_moves)
                     {
                         if (Nsa[state].count(a))
                         {
@@ -1896,7 +1866,7 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
             Board x(depth, expression_type, data, false, cache, layers, layer_types, num_epochs, bias, eta, theta, gamma, epsilon, beta_1, beta_2, lambda);
             sync_point.arrive_and_wait();
             float score = 0.0f;
-            std::vector<float> temp_legal_moves;
+            std::vector<std::string> temp_legal_moves;
             size_t temp_sz;
             while (timeElapsedSince(start_time) < time)
             {
@@ -1984,7 +1954,7 @@ int main()
 //...
 //-1.3 -2.2 Hemberg_2(-1.3, -2.2)
     
-    GP(generateData(20 /*rows*/, 3 /*columns*/, Hemberg_2 /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", true /*cache*/, 1 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 1 /*num threads*/, {2,10,5,5,1} /*Neural Network number of perceptrons in i'th layers */, std::deque<std::string>{"sigmoid", "sigmoid", "none", "none"}, 10 /*num_epochs*/,/* bias = */ 1.0f, /*eta = */ 0.5f, /*theta = */ 0.01f, /*gamma = */ 0.9f, /*beta_1 = */ 0.9f, /*beta_2 = */ 0.999f, /*lambda = */ 0.01f);
+    GP(generateData(20 /*rows*/, 3 /*columns*/, Hemberg_2 /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", true /*cache*/, 100 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 1 /*num threads*/, {2,10,5,5,1} /*Neural Network number of perceptrons in i'th layers */, std::deque<std::string>{"sigmoid", "sigmoid", "none", "none"}, 10 /*num_epochs*/,/* bias = */ 1.0f, /*eta = */ 0.5f, /*theta = */ 0.01f, /*gamma = */ 0.9f, /*beta_1 = */ 0.9f, /*beta_2 = */ 0.999f, /*lambda = */ 0.01f);
     
 
     return 0;
