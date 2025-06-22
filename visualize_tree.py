@@ -339,12 +339,14 @@ def test_visualize():
 #                plot_rpn_expression_tree(['x0', '0.999487', '+', '4.176018', '4', 'sech', '-', '^'], block=True, save = save)
 #                plot_pn_expression_tree("ln cos tanh - 4 / x0 0.648054".split(), block=True, save = save)
 #                plot_rpn_expression_tree("0 x x * 1 x x + tanh 0 ^ x * * 1 x x + tanh x * * / * ^ cos 1 - sin".split(), block=True, save = save)
-                plot_rpn_expression_tree("∂v_x/∂t (∂v_x/∂x) v_x * + (∂v_x/∂y) v_y * + (∂v_x/∂z) v_z * +".split(), block=True, save = save)
-#                plot_pn_expression_tree(["sin", "sin", "arcsin", "^", "0", "*", "y", "y"], block=True, save = save)
-
+#                plot_rpn_expression_tree("∂v_x/∂t (∂v_x/∂x) v_x * + (∂v_x/∂y) v_y * + (∂v_x/∂z) v_z * +".split(), block=True, save = save)
+                #plot_rpn_expression_tree("x x ^ x x ^ - asin tanh sin x x - * ~ 0 / 1 ^ tanh".split(), block=True, save = save)
+                plot_pn_expression_tree("+ - + x y z + - + x y z x".split(), block=True, save = save) #3*x + 2*y - 2*z -> {3, 2, -2}
+#                ['12', '4', '2', '0', '0', '0', '6', '4', '2', '0', '0', '0', '0']
+#                plot_pn_expression_tree("- + 1 - + 1 1".split(), block=True, save = save)
                 
     
-
+#                ((x+y)-z) + (((x+y) - z) + x)
         except KeyboardInterrupt:
 #            
             plt.close()

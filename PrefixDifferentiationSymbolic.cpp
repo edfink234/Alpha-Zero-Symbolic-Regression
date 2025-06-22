@@ -140,6 +140,7 @@ void derivePrefixHelper(int low, int up, const std::string& dx, const std::vecto
 //        Index = 0;
         setGR(prefix, grasp);
     }
+    
     //allowed ops: +, -, *, /, ^, unary +, unary -, sin(), cos(), tan(), ctg(), log(), sqrt(), const, x0, x1, ..., x_numFeatures
     //Define `grasp` of prefix[i], i.e., the number of elements forming operands of prefix[i] (grasp(operand) = 0)
     //The grasped elements of prefix[i] are the elements forming operands of prefix[i]
@@ -172,8 +173,10 @@ void derivePrefixHelper(int low, int up, const std::string& dx, const std::vecto
 
     if (prefix[low] == "+" || prefix[low] == "-")
     {
+        
         int op_idx = derivat.size();
         derivat.push_back(prefix[low]); //+/-
+
         int temp = low+1+grasp[low+1];
         int x_prime_low = derivat.size();
         derivePrefixHelper(low+1, temp, dx, prefix, grasp, true);  /* +/- x' */
@@ -193,7 +196,6 @@ void derivePrefixHelper(int low, int up, const std::string& dx, const std::vecto
         
         if (derivat[x_prime_high] == "0") //1.) +/- x' 0 -> x'
         {
-//            puts("hi 165");
             //remove y'
             if (x_prime_high == static_cast<int>(derivat.size() - 1))
             {
@@ -810,10 +812,17 @@ int main()
     std::vector<std::string> prefix; //array of prefix expression elements read from left to right
     std::vector<int> grasp;
     
+    prefix = {"+", "-", "+", "x", "y", "z", "+", "-", "+", "x", "y", "z", "x"};
+    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ 1 + 1 1 (prefix) -> 1+1+1 = 3 ✅
+    std::cout << grasp << '\n';
+    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    
     prefix = {"+","x","x"}; // x+x
     derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ 1 1 (prefix) -> 1+1 = 2 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    
+    exit(1);
     
     prefix = {"+","-","x","x","x"}; // (x-x)+x
     derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ - 1 1 1 (prefix) -> (1-1)+1 = 0+1 = 1 ✅
@@ -1470,3 +1479,5 @@ int main()
     
     return 0;
 }
+
+//g++ -std=c++20 -o PrefixDifferentiationSymbolic PrefixDifferentiationSymbolic.cpp

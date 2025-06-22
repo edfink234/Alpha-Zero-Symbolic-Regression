@@ -8,6 +8,8 @@ module function_space
     ["cos       ", "~         ", "sin       ", "log       ", "ln        ", "asin      ", "arcsin    ", &
      "acos      ", "arccos    ", "exp       ", "sech      ", "tanh      ", "sqrt      "]
     character(len=*), parameter :: binary_operators(5) = ["+", "-", "*", "/", "^"]
+    character(len=100), allocatable :: derivat(:)
+!    integer :: derivat_sz = 0
 
     type, bind(c) :: timespec
         integer(c_long) :: tv_sec  ! seconds
@@ -558,12 +560,15 @@ contains
     subroutine setPrefixGR(prefix, grasp)
         implicit none
         character(len=*), dimension(:), intent(in)  :: prefix
-        integer, allocatable, dimension(:), intent(out) :: grasp
+        integer, allocatable, dimension(:), intent(inout) :: grasp
 
         integer :: k, n
 
         n = size(prefix)
-        allocate(grasp(n))
+        if (size(grasp) /= n) then
+            deallocate(grasp)
+            allocate(grasp(n))
+        end if
 
         do k = 1, n
             grasp(k) = GR(k, prefix, 'prefix')
@@ -655,6 +660,169 @@ contains
             end if
         end do
     end function areExpressionRangesEqual
+
+    function areDerivatRangesEqual(start_idx_1, start_idx_2, num_steps) result(is_equal)
+        implicit none
+        integer, intent(in) :: start_idx_1, start_idx_2, num_steps
+        logical :: is_equal
+        integer :: i, j, stop_idx_1
+
+        stop_idx_1 = start_idx_1 + num_steps - 1
+        is_equal = .true.
+
+        do i = start_idx_1, stop_idx_1
+            j = start_idx_2 + (i - start_idx_1)
+            if (derivat(i) /= derivat(j)) then
+                is_equal = .false.
+                return
+            end if
+        end do
+    end function areDerivatRangesEqual
+
+    RECURSIVE subroutine derivePrefixHelper(low, up, dx, prefix, grasp, setGRvar)
+        integer, intent(in) :: low, up
+        character(len=*), intent(in) :: dx
+        character(len=*), dimension(:), intent(in) :: prefix
+        integer, allocatable, dimension(:), intent(inout) :: grasp
+        logical, intent(in), optional :: setGRvar
+        logical :: localSetGR
+        integer :: i, op_idx, temp, x_prime_low, x_prime_high, y_prime_high
+        integer :: step
+
+        localSetGR = .false.
+        if (present(setGRvar)) localSetGR = setGRvar
+
+        if (.not. localSetGR) then
+            allocate(derivat(1000))
+            derivat = ''
+!            derivat_sz = 0
+            ! Assume grasp is already filled
+            ! In original: setPrefixGR(prefix, grasp)
+            call setPrefixGR(prefix, grasp)
+            print *, "grasp(prefix) =", grasp
+        end if
+
+        if (.not. any(prefix(low:up) == dx)) then
+            call push_derivat("0")
+            return
+        end if
+
+        if (prefix(low) == "+" .or. prefix(low) == "-") then
+            
+            op_idx = derivat_size()
+!            print *, "op_idx =", op_idx
+!            STOP 1
+            call push_derivat(trim(prefix(low)))  ! '+' or '-'
+
+            temp = low + 1 + grasp(low + 1)
+            x_prime_low = derivat_size()
+
+            call derivePrefixHelper(low + 1, temp, dx, prefix, grasp, .true.)
+            x_prime_high = derivat_size()
+            call derivePrefixHelper(temp + 1, temp + 1 + grasp(temp + 1), dx, prefix, grasp, .true.)
+            y_prime_high = derivat_size()
+
+            ! Simplification cases
+            if (derivat(x_prime_high) == "0") then !+/- x' 0 -> x'
+                call pop_derivat_from(x_prime_high)
+                call remove_at(op_idx)
+            else if (derivat(x_prime_low) == "0") then
+                if (prefix(low) == "+") then !+ 0 y' -> y'
+                    call remove_range(op_idx, x_prime_high - 1)
+                else !- 0 y' -> ~ y'
+                    derivat(op_idx) = "~"
+                    call remove_at(x_prime_low)
+                end if
+            else
+                step = y_prime_high - x_prime_high
+                if (prefix(low) == "-" .and. step == (x_prime_high - x_prime_low)) then
+
+                    if (areDerivatRangesEqual(x_prime_low, x_prime_high, step)) then
+                        derivat(op_idx) = "0"
+                        call pop_derivat_from(op_idx + 1)
+                    end if
+                end if
+            end if
+        else
+            if (prefix(low) == dx) then
+                call push_derivat("1")
+            else
+                call push_derivat("0")
+            end if
+        end if
+    end subroutine derivePrefixHelper
+
+    !=== Helper Routines ===!
+
+    integer function derivat_size()
+        integer :: i
+        derivat_size = 1
+        do i = 1, size(derivat)
+            if (trim(derivat(i)) /= "") derivat_size = derivat_size + 1
+        end do
+    end function derivat_size
+
+    subroutine push_derivat(val)
+        character(len=*), intent(in) :: val
+        integer :: i
+        do i = 1, size(derivat)
+            if (trim(derivat(i)) == "") then
+                derivat(i) = val
+!                derivat_sz = derivat_sz + 1
+                return
+            end if
+        end do
+        print *, "Error: derivat full!"
+    end subroutine push_derivat
+
+    subroutine extend_derivat(new_size)
+        integer, intent(in) :: new_size
+        character(len=10), allocatable :: tmp(:)
+
+        allocate(tmp(new_size))
+        tmp(:size(derivat)) = derivat
+        call move_alloc(tmp, derivat)
+    end subroutine
+
+    subroutine pop_derivat_from(idx)
+        integer, intent(in) :: idx
+        integer :: i
+        do i = idx, size(derivat)
+            derivat(i) = ""
+        end do
+    end subroutine pop_derivat_from
+
+    subroutine remove_at(idx)
+        integer, intent(in) :: idx
+        integer :: i
+        do i = idx, size(derivat) - 1
+            derivat(i) = derivat(i + 1)
+        end do
+        derivat(size(derivat)) = ""
+    end subroutine remove_at
+
+    subroutine remove_range(i1, i2)
+        integer, intent(in) :: i1, i2
+        integer :: i, shift_len, end_idx
+        shift_len = i2 - i1 + 1
+        end_idx = size(derivat)
+        do i = i1, end_idx - shift_len
+            derivat(i) = derivat(i + shift_len)
+        end do
+        do i = end_idx - shift_len + 1, end_idx
+            derivat(i) = ""
+        end do
+    end subroutine remove_range
+
+    subroutine print_derivat()
+        integer :: i
+        do i = 1, size(derivat)
+            if (trim(derivat(i)) /= "") then
+                write(*,'(A)', advance='no') trim(derivat(i))//' '
+            end if
+        end do
+        print *, ""
+    end subroutine print_derivat
 
     function trueMod(N, M) result(modulo)
         implicit none
@@ -837,6 +1005,7 @@ program main
     integer :: i, j, low, up, rows, cols
     character(len=100) :: string_result
     character(len=15) :: token
+    character(len=3) :: dx
     CHARACTER(LEN=15), DIMENSION(:), ALLOCATABLE :: individual, individual_2
     CHARACTER(LEN=15), DIMENSION(2, 4) :: pieces_vec
     CHARACTER(LEN=10) :: expression_type
@@ -1057,6 +1226,66 @@ program main
         print *, "Element: ", individual(i), "  GR(", i, "): ", GR(i, individual, 'prefix'), " grasp(", i, "): ", grasp(i)
     end do
 
+    dx = 'x  '
+    DEALLOCATE(individual)
+    DEALLOCATE(grasp)
+    ALLOCATE(individual(13))
+    ALLOCATE(grasp(size(individual)))
+    individual = [ &
+        '+  ', &
+        '-  ', '+  ', 'x  ', 'y  ', 'z  ', &
+        '+  ', '-  ', '+  ', 'x  ', 'y  ', 'z  ', 'x  ' &
+    ] !"+ - + x y z + - + x y z x"
+    call derivePrefixHelper(1, 13, dx, individual, grasp, .false.) !+ 1 + 1 1
+    print *, "Derivative in prefix form:"
+    call print_derivat()
+
+    DEALLOCATE(individual)
+    DEALLOCATE(grasp)
+    DEALLOCATE(derivat)
+    ALLOCATE(individual(3))
+    ALLOCATE(grasp(size(individual)))
+    individual = [ &
+        '+  ', &
+        'x  ', 'x  ' &
+    ] !"+ - + x y z + - + x y z x"
+    call derivePrefixHelper(1, 3, dx, individual, grasp, .false.) !+ 1 1
+    print *, "Derivative in prefix form:"
+    call print_derivat()
+    
+    DEALLOCATE(individual)
+    DEALLOCATE(grasp)
+    DEALLOCATE(derivat)
+    ALLOCATE(individual(5))
+    ALLOCATE(grasp(size(individual)))
+    individual = [ &
+        '+  ', '-  ', &
+        'x  ', 'x  ', 'x  ' &
+    ] !"+ - + x y z + - + x y z x"
+    call derivePrefixHelper(1, 5, dx, individual, grasp, .false.) !1
+    print *, "Derivative in prefix form:"
+    call print_derivat()
+    
+    DEALLOCATE(individual)
+    DEALLOCATE(grasp)
+    DEALLOCATE(derivat)
+    ALLOCATE(individual(7))
+    ALLOCATE(grasp(size(individual)))
+    individual = [ &
+        '+  ', '-  ', '-  ', &
+        'x  ', 'x  ', 'x  ', 'y  ' &
+    ] !"+ - + x y z + - + x y z x"
+    call derivePrefixHelper(1, 7, dx, individual, grasp, .false.) !~ 1
+    print *, "Derivative in prefix form:"
+    call print_derivat()
+
+    STOP 1
+
+
+
+
+    DEALLOCATE(individual)
+    ALLOCATE(individual(12))
     individual = [&
         'x  ', 'y  ', '+  ', 'z  ', '-  ', &
         'x  ', 'y  ', '+  ', 'z  ', '-  ', 'cos', &
@@ -1150,3 +1379,5 @@ program main
 end program main
 
 !gfortran PrefixPostfixMultiThreadDiffSimplifySR.f90 -o PrefixPostfixMultiThreadDiffSimplifySR
+
+
