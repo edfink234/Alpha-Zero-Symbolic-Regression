@@ -195,6 +195,7 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
     // STEP 1: Feed a sample to the network `this->run(x)`
     // STEP 2: Calculate the MSE
     float MSE = this->mse(y, this->run(x));
+    puts("float MSE = this->mse(y, this->run(x)); done");
 
     // STEP 3: Calculate the output error terms
     
@@ -215,17 +216,17 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
     for (int i = 0; i < this->layers.back(); i++) //each neuron in the last layer 
     {
         float o_k = this->values.back()[i];
+        puts("float o_k = this->values.back()[i]; done");
         this->d.back()[i] = ((this->network.back()[i].output_type == "sigmoid") ? (o_k * (1 - o_k) * (y[i] - o_k)) : (y[i] - o_k));//* x.sum();
         // /Users/edwardfinkelstein/Desktop/Machine\ Learning/\(The\ Morgan\ Kaufmann\ Series\ in\ Data\ Management\ Systems\)\ Ian\ H.\ Witten\,\ Eibe\ Frank\,\ Mark\ A.\ Hall\ -\ Data\ Mining_\ Practical\ Machine\ Learning\ Tools\ and\ Techniques\,\ Third\ Edition-Morgan\ Kaufmann\ \(2011\).pdf, page 273
-        
-        
+        puts("this->d.back()[i] = ((this->network.back()[i].output_type == \"sigmoid\") ? (o_k * (1 - o_k) * (y[i] - o_k)) : (y[i] - o_k)); done");
     }
     
     if (this->weight_update == "SR")
     {
         this->d_nest.back() = this->d.back();
     }
-    
+    puts("this->d_nest.back() = this->d.back(); done");
     // STEP 4: Calculate the error term of each unit on each layer -> backpropagation
     for (int i = network.size()-2; i > 0; i--) //for each layer (starting from the one before the output layer and ending at and including the layer right before the input layer)
     {
@@ -250,6 +251,7 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
                     fwd_error += network[i+1][k].weights[h]*d[i+1][k];
                 }
             }
+            puts("for (int k = 0; k < layers[i+1]; k++) done");
             
             //\delta_h = o_h*(1-o_h)*fwd_error
             if (this->weight_update == "SR")
@@ -272,11 +274,13 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
                 }
                 this->d[i][h] = deriv * fwd_error;
             }
+            puts("//\\delta_h = o_h*(1-o_h)*fwd_error done");
         }
     }
     
     // STEPS 5 & 6: Calculate the deltas and update the weights
     this->t++; //increase t by 1 for Adam
+    puts("this->t++; done");
     for (int i = 1; i < network.size(); i++) //for each layer
     {
         for (int j = 0; j < layers[i]; j++) //for each neuron
@@ -311,7 +315,9 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
                     float m_t_k_hat = this->network[i][j].m[k]/(1-pow(this->beta_1, t));
                     float v_t_k_hat = this->network[i][j].v[k]/(1-pow(this->beta_2, t));
                     
+                    puts("float v_t_k_hat = this->network[i][j].v[k]/(1-pow(this->beta_2, t)); done");
                     this->network[i][j].weights[k] = this->expression_evaluator(this->network[i][j].weights[k], this->d[i][j], this->values[i-1][k], this->d_nest[i][j], this->network[i][j].velocities[k], this->network[i][j].gradients[k], g_t_k, this->network[i][j].expt_grad_squared[k], delta_w_t_k, this->network[i][j].expt_weight_squared[k], delta_w_t_k_ada_delta, this->network[i][j].m[k], this->network[i][j].v[k], m_t_k_hat, v_t_k_hat);
+                    puts("this->network[i][j].weights[k] = this->expression_evaluator(this->network[i][j].weights[k], this->d[i][j], this->values[i-1][k], this->d_nest[i][j], this->network[i][j].velocities[k], this->network[i][j].gradients[k], g_t_k, this->network[i][j].expt_grad_squared[k], delta_w_t_k, this->network[i][j].expt_weight_squared[k], delta_w_t_k_ada_delta, this->network[i][j].m[k], this->network[i][j].v[k], m_t_k_hat, v_t_k_hat); done");
                 }
                 else if (this->weight_update == "AdaGrad")
                 {
@@ -371,18 +377,20 @@ float MultiLayerPerceptron::train(const std::vector<Eigen::VectorXf>& x_train, c
     }
 //    puts("Press ctrl-c to continue");
     float MSE;
+    puts("float MSE; done");
     unsigned long int num_rows = x_train.size();
+    puts("unsigned long int num_rows = x_train.size(); done");
     for (unsigned long epoch = 0; ((num_epochs != 0) ? (epoch < num_epochs) : true); epoch++)
     {
         MSE = 0.0;
-        
+        puts("MSE = 0.0; done");
         for (unsigned long i = 0; i < num_rows; i++)
         {
             MSE += this->bp(x_train[i], y_train[i]);
-            
         }
+        puts("for (unsigned long i = 0; i < num_rows; i++) done;");
         MSE /= num_rows;
-
+        puts("MSE /= num_rows done;");
         if (interactive)
         {
             if (epoch % 100 == 0)
@@ -398,6 +406,7 @@ float MultiLayerPerceptron::train(const std::vector<Eigen::VectorXf>& x_train, c
             }
         }
     }
+    puts("for (unsigned long epoch = 0; ((num_epochs != 0) ? (epoch < num_epochs) : true); epoch++) done");
     return MSE;
 }
 
@@ -543,6 +552,7 @@ float MultiLayerPerceptron::expression_evaluator(float w_k, float d_ij, float va
         }
         else if (std::find(MultiLayerPerceptron::__unary_operators.begin(), MultiLayerPerceptron::__unary_operators.end(), pieces[i]) != MultiLayerPerceptron::__unary_operators.end()) // Unary operator
         {
+            assert stack.size() >= 1, "Wait what, stack.size() >= 1 failed 😨";
             if (token == "cos")
             {
                 float temp = stack.top();
@@ -610,10 +620,6 @@ float MultiLayerPerceptron::expression_evaluator(float w_k, float d_ij, float va
             {
                 std::runtime_error(std::string("Error in MultiLayerPerceptron::expression_evaluator, trying to access element that doesn't exist, token = ")+token+", token.size() = "+std::to_string(token.size()));
             }
-            else
-            {
-                printf("stack.size() = %lu\n", stack.size());
-            }
             float right_operand = stack.top();
             stack.pop();
             
@@ -646,10 +652,6 @@ float MultiLayerPerceptron::expression_evaluator(float w_k, float d_ij, float va
     if (stack.size() == 0)
     {
         std::runtime_error(std::string("Error in MultiLayerPerceptron::expression_evaluator, trying to access element that doesn't exist"));
-    }
-    else
-    {
-        printf("stack.size() = %lu\n", stack.size());
     }
     return stack.top();
 }

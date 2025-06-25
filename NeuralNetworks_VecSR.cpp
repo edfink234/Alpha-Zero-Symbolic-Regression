@@ -281,7 +281,7 @@ struct Board
 
             });
         }
-        exit(1);
+//        exit(1);
     }
     
     std::string operator[](size_t index) const
@@ -764,25 +764,24 @@ struct Board
                 this->depth = 0, this->num_binary = 0, this->num_leaves = 0;
             }
         }
+        puts("if (srnn.pieces.empty()) done");
         auto [depth, complete] =  ((this->expression_type == "prefix") ? getPNdepth(srnn.pieces, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/) : getRPNdepth(srnn.pieces, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/)); //structured binding :)
+        puts("auto [depth, complete] =  ((this->expression_type == \"prefix\") ? getPNdepth(srnn.pieces, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/) : getRPNdepth(srnn.pieces, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/)); //structured binding :) done");
         if (!complete || depth < this->n) //Expression not complete
         {
             return -1;
         }
         else
         {
-            if (visualize_exploration)
-            {
-                //whenever. TODO: call some plotting function, e.g. ROOT CERN plotting API, Matplotlib from the Python-C API, Plotly if we want a web application for this, etc. The plotting function could also have the fitted constants (rounded of course), but then this if statement would need to be moved down to below the fitFunctionToData call in this `complete_status` method.
-            }
-            
             if (is_primary)
             {
                 this->expression_string.clear();
                 this->expression_string.reserve(8*srnn.pieces.size());
+                puts("this->expression_string.reserve(8*srnn.pieces.size()); done");
                 for (const std::string& i: srnn.pieces){this->expression_string += i+" ";}
+                puts("for (const std::string& i: srnn.pieces){this->expression_string += i+" ";} done");
                 Board::expression_set.insert(this->expression_string);
-
+                puts("Board::expression_set.insert(this->expression_string); done");
                 return (1.0f/(1.0f+this->srnn.train(data.rows, data.labels, this->epochs, false))); //"fitFunctionToData"
             }
             return 0.0f;
@@ -1257,16 +1256,21 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
             {
                 //Step 1: Generate a random depth-n sub-expression `secondary_one.srnn.pieces`
                 secondary_one.srnn.pieces.clear();
+                puts("secondary_one.srnn.pieces.clear(); done");
                 sub_exprs_1.clear();
+                puts("sub_exprs_1.clear(); done");
                 secondary_one.n = n; //set the depth of `secondary_one.srnn.pieces` to the argument `n`
+                puts("secondary_one.n = n; done");
                 while (secondary_one.complete_status() == -1)
                 {
                     temp_legal_moves = secondary_one.get_legal_moves();
-                    assert (temp_legal_moves.size() > 0), "Line 1298, temp_legal_moves.size() = "+std::to_string(temp_legal_moves.size());
+                    puts("temp_legal_moves = secondary_one.get_legal_moves(); done");
+                    assert (temp_legal_moves.size() > 0), "Error in Mutation function: temp_legal_moves.size() = "+std::to_string(temp_legal_moves.size());
                     std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
                     secondary_one.srnn.pieces.push_back(temp_legal_moves[distribution(generator)]);
+                    puts("secondary_one.srnn.pieces.push_back(temp_legal_moves[distribution(generator)]); done");
                 }
-                
+                puts("while (secondary_one.complete_status() == -1) done;");
                 assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.srnn.pieces) : secondary_one.getRPNdepth(secondary_one.srnn.pieces)).first == secondary_one.n);
                 assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.srnn.pieces) : secondary_one.getRPNdepth(secondary_one.srnn.pieces)).second);
 
@@ -1275,7 +1279,9 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                 //in `x.srnn.pieces` and store them in an std::vector<std::pair<int, int>>
                 //called `sub_exprs_1`.
                 x.srnn.pieces = individuals[selector_dist(generator)].first; //A randomly selected individual to be mutated
+                puts("x.srnn.pieces = individuals[selector_dist(generator)].first; done");
                 secondary_one.get_indices(sub_exprs_1, x.srnn.pieces);
+                puts("secondary_one.get_indices(sub_exprs_1, x.srnn.pieces); done;");
                 
                 //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `mut_ind`
                 std::uniform_int_distribution<int> distribution(0, sub_exprs_1.size() - 1);
@@ -1284,14 +1290,20 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                 //Step 4: Substitute sub_exprs_1[mut_ind] in x.srnn.pieces with secondary_one.srnn.pieces
                 
                 auto start = x.srnn.pieces.begin() + sub_exprs_1[mut_ind].first;
+                puts("auto start = x.srnn.pieces.begin() + sub_exprs_1[mut_ind].first; done");
                 auto end = std::min(x.srnn.pieces.begin() + sub_exprs_1[mut_ind].second, x.srnn.pieces.end()-1);
+                puts("auto end = std::min(x.srnn.pieces.begin() + sub_exprs_1[mut_ind].second, x.srnn.pieces.end()-1); done");
                 x.srnn.pieces.erase(start, end+1);
+                puts("x.srnn.pieces.erase(start, end+1); done");
                 x.srnn.pieces.insert(start, secondary_one.srnn.pieces.begin(), secondary_one.srnn.pieces.end());
-                
+                puts("x.srnn.pieces.insert(start, secondary_one.srnn.pieces.begin(), secondary_one.srnn.pieces.end()); done");
                 //Step 5: Evaluate the new mutated `x.srnn.pieces` and update score if needed
                 score = x.complete_status(false);
+                puts("score = x.complete_status(false);");
                 updateScore();
+                puts("updateScore(); done");
                 individuals.push_back(std::make_pair(x.srnn.pieces, score));
+                puts("individuals.push_back(std::make_pair(x.srnn.pieces, score)); done");
             };
             
             auto Crossover = [&](int n) //depth-n trees to swap between secondary_one and secondary_two
