@@ -339,13 +339,12 @@ def test_visualize():
 #                plot_rpn_expression_tree(['x0', '0.999487', '+', '4.176018', '4', 'sech', '-', '^'], block=True, save = save)
 #                plot_pn_expression_tree("ln cos tanh - 4 / x0 0.648054".split(), block=True, save = save)
 #                plot_rpn_expression_tree("0 x x * 1 x x + tanh 0 ^ x * * 1 x x + tanh x * * / * ^ cos 1 - sin".split(), block=True, save = save)
-                plot_rpn_expression_tree("∂v_z/∂t (∂v_z/∂x) v_x * + (∂v_z/∂y) v_y * + (∂v_z/∂z) v_z * + (∂p/∂z) ρ / + ν ∂^2v_z/∂x^2 ∂^2v_z/∂y^2 + ∂^2v_z/∂z^2 + * - f_z -N".split(), block=True, save = save)
-                #plot_rpn_expression_tree("x x ^ x x ^ - asin tanh sin x x - * ~ 0 / 1 ^ tanh".split(), block=True, save = save)
+#                plot_rpn_expression_tree("∂v_z/∂t (∂v_z/∂x) v_x * + (∂v_z/∂y) v_y * + (∂v_z/∂z) v_z * + (∂p/∂z) ρ / + ν ∂^2v_z/∂x^2 ∂^2v_z/∂y^2 + ∂^2v_z/∂z^2 + * - f_z -N".split(), block=True, save = save)
+                plot_rpn_expression_tree("x0 sqrt sech arccos".split(), block=True, save = save)
 #                plot_pn_expression_tree("+ - + x y z + - + x y z x".split(), block=True, save = save) #3*x + 2*y - 2*z -> {3, 2, -2}
 #                ['12', '4', '2', '0', '0', '0', '6', '4', '2', '0', '0', '0', '0']
 #                plot_pn_expression_tree("- + 1 - + 1 1".split(), block=True, save = save)
                 
-    
 #                ((x+y)-z) + (((x+y) - z) + x)
         except KeyboardInterrupt:
 #            
@@ -359,6 +358,4 @@ if __name__ == "__main__":
 
 #-((x - x_0)*(x - x_0)) = -(x^2 - 2*x*x_0 + x_0^2)
 #(x - x_0)*(x_0 - x) = x*x_0 - x^2 - x_0^2 + x*x_0 = -(x^2 - 2*x*x_0 + x_0^2)
-
-
         

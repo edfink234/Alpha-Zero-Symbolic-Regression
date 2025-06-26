@@ -1458,7 +1458,7 @@ struct Board
                 new_expression.pop_back();
             }
             
-            else if (new_expression[first_arg_idx_high - 1] == "0")
+            else if (new_expression[first_arg_idx_high - 1] == "0") // 0 x +/- -> x +/-
             {
                 //puts("hi 184");
                 //erase elements from new_expression[first_arg_idx_low] to new_expression[first_arg_idx_high-1] inclusive
@@ -1470,7 +1470,7 @@ struct Board
                 }
             }
             
-            else if ((expression[up] == "-") && ((step = (first_arg_idx_high - first_arg_idx_low)) == (second_arg_idx_high - first_arg_idx_high)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression)))
+            else if ((expression[up] == "-") && ((step = (first_arg_idx_high - first_arg_idx_low)) == (second_arg_idx_high - first_arg_idx_high)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) //x x - -> 0
             {
                 //puts("hi 215");
                 new_expression[first_arg_idx_low] = "0"; //change first symbol of x' to 0
@@ -5610,6 +5610,116 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
     return results;
 }
 
+void variational_potential_integral_setter()
+{
+    Board::__other_tokens.push_back("b");
+    Board::__other_tokens.push_back("X");
+    Board::__other_tokens.push_back("A");
+}
+
+//x0 -> x, x1 -> y, x2 -> t
+std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
+{
+    std::vector<std::vector<std::string>> results;
+    std::vector<std::string> result;
+    result.reserve(100);
+    std::vector<int> grasp;
+    grasp.reserve(100);
+    std::vector<std::string> temp;
+    temp.reserve(50);
+    if (x.expression_type == "prefix")
+    {
+        //- f_hat' * * sech - A * ϵ x sech - A * ϵ x * sech - B * D x sech - B * D x
+        result.push_back("-"); // -
+        x.derivePrefix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
+        for (const std::string& i: x.derivat) // f_hat'
+        {
+            result.push_back(i);
+        }
+        
+        //* * sech - A * ϵ x sech - A * ϵ x * sech - B * D x sech - B * D x
+        result.push_back("*"); //*
+        result.push_back("*"); //*
+        result.push_back("sech"); //sech
+        result.push_back("-"); //-
+        for (const std::string& i: x.pieces[1]) //A
+        {
+            result.push_back(i);
+        }
+        result.push_back("*"); //*
+        for (const std::string& i: x.pieces[4]) //ϵ
+        {
+            result.push_back(i);
+        }
+        result.push_back("x0"); //x
+        result.push_back("sech"); //sech
+        result.push_back("-"); //-
+        for (const std::string& i: x.pieces[1]) //A
+        {
+            result.push_back(i);
+        }
+        result.push_back("*"); //*
+        for (const std::string& i: x.pieces[4]) //ϵ
+        {
+            result.push_back(i);
+        }
+        result.push_back("x0"); //x
+        result.push_back("*"); //*
+        result.push_back("sech"); //sech
+        result.push_back("-"); //-
+        for (const std::string& i: x.pieces[2]) //B
+        {
+            result.push_back(i);
+        }
+        result.push_back("*"); //*
+        for (const std::string& i: x.pieces[3]) //D
+        {
+            result.push_back(i);
+        }
+        result.push_back("x0"); //x
+        result.push_back("sech"); //sech
+        result.push_back("-"); //-
+        for (const std::string& i: x.pieces[2]) //B
+        {
+            result.push_back(i);
+        }
+        result.push_back("*"); //*
+        for (const std::string& i: x.pieces[3]) //D
+        {
+            result.push_back(i);
+        }
+        result.push_back("x0"); //x
+    }
+    else if (x.expression_type == "postfix")
+    {
+        //f_hat' b x * sech 2 ^ A x X - * sech 4 ^ * -
+        
+        x.derivePostfix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
+        for (const std::string& i: x.derivat) // f_hat'
+        {
+            result.push_back(i);
+        }
+        result.push_back("b"); //b
+        result.push_back("x0"); //x
+        result.push_back("*"); //*
+        result.push_back("sech"); //sech
+        result.push_back("2"); //2
+        result.push_back("^"); //^
+        result.push_back("A"); //A
+        result.push_back("x"); //x
+        result.push_back("X"); //X
+        result.push_back("-"); //-
+        result.push_back("*"); //*
+        result.push_back("sech"); //sech
+        result.push_back("4"); //4
+        result.push_back("^"); //^
+        result.push_back("*"); //*
+        result.push_back("-"); //-
+    }
+    results.push_back(result);
+    return results;
+}
+
 //https://dl.acm.org/doi/pdf/10.1145/3449639.3459345?casa_token=Np-_TMqxeJEAAAAA:8u-d6UyINV6Ex02kG9LthsQHAXMh2oxx3M4FG8ioP0hGgstIW45X8b709XOuaif5D_DVOm_FwFo
 //https://core.ac.uk/download/pdf/6651886.pdf
 //void SimulatedAnnealing(std::vector<std::string> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
@@ -6676,6 +6786,13 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
 //}
 
+template<typename T>
+std::ostream& operator<<(std::ostream& out, const std::vector<T>& vec)
+{
+    for (const T& elem: vec){out << elem << ' ';}
+    return out;
+}
+
 void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), void (*constSetter)(), const Eigen::MatrixXf& data, const std::vector<int>& depth, const std::string expression_type = "prefix", size_t num_consts = 4, const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
 {
     constSetter();
@@ -6758,6 +6875,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), void 
                 std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
                 std::cout << "Best score = " << score << ", MSE = " << best_MSE << '\n';
                 std::cout << "Best expression = " << best_expression << '\n';
+                std::cout << "Best expression derivative = " << x.derivat << '\n';
                 std::cout << "Best expression (original format simplified) = " << orig_expression << '\n';
                 std::cout << "Best expression (original format un-simplified) = " << x.unsimplified_expression << '\n';
                 std::cout << "Best diff result = " << best_expr_result << '\n';
@@ -6796,11 +6914,13 @@ int main()
     float threshold = 5.0e-4f;
     
 //    auto data = createMeshgridVectors(101, 1, {0.0001f}, {10.0f});
-//
 //    RandomSearch(VortexRadialProfile /*differential equation to solve*/, VortexRadialProfileSetter /*helper function to set constants that the solution may contain*/,  data /*data used to solve differential equation*/, std::vector<int>{29} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
 //    
+    auto data = createMeshgridVectors(101, 1, {0.0001f}, {10.0f});
+    RandomSearch(variational_potential_integral /*differential equation to solve*/, variational_potential_integral_setter /*helper function to set constants that the solution may contain*/,  data /*data used to solve differential equation*/, std::vector<int>{29} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
+//
     
-    auto data = createMeshgridVectors(10, 4, {-10, -10, -10, 0}, {10, 10, 10, 100});
+    //auto data = createMeshgridVectors(10, 4, {-10, -10, -10, 0}, {10, 10, 10, 100});
     
     return 0;
 }
@@ -6810,3 +6930,5 @@ int main()
 //g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd_Perfect PrefixPostfixMultiThreadDiffSimplifySR_Nd_Perfect.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
 
 //g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd_Perfect PrefixPostfixMultiThreadDiffSimplifySR_Nd_Perfect.cpp -g -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
+
+//arccos(log((~(tanh(cos(sech(acos(((cos(sqrt(arccos(sech(acos(sech(sin(sqrt(tanh((arccos(sech(sqrt(x0))) * (x0 * x0))))))))))) / ln(ln(arcsin(sech(sech(acos(x0))))))) - acos(x0))))))) * 0)))
