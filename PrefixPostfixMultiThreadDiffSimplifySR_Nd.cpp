@@ -1043,6 +1043,12 @@ struct Board
                 new_expression[op_idx] = "-1"; //change 'tanh' to '-1'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
+            else if ((new_expression[first_arg_idx_low] == "~") && (new_expression.size() < first_arg_idx_low+2) && (new_expression[first_arg_idx_low+1] == "inf")) // tanh ~ inf -> 1
+            {
+    //            puts("hi 421");
+                new_expression[op_idx] = "-1"; //change 'tanh' to '-1'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
         }
         else if (expression[low] == "sech") // sech x
         {
@@ -1636,6 +1642,12 @@ struct Board
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
             }
             else if (new_expression.back() == "-inf") // -inf tanh -> -1 (because, since postfix operators come at the end, if the end of the argument of 'tanh' is -inf, then the whole argument MUST be inf, therefore the expression reduces to inf tanh, which is -1)
+            {
+                //puts("hi 392");
+                new_expression[first_arg_idx_low] = "-1";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            }
+            else if ((new_expression.back() == "~") && (new_expression.size() >= 2) && ((*(new_expression.end() - 2)) == "inf")) // inf ~ tanh -> -1 (because, since postfix operators come at the end, if the end of the argument of 'tanh' is -inf, then the whole argument MUST be inf, therefore the expression reduces to inf tanh, which is -1)
             {
                 //puts("hi 392");
                 new_expression[first_arg_idx_low] = "-1";

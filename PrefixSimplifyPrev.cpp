@@ -415,7 +415,12 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "-1"; //change 'tanh' to '-1'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        //TODO: can add version of -inf with unary minus "~"
+        else if ((new_expression[first_arg_idx_low] == "~") && (new_expression.size() < first_arg_idx_low+2) && (new_expression[first_arg_idx_low+1] == "inf")) // tanh ~ inf -> 1
+        {
+//            puts("hi 421");
+            new_expression[op_idx] = "-1"; //change 'tanh' to '-1'
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
     }
     else if (expression[low] == "sech") // sech x
     {
@@ -1698,6 +1703,18 @@ int main()
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
+    
+    test_expr = {"tanh", "~", "inf"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"tanh", "-", "0", "inf"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
 }
 
 //g++ -std=c++20 -o PrefixSimplifyPrev PrefixSimplifyPrev.cpp
@@ -1705,4 +1722,4 @@ int main()
 //https://stackoverflow.com/questions/20153412/simplification-algorithm-for-reverse-polish-notation
 //https://dl.acm.org/
 //simplification of polish notation expressions articles
-// ! objdump -d -M intel PrefixSimplifyPrev
+// ! objdump -d -M intel PrefixSimplify
