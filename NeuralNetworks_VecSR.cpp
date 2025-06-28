@@ -764,9 +764,7 @@ struct Board
                 this->depth = 0, this->num_binary = 0, this->num_leaves = 0;
             }
         }
-        puts("if (srnn.pieces.empty()) done");
         auto [depth, complete] =  ((this->expression_type == "prefix") ? getPNdepth(srnn.pieces, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/) : getRPNdepth(srnn.pieces, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/)); //structured binding :)
-        puts("auto [depth, complete] =  ((this->expression_type == \"prefix\") ? getPNdepth(srnn.pieces, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/) : getRPNdepth(srnn.pieces, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/)); //structured binding :) done");
         if (!complete || depth < this->n) //Expression not complete
         {
             return -1;
@@ -777,11 +775,8 @@ struct Board
             {
                 this->expression_string.clear();
                 this->expression_string.reserve(8*srnn.pieces.size());
-                puts("this->expression_string.reserve(8*srnn.pieces.size()); done");
                 for (const std::string& i: srnn.pieces){this->expression_string += i+" ";}
-                puts("for (const std::string& i: srnn.pieces){this->expression_string += i+" ";} done");
                 Board::expression_set.insert(this->expression_string);
-                puts("Board::expression_set.insert(this->expression_string); done");
                 return (1.0f/(1.0f+this->srnn.train(data.rows, data.labels, this->epochs, false))); //"fitFunctionToData"
             }
             return 0.0f;
@@ -1108,7 +1103,7 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
         
         for (unsigned int i = 0; i < num_threads; i++)
         {
-            threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
+            threads[i] = std::thread(func);
         }
         
         for (unsigned int i = 0; i < num_threads; i++)
@@ -1143,7 +1138,7 @@ void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string 
 }
 
 //https://arxiv.org/abs/2310.06609
-void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, const unsigned long num_epochs = 1000, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f, float lambda = 0.01f /*weight decay AdamW*/)
+void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, const unsigned long num_epochs = 100, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f, float lambda = 0.01f /*weight decay AdamW*/)
 {
     std::map<int, std::vector<float>> scores; //map to store the scores
     size_t measure_period = static_cast<size_t>(time/interval);
@@ -1185,7 +1180,6 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
             std::random_device rand_dev;
             std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
             Board x(depth, expression_type, data, false, cache, layers, layer_types, num_epochs, bias, eta, theta, gamma, epsilon, beta_1, beta_2, lambda);
-            puts("here at 1185");
             
 //            Board(int n, const std::string& expression_type, const Eigen::MatrixXf& theData, bool visualize_exploration, bool cache, std::vector<int> layers, std::deque<std::string> layer_types, const unsigned long num_epochs, float bias, float eta, float theta, float gamma, float epsilon, float beta_1, float beta_2)
 //                : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, is_primary{true},
@@ -1207,7 +1201,6 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
             int rand_depth, rand_individual_idx_1, rand_individual_idx_2;
             std::uniform_real_distribution<float> rand_mut_cross_dist(0.0f, 1.0f);
             size_t temp_sz;
-            puts("here at 1207");
 
         //    std::string expression, orig_expression, best_expression;
             
@@ -1234,7 +1227,6 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
             for (int i = 0; i < init_population; i++)
             {
 //                puts("hi");
-                puts("here at 1234");
 
                 while ((score = x.complete_status()) == -1) //this while-loop generates one weight-update-rule expression
                 {
@@ -1244,8 +1236,6 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                     std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
                     x.srnn.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
                 }
-                puts("here at 1244");
-
                 
                 updateScore();
                 individuals.push_back(std::make_pair(x.srnn.pieces, score));
@@ -1256,21 +1246,16 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
             {
                 //Step 1: Generate a random depth-n sub-expression `secondary_one.srnn.pieces`
                 secondary_one.srnn.pieces.clear();
-                puts("secondary_one.srnn.pieces.clear(); done");
                 sub_exprs_1.clear();
-                puts("sub_exprs_1.clear(); done");
                 secondary_one.n = n; //set the depth of `secondary_one.srnn.pieces` to the argument `n`
                 puts("secondary_one.n = n; done");
                 while (secondary_one.complete_status() == -1)
                 {
                     temp_legal_moves = secondary_one.get_legal_moves();
-                    puts("temp_legal_moves = secondary_one.get_legal_moves(); done");
                     assert (temp_legal_moves.size() > 0), "Error in Mutation function: temp_legal_moves.size() = "+std::to_string(temp_legal_moves.size());
                     std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
                     secondary_one.srnn.pieces.push_back(temp_legal_moves[distribution(generator)]);
-                    puts("secondary_one.srnn.pieces.push_back(temp_legal_moves[distribution(generator)]); done");
                 }
-                puts("while (secondary_one.complete_status() == -1) done;");
                 assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.srnn.pieces) : secondary_one.getRPNdepth(secondary_one.srnn.pieces)).first == secondary_one.n);
                 assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.srnn.pieces) : secondary_one.getRPNdepth(secondary_one.srnn.pieces)).second);
 
@@ -1279,9 +1264,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                 //in `x.srnn.pieces` and store them in an std::vector<std::pair<int, int>>
                 //called `sub_exprs_1`.
                 x.srnn.pieces = individuals[selector_dist(generator)].first; //A randomly selected individual to be mutated
-                puts("x.srnn.pieces = individuals[selector_dist(generator)].first; done");
                 secondary_one.get_indices(sub_exprs_1, x.srnn.pieces);
-                puts("secondary_one.get_indices(sub_exprs_1, x.srnn.pieces); done;");
                 
                 //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `mut_ind`
                 std::uniform_int_distribution<int> distribution(0, sub_exprs_1.size() - 1);
@@ -1290,20 +1273,13 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                 //Step 4: Substitute sub_exprs_1[mut_ind] in x.srnn.pieces with secondary_one.srnn.pieces
                 
                 auto start = x.srnn.pieces.begin() + sub_exprs_1[mut_ind].first;
-                puts("auto start = x.srnn.pieces.begin() + sub_exprs_1[mut_ind].first; done");
                 auto end = std::min(x.srnn.pieces.begin() + sub_exprs_1[mut_ind].second, x.srnn.pieces.end()-1);
-                puts("auto end = std::min(x.srnn.pieces.begin() + sub_exprs_1[mut_ind].second, x.srnn.pieces.end()-1); done");
                 x.srnn.pieces.erase(start, end+1);
-                puts("x.srnn.pieces.erase(start, end+1); done");
                 x.srnn.pieces.insert(start, secondary_one.srnn.pieces.begin(), secondary_one.srnn.pieces.end());
-                puts("x.srnn.pieces.insert(start, secondary_one.srnn.pieces.begin(), secondary_one.srnn.pieces.end()); done");
                 //Step 5: Evaluate the new mutated `x.srnn.pieces` and update score if needed
                 score = x.complete_status(false);
-                puts("score = x.complete_status(false);");
                 updateScore();
-                puts("updateScore(); done");
                 individuals.push_back(std::make_pair(x.srnn.pieces, score));
-                puts("individuals.push_back(std::make_pair(x.srnn.pieces, score)); done");
             };
             
             auto Crossover = [&](int n) //depth-n trees to swap between secondary_one and secondary_two
@@ -1406,7 +1382,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                     }
                 }
                 std::sort(individuals.begin(), individuals.end(),
-                [](std::pair<std::vector<std::string>, float>& individual_1, std::pair<std::vector<std::string>, float>& individual_2) //TODO: might need to change vector<float> to vector<string> for list of expression tokens?!
+                [](std::pair<std::vector<std::string>, float>& individual_1, std::pair<std::vector<std::string>, float>& individual_2) 
                 {
                     return individual_1.second > individual_2.second;
                 }); //sorts the individuals in the population from highest to lowest score (so highest score -> first element, second highest score -> second element, etc.)
@@ -1416,7 +1392,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         
         for (unsigned int i = 0; i < num_threads; i++)
         {
-            threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
+            threads[i] = std::thread(func); 
         }
         
         for (unsigned int i = 0; i < num_threads; i++)
@@ -1614,7 +1590,7 @@ void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type
         
         for (unsigned int i = 0; i < num_threads; i++)
         {
-            threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
+            threads[i] = std::thread(func); 
         }
         
         for (unsigned int i = 0; i < num_threads; i++)
@@ -1798,7 +1774,7 @@ void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_typ
         
         for (unsigned int i = 0; i < num_threads; i++)
         {
-            threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
+            threads[i] = std::thread(func); 
         }
         
         for (unsigned int i = 0; i < num_threads; i++)
@@ -1908,7 +1884,7 @@ void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::s
         
         for (unsigned int i = 0; i < num_threads; i++)
         {
-            threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
+            threads[i] = std::thread(func); 
         }
         
         for (unsigned int i = 0; i < num_threads; i++)
