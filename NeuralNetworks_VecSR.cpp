@@ -208,7 +208,7 @@ struct Board
         {
             throw(std::runtime_error("Complexity cannot be larger than 30, sorry!"));
         }
-        puts("here at 211");
+        //puts("here at 211");
         this->n = n; //depth of expression
         this->expression_type = expression_type;
         srnn.pieces = {};
@@ -216,33 +216,34 @@ struct Board
         this->reserve_amount = 2*std::pow(2,this->n)-1;
         srnn.pieces.reserve(this->reserve_amount);
         this->cache = cache;
-        puts("here at 219");
+        //puts("here at 219");
         if (is_primary)
         {
             std::call_once(initialization_flag, [&]()
             {
-                puts("here at 224");
+                //puts("here at 224");
                 Board::data = theData;
                 
                 Board::__num_features = data[0].size() - 1;
                 Board::__input_vars.clear();
                 Board::expression_set.clear();
-                Board::__input_vars = {"w_k", "eta", "theta", "gamma", "epsilon", "beta_1", "beta_2", "d_ij", "value", "d_ij_nest", "velocity_k", "gradient_k", "g_t_k", "expt_grad_squared_k", "delta_w_t_k", "expt_weight_squared_k", "delta_w_t_k_ada_delta", "m_t_k", "v_t_k", "m_t_k_hat", "v_t_k_hat", "prev_w_k", "t"};
-                Board::__unary_operators = {"cos", "exp", "sqrt", "sin", "asin", "ln", "tanh", "acos", "~"};
-                Board::__binary_operators = {"+", "-", "*", "/", "^"};
+                Board::__input_vars = {"w_k", "eta", "theta", "gamma", "epsilon", "beta_1", "beta_2", "d_ij", "value", "d_ij_nest", "velocity_k", "gradient_k", "g_t_k", "expt_grad_squared_k", "delta_w_t_k", "expt_weight_squared_k", "delta_w_t_k_ada_delta", "m_t_k", "v_t_k", "m_t_k_hat", "v_t_k_hat", "t"};
+                Board::__unary_operators = srnn.__unary_operators; //{"cos", "exp", "sqrt", "sin", "asin", "ln", "tanh", "acos", "~"};
+                Board::__binary_operators = srnn.__binary_operators;//{"+", "-", "*", "/", "^"};
                 std::copy(Board::__unary_operators.begin(), Board::__unary_operators.end(), std::inserter(Board::__unary_operators_uset, Board::__unary_operators_uset.end()));
                 std::copy(Board::__binary_operators.begin(), Board::__binary_operators.end(), std::inserter(Board::__binary_operators_uset, Board::__binary_operators_uset.end()));
                 for (const std::string& i: Board::__unary_operators_uset) {std::cout << i << ' ';}puts("");
                 for (const std::string& i: Board::__binary_operators_uset) {std::cout << i << ' ';}puts("");
                 Board::__operators.clear();
-                for (std::string& i: Board::__unary_operators)
-                {
-                    Board::__operators.push_back(i);
-                }
-                for (std::string& i: Board::__binary_operators)
-                {
-                    Board::__operators.push_back(i);
-                }
+                Board::__operators = srnn.__operators;
+//                for (std::string& i: Board::__unary_operators)
+//                {
+//                    Board::__operators.push_back(i);
+//                }
+//                for (std::string& i: Board::__binary_operators)
+//                {
+//                    Board::__operators.push_back(i);
+//                }
                 Board::__other_tokens = {/*"const"*/};
                 Board::__tokens = Board::__operators;
                 
@@ -255,7 +256,7 @@ struct Board
                     Board::__tokens.push_back(i);
                 }
                 Board::action_size = Board::__tokens.size();
-                puts("here at 257");
+//                puts("here at 257");
                 Board::una_bin_leaf_legal_moves_dict[true][true][true] = Board::__tokens;
                 Board::una_bin_leaf_legal_moves_dict[true][true][false] = Board::__operators;
                 Board::una_bin_leaf_legal_moves_dict[true][false][true] = Board::__unary_operators; //1
@@ -757,6 +758,7 @@ struct Board
     {
         if (srnn.pieces.empty())
         {
+            this->srnn.reset_weights();
             this->stack.clear();
             this->idx = 0;
             if (this->expression_type == "prefix")
@@ -1231,7 +1233,8 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                 while ((score = x.complete_status()) == -1) //this while-loop generates one weight-update-rule expression
                 {
                     temp_legal_moves = x.get_legal_moves(); //the legal moves
-                    assert (temp_legal_moves.size() > 0), "Line 1278, temp_legal_moves.size() = "+std::to_string(temp_legal_moves.size());
+                    
+                    assert((temp_legal_moves.size() > 0 && "Line 1278, temp_legal_moves.size() = "+std::to_string(temp_legal_moves.size())));
                     temp_sz = temp_legal_moves.size(); //the number of legal moves
                     std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
                     x.srnn.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
@@ -1248,11 +1251,11 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                 secondary_one.srnn.pieces.clear();
                 sub_exprs_1.clear();
                 secondary_one.n = n; //set the depth of `secondary_one.srnn.pieces` to the argument `n`
-                puts("secondary_one.n = n; done");
+//                puts("secondary_one.n = n; done");
                 while (secondary_one.complete_status() == -1)
                 {
                     temp_legal_moves = secondary_one.get_legal_moves();
-                    assert (temp_legal_moves.size() > 0), "Error in Mutation function: temp_legal_moves.size() = "+std::to_string(temp_legal_moves.size());
+                    assert((temp_legal_moves.size() > 0 && "Error in Mutation function: temp_legal_moves.size() = "+std::to_string(temp_legal_moves.size())));
                     std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
                     secondary_one.srnn.pieces.push_back(temp_legal_moves[distribution(generator)]);
                 }
@@ -1942,7 +1945,7 @@ int main()
 //...
 //-1.3 -2.2 Hemberg_2(-1.3, -2.2)
     
-    GP(generateData(20 /*rows*/, 3 /*columns*/, Hemberg_2 /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", true /*cache*/, 100 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 1 /*num threads*/, {2,10,5,5,1} /*Neural Network number of perceptrons in i'th layers */, std::deque<std::string>{"sigmoid", "sigmoid", "none", "none"}, 10 /*num_epochs*/,/* bias = */ 1.0f, /*eta = */ 0.5f, /*theta = */ 0.01f, /*gamma = */ 0.9f, /*beta_1 = */ 0.9f, /*beta_2 = */ 0.999f, /*lambda = */ 0.01f);
+    GP(generateData(20 /*rows*/, 3 /*columns*/, Hemberg_2 /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", true /*cache*/, 100 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/, {2,10,5,5,1} /*Neural Network number of perceptrons in i'th layers */, std::deque<std::string>{"sigmoid", "sigmoid", "none", "none"}, 10 /*num_epochs*/,/* bias = */ 1.0f, /*eta = */ 0.5f, /*theta = */ 0.01f, /*gamma = */ 0.9f, /*beta_1 = */ 0.9f, /*beta_2 = */ 0.999f, /*lambda = */ 0.01f);
     
 
     return 0;

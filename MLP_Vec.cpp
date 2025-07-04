@@ -65,6 +65,19 @@ MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, std::deque<s
 {
     // Set up the signal handler
     signal(SIGINT, signalHandler);
+    
+    MultiLayerPerceptron::__unary_operators = {"cos", "exp", "sqrt", "sin", "asin", "ln", "tanh", "acos", "~"};
+    MultiLayerPerceptron::__binary_operators = {"+", "-", "*", "/", "^"};
+    MultiLayerPerceptron::__operators.clear();
+    for (std::string& i: MultiLayerPerceptron::__unary_operators)
+    {
+        MultiLayerPerceptron::__operators.push_back(i);
+    }
+    for (std::string& i: MultiLayerPerceptron::__binary_operators)
+    {
+        MultiLayerPerceptron::__operators.push_back(i);
+    }
+
     this->layers = layers;
     this->layer_types = layer_types;
     if (!this->layer_types.size())
@@ -101,7 +114,7 @@ MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, std::deque<s
         {
             for (int j = 0; j < this->layers[i]; j++)
             {
-                this->network[i].emplace_back(this->layers[i-1], this->bias, this->layer_types[i]);             
+                this->network[i].emplace_back(this->layers[i-1], this->bias, this->layer_types[i]);
             }
         }
     }
@@ -372,26 +385,26 @@ float MultiLayerPerceptron::train(const std::vector<Eigen::VectorXf>& x_train, c
     for (unsigned long epoch = 0; ((num_epochs != 0) ? (epoch < num_epochs) : true); epoch++)
     {
         MSE = 0.0;
-        puts("MSE = 0.0; done");
+//        puts("MSE = 0.0; done");
         for (unsigned long i = 0; i < num_rows; i++)
         {
             MSE += this->bp(x_train[i], y_train[i]);
         }
         MSE /= num_rows;
-        if (interactive)
-        {
-            if (epoch % 100 == 0)
-            {
-                std::cout << "MSE = " << MSE << '\r' << FLUSHTHETOILET;
-            }
-            if (MultiLayerPerceptron::interrupted)
-            {
-                std::cout << "\nInterrupted by Ctrl-C. Exiting loop.\n";
-                std::cout<<"MSE = "<<MSE<< '\n';
-                MultiLayerPerceptron::interrupted = 0; //reset MultiLayerPerceptron::interrupted
-                return MSE;
-            }
-        }
+//        if (interactive)
+//        {
+//            if (epoch % 100 == 0)
+//            {
+//                std::cout << "MSE = " << MSE << '\r' << FLUSHTHETOILET;
+//            }
+//            if (MultiLayerPerceptron::interrupted)
+//            {
+//                std::cout << "\nInterrupted by Ctrl-C. Exiting loop.\n";
+//                std::cout<<"MSE = "<<MSE<< '\n';
+//                MultiLayerPerceptron::interrupted = 0; //reset MultiLayerPerceptron::interrupted
+//                return MSE;
+//            }
+//        }
     }
     return MSE;
 }
@@ -444,6 +457,7 @@ float MultiLayerPerceptron::expression_evaluator(float w_k, float d_ij, float va
         std::string token = pieces[i];
         if (std::find(MultiLayerPerceptron::__operators.begin(), MultiLayerPerceptron::__operators.end(), pieces[i]) == MultiLayerPerceptron::__operators.end()) // leaf
         {
+//            {"w_k", "eta", "theta", "gamma", "epsilon", "beta_1", "beta_2", "d_ij", "value", "d_ij_nest", "velocity_k", "gradient_k", "g_t_k", "expt_grad_squared_k", "delta_w_t_k", "expt_weight_squared_k", "delta_w_t_k_ada_delta", "m_t_k", "v_t_k", "m_t_k_hat", "v_t_k_hat", "prev_w_k", "t"}
             if (token == "w_k")
             {
                 stack.push(w_k);
@@ -635,11 +649,11 @@ float MultiLayerPerceptron::expression_evaluator(float w_k, float d_ij, float va
                 throw std::runtime_error(std::string("Error in MultiLayerPerceptron::expression_evaluator, trying to push token ")+token+", token.size() = "+std::to_string(token.size()));
             }
         }
-        std::cout << "i = " << i << ", pieces.size() = " << pieces.size() << '\n';
-        std::cout << "pieces[" << i << "] = " << token << '\n';
-        std::cout << "stack.top() =" << stack.top();
+//        std::cout << "i = " << i << ", pieces.size() = " << pieces.size() << '\n';
+//        std::cout << "pieces[" << i << "] = " << token << '\n';
+//        std::cout << "stack.top() =" << stack.top();
     }
     assert(stack.size() > 0);
-    printf("stack.top() = "); std::cout << stack.top() << '\n';
+//    printf("stack.top() = "); std::cout << stack.top() << '\n';
     return stack.top();
 }

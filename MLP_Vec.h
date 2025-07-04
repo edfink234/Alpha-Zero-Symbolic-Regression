@@ -37,6 +37,7 @@ class MultiLayerPerceptron
     public:
         static std::vector<std::string> inline __operators;
         static std::vector<std::string> inline __unary_operators;
+        static std::vector<std::string> inline __binary_operators;
         std::vector<std::string> pieces; //expression list for Symbolic Regressor
 
     MultiLayerPerceptron() = default;
