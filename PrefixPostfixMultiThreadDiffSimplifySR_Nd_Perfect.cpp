@@ -5184,7 +5184,6 @@ void NavierStokes3DSetter()
  Postfix: ∂v_x/∂x ∂v_y/∂y ∂v_z/∂z + +
  
  {x0: x, x1: y, x2: z, x3: t}
- 
  {x.pieces[0]: v_x, x.pieces[1]: v_y, x.pieces[2]: v_z, x.pieces[3]: f_x, x.pieces[4]: f_y, x.pieces[5]: f_z, x.pieces[6]: p}
  
  */
@@ -5193,7 +5192,7 @@ std::vector<std::vector<std::string>> NavierStokes3D(Board& x)
     std::vector<std::vector<std::string>> results(4); //4 PDES
     for (int i = 0; i < results.size(); i++){results[i].reserve(100);}
     std::vector<int> grasp;
-    std::vector<std::string> dvdx, dvdy, dvdz;
+    std::vector<std::string> dvdx, dvdy, dvdz, dv_x_dx, dv_y_dy, dv_z_dz;
     std::string infty = std::to_string(FLT_MAX);
 
     if (x.expression_type == "postfix")
@@ -5206,6 +5205,7 @@ std::vector<std::vector<std::string>> NavierStokes3D(Board& x)
         }
         x.derivePostfix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
         dvdx = x.derivat;
+        dv_x_dx = dvdx;
         for (const std::string& i: x.derivat) //∂v_x/∂x
         {
             results[0].push_back(i);
@@ -5274,6 +5274,177 @@ std::vector<std::vector<std::string>> NavierStokes3D(Board& x)
             results[0].push_back(i);
         }
         results[0].push_back("-"); //-
+        
+        //∂v_y/∂t (∂v_y/∂x) v_x * + (∂v_y/∂y) v_y * + (∂v_y/∂z) v_z * + (∂p/∂y) ρ / + ν ∂^2v_y/∂x^2 ∂^2v_y/∂y^2 + ∂^2v_y/∂z^2 + * - f_y -
+        x.derivePostfix(0, x.pieces[1].size()-1, "x3", x.pieces[1], grasp);
+        for (const std::string& i: x.derivat) //∂v_y/∂t
+        {
+            results[1].push_back(i);
+        }
+        x.derivePostfix(0, x.pieces[1].size()-1, "x0", x.pieces[1], grasp);
+        dvdx = x.derivat;
+        for (const std::string& i: x.derivat) //∂v_y/∂x
+        {
+            results[1].push_back(i);
+        }
+        for (const std::string& i: x.pieces[0]) //v_x
+        {
+            results[1].push_back(i);
+        }
+        results[1].push_back("*"); //*
+        results[1].push_back("+"); //+
+        x.derivePostfix(0, x.pieces[1].size()-1, "x1", x.pieces[1], grasp);
+        dvdy = x.derivat;
+        dv_y_dy = dvdy;
+        for (const std::string& i: x.derivat) //∂v_y/∂y
+        {
+            results[1].push_back(i);
+        }
+        for (const std::string& i: x.pieces[1]) //v_y
+        {
+            results[1].push_back(i);
+        }
+        results[1].push_back("*"); //*
+        results[1].push_back("+"); //+
+        x.derivePostfix(0, x.pieces[1].size()-1, "x2", x.pieces[1], grasp);
+        dvdz = x.derivat;
+        for (const std::string& i: x.derivat) //∂v_y/∂z
+        {
+            results[1].push_back(i);
+        }
+        for (const std::string& i: x.pieces[2]) //v_z
+        {
+            results[1].push_back(i);
+        }
+        results[1].push_back("*"); //*
+        results[1].push_back("+"); //+
+        x.derivePostfix(0, x.pieces[6].size()-1, "x1", x.pieces[6], grasp);
+        for (const std::string& i: x.derivat) //∂p/∂y
+        {
+            results[1].push_back(i);
+        }
+        results[1].push_back("rho"); //ρ
+        results[1].push_back("/"); // /
+        results[1].push_back("+"); //+
+        results[1].push_back("nu"); //ν
+        
+        x.derivePostfix(0, dvdx.size()-1, "x0", dvdx, grasp);
+        for (const std::string& i: x.derivat) //∂^2v_y/∂x^2
+        {
+            results[1].push_back(i);
+        }
+        x.derivePostfix(0, dvdy.size()-1, "x1", dvdy, grasp);
+        for (const std::string& i: x.derivat) //∂^2v_y/∂y^2
+        {
+            results[1].push_back(i);
+        }
+        results[1].push_back("+"); //+
+        x.derivePostfix(0, dvdz.size()-1, "x2", dvdz, grasp);
+        for (const std::string& i: x.derivat) //∂^2v_y/∂z^2
+        {
+            results[1].push_back(i);
+        }
+        results[1].push_back("+"); //+
+        results[1].push_back("*"); //*
+        results[1].push_back("-"); //-
+        for (const std::string& i: x.pieces[4]) //f_y
+        {
+            results[1].push_back(i);
+        }
+        results[1].push_back("-"); //-
+        
+        //∂v_z/∂t (∂v_z/∂x) v_x * + (∂v_z/∂y) v_y * + (∂v_z/∂z) v_z * + (∂p/∂z) ρ / + ν ∂^2v_z/∂x^2 ∂^2v_z/∂y^2 + ∂^2v_z/∂z^2 + * - f_z -
+        x.derivePostfix(0, x.pieces[2].size()-1, "x3", x.pieces[2], grasp);
+        for (const std::string& i: x.derivat) //∂v_z/∂t
+        {
+            results[2].push_back(i);
+        }
+        x.derivePostfix(0, x.pieces[2].size()-1, "x0", x.pieces[2], grasp);
+        dvdx = x.derivat;
+        for (const std::string& i: x.derivat) //∂v_z/∂x
+        {
+            results[2].push_back(i);
+        }
+        for (const std::string& i: x.pieces[0]) //v_x
+        {
+            results[2].push_back(i);
+        }
+        results[2].push_back("*"); //*
+        results[2].push_back("+"); //+
+        x.derivePostfix(0, x.pieces[2].size()-1, "x1", x.pieces[2], grasp);
+        dvdy = x.derivat;
+        for (const std::string& i: x.derivat) //∂v_z/∂y
+        {
+            results[2].push_back(i);
+        }
+        for (const std::string& i: x.pieces[1]) //v_y
+        {
+            results[2].push_back(i);
+        }
+        results[2].push_back("*"); //*
+        results[2].push_back("+"); //+
+        x.derivePostfix(0, x.pieces[2].size()-1, "x2", x.pieces[2], grasp);
+        dvdz = x.derivat;
+        dv_z_dz = dvdz;
+        for (const std::string& i: x.derivat) //∂v_z/∂z
+        {
+            results[2].push_back(i);
+        }
+        for (const std::string& i: x.pieces[2]) //v_z
+        {
+            results[2].push_back(i);
+        }
+        results[2].push_back("*"); //*
+        results[2].push_back("+"); //+
+        x.derivePostfix(0, x.pieces[6].size()-1, "x2", x.pieces[6], grasp);
+        for (const std::string& i: x.derivat) //∂p/∂z
+        {
+            results[2].push_back(i);
+        }
+        results[2].push_back("rho"); //ρ
+        results[2].push_back("/"); // /
+        results[2].push_back("+"); //+
+        results[2].push_back("nu"); //ν
+        
+        x.derivePostfix(0, dvdx.size()-1, "x0", dvdx, grasp);
+        for (const std::string& i: x.derivat) //∂^2v_z/∂x^2
+        {
+            results[2].push_back(i);
+        }
+        x.derivePostfix(0, dvdy.size()-1, "x1", dvdy, grasp);
+        for (const std::string& i: x.derivat) //∂^2v_z/∂y^2
+        {
+            results[2].push_back(i);
+        }
+        results[2].push_back("+"); //+
+        x.derivePostfix(0, dvdz.size()-1, "x2", dvdz, grasp);
+        for (const std::string& i: x.derivat) //∂^2v_z/∂z^2
+        {
+            results[2].push_back(i);
+        }
+        results[2].push_back("+"); //+
+        results[2].push_back("*"); //*
+        results[2].push_back("-"); //-
+        for (const std::string& i: x.pieces[5]) //f_z
+        {
+            results[2].push_back(i);
+        }
+        results[2].push_back("-"); //-
+        //∂v_x/∂x ∂v_y/∂y ∂v_z/∂z + +
+        for (const std::string& i: dv_x_dx) //∂v_x/∂x
+        {
+            results[3].push_back(i);
+        }
+        for (const std::string& i: dv_y_dy) //∂v_y/∂y
+        {
+            results[3].push_back(i);
+        }
+        for (const std::string& i: dv_z_dz) //∂v_z/∂z
+        {
+            results[3].push_back(i);
+        }
+        results[3].push_back("+"); //+
+        results[3].push_back("+"); //+
     }
     else if (x.expression_type == "prefix")
     {
