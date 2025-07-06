@@ -686,7 +686,7 @@ contains
         integer, allocatable, dimension(:), intent(inout) :: grasp
         logical, intent(in), optional :: setGRvar
         logical :: localSetGR
-        integer :: i, op_idx, temp, x_prime_low, x_prime_high, y_prime_high
+        integer :: i, op_idx, temp, x_low, y_low, x_prime_low, x_prime_high, y_prime_low, y_prime_high
         integer :: step
 
         localSetGR = .false.
@@ -710,8 +710,7 @@ contains
         if (prefix(low) == "+" .or. prefix(low) == "-") then
             
             op_idx = derivat_size()
-!            print *, "op_idx =", op_idx
-!            STOP 1
+
             call push_derivat(trim(prefix(low)))  ! '+' or '-'
 
             temp = low + 1 + grasp(low + 1)
@@ -743,6 +742,74 @@ contains
                     end if
                 end if
             end if
+
+        else if (prefix(low) == "*") then
+            call push_derivat("+")
+            call push_derivat("*")
+            
+            x_low = derivat_size()
+            temp = low + 1 + grasp(low + 1)
+
+            ! Copy prefix[k] into derivat
+            do i = low + 1, temp !`for (int k = low+1; k <= temp; k++)`
+                call push_derivat(prefix(i))
+            end do
+
+            ! Simplify: * 0 y′ → 0
+            if (derivat(x_low) == "0") then
+                derivat(x_low - 1) = "0"
+                call remove_at(x_low)
+            else
+                ! Compute y'
+                y_prime_low = derivat_size()
+                call derivePrefixHelper(temp + 1, temp + 1 + grasp(temp + 1), dx, prefix, grasp, .true.)
+
+                if (derivat(y_prime_low) == "0") then
+                    derivat(x_low - 1) = "0"
+                    call pop_derivat_from(x_low)
+                else if (derivat(x_low) == "1") then
+                    call remove_range(x_low - 1, x_low)  ! remove "*" and "1"
+                else if (derivat(y_prime_low) == "1") then ! * x 1 -> x
+                    call pop_derivat_from(derivat_size() - 1)
+                    call remove_at(x_low - 1)
+                end if
+            end if
+
+            ! Now handle x' * y
+            call push_derivat("*")
+            x_prime_low = derivat_size()
+            call derivePrefixHelper(low + 1, temp, dx, prefix, grasp, .true.)
+
+            if (derivat(x_prime_low) == "0") then
+                derivat(x_prime_low - 1) = "0"
+                call remove_at(x_prime_low)
+            else
+                y_low = derivat_size()
+                do i = temp + 1, temp + 1 + grasp(temp + 1)
+                    call push_derivat(prefix(i))
+                end do
+
+                if (derivat(y_low) == "0") then
+                    derivat(x_prime_low - 1) = "0"
+                    call pop_derivat_from(x_prime_low)
+                else if (derivat(x_prime_low) == "1") then
+                    call remove_range(x_prime_low - 1, x_prime_low)
+                else if (derivat(y_low) == "1") then
+                    call pop_derivat_from(derivat_size() - 1)
+                    call assert(derivat(x_prime_low - 1) == "*");
+                    call remove_at(x_prime_low - 1)
+                end if
+            end if
+
+            ! Final top-level simplifications
+            if (derivat(x_low - 1) == "0") then
+                call remove_range(x_low - 2, x_low - 1)
+            else if (derivat(x_prime_low - 1) == "0") then
+                call assert(derivat_size() == x_prime_low)
+                call remove_at(x_low - 2)  ! remove "+"
+                call pop_derivat_from(derivat_size() - 1)
+            end if
+
         else
             if (prefix(low) == dx) then
                 call push_derivat("1")
@@ -1248,7 +1315,7 @@ program main
     individual = [ &
         '+  ', &
         'x  ', 'x  ' &
-    ] !"+ - + x y z + - + x y z x"
+    ] !"+ x x"
     call derivePrefixHelper(1, 3, dx, individual, grasp, .false.) !+ 1 1
     print *, "Derivative in prefix form:"
     call print_derivat()
@@ -1259,9 +1326,9 @@ program main
     ALLOCATE(individual(5))
     ALLOCATE(grasp(size(individual)))
     individual = [ &
-        '+  ', '-  ', &
+        '+  ', '+  ', &
         'x  ', 'x  ', 'x  ' &
-    ] !"+ - + x y z + - + x y z x"
+    ] !"+ + x x x"
     call derivePrefixHelper(1, 5, dx, individual, grasp, .false.) !1
     print *, "Derivative in prefix form:"
     call print_derivat()
@@ -1274,15 +1341,189 @@ program main
     individual = [ &
         '+  ', '-  ', '-  ', &
         'x  ', 'x  ', 'x  ', 'y  ' &
-    ] !"+ - + x y z + - + x y z x"
+    ] !"+ - - x x x y"
     call derivePrefixHelper(1, 7, dx, individual, grasp, .false.) !~ 1
     print *, "Derivative in prefix form:"
     call print_derivat()
 
-    STOP 1
+    DEALLOCATE(individual)
+    DEALLOCATE(grasp)
+    DEALLOCATE(derivat)
+    ALLOCATE(individual(5))
+    ALLOCATE(grasp(size(individual)))
+    individual = [ &
+        '+  ', '+  ', &
+        'x  ', 'x  ', 'y  ' &
+    ] !"+ + x x y"
+    call derivePrefixHelper(1, 5, dx, individual, grasp, .false.) !+ 1 1
+    print *, "Derivative in prefix form:"
+    call print_derivat()
 
+    DEALLOCATE(individual)
+    DEALLOCATE(grasp)
+    DEALLOCATE(derivat)
+    ALLOCATE(individual(3))
+    ALLOCATE(grasp(size(individual)))
+    individual = [ &
+        '-  ', 'y  ', 'x  ' &
+    ] !"- y x"
+    call derivePrefixHelper(1, 3, dx, individual, grasp, .false.) !~ 1
+    print *, "Derivative in prefix form:"
+    call print_derivat()
 
+    DEALLOCATE(individual)
+    DEALLOCATE(grasp)
+    DEALLOCATE(derivat)
+    ALLOCATE(individual(5))
+    ALLOCATE(grasp(size(individual)))
+    individual = [ &
+        '+  ', '*  ', 'x  ', &
+        'x  ', 'y  ' &
+    ] !"+ * x x y"
+    call derivePrefixHelper(1, 5, dx, individual, grasp, .false.) !+ x x
+    print *, "Derivative in prefix form:"
+    call print_derivat()
 
+    DEALLOCATE(individual)
+    DEALLOCATE(grasp)
+    DEALLOCATE(derivat)
+    ALLOCATE(individual(3))
+    ALLOCATE(grasp(size(individual)))
+    individual = [ &
+        '*  ', '0  ', 'x  ' &
+    ] !"* 0 x"
+    call derivePrefixHelper(1, 3, dx, individual, grasp, .false.) !0
+    print *, "Derivative in prefix form:"
+    call print_derivat()
+
+    DEALLOCATE(individual)
+    DEALLOCATE(grasp)
+    DEALLOCATE(derivat)
+    ALLOCATE(individual(5))
+    ALLOCATE(grasp(size(individual)))
+    individual = [ &
+        '*  ', '*  ', 'x  ', &
+        'x  ', '1  ' &
+    ] !"* * x x 1"
+    call derivePrefixHelper(1, 5, dx, individual, grasp, .false.) !+ x x
+    print *, "Derivative in prefix form:"
+    call print_derivat()
+
+    DEALLOCATE(individual)
+    DEALLOCATE(grasp)
+    DEALLOCATE(derivat)
+    ALLOCATE(individual(3))
+    ALLOCATE(grasp(size(individual)))
+    individual = [ &
+        "*  ", "x  ", "y  " &
+    ] !"* x y"
+    call derivePrefixHelper(1, 3, dx, individual, grasp, .false.) !y
+    print *, "Derivative in prefix form:"
+    call print_derivat()
+
+    DEALLOCATE(individual)
+    DEALLOCATE(grasp)
+    DEALLOCATE(derivat)
+    ALLOCATE(individual(3))
+    ALLOCATE(grasp(size(individual)))
+    individual = [ &
+        "*  ", "x  ", "y  " &
+    ] !"* x y"
+    dx = "y  "
+    call derivePrefixHelper(1, 3, dx, individual, grasp, .false.) !x
+    print *, "Derivative in prefix form:"
+    call print_derivat()
+
+    DEALLOCATE(individual)
+    DEALLOCATE(grasp)
+    DEALLOCATE(derivat)
+    ALLOCATE(individual(3))
+    ALLOCATE(grasp(size(individual)))
+    individual = [ &
+        "*  ", "x  ", "y  " &
+    ] !"* x y"
+    dx = "z  "
+    call derivePrefixHelper(1, 3, dx, individual, grasp, .false.) !0
+    print *, "Derivative in prefix form:"
+    call print_derivat()
+
+    DEALLOCATE(individual)
+    DEALLOCATE(grasp)
+    DEALLOCATE(derivat)
+    ALLOCATE(individual(3))
+    ALLOCATE(grasp(size(individual)))
+    individual = [ &
+        "+  ", "x  ", "0  " &
+    ] !"+ x 0"
+    dx = "x  "
+    call derivePrefixHelper(1, 3, dx, individual, grasp, .false.) !1
+    print *, "Derivative in prefix form:"
+    call print_derivat()
+
+    DEALLOCATE(individual)
+    DEALLOCATE(grasp)
+    DEALLOCATE(derivat)
+    ALLOCATE(individual(3))
+    ALLOCATE(grasp(size(individual)))
+    individual = [ &
+        "+  ", "0  ", "x  " &
+    ] !"+ 0 x"
+    dx = "x  "
+    call derivePrefixHelper(1, 3, dx, individual, grasp, .false.) !1
+    print *, "Derivative in prefix form:"
+    call print_derivat()
+
+    DEALLOCATE(individual)
+    DEALLOCATE(grasp)
+    DEALLOCATE(derivat)
+    ALLOCATE(individual(3))
+    ALLOCATE(grasp(size(individual)))
+    individual = [ &
+        "+  ", "x  ", "x  " &
+    ] !"+ x x"
+    dx = "x  "
+    call derivePrefixHelper(1, 3, dx, individual, grasp, .false.) !+ 1 1
+    print *, "Derivative in prefix form:"
+    call print_derivat()
+
+    DEALLOCATE(individual)
+    DEALLOCATE(grasp)
+    DEALLOCATE(derivat)
+    ALLOCATE(individual(3))
+    ALLOCATE(grasp(size(individual)))
+    individual = [ &
+        "*  ", "1  ", "x  " &
+    ] !"* 1 x"
+    dx = "x  "
+    call derivePrefixHelper(1, 3, dx, individual, grasp, .false.) !1
+    print *, "Derivative in prefix form:"
+    call print_derivat()
+
+    DEALLOCATE(individual)
+    DEALLOCATE(grasp)
+    DEALLOCATE(derivat)
+    ALLOCATE(individual(3))
+    ALLOCATE(grasp(size(individual)))
+    individual = [ &
+        "*  ", "x  ", "1  " &
+    ] !"* x 1"
+    dx = "x  "
+    call derivePrefixHelper(1, 3, dx, individual, grasp, .false.) !1
+    print *, "Derivative in prefix form:"
+    call print_derivat()
+
+    DEALLOCATE(individual)
+    DEALLOCATE(grasp)
+    DEALLOCATE(derivat)
+    ALLOCATE(individual(3))
+    ALLOCATE(grasp(size(individual)))
+    individual = [ &
+        "*  ", "0  ", "x  " &
+    ] !"* 0 x"
+    dx = "x  "
+    call derivePrefixHelper(1, 3, dx, individual, grasp, .false.) !0
+    print *, "Derivative in prefix form:"
+    call print_derivat()
 
     DEALLOCATE(individual)
     ALLOCATE(individual(12))
@@ -1291,7 +1532,6 @@ program main
         'x  ', 'y  ', '+  ', 'z  ', '-  ', 'cos', &
         '+  ' &
     ]
-
     DEALLOCATE(grasp)
     allocate(grasp(size(individual)))
     call setPostfixGR(individual, grasp)

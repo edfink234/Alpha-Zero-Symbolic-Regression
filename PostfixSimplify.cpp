@@ -408,13 +408,19 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
     {
         int first_arg_idx_low = new_expression.size();
         graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
-        if (new_expression.back() == "0") // 0 sech -> 1 (because, since postfix operators come at the end, if the end of the argument of 'sech' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 sech, which is 0)
+        if (new_expression.back() == "0") // 0 sech -> 1 (because, since postfix operators come at the end, if the end of the argument of 'sech' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 sech, which is 1)
         {
             //puts("hi 395");
+            new_expression[first_arg_idx_low] = "1";
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+        }
+        else if (new_expression.back() == "inf") // inf sech -> 0 (because, since postfix operators come at the end, if the end of the argument of 'sech' is inf, then the whole argument MUST be inf, therefore the expression reduces to inf sech, which is 0)
+        {
+//            puts("hi 419");
             new_expression[first_arg_idx_low] = "0";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
         }
-        //TODO: Can add inf and -inf
+        //TODO: Can add -inf
         else
         {
             new_expression.push_back(expression[up]);
@@ -1678,6 +1684,18 @@ int main()
     puts("");
     
     test_expr = {"0", "inf", "-", "tanh"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "x", "^", "x", "x", "^", "-", "asin", "tanh", "sin", "x", "x", "-", "*", "0", "/", "1", "^", "sech"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "x", "+", "x", "x", "-", "-", "asin", "tanh", "sin", "x", "x", "-", "*", "0", "/", "tanh", "0", "/", "sech"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);

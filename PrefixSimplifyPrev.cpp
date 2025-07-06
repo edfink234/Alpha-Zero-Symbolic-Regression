@@ -415,7 +415,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "-1"; //change 'tanh' to '-1'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if ((new_expression[first_arg_idx_low] == "~") && (new_expression.size() < first_arg_idx_low+2) && (new_expression[first_arg_idx_low+1] == "inf")) // tanh ~ inf -> 1
+        else if ((new_expression[first_arg_idx_low] == "~") && ((first_arg_idx_low+1) < (new_expression.size()))  && (new_expression[first_arg_idx_low+1] == "inf")) // tanh ~ inf -> 1
         {
 //            puts("hi 421");
             new_expression[op_idx] = "-1"; //change 'tanh' to '-1'
@@ -435,7 +435,13 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "1"; //change 'sech' to '1'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        //TODO: Can add inf and -inf
+        else if (new_expression[first_arg_idx_low] == "inf") // sech inf -> 0
+        {
+            //puts("hi 440");
+            new_expression[op_idx] = "0"; //change 'sech' to '1'
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
+        //TODO: Can add -inf
     }
     else
     {
@@ -1715,6 +1721,18 @@ int main()
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
+    
+    test_expr = {"sech", "/", "~", "sech", "cos", "+", "z", "x", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"sech", "/", "~", "tanh", "cos", "x", "sin", "+", "0", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
 }
 
 //g++ -std=c++20 -o PrefixSimplifyPrev PrefixSimplifyPrev.cpp
@@ -1722,4 +1740,4 @@ int main()
 //https://stackoverflow.com/questions/20153412/simplification-algorithm-for-reverse-polish-notation
 //https://dl.acm.org/
 //simplification of polish notation expressions articles
-// ! objdump -d -M intel PrefixSimplify
+// ! objdump -d -M intel PrefixSimplifyPrev
