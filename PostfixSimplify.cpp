@@ -387,13 +387,13 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             new_expression[first_arg_idx_low] = "1";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
         }
-        else if (new_expression.back() == "-inf") // -inf tanh -> -1 (because, since postfix operators come at the end, if the end of the argument of 'tanh' is -inf, then the whole argument MUST be inf, therefore the expression reduces to inf tanh, which is -1)
+        else if (new_expression.back() == "-inf") // -inf tanh -> -1 (because, since postfix operators come at the end, if the end of the argument of 'tanh' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf tanh, which is -1)
         {
             //puts("hi 392");
             new_expression[first_arg_idx_low] = "-1";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
         }
-        else if ((new_expression.back() == "~") && (new_expression.size() >= 2) && ((*(new_expression.end() - 2)) == "inf")) // inf ~ tanh -> -1 (because, since postfix operators come at the end, if the end of the argument of 'tanh' is -inf, then the whole argument MUST be inf, therefore the expression reduces to inf tanh, which is -1)
+        else if ((new_expression.back() == "~") && (new_expression.size() >= 2) && ((*(new_expression.end() - 2)) == "inf")) // inf ~ tanh -> -1 (because, since postfix operators come at the end, if the end of the argument of 'tanh' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf tanh, which is -1)
         {
             //puts("hi 392");
             new_expression[first_arg_idx_low] = "-1";
@@ -420,12 +420,36 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             new_expression[first_arg_idx_low] = "0";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
         }
-        //TODO: Can add -inf
+        else if (new_expression.back() == "-inf") // -inf sech -> 0 (because, since postfix operators come at the end, if the end of the argument of 'sech' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf sech, which is 0)
+        {
+            //puts("hi 425");
+            new_expression[first_arg_idx_low] = "0";
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+        }
+        else if ((new_expression.back() == "~") && (new_expression.size() >= 2) && ((*(new_expression.end() - 2)) == "inf")) // inf ~ sech -> 0 (because, since postfix operators come at the end, if the end of the argument of 'sech' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf sech, which is 0)
+        {
+            //puts("hi 431");
+            new_expression[first_arg_idx_low] = "0";
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+        }
         else
         {
             new_expression.push_back(expression[up]);
         }
     }
+//    else if (expression[up] == "~") //x ~
+//    {
+//        int first_arg_idx_low = new_expression.size();
+//        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
+//        if (false)
+//        {
+//
+//        }
+//        else
+//        {
+//            new_expression.push_back(expression[up]);
+//        }
+//    }
     else
     {
         for (int i = low; i <= up; i++)
@@ -1696,6 +1720,18 @@ int main()
     puts("");
     
     test_expr = {"x", "x", "+", "x", "x", "-", "-", "asin", "tanh", "sin", "x", "x", "-", "*", "0", "/", "tanh", "0", "/", "sech"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "x", "^", "x", "x", "^", "-", "asin", "tanh", "sin", "x", "x", "-", "*", "0", "/", "1", "^", "~", "sech"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "x", "+", "x", "x", "-", "-", "asin", "tanh", "sin", "x", "x", "-", "*", "0", "/", "tanh", "0", "/", "~", "sech"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);

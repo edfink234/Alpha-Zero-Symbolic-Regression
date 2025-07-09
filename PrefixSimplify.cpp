@@ -438,11 +438,30 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         else if (new_expression[first_arg_idx_low] == "inf") // sech inf -> 0
         {
             //puts("hi 440");
-            new_expression[op_idx] = "0"; //change 'sech' to '1'
+            new_expression[op_idx] = "0"; //change 'sech' to '0'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        //TODO: Can add -inf
+        else if (new_expression[first_arg_idx_low] == "-inf") // sech -inf -> 0
+        {
+//            puts("hi 446");
+            new_expression[op_idx] = "0"; //change 'sech' to '0'
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
+        else if ((new_expression[first_arg_idx_low] == "~") && ((first_arg_idx_low+1) < (new_expression.size()))  && (new_expression[first_arg_idx_low+1] == "inf")) // sech ~ inf -> 0
+        {
+//            puts("hi 452");
+            new_expression[op_idx] = "0"; //change 'sech' to '0'
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
     }
+//    else if (expression[low] == "~") // ~ x
+//    {
+//        int op_idx = new_expression.size();
+//        new_expression.push_back(expression[low]); // ~
+//        int temp = low+1+grasp[low+1];
+//        int first_arg_idx_low = new_expression.size();
+//        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // ~ x
+//    }
     else
     {
         for (int i = low; i <= up; i++)
@@ -1729,6 +1748,18 @@ int main()
     puts("");
     
     test_expr = {"sech", "/", "~", "tanh", "cos", "x", "sin", "+", "0", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"sech", "~", "/", "~", "sech", "cos", "+", "z", "x", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"sech", "~", "/", "~", "tanh", "cos", "x", "sin", "+", "0", "0"};
     printf("before: ");print_container(test_expr);
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
