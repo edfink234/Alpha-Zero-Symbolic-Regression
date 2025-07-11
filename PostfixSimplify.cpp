@@ -437,19 +437,21 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             new_expression.push_back(expression[up]);
         }
     }
-//    else if (expression[up] == "~") //x ~
-//    {
-//        int first_arg_idx_low = new_expression.size();
-//        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
-//        if (false)
-//        {
-//
-//        }
-//        else
-//        {
-//            new_expression.push_back(expression[up]);
-//        }
-//    }
+    else if (expression[up] == "~") //x ~
+    {
+        int first_arg_idx_low = new_expression.size();
+        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
+        if (new_expression.back() == "0") // 0 ~ -> 0 (because, since postfix operators come at the end, if the end of the argument of '~' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 ~, which is 0)
+        {
+//            puts("hi 445");
+            new_expression[first_arg_idx_low] = "0";
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+        }
+        else
+        {
+            new_expression.push_back(expression[up]);
+        }
+    }
     else
     {
         for (int i = low; i <= up; i++)
@@ -751,6 +753,7 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
                         simplified = true;
                         break;
                     }
+                    //TODO: Add 0 ~ -> 0
                     else if (expression[i] == "exp" && (expression[i-1] == "ln" || expression[i-1] == "log"))
                     {
                         //puts("hi 360");
