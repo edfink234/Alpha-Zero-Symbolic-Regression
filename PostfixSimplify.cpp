@@ -273,8 +273,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         int second_arg_idx_high = new_expression.size();
         int step;
         
-         //x 0 /
-        
+        //TODO: Need to handle 0/0 -> nan first before x 0 / -> inf
         if (new_expression.back() == "0") // x 0 / -> inf (because, since postfix operators come at the end, if the end of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 /, which is inf)
         {
             //puts("hi 280");
@@ -608,6 +607,7 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
                     
                     else if (expression[i] == "/")
                     {
+                        //TODO: Need to handle 0/0 -> nan first before 0 x / -> 0
                         if (expression[i-2] == "0" && is_const(expression[i-1])) // "0 x /" -> "0"
                         {
                             //puts("hi 187");

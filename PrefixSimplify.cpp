@@ -284,6 +284,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); // / x y
         int second_arg_idx_high = new_expression.size();
         int step;
+        //TODO: Need to handle 0/0 -> nan first before / x 0 -> inf
         if (new_expression[first_arg_idx_high] == "0") // / x 0 -> inf (because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to / x 0, which is 0)
         {
             //puts("hi 282");
@@ -624,6 +625,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                     
                     else if (expression[i] == "/")
                     {
+                        //TODO: Need to handle 0/0 -> nan first before / 0 x -> 0
                         if (expression[i+1] == "0" && is_const(expression[i+2])) // / 0 x -> 0
                         {
                             //puts("hi 187");
