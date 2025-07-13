@@ -66,17 +66,24 @@ MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, std::deque<s
     // Set up the signal handler
     signal(SIGINT, signalHandler);
     
-    MultiLayerPerceptron::__unary_operators = {"cos", "exp", "sqrt", "sin", "asin", "ln", "tanh", "acos", "~"};
-    MultiLayerPerceptron::__binary_operators = {"+", "-", "*", "/", "^"};
-    MultiLayerPerceptron::__operators.clear();
-    for (std::string& i: MultiLayerPerceptron::__unary_operators)
+    std::call_once(initialization_flag, [&]()
     {
-        MultiLayerPerceptron::__operators.push_back(i);
-    }
-    for (std::string& i: MultiLayerPerceptron::__binary_operators)
-    {
-        MultiLayerPerceptron::__operators.push_back(i);
-    }
+        this->__unary_operators = {"cos", "exp", "sqrt", "sin", "asin", "ln", "tanh", "acos", "~"};
+        this->__binary_operators = {"+", "-", "*", "/", "^"};
+        this->__operators.clear();
+        for (std::string& i: this->__unary_operators)
+        {
+            this->__operators.push_back(i);
+        }
+        for (std::string& i: this->__binary_operators)
+        {
+            this->__operators.push_back(i);
+        }
+        puts("this->__unary_operators");
+        for (const std::string& i: this->__unary_operators) {std::cout << i << ' ';}puts("");
+        puts("this->__binary_operators");
+        for (const std::string& i: this->__binary_operators) {std::cout << i << ' ';}puts("");
+    });
 
     this->layers = layers;
     this->layer_types = layer_types;
@@ -446,7 +453,6 @@ std::vector<Eigen::VectorXf> MultiLayerPerceptron::sigmoid(const std::vector<Eig
     return result;
 }
 
-//TODO: ADD prev_w_k TO OPERANDS AND THEN CHECK TO MAKE SURE THERE IS NO BUG ANYMORE!!!!!
 float MultiLayerPerceptron::expression_evaluator(float w_k, float d_ij, float value, float d_ij_nest, float velocity_k, float gradient_k, float g_t_k, float expt_grad_squared_k, float delta_w_t_k, float expt_weight_squared_k, float delta_w_t_k_ada_delta, float m_t_k, float v_t_k, float m_t_k_hat, float v_t_k_hat, const Eigen::VectorXf& params)
 {
     std::stack<float> stack;
@@ -455,7 +461,7 @@ float MultiLayerPerceptron::expression_evaluator(float w_k, float d_ij, float va
     for (int i = (is_prefix ? (pieces.size() - 1) : 0); (is_prefix ? (i >= 0) : (i < pieces.size())); (is_prefix ? (i--) : (i++)))
     {
         std::string token = pieces[i];
-        if (std::find(MultiLayerPerceptron::__operators.begin(), MultiLayerPerceptron::__operators.end(), pieces[i]) == MultiLayerPerceptron::__operators.end()) // leaf
+        if (std::find(this->__operators.begin(), this->__operators.end(), pieces[i]) == this->__operators.end()) // leaf
         {
 //            {"w_k", "eta", "theta", "gamma", "epsilon", "beta_1", "beta_2", "d_ij", "value", "d_ij_nest", "velocity_k", "gradient_k", "g_t_k", "expt_grad_squared_k", "delta_w_t_k", "expt_weight_squared_k", "delta_w_t_k_ada_delta", "m_t_k", "v_t_k", "m_t_k_hat", "v_t_k_hat", "prev_w_k", "t"}
             if (token == "w_k")
@@ -551,7 +557,7 @@ float MultiLayerPerceptron::expression_evaluator(float w_k, float d_ij, float va
                 throw std::runtime_error(std::string("Error in MultiLayerPerceptron::expression_evaluator, trying to push token ")+token+", token.size() = "+std::to_string(token.size()));
             }
         }
-        else if (std::find(MultiLayerPerceptron::__unary_operators.begin(), MultiLayerPerceptron::__unary_operators.end(), pieces[i]) != MultiLayerPerceptron::__unary_operators.end()) // Unary operator
+        else if (std::find(this->__unary_operators.begin(), this->__unary_operators.end(), pieces[i]) != this->__unary_operators.end()) // Unary operator
         {
             assert((stack.size() >= 1 && "Wait what, stack.size() >= 1 failed 😨"));
             if (token == "cos")

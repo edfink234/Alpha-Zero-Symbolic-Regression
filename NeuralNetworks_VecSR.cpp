@@ -73,6 +73,16 @@ int trueMod(int N, int M)
     return ((N % M) + M) % M;
 };
 
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const std::vector<T>& vec)
+{
+    for (const auto& i: vec)
+    {
+        os << i << ' ';
+    }
+    return os;
+}
+
 class Data
 {
     Eigen::MatrixXf data;
@@ -232,7 +242,9 @@ struct Board
                 Board::__binary_operators = srnn.__binary_operators;//{"+", "-", "*", "/", "^"};
                 std::copy(Board::__unary_operators.begin(), Board::__unary_operators.end(), std::inserter(Board::__unary_operators_uset, Board::__unary_operators_uset.end()));
                 std::copy(Board::__binary_operators.begin(), Board::__binary_operators.end(), std::inserter(Board::__binary_operators_uset, Board::__binary_operators_uset.end()));
+                puts("Board::__unary_operators_uset");
                 for (const std::string& i: Board::__unary_operators_uset) {std::cout << i << ' ';}puts("");
+                puts("Board::__binary_operators_uset");
                 for (const std::string& i: Board::__binary_operators_uset) {std::cout << i << ' ';}puts("");
                 Board::__operators.clear();
                 Board::__operators = srnn.__operators;
@@ -279,6 +291,7 @@ struct Board
                 std::cout << "Board::__unary_operators.size() = " << Board::__unary_operators.size() << '\n';
                 std::cout << "Board::__binary_operators.size() = " << Board::__binary_operators.size() << '\n';
                 std::cout << "Board::__tokens.size() = " << Board::__tokens.size() << '\n';
+                for (const std::string& i: Board::__tokens) {std::cout << i << ' ';}puts("");
 
             });
         }
@@ -766,7 +779,10 @@ struct Board
                 this->depth = 0, this->num_binary = 0, this->num_leaves = 0;
             }
         }
-        auto [depth, complete] =  ((this->expression_type == "prefix") ? getPNdepth(srnn.pieces, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/) : getRPNdepth(srnn.pieces, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/)); //structured binding :)
+        //structured binding :)
+        auto [depth, complete] =  ((this->expression_type == "prefix") ?
+                                   getPNdepth(srnn.pieces, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/) :
+                                   getRPNdepth(srnn.pieces, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/));
         if (!complete || depth < this->n) //Expression not complete
         {
             return -1;
@@ -776,8 +792,7 @@ struct Board
             if (is_primary)
             {
                 this->expression_string.clear();
-                this->expression_string.reserve(8*srnn.pieces.size());
-                for (const std::string& i: srnn.pieces){this->expression_string += i+" ";}
+                for (const std::string& i: this->srnn.pieces){this->expression_string += i+" ";}
                 Board::expression_set.insert(this->expression_string);
                 return (1.0f/(1.0f+this->srnn.train(data.rows, data.labels, this->epochs, false))); //"fitFunctionToData"
             }
@@ -1177,23 +1192,16 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
          Inside of thread:
          */
         
-        auto func = [&depth, &expression_type, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &layer_types, &num_epochs, &bias, &eta, &theta, &gamma, &epsilon, &beta_1, &beta_2, &lambda, &best_expression, &orig_expression]()
+        auto func = [&depth, &expression_type, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &layer_types, &num_epochs, &bias, &eta, &theta, &gamma, &epsilon, &beta_1, &beta_2, &lambda, &best_expression, &orig_expression](int thread_num)
         {
             std::random_device rand_dev;
             std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
             Board x(depth, expression_type, data, false, cache, layers, layer_types, num_epochs, bias, eta, theta, gamma, epsilon, beta_1, beta_2, lambda);
             
-//            Board(int n, const std::string& expression_type, const Eigen::MatrixXf& theData, bool visualize_exploration, bool cache, std::vector<int> layers, std::deque<std::string> layer_types, const unsigned long num_epochs, float bias, float eta, float theta, float gamma, float epsilon, float beta_1, float beta_2)
-//                : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, is_primary{true},
-//            
-//            srnn{layers, layer_types, bias, eta, theta, gamma, "SR", expression_type, epsilon, beta_1, beta_2}//, epochs{num_epochs}
-//            
-//            MultiLayerPerceptron(std::vector<int> layers, std::deque<std::string> layer_types, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, const std::string& weight_update = "basic", const std::string& expression_type = "prefix", float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f, float lambda = 0.01f /*weight decay AdamW*/);
-            
             sync_point.arrive_and_wait();
             Board secondary_one((depth > 0) ? depth-1 : 0, expression_type, cache), secondary_two((depth > 0) ? depth-1 : 0, expression_type, cache); //For crossover and mutations
             float score = 0.0f, mut_prob = 0.8f, rand_mut_cross;
-            constexpr int init_population = 5;
+            constexpr int init_population = 100;
             std::vector<std::pair<std::vector<std::string>, float>> individuals;
             std::pair<std::vector<std::string>, float> individual_1, individual_2;
             std::vector<std::pair<int, int>> sub_exprs_1, sub_exprs_2;
@@ -1203,8 +1211,6 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
             int rand_depth, rand_individual_idx_1, rand_individual_idx_2;
             std::uniform_real_distribution<float> rand_mut_cross_dist(0.0f, 1.0f);
             size_t temp_sz;
-
-        //    std::string expression, orig_expression, best_expression;
             
             auto updateScore = [&]()
             {
@@ -1212,16 +1218,21 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         //        assert(((x.expression_type == "prefix") ? x.getPNdepth(x.srnn.pieces) : x.getRPNdepth(x.srnn.pieces)).second);
                 if (score > max_score)
                 {
-        //            expression = x._to_infix();
-        //            orig_expression = x.expression();
                     max_score = score;
                     std::scoped_lock str_lock(Board::thread_locker);
                     best_expression = x._to_infix();
                     orig_expression = x.expression();
-        //            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-        //            std::cout << "Best expression = " << expression << '\n';
-        //            std::cout << "Best expression (original format) = " << orig_expression << '\n';
-        //            best_expression = std::move(expression);
+                    std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+                    std::cout << "Best expression = " << best_expression << '\n';
+                    std::cout << "Best expression (original format) = " << orig_expression << '\n';
+                }
+                else
+                {
+                    //TODO: figure out why score is nan here!!!
+                    //TODO: Also figure out if/how simplification is possible, might require recalculating the depth in mutation and crossover function calls.
+                    std::scoped_lock str_lock(Board::thread_locker);
+                    std::cout << "pieces = " << x.srnn.pieces << ", score = "
+                    << score << '\n';
                 }
             };
             
@@ -1234,7 +1245,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                 {
                     temp_legal_moves = x.get_legal_moves(); //the legal moves
                     
-                    assert((temp_legal_moves.size() > 0 && "Line 1278, temp_legal_moves.size() = "+std::to_string(temp_legal_moves.size())));
+                    assert(temp_legal_moves.size());
                     temp_sz = temp_legal_moves.size(); //the number of legal moves
                     std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
                     x.srnn.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
@@ -1244,8 +1255,12 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                 individuals.push_back(std::make_pair(x.srnn.pieces, score));
                 x.srnn.pieces.clear();
             }
+            {
+                std::scoped_lock str_lock(Board::thread_locker);
+                std::cout << "Thread " << thread_num << " done generating its initial population\n";
+            }
             
-            auto Mutation = [&](int n) //TODO: This is the function that is causing the error.
+            auto Mutation = [&](int n)
             {
                 //Step 1: Generate a random depth-n sub-expression `secondary_one.srnn.pieces`
                 secondary_one.srnn.pieces.clear();
@@ -1255,14 +1270,13 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                 while (secondary_one.complete_status() == -1)
                 {
                     temp_legal_moves = secondary_one.get_legal_moves();
-                    assert((temp_legal_moves.size() > 0 && "Error in Mutation function: temp_legal_moves.size() = "+std::to_string(temp_legal_moves.size())));
+                    assert(temp_legal_moves.size() > 0);
                     std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
                     secondary_one.srnn.pieces.push_back(temp_legal_moves[distribution(generator)]);
                 }
                 assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.srnn.pieces) : secondary_one.getRPNdepth(secondary_one.srnn.pieces)).first == secondary_one.n);
                 assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.srnn.pieces) : secondary_one.getRPNdepth(secondary_one.srnn.pieces)).second);
 
-                
                 //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
                 //in `x.srnn.pieces` and store them in an std::vector<std::pair<int, int>>
                 //called `sub_exprs_1`.
@@ -1354,7 +1368,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                 individuals.push_back(std::make_pair(x.srnn.pieces, score)); //adding the first cross-over'd individual to the expression population
                 
                 x.srnn.pieces = individual_2.first; //assigning the second cross-over'd individual to the primary Board object's pieces vector
-                score = x.complete_status (false); //getting the score of the second cross-over'd individual
+                score = x.complete_status(false); //getting the score of the second cross-over'd individual
                 updateScore(); //updating the best score achieved thus far
                 individuals.push_back(std::make_pair(x.srnn.pieces, score)); //adding the first cross-over'd individual to the expression population
             };
@@ -1395,7 +1409,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
         
         for (unsigned int i = 0; i < num_threads; i++)
         {
-            threads[i] = std::thread(func); 
+            threads[i] = std::thread(func, i+1);
         }
         
         for (unsigned int i = 0; i < num_threads; i++)
@@ -1945,7 +1959,7 @@ int main()
 //...
 //-1.3 -2.2 Hemberg_2(-1.3, -2.2)
     
-    GP(generateData(20 /*rows*/, 3 /*columns*/, Hemberg_2 /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f), 3 /*fixed depth*/, "prefix", true /*cache*/, 100 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/, {2,10,5,5,1} /*Neural Network number of perceptrons in i'th layers */, std::deque<std::string>{"sigmoid", "sigmoid", "none", "none"}, 10 /*num_epochs*/,/* bias = */ 1.0f, /*eta = */ 0.5f, /*theta = */ 0.01f, /*gamma = */ 0.9f, /*beta_1 = */ 0.9f, /*beta_2 = */ 0.999f, /*lambda = */ 0.01f);
+    GP(generateData(20 /*rows*/, 3 /*columns*/, Hemberg_2 /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f), 5 /*fixed depth*/, "postfix", true /*cache*/, 100 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/, {2,10,5,5,1} /*Neural Network number of perceptrons in i'th layers */, std::deque<std::string>{"sigmoid", "sigmoid", "none", "none"}, 10 /*num_epochs*/,/* bias = */ 1.0f, /*eta = */ 0.5f, /*theta = */ 0.01f, /*gamma = */ 0.9f, /*beta_1 = */ 0.9f, /*beta_2 = */ 0.999f, /*lambda = */ 0.01f);
     
 
     return 0;

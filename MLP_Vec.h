@@ -11,6 +11,7 @@
 #include <deque>
 #include <Eigen/Core>
 #include <random>
+#include <mutex>
 #include <float.h>
 
 class Perceptron
@@ -38,6 +39,7 @@ class MultiLayerPerceptron
         static std::vector<std::string> inline __operators;
         static std::vector<std::string> inline __unary_operators;
         static std::vector<std::string> inline __binary_operators;
+        static std::once_flag inline initialization_flag;  // Flag for std::call_once
         std::vector<std::string> pieces; //expression list for Symbolic Regressor
 
     MultiLayerPerceptron() = default;
