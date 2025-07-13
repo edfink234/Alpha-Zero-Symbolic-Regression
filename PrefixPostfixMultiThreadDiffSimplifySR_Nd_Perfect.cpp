@@ -2567,6 +2567,8 @@ struct Board
         return temp;
     }
     
+    //pastes together all of the elements of the `pieces` argument of this function into a string,
+    //where each element is separated by a space. Think `return ' '.join(pieces)` in Python
     std::string expression(const std::vector<std::string>& pieces, bool show_consts = true)
     {
         std::string temp, token;
@@ -2588,11 +2590,12 @@ struct Board
         return temp;
     }
     
+    //pastes each of the expressions in `this->pieces` together with ", " and returns that resulting string
     std::string expression(bool show_consts = true)
     {
         std::string temp;
         size_t sz = pieces.size() - 1;
-        for (int jdx = 0; jdx < sz; jdx++)
+        for (int jdx = 0; jdx < sz; jdx++) //loops over each generated expression
         {
             temp += expression(jdx, show_consts) + ", ";
         }
@@ -3328,12 +3331,14 @@ struct Board
         {
             if (Board::__num_features == 1)
             {
+                //first check if the unsimplified expression `this->pieces[jdx]` has the input variable `Board::__input_vars[0]`
                 if (std::find(this->pieces[jdx].begin(), this->pieces[jdx].end(), Board::__input_vars[0]) == this->pieces[jdx].end())
                 {
                     this->MSE_curr = FLT_MAX;
                     return score;
                 }
                 ((this->expression_type == "prefix") ? simplifyPN(this->pieces[jdx]) : simplifyRPN(this->pieces[jdx]));
+                //then check if the simplified expression `this->pieces[jdx]` has the input variable
                 if (std::find(this->pieces[jdx].begin(), this->pieces[jdx].end(), Board::__input_vars[0]) == this->pieces[jdx].end())
                 {
                     this->MSE_curr = FLT_MAX;
@@ -3342,6 +3347,7 @@ struct Board
             }
             else if (Board::__num_features > 1)
             {
+                //first check if the unsimplified expression `this->pieces[jdx]` has each of the input variables
                 for (const std::string& i: Board::__input_vars)
                 {
                     if (std::find(this->pieces[jdx].begin(), this->pieces[jdx].end(), i) == this->pieces[jdx].end())
@@ -3349,7 +3355,11 @@ struct Board
                         this->MSE_curr = FLT_MAX;
                         return score;
                     }
-                    ((this->expression_type == "prefix") ? simplifyPN(this->pieces[jdx]) : simplifyRPN(this->pieces[jdx]));
+                }
+                ((this->expression_type == "prefix") ? simplifyPN(this->pieces[jdx]) : simplifyRPN(this->pieces[jdx])); //then simplify `this->pieces[jdx]`
+                //then check if the simplified expression `this->pieces[jdx]` has each of the input variables
+                for (const std::string& i: Board::__input_vars)
+                {
                     if (std::find(this->pieces[jdx].begin(), this->pieces[jdx].end(), i) == this->pieces[jdx].end())
                     {
                         this->MSE_curr = FLT_MAX;
@@ -5239,6 +5249,14 @@ void NavierStokes3DSetter()
  {x0: x, x1: y, x2: z, x3: t}
  {x.pieces[0]: v_x, x.pieces[1]: v_y, x.pieces[2]: v_z, x.pieces[3]: f_x, x.pieces[4]: f_y, x.pieces[5]: f_z, x.pieces[6]: p}
  
+ sin((sqrt((arcsin((sech(sech(log(cos(x3)))) + sech(x0))) ^ (asin(x1) + sqrt(exp(x1))))) + x2)),
+ (((sin((sqrt(arccos((x1 - sqrt(x3)))) + sech(x2))) / x2) - tanh(arccos(exp(cos(x0))))) - (acos(arcsin(log(x2))) / arccos(tanh(x3)))),
+ (((arccos((log(x3) + sech((sin(x0) + log(x0))))) - x3) * x2) + x1),
+ (sech(exp(acos(((log(sin(x2)) - x3) + (sqrt(x0) * asin(cos(sqrt(x1)))))))) - (x3 / (exp((~(x2) - x3)) + ~(sech(log(arccos(arcsin(~(exp(x3)))))))))),
+ (~(log(sech((log(sech((x1 / x2))) + sech(log(acos(x2))))))) - (cos(log(x1)) + (x0 - (x0 / ln(sqrt(asin(log((x3 + log(x2)))))))))),
+ sech(asin(acos(~((((sqrt(asin(arccos(x1))) ^ x0) + x0) + (log(x2) ^ x3)))))),
+ (tanh((asin(exp(arcsin(x3))) + tanh(tanh(x0)))) + (cos(x2) + (x2 + tanh((arcsin(asin(acos(x1))) / arccos(acos(log(log(acos(x2))))))))))
+ 
  */
 std::vector<std::vector<std::string>> NavierStokes3D(Board& x)
 {
@@ -7066,7 +7084,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), void 
      Inside of thread:
      */
     
-    auto func = [&diffeq, &depth, &expression_type, &num_consts, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token, &best_MSE]()
+    auto func = [&diffeq, &depth, &expression_type, &num_consts, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token, &best_MSE](unsigned int thread_num)
     {
         std::random_device rand_dev;
         std::mt19937 thread_local generator(rand_dev()); // Mersenne Twister random number generator
@@ -7134,12 +7152,16 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), void 
             {
                 x.pieces[jdx].clear();
             }
+//            {
+//                std::scoped_lock str_lock(Board::thread_locker);
+//                printf("thread %d: n_count = %d, score = %f\n", thread_num, n_count++, score);
+//            }
         }
     };
     
     for (unsigned int i = 0; i < num_threads; i++)
     {
-        threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
+        threads[i] = std::thread(func, i+1);
     }
     
     for (unsigned int i = 0; i < num_threads; i++)
@@ -7161,14 +7183,16 @@ int main()
     constexpr double time = 1000000;
     float threshold = 5.0e-4f;
     
-    auto data = createMeshgridVectors(101, 1, {0.0001f}, {10.0f});
-    RandomSearch(VortexRadialProfile /*differential equation to solve*/, VortexRadialProfileSetter /*helper function to set constants that the solution may contain*/,  data /*data used to solve differential equation*/, std::vector<int>{3} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
+//    auto data = createMeshgridVectors(101, 1, {0.0001f}, {10.0f});
+//    RandomSearch(VortexRadialProfile /*differential equation to solve*/, VortexRadialProfileSetter /*helper function to set constants that the solution may contain*/,  data /*data used to solve differential equation*/, std::vector<int>{3} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
 //
 //    auto data = createMeshgridVectors(101, 1, {0.0001f}, {10.0f});
 //    RandomSearch(variational_potential_integral /*differential equation to solve*/, variational_potential_integral_setter /*helper function to set constants that the solution may contain*/,  data /*data used to solve differential equation*/, std::vector<int>{29} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
 //
     
-    //auto data = createMeshgridVectors(10, 4, {-10, -10, -10, 0}, {10, 10, 10, 100});
+    auto data = createMeshgridVectors(10, 4, {-10, -10, -10, 0}, {10, 10, 10, 100});
+    RandomSearch(NavierStokes3D /*differential equation to solve*/, NavierStokes3DSetter /*helper function to set constants that the solution may contain*/, data /*data used to solve differential equation*/, std::vector<int>(7, 10) /*fixed depths of generated unsimplified solution*/, "postfix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
+
     
     return 0;
 }
@@ -7178,3 +7202,5 @@ int main()
 //g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd_Perfect PrefixPostfixMultiThreadDiffSimplifySR_Nd_Perfect.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
 
 //g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd_Perfect PrefixPostfixMultiThreadDiffSimplifySR_Nd_Perfect.cpp -g -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
+
+

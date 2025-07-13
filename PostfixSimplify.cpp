@@ -297,7 +297,12 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             new_expression[first_arg_idx_low] = "1"; //change first symbol of x to 1
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.begin() + second_arg_idx_high); //erase the rest of x and y
         }
-        
+        //TODO:
+            /*
+            x*y       y
+            ---  -->  -
+            x*z       z
+            */
         else
         {
             new_expression.push_back(expression[up]);
@@ -451,6 +456,8 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             new_expression.push_back(expression[up]);
         }
     }
+    
+    //
     else
     {
         for (int i = low; i <= up; i++)

@@ -318,6 +318,13 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "1"; //change "-" to "1";
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.begin() + second_arg_idx_high);
         }
+        
+        //TODO:
+            /*
+            x*y       y
+            ---  -->  -
+            x*z       z
+            */
     }
     else if (expression[low] == "^") // ^ x y
     {
