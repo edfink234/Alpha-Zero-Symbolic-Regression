@@ -181,6 +181,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         setPrefixGR(expression, grasp);
     }
 //    print_container(expression, low, up);
+//    print_container(new_expression, 0, new_expression.size() - 1);
     if (expression[low] == "+" || expression[low] == "-") // +/- x y
     {
         int op_idx = new_expression.size();
@@ -239,8 +240,8 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); //* x
         int first_arg_idx_high = new_expression.size();
         graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); //* x y
-        int second_arg_idx_high = new_expression.size();
-        int step;
+        //int second_arg_idx_high = new_expression.size();
+        //int step;
         if (new_expression[first_arg_idx_high] == "0") //* x 0 -> 0 (because, since prefix operators come at the beginning, if the beginning of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to * x 0, which is 0)
         {
             //puts("hi 239");
@@ -284,7 +285,14 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); // / x y
         int second_arg_idx_high = new_expression.size();
         int step;
-        if (new_expression[first_arg_idx_high] == "0") // / x 0 -> inf (because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to / x 0, which is 0)
+        //TODO: There's an issue with how / is being handled here..., if the left or right sub-tree (represented by the symbol `x`) hasn't been simplified; it might be 0, so there's a possibility that the result of / x 0 could actually be nan as well, same goes for / 0 x
+        if ((new_expression[first_arg_idx_low] == "0") && (new_expression[first_arg_idx_high] == "0")) // / 0 0 -> nan
+        {
+            //puts("hi 290");
+            new_expression[op_idx] = "nan"; //change '/' to 'nan'
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
+        else if (new_expression[first_arg_idx_high] == "0") // / x 0 -> inf (because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to / x 0, which is 0)
         {
             //puts("hi 282");
             new_expression[op_idx] = (new_expression[first_arg_idx_low] != "~") ? "inf": "-inf"; //change '/' to 'inf' or '-inf'
@@ -317,6 +325,13 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "1"; //change "-" to "1";
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.begin() + second_arg_idx_high);
         }
+        
+        //TODO:
+            /*
+            x*y       y
+            ---  -->  -
+            x*z       z
+            */
     }
     else if (expression[low] == "^") // ^ x y
     {
@@ -328,7 +343,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         int first_arg_idx_high = new_expression.size();
         graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); // / x y
         //int second_arg_idx_high = new_expression.size();
-        int step;
+        //int step;
         if (new_expression[first_arg_idx_high] == "0") //^ x 0 -> 1 (because, since prefix operators come at the beginning, if the beginning of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to ^ x 0, which is 1)
         {
             //puts("hi 334");
@@ -467,6 +482,13 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "0"; //change '~' to '0'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
+        //TODO: Uncomment and test this!
+//        else if (new_expression[first_arg_idx_low] == "inf") // ~ inf -> -inf
+//        {
+//            //puts("hi 487");
+//            new_expression[op_idx] = "-inf"; //change '~' to '-inf'
+//            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+//        }
     }
     else
     {
@@ -771,6 +793,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                         break;
                     }
                     //TODO: Add 0 ~ -> 0
+                    //TODO: Add inf ~ -> -inf
                     else if (expression[i] == "exp" && (expression[i+1] == "ln" || expression[i+1] == "log"))
                     {
                         //puts("hi 361");
@@ -1778,6 +1801,23 @@ int main()
     printf("after: ");print_container(test_expr);
     puts("");
     
+    test_expr = {"/", "-", "cos", "x", "cos", "x", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"/", "-", "sech", "cos", "x", "sech", "cos", "x", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+//    test_expr = {"/", "sech", "~", "/", "~", "tanh", "cos", "x", "sin", "+", "0", "0", "0"};
+//    printf("before: ");print_container(test_expr);
+//    simplifyPN(test_expr);
+//    printf("after: ");print_container(test_expr);
+//    puts("");
 }
 //g++ -std=c++20 -o PrefixSimplifyPrev PrefixSimplifyPrev.cpp
 

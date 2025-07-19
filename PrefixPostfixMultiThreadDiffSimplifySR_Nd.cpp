@@ -809,7 +809,8 @@ struct Board
             setPrefixGR(expression, grasp);
         }
     //    print_container(expression, low, up);
-        if (expression[low] == "+" || expression[low] == "-")
+    //    print_container(new_expression, 0, new_expression.size() - 1);
+        if (expression[low] == "+" || expression[low] == "-") // +/- x y
         {
             int op_idx = new_expression.size();
             new_expression.push_back(expression[low]);
@@ -850,7 +851,7 @@ struct Board
                 }
             }
             
-            else if ((expression[low] == "-") && ((step = (second_arg_idx_high - first_arg_idx_high)) == (first_arg_idx_high - first_arg_idx_low)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression)))
+            else if ((expression[low] == "-") && ((step = (second_arg_idx_high - first_arg_idx_high)) == (first_arg_idx_high - first_arg_idx_low)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) //- x x
             {
                 //puts("hi 221");
                 assert(new_expression[op_idx] == expression[low]);
@@ -912,7 +913,14 @@ struct Board
             graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); // / x y
             int second_arg_idx_high = new_expression.size();
             int step;
-            if (new_expression[first_arg_idx_high] == "0") // / x 0 -> inf (because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to / x 0, which is 0)
+            //TODO: There's an issue with how / is being handled here..., if the left or right sub-tree (represented by the symbol `x`) hasn't been simplified; it might be 0, so there's a possibility that the result of / x 0 could actually be nan as well, same goes for / 0 x
+            if ((new_expression[first_arg_idx_low] == "0") && (new_expression[first_arg_idx_high] == "0")) // / 0 0 -> nan
+            {
+                //puts("hi 290");
+                new_expression[op_idx] = "nan"; //change '/' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression[first_arg_idx_high] == "0") // / x 0 -> inf (because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to / x 0, which is 0)
             {
                 //puts("hi 282");
                 new_expression[op_idx] = (new_expression[first_arg_idx_low] != "~") ? "inf": "-inf"; //change '/' to 'inf' or '-inf'
@@ -936,7 +944,7 @@ struct Board
                 {
                     new_expression.erase(new_expression.begin() + first_arg_idx_high, new_expression.end());
                 }
-                new_expression.erase(new_expression.begin() + op_idx); //erase the '*'
+                new_expression.erase(new_expression.begin() + op_idx); //erase the '/'
             }
             else if ((expression[low] == "/") && ((step = (second_arg_idx_high - first_arg_idx_high)) == (first_arg_idx_high - first_arg_idx_low)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) // / x x
             {
@@ -945,6 +953,13 @@ struct Board
                 new_expression[op_idx] = "1"; //change "-" to "1";
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.begin() + second_arg_idx_high);
             }
+            
+            //TODO:
+                /*
+                x*y       y
+                ---  -->  -
+                x*z       z
+                */
         }
         else if (expression[low] == "^") // ^ x y
         {
@@ -955,8 +970,8 @@ struct Board
             graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // / x
             int first_arg_idx_high = new_expression.size();
             graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); // / x y
-//            int second_arg_idx_high = new_expression.size();
-//            int step;
+            //int second_arg_idx_high = new_expression.size();
+            //int step;
             if (new_expression[first_arg_idx_high] == "0") //^ x 0 -> 1 (because, since prefix operators come at the beginning, if the beginning of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to ^ x 0, which is 1)
             {
                 //puts("hi 334");
@@ -1095,12 +1110,19 @@ struct Board
                 new_expression[op_idx] = "0"; //change '~' to '0'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
+            //TODO: Uncomment and test this!
+    //        else if (new_expression[first_arg_idx_low] == "inf") // ~ inf -> -inf
+    //        {
+    //            //puts("hi 487");
+    //            new_expression[op_idx] = "-inf"; //change '~' to '-inf'
+    //            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+    //        }
         }
         else
         {
             for (int i = low; i <= up; i++)
             {
-                assert(i < expression.size() && i >= 0);
+                //assert(i < expression.size() && i >= 0);
                 new_expression.push_back(expression[i]);
             }
         }
@@ -1476,7 +1498,7 @@ struct Board
             setPostfixGR(expression, grasp);
         }
     //    print_container(expression, low, up);
-        if (expression[up] == "+" || expression[up] == "-")
+        if (expression[up] == "+" || expression[up] == "-") // x y +/-
         {
             int first_arg_idx_low = new_expression.size();
             graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true);
@@ -1491,7 +1513,7 @@ struct Board
                 new_expression.pop_back();
             }
             
-            else if (new_expression[first_arg_idx_high - 1] == "0")
+            else if (new_expression[first_arg_idx_high - 1] == "0") // 0 x +/- -> x +/-
             {
                 //puts("hi 184");
                 //erase elements from new_expression[first_arg_idx_low] to new_expression[first_arg_idx_high-1] inclusive
@@ -1503,11 +1525,11 @@ struct Board
                 }
             }
             
-            else if ((expression[up] == "-") && ((step = (first_arg_idx_high - first_arg_idx_low)) == (second_arg_idx_high - first_arg_idx_high)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression)))
+            else if ((expression[up] == "-") && ((step = (first_arg_idx_high - first_arg_idx_low)) == (second_arg_idx_high - first_arg_idx_high)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) //x x - -> 0
             {
                 //puts("hi 215");
-                new_expression[first_arg_idx_low] = "0"; //change first symbol of x' to 0
-                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.begin() + second_arg_idx_high); //erase the rest of x' and y'
+                new_expression[first_arg_idx_low] = "0"; //change first symbol of x to 0
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.begin() + second_arg_idx_high); //erase the rest of x and y
             }
             
             else
@@ -1559,10 +1581,14 @@ struct Board
             graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
             int second_arg_idx_high = new_expression.size();
             int step;
-            
-             //x 0 /
-            
-            if (new_expression.back() == "0") // x 0 / -> inf (because, since postfix operators come at the end, if the end of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 /, which is inf)
+            //TODO: There's an issue with how / is being handled here..., if the left or right sub-tree (represented by the symbol `x`) hasn't been simplified; it might be 0, so there's a possibility that the result of x 0 / could actually be nan as well, same goes for 0 x /
+            if ((new_expression.back() == "0") && (new_expression[first_arg_idx_high - 1] == "0")) // 0 0 / -> nan
+            {
+                //puts("hi 279");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            }
+            else if (new_expression.back() == "0") // x 0 / -> inf (because, since postfix operators come at the end, if the end of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 /, which is inf)
             {
                 //puts("hi 280");
                 new_expression[first_arg_idx_low] = (new_expression[first_arg_idx_high - 1] == "~") ? "-inf" : "inf";
@@ -1585,6 +1611,12 @@ struct Board
                 new_expression[first_arg_idx_low] = "1"; //change first symbol of x to 1
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.begin() + second_arg_idx_high); //erase the rest of x and y
             }
+            //TODO:
+                /*
+                x*y       y
+                ---  -->  -
+                x*z       z
+                */
             else
             {
                 new_expression.push_back(expression[up]);
@@ -1596,8 +1628,8 @@ struct Board
             graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true); //x
             int first_arg_idx_high = new_expression.size();
             graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
-//            int second_arg_idx_high = new_expression.size();
-//            int step;
+            //int second_arg_idx_high = new_expression.size();
+            //int step;
             
             if (new_expression.back() == "0") // x 0 ^ -> 1 (because, since postfix operators come at the end, if the end of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 ^, which is 1)
             {
@@ -1661,7 +1693,7 @@ struct Board
         {
             int first_arg_idx_low = new_expression.size();
             graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
-            if (new_expression.back() == "0") // 0 tanh -> 0 (because, since postfix operators come at the end, if the end of the argument of 'tanh' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 sin, which is 0)
+            if (new_expression.back() == "0") // 0 tanh -> 0 (because, since postfix operators come at the end, if the end of the argument of 'tanh' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 tanh, which is 0)
             {
                 //puts("hi 380");
                 new_expression[first_arg_idx_low] = "0";
@@ -1733,6 +1765,13 @@ struct Board
                 new_expression[first_arg_idx_low] = "0";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
             }
+            //TODO: Uncomment and test this!
+    //        if (new_expression.back() == "inf") // inf ~ -> -inf (because, since postfix operators come at the end, if the end of the argument of '~' is inf, then the whole argument MUST be inf, therefore the expression reduces to inf ~, which is -inf)
+    //        {
+    ////            puts("hi 445");
+    //            new_expression[first_arg_idx_low] = "-inf";
+    //            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+    //        }
             else
             {
                 new_expression.push_back(expression[up]);
@@ -1742,7 +1781,7 @@ struct Board
         {
             for (int i = low; i <= up; i++)
             {
-                assert(i < expression.size() && i >= 0);
+                //assert(i < expression.size() && i >= 0);
                 new_expression.push_back(expression[i]);
             }
         }
@@ -6745,7 +6784,7 @@ int main()
     
 //    std::cout<<data << '\n' << (Eigen::VectorXf::Ones(5).array() / Eigen::VectorXf::Zero(5).array()).cos() /*Eigen::VectorXf::Zero(5).array().pow(Eigen::VectorXf::Ones(5).array())*/ << '\n';
     
-    RandomSearch(VortexRadialProfile /*differential equation to solve*/, data /*data used to solve differential equation*/, std::vector<int>{10} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
+    RandomSearch(VortexRadialProfile /*differential equation to solve*/, data /*data used to solve differential equation*/, std::vector<int>{12} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
     
     return 0;
 }
@@ -6755,58 +6794,3 @@ int main()
 //g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd PrefixPostfixMultiThreadDiffSimplifySR_Nd.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
 
 //g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd PrefixPostfixMultiThreadDiffSimplifySR_Nd.cpp -g -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
-
-//import numpy as np
-//from numpy import tanh, cosh, sin, cos, exp, log, log as ln, arcsin, arcsin as asin, arccos, arccos as acos
-//x0 = np.linspace(0.0001, 10, 101)
-//sech = lambda x: 1/cosh(x)
-//test_str = '(((((1 / 2) * ((sech(x0) * (~(sech(x0)) * tanh(x0))) + ((~(sech(x0)) * tanh(x0)) * sech(x0)))) + ((1 / (2 * x0)) * (sech(x0) * sech(x0)))) + ((1 - ((1 * 1) / (2 * (x0 * x0)))) * tanh(x0))) - ((tanh(x0) * tanh(x0)) * tanh(x0)))'
-//#test_str = '(((((1 / 2) * ~(sin(x0))) + ((1 / (2 * x0)) * cos(x0))) + ((1 - ((1 * 1) / (2 * (x0 * x0)))) * sin(x0))) - ((sin(x0) * sin(x0)) * sin(x0)))'
-//test_str = test_str.replace('~','-')
-//func = eval(f'lambda x0: {test_str}')
-//#val = np.nan_to_num(func(x0), nan=0.0)
-//val = func(x0)
-//print((val**2).sum())
-
-//using namespace ROOT::VecOps;
-//const int n = 101;
-//RVec<float> x0(n);
-//// Create linspace equivalent for x0: [-10, 10]
-//for (int i = 0; i < n; ++i) {x0[i] = -10.0f + (20.0f / (n - 1)) * i;}
-//// Define sech function
-//auto sech = [](float x) { return 1.0f / std::cosh(x); };
-//// Evaluate the formula
-//RVec<float> val(n);
-//for (int i = 0; i < n; ++i) {float sech_x = sech(x0[i]);float tanh_x = std::tanh(x0[i]);float x0_i = x0[i];val[i] = ((((0.5 * ((sech_x * (-sech_x * tanh_x)) + ((-sech_x * tanh_x) * sech_x)))) + ((1.0 / (2 * x0_i)) * (sech_x * sech_x))) + ((1 - (1.0 / (2 * x0_i * x0_i))) * tanh_x)) - ((tanh_x * tanh_x) * tanh_x);}
-//// Handle nan-to-zero conversion and compute the squared sum
-//RVec<float> squared_vals = val * val;
-//float squared_sum = 0.0;
-//for (int i = 0; i < n; ++i) {squared_sum += std::isnan(squared_vals[i]) ? 0.0 : squared_vals[i];}
-
-//arr1 = np.array([0.005     ,  0.00520616,  0.00542535,  0.00565867,  0.00590737,
-//                 0.00617284,  0.00645661,  0.0067604 ,  0.00708616,  0.00743603,
-//                 0.00781247,  0.00821823,  0.00865644,  0.00913064,  0.0096449 ,
-//                 0.01020383,  0.01081276,  0.01147782,  0.0122061 ,  0.01300585,
-//                 0.01388667,  0.01485982,  0.01593856,  0.01713852,  0.01847829,
-//                 0.01998003,  0.02167023,  0.02358079,  0.02575017,  0.02822489,
-//                 0.03106142,  0.03432827,  0.03810853,  0.04250265,  0.0476311 ,
-//                 0.05363648,  0.06068368,  0.06895584,  0.07864182,  0.08990779,
-//                 0.10284074,  0.11734582,  0.13297368,  0.14865771,  0.16237174,
-//                 0.17080991,  0.16936925,  0.15292071,  0.11779202,  0.06458405,
-//                        nan, -0.06458405, -0.11779202, -0.15292071, -0.16936925,
-//                -0.17080991, -0.16237174, -0.14865771, -0.13297368, -0.11734582,
-//                -0.10284074, -0.08990779, -0.07864182, -0.06895584, -0.06068368,
-//                -0.05363648, -0.0476311 , -0.04250265, -0.03810853, -0.03432827,
-//                -0.03106142, -0.02822489, -0.02575017, -0.02358079, -0.02167023,
-//                -0.01998003, -0.01847829, -0.01713852, -0.01593856, -0.01485982,
-//                -0.01388667, -0.01300585, -0.0122061 , -0.01147782, -0.01081276,
-//                -0.01020383, -0.0096449 , -0.00913064, -0.00865644, -0.00821823,
-//                -0.00781247, -0.00743603, -0.00708616, -0.0067604 , -0.00645661,
-//                -0.00617284, -0.00590737, -0.00565867, -0.00542535, -0.00520616,
-//                -0.005])
-//
-//arr2 = np.array([0.005000, 0.005206, 0.005425, 0.005658, 0.005907, 0.006172, 0.006456, 0.006760, 0.007086, 0.007436, 0.007812, 0.008218, 0.008657, 0.009131, 0.009645, 0.010204, 0.010813, 0.011478, 0.012206, 0.013006, 0.013886, 0.014860, 0.015939, 0.017138, 0.018478, 0.019980, 0.021670, 0.023581, 0.025750, 0.028225, 0.031061, 0.034328, 0.038108, 0.042503, 0.047631, 0.053636, 0.060684, 0.068956, 0.078642, 0.089908, 0.102841, 0.117346, 0.132974, 0.148658, 0.162372, 0.170810, 0.169369, 0.152921, 0.117792, 0.064584, 0.250000, -0.064583, -0.117792, -0.152921, -0.169369, -0.170810, -0.162372, -0.148658, -0.132974, -0.117346, -0.102841, -0.089908, -0.078642, -0.068956, -0.060684, -0.053636, -0.047631, -0.042503, -0.038108, -0.034328, -0.031061, -0.028225, -0.025750, -0.023581, -0.021670, -0.019980, -0.018478, -0.017138, -0.015939, -0.014860, -0.013886, -0.013006, -0.012206, -0.011478, -0.010813, -0.010204, -0.009645, -0.009131, -0.008657, -0.008218, -0.007812, -0.007436, -0.007086, -0.006760, -0.006456, -0.006172, -0.005907, -0.005658, -0.005425, -0.005206, -0.005000])
-////
-//print(np.sum((arr1 - arr2)**2))
-
-//0.005000, 0.005206, 0.005425, 0.005658, 0.005907, 0.006172, 0.006456, 0.006760, 0.007086, 0.007436, 0.007812, 0.008218, 0.008657, 0.009131, 0.009645, 0.010204, 0.010813, 0.011478, 0.012206, 0.013006, 0.013886, 0.014860, 0.015939, 0.017138, 0.018478, 0.019980, 0.021670, 0.023581, 0.025750, 0.028225, 0.031061, 0.034328, 0.038108, 0.042503, 0.047631, 0.053636, 0.060684, 0.068956, 0.078642, 0.089908, 0.102841, 0.117346, 0.132974, 0.148658, 0.162372, 0.170810, 0.169369, 0.152921, 0.117792, 0.064584, 0.250000, -0.064583, -0.117792, -0.152921, -0.169369, -0.170810, -0.162372, -0.148658, -0.132974, -0.117346, -0.102841, -0.089908, -0.078642, -0.068956, -0.060684, -0.053636, -0.047631, -0.042503, -0.038108, -0.034328, -0.031061, -0.028225, -0.025750, -0.023581, -0.021670, -0.019980, -0.018478, -0.017138, -0.015939, -0.014860, -0.013886, -0.013006, -0.012206, -0.011478, -0.010813, -0.010204, -0.009645, -0.009131, -0.008657, -0.008218, -0.007812, -0.007436, -0.007086, -0.006760, -0.006456, -0.006172, -0.005907, -0.005658, -0.005425, -0.005206, -0.005000

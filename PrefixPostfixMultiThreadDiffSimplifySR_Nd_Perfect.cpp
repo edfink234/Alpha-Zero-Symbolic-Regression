@@ -814,7 +814,8 @@ struct Board
             setPrefixGR(expression, grasp);
         }
     //    print_container(expression, low, up);
-        if (expression[low] == "+" || expression[low] == "-")
+    //    print_container(new_expression, 0, new_expression.size() - 1);
+        if (expression[low] == "+" || expression[low] == "-") // +/- x y
         {
             int op_idx = new_expression.size();
             new_expression.push_back(expression[low]);
@@ -855,7 +856,7 @@ struct Board
                 }
             }
             
-            else if ((expression[low] == "-") && ((step = (second_arg_idx_high - first_arg_idx_high)) == (first_arg_idx_high - first_arg_idx_low)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression)))
+            else if ((expression[low] == "-") && ((step = (second_arg_idx_high - first_arg_idx_high)) == (first_arg_idx_high - first_arg_idx_low)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) //- x x
             {
                 //puts("hi 221");
                 assert(new_expression[op_idx] == expression[low]);
@@ -917,7 +918,14 @@ struct Board
             graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); // / x y
             int second_arg_idx_high = new_expression.size();
             int step;
-            if (new_expression[first_arg_idx_high] == "0") // / x 0 -> inf (because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to / x 0, which is 0)
+            //TODO: There's an issue with how / is being handled here..., if the left or right sub-tree (represented by the symbol `x`) hasn't been simplified; it might be 0, so there's a possibility that the result of / x 0 could actually be nan as well, same goes for / 0 x
+            if ((new_expression[first_arg_idx_low] == "0") && (new_expression[first_arg_idx_high] == "0")) // / 0 0 -> nan
+            {
+                //puts("hi 290");
+                new_expression[op_idx] = "nan"; //change '/' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression[first_arg_idx_high] == "0") // / x 0 -> inf (because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to / x 0, which is 0)
             {
                 //puts("hi 282");
                 new_expression[op_idx] = (new_expression[first_arg_idx_low] != "~") ? "inf": "-inf"; //change '/' to 'inf' or '-inf'
@@ -941,7 +949,7 @@ struct Board
                 {
                     new_expression.erase(new_expression.begin() + first_arg_idx_high, new_expression.end());
                 }
-                new_expression.erase(new_expression.begin() + op_idx); //erase the '*'
+                new_expression.erase(new_expression.begin() + op_idx); //erase the '/'
             }
             else if ((expression[low] == "/") && ((step = (second_arg_idx_high - first_arg_idx_high)) == (first_arg_idx_high - first_arg_idx_low)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) // / x x
             {
@@ -950,6 +958,13 @@ struct Board
                 new_expression[op_idx] = "1"; //change "-" to "1";
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.begin() + second_arg_idx_high);
             }
+            
+            //TODO:
+                /*
+                x*y       y
+                ---  -->  -
+                x*z       z
+                */
         }
         else if (expression[low] == "^") // ^ x y
         {
@@ -960,8 +975,8 @@ struct Board
             graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // / x
             int first_arg_idx_high = new_expression.size();
             graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); // / x y
-//            int second_arg_idx_high = new_expression.size();
-//            int step;
+            //int second_arg_idx_high = new_expression.size();
+            //int step;
             if (new_expression[first_arg_idx_high] == "0") //^ x 0 -> 1 (because, since prefix operators come at the beginning, if the beginning of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to ^ x 0, which is 1)
             {
                 //puts("hi 334");
@@ -1100,12 +1115,19 @@ struct Board
                 new_expression[op_idx] = "0"; //change '~' to '0'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
+            //TODO: Uncomment and test this!
+    //        else if (new_expression[first_arg_idx_low] == "inf") // ~ inf -> -inf
+    //        {
+    //            //puts("hi 487");
+    //            new_expression[op_idx] = "-inf"; //change '~' to '-inf'
+    //            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+    //        }
         }
         else
         {
             for (int i = low; i <= up; i++)
             {
-                assert(i < expression.size() && i >= 0);
+                //assert(i < expression.size() && i >= 0);
                 new_expression.push_back(expression[i]);
             }
         }
@@ -1481,7 +1503,7 @@ struct Board
             setPostfixGR(expression, grasp);
         }
     //    print_container(expression, low, up);
-        if (expression[up] == "+" || expression[up] == "-")
+        if (expression[up] == "+" || expression[up] == "-") // x y +/-
         {
             int first_arg_idx_low = new_expression.size();
             graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true);
@@ -1511,8 +1533,8 @@ struct Board
             else if ((expression[up] == "-") && ((step = (first_arg_idx_high - first_arg_idx_low)) == (second_arg_idx_high - first_arg_idx_high)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) //x x - -> 0
             {
                 //puts("hi 215");
-                new_expression[first_arg_idx_low] = "0"; //change first symbol of x' to 0
-                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.begin() + second_arg_idx_high); //erase the rest of x' and y'
+                new_expression[first_arg_idx_low] = "0"; //change first symbol of x to 0
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.begin() + second_arg_idx_high); //erase the rest of x and y
             }
             
             else
@@ -1564,10 +1586,14 @@ struct Board
             graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
             int second_arg_idx_high = new_expression.size();
             int step;
-            
-             //x 0 /
-            
-            if (new_expression.back() == "0") // x 0 / -> inf (because, since postfix operators come at the end, if the end of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 /, which is inf)
+            //TODO: There's an issue with how / is being handled here..., if the left or right sub-tree (represented by the symbol `x`) hasn't been simplified; it might be 0, so there's a possibility that the result of x 0 / could actually be nan as well, same goes for 0 x /
+            if ((new_expression.back() == "0") && (new_expression[first_arg_idx_high - 1] == "0")) // 0 0 / -> nan
+            {
+                //puts("hi 279");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            }
+            else if (new_expression.back() == "0") // x 0 / -> inf (because, since postfix operators come at the end, if the end of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 /, which is inf)
             {
                 //puts("hi 280");
                 new_expression[first_arg_idx_low] = (new_expression[first_arg_idx_high - 1] == "~") ? "-inf" : "inf";
@@ -1590,6 +1616,12 @@ struct Board
                 new_expression[first_arg_idx_low] = "1"; //change first symbol of x to 1
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.begin() + second_arg_idx_high); //erase the rest of x and y
             }
+            //TODO:
+                /*
+                x*y       y
+                ---  -->  -
+                x*z       z
+                */
             else
             {
                 new_expression.push_back(expression[up]);
@@ -1601,8 +1633,8 @@ struct Board
             graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true); //x
             int first_arg_idx_high = new_expression.size();
             graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
-//            int second_arg_idx_high = new_expression.size();
-//            int step;
+            //int second_arg_idx_high = new_expression.size();
+            //int step;
             
             if (new_expression.back() == "0") // x 0 ^ -> 1 (because, since postfix operators come at the end, if the end of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 ^, which is 1)
             {
@@ -1666,7 +1698,7 @@ struct Board
         {
             int first_arg_idx_low = new_expression.size();
             graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
-            if (new_expression.back() == "0") // 0 tanh -> 0 (because, since postfix operators come at the end, if the end of the argument of 'tanh' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 sin, which is 0)
+            if (new_expression.back() == "0") // 0 tanh -> 0 (because, since postfix operators come at the end, if the end of the argument of 'tanh' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 tanh, which is 0)
             {
                 //puts("hi 380");
                 new_expression[first_arg_idx_low] = "0";
@@ -1738,6 +1770,13 @@ struct Board
                 new_expression[first_arg_idx_low] = "0";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
             }
+            //TODO: Uncomment and test this!
+    //        if (new_expression.back() == "inf") // inf ~ -> -inf (because, since postfix operators come at the end, if the end of the argument of '~' is inf, then the whole argument MUST be inf, therefore the expression reduces to inf ~, which is -inf)
+    //        {
+    ////            puts("hi 445");
+    //            new_expression[first_arg_idx_low] = "-inf";
+    //            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+    //        }
             else
             {
                 new_expression.push_back(expression[up]);
@@ -1747,7 +1786,7 @@ struct Board
         {
             for (int i = low; i <= up; i++)
             {
-                assert(i < expression.size() && i >= 0);
+                //assert(i < expression.size() && i >= 0);
                 new_expression.push_back(expression[i]);
             }
         }
@@ -5519,7 +5558,7 @@ std::vector<std::vector<std::string>> NavierStokes3D(Board& x)
     }
     else if (x.expression_type == "prefix")
     {
-        
+        throw std::invalid_argument("Prefix not implemented yet for this NavierStokes3D function!");
     }
     return results;
 }
@@ -7183,15 +7222,15 @@ int main()
     constexpr double time = 1000000;
     float threshold = 5.0e-4f;
     
-//    auto data = createMeshgridVectors(101, 1, {0.0001f}, {10.0f});
-//    RandomSearch(VortexRadialProfile /*differential equation to solve*/, VortexRadialProfileSetter /*helper function to set constants that the solution may contain*/,  data /*data used to solve differential equation*/, std::vector<int>{3} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
+    auto data = createMeshgridVectors(101, 1, {0.0001f}, {10.0f});
+    RandomSearch(VortexRadialProfile /*differential equation to solve*/, VortexRadialProfileSetter /*helper function to set constants that the solution may contain*/,  data /*data used to solve differential equation*/, std::vector<int>{3} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
 //
 //    auto data = createMeshgridVectors(101, 1, {0.0001f}, {10.0f});
 //    RandomSearch(variational_potential_integral /*differential equation to solve*/, variational_potential_integral_setter /*helper function to set constants that the solution may contain*/,  data /*data used to solve differential equation*/, std::vector<int>{29} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
 //
     
-    auto data = createMeshgridVectors(10, 4, {-10, -10, -10, 0}, {10, 10, 10, 100});
-    RandomSearch(NavierStokes3D /*differential equation to solve*/, NavierStokes3DSetter /*helper function to set constants that the solution may contain*/, data /*data used to solve differential equation*/, std::vector<int>(7, 10) /*fixed depths of generated unsimplified solution*/, "postfix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
+//    auto data = createMeshgridVectors(10, 4, {-10, -10, -10, 0}, {10, 10, 10, 100});
+//    RandomSearch(NavierStokes3D /*differential equation to solve*/, NavierStokes3DSetter /*helper function to set constants that the solution may contain*/, data /*data used to solve differential equation*/, std::vector<int>(7, 10) /*fixed depths of generated unsimplified solution*/, "postfix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
 
     
     return 0;

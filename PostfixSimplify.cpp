@@ -206,7 +206,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         
         else if (new_expression[first_arg_idx_high - 1] == "0")
         {
-//            puts("hi 184");
+            //puts("hi 184");
             //erase elements from new_expression[first_arg_idx_low] to new_expression[first_arg_idx_high-1] inclusive
             new_expression.erase(new_expression.begin() + first_arg_idx_low, new_expression.begin() + first_arg_idx_high); //0 y + -> y
             if (expression[up] == "-")
@@ -216,7 +216,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             }
         }
         
-        else if ((expression[up] == "-") && ((step = (first_arg_idx_high - first_arg_idx_low)) == (second_arg_idx_high - first_arg_idx_high)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) //- x x -> 0
+        else if ((expression[up] == "-") && ((step = (first_arg_idx_high - first_arg_idx_low)) == (second_arg_idx_high - first_arg_idx_high)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) //x x - -> 0
         {
             //puts("hi 215");
             new_expression[first_arg_idx_low] = "0"; //change first symbol of x to 0
@@ -234,8 +234,8 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true); //x
         int first_arg_idx_high = new_expression.size();
         graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
-        int second_arg_idx_high = new_expression.size();
-        int step;
+        //int second_arg_idx_high = new_expression.size();
+        //int step;
         
         if (new_expression.back() == "0") // x 0 * -> 0 (because, since postfix operators come at the end, if the end of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 *, which is 0)
         {
@@ -245,7 +245,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         }
         else if (new_expression[first_arg_idx_high - 1] == "0") //0 x * -> 0 (because, since postfix operators come at the end, if the end of the first argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to 0 x *, which is 0)
         {
-//            puts("hi 241");
+            //puts("hi 241");
             new_expression[first_arg_idx_low] = "0";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
         }
@@ -272,9 +272,14 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
         int second_arg_idx_high = new_expression.size();
         int step;
-        
-        //TODO: Need to handle 0/0 -> nan first before x 0 / -> inf
-        if (new_expression.back() == "0") // x 0 / -> inf (because, since postfix operators come at the end, if the end of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 /, which is inf)
+        //TODO: There's an issue with how / is being handled here..., if the left or right sub-tree (represented by the symbol `x`) hasn't been simplified; it might be 0, so there's a possibility that the result of x 0 / could actually be nan as well, same goes for 0 x /
+        if ((new_expression.back() == "0") && (new_expression[first_arg_idx_high - 1] == "0")) // 0 0 / -> nan
+        {
+            //puts("hi 279");
+            new_expression[first_arg_idx_low] = "nan";
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+        }
+        else if (new_expression.back() == "0") // x 0 / -> inf (because, since postfix operators come at the end, if the end of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 /, which is inf)
         {
             //puts("hi 280");
             new_expression[first_arg_idx_low] = (new_expression[first_arg_idx_high - 1] == "~") ? "-inf" : "inf";
@@ -314,8 +319,8 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true); //x
         int first_arg_idx_high = new_expression.size();
         graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
-        int second_arg_idx_high = new_expression.size();
-        int step;
+        //int second_arg_idx_high = new_expression.size();
+        //int step;
         
         if (new_expression.back() == "0") // x 0 ^ -> 1 (because, since postfix operators come at the end, if the end of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 ^, which is 1)
         {
@@ -451,13 +456,18 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             new_expression[first_arg_idx_low] = "0";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
         }
+        //TODO: Uncomment and test this!
+//        if (new_expression.back() == "inf") // inf ~ -> -inf (because, since postfix operators come at the end, if the end of the argument of '~' is inf, then the whole argument MUST be inf, therefore the expression reduces to inf ~, which is -inf)
+//        {
+////            puts("hi 445");
+//            new_expression[first_arg_idx_low] = "-inf";
+//            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+//        }
         else
         {
             new_expression.push_back(expression[up]);
         }
     }
-    
-    //
     else
     {
         for (int i = low; i <= up; i++)
@@ -614,7 +624,6 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
                     
                     else if (expression[i] == "/")
                     {
-                        //TODO: Need to handle 0/0 -> nan first before 0 x / -> 0
                         if (expression[i-2] == "0" && is_const(expression[i-1])) // "0 x /" -> "0"
                         {
                             //puts("hi 187");
