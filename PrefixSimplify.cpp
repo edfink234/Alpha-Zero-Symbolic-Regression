@@ -511,7 +511,7 @@ void graspSimplifyPrefix(std::vector<std::string>& expression, int low, int up, 
 void simplifyPN_Helper(std::vector<std::string>& expression)
 {
     bool simplified = true;
-    bool isFloat1, isFloat2;
+    bool isFloat1, isFloat2, isConst1, isConst2;
     while (simplified)
     {
         simplified = false;
@@ -563,9 +563,20 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                         }
                     }
                     
+                    isConst1 = is_const(expression[i+1]);
+                    isConst2 = is_const(expression[i+2]);
+                    
+                    if ((isConst1 && isConst2) && ((expression[i+1].find("nan") != std::string::npos) || (expression[i+2].find("nan") != std::string::npos))) //binary_op nan x = binary_op x nan = nan
+                    {
+                        //puts("hi 570");
+                        expression[i] = "nan";
+                        expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                        simplified = true;
+                        break;
+                    }
                     else if (expression[i] == "-")
                     {
-                        if ((is_const(expression[i+1]) && is_const(expression[i+2])) && (expression[i+1] == expression[i+2])) //- x x => 0
+                        if ((isConst1 && isConst2) && (expression[i+1] == expression[i+2])) //- x x => 0
                         {
                             expression[i] = "0";
                             expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
@@ -579,7 +590,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+2] == "0" && is_const(expression[i+1])) //- x 0 -> x
+                        else if (expression[i+2] == "0" && isConst1) //- x 0 -> x
                         {
                             expression[i] = expression[i+1];
                             expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
@@ -587,10 +598,9 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             break;
                         }
                     }
-                    
                     else if (expression[i] == "*")
                     {
-                        if (expression[i+1] == "0" && is_const(expression[i+2])) //* 0 x -> 0
+                        if (expression[i+1] == "0" && isConst2) //* 0 x -> 0
                         {
                             //puts("hi 131");
                             expression[i] = "0";
@@ -598,7 +608,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+2] == "0" && is_const(expression[i+1])) //* x 0 -> 0
+                        else if (expression[i+2] == "0" && isConst1) //* x 0 -> 0
                         {
                             //puts("hi 139");
                             expression[i] = "0";
@@ -606,7 +616,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+1] == "1" && is_const(expression[i+2])) //* 1 x -> x
+                        else if (expression[i+1] == "1" && isConst2) //* 1 x -> x
                         {
                             //puts("hi 147");
                             expression[i] = expression[i+2];
@@ -614,7 +624,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+2] == "1" && is_const(expression[i+1])) //* x 1 -> x
+                        else if (expression[i+2] == "1" && isConst1) //* x 1 -> x
                         {
                             //puts("hi 155");
                             expression[i] = expression[i+1];
@@ -623,10 +633,9 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             break;
                         }
                     }
-                    
                     else if (expression[i] == "+")
                     {
-                        if (expression[i+1] == "0" && is_const(expression[i+2])) //+ 0 x -> x
+                        if (expression[i+1] == "0" && isConst2) //+ 0 x -> x
                         {
                             //puts("hi 167");
                             expression[i] = expression[i+2];
@@ -634,7 +643,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+2] == "0" && is_const(expression[i+1])) //+ x 0 -> x
+                        else if (expression[i+2] == "0" && isConst1) //+ x 0 -> x
                         {
                             //puts("hi 175");
                             expression[i] = expression[i+1];
@@ -643,10 +652,9 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             break;
                         }
                     }
-                    
                     else if (expression[i] == "/")
                     {
-                        if (expression[i+1] == "0" && is_const(expression[i+2])) // / 0 x -> 0
+                        if (expression[i+1] == "0" && isConst2) // / 0 x -> 0
                         {
                             //puts("hi 187");
                             expression[i] = "0";
@@ -654,7 +662,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+2] == "1" && is_const(expression[i+1])) // / x 1 -> x
+                        else if (expression[i+2] == "1" && isConst1) // / x 1 -> x
                         {
                             //puts("hi 195");
                             expression[i] = expression[i+1];
@@ -662,7 +670,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (is_const(expression[i+1]) && is_const(expression[i+2]) && (expression[i+1] == expression[i+2])) // / x x -> 1
+                        else if (isConst1 && isConst2 && (expression[i+1] == expression[i+2])) // / x x -> 1
                         {
                             //puts("hi 203");
                             expression[i] = "1";
@@ -671,10 +679,9 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             break;
                         }
                     }
-                    
                     else if (expression[i] == "^")
                     {
-                        if (expression[i+2] == "0" && is_const(expression[i+1])) // ^ x 0 -> 1
+                        if (expression[i+2] == "0" && isConst1) // ^ x 0 -> 1
                         {
                             //puts("hi 223");
                             expression[i] = "1";
@@ -682,7 +689,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+1] == "0" && is_const(expression[i+2])) // ^ 0 x -> 0 (x > 0)
+                        else if (expression[i+1] == "0" && isConst2) // ^ 0 x -> 0 (x > 0)
                         {
                             //puts("hi 215");
                             expression[i] = "0";
@@ -690,7 +697,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+1] == "1" && is_const(expression[i+2])) // ^ 1 x -> 1
+                        else if (expression[i+1] == "1" && isConst2) // ^ 1 x -> 1
                         {
                             //puts("hi 231");
                             expression[i] = "1";
@@ -698,7 +705,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+2] == "1" && is_const(expression[i+1])) // ^ x 1 -> x
+                        else if (expression[i+2] == "1" && isConst1) // ^ x 1 -> x
                         {
                             //puts("hi 239");
                             expression[i] = expression[i+1];
@@ -707,7 +714,6 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             break;
                         }
                     }
-                    
                 }
                 
                 else if (is_unary(expression[i]) && isFloat(expression[i+1]))
@@ -1808,6 +1814,18 @@ int main()
     puts("");
     
     test_expr = {"/", "-", "sech", "cos", "x", "sech", "cos", "x", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"/", "-", "+", "z", "nan", "-", "nan", "x", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"tanh", "/", "~", "-", "x", "nan", "0"};
     printf("before: ");print_container(test_expr);
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);

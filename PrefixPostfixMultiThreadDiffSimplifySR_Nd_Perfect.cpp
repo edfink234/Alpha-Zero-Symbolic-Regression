@@ -731,8 +731,8 @@ struct Board
 //            return 0;
 //        }
 //        int count = 0;
-//        
-//        
+//
+//
 //        for (const std::string& token : pieces[i])
 //        {
 //            if (token.substr(0,5) == "const")
@@ -1144,7 +1144,7 @@ struct Board
     void simplifyPN_Helper(std::vector<std::string>& expression)
     {
         bool simplified = true;
-        bool isFloat1, isFloat2;
+        bool isFloat1, isFloat2, isConst1, isConst2;
         while (simplified)
         {
             simplified = false;
@@ -1196,9 +1196,20 @@ struct Board
                             }
                         }
                         
+                        isConst1 = is_const(expression[i+1]);
+                        isConst2 = is_const(expression[i+2]);
+                        
+                        if ((isConst1 && isConst2) && ((expression[i+1].find("nan") != std::string::npos) || (expression[i+2].find("nan") != std::string::npos))) //binary_op nan x = binary_op x nan = nan
+                        {
+                            //puts("hi 570");
+                            expression[i] = "nan";
+                            expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                            simplified = true;
+                            break;
+                        }
                         else if (expression[i] == "-")
                         {
-                            if ((is_const(expression[i+1]) && is_const(expression[i+2])) && (expression[i+1] == expression[i+2])) //- x x => 0
+                            if ((isConst1 && isConst2) && (expression[i+1] == expression[i+2])) //- x x => 0
                             {
                                 expression[i] = "0";
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
@@ -1212,7 +1223,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i+2] == "0" && is_const(expression[i+1])) //- x 0 -> x
+                            else if (expression[i+2] == "0" && isConst1) //- x 0 -> x
                             {
                                 expression[i] = expression[i+1];
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
@@ -1220,10 +1231,9 @@ struct Board
                                 break;
                             }
                         }
-                        
                         else if (expression[i] == "*")
                         {
-                            if (expression[i+1] == "0" && is_const(expression[i+2])) //* 0 x -> 0
+                            if (expression[i+1] == "0" && isConst2) //* 0 x -> 0
                             {
                                 //puts("hi 131");
                                 expression[i] = "0";
@@ -1231,7 +1241,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i+2] == "0" && is_const(expression[i+1])) //* x 0 -> 0
+                            else if (expression[i+2] == "0" && isConst1) //* x 0 -> 0
                             {
                                 //puts("hi 139");
                                 expression[i] = "0";
@@ -1239,7 +1249,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i+1] == "1" && is_const(expression[i+2])) //* 1 x -> x
+                            else if (expression[i+1] == "1" && isConst2) //* 1 x -> x
                             {
                                 //puts("hi 147");
                                 expression[i] = expression[i+2];
@@ -1247,7 +1257,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i+2] == "1" && is_const(expression[i+1])) //* x 1 -> x
+                            else if (expression[i+2] == "1" && isConst1) //* x 1 -> x
                             {
                                 //puts("hi 155");
                                 expression[i] = expression[i+1];
@@ -1256,10 +1266,9 @@ struct Board
                                 break;
                             }
                         }
-                        
                         else if (expression[i] == "+")
                         {
-                            if (expression[i+1] == "0" && is_const(expression[i+2])) //+ 0 x -> x
+                            if (expression[i+1] == "0" && isConst2) //+ 0 x -> x
                             {
                                 //puts("hi 167");
                                 expression[i] = expression[i+2];
@@ -1267,7 +1276,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i+2] == "0" && is_const(expression[i+1])) //+ x 0 -> x
+                            else if (expression[i+2] == "0" && isConst1) //+ x 0 -> x
                             {
                                 //puts("hi 175");
                                 expression[i] = expression[i+1];
@@ -1276,10 +1285,9 @@ struct Board
                                 break;
                             }
                         }
-                        
                         else if (expression[i] == "/")
                         {
-                            if (expression[i+1] == "0" && is_const(expression[i+2])) // / 0 x -> 0
+                            if (expression[i+1] == "0" && isConst2) // / 0 x -> 0
                             {
                                 //puts("hi 187");
                                 expression[i] = "0";
@@ -1287,7 +1295,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i+2] == "1" && is_const(expression[i+1])) // / x 1 -> x
+                            else if (expression[i+2] == "1" && isConst1) // / x 1 -> x
                             {
                                 //puts("hi 195");
                                 expression[i] = expression[i+1];
@@ -1295,7 +1303,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (is_const(expression[i+1]) && is_const(expression[i+2]) && (expression[i+1] == expression[i+2])) // / x x -> 1
+                            else if (isConst1 && isConst2 && (expression[i+1] == expression[i+2])) // / x x -> 1
                             {
                                 //puts("hi 203");
                                 expression[i] = "1";
@@ -1304,10 +1312,9 @@ struct Board
                                 break;
                             }
                         }
-                        
                         else if (expression[i] == "^")
                         {
-                            if (expression[i+2] == "0" && is_const(expression[i+1])) // ^ x 0 -> 1
+                            if (expression[i+2] == "0" && isConst1) // ^ x 0 -> 1
                             {
                                 //puts("hi 223");
                                 expression[i] = "1";
@@ -1315,7 +1322,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i+1] == "0" && is_const(expression[i+2])) // ^ 0 x -> 0 (x > 0)
+                            else if (expression[i+1] == "0" && isConst2) // ^ 0 x -> 0 (x > 0)
                             {
                                 //puts("hi 215");
                                 expression[i] = "0";
@@ -1323,7 +1330,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i+1] == "1" && is_const(expression[i+2])) // ^ 1 x -> 1
+                            else if (expression[i+1] == "1" && isConst2) // ^ 1 x -> 1
                             {
                                 //puts("hi 231");
                                 expression[i] = "1";
@@ -1331,7 +1338,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i+2] == "1" && is_const(expression[i+1])) // ^ x 1 -> x
+                            else if (expression[i+2] == "1" && isConst1) // ^ x 1 -> x
                             {
                                 //puts("hi 239");
                                 expression[i] = expression[i+1];
@@ -1340,7 +1347,6 @@ struct Board
                                 break;
                             }
                         }
-                        
                     }
                     
                     else if (is_unary(expression[i]) && isFloat(expression[i+1]))
@@ -1425,6 +1431,8 @@ struct Board
                             simplified = true;
                             break;
                         }
+                        //TODO: Add 0 ~ -> 0
+                        //TODO: Add inf ~ -> -inf
                         else if (expression[i] == "exp" && (expression[i+1] == "ln" || expression[i+1] == "log"))
                         {
                             //puts("hi 361");
@@ -1479,7 +1487,7 @@ struct Board
             }
         }
     }
-    
+
     void simplifyPN(std::vector<std::string>& expression)
     {
         size_t size_before, size_after;
@@ -1803,7 +1811,7 @@ struct Board
     void simplifyRPN_Helper(std::vector<std::string>& expression)
     {
         bool simplified = true;
-        bool isFloat1, isFloat2;
+        bool isFloat1, isFloat2, isConst1, isConst2;
         while (simplified)
         {
             simplified = false;
@@ -1855,16 +1863,27 @@ struct Board
                             }
                         }
                         
+                        isConst1 = is_const(expression[i-1]);
+                        isConst2 = is_const(expression[i-2]);
+                        
+                        if ((isConst1 && isConst2) && ((expression[i-1].find("nan") != std::string::npos) || (expression[i-2].find("nan") != std::string::npos))) //x nan binary_op = nan x binary_op = nan
+                        {
+                            //puts("hi 549");
+                            expression[i] = "nan";
+                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                            simplified = true;
+                            break;
+                        }
                         else if (expression[i] == "-")
                         {
-                            if ((is_const(expression[i-1]) && is_const(expression[i-2])) && (expression[i-1] == expression[i-2])) //x x - => 0
+                            if ((isConst1 && isConst2) && (expression[i-1] == expression[i-2])) //x x - => 0
                             {
                                 expression[i] = "0";
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i-2] == "0" && is_const(expression[i-1])) //"0 x -" -> "x ~"
+                            else if (expression[i-2] == "0" && isConst1) //"0 x -" -> "x ~"
                             {
                                 expression[i] = "~";
                                 expression.erase(expression.begin() + i - 2);
@@ -1879,10 +1898,10 @@ struct Board
                                 break;
                             }
                         }
-                        
+
                         else if (expression[i] == "*")
                         {
-                            if (expression[i-2] == "0" && is_const(expression[i-1])) //"0 x *" -> "0"
+                            if (expression[i-2] == "0" && isConst1) //"0 x *" -> "0"
                             {
                                 //puts("hi 131");
                                 expression[i] = "0";
@@ -1890,7 +1909,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i-1] == "0" && is_const(expression[i-2])) //"x 0 *" -> "0"
+                            else if (expression[i-1] == "0" && isConst2) //"x 0 *" -> "0"
                             {
                                 //puts("hi 139");
                                 expression[i] = "0";
@@ -1898,7 +1917,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i-2] == "1" && is_const(expression[i-1])) //"1 x *" -> "x"
+                            else if (expression[i-2] == "1" && isConst1) //"1 x *" -> "x"
                             {
                                 //puts("hi 147");
                                 expression[i] = expression[i-1];
@@ -1906,7 +1925,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i-1] == "1" && is_const(expression[i-2])) //"x 1 *" -> "x"
+                            else if (expression[i-1] == "1" && isConst2) //"x 1 *" -> "x"
                             {
                                 //puts("hi 155");
                                 expression[i] = expression[i-2];
@@ -1915,10 +1934,10 @@ struct Board
                                 break;
                             }
                         }
-                        
+
                         else if (expression[i] == "+")
                         {
-                            if (expression[i-2] == "0" && is_const(expression[i-1])) //"0 x +" -> "x"
+                            if (expression[i-2] == "0" && isConst1) //"0 x +" -> "x"
                             {
                                 //puts("hi 167");
                                 expression[i] = expression[i-1];
@@ -1926,7 +1945,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i-1] == "0" && is_const(expression[i-2])) //"x 0 +" -> "x"
+                            else if (expression[i-1] == "0" && isConst2) //"x 0 +" -> "x"
                             {
                                 //puts("hi 175");
                                 expression[i] = expression[i-2];
@@ -1935,10 +1954,10 @@ struct Board
                                 break;
                             }
                         }
-                        
+
                         else if (expression[i] == "/")
                         {
-                            if (expression[i-2] == "0" && is_const(expression[i-1])) // "0 x /" -> "0"
+                            if (expression[i-2] == "0" && isConst1) // "0 x /" -> "0"
                             {
                                 //puts("hi 187");
                                 expression[i] = "0";
@@ -1946,7 +1965,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i-1] == "1" && is_const(expression[i-2])) // "x 1 /" -> "x"
+                            else if (expression[i-1] == "1" && isConst2) // "x 1 /" -> "x"
                             {
                                 //puts("hi 195");
                                 expression[i] = expression[i-2];
@@ -1954,7 +1973,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (is_const(expression[i-1]) && is_const(expression[i-2]) && (expression[i-1] == expression[i-2])) // "x x /" -> "1"
+                            else if (isConst1 && isConst2 && (expression[i-1] == expression[i-2])) // "x x /" -> "1"
                             {
                                 //puts("hi 203");
                                 expression[i] = "1";
@@ -1963,10 +1982,10 @@ struct Board
                                 break;
                             }
                         }
-                        
+
                         else if (expression[i] == "^")
                         {
-                            if (expression[i-1] == "0" && is_const(expression[i-2])) // "x 0 ^" -> "1"
+                            if (expression[i-1] == "0" && isConst2) // "x 0 ^" -> "1"
                             {
                                 //puts("hi 223");
                                 expression[i] = "1";
@@ -1974,7 +1993,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i-2] == "0" && is_const(expression[i-1])) // "0 x ^" -> "0" (x > 0)
+                            else if (expression[i-2] == "0" && isConst1) // "0 x ^" -> "0" (x > 0)
                             {
                                 //puts("hi 215");
                                 expression[i] = "0";
@@ -1982,7 +2001,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i-2] == "1" && is_const(expression[i-1])) // "1 x ^" -> "1"
+                            else if (expression[i-2] == "1" && isConst1) // "1 x ^" -> "1"
                             {
                                 //puts("hi 231");
                                 expression[i] = "1";
@@ -1990,7 +2009,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i-1] == "1" && is_const(expression[i-2])) // "x 1 ^" -> "x"
+                            else if (expression[i-1] == "1" && isConst2) // "x 1 ^" -> "x"
                             {
                                 //puts("hi 239");
                                 expression[i] = expression[i-2];
@@ -2080,11 +2099,10 @@ struct Board
                         if (expression[i] == "~" && expression[i-1] == "~")
                         {
                             expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
-                            
-                            
                             simplified = true;
                             break;
                         }
+                        //TODO: Add 0 ~ -> 0
                         else if (expression[i] == "exp" && (expression[i-1] == "ln" || expression[i-1] == "log"))
                         {
                             //puts("hi 360");
@@ -2139,7 +2157,7 @@ struct Board
             }
         }
     }
-    
+
     void simplifyRPN(std::vector<std::string>& expression)
     {
         size_t size_before, size_after;
@@ -3240,7 +3258,7 @@ struct Board
         }
         return 0.0f;
     }
-//    
+//
     bool LBFGS()
     {
         bool improved = false;
@@ -6029,39 +6047,39 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //https://core.ac.uk/download/pdf/6651886.pdf
 //void SimulatedAnnealing(std::vector<std::string> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
 //{
-//    
+//
 //    if (num_threads == 0)
 //    {
 //        unsigned int temp = std::thread::hardware_concurrency();
 //        num_threads = ((temp <= 1) ? 1 : temp);
 //    }
-//    
+//
 //    std::vector<std::thread> threads(num_threads);
 //    std::latch sync_point(num_threads);
-//    
+//
 //    /*
 //     Outside of thread:
 //     */
 //    std::atomic<float> max_score{0.0};
 //    std::atomic<float> best_MSE{FLT_MAX};
 //    std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
-//    
+//
 //    auto start_time = Clock::now();
-//    
+//
 //    /*
 //     Inside of thread:
 //     */
-//    
+//
 //    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token, &best_MSE]()
 //    {
 //        std::random_device rand_dev;
 //        std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
 //        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token);
-//        
+//
 //        sync_point.arrive_and_wait();
 //        Board secondary(diffeq, false, 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token); //For perturbations
 //        float score = 0.0f, check_point_score = 0.0f;
-//        
+//
 //        std::vector<std::string> current;
 //        std::vector<std::pair<int, int>> sub_exprs;
 //        std::vector<std::string> temp_legal_moves;
@@ -6072,12 +6090,12 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //        constexpr float T_min = 0.012f;
 //        constexpr float ratio = T_min/T_max;
 //        float T = T_max;
-//        
+//
 //        auto P = [&](float delta)
 //        {
 //            return exp(delta/T);
 //        };
-//        
+//
 //        auto updateScore = [&](float r = 1.0f)
 //        {
 ////            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
@@ -6108,7 +6126,7 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //            }
 //            T = r*T;
 //        };
-//        
+//
 //        //Another way to do this might be clustering...
 //        auto Perturbation = [&](int n, int i)
 //        {
@@ -6122,10 +6140,10 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //                std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
 //                secondary.pieces.push_back(temp_legal_moves[distribution(generator)]);
 //            }
-//            
+//
 ////            assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces) : secondary.getRPNdepth(secondary.pieces)).first == secondary.n);
 ////            assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces) : secondary.getRPNdepth(secondary.pieces)).second);
-//            
+//
 //            if (n == x.n)
 //            {
 //                std::swap(secondary.pieces, x.pieces);
@@ -6136,20 +6154,20 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //                //in `x.pieces` and store them in an std::vector<std::pair<int, int>>
 //                //called `sub_exprs`.
 //                secondary.get_indices(sub_exprs, x.pieces);
-//                
+//
 //                //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `pert_ind`
 //
 //                std::uniform_int_distribution<int> distribution(0, sub_exprs.size() - 1);
 //                int pert_ind = distribution(generator);
-//                
+//
 //                //Step 4: Substitute sub_exprs_1[pert_ind] in x.pieces with secondary_one.pieces
-//                
+//
 //                auto start = x.pieces.begin() + sub_exprs[pert_ind].first;
 //                auto end = std::min(x.pieces.begin() + sub_exprs[pert_ind].second, x.pieces.end());
 //                x.pieces.erase(start, end+1);
 //                x.pieces.insert(start, secondary.pieces.begin(), secondary.pieces.end()); //could be a move operation: secondary.pieces doesn't need to be in a defined state after this->params
 //            }
-//            
+//
 //            //Step 5: Reset const token labels in pieces
 //            size_t const_counter = 0;
 //            for (std::string& token: x.pieces)
@@ -6159,7 +6177,7 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //                    token = "const" + std::to_string(const_counter++);
 //                }
 //            }
-//            
+//
 //            //Step 6: Evaluate the new mutated `x.pieces` and update score if needed
 //            score = x.complete_status(false);
 //            updateScore(pow(ratio, 1.0f/(i+1)));
@@ -6175,7 +6193,7 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //            current.push_back(x.pieces.back());
 //        }
 //        updateScore();
-//        
+//
 //        for (int i = 0; (timeElapsedSince(start_time) < time); i++)
 //        {
 //            if (i && (i%50000 == 0))
@@ -6192,20 +6210,20 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //                check_point_score = max_score;
 //            }
 //            Perturbation(rand_depth_dist(generator), i);
-//            
+//
 //        }
 //    };
-//    
+//
 //    for (unsigned int i = 0; i < num_threads; i++)
 //    {
 //        threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
 //    }
-//    
+//
 //    for (unsigned int i = 0; i < num_threads; i++)
 //    {
 //        threads[i].join();
 //    }
-//    
+//
 //    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
 //    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
 //    std::cout << "Best score = " << score << ", MSE = " << best_MSE << '\n';
@@ -6223,23 +6241,23 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //        unsigned int temp = std::thread::hardware_concurrency();
 //        num_threads = ((temp <= 1) ? 1 : temp);
 //    }
-//    
+//
 //    std::vector<std::thread> threads(num_threads);
 //    std::latch sync_point(num_threads);
-//    
+//
 //    /*
 //     Outside of thread:
 //     */
 //    std::atomic<float> max_score{0.0};
 //    std::atomic<float> best_MSE{FLT_MAX};
 //    std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
-//    
+//
 //    auto start_time = Clock::now();
-//    
+//
 //    /*
 //     Inside of thread:
 //     */
-//    
+//
 //    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token, &best_MSE]()
 //    {
 //        std::random_device rand_dev;
@@ -6259,7 +6277,7 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //        std::uniform_real_distribution<float> rand_mut_cross_dist(0.0f, 1.0f);
 //        size_t temp_sz;
 //    //    std::string expression, orig_expression, best_expression;
-//        
+//
 //        auto updateScore = [&]()
 //        {
 //            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
@@ -6281,7 +6299,7 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //                std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
 //            }
 //        };
-//        
+//
 //        //Step 1, generate init_population expressions
 //        for (int i = 0; i < init_population; i++)
 //        {
@@ -6297,7 +6315,7 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //            individuals.push_back(std::make_pair(x.pieces, score));
 //            x.pieces.clear();
 //        }
-//        
+//
 //        auto Mutation = [&](int n)
 //        {
 //            //Step 1: Generate a random depth-n sub-expression `secondary_one.pieces`
@@ -6310,7 +6328,7 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //                std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
 //                secondary_one.pieces.push_back(temp_legal_moves[distribution(generator)]);
 //            }
-//            
+//
 //            assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).first == secondary_one.n);
 //            assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).second);
 //
@@ -6319,18 +6337,18 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //            //called `sub_exprs_1`.
 //            x.pieces = individuals[selector_dist(generator)].first; //A randomly selected individual to be mutated
 //            secondary_one.get_indices(sub_exprs_1, x.pieces);
-//            
+//
 //            //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `mut_ind`
 //            std::uniform_int_distribution<int> distribution(0, sub_exprs_1.size() - 1);
 //            int mut_ind = distribution(generator);
-//            
+//
 //            //Step 4: Substitute sub_exprs_1[mut_ind] in x.pieces with secondary_one.pieces
-//            
+//
 //            auto start = x.pieces.begin() + sub_exprs_1[mut_ind].first;
 //            auto end = std::min(x.pieces.begin() + sub_exprs_1[mut_ind].second, x.pieces.end()-1);
 //            x.pieces.erase(start, end+1);
 //            x.pieces.insert(start, secondary_one.pieces.begin(), secondary_one.pieces.end());
-//            
+//
 //            //Step 5: Reset const token labels in pieces
 //            size_t const_counter = 0;
 //            for (std::string& token: x.pieces)
@@ -6340,55 +6358,55 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //                    token = "const" + std::to_string(const_counter++);
 //                }
 //            }
-//            
+//
 //            //Step 6: Evaluate the new mutated `x.pieces` and update score if needed
 //            score = x.complete_status(false);
 //            updateScore();
 //            individuals.push_back(std::make_pair(x.pieces, score));
 //        };
-//        
+//
 //        auto Crossover = [&](int n)
 //        {
 //            sub_exprs_1.clear();
 //            sub_exprs_2.clear();
 //            secondary_one.n = n;
 //            secondary_two.n = n;
-//            
+//
 //            rand_individual_idx_1 = selector_dist(generator);
 //            assert(individuals.size() && rand_individual_idx_1 < individuals.size());
 //            individual_1 = individuals[rand_individual_idx_1];
-//            
+//
 //            do {
 //                rand_individual_idx_2 = selector_dist(generator);
 //            } while (rand_individual_idx_2 == rand_individual_idx_1);
 //            assert(individuals.size() && rand_individual_idx_1 < individuals.size());
 //            individual_2 = individuals[rand_individual_idx_2];
-//        
+//
 //            //Step 1: Identify the starting and stopping index pairs of all depth-n sub-expressions
 //            //in `individual_1.first` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_1`.
 //            secondary_one.get_indices(sub_exprs_1, individual_1.first);
-//            
+//
 //            //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
 //            //in `individual_2.first` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_2`.
 //            secondary_two.get_indices(sub_exprs_2, individual_2.first);
-//            
+//
 //            //Step 3: Generate a random uniform int from 0 to sub_exprs_1.size() - 1 called `mut_ind_1`
 //            std::uniform_int_distribution<int> distribution_1(0, sub_exprs_1.size() - 1);
 //            int mut_ind_1 = distribution_1(generator);
-//            
+//
 //            //Step 4: Generate a random uniform int from 0 to sub_exprs_2.size() - 1 called `mut_ind_2`
 //            std::uniform_int_distribution<int> distribution_2(0, sub_exprs_2.size() - 1);
 //            int mut_ind_2 = distribution_2(generator);
-//            
+//
 //            //Step 5: Swap sub_exprs_1[mut_ind_1] in individual_1.first with sub_exprs_2[mut_ind_2] in individual_2.first
 //            auto start_1 = individual_1.first.begin() + sub_exprs_1[mut_ind_1].first;
 //            auto end_1 = std::min(individual_1.first.begin() + sub_exprs_1[mut_ind_1].second, individual_1.first.end());
-//            
+//
 //            auto start_2 = individual_2.first.begin() + sub_exprs_2[mut_ind_2].first;
 //            auto end_2 = std::min(individual_2.first.begin() + sub_exprs_2[mut_ind_2].second, individual_2.first.end());
-//            
+//
 //    //        insert the range start_2, end_2+1 into individual_1 and the range start_1, end_1+1 into individual_2.
-//            
+//
 //            if ((end_1 - start_1) < (end_2 - start_2))
 //            {
 //                std::swap_ranges(start_1, end_1+1, start_2);
@@ -6409,7 +6427,7 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //            {
 //                std::swap_ranges(start_1, end_1+1, start_2);
 //            }
-//            
+//
 //            //Step 6: Reset const token labels in individual_1.first
 //            size_t const_counter = 0;
 //            for (std::string& token: individual_1.first)
@@ -6419,14 +6437,14 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //                    token = "const" + std::to_string(const_counter++);
 //                }
 //            }
-//            
+//
 //            //Step 7: Evaluate the new `x.pieces` and update score if needed
 //            x.pieces = individual_1.first;
 //            score = x.complete_status(false);
 //            updateScore();
-//            
+//
 //            individuals.push_back(std::make_pair(x.pieces, score));
-//            
+//
 //            //Step 8: Reset const token labels in individual_2.first
 //            const_counter = 0;
 //            for (std::string& token: individual_2.first)
@@ -6436,16 +6454,16 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //                    token = "const" + std::to_string(const_counter++);
 //                }
 //            }
-//            
+//
 //            //Step 9: Evaluate the new `x.pieces` and update score if needed
 //            x.pieces = individual_2.first;
 //            score = x.complete_status(false);
 //            updateScore();
-//            
+//
 //            individuals.push_back(std::make_pair(x.pieces, score));
 //        };
 //
-//        
+//
 //        for (/*int ngen = 0*/; (timeElapsedSince(start_time) < time); /*ngen++*/)
 //        {
 ////            if (ngen && (ngen%5 == 0))
@@ -6457,10 +6475,10 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //            {
 //                //Step 1: Generate a random number between 0 and 1 called `rand_mut_cross`
 //                rand_mut_cross = rand_mut_cross_dist(generator);
-//                
+//
 //                //Step 2: Generate a random uniform int from 0 to x.n - 1 called `rand_depth`
 //                rand_depth = rand_depth_dist(generator);
-//                
+//
 //                //Step 4: Call Mutation function if 0 <= rand_mut_cross <= mut_prob, else select Crossover
 //                if (rand_mut_cross <= mut_prob)
 //                {
@@ -6479,17 +6497,17 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //            individuals.resize(init_population);
 //        }
 //    };
-//    
+//
 //    for (unsigned int i = 0; i < num_threads; i++)
 //    {
 //        threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
 //    }
-//    
+//
 //    for (unsigned int i = 0; i < num_threads; i++)
 //    {
 //        threads[i].join();
 //    }
-//    
+//
 //    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
 //    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
 //    std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
@@ -6506,37 +6524,37 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //        unsigned int temp = std::thread::hardware_concurrency();
 //        num_threads = ((temp <= 1) ? 1 : temp);
 //    }
-//    
+//
 //    std::vector<std::thread> threads(num_threads);
 //    std::latch sync_point(num_threads);
-//    
+//
 //    /*
 //     Outside of thread:
 //     */
-//    
+//
 //    std::atomic<float> max_score{0.0};
 //    std::atomic<float> best_MSE{FLT_MAX};
 //    std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
-//    
+//
 //    auto start_time = Clock::now();
 //
 //    /*
 //     Inside of thread:
 //     */
-//    
+//
 //    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token, &best_MSE]()
 //    {
 //        std::random_device rand_dev;
 //        std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
 //        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token);
-//        
+//
 //        sync_point.arrive_and_wait();
 //        float score = 0, check_point_score = 0;
 //        std::vector<std::string> temp_legal_moves;
-//        
+//
 //        size_t temp_sz;
 //    //    std::string expression, orig_expression, best_expression;
-//        
+//
 //        /*
 //         For this setup, we don't know a-priori the number of particles, so we generate them and their corresponding velocities as needed
 //         */
@@ -6550,17 +6568,17 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //        std::unordered_map<float, std::unordered_map<int, int>> Nsa;
 //        std::unordered_map<float, std::unordered_map<int, float>> Psa;
 //        std::unordered_map<int, float> p_i_vals, p_i;
-//        
+//
 //        /*
 //         In this implementation of PSO:
-//         
+//
 //             The traditional PSO initializes the particle positions to be between 0 and 1. However, in this application,
 //             the particle positions are discrete values and any of the legal integer tokens (moves). The
 //             velocities are continuous-valued and perturb the postions, which are subsequently constrained by rounding to
 //             the nearest whole number then taking the modulo w.r.t. the # of allowed legal moves.
-//         
+//
 //         */
-//        
+//
 //        for (int iter = 0; (timeElapsedSince(start_time) < time); iter++)
 //        {
 //            if (iter && (iter%50000 == 0))
@@ -6585,7 +6603,7 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //                }
 //                check_point_score = max_score;
 //            }
-//            
+//
 //            for (int i = 0; (score = x.complete_status()) == -1; i++) //i is the index of the token
 //            {
 //                rp = x.pos_dist(generator), rg = x.pos_dist(generator);
@@ -6597,7 +6615,7 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //                    particle_positions.push_back(x.pos_dist(generator));
 //                    v.push_back(x.vel_dist(generator));
 //                }
-//                
+//
 //                particle_positions[i] = trueMod(std::round(particle_positions[i]), temp_sz);
 //                x.pieces.push_back(temp_legal_moves[particle_positions[i]]); //x.pieces holds the pieces corresponding to the indices
 //                curr_positions.push_back(particle_positions[i]);
@@ -6613,7 +6631,7 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //                particle_positions[i] += v[i];
 //                Nsa[curr_positions[i]][i]++;
 //            }
-//            
+//
 //            for (int i = 0; i < static_cast<int>(curr_positions.size()); i++)
 //            {
 //                Psa[curr_positions[i]][i] = (Psa[curr_positions[i]][i]+score)/Nsa[curr_positions[i]][i];
@@ -6622,9 +6640,9 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //                    p_i[i] = curr_positions[i];
 //                }
 //                p_i_vals[i] = std::max(p_i_vals[i], Psa[curr_positions[i]][i]);
-//                
+//
 //            }
-//            
+//
 //            if (score > max_score)
 //            {
 //                for (int idx = 0; idx < static_cast<int>(curr_positions.size()); idx++)
@@ -6648,17 +6666,17 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //            curr_positions.clear();
 //        }
 //    };
-//    
+//
 //    for (unsigned int i = 0; i < num_threads; i++)
 //    {
 //        threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
 //    }
-//    
+//
 //    for (unsigned int i = 0; i < num_threads; i++)
 //    {
 //        threads[i].join();
 //    }
-//        
+//
 //    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
 //    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
 //    std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
@@ -6676,41 +6694,41 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //        unsigned int temp = std::thread::hardware_concurrency();
 //        num_threads = ((temp <= 1) ? 1 : temp);
 //    }
-//    
+//
 //    std::vector<std::thread> threads(num_threads);
 //    std::latch sync_point(num_threads);
-//    
+//
 //    /*
 //     Outside of thread:
 //     */
 //    std::atomic<float> max_score{0.0f};
 //    std::atomic<float> best_MSE{FLT_MAX};
-//    
+//
 //    std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
-//    
+//
 //    auto start_time = Clock::now();
-//    
+//
 //    /*
 //     Inside of thread:
 //     */
-//    
+//
 //    boost::concurrent_flat_map<std::string, boost::concurrent_flat_map<std::string, float>> Qsa;
 //    boost::concurrent_flat_map<std::string, boost::concurrent_flat_map<std::string, int>> Nsa;
 //    boost::concurrent_flat_map<std::string, int> Ns;
-//    
+//
 //    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token, &best_MSE, &Qsa, &Nsa, &Ns]()
 //    {
 //        std::random_device rand_dev;
 //        std::mt19937 thread_local generator(rand_dev());
 //        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token);
-//        
+//
 //        sync_point.arrive_and_wait();
 //        float score = 0.0f, check_point_score = 0.0f, UCT, UCT_best;
 //        std::string best_act;
-//        
+//
 //        std::vector<std::string> temp_legal_moves;
 //        std::string state;
-//        
+//
 //        float c = 1.4f; //"controls the balance between exploration and exploitation", see equation 2 here: https://web.engr.oregonstate.edu/~afern/classes/cs533/notes/uct.pdf, top of page 8 here: https://arxiv.org/pdf/1402.6028.pdf, first formula in section 4. Experiments here: https://cesa-bianchi.di.unimi.it/Pubblicazioni/ml-02.pdf
 //        std::vector<std::pair<std::string, std::string>> moveTracker;
 //        moveTracker.reserve(x.reserve_amount);
@@ -6724,7 +6742,7 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //                state += x.pieces[x.pieces.size()-1] + " ";
 //            }
 //        };
-//        
+//
 //        for (int i = 0; (timeElapsedSince(start_time) < time); i++)
 //        {
 //            if (i && (i%1000 == 0))
@@ -6751,7 +6769,7 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //            {
 //                temp_legal_moves = x.get_legal_moves();
 //                assert(temp_legal_moves.size());
-//                
+//
 ////                for (float i: temp_legal_moves)
 ////                {
 ////                    assert(i >= 0.0f);
@@ -6764,7 +6782,7 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //                best_act = temp_legal_moves[0];
 //                std::vector<std::string> best_acts;
 //                best_acts.reserve(temp_legal_moves.size());
-//                
+//
 //                for (const std::string& a : temp_legal_moves)
 //                {
 ////                    assert(a > -1.0f);
@@ -6829,7 +6847,7 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //                        best_acts.push_back(a);
 //                        UCT = -FLT_MAX;
 //                    }
-//                    
+//
 //                    if (UCT > UCT_best)
 //                    {
 //                        best_act = a;
@@ -6842,7 +6860,7 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //                    std::uniform_int_distribution<int> distribution(0, best_acts.size() - 1);
 //                    best_act = best_acts[distribution(generator)];
 //                }
-//                
+//
 //                x.pieces.push_back(best_act);
 //                moveTracker.push_back(make_pair(state, best_act));
 ////                assert(Ns.contains(state));
@@ -6879,14 +6897,14 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //                        });
 //                        x.second.insert_or_assign(state_action.second, 0.0f);
 //                    }
-//                    
+//
 //                    x.second.visit(state_action.second, [&](auto& y)
 //                    {
 //                        y.second = std::max(y.second, score);
 //                    });
 //                });
 //            }
-//            
+//
 //            if (score > max_score)
 //            {
 //                max_score = score;
@@ -6901,17 +6919,17 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //            moveTracker.clear();
 //        }
 //    };
-//    
+//
 //    for (unsigned int i = 0; i < num_threads; i++)
 //    {
 //        threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
 //    }
-//    
+//
 //    for (unsigned int i = 0; i < num_threads; i++)
 //    {
 //        threads[i].join();
 //    }
-//    
+//
 //    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
 //    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
 //    std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
@@ -6929,38 +6947,38 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //        unsigned int temp = std::thread::hardware_concurrency();
 //        num_threads = ((temp <= 1) ? 1 : temp);
 //    }
-//    
+//
 //    std::vector<std::thread> threads(num_threads);
 //    std::latch sync_point(num_threads);
-//    
+//
 //    /*
 //     Outside of thread:
 //     */
 //    std::atomic<float> max_score{0.0};
 //    std::atomic<float> best_MSE{FLT_MAX};
 //    std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
-//    
+//
 //    auto start_time = Clock::now();
-//    
+//
 //    /*
 //     Inside of thread:
 //     */
-//    
+//
 //    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token, &best_MSE]()
 //    {
 //        std::random_device rand_dev;
 //        std::mt19937 thread_local generator(rand_dev());
 //        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token);
-//        
+//
 //        sync_point.arrive_and_wait();
 //        float score = 0.0f, check_point_score = 0.0f, UCT, UCT_best;
 //        std::string best_act;
-//        
+//
 //        std::vector<std::string> temp_legal_moves;
 //        std::unordered_map<std::string, std::unordered_map<std::string, float>> Qsa, Nsa;
 //        std::unordered_map<std::string, float> Ns;
 //        std::string state;
-//        
+//
 //        float c = 1.4f; //"controls the balance between exploration and exploitation", see equation 2 here: https://web.engr.oregonstate.edu/~afern/classes/cs533/notes/uct.pdf, top of page 8 here: https://arxiv.org/pdf/1402.6028.pdf, first formula in section 4. Experiments here: https://cesa-bianchi.di.unimi.it/Pubblicazioni/ml-02.pdf
 //        std::vector<std::pair<std::string, std::string>> moveTracker;
 //        moveTracker.reserve(x.reserve_amount);
@@ -6974,7 +6992,7 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //                state += (x.pieces[x.pieces.size()-1] + " ");
 //            }
 //        };
-//        
+//
 //        for (int i = 0; (((timeElapsedSince(start_time) < time) || (Board::expression_dict.size() < 105614388))); i++)
 //        {
 //            if (!(Board::expression_dict.size()%1000000))
@@ -7014,7 +7032,7 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //                best_act = temp_legal_moves[0];
 //                std::vector<std::string> best_acts;
 //                best_acts.reserve(temp_legal_moves.size());
-//                
+//
 //                for (const std::string& a : temp_legal_moves)
 //                {
 //                    if (Nsa[state].count(a))
@@ -7027,14 +7045,14 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //                        best_acts.push_back(a);
 //                        UCT = -FLT_MAX;
 //                    }
-//                    
+//
 //                    if (UCT > UCT_best)
 //                    {
 //                        best_act = a;
 //                        UCT_best = UCT;
 //                    }
 //                }
-//                
+//
 //                if (best_acts.size())
 //                {
 //                    std::uniform_int_distribution<int> distribution(0, best_acts.size() - 1);
@@ -7050,7 +7068,7 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //            {
 //                Qsa[state_action.first][state_action.second] = std::max(Qsa[state_action.first][state_action.second], score);
 //            }
-//            
+//
 //            if (score > max_score)
 //            {
 //                max_score = score;
@@ -7071,17 +7089,17 @@ std::vector<std::vector<std::string>> variational_potential_integral(Board& x)
 //            moveTracker.clear();
 //        }
 //    };
-//    
+//
 //    for (unsigned int i = 0; i < num_threads; i++)
 //    {
 //        threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
 //    }
-//    
+//
 //    for (unsigned int i = 0; i < num_threads; i++)
 //    {
 //        threads[i].join();
 //    }
-//    
+//
 //    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
 //    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
 //    std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
@@ -7136,7 +7154,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), void 
         size_t temp_sz;
         
         int n_count = 0;
-//        
+//
         while ((timeElapsedSince(start_time) < time))
         {
             for (int jdx = 0; jdx < x.num_objectives; jdx++)
@@ -7223,7 +7241,7 @@ int main()
     float threshold = 5.0e-4f;
     
     auto data = createMeshgridVectors(101, 1, {0.0001f}, {10.0f});
-    RandomSearch(VortexRadialProfile /*differential equation to solve*/, VortexRadialProfileSetter /*helper function to set constants that the solution may contain*/,  data /*data used to solve differential equation*/, std::vector<int>{3} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
+    RandomSearch(VortexRadialProfile /*differential equation to solve*/, VortexRadialProfileSetter /*helper function to set constants that the solution may contain*/,  data /*data used to solve differential equation*/, std::vector<int>{20} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
 //
 //    auto data = createMeshgridVectors(101, 1, {0.0001f}, {10.0f});
 //    RandomSearch(variational_potential_integral /*differential equation to solve*/, variational_potential_integral_setter /*helper function to set constants that the solution may contain*/,  data /*data used to solve differential equation*/, std::vector<int>{29} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
