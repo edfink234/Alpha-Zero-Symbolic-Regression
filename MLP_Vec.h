@@ -45,7 +45,7 @@ class MultiLayerPerceptron
     MultiLayerPerceptron() = default;
     MultiLayerPerceptron(std::vector<int> layers, std::deque<std::string> layer_types, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, const std::string& weight_update = "basic", const std::string& expression_type = "prefix", float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f, float lambda = 0.01f /*weight decay AdamW*/);
         void set_weights(std::vector<Eigen::MatrixXf>&& w_init);
-        void reset_weights();
+        void reset_params();
         void print_weights();
         Eigen::VectorXf run(const Eigen::VectorXf& x);
         static float mse(const Eigen::VectorXf& x, const Eigen::VectorXf& y);

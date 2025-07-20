@@ -275,8 +275,7 @@ def plot_rpn_expression_tree(expression: list[str], save = False, filename = "",
         implot = plt.imshow(plt.imread('expression_tree.png'))
         plt.axis('off')
         plt.title(f"{' '.join(expression)}, depth = {getRPNdepth(expression)[0]}")
-        plt.show(block = False)
-        plt.pause(0.01)
+        plt.show()
 
 def test_visualize():
     save = False
@@ -316,8 +315,8 @@ def test_visualize():
             os.system(f"open -a Xcode {file_name}.tex")
             os.system(f"open -a Safari {file_name}.pdf")
     else:
-#        plot_rpn_expression_tree("+ cos cos x0 * 1.031240 + 0.008202 * 1.919085 - cos x3 - cos x0 cos cos * x0 + x3 x3".split(), block=False, save = save)
-        plot_pn_expression_tree("~ asin sin - d_ij_nest sqrt g_t_k".split(), save = save)
+        plot_rpn_expression_tree("d_ij_nest velocity_k w_k epsilon * cos w_k asin epsilon ln / * + /".split(), save = save)
+#        plot_pn_expression_tree("~ asin sin - d_ij_nest sqrt g_t_k".split(), save = save)
 
 if __name__ == "__main__":
     test_visualize()

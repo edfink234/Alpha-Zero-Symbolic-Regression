@@ -769,9 +769,12 @@ struct Board
     */
     float complete_status(bool cache = true)
     {
-        if (srnn.pieces.empty())
+        if (this->srnn.pieces.empty())
         {
-            this->srnn.reset_weights();
+            if (this->is_primary)
+            {
+                this->srnn.reset_params();
+            }
             this->stack.clear();
             this->idx = 0;
             if (this->expression_type == "prefix")
@@ -780,7 +783,7 @@ struct Board
             }
         }
         //structured binding :)
-        auto [depth, complete] =  ((this->expression_type == "prefix") ?
+        auto [depth, complete] = ((this->expression_type == "prefix") ?
                                    getPNdepth(srnn.pieces, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/) :
                                    getRPNdepth(srnn.pieces, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/));
         if (!complete || depth < this->n) //Expression not complete
@@ -789,8 +792,12 @@ struct Board
         }
         else
         {
-            if (is_primary)
+            if (this->is_primary)
             {
+                if (!cache)
+                {
+                    this->srnn.reset_params();
+                }
                 this->expression_string.clear();
                 for (const std::string& i: this->srnn.pieces){this->expression_string += i+" ";}
                 Board::expression_set.insert(this->expression_string);
@@ -1211,6 +1218,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
             int rand_depth, rand_individual_idx_1, rand_individual_idx_2;
             std::uniform_real_distribution<float> rand_mut_cross_dist(0.0f, 1.0f);
             size_t temp_sz;
+            bool doneGeneratingInitPop = false;
             
             auto updateScore = [&]()
             {
@@ -1226,7 +1234,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                     std::cout << "Best expression = " << best_expression << '\n';
                     std::cout << "Best expression (original format) = " << orig_expression << '\n';
                 }
-                else
+                else if (doneGeneratingInitPop)
                 {
                     //TODO: figure out why score is nan here!!!
                     //TODO: Also figure out if/how simplification is possible, might require recalculating the depth in mutation and crossover function calls.
@@ -1256,6 +1264,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                 x.srnn.pieces.clear();
             }
             {
+                doneGeneratingInitPop = true;
                 std::scoped_lock str_lock(Board::thread_locker);
                 std::cout << "Thread " << thread_num << " done generating its initial population\n";
             }

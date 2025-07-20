@@ -58,8 +58,6 @@ float Perceptron::scale_between(float unscaled_num, float min, float max, float 
     (unscaled_num - min) / (max - min) + min_allowed;
 }
 
-
-
 // Return a new MultiLayerPerceptron object with the specified parameters.
 MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, std::deque<std::string> layer_types, float bias, float eta, float theta, float gamma, const std::string& weight_update, const std::string& expression_type, float epsilon, float beta_1, float beta_2, float lambda)
 {
@@ -111,7 +109,7 @@ MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, std::deque<s
     for (int i = 0; i < mlp_sz; i++) //for each layer
     {
         this->values.emplace_back(Eigen::VectorXf::Zero(layers[i])); //add vector of values
-        this->network.emplace_back(); //add vector of neurons
+        this->network.emplace_back(); //add vector of neurons, first layer in the empty input layer
         this->d.emplace_back(Eigen::VectorXf::Zero(layers[i]));
         if (this->weight_update == "SR")
         {
@@ -141,22 +139,32 @@ void MultiLayerPerceptron::set_weights(std::vector<Eigen::MatrixXf>&& w_init)
     }
 }
 
-void MultiLayerPerceptron::reset_weights()
+void MultiLayerPerceptron::reset_params()
 {
-    static std::random_device rd;  // Obtain a random number from hardware
-    static std::mt19937 gen(rd()); // Seed the generator
-    static std::uniform_real_distribution<> distr; // Define the range
-    // Write all the weights into the neural network.
-    // w_init is a vector of vectors of vectors of floats.
+    this->values[0] = Eigen::VectorXf::Zero(layers[0]);
+    this->d[0] = this->values[0];
+    if (this->weight_update == "SR")
+    {
+        this->d_nest[0] = this->d[0];
+    }
     for (int i = 1; i < network.size(); i++)
     { //first layer is the input layer so they're no neurons there
         for (int j = 0; j < layers[i]; j++)
         { //for each neuron
             network[i][j].weights = Eigen::VectorXf::Random(network[i][j].weights.size());
-            network[i][j].bias = distr(gen);
+            network[i][j].bias = this->bias;
+            network[i][j].velocities = Eigen::VectorXf::Random(network[i][j].velocities.size());
+            network[i][j].v = Eigen::VectorXf::Zero(network[i][j].v.size()); //2nd moment vector for Adam
+            network[i][j].m = Eigen::VectorXf::Zero(network[i][j].m.size()); //1st moment vector for Adam
+            network[i][j].gradients = Eigen::VectorXf::Zero(network[i][j].gradients.size());
+            network[i][j].expt_grad_squared = Eigen::VectorXf::Zero(network[i][j].expt_grad_squared.size());
+            network[i][j].expt_weight_squared = Eigen::VectorXf::Zero(network[i][j].expt_weight_squared.size());
+            this->values[i][j] = 0.0f;
+            this->d[i][j] = 0.0f;
+            this->d_nest[i][j] = 0.0f;
         }
-        
     }
+    this->t = 0;
 }
 
 void MultiLayerPerceptron::print_weights()
@@ -182,7 +190,7 @@ Eigen::VectorXf MultiLayerPerceptron::run(const Eigen::VectorXf& x)
     // Run an input forward through the neural network.
     // x is a vector with the input values.
     //Returns: vector with output values, i.e., the last element in the values vector
-    this->values[0] = x;
+    this->values[0] = x; //First layer of values are the inputs!
     for (int i = 1; i < network.size(); i++) //for each layer
     {
         for (int j = 0; j < this->layers[i]; j++) //for each neuron
@@ -292,7 +300,6 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
     }
     
     // STEPS 5 & 6: Calculate the deltas and update the weights
-    this->t++; //increase t by 1 for Adam
     for (int i = 1; i < network.size(); i++) //for each layer
     {
         for (int j = 0; j < layers[i]; j++) //for each neuron
@@ -389,30 +396,32 @@ float MultiLayerPerceptron::train(const std::vector<Eigen::VectorXf>& x_train, c
 //    puts("Press ctrl-c to continue");
     float MSE;
     unsigned long int num_rows = x_train.size();
-    for (unsigned long epoch = 0; ((num_epochs != 0) ? (epoch < num_epochs) : true); epoch++)
+    assert(num_rows);
+    for (unsigned long epoch = 0; ((num_epochs != 0) ? (epoch < (num_epochs - 1)) : true); epoch++)
     {
-        MSE = 0.0;
-//        puts("MSE = 0.0; done");
         for (unsigned long i = 0; i < num_rows; i++)
         {
-            MSE += this->bp(x_train[i], y_train[i]);
+            this->bp(x_train[i], y_train[i]);
         }
-        MSE /= num_rows;
-//        if (interactive)
-//        {
-//            if (epoch % 100 == 0)
-//            {
-//                std::cout << "MSE = " << MSE << '\r' << FLUSHTHETOILET;
-//            }
-//            if (MultiLayerPerceptron::interrupted)
-//            {
-//                std::cout << "\nInterrupted by Ctrl-C. Exiting loop.\n";
-//                std::cout<<"MSE = "<<MSE<< '\n';
-//                MultiLayerPerceptron::interrupted = 0; //reset MultiLayerPerceptron::interrupted
-//                return MSE;
-//            }
-//        }
+        //if (interactive)
+        //{
+        //    if (MultiLayerPerceptron::interrupted)
+        //    {
+        //        std::cout << "\nInterrupted by Ctrl-C. Exiting loop.\n";
+        //        MultiLayerPerceptron::interrupted = 0; //reset MultiLayerPerceptron::interrupted
+        //        break;
+        //    }
+        //}
+        this->t++; //increase t by 1 for Adam
     }
+    //On the last epoch, we update the MSE
+    MSE = 0.0;
+    for (unsigned long i = 0; i < num_rows; i++)
+    {
+        MSE += this->bp(x_train[i], y_train[i]);
+    }
+    MSE /= num_rows;
+    
     return MSE;
 }
 
