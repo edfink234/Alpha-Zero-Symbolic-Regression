@@ -417,14 +417,13 @@ float MSE(const std::vector<Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>
     return count > 0 ? temp / count : FLT_MAX;
 }
 
-
 float MSE(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
 {
     if (actual.size() != predicted.size())
     {
         throw std::invalid_argument("Vectors must be of the same size");
     }
-    return (actual - predicted).squaredNorm();
+    return (actual - predicted).cWiseAbs().squaredNorm();
 }
 
 Eigen::AutoDiffScalar<Eigen::VectorXf> MSE(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>& actual)
@@ -3006,15 +3005,7 @@ struct Board
                 }
                 else if (token == "^")
                 {
-                    if ((expression_type == "postfix" && right_operand.isZero(1e-6)) || (expression_type == "prefix" && left_operand.isZero(1e-6)))
-                    {
-                        stack.push(Eigen::VectorXf::Zero(Board::data.numRows()));
-                    }
-                    else
-                    {
-                        stack.push(((expression_type == "postfix") ? (right_operand.array().pow(left_operand.array())) : (left_operand.array().pow(right_operand.array()))));
-                    }
-
+                    stack.push(((expression_type == "postfix") ? (right_operand.array().pow(left_operand.array())) : (left_operand.array().pow(right_operand.array()))));
                 }
             }
         }
@@ -7257,7 +7248,7 @@ int main()
 //git push --set-upstream origin PrefixPostfixSymbolicDifferentiator
 
 //g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd_Perfect PrefixPostfixMultiThreadDiffSimplifySR_Nd_Perfect.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
-
+//
 //g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd_Perfect PrefixPostfixMultiThreadDiffSimplifySR_Nd_Perfect.cpp -g -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
 
 

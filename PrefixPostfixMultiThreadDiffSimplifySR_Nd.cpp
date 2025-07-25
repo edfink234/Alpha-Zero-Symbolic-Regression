@@ -6,6 +6,7 @@
 #include <utility>
 #include <algorithm>
 #include <future>         // std::async, std::future
+#include <limits>
 #include <unordered_set>
 #include <unordered_map>
 #include <map>
@@ -23,15 +24,27 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
-#include <latch>
+//#include <latch>
 #include <tuple>
 #include <functional>
-#include <numbers>
+//#include <numbers>
 #include <LBFGS.h>
 #include <LBFGSB.h>
+
 #include <unsupported/Eigen/NonLinearOptimization>
 #include <unsupported/Eigen/AutoDiff>
 #include <boost/unordered/concurrent_flat_map.hpp>
+
+/*
+Search Directories to add:
+ - C:\Users\finkelsteine\test_codes\eigen\
+ - C:\Users\finkelsteine\test_codes\eigen\unsupported
+ - C:\Users\finkelsteine\test_codes\boost_1_88_0
+ - C:\Users\finkelsteine\test_codes\LBFGSpp\include
+
+Set Compilers installation directory in Toolchain Executables to:
+ - C:\msys64\ucrt64
+*/
 
 using Clock = std::chrono::high_resolution_clock;
 
@@ -41,14 +54,115 @@ double timeElapsedSince(T start_time)
 {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9;
 }
+float Stof(const std::string& param)
+{
+    try
+    {
+        float val = std::stof(param);
+        return val;
+    }
+    catch (const std::out_of_range&)
+    {
+        if (!param.empty() && param[0] == '-')
+        {
+            return -std::numeric_limits<float>::infinity();
+        }
+        else
+        {
+            return std::numeric_limits<float>::infinity();
+        }
+    }
+}
 
+// https://www.geeksforgeeks.org/cpp/how-to-split-string-by-delimiter-in-cpp/
+std::vector<std::string> split(const std::string& str)
+{
+    // Create a stringstream object
+    // to str
+    std::stringstream ss(str);
+    std::vector<std::string> vec;
+
+      // Temporary object to store
+      // the splitted string
+    std::string t;
+
+      // Delimiter
+    char del = ' ';
+
+       // Splitting the str string
+       // by delimiter
+    while (std::getline(ss, t, del))
+    {
+        vec.push_back(t);
+    }
+
+    return vec;
+}
+
+namespace std
+{
+    class latch
+    {
+        std::atomic<std::ptrdiff_t> counter_;
+        mutable std::mutex mut_;
+        mutable std::condition_variable cv_;
+
+    public:
+        explicit latch(std::ptrdiff_t count) : counter_(count)
+        {
+            if (count < 0) throw std::invalid_argument("latch count must be non-negative");
+        }
+
+        latch(const latch&) = delete;
+        latch& operator=(const latch&) = delete;
+
+        void count_down(std::ptrdiff_t n = 1)
+        {
+            if (n <= 0) return;
+            auto old = counter_.fetch_sub(n, std::memory_order_acq_rel);
+            if (old < n) throw std::runtime_error("latch count went negative");
+
+            if (old == n)
+            {
+                std::lock_guard<std::mutex> lock(mut_);
+                cv_.notify_all();
+            }
+        }
+
+        void wait() const
+        {
+            if (try_wait()) return;
+            std::unique_lock<std::mutex> lock(mut_);
+            cv_.wait(lock, [this]
+            {
+                return (counter_.load(std::memory_order_acquire) == 0);
+            });
+        }
+
+        bool try_wait() const noexcept
+        {
+            return (counter_.load(std::memory_order_acquire) == 0);
+        }
+
+        void arrive_and_wait(std::ptrdiff_t n = 1)
+        {
+            count_down(n);
+            wait();
+        }
+
+        static constexpr std::ptrdiff_t max() noexcept
+        {
+            return std::numeric_limits<std::ptrdiff_t>::max();
+        }
+    };
+}
 //https://medium.com/@ryan_forrester_/c-check-if-string-is-number-practical-guide-c7ba6db2febf
 bool isFloat(const std::string& s)
 {
     enum State { START, INT, FRAC, EXP, EXP_NUM };
     State state = START;
     bool has_digits = false;
-    
+
     if ((s.rfind("nan", 0) != std::string::npos)
         || (s.rfind("inf", 0) != std::string::npos)
         || (s.rfind("-inf", 0) != std::string::npos))
@@ -175,18 +289,18 @@ Eigen::MatrixXf addColumnWithLambda(const Eigen::MatrixXf& matrix, const std::fu
     // Get the number of rows and columns of the input matrix
     int rows = matrix.rows();
     int cols = matrix.cols();
-    
+
     // Create a new matrix with an additional column
     Eigen::MatrixXf newMatrix(rows, cols + 1);
-    
+
     // Copy the original matrix into the new matrix (without the last column)
     newMatrix.block(0, 0, rows, cols) = matrix;
-    
+
     // Apply the lambda function to each row and store the result in the last column
     for (int i = 0; i < rows; ++i) {
         newMatrix(i, cols) = lambda(matrix.row(i));
     }
-    
+
     return newMatrix;
 }
 
@@ -219,7 +333,7 @@ Eigen::MatrixXf createMeshgridVectors(int rows, int cols, std::vector<float> min
         {
             repeat_count *= rows;
         }
-        
+
         int num_repeats = total_combinations / (repeat_count * rows);
         for (int repeat = 0; repeat < num_repeats; ++repeat)
         {
@@ -237,6 +351,13 @@ Eigen::MatrixXf createMeshgridVectors(int rows, int cols, std::vector<float> min
     return matrix;
 }
 
+Eigen::MatrixXf hstack(const Eigen::MatrixXf& mat1, const Eigen::MatrixXf& mat2)
+{
+    Eigen::MatrixXf result(mat1.rows(), mat1.cols() + mat2.cols());
+    result << mat1, mat2; // Concatenate horizontally
+    return result;
+}
+
 int trueMod(int N, int M)
 {
     return ((N % M) + M) % M;
@@ -250,6 +371,35 @@ bool isInvalid(float x)
 float Variance(const Eigen::VectorXf& vec)
 {
     return (vec.array() - vec.mean()).square().sum() / vec.size();
+}
+
+Eigen::VectorXf VarianceVec(const Eigen::VectorXf& vec)
+{
+    return (vec.array() - vec.mean()).square() / vec.size();
+}
+
+std::vector<Eigen::VectorXf> Variance(const std::vector<Eigen::VectorXf>& vec)
+{
+    size_t sz = vec.size();
+    std::vector<Eigen::VectorXf> temp(sz);
+
+    for (size_t idx = 0; idx < sz; idx++)
+    {
+        temp[idx] = VarianceVec(vec[idx]);
+    }
+    return temp;
+}
+
+float VarianceSum(const std::vector<Eigen::VectorXf>& vec)
+{
+    size_t sz = vec.size();
+    float temp = 0.0f;
+
+    for (size_t idx = 0; idx < sz; idx++)
+    {
+        temp += Variance(vec[idx]);
+    }
+    return temp;
 }
 
 bool isZero(const Eigen::VectorXf& vec, float tolerance = 1e-5f)
@@ -269,8 +419,7 @@ bool isZero(const Eigen::VectorXf& vec, float tolerance = 1e-5f)
             return true; // Return true if any NaN is present in values
         }
     }
-//    return (vec.array().abs().maxCoeff() <= tolerance);
-    return (Variance(vec) <= tolerance);
+    return (vec.array().abs().maxCoeff() <= tolerance);
 }
 
 bool isZero(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>& vec, float tolerance = 1e-5f)
@@ -306,8 +455,6 @@ bool isConstant(const Eigen::VectorXf& vec, float tolerance = 1e-5f)
             return true; // Return true if any NaN is present in values
         }
     }
-//    float firstElement = vec(0);
-//    return (vec.array().abs().maxCoeff() <= tolerance);
     return (Variance(vec) <= tolerance);
 }
 
@@ -335,11 +482,11 @@ class Data
     std::unordered_map<std::string, Eigen::VectorXf> features;
     std::vector<Eigen::VectorXf> rows;
     long num_columns, num_rows;
-    
+
 public:
-    
+
     Data() = default; //so we can have a static Data attribute
-    
+
     // Assignment operator
     Data& operator=(const Eigen::MatrixXf& theData)
     {
@@ -355,20 +502,20 @@ public:
             }
         }
         this->rows.resize(this->num_rows);
-        
+
         for (long i = 0; i < num_rows; i++)
         {
             this->rows[i] = data.row(i);
         }
-        
+
         return *this;
     }
-    
+
     bool operator==( Data& other)
     {
         return this->data == other.data;
     }
-    
+
     const Eigen::VectorXf& operator[] (int i){return rows[i];}
     const Eigen::VectorXf& operator[] (const std::string& i)
     {
@@ -383,6 +530,36 @@ public:
     }
 };
 
+template <typename T, typename U>
+std::ostream& operator<<(std::ostream& os, const std::pair<T, U>& data)
+{
+    return (os << '(' << data.first << ", " << data.second << ')');
+}
+
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const std::vector<std::vector<T>>& data)
+{
+    for (const auto& vec: data)
+    {
+        for (const auto& elem: vec)
+        {
+            os << elem << ' ';
+        }
+        os << '\n';
+    }
+    return os;
+}
+
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const std::vector<T>& data)
+{
+    for (const auto& i: data)
+    {
+        os << i << ' ';
+    }
+    return os;
+}
+
 float MSE(const Eigen::VectorXf& actual)
 {
     return actual.squaredNorm();
@@ -395,7 +572,7 @@ float MSE(const std::vector<Eigen::VectorXf>& actual)
     {
         temp += actual[i].squaredNorm();
     }
-    
+
     return temp;
 }
 
@@ -455,8 +632,9 @@ float loss_func(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
 struct Board
 {
     static boost::concurrent_flat_map<std::string, Eigen::VectorXf> inline expression_dict;
+    static constexpr size_t max_expression_dict_sz = 100000000; //one-hundred million
     static std::atomic<float> inline fit_time = 0.0;
-    
+
     static constexpr float K = 0.0884956f;
     static constexpr float phi_1 = 2.8f;
     static constexpr float phi_2 = 1.3f;
@@ -464,6 +642,9 @@ struct Board
     static std::vector<std::string> inline __input_vars;
     static std::vector<std::string> inline __unary_operators;
     static std::vector<std::string> inline __binary_operators;
+    static size_t inline num_unary_ops;
+    static size_t inline num_binary_ops;
+    static size_t inline num_leaf_operands;
     static std::unordered_set<std::string> inline __unary_operators_uset;
     static std::unordered_set<std::string> inline __binary_operators_uset;
     static std::vector<std::string> inline __operators;
@@ -471,41 +652,52 @@ struct Board
     static std::vector<std::string> inline __tokens;
     Eigen::VectorXf params; //store the parameters of the expression of the current episode after it's completed
     static Data inline data;
-    
+
     std::random_device rd;
     std::mt19937 gen;
     std::uniform_real_distribution<float> vel_dist, pos_dist;
-    
+    static std::uniform_int_distribution<int> inline unary_dist; // A random integer generator which generates an index corresponding to a unary operator
+    static std::uniform_int_distribution<int> inline binary_dist; // A random integer generator which generates an index corresponding to a binary operator
+    static std::uniform_int_distribution<int> inline leaf_dist; // A random integer generator which generates an index corresponding to an operand
+
     static int inline action_size;
     static std::once_flag inline initialization_flag;  // Flag for std::call_once
     static std::unordered_map<std::string, std::pair<std::string, std::string>> inline feature_mins_maxes;
-    
+
     size_t reserve_amount;
     int num_fit_iter;
     int num_objectives;
     float MSE_curr;
     std::string fit_method;
     std::string fit_grad_method;
-    
+
     bool cache;
-    bool const_token;
+    bool use_const_pieces;
     std::vector<std::vector<int>> stack;
     std::vector<int> depth, num_binary, num_leaves, idx;
     static std::unordered_map<bool, std::unordered_map<bool, std::unordered_map<bool, std::vector<std::string>>>> inline una_bin_leaf_legal_moves_dict;
     std::vector<int> simplify_grasp;
-    
-    const std::vector<int> n; //depth of RPN/PN trees
+
+    std::vector<int> n; //depth of RPN/PN trees
     std::string expression_type, expression_string;
-    size_t num_consts;
+    size_t num_consts_diff;
     static std::mutex inline thread_locker; //static because it needs to protect static members
     std::vector<std::vector<std::string>> pieces; // Create the empty expression list.
     std::vector<std::string> derivat;// Vector to store the derivative.
     bool visualize_exploration, is_primary;
     std::vector<std::vector<std::string>> (*diffeq)(Board&); //differential equation we want to solve
+    size_t num_diff_eqns; //number of equations in the system `diffeq`, TODO: initialize in constructor!
     std::vector<std::vector<std::string>> diffeq_result;
     float isConstTol;
-    
-    Board(std::vector<std::vector<std::string>> (*diffeq)(Board&), bool primary = true, const std::vector<int>& depth = {}, const std::string& expression_type = "prefix", size_t num_consts = 0, std::string fitMethod = "PSO", int numFitIter = 1, std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false) : gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, n{depth}, is_primary{primary}
+    bool simplify_original;
+
+    Board(std::vector<std::vector<std::string>> (*diffeq)(Board&), size_t num_diff_eqns, bool primary = true, const std::vector<int>& depth = {},
+          const std::string& expression_type = "prefix", size_t num_consts_diff = 0, std::string fitMethod = "LevenbergMarquardt", int numFitIter = 1,
+          std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXf& theData = {}, bool visualize_exploration = false, bool cache = false,
+          bool const_tokens = false, float isConstTol = 1e-1f, bool use_const_pieces = false, bool simplifyOriginal = true,
+          int numDataCols = 0) :
+        gen{rd()}, vel_dist{-1.0f, 1.0f}, pos_dist{0.0f, 1.0f}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, n{depth},
+        is_primary{primary}, simplify_original{simplifyOriginal}
     {
         assert(n.size());
         this->num_objectives = n.size();
@@ -530,22 +722,24 @@ struct Board
             }
             this->stack[counter++].reserve(i);
         }
-        
+
         this->expression_type = expression_type;
-        this->num_consts = num_consts;
+        this->num_consts_diff = num_consts_diff;
+        this->use_const_pieces = use_const_pieces;
         this->visualize_exploration = visualize_exploration;
         this->reserve_amount = 2*std::pow(2,max_n)-1;
         this->cache = cache;
         this->diffeq = diffeq;
+        this->num_diff_eqns = num_diff_eqns;
         this->isConstTol = isConstTol;
-        this->const_token = const_token;
-        
+
         if (is_primary)
         {
             std::call_once(initialization_flag, [&]()
             {
                 Board::data = theData;
-                Board::__num_features = Board::data[0].size();
+                Board::__num_features = Board::data[0].size() - numDataCols;
+                assert(Board::__num_features > 0);
                 printf("Number of features = %d\n", Board::__num_features);
                 Board::__input_vars.clear();
                 Board::expression_dict.clear();
@@ -558,8 +752,8 @@ struct Board
                 Board::__binary_operators = {"+", "-", "*", "/", "^"};
                 std::copy(Board::__unary_operators.begin(), Board::__unary_operators.end(), std::inserter(Board::__unary_operators_uset, Board::__unary_operators_uset.end()));
                 std::copy(Board::__binary_operators.begin(), Board::__binary_operators.end(), std::inserter(Board::__binary_operators_uset, Board::__binary_operators_uset.end()));
-//                for (const std::string& i: Board::__unary_operators_uset) {std::cout << i << ' ';}puts("");
-//                for (const std::string& i: Board::__binary_operators_uset) {std::cout << i << ' ';}puts("");
+                for (const std::string& i: Board::__unary_operators_uset) {std::cout << i << ' ';}puts("");
+                for (const std::string& i: Board::__binary_operators_uset) {std::cout << i << ' ';}puts("");
                 Board::__operators.clear();
                 for (std::string& i: Board::__unary_operators)
                 {
@@ -577,16 +771,18 @@ struct Board
                     Board::__other_tokens.push_back(minCoeff_i); //add smallest element
                     Board::__other_tokens.push_back(maxCoeff_i); //add largest element
                     feature_mins_maxes[i] = std::make_pair(minCoeff_i, maxCoeff_i);
+                    std::cout << "feature_mins_maxes[" << i << "] = " << feature_mins_maxes[i] << '\n';
                 }
-                if (const_token)
+                if (this->use_const_pieces) //first add "const" if requested
                 {
-                    for (size_t i = 0; i < this->num_consts; i++)
-                    {
-                        Board::__other_tokens.push_back("const"+std::to_string(i));
-                    }
+                    Board::__other_tokens.push_back("const");
+                }
+                for (size_t i = 0; i < this->num_consts_diff; i++) //then add "const0", "const1", ..., "const{this->num_consts_diff-1}"
+                {
+                    Board::__other_tokens.push_back("const"+std::to_string(i));
                 }
                 Board::__tokens = Board::__operators;
-                
+
                 for (auto& i: this->Board::__input_vars)
                 {
                     Board::__tokens.push_back(i);
@@ -595,36 +791,34 @@ struct Board
                 {
                     Board::__tokens.push_back(i);
                 }
-                if (const_token)
-                {
-                    std::cout << Board::__tokens.back() << '\n';
-                    assert(Board::__tokens.back().substr(0, 5) == "const" || !this->num_consts);
-                }
+                assert((!(this->num_consts_diff || this->use_const_pieces)) || (Board::__tokens.back().compare(0, 5, "const") == 0));
                 Board::action_size = Board::__tokens.size();
-                
+
                 Board::una_bin_leaf_legal_moves_dict.clear();
                 if (const_tokens)
                 {
+                    //Then include fixed constants, the non-differential equation optimizable constant `const` (if use_const_pieces == true),
+                    //AND `this->num_consts_diff` optimizable constant tokens (const0, const1, ..., const{this->num_consts_diff}) that can be optimized.
                     Board::una_bin_leaf_legal_moves_dict[true][true][true] = Board::__tokens;
                 }
-                
+
                 else
                 {
                     Board::una_bin_leaf_legal_moves_dict[true][true][true] = Board::__operators;
                 }
-                
+
                 Board::una_bin_leaf_legal_moves_dict[true][true][false] = Board::__operators;
                 Board::una_bin_leaf_legal_moves_dict[true][false][true] = Board::__unary_operators; //1
                 Board::una_bin_leaf_legal_moves_dict[true][false][false] = Board::__unary_operators;
                 Board::una_bin_leaf_legal_moves_dict[false][true][true] = Board::__binary_operators; //2
                 Board::una_bin_leaf_legal_moves_dict[false][true][false] = Board::__binary_operators;
-                
+
                 for (const std::string &i: Board::__input_vars)
                 {
                     Board::una_bin_leaf_legal_moves_dict[true][false][true].push_back(i); //1
                     Board::una_bin_leaf_legal_moves_dict[false][true][true].push_back(i); //2
                     Board::una_bin_leaf_legal_moves_dict[false][false][true].push_back(i); //3
-                    if (!const_tokens)
+                    if (!const_tokens) //without constants (optimizable or not), the only leaf nodes will be the input variables
                     {
                         Board::una_bin_leaf_legal_moves_dict[true][true][true].push_back(i);
                     }
@@ -638,15 +832,21 @@ struct Board
                         Board::una_bin_leaf_legal_moves_dict[false][false][true].push_back(i); //3
                     }
                 }
-                std::cout << "Board::__unary_operators.size() = " << Board::__unary_operators.size() << '\n';
-                std::cout << "Board::__binary_operators.size() = " << Board::__binary_operators.size() << '\n';
+                Board::num_unary_ops = Board::__unary_operators.size();
+                Board::num_binary_ops = Board::__binary_operators.size();
+                Board::num_leaf_operands = Board::una_bin_leaf_legal_moves_dict[false][false][true].size();
+                std::cout << "Board::num_unary_ops = " << Board::num_unary_ops << '\n';
+                std::cout << "Board::num_binary_ops = " << Board::num_binary_ops << '\n';
+                std::cout << "Board::num_leaf_operands = " << Board::num_leaf_operands << '\n';
                 std::cout << "Board::__tokens.size() = " << Board::__tokens.size() << '\n';
-
+                Board::unary_dist = std::uniform_int_distribution<int>(0, Board::num_unary_ops - 1);
+                Board::binary_dist = std::uniform_int_distribution<int>(0, Board::num_binary_ops - 1);
+                Board::leaf_dist = std::uniform_int_distribution<int>(0, Board::num_leaf_operands - 1);
             });
-            
+
         }
     }
-    
+
     std::string operator[](size_t index) const
     {
         if (index < Board::__tokens.size())
@@ -655,7 +855,7 @@ struct Board
         }
         throw std::out_of_range("Index out of range");
     }
-    
+
     int __num_binary_ops(int i) const
     {
         int count = 0;
@@ -668,7 +868,7 @@ struct Board
         }
         return count;
     }
-    
+
     int __num_unary_ops(int i) const
     {
         int count = 0;
@@ -681,11 +881,11 @@ struct Board
         }
         return count;
     }
-    
+
     int __num_leaves(int i) const
     {
         int count = 0;
-        
+
         for (const std::string& token : pieces[i])
         {
             if (!is_unary(token) && !is_binary(token))
@@ -695,57 +895,15 @@ struct Board
         }
         return count;
     }
-    
-    int __num_consts(int i) const
+
+    int __num_consts() const
     {
-        if (!this->const_token)
-        {
-            return 0;
-        }
         int count = 0;
-        
-        for (const std::string& token : pieces[i])
+        for (const std::vector<std::string>& vec: this->pieces)
         {
-            if (token.substr(0,5) == "const")
+            for (const std::string& piece: vec)
             {
-                count++;
-            }
-        }
-        return count;
-    }
-    
-//    int __num_consts() const
-//    {
-//        if (!this->const_token)
-//        {
-//            return 0;
-//        }
-//        int count = 0;
-//        
-//        
-//        for (const std::string& token : pieces[i])
-//        {
-//            if (token.substr(0,5) == "const")
-//            {
-//                count++;
-//            }
-//        }
-//        return count;
-//    }
-    
-    int __num_consts_diff() const
-    {
-        if (!this->const_token)
-        {
-            return 0;
-        }
-        int count = 0;
-        
-        for (int jdx = 0; jdx < diffeq_result.size(); jdx++)
-        {
-            for (const std::string& token : diffeq_result[jdx])
-            {
-                if (token.substr(0,5) == "const")
+                if (piece.compare(0, 5, "const") == 0)
                 {
                     count++;
                 }
@@ -753,27 +911,40 @@ struct Board
         }
         return count;
     }
-    
+
+    int __num_consts(int jdx) const
+    {
+        int count = 0;
+        for (const std::string& piece: this->pieces[jdx])
+        {
+            if (piece.compare(0, 5, "const") == 0)
+            {
+                count++;
+            }
+        }
+        return count;
+    }
+
     bool is_unary(const std::string& token) const
     {
         return (Board::__unary_operators_uset.find(token) != Board::__unary_operators_uset.end());
     }
-    
+
     bool is_binary(const std::string& token) const
     {
         return (Board::__binary_operators_uset.find(token) != Board::__binary_operators_uset.end());
     }
-    
+
     bool is_operator(const std::string& token) const
     {
         return (is_binary(token) || is_unary(token));
     }
-    
+
     bool is_const(const std::string& token) const
     {
         return ((!is_unary(token)) && (!is_binary(token)));
     }
-    
+
     std::string simplifyString(const std::string& x)
     {
         if ((x.size() == 2) && (x[0] == '-') && (x[1] == '0')) //"-0" -> "0"
@@ -797,10 +968,9 @@ struct Board
         {
             return "0";
         }
-        
         return temp; //"x.0000000" (repeating) -> "x"
     }
-    
+
     void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, int up, std::vector<int>& grasp, std::vector<std::string>& new_expression, bool setGRvar = false)
     {
         if (!setGRvar)
@@ -821,7 +991,7 @@ struct Board
             graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true);
             int second_arg_idx_high = new_expression.size();
             int step;
-            
+
             if (new_expression[first_arg_idx_high] == "0") //+/- x 0 -> x
             {
                 //puts("hi 177");
@@ -835,7 +1005,7 @@ struct Board
                 }
                 new_expression.erase(new_expression.begin() + op_idx); //remove +/- operator at beginning
             }
-            
+
             else if (new_expression[first_arg_idx_low] == "0")
             {
                 if (expression[low] == "+") //+ 0 y -> y
@@ -850,7 +1020,7 @@ struct Board
                     new_expression.erase(new_expression.begin() + first_arg_idx_low); //'0'
                 }
             }
-            
+
             else if ((expression[low] == "-") && ((step = (second_arg_idx_high - first_arg_idx_high)) == (first_arg_idx_high - first_arg_idx_low)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) //- x x
             {
                 //puts("hi 221");
@@ -953,7 +1123,7 @@ struct Board
                 new_expression[op_idx] = "1"; //change "-" to "1";
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.begin() + second_arg_idx_high);
             }
-            
+
             //TODO:
                 /*
                 x*y       y
@@ -1135,7 +1305,7 @@ struct Board
         graspSimplifyPrefixHelper(expression, low, up, grasp, new_expression, false);
         expression = new_expression;
     }
-    
+
     void simplifyPN_Helper(std::vector<std::string>& expression)
     {
         bool simplified = true;
@@ -1151,49 +1321,49 @@ struct Board
                     {
                         isFloat1 = isFloat(expression[i+1]);
                         isFloat2 = isFloat(expression[i+2]);
-                        
+
                         if (isFloat1 && isFloat2)
                         {
                             if (expression[i] == "+")
                             {
-                                expression[i] = simplifyString(std::to_string(std::stof(expression[i+1]) + std::stof(expression[i+2])));
+                                expression[i] = simplifyString(std::to_string(Stof(expression[i+1]) + Stof(expression[i+2])));
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                                 simplified = true;
                                 break;
                             }
                             else if (expression[i] == "-")
                             {
-                                expression[i] = simplifyString(std::to_string(std::stof(expression[i+1]) - std::stof(expression[i+2])));
+                                expression[i] = simplifyString(std::to_string(Stof(expression[i+1]) - Stof(expression[i+2])));
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                                 simplified = true;
                                 break;
                             }
                             else if (expression[i] == "*")
                             {
-                                expression[i] = simplifyString(std::to_string(std::stof(expression[i+1]) * std::stof(expression[i+2])));
+                                expression[i] = simplifyString(std::to_string(Stof(expression[i+1]) * Stof(expression[i+2])));
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                                 simplified = true;
                                 break;
                             }
                             else if (expression[i] == "/")
                             {
-                                expression[i] = simplifyString(std::to_string(std::stof(expression[i+1]) / std::stof(expression[i+2])));
+                                expression[i] = simplifyString(std::to_string(Stof(expression[i+1]) / Stof(expression[i+2])));
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                                 simplified = true;
                                 break;
                             }
                             else if (expression[i] == "^")
                             {
-                                expression[i] = simplifyString(std::to_string(std::powf(std::stof(expression[i+1]), std::stof(expression[i+2]))));
+                                expression[i] = simplifyString(std::to_string(std::powf(Stof(expression[i+1]), Stof(expression[i+2]))));
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                                 simplified = true;
                                 break;
                             }
                         }
-                        
+
                         isConst1 = is_const(expression[i+1]);
                         isConst2 = is_const(expression[i+2]);
-                        
+
                         if ((isConst1 && isConst2) && ((expression[i+1].find("nan") != std::string::npos) || (expression[i+2].find("nan") != std::string::npos))) //binary_op nan x = binary_op x nan = nan
                         {
                             //puts("hi 570");
@@ -1343,81 +1513,81 @@ struct Board
                             }
                         }
                     }
-                    
+
                     else if (is_unary(expression[i]) && isFloat(expression[i+1]))
                     {
                         if (expression[i] == "cos")
                         {
-                            expression[i] = simplifyString(std::to_string(cos(std::stof(expression[i+1]))));
+                            expression[i] = simplifyString(std::to_string(cos(Stof(expression[i+1]))));
                             expression.erase(expression.begin() + i + 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "~")
                         {
-                            expression[i] = simplifyString(std::to_string(-(std::stof(expression[i+1]))));
+                            expression[i] = simplifyString(std::to_string(-(Stof(expression[i+1]))));
                             expression.erase(expression.begin() + i + 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "sin")
                         {
-                            expression[i] = simplifyString(std::to_string(sin(std::stof(expression[i+1]))));
+                            expression[i] = simplifyString(std::to_string(sin(Stof(expression[i+1]))));
                             expression.erase(expression.begin() + i + 1);
                             simplified = true;
                             break;
                         }
                         else if ((expression[i] == "ln") || (expression[i] == "log"))
                         {
-                            expression[i] = simplifyString(std::to_string(log(std::stof(expression[i+1])))); // Natural log (ln)
+                            expression[i] = simplifyString(std::to_string(log(Stof(expression[i+1])))); // Natural log (ln)
                             expression.erase(expression.begin() + i + 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "asin" || expression[i] == "arcsin")
                         {
-                            expression[i] = simplifyString(std::to_string(asin(std::stof(expression[i+1]))));
+                            expression[i] = simplifyString(std::to_string(asin(Stof(expression[i+1]))));
                             expression.erase(expression.begin() + i + 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "acos" || expression[i] == "arccos")
                         {
-                            expression[i] = simplifyString(std::to_string(acos(std::stof(expression[i+1]))));
+                            expression[i] = simplifyString(std::to_string(acos(Stof(expression[i+1]))));
                             expression.erase(expression.begin() + i + 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "exp")
                         {
-                            expression[i] = simplifyString(std::to_string(exp(std::stof(expression[i+1]))));
+                            expression[i] = simplifyString(std::to_string(exp(Stof(expression[i+1]))));
                             expression.erase(expression.begin() + i + 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "sech")
                         {
-                            expression[i] = simplifyString(std::to_string(1 / cosh(std::stof(expression[i+1])))); // sech(x) = 1 / cosh(x)
+                            expression[i] = simplifyString(std::to_string(1 / cosh(Stof(expression[i+1])))); // sech(x) = 1 / cosh(x)
                             expression.erase(expression.begin() + i + 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "tanh")
                         {
-                            expression[i] = simplifyString(std::to_string(tanh(std::stof(expression[i+1]))));
+                            expression[i] = simplifyString(std::to_string(tanh(Stof(expression[i+1]))));
                             expression.erase(expression.begin() + i + 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "sqrt")
                         {
-                            expression[i] = simplifyString(std::to_string(sqrt(std::stof(expression[i+1]))));
+                            expression[i] = simplifyString(std::to_string(sqrt(Stof(expression[i+1]))));
                             expression.erase(expression.begin() + i + 1);
                             simplified = true;
                             break;
                         }
                     }
-                    
+
                     else if (is_unary(expression[i]))
                     {
                         if (expression[i] == "~" && expression[i+1] == "~")
@@ -1496,8 +1666,8 @@ struct Board
             size_after = expression.size();
         } while (size_before != size_after);
     }
-    
-    
+
+
     void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, int up, std::vector<int>& grasp, std::vector<std::string>& new_expression, bool setGRvar = false)
     {
         if (!setGRvar)
@@ -1514,13 +1684,13 @@ struct Board
             graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true);
             int second_arg_idx_high = new_expression.size();
             int step;
-            
+
             if (new_expression.back() == "0") // x 0 +/- -> x
             {
                 //puts("hi 181");
                 new_expression.pop_back();
             }
-            
+
             else if (new_expression[first_arg_idx_high - 1] == "0") // 0 x +/- -> x +/-
             {
                 //puts("hi 184");
@@ -1532,14 +1702,14 @@ struct Board
                     new_expression.push_back("~"); //0 y - -> y ~
                 }
             }
-            
+
             else if ((expression[up] == "-") && ((step = (first_arg_idx_high - first_arg_idx_low)) == (second_arg_idx_high - first_arg_idx_high)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) //x x - -> 0
             {
                 //puts("hi 215");
                 new_expression[first_arg_idx_low] = "0"; //change first symbol of x to 0
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.begin() + second_arg_idx_high); //erase the rest of x and y
             }
-            
+
             else
             {
                 new_expression.push_back(expression[up]);
@@ -1553,7 +1723,7 @@ struct Board
             graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
             //int second_arg_idx_high = new_expression.size();
             //int step;
-            
+
             if (new_expression.back() == "0") // x 0 * -> 0 (because, since postfix operators come at the end, if the end of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 *, which is 0)
             {
                 //puts("hi 235");
@@ -1638,7 +1808,7 @@ struct Board
             graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
             //int second_arg_idx_high = new_expression.size();
             //int step;
-            
+
             if (new_expression.back() == "0") // x 0 ^ -> 1 (because, since postfix operators come at the end, if the end of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 ^, which is 1)
             {
                 //puts("hi 318");
@@ -1794,7 +1964,7 @@ struct Board
             }
         }
     }
-    
+
     void graspSimplifyPostfix(std::vector<std::string>& expression, int low, int up, std::vector<int>& grasp)
     {
         std::vector<std::string> new_expression;
@@ -1818,49 +1988,49 @@ struct Board
                     {
                         isFloat1 = isFloat(expression[i-1]);
                         isFloat2 = isFloat(expression[i-2]);
-                        
+
                         if (isFloat1 && isFloat2)
                         {
                             if (expression[i] == "+")
                             {
-                                expression[i] = simplifyString(std::to_string(std::stof(expression[i-2]) + std::stof(expression[i-1])));
+                                expression[i] = simplifyString(std::to_string(Stof(expression[i-2]) + Stof(expression[i-1])));
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
                                 break;
                             }
                             else if (expression[i] == "-")
                             {
-                                expression[i] = simplifyString(std::to_string(std::stof(expression[i-2]) - std::stof(expression[i-1])));
+                                expression[i] = simplifyString(std::to_string(Stof(expression[i-2]) - Stof(expression[i-1])));
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
                                 break;
                             }
                             else if (expression[i] == "*")
                             {
-                                expression[i] = simplifyString(std::to_string(std::stof(expression[i-2]) * std::stof(expression[i-1])));
+                                expression[i] = simplifyString(std::to_string(Stof(expression[i-2]) * Stof(expression[i-1])));
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
                                 break;
                             }
                             else if (expression[i] == "/")
                             {
-                                expression[i] = simplifyString(std::to_string(std::stof(expression[i-2]) / std::stof(expression[i-1])));
+                                expression[i] = simplifyString(std::to_string(Stof(expression[i-2]) / Stof(expression[i-1])));
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
                                 break;
                             }
                             else if (expression[i] == "^")
                             {
-                                expression[i] = simplifyString(std::to_string(std::powf(std::stof(expression[i-2]), std::stof(expression[i-1]))));
+                                expression[i] = simplifyString(std::to_string(std::powf(Stof(expression[i-2]), Stof(expression[i-1]))));
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
                                 break;
                             }
                         }
-                        
+
                         isConst1 = is_const(expression[i-1]);
                         isConst2 = is_const(expression[i-2]);
-                        
+
                         if ((isConst1 && isConst2) && ((expression[i-1].find("nan") != std::string::npos) || (expression[i-2].find("nan") != std::string::npos))) //x nan binary_op = nan x binary_op = nan
                         {
                             //puts("hi 549");
@@ -2014,81 +2184,81 @@ struct Board
                             }
                         }
                     }
-                    
+
                     else if (is_unary(expression[i]) && isFloat(expression[i-1]))
                     {
                         if (expression[i] == "cos")
                         {
-                            expression[i] = simplifyString(std::to_string(cos(std::stof(expression[i-1]))));
+                            expression[i] = simplifyString(std::to_string(cos(Stof(expression[i-1]))));
                             expression.erase(expression.begin() + i - 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "~")
                         {
-                            expression[i] = simplifyString(std::to_string(-(std::stof(expression[i-1]))));
+                            expression[i] = simplifyString(std::to_string(-(Stof(expression[i-1]))));
                             expression.erase(expression.begin() + i - 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "sin")
                         {
-                            expression[i] = simplifyString(std::to_string(sin(std::stof(expression[i-1]))));
+                            expression[i] = simplifyString(std::to_string(sin(Stof(expression[i-1]))));
                             expression.erase(expression.begin() + i - 1);
                             simplified = true;
                             break;
                         }
                         else if ((expression[i] == "ln") || (expression[i] == "log"))
                         {
-                            expression[i] = simplifyString(std::to_string(log(std::stof(expression[i-1])))); // Natural log (ln)
+                            expression[i] = simplifyString(std::to_string(log(Stof(expression[i-1])))); // Natural log (ln)
                             expression.erase(expression.begin() + i - 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "asin" || expression[i] == "arcsin")
                         {
-                            expression[i] = simplifyString(std::to_string(asin(std::stof(expression[i-1]))));
+                            expression[i] = simplifyString(std::to_string(asin(Stof(expression[i-1]))));
                             expression.erase(expression.begin() + i - 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "acos" || expression[i] == "arccos")
                         {
-                            expression[i] = simplifyString(std::to_string(acos(std::stof(expression[i-1]))));
+                            expression[i] = simplifyString(std::to_string(acos(Stof(expression[i-1]))));
                             expression.erase(expression.begin() + i - 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "exp")
                         {
-                            expression[i] = simplifyString(std::to_string(exp(std::stof(expression[i-1]))));
+                            expression[i] = simplifyString(std::to_string(exp(Stof(expression[i-1]))));
                             expression.erase(expression.begin() + i - 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "sech")
                         {
-                            expression[i] = simplifyString(std::to_string(1 / cosh(std::stof(expression[i-1])))); // sech(x) = 1 / cosh(x)
+                            expression[i] = simplifyString(std::to_string(1 / cosh(Stof(expression[i-1])))); // sech(x) = 1 / cosh(x)
                             expression.erase(expression.begin() + i - 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "tanh")
                         {
-                            expression[i] = simplifyString(std::to_string(tanh(std::stof(expression[i-1]))));
+                            expression[i] = simplifyString(std::to_string(tanh(Stof(expression[i-1]))));
                             expression.erase(expression.begin() + i - 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "sqrt")
                         {
-                            expression[i] = simplifyString(std::to_string(sqrt(std::stof(expression[i-1]))));
+                            expression[i] = simplifyString(std::to_string(sqrt(Stof(expression[i-1]))));
                             expression.erase(expression.begin() + i - 1);
                             simplified = true;
                             break;
                         }
                     }
-                    
+
                     else if (is_unary(expression[i]))
                     {
                         if (expression[i] == "~" && expression[i-1] == "~")
@@ -2166,7 +2336,7 @@ struct Board
             size_after = expression.size();
         } while (size_before != size_after);
     }
-    
+
     /*
      Returns a pair containing the depth of the sub-expression from start to stop, and whether or not it's complete
      Algorithm adopted from here: https://stackoverflow.com/a/77180279
@@ -2177,12 +2347,12 @@ struct Board
         {
             return std::make_pair(0, false);
         }
-        
+
         if (stop == 0)
         {
             stop = expression.size();
         }
-        
+
         if (!cache)
         {
             this->stack[idx].clear();
@@ -2260,7 +2430,7 @@ struct Board
         }
         return std::make_pair(this->depth[idx] - 1, this->num_leaves[idx] == this->num_binary[idx] + 1);
     }
-    
+
     /*
      Returns a pair containing the depth of the sub-expression from start to stop, and whether or not it's complete
      Algorithm adopted from here: https://stackoverflow.com/a/77128902
@@ -2271,26 +2441,32 @@ struct Board
         {
             return std::make_pair(0, false);
         }
-        
+
         if (stop == 0)
         {
             stop = expression.size();
         }
         assert(this->stack.size() > idx);
-        
+
         if (!cache)
         {
             this->stack[idx].clear();
             bool complete = true;
-            
+//            std::cout << "expression = " << expression << '\n';
             for (size_t i = start; i < stop; i++)
             {
+//                std::cout << "this->stack[idx] = "
+//                << this->stack[idx] << '\n';
                 if (is_unary(expression[i]))
                 {
+//                    std::cout << "expression["
+//                    << i << "] is a unary operator\n";
                     this->stack[idx].back() += 1;
                 }
                 else if (is_binary(expression[i]))
                 {
+//                    std::cout << "expression["
+//                    << i << "] is a binary operator\n";
                     int op2 = this->stack[idx].back();
                     this->stack[idx].pop_back();
                     int op1 = this->stack[idx].back();
@@ -2299,10 +2475,12 @@ struct Board
                 }
                 else //leaf
                 {
+//                    std::cout << "expression["
+//                    << i << "] is a leaf node\n";
                     this->stack[idx].push_back(1);
                 }
             }
-            
+
             while (this->stack[idx].size() > 1)
             {
                 int op2 = this->stack[idx].back();
@@ -2312,7 +2490,7 @@ struct Board
                 this->stack[idx].push_back(std::max(op1, op2) + 1);
                 complete = false;
             }
-            
+
             /*
              e.g., assume this->stack = {1, 2, 3, 4, 5}, then:
              {1, 2, 3, 4, 5}
@@ -2321,7 +2499,7 @@ struct Board
              {1, 8}
              {9}
              */
-            
+
             return std::make_pair(this->stack[idx].back() - 1, complete);
         }
         else //optimize with caching
@@ -2342,7 +2520,7 @@ struct Board
                         {
                             curr_max = std::max(curr_max, this->stack[idx][i-1])+1;
                         }
-                        
+
                         /*
                          e.g., assume this->stack = {1, 2, 3, 4, 5}, then:
                          curr_max = max(5, 4)+1 = 6;
@@ -2350,7 +2528,7 @@ struct Board
                          curr_max = max(7, 2)+1 = 8;
                          curr_max = max(8, 1)+1 = 9;
                          */
-                        
+
                         return std::make_pair(curr_max - 1, false);
                     }
                 }
@@ -2375,7 +2553,7 @@ struct Board
                          curr_max = max(7, 2)+1 = 8;
                          curr_max = max(8, 1)+1 = 9;
                          */
-                        
+
                         return std::make_pair(curr_max - 1, false);
                     }
                 }
@@ -2400,13 +2578,13 @@ struct Board
 //                    std::cout << "this->stack.size() = " << this->stack.size() << '\n';
                     this->stack[idx].push_back(1);
                 }
-                
+
                 this->idx[idx]++;
                 if (this->stack[idx].size() == 1)
                 {
                     return std::make_pair(this->stack[idx].back() - 1, true);
                 }
-                
+
                 else
                 {
                     int curr_max = std::max(this->stack[idx].back(), *(this->stack[idx].end()-2))+1;
@@ -2417,11 +2595,11 @@ struct Board
                     return std::make_pair(curr_max - 1, false);
                 }
             }
-            
+
             return std::make_pair(this->stack[idx].back() - 1, true);
         }
     }
-    
+
     std::vector<std::string> get_legal_moves(int idx)
     {
         assert(n.size() > idx);
@@ -2440,7 +2618,7 @@ struct Board
             }
             int num_binary = this->__num_binary_ops(idx);
             int num_leaves = this->__num_leaves(idx);
-            
+
             if (this->cache)
             {
                 //basic constraints for depth
@@ -2448,37 +2626,10 @@ struct Board
                 bool bin_allowed = (getPNdepth(pieces[idx], idx, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, true /*binary*/, false /*unary*/, false /*leaf*/).first <= this->n[idx]);
                 bool leaf_allowed = (!((num_leaves == num_binary + 1) || (getPNdepth(pieces[idx], idx, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, false /*binary*/, false /*unary*/, true /*leaf*/).first < this->n[idx] && (num_leaves == num_binary))));
                 std::vector<std::string> legal_moves = Board::una_bin_leaf_legal_moves_dict[una_allowed][bin_allowed][leaf_allowed];
-                
-                //more complicated constraints for simplification
-//                if (leaf_allowed)
-//                {
-//                    size_t pcs_sz = pieces[idx].size();
-//                    if (pcs_sz >= 2 && pieces[idx][pcs_sz-2] == "/") // "/ x{i}" should not result in "/ x{i} x{i}" as that is 1
-//                    {
-//                        for (const std::string& i: Board::__input_vars)
-//                        {
-//                            if (pieces[idx].back() == i)
-//                            {
-//                                if (legal_moves.size() > 1)
-//                                {
-//                                    legal_moves.erase(std::remove(legal_moves.begin(), legal_moves.end(), i), legal_moves.end()); //remove "x{i}" from legal_moves
-//                                }
-//                                else //if x{i} is the only legal move, then we'll change "/" to another binary operator, like "+", "*", or "^"
-//                                {
-//                                    std::vector<std::string> sub_bin_ops = {"*", "+", "^"};
-//                                    std::uniform_int_distribution<int> distribution(0, 2);
-//                                    pieces[idx][pcs_sz-2] = sub_bin_ops[distribution(gen)];
-//                                }
-//                                break;
-//                            }
-//                        }
-//                    }
-//                }
                 assert(legal_moves.size());
                 return legal_moves;
-                
             }
-            
+
             else
             {
                 bool una_allowed = false, bin_allowed = false, leaf_allowed = false;
@@ -2496,11 +2647,11 @@ struct Board
                 leaf_allowed = (!((num_leaves == num_binary + 1) || (getPNdepth(pieces[idx], idx).first < this->n[idx] && (num_leaves == num_binary))));
                 pieces[idx].pop_back();
                 assert(!(!una_allowed && !bin_allowed && !leaf_allowed));
-                
+
                 return Board::una_bin_leaf_legal_moves_dict[una_allowed][bin_allowed][leaf_allowed];
             }
         }
-        
+
         else //postfix
         {
             if (this->pieces[idx].empty()) //At the beginning, self.pieces[idx] is empty, so the only legal moves are the features and const
@@ -2509,12 +2660,12 @@ struct Board
             }
             int num_binary = this->__num_binary_ops(idx);
             int num_leaves = this->__num_leaves(idx);
-            
+
             if (this->cache)
             {
                 return Board::una_bin_leaf_legal_moves_dict[((num_leaves >= 1) && (getRPNdepth(pieces[idx], idx, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, true /*unary*/, false /*leaf*/).first <= this->n[idx]))][(num_binary != num_leaves - 1)][(getRPNdepth(pieces[idx], idx, 0 /*start*/, 0 /*stop*/, this->cache /*cache*/, false /*modify*/, false /*unary*/, true /*leaf*/).first <= this->n[idx])];
             }
-            
+
             else
             {
                 bool una_allowed = false, bin_allowed = (num_binary != num_leaves - 1), leaf_allowed = false;
@@ -2523,32 +2674,32 @@ struct Board
                     pieces[idx].push_back(Board::__unary_operators[0]);
                     una_allowed = ((num_leaves >= 1) && (getRPNdepth(pieces[idx], idx).first <= this->n[idx]));
                 }
-                
+
                 pieces[idx][pieces[idx].size() - 1] = Board::__input_vars[0];
                 leaf_allowed = (getRPNdepth(pieces[idx], idx).first <= this->n[idx]);
-                
+
                 pieces[idx].pop_back();
                 //                assert(!(!una_allowed && !bin_allowed && !leaf_allowed));
-                
+
                 return Board::una_bin_leaf_legal_moves_dict[una_allowed][bin_allowed][leaf_allowed];
             }
         }
-        
+
     }
-    
+
     std::string _to_infix(int idx, bool show_consts = true)
     {
         std::stack<std::string> stack;
         bool is_prefix = (expression_type == "prefix");
         std::string result, token;
-        
+
         for (int i = (is_prefix ? (static_cast<int>(pieces[idx].size()) - 1) : 0); (is_prefix ? (i >= 0) : (i < static_cast<int>(pieces[idx].size()))); (is_prefix ? (i--) : (i++)))
         {
             token = pieces[idx][i];
-            
+
             if (std::find(Board::__operators.begin(), Board::__operators.end(), token) == Board::__operators.end()) // leaf
             {
-                if (token.substr(0,5) == "const" && show_consts)
+                if (token.compare(0, 5, "const") == 0 && show_consts)
                 {
                     stack.push(std::to_string((this->params)(std::stoi(token.substr(5)))));
                 }
@@ -2581,10 +2732,10 @@ struct Board
                 stack.push(result);
             }
         }
-        
+
         return stack.top();
     }
-    
+
     std::string _to_infix(bool show_consts = true)
     {
         std::string temp;
@@ -2596,7 +2747,7 @@ struct Board
         temp += _to_infix(sz, show_consts);
         return temp;
     }
-    
+
     //Returns the `expression_type` string form of the expression stored in the vector<std::string> parameter pieces
     std::string expression(int idx, bool show_consts = true)
     {
@@ -2606,8 +2757,8 @@ struct Board
         for (size_t i = 0; i <= sz; i++)
         {
             token = pieces[idx][i];
-            
-            if ((token.substr(0,5) == "const") && show_consts)
+
+            if ((token.compare(0, 5, "const") == 0) && show_consts)
             {
                 temp += ((i!=sz) ? std::to_string((this->params)(std::stoi(token.substr(5)))) + " " : std::to_string((this->params)(std::stoi(token.substr(5)))));
             }
@@ -2618,7 +2769,7 @@ struct Board
         }
         return temp;
     }
-    
+
     std::string expression(const std::vector<std::string>& pieces, bool show_consts = true)
     {
         std::string temp, token;
@@ -2627,8 +2778,8 @@ struct Board
         for (size_t i = 0; i <= sz; i++)
         {
             token = pieces[i];
-            
-            if ((token.substr(0,5) == "const") && show_consts)
+
+            if ((token.compare(0, 5, "const") == 0) && show_consts)
             {
                 temp += ((i!=sz) ? std::to_string((this->params)(std::stoi(token.substr(5)))) + " " : std::to_string((this->params)(std::stoi(token.substr(5)))));
             }
@@ -2639,7 +2790,7 @@ struct Board
         }
         return temp;
     }
-    
+
     std::string expression(bool show_consts = true)
     {
         std::string temp;
@@ -2651,20 +2802,20 @@ struct Board
         temp += expression(sz, show_consts);
         return temp;
     }
-    
+
     std::string _to_infix(const std::vector<std::string>& pieces, bool show_consts = true)
     {
         std::stack<std::string> stack;
         bool is_prefix = (expression_type == "prefix");
         std::string result, token;
-        
+
         for (int i = (is_prefix ? (static_cast<int>(pieces.size()) - 1) : 0); (is_prefix ? (i >= 0) : (i < static_cast<int>(pieces.size()))); (is_prefix ? (i--) : (i++)))
         {
             token = pieces[i];
-            
+
             if (std::find(Board::__operators.begin(), Board::__operators.end(), token) == Board::__operators.end()) // leaf
             {
-                if (token.substr(0,5) == "const" && show_consts)
+                if ((token.compare(0, 5, "const") == 0) && show_consts)
                 {
                     stack.push(std::to_string((this->params)(std::stoi(token.substr(5)))));
                 }
@@ -2673,7 +2824,7 @@ struct Board
                     stack.push(token);
                 }
             }
-            
+
             else if (std::find(Board::__unary_operators.begin(), Board::__unary_operators.end(), pieces[i]) != Board::__unary_operators.end()) // Unary operator
             {
                 std::string operand = stack.top();
@@ -2698,10 +2849,10 @@ struct Board
                 stack.push(result);
             }
         }
-        
+
         return stack.top();
     }
-    
+
     std::string _to_infix(const std::vector<std::vector<std::string>>& pieces, bool show_consts = true)
     {
         std::string temp;
@@ -2713,7 +2864,7 @@ struct Board
         temp += _to_infix(pieces[sz], show_consts);
         return temp;
     }
-    
+
     std::string expression(const std::vector<std::vector<std::string>>& pieces, bool show_consts = true)
     {
         std::string temp;
@@ -2725,7 +2876,7 @@ struct Board
         temp += expression(pieces[sz], show_consts);
         return temp;
     }
-    
+
     float expression_evaluator(const Eigen::VectorXf& params, const std::vector<std::string>& pieces, float t) const
     {
         std::stack<float> stack;
@@ -2738,7 +2889,7 @@ struct Board
             assert(token.size());
             if (std::find(Board::__operators.begin(), Board::__operators.end(), token) == Board::__operators.end()) //not an operator, i.e., a leaf
             {
-                if (token.substr(0,5) == "const")
+                if (token.compare(0, 5, "const") == 0)
                 {
                     int temp_idx = std::stoi(token.substr(5));
                     assert(temp_idx < params.size());
@@ -2762,7 +2913,7 @@ struct Board
                 }
                 else if (isFloat(token))
                 {
-                    stack.push(std::stof(token));
+                    stack.push(Stof(token));
                 }
                 else if (token == "x0")
                 {
@@ -2867,7 +3018,7 @@ struct Board
         }
         return stack.top();
     }
-    
+
     Eigen::VectorXf expression_evaluator(const Eigen::VectorXf& params, const std::vector<std::string>& pieces) const
     {
         std::stack<Eigen::VectorXf> stack;
@@ -2876,17 +3027,22 @@ struct Board
         for (int i = (is_prefix ? (static_cast<int>(pieces.size()) - 1) : 0); (is_prefix ? (i >= 0) : (i < static_cast<int>(pieces.size()))); (is_prefix ? (i--) : (i++)))
         {
             token = pieces[i];
-            //            std::cout << "pieces[i] = " << pieces[i] << '\n';
             assert(token.size());
             if (std::find(Board::__operators.begin(), Board::__operators.end(), token) == Board::__operators.end()) //not an operator, i.e., a leaf
             {
-                if (token.substr(0,5) == "const")
+                if (token.compare(0, 5, "const") == 0)
                 {
                     int temp_idx = std::stoi(token.substr(5));
-                    assert(temp_idx < params.size());
+                    if (temp_idx >= params.size())
+                    {
+                        throw std::runtime_error("\ntemp_idx = "+std::to_string(temp_idx)
+                                                 +"\nparams.size() = "+std::to_string(params.size())
+                                                 +"\nnum_consts = "+std::to_string(this->__num_consts())
+                                                 +"\nBoard::expression_dict.size() = "+std::to_string(Board::expression_dict.size()));
+                    }
                     stack.push(Eigen::VectorXf::Ones(Board::data.numRows())*params(temp_idx));
                 }
-                else if (token == "0" || token == "nan" || token == "inf" || token == "-inf")
+                else if (token == "0")
                 {
                     stack.push(Eigen::VectorXf::Zero(Board::data.numRows()));
                 }
@@ -2904,7 +3060,7 @@ struct Board
                 }
                 else if (isFloat(token))
                 {
-                    stack.push(Eigen::VectorXf::Ones(Board::data.numRows())*std::stof(token));
+                    stack.push(Eigen::VectorXf::Ones(Board::data.numRows())*Stof(token));
                 }
                 else
                 {
@@ -2998,21 +3154,14 @@ struct Board
                 }
                 else if (token == "^")
                 {
-                    if ((expression_type == "postfix" && right_operand.isZero(1e-6)) || (expression_type == "prefix" && left_operand.isZero(1e-6)))
-                    {
-                        stack.push(Eigen::VectorXf::Zero(Board::data.numRows()));
-                    }
-                    else
-                    {
-                        stack.push(((expression_type == "postfix") ? (right_operand.array().pow(left_operand.array())) : (left_operand.array().pow(right_operand.array()))));
-                    }
-
+                    stack.push(((expression_type == "postfix") ? (right_operand.array().pow(left_operand.array())) : (left_operand.array().pow(right_operand.array()))));
                 }
             }
         }
+        assert(stack.size());
         return stack.top();
     }
-    
+
     Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> expression_evaluator(const std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& parameters, const std::vector<std::string>& pieces) const
     {
         std::stack<Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>> stack;
@@ -3024,7 +3173,7 @@ struct Board
             assert(token.size());
             if (std::find(Board::__operators.begin(), Board::__operators.end(), token) == Board::__operators.end()) // leaf
             {
-                if (token.substr(0,5) == "const")
+                if (token.compare(0, 5, "const") == 0)
                 {
                     //                    std::cout << "\nparameters[" << const_count << "] = " << parameters[const_count].value() << '\n';
                     stack.push(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>::Constant(Board::data.numRows(), parameters[std::stoi(token.substr(5))]));
@@ -3051,7 +3200,7 @@ struct Board
                 }
                 else if (isFloat(token))
                 {
-                    stack.push(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>::Constant(Board::data.numRows(), std::stof(token)));
+                    stack.push(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>::Constant(Board::data.numRows(), Stof(token)));
                 }
                 else
                 {
@@ -3127,7 +3276,7 @@ struct Board
                 stack.pop();
                 Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> right_operand = stack.top();
                 stack.pop();
-                
+
                 if (token == "+")
                 {
                     stack.push(((expression_type == "postfix") ? (right_operand.array() + left_operand.array()) : (left_operand.array() + right_operand.array())));
@@ -3152,19 +3301,19 @@ struct Board
         }
         return stack.top();
     }
-    
+
     std::vector<Eigen::VectorXf> expression_evaluator(const Eigen::VectorXf& params, const std::vector<std::vector<std::string>>& pieces) const
     {
-        std::vector<Eigen::VectorXf> temp;
         size_t sz = pieces.size();
-        temp.reserve(sz);
+        std::vector<Eigen::VectorXf> temp(sz);
+
         for (size_t idx = 0; idx < sz; idx++)
         {
-            temp.push_back(expression_evaluator(params, pieces[idx]));
+            temp[idx] = expression_evaluator(params, pieces[idx]);
         }
         return temp;
     }
-    
+
     std::vector<Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>> expression_evaluator(const std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& params, const std::vector<std::vector<std::string>>& pieces) const
     {
         std::vector<Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>> temp;
@@ -3176,12 +3325,12 @@ struct Board
         }
         return temp;
     }
-    
+
     Eigen::AutoDiffScalar<Eigen::VectorXf> grad_func(std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>>& inputs)
     {
         return MSE(expression_evaluator(inputs, this->diffeq_result));
     }
-    
+
     /*
      x: parameter vector: (x_0, x_1, ..., x_{x.size()-1})
      g: gradient evaluated at x: (g_0(x_0), g_1(x_1), ..., g_{g.size()-1}(x_{x.size()-1}))
@@ -3190,67 +3339,112 @@ struct Board
     {
         if (this->fit_method == "LBFGS" || this->fit_method == "LBFGSB")
         {
+            assert(grad.size() == x.size());
+            float grad_piece_prefactor = this->isConstTol/(Board::data.numRows()*this->num_objectives);
             float mse = MSE(expression_evaluator(x, this->diffeq_result));
             if (this->fit_grad_method == "naive_numerical")
             {
-                float low_b, temp;
+                float low_b, temp, low_inv_var_b;
                 for (int i = 0; i < x.size(); i++) //finite differences wrt x evaluated at the current values x(i)
                 {
                     //https://stackoverflow.com/a/38855586/18255427
                     temp = x(i);
                     x(i) -= 0.00001f;
-                    low_b = MSE(expression_evaluator(x, this->diffeq_result));
+                    low_inv_var_b = grad_piece_prefactor;
+                    if (low_inv_var_b)
+                    {
+                        low_inv_var_b /= VarianceSum(this->expression_evaluator(x, this->pieces));
+                    }
+                    low_b = MSE(expression_evaluator(x, this->diffeq_result)) + low_inv_var_b;
                     x(i) = temp + 0.00001f;
-                    grad(i) = (MSE(expression_evaluator(x, this->diffeq_result)) - low_b) / 0.00002f ;
+                    low_inv_var_b = grad_piece_prefactor;
+                    if (low_inv_var_b)
+                    {
+                        low_inv_var_b /= VarianceSum(this->expression_evaluator(x, this->pieces));
+                    }
+                    grad(i) = ((MSE(expression_evaluator(x, this->diffeq_result)) + low_inv_var_b) - low_b) / 0.00002f;
                     x(i) = temp;
                 }
             }
-            
-//            else if (this->fit_grad_method == "autodiff")
-//            {
-//                size_t sz = x.size();
-//                std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>> inputs(sz);
-//                inputs.reserve(sz);
-//                for (size_t i = 0; i < sz; i++)
-//                {
-//                    inputs[i].value() = x(i);
-//                    inputs[i].derivatives() = Eigen::VectorXf::Unit(sz, i);
-//                }
-//                grad = grad_func(inputs).derivatives();
-//            }
+
+            else if (this->fit_grad_method == "autodiff")
+            {
+                size_t sz = x.size();
+                std::vector<Eigen::AutoDiffScalar<Eigen::VectorXf>> inputs(sz);
+                inputs.reserve(sz);
+                for (size_t i = 0; i < sz; i++)
+                {
+                    inputs[i].value() = x(i);
+                    inputs[i].derivatives() = Eigen::VectorXf::Unit(sz, i);
+                }
+                grad = grad_func(inputs).derivatives();
+            }
             return mse;
         }
         else if (this->fit_method == "LevenbergMarquardt")
         {
-//            grad = (this->expression_evaluator(x, this->diffeq_result[0]));
-//            std::vector<float> temp(grad.data(), grad.data() + grad.size());
-//
-//            for (size_t jdx = 1; jdx < this->diffeq_result.size(); jdx++)
+//            if (Board::expression_dict.size() >= Board::max_expression_dict_sz)
 //            {
-//                Eigen::VectorXf temp = (this->expression_evaluator(x, this->diffeq_result[jdx]));
-//                for (float kdx: temp)
-//                {
-//                    grad.push_back(kdx);
-//                }
+//                std::scoped_lock str_lock(Board::thread_locker);
+//                puts(("NOW 3326 Board::expression_dict.size() >= Board::max_expression_dict_sz\n(params.size() == num_consts) is "
+//                     +std::to_string(this->params.size() == this->__num_consts())).c_str());
 //            }
-            //have to flatten the std::vector<Eigen::VectorXf> into an std::vector
-            auto temp = this->expression_evaluator(x, this->diffeq_result);
-            std::vector<float> temp_vec;
-            temp_vec.reserve(temp.size() * temp[0].size());
-            for (size_t kdx = 0; kdx < temp.size(); kdx++)
+            auto temp = this->expression_evaluator(x, this->diffeq_result); //std::vector<Eigen::VectorXf>
+            std::vector<Eigen::VectorXf> expr_eval_var;
+            if (this->isConstTol)
             {
-                for (size_t ldx = 0; ldx < temp[kdx].size(); ldx++)
+                expr_eval_var = Variance(this->expression_evaluator(x, this->pieces)); //std::vector<Eigen::VectorXf>
+            }
+            size_t num_cols = temp.size(), num_rows = temp[0].size();
+            size_t num_piece_cols = expr_eval_var.size();
+            size_t num_piece_vals = num_piece_cols*num_rows;
+            float grad_piece_prefactor = (this->isConstTol) ? (this->isConstTol/(num_piece_vals)) : 0.0f;
+            size_t total_cols = num_cols + num_piece_cols;
+            assert((!expr_eval_var.size()) || (num_rows == expr_eval_var[0].size()));
+            assert(num_piece_cols == ((this->isConstTol) ? this->num_objectives : 0));
+            assert(grad.size() == num_rows*total_cols);
+            for (size_t kdx = 0; kdx < num_rows; kdx++) //for each row
+            {
+                for (size_t ldx = 0; ldx < num_cols; ldx++) //first loop over each differential equation value
                 {
-                    temp_vec.push_back(temp[kdx][ldx]);
+                    grad(kdx*total_cols + ldx) = temp[ldx][kdx]; // Assign values directly
+                }
+                if (this->isConstTol)
+                {
+                    for (size_t ldx = num_cols, mdx = 0; ldx < total_cols; ldx++, mdx++) //then loop over each expression value
+                    {
+                        grad(kdx*total_cols + ldx) = (grad_piece_prefactor / expr_eval_var[mdx][kdx]);
+                    }
                 }
             }
-            // Resize `grad` to match the size of `temp_vec`
-            grad.resize(temp_vec.size());
-            grad = Eigen::Map<Eigen::VectorXf>(temp_vec.data(), temp_vec.size());
+
+            /*
+                e.g. Imagine below is data, where first num_cols = 3 columns are temp and last num_piece_cols = 2 columns are expr_eval_var
+                Then num_rows = 7, total_cols = 3+2 = 5
+
+                    1 3 5 1 1
+                    2 1 4 2 1
+                    3 2 2 1 2
+                    4 2 1 3 1
+                    5 2 5 4 1
+                    3 6 4 5 2
+                    1 2 0 2 3
+
+                Then we have
+                grad[(0*5 + 0) = 0] = temp[0][0]
+                grad[(0*5 + 1) = 1] = temp[1][0]
+                grad[(0*5 + 2) = 2] = temp[2][0]
+                grad[(0*5 + 3) = 3] = grad_piece_prefactor/expr_eval_var[0][0]
+                grad[(0*5 + 4) = 4] = grad_piece_prefactor/expr_eval_var[1][0]
+                grad[(1*5 + 0) = 5] = temp[0][1]
+                grad[(1*5 + 1) = 6] = temp[1][1]
+                grad[(1*5 + 2) = 7] = temp[2][1]
+                grad[(1*5 + 3) = 8] = grad_piece_prefactor/expr_eval_var[0][1]
+                grad[(1*5 + 4) = 9] = grad_piece_prefactor/expr_eval_var[1][1]
+            */
         }
         return 0.0f;
     }
-//    
     bool LBFGS()
     {
         bool improved = false;
@@ -3261,7 +3455,7 @@ struct Board
         //https://lbfgspp.statr.me/doc/LineSearchBacktracking_8h_source.html
         LBFGSpp::LBFGSSolver<float, LBFGSpp::LineSearchMoreThuente> solver(param); //LineSearchBacktracking, LineSearchBracketing, LineSearchMoreThuente, LineSearchNocedalWright
         float fx;
-        
+
         Eigen::VectorXf eigenVec = this->params;
         float mse = MSE(expression_evaluator(this->params, this->diffeq_result));
         try
@@ -3270,18 +3464,18 @@ struct Board
         }
         catch (std::runtime_error& e){}
         catch (std::invalid_argument& e){}
-        
-        //        printf("mse = %f -> fx = %f\n", mse, fx);
+
+        //printf("mse = %f -> fx = %f\n", mse, fx);
         if (fx < mse)
         {
-            //            printf("mse = %f -> fx = %f\n", mse, fx);
+            //printf("mse = %f -> fx = %f\n", mse, fx);
             this->params = eigenVec;
             improved = true;
         }
         Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
         return improved;
     }
-    
+
     bool LBFGSB()
     {
         bool improved = false;
@@ -3292,65 +3486,65 @@ struct Board
         //https://lbfgspp.statr.me/doc/LineSearchBacktracking_8h_source.html
         LBFGSpp::LBFGSBSolver<float> solver(param); //LineSearchBacktracking, LineSearchBracketing, LineSearchMoreThuente, LineSearchNocedalWright
         float fx;
-        
+
         Eigen::VectorXf eigenVec = this->params;
         float mse = MSE(expression_evaluator(this->params, this->diffeq_result));
         try
         {
             solver.minimize((*this), eigenVec, fx, Eigen::VectorXf::Constant(eigenVec.size(), -std::numeric_limits<float>::infinity()), Eigen::VectorXf::Constant(eigenVec.size(), std::numeric_limits<float>::infinity()));
-            //            solver.minimize((*this), eigenVec, fx, Eigen::VectorXf::Constant(eigenVec.size(), -10.f), Eigen::VectorXf::Constant(eigenVec.size(), 10.f));
+            //solver.minimize((*this), eigenVec, fx, Eigen::VectorXf::Constant(eigenVec.size(), -10.f), Eigen::VectorXf::Constant(eigenVec.size(), 10.f));
         }
         catch (std::runtime_error& e){}
         catch (std::invalid_argument& e){}
         catch (std::logic_error& e){}
-        
-        //        printf("mse = %f -> fx = %f\n", mse, fx);
+
+        //printf("mse = %f -> fx = %f\n", mse, fx);
         if (fx < mse)
         {
-            //            printf("mse = %f -> fx = %f\n", mse, fx);
+            //printf("mse = %f -> fx = %f\n", mse, fx);
             this->params = eigenVec;
             improved = true;
         }
         Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
         return improved;
     }
-    
+
     int values() const
     {
-        return Board::data.numRows();
+        return Board::data.numRows()*(this->num_diff_eqns + (this->isConstTol ? this->num_objectives : 0));
     }
-    
+
     int df(Eigen::VectorXf &x, Eigen::MatrixXf &fjac)
     {
         float epsilon, temp;
         epsilon = 1e-5f;
-        
+
         for (int i = 0; i < x.size(); i++)
         {
-            //            Eigen::VectorXf xPlus(x);
-            //            xPlus(i) += epsilon;
+            //Eigen::VectorXf xPlus(x);
+            //xPlus(i) += epsilon;
             //
-            //            Eigen::VectorXf xMinus(x);
-            //            xMinus(i) -= epsilon;
-            //            x(i) -= epsilon;
-            
+            //Eigen::VectorXf xMinus(x);
+            //xMinus(i) -= epsilon;
+            //x(i) -= epsilon;
+
             temp = x(i);
-            
+
             x(i) = temp + epsilon;
             Eigen::VectorXf fvecPlus(values());
             operator()(x, fvecPlus);
-            
+
             x(i) = temp - epsilon;
             Eigen::VectorXf fvecMinus(values());
             operator()(x, fvecMinus);
-            
+
             fjac.block(0, i, values(), 1) = std::move((fvecPlus - fvecMinus) / (2.0f * epsilon));
-            
+
             x(i) = temp;
         }
         return 0;
     }
-    
+
     bool LevenbergMarquardt()
     {
         bool improved = false;
@@ -3358,30 +3552,64 @@ struct Board
         Eigen::LevenbergMarquardt<decltype(*this), float> lm(*this);
         float score_before = MSE(expression_evaluator(this->params, this->diffeq_result));
         lm.parameters.maxfev = this->num_fit_iter;
-        //        std::cout << "ftol (Cost function change) = " << lm.parameters.ftol << '\n';
-        //        std::cout << "xtol (Parameters change) = " << lm.parameters.xtol << '\n';
-        
+        //std::cout << "ftol (Cost function change) = " << lm.parameters.ftol << '\n';
+        //std::cout << "xtol (Parameters change) = " << lm.parameters.xtol << '\n';
         lm.minimize(this->params);
-        if (MSE(expression_evaluator(this->params, this->diffeq_result)) < score_before)
+        float score_after = MSE(expression_evaluator(this->params, this->diffeq_result));
+        if (score_after < score_before)
         {
+            //printf("score_before = %f -> score_after = %f\n", score_before, score_after);
             improved = true;
         }
-        
-        //        std::cout << "Iterations = " << lm.nfev << '\n';
+        //std::cout << "Iterations = " << lm.nfev << '\n';
         Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
         return improved;
     }
-    
+
     float fitFunctionToData()
     {
         float score = 0.0f;
-        for (int jdx = 0; jdx < this->pieces.size(); jdx++)
+        bool depends_symb_on_x0 = false;
+        for (int jdx = 0; jdx < this->pieces.size(); jdx++) //loops over each generated symbolic expression
         {
-            ((this->expression_type == "prefix") ? simplifyPN(this->pieces[jdx]) : simplifyRPN(this->pieces[jdx]));
-            for (const auto& piece: this->pieces[jdx]){if (piece.find("nan") != std::string::npos) return score;}
-            //for(const auto& i: this->pieces[jdx]) {std::cout << i << ' ';}puts("");
+            //This block below checks if `this->pieces[jdx]` depends on `x0`.
+            {
+                depends_symb_on_x0 = false;
+                for (const auto& piece: this->pieces[jdx])
+                {
+                    if (piece != "x0")
+                    {
+                        for (int i = 0; i < static_cast<int>(piece.size())-2; i++)
+                        {
+                            //checks if next 3 characters are 'n', 'a', 'n' or 'i', 'n', 'f'
+                            if (((piece[i] == 'n') && (piece[i+1] == 'a') && (piece[i+2] == 'n')) ||
+                                ((piece[i] == 'i') && (piece[i+1] == 'n') && (piece[i+2] == 'f')))
+                            {
+                                this->MSE_curr = FLT_MAX;
+                                return score;
+                            }
+                            //checks if next 3 characters are 'x', '0', * or *, 'x', '0'
+                            else if (((piece[i] == 'x') && (piece[i+1] == '0')) ||
+                                    ((piece[i+1] == 'x') && (piece[i+2] == '0')))
+                            {
+                                depends_symb_on_x0 = true;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        depends_symb_on_x0 = true;
+                    }
+                }
+                //We reject the solution if it doesn't depend on `x0`
+                if (!depends_symb_on_x0)
+                {
+                    this->MSE_curr = FLT_MAX;
+                    return score;
+                }
+            }
             Eigen::VectorXf expression_eval = expression_evaluator(this->params, this->pieces[jdx]);
-            if ((Board::__num_features == 1) && isConstant(expression_eval, sqrt(this->isConstTol))) //Ignore the trivial solution (1-d functions)!
+            if ((Board::__num_features == 1) && isConstant(expression_eval, this->isConstTol)) //Ignore the trivial solution (1-d functions)!
             {
                 this->MSE_curr = FLT_MAX;
                 return score;
@@ -3391,6 +3619,15 @@ struct Board
                 std::vector<int> grasp;
                 for (const std::string& i: Board::__input_vars)
                 {
+                    //Below, we're checking if the independent variable `i` is present in the expression `this->pieces[jdx]`.
+                    //We checked "x0" above; hence, the `(i != "x0")` bit.
+                    if ((i != "x0") && std::find(this->pieces[jdx].begin(), this->pieces[jdx].end(), i) == this->pieces[jdx].end())
+                    {
+                        //then `this->pieces[jdx]` does not depend on `i` so it is a trivial expression -> get out of dodge!
+                        this->MSE_curr = FLT_MAX;
+                        return score;
+                    }
+                    //If the variable `i` is found, we then test the derivative wrt `i` to check if it's 0 within `this->isConstTol` tolerance.
                     if (this->expression_type == "prefix")
                     {
                         this->derivePrefix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
@@ -3399,7 +3636,7 @@ struct Board
                     {
                         this->derivePostfix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
                     }
-                    if (isZero(expression_evaluator(this->params, this->derivat), sqrt(this->isConstTol))) //Ignore the trivial solution (N-d functions)!
+                    if (isZero(expression_evaluator(this->params, this->derivat), this->isConstTol)) //Ignore the trivial solution (N-d functions)!
                     {
                         this->MSE_curr = FLT_MAX;
                         return score;
@@ -3410,8 +3647,11 @@ struct Board
         if (this->params.size())
         {
             this->diffeq_result = diffeq(*this);
-//            if (this->num_consts)
-//            {
+            for (int jdx = 0; jdx < this->diffeq_result.size(); jdx++)
+            {
+                ((this->expression_type == "prefix") ? simplifyPN(this->diffeq_result[jdx]) : simplifyRPN(this->diffeq_result[jdx]));
+            }
+            assert(this->diffeq_result.size() == this->num_diff_eqns);
             bool improved = true;
             if (this->fit_method == "LBFGS")
             {
@@ -3425,95 +3665,92 @@ struct Board
             {
                 improved = LevenbergMarquardt();
             }
-            Eigen::VectorXf temp_vec;
-            
+            Eigen::VectorXf temp_vec; //need to have a back-up vector in case `improved == false` so we can get the score of the expression we just built.
+
             if (improved) //If improved, update the expression_dict with this->params
             {
-                if (Board::expression_dict.contains(this->expression_string))
+                //If the `Board::max_expression_dict_sz` hasn't been exceeded, add it to `Board::expression_dict`
+                if (Board::expression_dict.contains(this->expression_string)) //If the expression has been visited before (it's already in `Board::expression_dict`)
                 {
-                    Board::expression_dict.visit(this->expression_string, [&](auto& x)
+                    Board::expression_dict.visit(this->expression_string, [&](auto& x) //simply update the corresponding parameter vector with
                     {
                         x.second = this->params;
                     });
                 }
-                else
+                else if (Board::expression_dict.size() < Board::max_expression_dict_sz) //Else if there's capacity to add the new expression-params pair to `Board::expression_dict`
                 {
                     Board::expression_dict.insert_or_assign(this->expression_string, this->params);
                 }
             }
-            Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
+            if (Board::expression_dict.contains(this->expression_string))
             {
-                temp_vec = x.second;
-            });
-            std::vector<Eigen::VectorXf> expression_eval = expression_evaluator(temp_vec, this->diffeq_result);
-            for (size_t jdx = 0; jdx < expression_eval.size(); ++jdx)
-            {
-                if (isConstant(expression_eval[jdx], sqrt(this->isConstTol)))
+                Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
                 {
-                    this->MSE_curr = FLT_MAX;
-                    return score;
-                }
+                    temp_vec = x.second;
+                });
             }
+            else //Once `Board::expression_dict.size() >= Board::max_expression_dict_sz`, this can happen
+            {
+                temp_vec.setOnes(this->params.size());
+            }
+            std::vector<Eigen::VectorXf> expression_eval = expression_evaluator(temp_vec, this->diffeq_result);
             score = loss_func(expression_eval[0]);
+//            std::cout << "expression values for (" << this->_to_infix(this->diffeq_result[0], false) << ") = " << hstack(Board::data["x0"], expression_eval[0]) << "\nand params = " << temp_vec << "\nand pieces[0] = " << this->_to_infix(this->pieces[0], false) << '\n';
             if (isInvalid(score))
             {
                 this->MSE_curr = FLT_MAX;
                 return 0.0f;
             }
-            
+            else
+            {
+                assert(score >= 0.0f);
+            }
+
             this->MSE_curr = (1.0f/score) - 1.0f;
             float temp;
             for (size_t jdx = 1; jdx < expression_eval.size(); ++jdx)
             {
                 temp = loss_func(expression_eval[jdx]);
+                
                 if (isInvalid(temp))
                 {
                     this->MSE_curr = FLT_MAX;
                     return 0.0f;
                 }
+                else
+                {
+                    assert(temp >= 0.0f);
+                }
                 score += temp;
                 this->MSE_curr += (1.0f/temp) - 1.0f;
             }
+            this->params = temp_vec; //copy `temp_vec` back into `this->params` for displaying purposes
         }
         else
         {
             this->diffeq_result = diffeq(*this);
+            assert(this->diffeq_result.size() == this->num_diff_eqns);
             score = 0.0f;
             float temp;
             this->MSE_curr = 0.0f;
             for (int jdx = 0; jdx < this->diffeq_result.size(); jdx++)
             {
-//                puts("hi");
+                ((this->expression_type == "prefix") ? simplifyPN(this->diffeq_result[jdx]) : simplifyRPN(this->diffeq_result[jdx]));
                 auto temp_data = expression_evaluator(this->params, this->diffeq_result[jdx]);
-//                std::cout << Board::data << '\n';
-//                for (const std::string& jd: this->diffeq_result[jdx]){std::cout << jd << ' ';}puts("");
-//                for (int i = 0; i < temp_data.size(); i++){std::cout << ((i == temp_data.size() - 1) ? std::to_string(temp_data[i]) : std::to_string(temp_data[i]) + ", ");}puts("");
-//                std::cout << "result with x0 = 1.49012e-07 is " << expression_evaluator(this->params, this->diffeq_result[jdx], 1.49012e-07) << '\n';
-//                exit(1);
                 temp = loss_func(temp_data);
                 if (isInvalid(temp))
                 {
                     this->MSE_curr = FLT_MAX;
-//                    puts("hi");
                     return 0.0f;
                 }
                 score += temp;
                 this->MSE_curr += ((1.0f/temp) - 1.0f);
             }
-//            if (score > 2.9f)
-//            {
-//                std::cout << Board::data << '\n';
-//                auto temp_data = expression_evaluator(this->params, this->diffeq_result[0]);
-//                for (const std::string& jd: this->diffeq_result[0]){std::cout << jd << ' ';}puts("");
-//                for (int i = 0; i < temp_data.size(); i++){std::cout << ((i == temp_data.size() - 1) ? std::to_string(temp_data[i]) : std::to_string(temp_data[i]) + ", ");}puts("");
-//                std::cout << "result with x0 = 0.0001f is " << expression_evaluator(this->params, this->diffeq_result[0], 0.0001f) << '\n';
-//                exit(1);
-//            }
         }
 
         return score;
     }
-    
+
     /*
      Check whether the given player has created a
      complete (depth self.n) expression (again), and
@@ -3537,7 +3774,6 @@ struct Board
         }
         assert(this->stack.size() > idx);
         auto [depth, complete] =  ((this->expression_type == "prefix") ? getPNdepth(pieces[idx], idx, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/) : getRPNdepth(pieces[idx], idx, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/)); //structured binding :)
-//        std::cout << "depth = " << depth << ", complete = " << complete << "\n";
         if (!complete || depth < this->n[idx]) //Expression not complete
         {
             return -1.0f;
@@ -3552,38 +3788,101 @@ struct Board
             {
                 //whenever. TODO: call some plotting function, e.g. ROOT CERN plotting API, Matplotlib from the Python-C API, Plotly if we want a web application for this, etc. The plotting function could also have the fitted constants (rounded of course), but then this if statement would need to be moved down to below the fitFunctionToData call in this `complete_status` method.
             }
-            
             if (is_primary)
             {
-                if (this->num_consts)
+                if (this->simplify_original)
+                {
+                    for (int jdx = 0; jdx < this->pieces.size(); jdx++)
+                    {
+                        ((this->expression_type == "prefix") ? simplifyPN(this->pieces[jdx]) : simplifyRPN(this->pieces[jdx])); //simplify expression
+                    }
+                }
+                if (this->num_consts_diff || this->use_const_pieces) //If I have tokens that need to be optimized
                 {
                     this->expression_string.clear();
                     this->expression_string.reserve(8*pieces.size());
-                    
+
                     for (int jdx = 0; jdx < this->pieces.size(); jdx++)
                     {
-                        for (std::string& token: this->pieces[jdx])
+                        for (const std::string& token: this->pieces[jdx])
                         {
                             this->expression_string += token+" ";
                         }
                         this->expression_string += ((jdx < this->pieces.size() - 1) ? ", " : "");
                     }
-                    
-                    if (!Board::expression_dict.contains(this->expression_string))
+
+                    if (!Board::expression_dict.contains(this->expression_string)) //If the generated expression has NOT been generated before...
                     {
-                        Board::expression_dict.insert_or_assign(this->expression_string, Eigen::VectorXf());
+                        //insert it into the shared dictionary of `{expressions: best_fit_params}` key-value pairs...
+                        try //MAYBE: Might be able to remove this try-catch block itf.
+                        {
+                            if (Board::expression_dict.size() < Board::max_expression_dict_sz) //if the capacity of the shared dict has not been exceeded.
+                            {
+                                Board::expression_dict.insert_or_assign(this->expression_string, Eigen::VectorXf());
+                            }
+                        }
+                        catch (const std::bad_alloc& e)
+                        {
+                            std::scoped_lock str_lock(Board::thread_locker);
+                            std::cerr << "Inserting into Board::expression_dict failed, Board::expression_dict.size() = "
+                                      << Board::expression_dict.size() << '\n';
+                            exit(1);
+                        }
                     }
-                    
-                    Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
+                    if (Board::expression_dict.contains(this->expression_string))
                     {
-                        this->params = x.second;
-                    });
-                    
-                    if (!this->params.size())
-                    {
-                        this->params.setOnes(this->num_consts);
-                        Board::expression_dict.insert_or_assign(this->expression_string, this->params);
+                        Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
+                        {
+                            this->params = x.second;
+                        });
                     }
+
+                    int piece_const_counter = this->num_consts_diff;
+                    if (this->use_const_pieces)
+                    {
+                        for (int jdx = 0; jdx < this->pieces.size(); jdx++)
+                        {
+                            for (std::string& token: this->pieces[jdx])
+                            {
+                                if (token.compare(0, 5, "const") == 0)
+                                {
+                                    if (token.size() == 5)
+                                    {
+                                        token += std::to_string(piece_const_counter++);
+                                    }
+                                    else //MAYBE: Might be able to remove this else-statement itf.
+                                    {
+                                        std::string int_suffix = token.substr(5);
+                                        int temp_idx = std::stoi(int_suffix);
+                                        if (temp_idx >= this->num_consts_diff)
+                                        {
+                                            throw std::runtime_error("Somehow, there's a const token with a suffix integer equal to " + std::to_string(temp_idx));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (this->params.size() != piece_const_counter)
+                    {
+                        this->params.setOnes(piece_const_counter);
+                        try //MAYBE: Might be able to remove this try-catch block itf.
+                        {
+                            if (Board::expression_dict.size() < Board::max_expression_dict_sz)
+                            {
+                                Board::expression_dict.insert_or_assign(this->expression_string, this->params);
+                            }
+                        }
+                        catch (const std::bad_alloc& e)
+                        {
+                            std::scoped_lock str_lock(Board::thread_locker);
+                            std::cerr << "Inserting into Board::expression_dict failed, Board::expression_dict.size() = "
+                                      << Board::expression_dict.size() << '\n';
+                            exit(1);
+                        }
+                    }
+                    assert((this->params.size() == piece_const_counter));
                 }
                 return fitFunctionToData();
             }
@@ -3598,19 +3897,19 @@ struct Board
     {
         return Board::data[i];
     }
-    
+
     friend std::ostream& operator<<(std::ostream& os, const Board& b)
     {
         return (os << b.data);
     }
-    
+
     //Function to compute the LGB or RGB, from https://www.jstor.org/stable/43998756
     //(top of pg. 165)
-    void GB(size_t z, size_t& ind, const std::vector<std::string>& individual)
+    void GB(size_t z, int& ind, const std::vector<std::string>& individual)
     {
         do
         {
-            ind = ((expression_type == "prefix") ? ind+1 : ind-1);
+            ind = ((expression_type == "prefix") ? std::min(static_cast<int>(individual.size()) - 1, ind+1) : std::max(0, ind-1));
             if (is_unary(individual[ind]))
             {
                 GB(1, ind, individual);
@@ -3622,13 +3921,13 @@ struct Board
             --z;
         } while (z);
     }
-    
+
     //Computes the grasp of an arbitrary element pieces[i],
     //from https://www.jstor.org/stable/43998756 (bottom of pg. 165)
-    int GR(size_t i, const std::vector<std::string>& individual)
+    int GR(int i, const std::vector<std::string>& individual)
     {
-        size_t start = i;
-        size_t& ptr_lgb = start;
+        int start = i;
+        int& ptr_lgb = start;
         if (is_unary(individual[i]))
         {
             GB(1, ptr_lgb, individual);
@@ -3639,17 +3938,18 @@ struct Board
         }
         return ((expression_type == "prefix") ? ( ptr_lgb - i) : (i - ptr_lgb));
     }
-    
+
     //Adds pairs containing the starting and stopping indices for each
     //depth-n sub-expression in the expression individual
     void get_indices(std::vector<std::pair<int, int>>& sub_exprs, std::vector<std::string>& individual, int idx)
     {
-        size_t temp;
-        for (size_t k = 0; k < individual.size(); k++)
+        int temp;
+        int sz = static_cast<int>(individual.size());
+        for (int k = 0; k < sz; k++)
         {
             temp = k; //we don't want to change k
-            size_t& ptr_GB = temp;
-            
+            int& ptr_GB = temp;
+
             if (is_unary(individual[k]))
             {
                 GB(1, ptr_GB, individual);
@@ -3663,22 +3963,21 @@ struct Board
                 sub_exprs.push_back(std::make_pair(k, k));
                 continue;
             }
-            
+
             auto [start, stop] = std::make_pair( std::min(k, ptr_GB), std::max(k, ptr_GB));
-            //            std::cout << "start, stop = " << start << " , " << stop << '\n';
-            auto [depth, complete] =  ((expression_type == "prefix") ? getPNdepth(individual, idx, start, stop+1, false /*cache*/) : getRPNdepth(individual, idx, start, stop+1));
-            
+            auto [depth, complete] =  ((expression_type == "prefix") ? getPNdepth(individual, idx, start, stop+1, false /*cache*/) : getRPNdepth(individual, idx, start, stop+1, false /*cache*/));
+
             if (complete && (depth == this->n[idx]))
             {
                 sub_exprs.push_back(std::make_pair(start, stop));
             }
         }
     }
-    
+
     bool areDerivatRangesEqual(int start_idx_1, int start_idx_2, int num_steps)
     {
         int stop_idx_1 = start_idx_1 + num_steps;
-        
+
         for (int i = start_idx_1, j = start_idx_2; i < stop_idx_1; i++, j++)
         {
             if (derivat[i] != derivat[j])
@@ -3688,11 +3987,11 @@ struct Board
         }
         return true;
     }
-    
+
     bool areExpressionRangesEqual(int start_idx_1, int start_idx_2, int num_steps, const std::vector<std::string>& expression)
     {
         int stop_idx_1 = start_idx_1 + num_steps;
-        
+
         for (int i = start_idx_1, j = start_idx_2; i < stop_idx_1; i++, j++)
         {
             if (expression[i] != expression[j])
@@ -3702,7 +4001,7 @@ struct Board
         }
         return true;
     }
-    
+
     void setPrefixGR(const std::vector<std::string>& prefix, std::vector<int>& grasp)
     {
         grasp.reserve(prefix.size());
@@ -3711,7 +4010,7 @@ struct Board
             grasp.push_back(GR(k, prefix));
         }
     }
-    
+
     /*
      low and up: lower and upper Index bounds, respectively, for the piece of the array prefix which is to be the subject of the processing.
      dx: string representing the variable by which the derivation is to be made. (The derivative is made wrt dx)
@@ -3742,7 +4041,7 @@ struct Board
         //If the grasp of an arbitrary prefix[i] is greater than N, then at least one of its argument heads is also an operator.
         //Example: If the grasp of any binary operator prefix[i] is greater than 2, then at least one of the two preceding elements in the RPN of the expression (prefix[i-1] and prefix[i-2]) is also an operator (unary or binary).
         //prefix[numElements] is certainly an operator (unary or binary)
-        
+
         //if prefix[up] is a binary operator, then:
         //the head of its second argument (let's call it op2) is equal to prefix[up-1]
         //then the grasped elements of op2 are the elements from prefix[up-1-grasp[up-1]] to prefix[up-1]
@@ -3756,13 +4055,13 @@ struct Board
         //so prefix[up-grasp(op2)-2] = prefix[9-5-2] = prefix[2] = "*" is the head of the first argument of "+" and so the grasped elements
         //of prefix[up-grasp(op2)-2] are the elements [prefix[low] = prefix[0], prefix[up-grasp(op2)-2] = prefix[9-5-2] = prefix[2]]
         //i.e., the elements {"x", "x", "*"}
-        
+
         if (std::find(prefix.begin(), prefix.end(), dx) == prefix.end())
         {
             this->derivat.push_back("0");
             return;
         }
-        
+
         if (prefix[low] == "+" || prefix[low] == "-")
         {
             int op_idx = this->derivat.size();
@@ -3774,16 +4073,16 @@ struct Board
             derivePrefixHelper(temp+1, temp+1+grasp[temp+1], dx, prefix, grasp, true); /* +/- x' y' */
             int y_prime_high = derivat.size();
             int step;
-            
+
             /*
              Simplification cases:
-             
+
              1.) y' == 0, +/-, x'
              2.) x' == 0,   +, y'
              3.) x' == 0,   -, ~ y'
-             
+
              */
-            
+
             if (derivat[x_prime_high] == "0") //1.) +/- x' 0 -> x'
             {
                 //            puts("hi 147");
@@ -3798,7 +4097,7 @@ struct Board
                 }
                 derivat.erase(derivat.begin() + op_idx); //remove +/- operator at beginning
             }
-            
+
             else if (derivat[x_prime_low] == "0") //2.) and 3.)
             {
                 //            puts("hi 162");
@@ -3907,7 +4206,7 @@ struct Board
                 derivat.pop_back(); //remove "0"
             }
         }
-        
+
         else if (prefix[low] == "/")
         {
             int div_idx = derivat.size();
@@ -3985,7 +4284,7 @@ struct Board
                     derivat.pop_back(); //remove the "1"
                 }
             }
-            
+
             if (((k = (x_low - x_prime_low)) == (static_cast<int>(derivat.size()) - (x_low - 1))) && (areDerivatRangesEqual(x_prime_low - 1, x_low - 1, k))) //- thing1 thing1 -> 0
             {
                 //            puts("hi 367");
@@ -4030,7 +4329,7 @@ struct Board
                 }
             }
         }
-        
+
         else if (prefix[low] == "^")
         {
             derivat.push_back("*"); /* * */
@@ -4119,7 +4418,7 @@ struct Board
                 derivat.pop_back(); //erasing the "1"
             }
         }
-        
+
         else if (prefix[low] == "cos")
         {
             derivat.push_back("*"); /* * */
@@ -4145,7 +4444,7 @@ struct Board
                 derivat.erase(derivat.begin() + x_prime_low - 1, derivat.begin() + x_prime_low + 1); //erase "*" and "1"
             }
         }
-        
+
         else if (prefix[low] == "sin")
         {
             derivat.push_back("*"); /* * */
@@ -4170,7 +4469,7 @@ struct Board
                 derivat.erase(derivat.begin() + x_prime_low - 1, derivat.begin() + x_prime_low + 1); //erase "*" and "1"
             }
         }
-        
+
         else if (prefix[low] == "sqrt")
         {
             derivat.push_back("/");         /* / */
@@ -4192,7 +4491,7 @@ struct Board
                 derivat.push_back(prefix[k]);
             }
         }
-        
+
         else if (prefix[low] == "log" || prefix[low] == "ln")
         {
             derivat.push_back("/");               /* / */
@@ -4220,7 +4519,7 @@ struct Board
                 derivat.erase(derivat.begin() + x_prime_low, derivat.end()); //delete the rest
             }
         }
-        
+
         else if (prefix[low] == "asin" || prefix[low] == "arcsin")
         {
             derivat.push_back("/");   /* / */
@@ -4247,7 +4546,7 @@ struct Board
                 derivat.push_back(prefix[k]);
             }
         }
-        
+
         else if (prefix[low] == "acos" || prefix[low] == "arccos")
         {
             derivat.push_back("~");   /* ~ */
@@ -4275,7 +4574,7 @@ struct Board
                 derivat.push_back(prefix[k]);
             }
         }
-        
+
         else if (prefix[low] == "tanh")
         {
             derivat.push_back("*");      //*
@@ -4306,7 +4605,7 @@ struct Board
                 derivat.erase(derivat.begin() + x_prime_low - 1, derivat.begin() + x_prime_low + 1); //erase "*" and "1"
             }
         }
-        
+
         else if (prefix[low] == "sech")
         {
             derivat.push_back("*"); //*
@@ -4338,7 +4637,7 @@ struct Board
                 derivat.erase(derivat.begin() + x_prime_low - 1, derivat.begin() + x_prime_low + 1); //erase "*" and "1"
             }
         }
-        
+
         else if (prefix[low] == "exp")
         {
             derivat.push_back("*");               //*
@@ -4363,7 +4662,7 @@ struct Board
                 derivat.erase(derivat.begin() + x_prime_low - 1, derivat.begin() + x_prime_low + 1); //erase "*" and "1"
             }
         }
-        
+
         else if (prefix[low] == "~")
         {
             int temp = low+1;
@@ -4377,7 +4676,7 @@ struct Board
                 derivat.erase(derivat.begin() + un_minus_idx, derivat.begin() + x_prime_low + 1); //erase the two "~"
             }
         }
-        
+
         else
         {
             if (prefix[low] == dx)
@@ -4390,12 +4689,12 @@ struct Board
             }
         }
     }
-    
+
     void derivePrefix(int low, int up, const std::string& dx, const std::vector<std::string>& prefix, std::vector<int>& grasp)
     {
         derivePrefixHelper(low, up, dx, prefix, grasp, false);
     }
-    
+
     void setPostfixGR(const std::vector<std::string>& postfix, std::vector<int>& grasp)
     {
         grasp.reserve(postfix.size()); //grasp[k] = GR( postfix[k]), k = 1, ... ,i.
@@ -4406,7 +4705,7 @@ struct Board
             grasp.push_back(GR(k, postfix));
         }
     }
-    
+
     /*
      low and up: lower and upper Index bounds, respectively, for the piece of the array postfix which is to be the subject of the processing.
      dx: string representing the variable by which the derivation is to be made. (The derivative is made wrt dx)
@@ -4437,7 +4736,7 @@ struct Board
         //If the grasp of an arbitrary postfix[i] is greater than N, then at least one of its argument heads is also an operator.
         //Example: If the grasp of any binary operator postfix[i] is greater than 2, then at least one of the two preceding elements in the RPN of the expression (postfix[i-1] and postfix[i-2]) is also an operator (unary or binary).
         //postfix[numElements] is certainly an operator (unary or binary)
-        
+
         //if postfix[up] is a binary operator, then:
         //the head of its second argument (let's call it op2) is equal to postfix[up-1]
         //then the grasped elements of op2 are the elements from postfix[up-1-grasp[up-1]] to postfix[up-1]
@@ -4451,13 +4750,13 @@ struct Board
         //so postfix[up-grasp(op2)-2] = postfix[9-5-2] = postfix[2] = "*" is the head of the first argument of "+" and so the grasped elements
         //of postfix[up-grasp(op2)-2] are the elements [(postfix[low] = postfix[0], postfix[up-grasp(op2)-2] = postfix[9-5-2] = postfix[2]]
         //i.e., the elements {"x", "x", "*"}
-        
+
         if (std::find(postfix.begin(), postfix.end(), dx) == postfix.end())
         {
             this->derivat.push_back("0");
             return;
         }
-        
+
         if (postfix[up] == "+" || postfix[up] == "-")
         {
             int x_prime_low = derivat.size();
@@ -4466,22 +4765,22 @@ struct Board
             derivePostfixHelper(up-1-grasp[up-1], up-1, dx, postfix, grasp, true); /*Putting y'*/
             int y_prime_high = derivat.size();
             int step;
-            
+
             /*
              Simplification cases:
-             
+
              1.) y' == 0, +/-, x'
              2.) x' == 0,   +, y'
              3.) x' == 0,   -, y' ~
-             
+
              */
-            
+
             if (derivat.back() == "0") //1.) x' 0 + -> x'
             {
                 //            puts("hi 145");
                 derivat.pop_back();
             }
-            
+
             else if (derivat[x_prime_high - 1] == "0")
             {
                 //            puts("hi 151");
@@ -4493,14 +4792,14 @@ struct Board
                     derivat.push_back("~"); //0 y - -> y ~
                 }
             }
-            
+
             else if ((postfix[up] == "-") && ((step = (x_prime_high - x_prime_low)) == (y_prime_high - x_prime_high)) && (areDerivatRangesEqual(x_prime_low, x_prime_high, step)))
             {
                 //                puts("hi 180");
                 derivat[x_prime_low] = "0"; //change first symbol of x' to 0
                 derivat.erase(derivat.begin() + x_prime_low + 1, derivat.begin() + y_prime_high); //erase the rest of x' and y'
             }
-            
+
             else
             {
                 derivat.push_back(postfix[up]);
@@ -4543,7 +4842,7 @@ struct Board
                     derivat.push_back("*"); /* x y' "*" */
                 }
             }
-            
+
             int x_prime_low = derivat.size();
             derivePostfixHelper(low, up-2-grasp[up-1], dx, postfix, grasp, true); /* x y' "*" x' */
             if (derivat.back() == "0") //0 y * -> 0
@@ -4593,7 +4892,7 @@ struct Board
                 derivat.push_back("+"); /* x y' "*" x' y "*" + */
             }
         }
-        
+
         else if (postfix[up] == "/")
         {
             int x_prime_low = derivat.size();
@@ -4706,7 +5005,7 @@ struct Board
                 }
             }
         }
-        
+
         else if (postfix[up] == "^")
         {
             int k;
@@ -4749,7 +5048,7 @@ struct Board
                     derivat.push_back("^"); /* x y ^ */
                 }
             }
-            
+
             std::vector<std::string> postfix_temp;
             std::vector<int> grasp_temp;
             size_t reserve_amount = up+2-low; //up-low -> x and y, 2 -> ln and *, => up+2-low -> x ln y *
@@ -4791,7 +5090,7 @@ struct Board
                 derivat.push_back("*"); /* x y ^ (x ln y *)' * */
             }
         }
-        
+
         else if (postfix[up] == "cos")
         {
             derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
@@ -4817,7 +5116,7 @@ struct Board
                 derivat.push_back("*"); /* x' x sin ~ * */
             }
         }
-        
+
         else if (postfix[up] == "sin")
         {
             derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
@@ -4842,7 +5141,7 @@ struct Board
                 derivat.push_back("*"); /* x' x cos * */
             }
         }
-        
+
         else if (postfix[up] == "sqrt")
         {
             derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
@@ -4860,7 +5159,7 @@ struct Board
             derivat.push_back("*");       /* x' 2 x sqrt * */
             derivat.push_back("/");       /* x' 2 x sqrt * / */
         }
-        
+
         else if (postfix[up] == "log" || postfix[up] == "ln")
         {
             int x_prime_low = derivat.size();
@@ -4884,10 +5183,10 @@ struct Board
                 derivat.erase(derivat.begin() + x_prime_low + 1, derivat.end()); //erase the rest
                 return;
             }
-            
+
             derivat.push_back("/");               /* x' x / */
         }
-        
+
         else if (postfix[up] == "asin" || postfix[up] == "arcsin")
         {
             derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
@@ -4910,7 +5209,7 @@ struct Board
             derivat.push_back("sqrt");   /* x' 1 x x * - sqrt */
             derivat.push_back("/");   /* x' 1 x x * - sqrt / */
         }
-        
+
         else if (postfix[up] == "acos" || postfix[up] == "arccos")
         {
             derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
@@ -4934,7 +5233,7 @@ struct Board
             derivat.push_back("/");   /* x' 1 x x * - sqrt / */
             derivat.push_back("~");   /* x' 1 x x * - sqrt / ~ */
         }
-        
+
         else if (postfix[up] == "tanh")
         {
             derivePostfixHelper(low, up-1, dx, postfix, grasp, true); //x'
@@ -4965,7 +5264,7 @@ struct Board
                 derivat.push_back("*");                 //x' x sech ~ x tanh * *
             }
         }
-        
+
         else if (postfix[up] == "sech")
         {
             derivePostfixHelper(low, up-1, dx, postfix, grasp, true); //x'
@@ -4997,7 +5296,7 @@ struct Board
                 derivat.push_back("*");                 //x' x sech ~ x tanh * *
             }
         }
-        
+
         else if (postfix[up] == "exp")
         {
             derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
@@ -5022,7 +5321,7 @@ struct Board
                 derivat.push_back("*");               /* x' x exp * */
             }
         }
-        
+
         else if (postfix[up] == "~")
         {
             derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
@@ -5035,7 +5334,7 @@ struct Board
                 derivat.push_back(postfix[up]); /* x' ~ */
             }
         }
-        
+
         else
         {
             if (postfix[up] == dx)
@@ -5048,12 +5347,414 @@ struct Board
             }
         }
     }
-    
+
     void derivePostfix(int low, int up, const std::string& dx, const std::vector<std::string>& postfix, std::vector<int>& grasp)
     {
         derivePostfixHelper(low, up, dx, postfix, grasp, false);
     }
 };
+
+/*
+||===================================================================================================================================||
+|| Equations from here (14-15): https://pubs.aip.org/aip/pop/article/23/3/032102/1015921/Laser-propagation-and-soliton-generation-in ||
+||===================================================================================================================================||
+
+ Infix: ∂^2(tanh(u)*((1/sech(u)) - α))/∂ξ^2 + ω_squared_factor*n*(tanh(u)*((1/sech(u)) - α)) - (n/(1+ρ_i*α))*(tanh(u)*(1+(ρ_i/sech(u))))
+ Postfix: u tanh 1 u sech / α - * ∂^2/∂ξ^2 ω_squared_factor n * u tanh 1 u sech / α - * * + n 1 ρ_i α * + / u tanh 1 ρ_i u sech / + * * -
+
+ Infix: c_s_squared*ln(n) - ρ_i*((1-(1/sech(u))) + (α/2)*tanh^2(u) - (ρ_i*((tanh(u)*((1/sech(u)) - α))^2))/(2*(1+ρ_i*α)))
+ Postfix: c_s_squared n ln * ρ_i 1 1 u sech / - α 2 / u tanh 2 ^ * + ρ_i u tanh 1 u sech / α - * 2 ^ * 2 1 ρ_i α * + * / - * -
+
+ Infix: tanh(u(ξ_min))*((1/sech(u(ξ_min))) - α*const0)
+ Postfix: u(ξ_min) tanh 1 u(ξ_min) sech / α const0 * - *
+
+ Infix: tanh(u(ξ_max))*((1/sech(u(ξ_max))) - α*const0)
+ Postfix: u(ξ_max) tanh 1 u(ξ_max) sech / α const0 * - *
+
+ Infix: ((1/sech(u(ξ_min))) - α*const0*sech^2(u(ξ_min)))*∂u(x_min)/∂ξ
+ Postfix: 1 u(ξ_min) sech / α const0 * u(ξ_min) sech 2 ^ * - ∂u(x_min)/∂ξ *
+
+ Infix: ((1/sech(u(ξ_max))) - α*const0*sech^2(u(ξ_max)))*∂u(x_max)/∂ξ
+ Postfix: 1 u(ξ_max) sech / α const0 * u(ξ_max) sech 2 ^ * - ∂u(x_max)/∂ξ *
+
+// Infix: (tanh(u)*((1/sech(u)) - α))^2
+// Postfix: u tanh 1 u sech / α - * 2 ^
+
+ Infix: (n(ξ) - n(-ξ))^2
+ Postfix: n(ξ) n(-ξ) - 2 ^
+
+ Infix: (((n(ξ)/1) - 1) - x1)^2
+ Postfix: n(ξ) 1 / 1 - x1 - 2 ^
+
+ Infix: ((tanh(u)*((1/sech(u)) - α*const0)) - x2)^2
+ Postfix: u tanh 1 u sech / α const0 * - * x2 - 2 ^
+
+ {x0: ξ}
+ {x.pieces[0]: u, x.pieces[1]: n}
+
+*/
+std::vector<std::vector<std::string>> SolitonWaveFengEq14and15Laser(Board& x)
+{
+    //std::vector<std::vector<std::string>> results(10); //2 equations for the ODE, 4 equations for the boundary conditions, 2 equations for symmetry of a(u) and n respectively, 2 equations for data
+    std::vector<std::vector<std::string>> results(9); //2 equations for the ODE, 4 equations for the boundary conditions, 1 equation for symmetry of n respectively, 2 equations for data
+    for (int i = 0; i < results.size(); i++){results[i].reserve(100);}
+    std::vector<std::string> temp, temp_prime;
+    temp.reserve(100);
+    temp_prime.reserve(100);
+    std::vector<int> grasp;
+    std::vector<std::string> R_prime;
+    /*
+      For parameters commented-out below (first 2 equations only):
+       - Best score = 0.997519, MSE = 2.17869e+27
+       - Best expression = ((-0.416147 * x0) / -31.415920), tanh(sech(x0))
+
+        //constexpr const char* rho = "0.000544662309"; // 1/1836, Figs 10-11 caption, https://www.bing.com/search?q=9.1e-31%2F%201.67e-27%20&qs=n&form=QBRE&sp=-1&ghc=1&lq=0&pq=9.1e-31%2F%201.67e-27%20&sc=0-18&sk=&cvid=09FAD78B6CC6414E98D1BED802D49D1C
+        //constexpr const char* omega_squared_factor_for_omega_0_point_8_omega_pe = "2.26016865e-7"; //0.8^2 * 4*pi*(q_e^2 / m_e), Figs 10-11 caption "ω = 0.8*ω_{pe}", ω_{pe} = (4*pi*(n_e=n)*(q_e^2))/(m_e), see "III. PROPAGATION MODES", https://www.bing.com/search?q=(((-1.6e-19)%5E2)%2F(9.109382902843941771e-31))*(.8%5E2)*(4*pi)&qs=n&form=QBRE&sp=-1&lq=0&pq=(((-1.6e-19)%5E2)%2F(9.109382902843941771e-31))*(.8%5E2)*(4*pi)&sc=0-57&sk=&cvid=E84D46D8A3F04F38ABE1297CC3515859
+        //constexpr const char* omega_squared_factor = omega_squared_factor_for_omega_0_point_8_omega_pe;
+        //constexpr const char* cs_squared_factor_for_rho_i_1_over_1836_v_te_0_point_05c_v_ti_0_point_001c = "2.12255036e11"; //(2.99792458e8*2.99792458e8)*(((.05*.05)/1836) + (.001*.001)), https://www.bing.com/search?q=(2.99792458e8*2.99792458e8)*(((.05*.05)%2F1836)%20%2B%20(.001*.001))&qs=n&form=QBRE&sp=-1&lq=0&pq=(2.99792458e8*2.99792458e8)*(((.05*.05)%2F1836)%20%2B%20(.001*.001))&sc=0-60&sk=&cvid=A05685C4D5D440BC9810452F04051A5E
+        //constexpr const char* cs_squared = cs_squared_factor_for_rho_i_1_over_1836_v_te_0_point_05c_v_ti_0_point_001c;
+        //constexpr const char* alpha_0 = "0";
+        //constexpr const char* alpha = alpha_0;
+        //constexpr const char* one_plus_rho_i_times_alpha_for_rho_i_1_over_1836_alpha_0 = "1"; //1 + ρ_i*0 = 1
+        //constexpr const char* one_plus_rho_i_times_alpha = one_plus_rho_i_times_alpha_for_rho_i_1_over_1836_alpha_0; //1 + ρ_i*α
+    */
+
+    /*
+      For parameters below (first 6 equations only)
+        - Best score = 5.1745, MSE = 3.46556
+        - Best expression = arccos((0.000004 ^ sech(x0))), exp(~(sin(cos(x0))))
+        - Best expression (original format) = 0.000004 x0 sech ^ arccos, x0 cos sin ~ exp
+
+      For parameters below (first 8 equations)
+        - Best score = 7.99935, MSE = 0.000654101
+        - Best expression = (1 / (-10.594090 / arcsin(sech(x0)))), cos((sech(x0) - (cos(1) - sech(x0))))
+        - Best expression (original format) = 1 -10.594090 x0 sech arcsin / /, x0 sech 1 cos x0 sech - - cos
+
+      For parameters below (all 10 equations)
+        - Best score = 9.99802, MSE = 0.00198078
+        - Best expression = (cos(1.559132) * sech((x0 * 0.774245))), sech((sech(x0) * (0.157922 ^ cos(4))))
+        - Best expression (original format) = 1.559132 cos x0 0.774245 * sech *, x0 sech 0.157922 4 cos ^ * sech
+
+      For parameters below (first 6 equations and last 3 equations WITH `const0`)
+        - Best score = 9.99802, MSE = 0.00198078
+        - Best expression = (cos(1.559132) * sech((x0 * 0.774245))), sech((sech(x0) * (0.157922 ^ cos(4))))
+        - Best expression (original format) = 1.559132 cos x0 0.774245 * sech *, x0 sech 0.157922 4 cos ^ * sech
+    */
+    constexpr const char* rho = "0.000544662309"; // 1/1836, Figs 10-11 caption, https://www.bing.com/search?q=9.1e-31%2F%201.67e-27%20&qs=n&form=QBRE&sp=-1&ghc=1&lq=0&pq=9.1e-31%2F%201.67e-27%20&sc=0-18&sk=&cvid=09FAD78B6CC6414E98D1BED802D49D1C
+    constexpr const char* omega_squared_factor_for_omega_0_point_8_omega_pe = "0.64"; //0.8^2 ω_{pe} = 0.64 ω_{pe}, Figs 10-11 caption "ω = 0.8*ω_{pe}", ω_{pe} = (4*pi*(n_e=n)*(q_e^2))/(m_e), see "III. PROPAGATION MODES"
+    constexpr const char* omega_squared_factor = omega_squared_factor_for_omega_0_point_8_omega_pe;
+    constexpr const char* cs_squared_factor_for_rho_i_1_over_1836_v_te_0_point_05c_v_ti_0_point_001c = "2.36165577e-6"; //Figure 10: (((.05*.05)/1836) + (.001*.001)), https://www.bing.com/search?q=(((.05*.05)%2F1836)%20%2B%20(.001*.001))&qs=n&form=QBRE&sp=-1&lq=0&pq=(((.05*.05)%2F1836)%20%2B%20(.001*.001))&sc=1-32&sk=&cvid=C563F2D3B3AB42BAA438BCD2FAF6F307&ajf=10
+    constexpr const char* cs_squared = cs_squared_factor_for_rho_i_1_over_1836_v_te_0_point_05c_v_ti_0_point_001c;
+    constexpr const char* alpha_0 = "0.4";
+    constexpr const char* alpha = alpha_0;
+    constexpr const char* one_plus_rho_i_times_alpha_for_rho_i_1_over_1836_alpha_0 = "1.0002178649237472767"; //1 + ρ_i*0.4 = 1.0002178649237472767
+    constexpr const char* one_plus_rho_i_times_alpha = one_plus_rho_i_times_alpha_for_rho_i_1_over_1836_alpha_0; //1 + ρ_i*α
+//    std::string infty = std::numeric_limits<float>::infinity();
+
+    if (x.expression_type == "prefix")
+    {
+        throw std::invalid_argument("Prefix not implemented yet for this SolitonWaveFengEq14and15Laser function!");
+    }
+    else if (x.expression_type == "postfix")
+    {
+        //u tanh 1 u sech / α - * ∂^2/∂ξ^2 ω_squared_factor n * u tanh 1 u sech / α - * * + n 1 ρ_i α * + / u tanh 1 ρ_i u sech / + * * -
+        for (const std::string& i: x.pieces[0]) // u
+        {
+            temp.push_back(i);
+        }
+        temp.push_back("tanh"); // tanh
+        temp.push_back("1"); // 1
+        for (const std::string& i: x.pieces[0]) // u
+        {
+            temp.push_back(i);
+        }
+        temp.push_back("sech"); // sech
+        temp.push_back("/"); // /
+        temp.push_back(alpha); // α
+        temp.push_back("-"); // -
+        temp.push_back("*"); // *
+        //temp now contains: u tanh 1 u sech / α - *
+        x.derivePostfix(0, temp.size()-1, "x0", temp, grasp);
+        temp_prime = x.derivat;
+        x.derivePostfix(0, temp_prime.size()-1, "x0", temp_prime, grasp);
+        for (const std::string& i: x.derivat) // u tanh 1 u sech / α - * ∂^2/∂ξ^2
+        {
+            results[0].push_back(i);
+        }
+        results[0].push_back(omega_squared_factor); // ω_squared_factor
+        for (const std::string& i: x.pieces[1]) // n
+        {
+            results[0].push_back(i);
+        }
+        results[0].push_back("*"); // *
+        for (const std::string& i: temp) // u tanh 1 u sech / α - *
+        {
+            results[0].push_back(i);
+        }
+        results[0].push_back("*"); // *
+        results[0].push_back("+"); // +
+        for (const std::string& i: x.pieces[1]) // n
+        {
+            results[0].push_back(i);
+        }
+        results[0].push_back("1"); // 1
+        results[0].push_back(rho); // ρ_i
+        results[0].push_back(alpha); // α
+        results[0].push_back("*"); // *
+        results[0].push_back("+"); // +
+        results[0].push_back("/"); // /
+        for (const std::string& i: x.pieces[0]) // u
+        {
+            results[0].push_back(i);
+        }
+        results[0].push_back("tanh"); // tanh
+        results[0].push_back("1"); // 1
+        results[0].push_back(rho); // ρ_i
+        for (const std::string& i: x.pieces[0]) // u
+        {
+            results[0].push_back(i);
+        }
+        results[0].push_back("sech"); // sech
+        results[0].push_back("/"); // /
+        results[0].push_back("+"); // +
+        results[0].push_back("*"); // *
+        results[0].push_back("*"); // *
+        results[0].push_back("-"); // -
+        //c_s_squared n ln * ρ_i 1 1 u sech / - α 2 / u tanh 2 ^ * + ρ_i u tanh 1 u sech / α - * 2 ^ * 2 1 ρ_i α * + * / - * -
+        results[1].push_back(cs_squared); // c_s_squared
+        for (const std::string& i: x.pieces[1]) // n
+        {
+            results[1].push_back(i);
+        }
+        results[1].push_back("ln"); // ln
+        results[1].push_back("*"); // *
+        results[1].push_back(rho); // ρ_i
+        results[1].push_back("1"); // 1
+        results[1].push_back("1"); // 1
+        for (const std::string& i: x.pieces[0]) // u
+        {
+            results[1].push_back(i);
+        }
+        results[1].push_back("sech"); // sech
+        results[1].push_back("/"); // /
+        results[1].push_back("-"); // -
+        results[1].push_back(alpha); // α
+        results[1].push_back("2"); // 2
+        results[1].push_back("/"); // /
+        for (const std::string& i: x.pieces[0]) // u
+        {
+            results[1].push_back(i);
+        }
+        results[1].push_back("tanh"); // tanh
+        results[1].push_back("2"); // 2
+        results[1].push_back("^"); // ^
+        results[1].push_back("*"); // *
+        results[1].push_back("+"); // +
+        results[1].push_back(rho); // ρ_i
+        for (const std::string& i: temp) // u tanh 1 u sech / α - *
+        {
+            results[1].push_back(i);
+        }
+        results[1].push_back("2"); // 2
+        results[1].push_back("^"); // ^
+        results[1].push_back("*"); // *
+        results[1].push_back("2"); // 2
+        results[1].push_back("1"); // 1
+        results[1].push_back(rho); // ρ_i
+        results[1].push_back(alpha); // α
+        results[1].push_back("*"); // *
+        results[1].push_back("+"); // +
+        results[1].push_back("*"); // *
+        results[1].push_back("/"); // /
+        results[1].push_back("-"); // -
+        results[1].push_back("*"); // *
+        results[1].push_back("-"); // -
+        //u(ξ_min) tanh 1 u(ξ_min) sech / α const0 * - *
+        for (const std::string& i: temp) //u(ξ_min) tanh 1 u(ξ_min) sech / α const0 * - *
+        {
+            if (i == "x0")
+            {
+                results[2].push_back(x.feature_mins_maxes[i].first);
+            }
+            else if (i == alpha)
+            {
+                results[2].push_back(alpha);
+                results[2].push_back("const0");
+                results[2].push_back("*");
+            }
+            else
+            {
+                results[2].push_back(i);
+            }
+        }
+        assert((2+temp.size()) == results[2].size()); //sanity check
+        //u(ξ_max) tanh 1 u(ξ_max) sech / α const0 * - *
+        for (const std::string& i: temp) // u(ξ_max) tanh 1 u(ξ_max) sech / α const0 * - *
+        {
+            if (i == "x0")
+            {
+                results[3].push_back(x.feature_mins_maxes[i].second);
+            }
+            else if (i == alpha)
+            {
+                results[3].push_back(alpha);
+                results[3].push_back("const0");
+                results[3].push_back("*");
+            }
+            else
+            {
+                results[3].push_back(i);
+            }
+        }
+        assert((2+temp.size()) == results[3].size()); //sanity check
+        //1 u(ξ_min) sech / α const0 * u(ξ_min) sech 2 ^ * - ∂u(x_min)/∂ξ *
+        results[4].push_back("1"); // 1
+        for (const std::string& i: x.pieces[0]) // u
+        {
+            if (i == "x0")
+            {
+                results[4].push_back(x.feature_mins_maxes[i].first);
+            }
+            else
+            {
+                results[4].push_back(i);
+            }
+        }
+        results[4].push_back("sech"); // sech
+        results[4].push_back("/"); // /
+        results[4].push_back(alpha); // α
+        results[4].push_back("const0"); // const0
+        results[4].push_back("*"); // *
+        for (const std::string& i: x.pieces[0]) // u
+        {
+            if (i == "x0")
+            {
+                results[4].push_back(x.feature_mins_maxes[i].first);
+            }
+            else
+            {
+                results[4].push_back(i);
+            }
+        }
+        results[4].push_back("sech"); // sech
+        results[4].push_back("2"); // 2
+        results[4].push_back("^"); // ^
+        results[4].push_back("*"); // *
+        results[4].push_back("-"); // -
+        x.derivePostfix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
+        //now `x.derivat` stores ∂u/∂ξ
+        for (const std::string& i: x.derivat) // ∂u(x_min)/∂ξ
+        {
+            if (i == "x0")
+            {
+                results[4].push_back(x.feature_mins_maxes[i].first);
+            }
+            else
+            {
+                results[4].push_back(i);
+            }
+        }
+        results[4].push_back("*"); // *
+        //1 u(ξ_max) sech / α const0 * u(ξ_max) sech 2 ^ * - ∂u(x_max)/∂ξ *
+        results[5].push_back("1"); // 1
+        for (const std::string& i: x.pieces[0]) // u(ξ_max)
+        {
+            if (i == "x0")
+            {
+                results[5].push_back(x.feature_mins_maxes[i].second);
+            }
+            else
+            {
+                results[5].push_back(i);
+            }
+        }
+        results[5].push_back("sech"); // sech
+        results[5].push_back("/"); // /
+        results[5].push_back(alpha); // α
+        results[5].push_back("const0"); // const0
+        results[5].push_back("*"); // *
+        for (const std::string& i: x.pieces[0]) // u(ξ_max)
+        {
+            if (i == "x0")
+            {
+                results[5].push_back(x.feature_mins_maxes[i].second);
+            }
+            else
+            {
+                results[5].push_back(i);
+            }
+        }
+        results[5].push_back("sech"); // sech
+        results[5].push_back("2"); // 2
+        results[5].push_back("^"); // ^
+        results[5].push_back("*"); // *
+        results[5].push_back("-"); // -
+        for (const std::string& i: x.derivat) // ∂u(x_max)/∂ξ
+        {
+            if (i == "x0")
+            {
+                results[5].push_back(x.feature_mins_maxes[i].second);
+            }
+            else
+            {
+                results[5].push_back(i);
+            }
+        }
+        results[5].push_back("*"); // *
+        //u tanh 1 u sech / α - * 2 ^
+//        for (const std::string& i: temp) // u tanh 1 u sech / α - *
+//        {
+//            results[6].push_back(i);
+//        }
+//        results[6].push_back("2");
+//        results[6].push_back("^");
+        //n(ξ) n(-ξ) - 2 ^
+        for (const std::string& i: x.pieces[1]) //n(ξ)
+        {
+            results[6].push_back(i);
+        }
+        for (const std::string& i: x.pieces[1]) //n(-ξ)
+        {
+            results[6].push_back(i);
+            if (i == "x0")
+            {
+                results[6].push_back("~");
+            }
+        }
+        results[6].push_back("-");
+        results[6].push_back("2");
+        results[6].push_back("^");
+        //n(ξ) 1 / 1 - x1 - 2 ^
+        for (const std::string& i: x.pieces[1]) //n(ξ)
+        {
+            results[7].push_back(i);
+        }
+        results[7].push_back("1");
+        results[7].push_back("/");
+        results[7].push_back("1");
+        results[7].push_back("-");
+        results[7].push_back("x1");
+        results[7].push_back("-");
+        results[7].push_back("2");
+        results[7].push_back("^");
+        //u tanh 1 u sech / α const0 * - * x2 - 2 ^
+        for (const std::string& i: temp) // u tanh 1 u sech / α const0 * - *
+        {
+            results[8].push_back(i);
+            if (i == alpha)
+            {
+                results[8].push_back("const0");
+                results[8].push_back("*");
+            }
+        }
+        results[8].push_back("x2");
+        results[8].push_back("-");
+        results[8].push_back("2");
+        results[8].push_back("^");
+    }
+
+    return results;
+}
 
 std::vector<std::vector<std::string>> VortexRadialProfile(Board& x)
 {
@@ -5139,7 +5840,7 @@ std::vector<std::vector<std::string>> VortexRadialProfile(Board& x)
             }
         }
         results.push_back(result);
-        
+
         //- R(∞) sqrt mu
         result.clear();
         result.push_back("-");
@@ -5231,10 +5932,10 @@ std::vector<std::vector<std::string>> VortexRadialProfile(Board& x)
             }
         }
         results.push_back(result);
-        
+
         //R(∞) mu sqrt -
         result.clear();
-        
+
         for (size_t i = 0; i < x.pieces[0].size(); i++)
         {
             if (x.pieces[0][i] == "x0")
@@ -5246,13 +5947,13 @@ std::vector<std::vector<std::string>> VortexRadialProfile(Board& x)
                 result.push_back(x.pieces[0][i]);
             }
         }
-        
+
         result.push_back(mu);
         result.push_back("sqrt");
         result.push_back("-");
         results.push_back(result);
 
-        
+
 
     }
     return results;
@@ -5336,7 +6037,7 @@ std::vector<std::vector<std::string>> TwoDAdvectionDiffusion_1(Board& x)
         {
             result.push_back(i);
         }
-        
+
         x.derivePostfix(0, x.pieces[0].size()-1, "x1", x.pieces[0], grasp);
         temp = x.derivat;
         x.derivePostfix(0, temp.size()-1, "x1", temp, grasp);
@@ -5369,7 +6070,7 @@ std::vector<std::vector<std::string>> TwoDAdvectionDiffusion_2(Board& x)
         result.push_back("-"); //-
         result.push_back("+"); //+
         result.push_back("+"); //+
-        
+
         x.derivePrefix(0, x.pieces[0].size()-1, "x2", x.pieces[0], grasp);
         for (const std::string& i: x.derivat) //T_t
         {
@@ -5380,25 +6081,25 @@ std::vector<std::vector<std::string>> TwoDAdvectionDiffusion_2(Board& x)
         result.push_back("*");
         result.push_back("4");
         result.push_back("x1");
-        
+
         x.derivePrefix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
         for (const std::string& i: x.derivat) //T_x
         {
             result.push_back(i);
         }
-        
+
         result.push_back("*");
         result.push_back("cos");
         result.push_back("*");
         result.push_back("4");
         result.push_back("x0");
-        
+
         x.derivePrefix(0, x.pieces[0].size()-1, "x1", x.pieces[0], grasp);
         for (const std::string& i: x.derivat) //T_y
         {
             result.push_back(i);
         }
-        
+
         result.push_back("*"); //*
         result.push_back(kappa); //kappa
         result.push_back("+"); //+
@@ -5409,7 +6110,7 @@ std::vector<std::vector<std::string>> TwoDAdvectionDiffusion_2(Board& x)
         {
             result.push_back(i);
         }
-        
+
         x.derivePrefix(0, x.pieces[0].size()-1, "x1", x.pieces[0], grasp);
         temp = x.derivat;
         x.derivePrefix(0, temp.size()-1, "x1", temp, grasp);
@@ -5417,7 +6118,7 @@ std::vector<std::vector<std::string>> TwoDAdvectionDiffusion_2(Board& x)
         {
             result.push_back(i);
         }
-        
+
     }
     else if (x.expression_type == "postfix")
     {
@@ -5491,7 +6192,7 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
         {
             result.push_back(i);
         }
-        
+
         //* * sech - A * ϵ x sech - A * ϵ x * sech - B * D x sech - B * D x
         result.push_back("*"); //*
         result.push_back("*"); //*
@@ -5612,226 +6313,350 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 
 //https://dl.acm.org/doi/pdf/10.1145/3449639.3459345?casa_token=Np-_TMqxeJEAAAAA:8u-d6UyINV6Ex02kG9LthsQHAXMh2oxx3M4FG8ioP0hGgstIW45X8b709XOuaif5D_DVOm_FwFo
 //https://core.ac.uk/download/pdf/6651886.pdf
-//void SimulatedAnnealing(std::vector<std::string> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
-//{
-//    
-//    if (num_threads == 0)
-//    {
-//        unsigned int temp = std::thread::hardware_concurrency();
-//        num_threads = ((temp <= 1) ? 1 : temp);
-//    }
-//    
-//    std::vector<std::thread> threads(num_threads);
-//    std::latch sync_point(num_threads);
-//    
-//    /*
-//     Outside of thread:
-//     */
-//    std::atomic<float> max_score{0.0};
-//    std::atomic<float> best_MSE{FLT_MAX};
-//    std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
-//    
-//    auto start_time = Clock::now();
-//    
-//    /*
-//     Inside of thread:
-//     */
-//    
-//    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token, &best_MSE]()
-//    {
-//        std::random_device rand_dev;
-//        std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-//        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token);
-//        
-//        sync_point.arrive_and_wait();
-//        Board secondary(diffeq, false, 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token); //For perturbations
-//        float score = 0.0f, check_point_score = 0.0f;
-//        
-//        std::vector<std::string> current;
-//        std::vector<std::pair<int, int>> sub_exprs;
-//        std::vector<std::string> temp_legal_moves;
-//        std::uniform_int_distribution<int> rand_depth_dist(0, x.n);
-//        size_t temp_sz;
-////        std::string expression, orig_expression, best_expression;
-//        constexpr float T_max = 0.1f;
-//        constexpr float T_min = 0.012f;
-//        constexpr float ratio = T_min/T_max;
-//        float T = T_max;
-//        
-//        auto P = [&](float delta)
-//        {
-//            return exp(delta/T);
-//        };
-//        
-//        auto updateScore = [&](float r = 1.0f)
-//        {
-////            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
-////            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
-//            if ((score > max_score) || (x.pos_dist(generator) < P(score-max_score)))
-//            {
-//                current = x.pieces; //update current expression
-//                if (score > max_score)
-//                {
-//                    max_score = score;
-//                    std::scoped_lock str_lock(Board::thread_locker);
-//                    best_MSE = x.MSE_curr;
-//                    best_expression = x._to_infix();
-//                    orig_expression = x.expression();
-//                    best_expr_result = x._to_infix(x.diffeq_result);
-//                    orig_expr_result = x.expression(x.diffeq_result);
-//                    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
-//                    std::cout << "Best score = " << score << ", MSE = " << best_MSE << '\n';
-//                    std::cout << "Best expression = " << best_expression << '\n';
-//                    std::cout << "Best expression (original format) = " << orig_expression << '\n';
-//                    std::cout << "Best diff result = " << best_expr_result << '\n';
-//                    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
-//                }
-//            }
-//            else
-//            {
-//                x.pieces = current; //reset perturbed state to current state
-//            }
-//            T = r*T;
-//        };
-//        
-//        //Another way to do this might be clustering...
-//        auto Perturbation = [&](int n, int i)
-//        {
-//            //Step 1: Generate a random depth-n sub-expression `secondary_one.pieces`
-//            secondary.pieces.clear();
-//            sub_exprs.clear();
-//            secondary.n = n;
-//            while (secondary.complete_status() == -1)
-//            {
-//                temp_legal_moves = secondary.get_legal_moves();
-//                std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
-//                secondary.pieces.push_back(temp_legal_moves[distribution(generator)]);
-//            }
-//            
-////            assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces) : secondary.getRPNdepth(secondary.pieces)).first == secondary.n);
-////            assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces) : secondary.getRPNdepth(secondary.pieces)).second);
-//            
-//            if (n == x.n)
-//            {
-//                std::swap(secondary.pieces, x.pieces);
-//            }
-//            else
-//            {
-//                //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
-//                //in `x.pieces` and store them in an std::vector<std::pair<int, int>>
-//                //called `sub_exprs`.
-//                secondary.get_indices(sub_exprs, x.pieces);
-//                
-//                //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `pert_ind`
-//
-//                std::uniform_int_distribution<int> distribution(0, sub_exprs.size() - 1);
-//                int pert_ind = distribution(generator);
-//                
-//                //Step 4: Substitute sub_exprs_1[pert_ind] in x.pieces with secondary_one.pieces
-//                
-//                auto start = x.pieces.begin() + sub_exprs[pert_ind].first;
-//                auto end = std::min(x.pieces.begin() + sub_exprs[pert_ind].second, x.pieces.end());
-//                x.pieces.erase(start, end+1);
-//                x.pieces.insert(start, secondary.pieces.begin(), secondary.pieces.end()); //could be a move operation: secondary.pieces doesn't need to be in a defined state after this->params
-//            }
-//            
-//            //Step 5: Reset const token labels in pieces
-//            size_t const_counter = 0;
-//            for (std::string& token: x.pieces)
-//            {
-//                if (token.substr(0, 5) == "const")
-//                {
-//                    token = "const" + std::to_string(const_counter++);
-//                }
-//            }
-//            
-//            //Step 6: Evaluate the new mutated `x.pieces` and update score if needed
-//            score = x.complete_status(false);
-//            updateScore(pow(ratio, 1.0f/(i+1)));
-//        };
-//
-//        //Step 1: generate a random expression
-//        while ((score = x.complete_status()) == -1)
-//        {
-//            temp_legal_moves = x.get_legal_moves(); //the legal moves
-//            temp_sz = temp_legal_moves.size(); //the number of legal moves
-//            std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
-//            x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
-//            current.push_back(x.pieces.back());
-//        }
-//        updateScore();
-//        
-//        for (int i = 0; (timeElapsedSince(start_time) < time); i++)
-//        {
-//            if (i && (i%50000 == 0))
-//            {
-////                std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
-//                if (check_point_score == max_score)
-//                {
-//                    T = std::min(T*10.0f, T_max);
-//                }
-//                else
-//                {
-//                    T = std::max(T/10.0f, T_min);
-//                }
-//                check_point_score = max_score;
-//            }
-//            Perturbation(rand_depth_dist(generator), i);
-//            
-//        }
-//    };
-//    
-//    for (unsigned int i = 0; i < num_threads; i++)
-//    {
-//        threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
-//    }
-//    
-//    for (unsigned int i = 0; i < num_threads; i++)
-//    {
-//        threads[i].join();
-//    }
-//    
-//    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
-//    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-//    std::cout << "Best score = " << score << ", MSE = " << best_MSE << '\n';
-//    std::cout << "Best expression = " << best_expression << '\n';
-//    std::cout << "Best expression (original format) = " << orig_expression << '\n';
-//    std::cout << "Best diff result = " << best_expr_result << '\n';
-//    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
-//}
+void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&), size_t num_diff_eqns, const Eigen::MatrixXf& data, const std::vector<int>& depth, const std::string expression_type = "prefix", size_t num_consts_diff = 0, const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool use_const_pieces = false, int numDataCols = 0, const std::vector<std::vector<std::string>>& seed_expressions = {})
+{
+
+    if (num_threads == 0)
+    {
+        unsigned int temp = std::thread::hardware_concurrency();
+        num_threads = ((temp <= 1) ? 1 : temp);
+        printf("num_threads = %u\n", num_threads);
+    }
+
+    std::vector<std::thread> threads(num_threads);
+    std::latch sync_point(num_threads);
+
+    /*
+     Outside of thread:
+    */
+    std::atomic<float> max_score{0.0};
+    std::atomic<float> best_MSE{FLT_MAX};
+    std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
+
+    auto start_time = Clock::now();
+
+    /*
+     Inside of thread:
+     */
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &numDataCols, &seed_expressions, &best_MSE]()
+    {
+        std::random_device rand_dev;
+        std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
+        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, false, numDataCols);
+        sync_point.arrive_and_wait();
+        Board secondary(diffeq, num_diff_eqns, false, std::vector<int>(depth.size(), 0), expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, false, numDataCols); //For perturbations
+        assert(secondary.pieces.size() == secondary.n.size());
+        assert(secondary.pieces.size() == x.pieces.size());
+        assert(secondary.pieces.size() == x.n.size());
+        float score = 0.0f, check_point_score = 0.0f;
+
+        std::vector<std::vector<std::string>> current(depth.size());
+        std::vector<std::pair<int, int>> sub_exprs;
+        std::vector<std::string> temp_legal_moves;
+        size_t piece_to_perturb_idx; //Used in the case of a depth-0 perturbation
+        std::string piece_to_perturb; piece_to_perturb.reserve(10); //Used in the case of a depth-0 perturbation
+        std::string piece_to_replace_with; piece_to_replace_with.reserve(10); //Used in the case of a depth-0 perturbation
+        std::vector<std::uniform_int_distribution<int>> rand_depth_dists(depth.size());
+        std::vector<int> rand_depths(depth.size());
+
+        size_t temp_sz;
+//        std::string expression, orig_expression, best_expression;
+        constexpr float T_max = 0.1f;
+        constexpr float T_min = 0.012f;
+        constexpr float ratio = T_min/T_max;
+        float T = T_max;
+
+        auto P = [&](float delta)
+        {
+            return exp(delta/T);
+        };
+
+        auto updateScore = [&](float r = 1.0f)
+        {
+//            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
+//            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
+            if ((score > max_score) || (x.pos_dist(generator) < P(score-max_score)))
+            {
+                current = x.pieces; //update current expression
+                if (score > max_score)
+                {
+                    max_score = score;
+                    std::scoped_lock str_lock(Board::thread_locker);
+                    best_MSE = x.MSE_curr;
+                    best_expression = x._to_infix();
+                    orig_expression = x.expression();
+                    best_expr_result = x._to_infix(x.diffeq_result);
+                    orig_expr_result = x.expression(x.diffeq_result);
+                    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+                    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
+                    std::cout << "Best score = " << score << ", MSE = " << best_MSE << '\n';
+                    std::cout << "Best expression = " << best_expression << '\n';
+                    std::cout << "Best expression (original format) = " << orig_expression << '\n';
+                    std::cout << "Best diff result = " << best_expr_result << '\n';
+                    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
+                }
+            }
+            else
+            {
+                x.pieces = current; //reset perturbed state to current state
+            }
+            T = r*T;
+        };
+
+        //performs the transformation "const{>=x.num_consts_diff}" -> "const"
+        //on each such token in x.pieces
+        auto reset_const_token_labels = [&]()
+        {
+            for (std::vector<std::string>& x_expr: x.pieces)
+            {
+                for (std::string& token: x_expr)
+                {
+                    if (token.compare(0, 5, "const") == 0)
+                    {
+                        std::string int_suffix = token.substr(5);
+                        if (int_suffix.size())
+                        {
+                            int int_suffix_num = std::stoi(int_suffix);
+                            if (int_suffix_num >= x.num_consts_diff) //then it's a const that belongs to pieces -> reset it
+                            {
+                                token = "const";
+                            }
+                            else
+                            {
+                                //Below we test that token is of the form `const{0 <= num < x.num_consts_diff}`
+                                assert(((0 <= int_suffix_num) && (int_suffix_num < x.num_consts_diff)));
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        //`n` is the vector of mutation-tree depths that dictate how each expression in `x.pieces` will be perturbed, and `i` is the time index
+        auto Perturbation = [&](const std::vector<int>& n, float i)
+        {
+            //Step 1: Generate a random depth-n sub-expression `secondary_one.pieces`
+            sub_exprs.clear();
+            secondary.n = n;
+            for (int jdx = 0; jdx < secondary.num_objectives; jdx++)
+            {
+                //Pre-validation: clears and sanity check
+                secondary.pieces[jdx].clear();
+                sub_exprs.clear();
+                assert(secondary.n[jdx] <= x.n[jdx]);
+                //Step 1a: check for the special case of a depth-0 (i.e. 1 operand) perturbation
+                if (n[jdx] == 0)
+                {
+                    temp_sz = x.pieces[jdx].size();
+                    std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
+                    piece_to_perturb_idx = distribution(generator);
+                    piece_to_perturb = x.pieces[jdx][piece_to_perturb_idx];
+                    if (x.is_unary(piece_to_perturb))
+                    {
+                        piece_to_replace_with = Board::__unary_operators[Board::unary_dist(generator)];
+                    }
+                    else if (x.is_binary(piece_to_perturb))
+                    {
+                        piece_to_replace_with = Board::__binary_operators[Board::binary_dist(generator)];
+                    }
+                    else
+                    {
+                        piece_to_replace_with = Board::una_bin_leaf_legal_moves_dict[false][false][true][Board::leaf_dist(generator)];
+                    }
+                    std::swap(x.pieces[jdx][piece_to_perturb_idx], piece_to_replace_with);
+                }
+                else
+                {
+                    //Step 1b: generate a random expression
+                    while (secondary.complete_status(jdx) == -1)
+                    {
+                        temp_legal_moves = secondary.get_legal_moves(jdx); //the legal moves
+                        temp_sz = temp_legal_moves.size(); //the number of legal moves
+
+                        assert(temp_sz);
+                        std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
+                        {
+                            secondary.pieces[jdx].emplace_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
+                        }
+                    }
+                    if (jdx < secondary.num_objectives - 1)
+                    {
+                        assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces[jdx], jdx) : secondary.getRPNdepth(secondary.pieces[jdx], jdx)).first == secondary.n[jdx]);
+                        assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces[jdx], jdx) : secondary.getRPNdepth(secondary.pieces[jdx], jdx)).second);
+                    }
+                    //Step 2a: swap in case when perturbation depth == expression depth
+                    if (n[jdx] == x.n[jdx])
+                    {
+                        std::swap(secondary.pieces[jdx], x.pieces[jdx]);
+                    }
+                    else
+                    {
+                        //Step 2b: Else, start by identifying the starting and stopping index pairs of all depth-n sub-expressions
+                        //in `x.pieces[jdx]` and store them in an std::vector<std::pair<int, int>> called `sub_exprs`.
+                        secondary.get_indices(sub_exprs, x.pieces[jdx], jdx);
+                        if (!sub_exprs.size())
+                        {
+                            throw std::runtime_error("sub_exprs empty, x.n["+std::to_string(jdx)+"] = "+std::to_string(x.n[jdx])
+                                                     + ", secondary.n[" +std::to_string(jdx)+ "] = " +std::to_string(secondary.n[jdx]));
+                        }
+                        else if (secondary.n[jdx] > x.n[jdx])
+                        {
+                            throw std::runtime_error("(secondary.n[jdx] > x.n[jdx]), x.n["+std::to_string(jdx)+"] = "+std::to_string(x.n[jdx])
+                                                     + ", secondary.n[" +std::to_string(jdx)+ "] = " +std::to_string(secondary.n[jdx]));
+                        }
+                        //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `pert_ind`
+                        std::uniform_int_distribution<int> distribution(0, sub_exprs.size() - 1);
+                        int pert_ind = distribution(generator);
+
+                        //Step 4: Substitute sub_exprs_1[pert_ind] in x.pieces[jdx] with secondary_one.pieces[jdx]
+                        auto start = x.pieces[jdx].begin() + sub_exprs[pert_ind].first;
+                        auto end = x.pieces[jdx].begin() + std::min(sub_exprs[pert_ind].second, static_cast<int>(x.pieces[jdx].size()));
+                        x.pieces[jdx].erase(start, end+1);
+                        x.pieces[jdx].insert(start, secondary.pieces[jdx].begin(), secondary.pieces[jdx].end()); //could be a move operation: secondary.pieces doesn't need to be in a defined state after this->params, or erase+insert -> replace?
+                        auto depth_and_completion = ((x.expression_type == "prefix") ? x.getPNdepth(x.pieces[jdx], jdx) : x.getRPNdepth(x.pieces[jdx], jdx));
+                        if (depth_and_completion.first != x.n[jdx])
+                        {
+                            throw std::runtime_error("(depth_and_completion.first != x.n[jdx]), x.n["+std::to_string(jdx)+"] = "+std::to_string(x.n[jdx])
+                                                     + ", secondary.n[" +std::to_string(jdx)+ "] = " +std::to_string(secondary.n[jdx])
+                                                     + ", depth_and_completion.first = "+std::to_string(depth_and_completion.first));
+                        }
+                    }
+                }
+                //Step 5: Reset const token labels in pieces
+                if (x.use_const_pieces)
+                {
+                    reset_const_token_labels();
+                }
+                //Step 6: Evaluate the new mutated `x.pieces` and update score if needed
+                score = x.complete_status(x.pieces.size() - 1, false);
+                if (score < 0.0f)
+                {
+                    throw(std::runtime_error("score = "+std::to_string(score)));
+                }
+                updateScore(pow(ratio, 1.0f/(i+1.0f)));
+            }
+        };
+
+        //Step 1: generate a random expression
+        if (seed_expressions.empty())
+        {
+            for (int jdx = 0; jdx < x.num_objectives; jdx++)
+            {
+                while ((score = x.complete_status(jdx)) == -1)
+                {
+                    temp_legal_moves = x.get_legal_moves(jdx); //the legal moves
+                    temp_sz = temp_legal_moves.size(); //the number of legal moves
+
+                    assert(temp_sz);
+                    std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
+                    {
+                        x.pieces[jdx].emplace_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
+                        current[jdx].push_back(x.pieces[jdx].back());
+                    }
+                }
+                auto depth_and_completion = ((x.expression_type == "prefix") ? x.getPNdepth(x.pieces[jdx], jdx) : x.getRPNdepth(x.pieces[jdx], jdx));
+                assert(depth_and_completion.first <= x.n[jdx]);
+                assert(depth_and_completion.second);
+                x.n[jdx] = depth_and_completion.first;
+                rand_depth_dists[jdx] = std::uniform_int_distribution<int>(0, depth_and_completion.first);
+                rand_depths[jdx] = rand_depth_dists[jdx](generator);
+            }
+        }
+        else
+        {
+            assert(x.pieces.size() == x.num_objectives);
+            for (int jdx = 0; jdx < x.num_objectives; jdx++)
+            {
+                x.pieces[jdx] = seed_expressions[jdx];
+                auto depth_and_completion = ((x.expression_type == "prefix") ? x.getPNdepth(x.pieces[jdx], jdx) : x.getRPNdepth(x.pieces[jdx], jdx));
+                if (depth_and_completion.first > x.n[jdx])
+                {
+                    throw std::runtime_error("Seed expression depth of x.pieces["+std::to_string(jdx)+"] = "
+                                             +std::to_string(depth_and_completion.first));
+                }
+                assert(depth_and_completion.second);
+                x.n[jdx] = depth_and_completion.first;
+                rand_depth_dists[jdx] = std::uniform_int_distribution<int>(0, depth_and_completion.first);
+            }
+            score = x.complete_status(x.pieces.size() - 1, false);
+        }
+        reset_const_token_labels();
+        updateScore();
+
+        for (float i = 0; (timeElapsedSince(start_time) < time); i++)
+        {
+            if (i && (static_cast<int>(i)%50000 == 0))
+            {
+//                std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+                if (check_point_score == max_score)
+                {
+                    T = std::min(T*10.0f, T_max);
+                }
+                else
+                {
+                    T = std::max(T/10.0f, T_min);
+                }
+                check_point_score = max_score;
+            }
+            for (int jdx = 0; jdx < x.num_objectives; jdx++)
+            {
+                rand_depths[jdx] = rand_depth_dists[jdx](generator);
+            }
+            Perturbation(rand_depths, i);
+        }
+    };
+
+    for (unsigned int i = 0; i < num_threads; i++)
+    {
+        threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
+    }
+
+    for (unsigned int i = 0; i < num_threads; i++)
+    {
+        threads[i].join();
+    }
+
+    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
+    std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
+    std::cout << "Best expression = " << best_expression << '\n';
+    std::cout << "Best expression (original format) = " << orig_expression << '\n';
+    std::cout << "Best diff result = " << best_expr_result << '\n';
+    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
+}
 ////
 //////https://arxiv.org/abs/2310.06609
-//void GP(std::vector<std::string> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
+//void GP(std::vector<std::string> (*diffeq)(Board&), size_t num_diff_eqns, const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f)
 //{
 //    if (num_threads == 0)
 //    {
 //        unsigned int temp = std::thread::hardware_concurrency();
 //        num_threads = ((temp <= 1) ? 1 : temp);
 //    }
-//    
+//
 //    std::vector<std::thread> threads(num_threads);
 //    std::latch sync_point(num_threads);
-//    
+//
 //    /*
 //     Outside of thread:
 //     */
 //    std::atomic<float> max_score{0.0};
 //    std::atomic<float> best_MSE{FLT_MAX};
 //    std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
-//    
+//
 //    auto start_time = Clock::now();
-//    
+//
 //    /*
 //     Inside of thread:
 //     */
-//    
-//    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token, &best_MSE]()
+//
+//    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &best_MSE]()
 //    {
 //        std::random_device rand_dev;
 //        std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-//        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token);
+//        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol);
 //        sync_point.arrive_and_wait();
-//        Board secondary_one(diffeq, false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token), secondary_two(diffeq, false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token); //For crossover and mutations
+//        Board secondary_one(diffeq, false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol), secondary_two(diffeq, false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol); //For crossover and mutations
 //        float score = 0.0f, mut_prob = 0.8f, rand_mut_cross;
 //        constexpr int init_population = 2000;
 //        std::vector<std::pair<std::vector<std::string>, float>> individuals;
@@ -5844,7 +6669,7 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //        std::uniform_real_distribution<float> rand_mut_cross_dist(0.0f, 1.0f);
 //        size_t temp_sz;
 //    //    std::string expression, orig_expression, best_expression;
-//        
+//
 //        auto updateScore = [&]()
 //        {
 //            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
@@ -5866,7 +6691,7 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //                std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
 //            }
 //        };
-//        
+//
 //        //Step 1, generate init_population expressions
 //        for (int i = 0; i < init_population; i++)
 //        {
@@ -5882,7 +6707,7 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //            individuals.push_back(std::make_pair(x.pieces, score));
 //            x.pieces.clear();
 //        }
-//        
+//
 //        auto Mutation = [&](int n)
 //        {
 //            //Step 1: Generate a random depth-n sub-expression `secondary_one.pieces`
@@ -5895,7 +6720,7 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //                std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
 //                secondary_one.pieces.push_back(temp_legal_moves[distribution(generator)]);
 //            }
-//            
+//
 //            assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).first == secondary_one.n);
 //            assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).second);
 //
@@ -5904,76 +6729,76 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //            //called `sub_exprs_1`.
 //            x.pieces = individuals[selector_dist(generator)].first; //A randomly selected individual to be mutated
 //            secondary_one.get_indices(sub_exprs_1, x.pieces);
-//            
+//
 //            //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `mut_ind`
 //            std::uniform_int_distribution<int> distribution(0, sub_exprs_1.size() - 1);
 //            int mut_ind = distribution(generator);
-//            
+//
 //            //Step 4: Substitute sub_exprs_1[mut_ind] in x.pieces with secondary_one.pieces
-//            
+//
 //            auto start = x.pieces.begin() + sub_exprs_1[mut_ind].first;
 //            auto end = std::min(x.pieces.begin() + sub_exprs_1[mut_ind].second, x.pieces.end()-1);
 //            x.pieces.erase(start, end+1);
 //            x.pieces.insert(start, secondary_one.pieces.begin(), secondary_one.pieces.end());
-//            
+//
 //            //Step 5: Reset const token labels in pieces
 //            size_t const_counter = 0;
 //            for (std::string& token: x.pieces)
 //            {
-//                if (token.substr(0, 5) == "const")
+//                if (token.compare(0, 5, "const") == 0)
 //                {
 //                    token = "const" + std::to_string(const_counter++);
 //                }
 //            }
-//            
+//
 //            //Step 6: Evaluate the new mutated `x.pieces` and update score if needed
 //            score = x.complete_status(false);
 //            updateScore();
 //            individuals.push_back(std::make_pair(x.pieces, score));
 //        };
-//        
+//
 //        auto Crossover = [&](int n)
 //        {
 //            sub_exprs_1.clear();
 //            sub_exprs_2.clear();
 //            secondary_one.n = n;
 //            secondary_two.n = n;
-//            
+//
 //            rand_individual_idx_1 = selector_dist(generator);
 //            assert(individuals.size() && rand_individual_idx_1 < individuals.size());
 //            individual_1 = individuals[rand_individual_idx_1];
-//            
+//
 //            do {
 //                rand_individual_idx_2 = selector_dist(generator);
 //            } while (rand_individual_idx_2 == rand_individual_idx_1);
 //            assert(individuals.size() && rand_individual_idx_1 < individuals.size());
 //            individual_2 = individuals[rand_individual_idx_2];
-//        
+//
 //            //Step 1: Identify the starting and stopping index pairs of all depth-n sub-expressions
 //            //in `individual_1.first` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_1`.
 //            secondary_one.get_indices(sub_exprs_1, individual_1.first);
-//            
+//
 //            //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
 //            //in `individual_2.first` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_2`.
 //            secondary_two.get_indices(sub_exprs_2, individual_2.first);
-//            
+//
 //            //Step 3: Generate a random uniform int from 0 to sub_exprs_1.size() - 1 called `mut_ind_1`
 //            std::uniform_int_distribution<int> distribution_1(0, sub_exprs_1.size() - 1);
 //            int mut_ind_1 = distribution_1(generator);
-//            
+//
 //            //Step 4: Generate a random uniform int from 0 to sub_exprs_2.size() - 1 called `mut_ind_2`
 //            std::uniform_int_distribution<int> distribution_2(0, sub_exprs_2.size() - 1);
 //            int mut_ind_2 = distribution_2(generator);
-//            
+//
 //            //Step 5: Swap sub_exprs_1[mut_ind_1] in individual_1.first with sub_exprs_2[mut_ind_2] in individual_2.first
 //            auto start_1 = individual_1.first.begin() + sub_exprs_1[mut_ind_1].first;
 //            auto end_1 = std::min(individual_1.first.begin() + sub_exprs_1[mut_ind_1].second, individual_1.first.end());
-//            
+//
 //            auto start_2 = individual_2.first.begin() + sub_exprs_2[mut_ind_2].first;
 //            auto end_2 = std::min(individual_2.first.begin() + sub_exprs_2[mut_ind_2].second, individual_2.first.end());
-//            
+//
 //    //        insert the range start_2, end_2+1 into individual_1 and the range start_1, end_1+1 into individual_2.
-//            
+//
 //            if ((end_1 - start_1) < (end_2 - start_2))
 //            {
 //                std::swap_ranges(start_1, end_1+1, start_2);
@@ -5994,43 +6819,43 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //            {
 //                std::swap_ranges(start_1, end_1+1, start_2);
 //            }
-//            
+//
 //            //Step 6: Reset const token labels in individual_1.first
 //            size_t const_counter = 0;
 //            for (std::string& token: individual_1.first)
 //            {
-//                if (token.substr(0, 5) == "const")
+//                if (token.compare(0, 5, "const") == 0)
 //                {
 //                    token = "const" + std::to_string(const_counter++);
 //                }
 //            }
-//            
+//
 //            //Step 7: Evaluate the new `x.pieces` and update score if needed
 //            x.pieces = individual_1.first;
 //            score = x.complete_status(false);
 //            updateScore();
-//            
+//
 //            individuals.push_back(std::make_pair(x.pieces, score));
-//            
+//
 //            //Step 8: Reset const token labels in individual_2.first
 //            const_counter = 0;
 //            for (std::string& token: individual_2.first)
 //            {
-//                if (token.substr(0, 5) == "const")
+//                if (token.compare(0, 5, "const") == 0)
 //                {
 //                    token = "const" + std::to_string(const_counter++);
 //                }
 //            }
-//            
+//
 //            //Step 9: Evaluate the new `x.pieces` and update score if needed
 //            x.pieces = individual_2.first;
 //            score = x.complete_status(false);
 //            updateScore();
-//            
+//
 //            individuals.push_back(std::make_pair(x.pieces, score));
 //        };
 //
-//        
+//
 //        for (/*int ngen = 0*/; (timeElapsedSince(start_time) < time); /*ngen++*/)
 //        {
 ////            if (ngen && (ngen%5 == 0))
@@ -6042,10 +6867,10 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //            {
 //                //Step 1: Generate a random number between 0 and 1 called `rand_mut_cross`
 //                rand_mut_cross = rand_mut_cross_dist(generator);
-//                
+//
 //                //Step 2: Generate a random uniform int from 0 to x.n - 1 called `rand_depth`
 //                rand_depth = rand_depth_dist(generator);
-//                
+//
 //                //Step 4: Call Mutation function if 0 <= rand_mut_cross <= mut_prob, else select Crossover
 //                if (rand_mut_cross <= mut_prob)
 //                {
@@ -6064,17 +6889,17 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //            individuals.resize(init_population);
 //        }
 //    };
-//    
+//
 //    for (unsigned int i = 0; i < num_threads; i++)
 //    {
 //        threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
 //    }
-//    
+//
 //    for (unsigned int i = 0; i < num_threads; i++)
 //    {
 //        threads[i].join();
 //    }
-//    
+//
 //    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
 //    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
 //    std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
@@ -6084,44 +6909,44 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
 //}
 //
-//void PSO(std::vector<std::string> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
+//void PSO(std::vector<std::string> (*diffeq)(Board&), size_t num_diff_eqns, const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f)
 //{
 //    if (num_threads == 0)
 //    {
 //        unsigned int temp = std::thread::hardware_concurrency();
 //        num_threads = ((temp <= 1) ? 1 : temp);
 //    }
-//    
+//
 //    std::vector<std::thread> threads(num_threads);
 //    std::latch sync_point(num_threads);
-//    
+//
 //    /*
 //     Outside of thread:
 //     */
-//    
+//
 //    std::atomic<float> max_score{0.0};
 //    std::atomic<float> best_MSE{FLT_MAX};
 //    std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
-//    
+//
 //    auto start_time = Clock::now();
 //
 //    /*
 //     Inside of thread:
 //     */
-//    
-//    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token, &best_MSE]()
+//
+//    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &best_MSE]()
 //    {
 //        std::random_device rand_dev;
 //        std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-//        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token);
-//        
+//        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol);
+//
 //        sync_point.arrive_and_wait();
 //        float score = 0, check_point_score = 0;
 //        std::vector<std::string> temp_legal_moves;
-//        
+//
 //        size_t temp_sz;
 //    //    std::string expression, orig_expression, best_expression;
-//        
+//
 //        /*
 //         For this setup, we don't know a-priori the number of particles, so we generate them and their corresponding velocities as needed
 //         */
@@ -6135,17 +6960,17 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //        std::unordered_map<float, std::unordered_map<int, int>> Nsa;
 //        std::unordered_map<float, std::unordered_map<int, float>> Psa;
 //        std::unordered_map<int, float> p_i_vals, p_i;
-//        
+//
 //        /*
 //         In this implementation of PSO:
-//         
+//
 //             The traditional PSO initializes the particle positions to be between 0 and 1. However, in this application,
 //             the particle positions are discrete values and any of the legal integer tokens (moves). The
 //             velocities are continuous-valued and perturb the postions, which are subsequently constrained by rounding to
 //             the nearest whole number then taking the modulo w.r.t. the # of allowed legal moves.
-//         
+//
 //         */
-//        
+//
 //        for (int iter = 0; (timeElapsedSince(start_time) < time); iter++)
 //        {
 //            if (iter && (iter%50000 == 0))
@@ -6170,7 +6995,7 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //                }
 //                check_point_score = max_score;
 //            }
-//            
+//
 //            for (int i = 0; (score = x.complete_status()) == -1; i++) //i is the index of the token
 //            {
 //                rp = x.pos_dist(generator), rg = x.pos_dist(generator);
@@ -6182,7 +7007,7 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //                    particle_positions.push_back(x.pos_dist(generator));
 //                    v.push_back(x.vel_dist(generator));
 //                }
-//                
+//
 //                particle_positions[i] = trueMod(std::round(particle_positions[i]), temp_sz);
 //                x.pieces.push_back(temp_legal_moves[particle_positions[i]]); //x.pieces holds the pieces corresponding to the indices
 //                curr_positions.push_back(particle_positions[i]);
@@ -6198,7 +7023,7 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //                particle_positions[i] += v[i];
 //                Nsa[curr_positions[i]][i]++;
 //            }
-//            
+//
 //            for (int i = 0; i < static_cast<int>(curr_positions.size()); i++)
 //            {
 //                Psa[curr_positions[i]][i] = (Psa[curr_positions[i]][i]+score)/Nsa[curr_positions[i]][i];
@@ -6207,9 +7032,9 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //                    p_i[i] = curr_positions[i];
 //                }
 //                p_i_vals[i] = std::max(p_i_vals[i], Psa[curr_positions[i]][i]);
-//                
+//
 //            }
-//            
+//
 //            if (score > max_score)
 //            {
 //                for (int idx = 0; idx < static_cast<int>(curr_positions.size()); idx++)
@@ -6233,17 +7058,17 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //            curr_positions.clear();
 //        }
 //    };
-//    
+//
 //    for (unsigned int i = 0; i < num_threads; i++)
 //    {
 //        threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
 //    }
-//    
+//
 //    for (unsigned int i = 0; i < num_threads; i++)
 //    {
 //        threads[i].join();
 //    }
-//        
+//
 //    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
 //    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
 //    std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
@@ -6254,48 +7079,48 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //}
 //
 ////https://arxiv.org/abs/2205.13134
-//void ConcurrentMCTS(std::vector<std::string> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
+//void ConcurrentMCTS(std::vector<std::string> (*diffeq)(Board&), size_t num_diff_eqns, const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f)
 //{
 //    if (num_threads == 0)
 //    {
 //        unsigned int temp = std::thread::hardware_concurrency();
 //        num_threads = ((temp <= 1) ? 1 : temp);
 //    }
-//    
+//
 //    std::vector<std::thread> threads(num_threads);
 //    std::latch sync_point(num_threads);
-//    
+//
 //    /*
 //     Outside of thread:
 //     */
 //    std::atomic<float> max_score{0.0f};
 //    std::atomic<float> best_MSE{FLT_MAX};
-//    
+//
 //    std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
-//    
+//
 //    auto start_time = Clock::now();
-//    
+//
 //    /*
 //     Inside of thread:
 //     */
-//    
+//
 //    boost::concurrent_flat_map<std::string, boost::concurrent_flat_map<std::string, float>> Qsa;
 //    boost::concurrent_flat_map<std::string, boost::concurrent_flat_map<std::string, int>> Nsa;
 //    boost::concurrent_flat_map<std::string, int> Ns;
-//    
-//    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token, &best_MSE, &Qsa, &Nsa, &Ns]()
+//
+//    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &best_MSE, &Qsa, &Nsa, &Ns]()
 //    {
 //        std::random_device rand_dev;
 //        std::mt19937 thread_local generator(rand_dev());
-//        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token);
-//        
+//        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol);
+//
 //        sync_point.arrive_and_wait();
 //        float score = 0.0f, check_point_score = 0.0f, UCT, UCT_best;
 //        std::string best_act;
-//        
+//
 //        std::vector<std::string> temp_legal_moves;
 //        std::string state;
-//        
+//
 //        float c = 1.4f; //"controls the balance between exploration and exploitation", see equation 2 here: https://web.engr.oregonstate.edu/~afern/classes/cs533/notes/uct.pdf, top of page 8 here: https://arxiv.org/pdf/1402.6028.pdf, first formula in section 4. Experiments here: https://cesa-bianchi.di.unimi.it/Pubblicazioni/ml-02.pdf
 //        std::vector<std::pair<std::string, std::string>> moveTracker;
 //        moveTracker.reserve(x.reserve_amount);
@@ -6309,7 +7134,7 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //                state += x.pieces[x.pieces.size()-1] + " ";
 //            }
 //        };
-//        
+//
 //        for (int i = 0; (timeElapsedSince(start_time) < time); i++)
 //        {
 //            if (i && (i%1000 == 0))
@@ -6336,7 +7161,7 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //            {
 //                temp_legal_moves = x.get_legal_moves();
 //                assert(temp_legal_moves.size());
-//                
+//
 ////                for (float i: temp_legal_moves)
 ////                {
 ////                    assert(i >= 0.0f);
@@ -6349,7 +7174,7 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //                best_act = temp_legal_moves[0];
 //                std::vector<std::string> best_acts;
 //                best_acts.reserve(temp_legal_moves.size());
-//                
+//
 //                for (const std::string& a : temp_legal_moves)
 //                {
 ////                    assert(a > -1.0f);
@@ -6414,7 +7239,7 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //                        best_acts.push_back(a);
 //                        UCT = -FLT_MAX;
 //                    }
-//                    
+//
 //                    if (UCT > UCT_best)
 //                    {
 //                        best_act = a;
@@ -6427,7 +7252,7 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //                    std::uniform_int_distribution<int> distribution(0, best_acts.size() - 1);
 //                    best_act = best_acts[distribution(generator)];
 //                }
-//                
+//
 //                x.pieces.push_back(best_act);
 //                moveTracker.push_back(make_pair(state, best_act));
 ////                assert(Ns.contains(state));
@@ -6464,14 +7289,14 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //                        });
 //                        x.second.insert_or_assign(state_action.second, 0.0f);
 //                    }
-//                    
+//
 //                    x.second.visit(state_action.second, [&](auto& y)
 //                    {
 //                        y.second = std::max(y.second, score);
 //                    });
 //                });
 //            }
-//            
+//
 //            if (score > max_score)
 //            {
 //                max_score = score;
@@ -6486,17 +7311,17 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //            moveTracker.clear();
 //        }
 //    };
-//    
+//
 //    for (unsigned int i = 0; i < num_threads; i++)
 //    {
 //        threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
 //    }
-//    
+//
 //    for (unsigned int i = 0; i < num_threads; i++)
 //    {
 //        threads[i].join();
 //    }
-//    
+//
 //    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
 //    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
 //    std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
@@ -6507,45 +7332,45 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //}
 //
 ////https://arxiv.org/abs/2205.13134
-//void MCTS(std::vector<std::string> (*diffeq)(Board&), const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
+//void MCTS(std::vector<std::string> (*diffeq)(Board&), size_t num_diff_eqns, const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f)
 //{
 //    if (num_threads == 0)
 //    {
 //        unsigned int temp = std::thread::hardware_concurrency();
 //        num_threads = ((temp <= 1) ? 1 : temp);
 //    }
-//    
+//
 //    std::vector<std::thread> threads(num_threads);
 //    std::latch sync_point(num_threads);
-//    
+//
 //    /*
 //     Outside of thread:
 //     */
 //    std::atomic<float> max_score{0.0};
 //    std::atomic<float> best_MSE{FLT_MAX};
 //    std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
-//    
+//
 //    auto start_time = Clock::now();
-//    
+//
 //    /*
 //     Inside of thread:
 //     */
-//    
-//    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token, &best_MSE]()
+//
+//    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &best_MSE]()
 //    {
 //        std::random_device rand_dev;
 //        std::mt19937 thread_local generator(rand_dev());
-//        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token);
-//        
+//        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol);
+//
 //        sync_point.arrive_and_wait();
 //        float score = 0.0f, check_point_score = 0.0f, UCT, UCT_best;
 //        std::string best_act;
-//        
+//
 //        std::vector<std::string> temp_legal_moves;
 //        std::unordered_map<std::string, std::unordered_map<std::string, float>> Qsa, Nsa;
 //        std::unordered_map<std::string, float> Ns;
 //        std::string state;
-//        
+//
 //        float c = 1.4f; //"controls the balance between exploration and exploitation", see equation 2 here: https://web.engr.oregonstate.edu/~afern/classes/cs533/notes/uct.pdf, top of page 8 here: https://arxiv.org/pdf/1402.6028.pdf, first formula in section 4. Experiments here: https://cesa-bianchi.di.unimi.it/Pubblicazioni/ml-02.pdf
 //        std::vector<std::pair<std::string, std::string>> moveTracker;
 //        moveTracker.reserve(x.reserve_amount);
@@ -6559,7 +7384,7 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //                state += (x.pieces[x.pieces.size()-1] + " ");
 //            }
 //        };
-//        
+//
 //        for (int i = 0; (((timeElapsedSince(start_time) < time) || (Board::expression_dict.size() < 105614388))); i++)
 //        {
 //            if (!(Board::expression_dict.size()%1000000))
@@ -6599,7 +7424,7 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //                best_act = temp_legal_moves[0];
 //                std::vector<std::string> best_acts;
 //                best_acts.reserve(temp_legal_moves.size());
-//                
+//
 //                for (const std::string& a : temp_legal_moves)
 //                {
 //                    if (Nsa[state].count(a))
@@ -6612,14 +7437,14 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //                        best_acts.push_back(a);
 //                        UCT = -FLT_MAX;
 //                    }
-//                    
+//
 //                    if (UCT > UCT_best)
 //                    {
 //                        best_act = a;
 //                        UCT_best = UCT;
 //                    }
 //                }
-//                
+//
 //                if (best_acts.size())
 //                {
 //                    std::uniform_int_distribution<int> distribution(0, best_acts.size() - 1);
@@ -6635,7 +7460,7 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //            {
 //                Qsa[state_action.first][state_action.second] = std::max(Qsa[state_action.first][state_action.second], score);
 //            }
-//            
+//
 //            if (score > max_score)
 //            {
 //                max_score = score;
@@ -6656,17 +7481,17 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //            moveTracker.clear();
 //        }
 //    };
-//    
+//
 //    for (unsigned int i = 0; i < num_threads; i++)
 //    {
 //        threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
 //    }
-//    
+//
 //    for (unsigned int i = 0; i < num_threads; i++)
 //    {
 //        threads[i].join();
 //    }
-//    
+//
 //    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
 //    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
 //    std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
@@ -6676,45 +7501,45 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 //    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
 //}
 
-void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), const Eigen::MatrixXf& data, const std::vector<int>& depth, const std::string expression_type = "prefix", size_t num_consts = 4, const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool const_token = false)
+void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), size_t num_diff_eqns, const Eigen::MatrixXf& data, const std::vector<int>& depth, const std::string expression_type = "prefix", size_t num_consts_diff = 0, const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool use_const_pieces = false, int numDataCols = 0)
 {
     if (num_threads == 0)
     {
         unsigned int temp = std::thread::hardware_concurrency();
         num_threads = ((temp <= 1) ? 1 : temp);
     }
-    
+
     std::vector<std::thread> threads(num_threads);
     std::latch sync_point(num_threads);
 
     /*
      Outside of thread:
      */
-    
+
     std::atomic<float> max_score{0.0};
     std::atomic<float> best_MSE{FLT_MAX};
     std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
-    
+
     auto start_time = Clock::now();
-    
+
     /*
      Inside of thread:
      */
-    
-    auto func = [&diffeq, &depth, &expression_type, &num_consts, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &const_token, &best_MSE]()
+
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &use_const_pieces, &numDataCols, &isConstTol, &best_MSE]()
     {
         std::random_device rand_dev;
         std::mt19937 thread_local generator(rand_dev()); // Mersenne Twister random number generator
 
-        Board x(diffeq, true, depth, expression_type, num_consts, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, const_token);
-        
+        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, true, numDataCols);
+
         sync_point.arrive_and_wait();
         float score = 0.0f;
         std::vector<std::string> temp_legal_moves;
         size_t temp_sz;
-        
+
         int n_count = 0;
-//        
+//
         while ((timeElapsedSince(start_time) < time))
         {
             for (int jdx = 0; jdx < x.num_objectives; jdx++)
@@ -6724,7 +7549,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), const
                 {
                     temp_legal_moves = x.get_legal_moves(jdx); //the legal moves
                     temp_sz = temp_legal_moves.size(); //the number of legal moves
-                    
+
                     assert(temp_sz);
                     std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
                     {
@@ -6738,7 +7563,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), const
                 }
             }
 //            printf("score = %f\n", score);
-            
+
             if (Board::expression_dict.size() > n_count)
             {
                 std::scoped_lock str_lock(Board::thread_locker);
@@ -6769,17 +7594,17 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), const
             }
         }
     };
-    
+
     for (unsigned int i = 0; i < num_threads; i++)
     {
-        threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
+        threads[i] = std::thread(func);
     }
-    
+
     for (unsigned int i = 0; i < num_threads; i++)
     {
         threads[i].join();
     }
-    
+
     std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
     std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
     std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
@@ -6792,20 +7617,18 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), const
 int main()
 {
     constexpr double time = 1000000;
-    float threshold = 5.0e-4f;
-    
-//    auto data1 = createMeshgridVectors(10, 3, {0.1f, -1.1f, 0.1f}, {2.1f, 1.1f, 20.0f});
-//    RandomSearch(TwoDAdvectionDiffusion_1 /*differential equation to solve*/, data1 /*data used to solve differential equation*/, std::vector<int>{5} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 1 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
-                
-//    auto data2 = createMeshgridVectors(10, 3, {0.1f, 0.1f, 0.1f}, {2.0f*std::numbers::pi_v<float>, 2.0f*std::numbers::pi_v<float>, 20.0f});
-//    RandomSearch(TwoDAdvectionDiffusion_2 /*differential equation to solve*/, data2 /*data used to solve differential equation*/, std::vector<int>{5} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 1 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
-    
-    auto data = createMeshgridVectors(101, 1, {0.0001f}, {10.0f});
-    
-//    std::cout<<data << '\n' << (Eigen::VectorXf::Ones(5).array() / Eigen::VectorXf::Zero(5).array()).cos() /*Eigen::VectorXf::Zero(5).array().pow(Eigen::VectorXf::Ones(5).array())*/ << '\n';
-    
-    RandomSearch(VortexRadialProfile /*differential equation to solve*/, data /*data used to solve differential equation*/, std::vector<int>{13} /*fixed depths of generated solution*/, "prefix" /*expression representation*/, 0 /*num_consts: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether to any of the const tokens from the differential equation in the original expression, though `const_tokens`must be true as well*/);
-    
+//    float threshold = 0.0223f;
+//    auto data = createMeshgridVectors(101, 1, {0.0001f}, {10.0f});
+//    RandomSearch(VortexRadialProfile /*differential equation to solve*/, 3 /*number of equations in differential equation system*/, data /*data used to solve differential equation*/, std::vector<int>{7} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts_diff: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/, 0 /*number of data columns that constitute labels and not independent variables/features*/);
+    float threshold = 0.0f;
+    Eigen::MatrixXf data(127, 3);
+    data << -10.43428828745382, 0.0012964163037524623, -0.0010561600135938624, -10.317688181744055, 0.0012964163037524623, -0.0010590449646629705, -10.201088076034292, 0.0012964163037524623, -0.001061929915732083, -10.084487970324528, 0.0012964163037524623, -0.0010807860775096723, -9.967887864614763, 0.0012964163037524623, -0.0011318227224482134, -8.91848691322689, 0.0012964163037524623, -0.0010936643774922638, -8.801886807517125, 0.0012964163037524623, -0.0010965493285613778, -8.68528670180736, 0.0012964163037524623, -0.0010994342796304824, -8.568686596097598, 0.0012964163037524623, -0.0010915881967886473, -8.481236516815274, 0.0012964163037524623, -0.0010761774391480077, -7.460985591854841, 0.0012964163037524623, -0.0007317424693321756, -7.344385486145076, 0.0012964163037524623, -0.0006616950327002919, -7.2277853804353125, 0.0012964163037524623, -0.0006260437338381488, -7.111185274725549, 0.0012964163037524623, -0.0005903924349760059, -7.023735195443225, 0.0012964163037524623, -0.0005636539608293984, -6.003484270482792, 0.0012964163037524623, -0.0002904584970633939, -5.886884164773028, 0.0012964163037524623, -0.0002933434481325109, -5.770284059063264, 0.0012964163037524623, -0.00029622839920161436, -5.6536839533535, 0.0012964163037524623, -0.0002634502321286223, -5.566233874071178, 0.0012964163037524623, -0.00014361535924022599, -5.04153339837724, -0.0023812961476865346, 0.0005753938780901555, -4.487682896255862, -0.0023812961476865346, 0.0025630321446362203, -4.371082790546097, -0.0023812961476865346, 0.003170470816595319, -4.254482684836333, -0.004220152373406005, 0.0039049987818705924, -4.13788257912657, -0.0023812961476865346, 0.004744215952619693, -3.1370650051177638, -0.0477397497154341, 0.015162386082458477, -3.0301815748838123, -0.04651384556495444, 0.017571736480597892, -3.0301815748838123, -0.059385839144990904, 0.017571736480597892, -2.9135814691740496, -0.0612246953707104, 0.020200118733113566, -2.9135814691740496, -0.0722578327250274, 0.020200118733113566, -2.826131389891726, -0.0722578327250274, 0.022171405422500352, -2.272280887770348, -0.20097776852539212, 0.03380538107006965, -2.204264159439653, -0.2193663307825871, 0.03703478194098867, -2.1556807820605837, -0.23959374926550153, 0.039341496848788016, -2.1265307556331425, -0.22672175568546504, 0.04072552579346761, -1.864180517786174, -0.3664748288401468, 0.05165624361142156, -1.864180517786174, -0.3811856786459028, 0.05165624361142156, -1.835030491358733, -0.40692966580597567, 0.0529119057852572, -1.7961637894554787, -0.3958965284516587, 0.05212629254610853, -1.7767304385038507, -0.3738302537430248, 0.05316534620334737, -1.7767304385038507, -0.42899594051460965, 0.05316534620334737, -1.7378637366005965, -0.41673689900981303, 0.05538744310479808, -1.5143802006568823, -0.5503604514120964, 0.06859392065655061, -1.5143802006568823, -0.5632324449921329, 0.06859392065655061, -1.456080147802, -0.5797821510236083, 0.07148952152552111, -1.4269301213745589, -0.6092038506351203, 0.07068320834571716, -1.4269301213745589, -0.5650713012178524, 0.07068320834571716, -1.3880634194713046, -0.5944930008293643, 0.07399308257283442, -1.2520299628099139, -0.6643695374067052, 0.07771025027470406, -1.096563155196895, -0.7342460739840461, 0.08765946352014711, -1.0382631023420146, -0.75631234869268, 0.09068147600343156, -1.0188297513903866, -0.7342460739840461, 0.09032323761866505, -0.9605296985355043, -0.763667773595558, 0.09139473856823228, -0.9313796721080632, -0.7765397671755945, 0.0949841086018029, -0.34837914355924404, -0.8813545720416058, 0.1078952792642798, -0.2900790907043618, -0.8923877093959227, 0.1081109856961209, -0.2317790378494795, -0.8850322844930447, 0.1083264085954597, -0.11517893213971497, -0.8887099969444838, 0.10825685757412504, -0.11517893213971497, -0.8997431342988007, 0.10825685757412504, 0.0014211735700477846, -0.8960654218473618, 0.10889242358867447, 0.4095215435542219, -0.8776768595901667, 0.10071037481903938, 0.7301718342560726, -0.8261888852700209, 0.09222130882213057, 0.7593218606835137, -0.8133168916899844, 0.0907023965524053, 0.817621913538396, -0.8004448981099479, 0.09121769317212448, 0.8467719399658353, -0.8151557479157039, 0.09057423883080643, 0.8759219663932765, -0.7857340483041919, 0.08956661658439113, 0.9050719928207176, -0.8004448981099479, 0.08778230764296704, 0.9439386947239718, -0.7710231984984359, 0.08540322905440165, 0.9633720456755999, -0.7894117607556309, 0.08421368976011888, 1.2840223363774506, -0.6423032626980713, 0.07096278110376601, 1.2840223363774506, -0.6551752562781077, 0.07096278110376601, 1.2937390118532637, -0.6239147004408763, 0.07102632037452986, 1.352039064708146, -0.6018484257322423, 0.06793381671873283, 1.371472415659774, -0.6239147004408763, 0.06690298216680045, 1.4297724685146562, -0.5944930008293643, 0.06381047851100341, 1.4297724685146562, -0.6055261381836813, 0.06381047851100341, 1.6046726270793013, -0.4657730650289996, 0.0563485619345576, 1.6435393289825555, -0.45473992767468263, 0.054811139292982716, 1.7018393818374378, -0.43267365296604865, 0.049947734849127005, 1.7212727327890658, -0.45473992767468263, 0.05004382699481444, 1.779572785643948, -0.41796280316029266, 0.04866441212888443, 1.779572785643948, -0.42899594051460965, 0.04866441212888443, 1.954472944208593, -0.28924286735992794, 0.04236496314010472, 1.9933396461118473, -0.27820973000561094, 0.040965085587042566, 2.0710730499183576, -0.256143455296977, 0.0381653304809182, 2.0710730499183576, -0.270854305102733, 0.0381653304809182, 2.0710730499183576, -0.28188744245704994, 0.0381653304809182, 2.109939751821612, -0.2402067013407414, 0.03676545292785605, 2.1876731556281204, -0.23039946813690404, 0.03396569782173175, 2.333423287765326, -0.1715560689138802, 0.030854610209602847, 2.6346402275155505, -0.10167953233653931, 0.021605693132999516, 2.712373631322059, -0.10167953233653931, 0.01973791820879841, 2.7415236577495, -0.08696868253078335, 0.019037502612222985, 2.7998237106043806, -0.0722578327250274, 0.017636671419072176, 2.8289737370318218, -0.08329097007934436, 0.01693625582249675, 3.7326245562824916, -0.013414433502003498, 0.007472265835869461, 3.849224661992256, -0.006059008599125504, 0.006376637533005264, 3.849224661992256, -0.017092145953442495, 0.006376637533005264, 3.9658247677020206, -0.006059008599125504, 0.005281009230141067, 4.082424873411785, -0.006059008599125504, 0.004185380927276871, 4.199024979121546, -0.006059008599125504, 0.0038337565701724525, 4.315625084831311, -0.006059008599125504, 0.002806815055583041, 4.432225190541075, -0.0005424399219670362, 0.0018962403086712788, 4.54882529625084, 0.0012964163037524623, 0.0022326809651833437, 4.665425401960604, 0.0012964163037524623, 0.0014163423316503833, 4.752875481242928, 0.0012964163037524623, 0.001872028283842192, 5.77312640620336, -0.0005424399219670362, -0.0005818385550432711, 5.889726511913125, 0.0012964163037524623, -0.000584723506112388, 6.006326617622889, 0.0012964163037524623, -0.0005876084571814913, 6.12292672333265, 0.0012964163037524623, -0.0006079755495703998, 6.239526829042415, 0.0012964163037524623, -0.0006811290130572356, 7.23062772757541, 0.0012964163037524623, -0.00136232556390265, 7.347227833285174, 0.0012964163037524623, -0.0015817304103852947, 7.463827938994935, 0.0012964163037524623, -0.0018011352568679273, 7.5804280447047, 0.0012964163037524623, -0.001939549782349283, 7.667878123987023, 0.0012964163037524623, -0.0019254043838014701, 8.163428573253519, 0.0012964163037524623, -0.0017486845884493267, 8.688129048947456, 0.0012964163037524623, -0.0015615695110176451, 8.80472915465722, 0.0012964163037524623, -0.001650762588452242, 8.921329260366985, 0.0012964163037524623, -0.001896787283102471, 9.03792936607675, 0.0012964163037524623, -0.001610327152429707, 9.154529471786514, 0.0012964163037524623, -0.0015408317932039549, 9.65007992105301, 0.0012964163037524623, -0.0015530928352476675, 10.145630370319505, 0.0012964163037524623, -0.00156535387729138, 10.26223047602927, 0.0012964163037524623, -0.0015682388283604879, 10.378830581739034, 0.0012964163037524623, -0.0015711237794295918, 10.466280661021358, -0.0023812961476865346, -0.0015732874927314232;
+    std::cout << "data = " << data << '\n';
+
+//    RandomSearch(SolitonWaveFengEq14and15Laser /*differential equation to solve*/, 9 /*number of equations in differential equation system*/, data /*data used to solve differential equation*/, std::vector<int>{4, 4} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts_diff: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/, 2 /*number of data columns that constitute labels and not independent variables/features*/);
+//    SimulatedAnnealing(SolitonWaveFengEq14and15Laser /*differential equation to solve*/, 9 /*number of equations in differential equation system*/, data /*data used to solve differential equation*/, std::vector<int>{4, 4} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts_diff: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/, 2 /*number of data columns that constitute labels and not independent variables/features*/, {} /*seed expressions*/);
+    SimulatedAnnealing(SolitonWaveFengEq14and15Laser /*differential equation to solve*/, 9 /*number of equations in differential equation system*/, data /*data used to solve differential equation*/, std::vector<int>{4, 4} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 1 /*num_consts_diff: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/, 2 /*number of data columns that constitute labels and not independent variables/features*/, {split("1.559132 cos x0 0.774245 * sech *"), split("x0 sech 0.157922 4 cos ^ * sech")} /*seed expressions*/);
+
     return 0;
 }
 

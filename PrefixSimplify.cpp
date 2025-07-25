@@ -1831,11 +1831,11 @@ int main()
     printf("after: ");print_container(test_expr);
     puts("");
     
-//    test_expr = {"/", "sech", "~", "/", "~", "tanh", "cos", "x", "sin", "+", "0", "0", "0"};
-//    printf("before: ");print_container(test_expr);
-//    simplifyPN(test_expr);
-//    printf("after: ");print_container(test_expr);
-//    puts("");
+    test_expr = {"/", "sech", "~", "/", "~", "tanh", "cos", "x", "sin", "+", "0", "0", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
 }
 //g++ -std=c++20 -o PrefixSimplify PrefixSimplify.cpp
 
