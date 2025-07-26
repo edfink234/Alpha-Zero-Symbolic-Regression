@@ -13,7 +13,7 @@ std::vector<int> grasp;
 
 bool is_unary(const std::string& token)
 {
-    return (unary_operators.find(token) != unary_operators.end());
+    return ((unary_operators.find(token) != unary_operators.end()) || (token == "abs"));
 }
 
 bool is_binary(const std::string& token)
@@ -31,6 +31,26 @@ void print_container(const std::vector<std::string>& c)
     for (const std::string& i : c)
         std::cout << i << ' ';
     std::cout << '\n';
+}
+
+float Stof(const std::string& param)
+{
+    try
+    {
+        float val = std::stof(param);
+        return val;
+    }
+    catch (const std::out_of_range&)
+    {
+        if (!param.empty() && param[0] == '-')
+        {
+            return -std::numeric_limits<float>::infinity();
+        }
+        else
+        {
+            return std::numeric_limits<float>::infinity();
+        }
+    }
 }
 
 //https://medium.com/@ryan_forrester_/c-check-if-string-is-number-practical-guide-c7ba6db2febf
@@ -490,6 +510,12 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
 //            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
 //        }
     }
+    else if (expression[low] == "abs") // abs x
+    {
+        new_expression.push_back(expression[low]); // abs
+        int temp = low+1+grasp[low+1];
+        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // abs x
+    }
     else
     {
         for (int i = low; i <= up; i++)
@@ -784,6 +810,13 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                     else if (expression[i] == "sqrt")
                     {
                         expression[i] = simplifyString(std::to_string(sqrt(std::stof(expression[i+1]))));
+                        expression.erase(expression.begin() + i + 1);
+                        simplified = true;
+                        break;
+                    }
+                    else if (expression[i] == "abs")
+                    {
+                        expression[i] = simplifyString(std::to_string(abs(std::stof(expression[i+1]))));
                         expression.erase(expression.begin() + i + 1);
                         simplified = true;
                         break;

@@ -560,6 +560,13 @@ std::ostream& operator<<(std::ostream& os, const std::vector<T>& data)
     return os;
 }
 
+void print_container(const std::vector<std::string>& c, int low, int up)
+{
+    for (int i = low; i <= up; i++)
+        std::cout << c[i] << ' ';
+    puts("");
+}
+
 float MSE(const Eigen::VectorXf& actual)
 {
     return actual.squaredNorm();
@@ -593,7 +600,6 @@ float MSE(const std::vector<Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>
 
     return count > 0 ? temp / count : FLT_MAX;
 }
-
 
 float MSE(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
 {
@@ -847,6 +853,42 @@ struct Board
         }
     }
 
+    std::string print_expression_params()
+    {
+        std::stringstream outstringstream;
+        outstringstream << '{';
+        constexpr const char* const_label = "const";
+        for (size_t i = this->num_consts_diff; i < this->params.size(); i++)
+        {
+            outstringstream << '(' << const_label+std::to_string(i) << ", " << this->params[i] << "), ";
+        }
+        outstringstream << '}';
+        std::string x = outstringstream.str();
+        if (x.size() > 2)
+        {
+            return x.replace(x.size() - 3, std::string::npos, "}");
+        }
+        return x;
+    }
+
+    std::string print_diff_params()
+    {
+        std::stringstream outstringstream;
+        outstringstream << '{';
+        constexpr const char* const_label = "const";
+        for (size_t i = 0; i < this->num_consts_diff; i++)
+        {
+            outstringstream << '(' << const_label+std::to_string(i) << ", " << this->params[i] << "), ";
+        }
+        outstringstream << '}';
+        std::string x = outstringstream.str();
+        if (x.size() > 2)
+        {
+            return x.replace(x.size() - 3, std::string::npos, "}");
+        }
+        return x;
+    }
+
     std::string operator[](size_t index) const
     {
         if (index < Board::__tokens.size())
@@ -927,7 +969,7 @@ struct Board
 
     bool is_unary(const std::string& token) const
     {
-        return (Board::__unary_operators_uset.find(token) != Board::__unary_operators_uset.end());
+        return ((Board::__unary_operators_uset.find(token) != Board::__unary_operators_uset.end()) || (token == "abs"));
     }
 
     bool is_binary(const std::string& token) const
@@ -1288,6 +1330,12 @@ struct Board
     //            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
     //        }
         }
+        else if (expression[low] == "abs") // abs x
+        {
+            new_expression.push_back(expression[low]); // abs
+            int temp = low+1+grasp[low+1];
+            graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // abs x
+        }
         else
         {
             for (int i = low; i <= up; i++)
@@ -1582,6 +1630,13 @@ struct Board
                         else if (expression[i] == "sqrt")
                         {
                             expression[i] = simplifyString(std::to_string(sqrt(Stof(expression[i+1]))));
+                            expression.erase(expression.begin() + i + 1);
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i] == "abs")
+                        {
+                            expression[i] = simplifyString(std::to_string(abs(Stof(expression[i+1]))));
                             expression.erase(expression.begin() + i + 1);
                             simplified = true;
                             break;
@@ -1955,6 +2010,11 @@ struct Board
                 new_expression.push_back(expression[up]);
             }
         }
+        else if (expression[up] == "abs") //x abs
+        {
+            graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
+            new_expression.push_back(expression[up]); //abs
+        }
         else
         {
             for (int i = low; i <= up; i++)
@@ -2253,6 +2313,13 @@ struct Board
                         else if (expression[i] == "sqrt")
                         {
                             expression[i] = simplifyString(std::to_string(sqrt(Stof(expression[i-1]))));
+                            expression.erase(expression.begin() + i - 1);
+                            simplified = true;
+                            break;
+                        }
+                        else if (expression[i] == "abs")
+                        {
+                            expression[i] = simplifyString(std::to_string(abs(Stof(expression[i-1]))));
                             expression.erase(expression.begin() + i - 1);
                             simplified = true;
                             break;
@@ -2696,8 +2763,8 @@ struct Board
         for (int i = (is_prefix ? (static_cast<int>(pieces[idx].size()) - 1) : 0); (is_prefix ? (i >= 0) : (i < static_cast<int>(pieces[idx].size()))); (is_prefix ? (i--) : (i++)))
         {
             token = pieces[idx][i];
-
-            if (std::find(Board::__operators.begin(), Board::__operators.end(), token) == Board::__operators.end()) // leaf
+//            puts(("\ntoken = "+token+"\n").c_str());
+            if (is_const(token)) // leaf
             {
                 if (token.compare(0, 5, "const") == 0 && show_consts)
                 {
@@ -2708,7 +2775,7 @@ struct Board
                     stack.push(token);
                 }
             }
-            else if (std::find(Board::__unary_operators.begin(), Board::__unary_operators.end(), pieces[idx][i]) != Board::__unary_operators.end()) // Unary operator
+            else if (is_unary(token)) // Unary operator
             {
                 std::string operand = stack.top();
                 stack.pop();
@@ -2812,8 +2879,8 @@ struct Board
         for (int i = (is_prefix ? (static_cast<int>(pieces.size()) - 1) : 0); (is_prefix ? (i >= 0) : (i < static_cast<int>(pieces.size()))); (is_prefix ? (i--) : (i++)))
         {
             token = pieces[i];
-
-            if (std::find(Board::__operators.begin(), Board::__operators.end(), token) == Board::__operators.end()) // leaf
+            //puts(("\ntoken = "+token+"\n").c_str());
+            if (this->is_const(token)) // leaf
             {
                 if ((token.compare(0, 5, "const") == 0) && show_consts)
                 {
@@ -2825,7 +2892,7 @@ struct Board
                 }
             }
 
-            else if (std::find(Board::__unary_operators.begin(), Board::__unary_operators.end(), pieces[i]) != Board::__unary_operators.end()) // Unary operator
+            else if (this->is_unary(token)) // Unary operator
             {
                 std::string operand = stack.top();
                 stack.pop();
@@ -2885,9 +2952,8 @@ struct Board
         for (int i = (is_prefix ? (static_cast<int>(pieces.size()) - 1) : 0); (is_prefix ? (i >= 0) : (i < static_cast<int>(pieces.size()))); (is_prefix ? (i--) : (i++)))
         {
             token = pieces[i];
-            //            std::cout << "pieces[i] = " << pieces[i] << '\n';
             assert(token.size());
-            if (std::find(Board::__operators.begin(), Board::__operators.end(), token) == Board::__operators.end()) //not an operator, i.e., a leaf
+            if (is_const(token)) //not an operator, i.e., a leaf
             {
                 if (token.compare(0, 5, "const") == 0)
                 {
@@ -2924,7 +2990,7 @@ struct Board
                     throw(std::runtime_error("bad token"));
                 }
             }
-            else if (std::find(Board::__unary_operators.begin(), Board::__unary_operators.end(), token) != Board::__unary_operators.end()) // Unary operator
+            else if (is_unary(token)) // Unary operator
             {
                 if (token == "cos")
                 {
@@ -2986,6 +3052,12 @@ struct Board
                     stack.pop();
                     stack.push(-temp);
                 }
+                else if (token == "abs") //unary abs
+                {
+                    float temp = stack.top();
+                    stack.pop();
+                    stack.push(abs(temp));
+                }
             }
             else // binary operator
             {
@@ -3028,7 +3100,7 @@ struct Board
         {
             token = pieces[i];
             assert(token.size());
-            if (std::find(Board::__operators.begin(), Board::__operators.end(), token) == Board::__operators.end()) //not an operator, i.e., a leaf
+            if (is_const(token)) //not an operator, i.e., a leaf
             {
                 if (token.compare(0, 5, "const") == 0)
                 {
@@ -3067,7 +3139,7 @@ struct Board
                     stack.push(Board::data[token]);
                 }
             }
-            else if (std::find(Board::__unary_operators.begin(), Board::__unary_operators.end(), token) != Board::__unary_operators.end()) // Unary operator
+            else if (is_unary(token)) // Unary operator
             {
                 if (token == "cos")
                 {
@@ -3128,6 +3200,12 @@ struct Board
                     Eigen::VectorXf temp = stack.top();
                     stack.pop();
                     stack.push(-temp.array());
+                }
+                else if (token == "abs") //unary abs
+                {
+                    Eigen::VectorXf temp = stack.top();
+                    stack.pop();
+                    stack.push(temp.array().cwiseAbs());
                 }
             }
             else // binary operator
@@ -3171,7 +3249,7 @@ struct Board
         {
             token = pieces[i];
             assert(token.size());
-            if (std::find(Board::__operators.begin(), Board::__operators.end(), token) == Board::__operators.end()) // leaf
+            if (is_const(token)) // leaf
             {
                 if (token.compare(0, 5, "const") == 0)
                 {
@@ -3207,7 +3285,7 @@ struct Board
                     stack.push(Board::data[token]);
                 }
             }
-            else if (std::find(Board::__unary_operators.begin(), Board::__unary_operators.end(), token) != Board::__unary_operators.end()) // Unary operator
+            else if (is_unary(token)) // Unary operator
             {
                 if (token == "cos")
                 {
@@ -3268,6 +3346,12 @@ struct Board
                     Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
                     stack.pop();
                     stack.push(-temp.array());
+                }
+                else if (token == "abs") //unary minus
+                {
+                    Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic> temp = stack.top();
+                    stack.pop();
+                    stack.push(temp.array().cwiseAbs());
                 }
             }
             else // binary operator
@@ -3353,14 +3437,14 @@ struct Board
                     low_inv_var_b = grad_piece_prefactor;
                     if (low_inv_var_b)
                     {
-                        low_inv_var_b /= VarianceSum(this->expression_evaluator(x, this->pieces));
+                        low_inv_var_b /= VarianceSum(this->expression_evaluator(x, this->pieces)); //larger variance in SR expressions -> smaller penalty
                     }
                     low_b = MSE(expression_evaluator(x, this->diffeq_result)) + low_inv_var_b;
                     x(i) = temp + 0.00001f;
                     low_inv_var_b = grad_piece_prefactor;
                     if (low_inv_var_b)
                     {
-                        low_inv_var_b /= VarianceSum(this->expression_evaluator(x, this->pieces));
+                        low_inv_var_b /= VarianceSum(this->expression_evaluator(x, this->pieces)); //larger variance in SR expressions -> smaller penalty
                     }
                     grad(i) = ((MSE(expression_evaluator(x, this->diffeq_result)) + low_inv_var_b) - low_b) / 0.00002f;
                     x(i) = temp;
@@ -3411,7 +3495,7 @@ struct Board
                 }
                 if (this->isConstTol)
                 {
-                    for (size_t ldx = num_cols, mdx = 0; ldx < total_cols; ldx++, mdx++) //then loop over each expression value
+                    for (size_t ldx = num_cols, mdx = 0; ldx < total_cols; ldx++, mdx++) //then loop over each SR-expression value
                     {
                         grad(kdx*total_cols + ldx) = (grad_piece_prefactor / expr_eval_var[mdx][kdx]);
                     }
@@ -3667,7 +3751,7 @@ struct Board
             }
             Eigen::VectorXf temp_vec; //need to have a back-up vector in case `improved == false` so we can get the score of the expression we just built.
 
-            if (improved) //If improved, update the expression_dict with this->params
+            if (improved) //If improved, update the expression_dict with this->params, TODO: add a check here in addition to `improved` to also make sure `this->isConstTol` wasn't violated in the process of optimizing
             {
                 //If the `Board::max_expression_dict_sz` hasn't been exceeded, add it to `Board::expression_dict`
                 if (Board::expression_dict.contains(this->expression_string)) //If the expression has been visited before (it's already in `Board::expression_dict`)
@@ -3711,7 +3795,7 @@ struct Board
             for (size_t jdx = 1; jdx < expression_eval.size(); ++jdx)
             {
                 temp = loss_func(expression_eval[jdx]);
-                
+
                 if (isInvalid(temp))
                 {
                     this->MSE_curr = FLT_MAX;
@@ -5380,14 +5464,17 @@ struct Board
 // Infix: (tanh(u)*((1/sech(u)) - α))^2
 // Postfix: u tanh 1 u sech / α - * 2 ^
 
- Infix: (n(ξ) - n(-ξ))^2
- Postfix: n(ξ) n(-ξ) - 2 ^
+ Infix: abs(n(ξ) - n(-ξ))
+// Postfix: n(ξ) n(-ξ) - 2 ^
+ Postfix: n(ξ) n(-ξ) - abs
 
- Infix: (((n(ξ)/1) - 1) - x1)^2
- Postfix: n(ξ) 1 / 1 - x1 - 2 ^
+ Infix: abs(((n(ξ)/1) - 1) - x1)
+// Postfix: n(ξ) 1 / 1 - x1 - 2 ^
+ Postfix: n(ξ) 1 / 1 - x1 - abs
 
- Infix: ((tanh(u)*((1/sech(u)) - α*const0)) - x2)^2
- Postfix: u tanh 1 u sech / α const0 * - * x2 - 2 ^
+ Infix: abs((tanh(u)*((1/sech(u)) - α*const0)) - x2)
+// Postfix: u tanh 1 u sech / α const0 * - * x2 - 2 ^
+ Postfix: u tanh 1 u sech / α const0 * - * x2 - abs 10 *
 
  {x0: ξ}
  {x.pieces[0]: u, x.pieces[1]: n}
@@ -5439,6 +5526,13 @@ std::vector<std::vector<std::string>> SolitonWaveFengEq14and15Laser(Board& x)
         - Best score = 9.99802, MSE = 0.00198078
         - Best expression = (cos(1.559132) * sech((x0 * 0.774245))), sech((sech(x0) * (0.157922 ^ cos(4))))
         - Best expression (original format) = 1.559132 cos x0 0.774245 * sech *, x0 sech 0.157922 4 cos ^ * sech
+     
+     For parameters below (same configuration as the one right above but adding `10 *` at the end of last equation and changing threshold `this->isConstTol` to 0.001 instead of 0 and changing `^ 2` to `abs` in last 3 equations
+       - Best score = 8.81304, MSE = 0.20431
+       - Best expression = (sech(10.466281) - (tanh(sech(x0)) / 4)), sech((3.458594 * sin(sech(x0))))
+       - Best expression (original format) = 10.466281 sech x0 sech tanh 4 / -, 3.458594 x0 sech sin * sech
+       - Best differential equation parameters = {(const0, 4.05498)}
+       - Best expression parameters = {}
     */
     constexpr const char* rho = "0.000544662309"; // 1/1836, Figs 10-11 caption, https://www.bing.com/search?q=9.1e-31%2F%201.67e-27%20&qs=n&form=QBRE&sp=-1&ghc=1&lq=0&pq=9.1e-31%2F%201.67e-27%20&sc=0-18&sk=&cvid=09FAD78B6CC6414E98D1BED802D49D1C
     constexpr const char* omega_squared_factor_for_omega_0_point_8_omega_pe = "0.64"; //0.8^2 ω_{pe} = 0.64 ω_{pe}, Figs 10-11 caption "ω = 0.8*ω_{pe}", ω_{pe} = (4*pi*(n_e=n)*(q_e^2))/(m_e), see "III. PROPAGATION MODES"
@@ -5447,8 +5541,10 @@ std::vector<std::vector<std::string>> SolitonWaveFengEq14and15Laser(Board& x)
     constexpr const char* cs_squared = cs_squared_factor_for_rho_i_1_over_1836_v_te_0_point_05c_v_ti_0_point_001c;
     constexpr const char* alpha_0 = "0.4";
     constexpr const char* alpha = alpha_0;
-    constexpr const char* one_plus_rho_i_times_alpha_for_rho_i_1_over_1836_alpha_0 = "1.0002178649237472767"; //1 + ρ_i*0.4 = 1.0002178649237472767
-    constexpr const char* one_plus_rho_i_times_alpha = one_plus_rho_i_times_alpha_for_rho_i_1_over_1836_alpha_0; //1 + ρ_i*α
+//    constexpr const char* one_plus_rho_i_times_alpha_for_rho_i_1_over_1836_alpha_0 = "1.0002178649237472767"; //1 + ρ_i*0.4 = 1.0002178649237472767
+//    constexpr const char* one_plus_rho_i_times_alpha = one_plus_rho_i_times_alpha_for_rho_i_1_over_1836_alpha_0; //1 + ρ_i*α
+//    constexpr const char* const0 = "4.058336";
+    constexpr const char* const0 = "const0";
 //    std::string infty = std::numeric_limits<float>::infinity();
 
     if (x.expression_type == "prefix")
@@ -5579,7 +5675,7 @@ std::vector<std::vector<std::string>> SolitonWaveFengEq14and15Laser(Board& x)
             else if (i == alpha)
             {
                 results[2].push_back(alpha);
-                results[2].push_back("const0");
+                results[2].push_back(const0);
                 results[2].push_back("*");
             }
             else
@@ -5598,7 +5694,7 @@ std::vector<std::vector<std::string>> SolitonWaveFengEq14and15Laser(Board& x)
             else if (i == alpha)
             {
                 results[3].push_back(alpha);
-                results[3].push_back("const0");
+                results[3].push_back(const0);
                 results[3].push_back("*");
             }
             else
@@ -5623,7 +5719,7 @@ std::vector<std::vector<std::string>> SolitonWaveFengEq14and15Laser(Board& x)
         results[4].push_back("sech"); // sech
         results[4].push_back("/"); // /
         results[4].push_back(alpha); // α
-        results[4].push_back("const0"); // const0
+        results[4].push_back(const0); // const0
         results[4].push_back("*"); // *
         for (const std::string& i: x.pieces[0]) // u
         {
@@ -5671,7 +5767,7 @@ std::vector<std::vector<std::string>> SolitonWaveFengEq14and15Laser(Board& x)
         results[5].push_back("sech"); // sech
         results[5].push_back("/"); // /
         results[5].push_back(alpha); // α
-        results[5].push_back("const0"); // const0
+        results[5].push_back(const0); // const0
         results[5].push_back("*"); // *
         for (const std::string& i: x.pieces[0]) // u(ξ_max)
         {
@@ -5709,6 +5805,7 @@ std::vector<std::vector<std::string>> SolitonWaveFengEq14and15Laser(Board& x)
 //        results[6].push_back("2");
 //        results[6].push_back("^");
         //n(ξ) n(-ξ) - 2 ^
+        //n(ξ) n(-ξ) - abs
         for (const std::string& i: x.pieces[1]) //n(ξ)
         {
             results[6].push_back(i);
@@ -5722,9 +5819,11 @@ std::vector<std::vector<std::string>> SolitonWaveFengEq14and15Laser(Board& x)
             }
         }
         results[6].push_back("-");
-        results[6].push_back("2");
-        results[6].push_back("^");
+        //results[6].push_back("2");
+        //results[6].push_back("^");
+        results[6].push_back("abs");
         //n(ξ) 1 / 1 - x1 - 2 ^
+        //n(ξ) 1 / 1 - x1 - abs
         for (const std::string& i: x.pieces[1]) //n(ξ)
         {
             results[7].push_back(i);
@@ -5735,22 +5834,26 @@ std::vector<std::vector<std::string>> SolitonWaveFengEq14and15Laser(Board& x)
         results[7].push_back("-");
         results[7].push_back("x1");
         results[7].push_back("-");
-        results[7].push_back("2");
-        results[7].push_back("^");
-        //u tanh 1 u sech / α const0 * - * x2 - 2 ^
+        //results[7].push_back("2");
+        //results[7].push_back("^");
+        results[7].push_back("abs");
+        //u tanh 1 u sech / α const0 * - * x2 - abs 10 *
         for (const std::string& i: temp) // u tanh 1 u sech / α const0 * - *
         {
             results[8].push_back(i);
             if (i == alpha)
             {
-                results[8].push_back("const0");
+                results[8].push_back(const0);
                 results[8].push_back("*");
             }
         }
         results[8].push_back("x2");
         results[8].push_back("-");
-        results[8].push_back("2");
-        results[8].push_back("^");
+        //results[8].push_back("2");
+        //results[8].push_back("^");
+        results[8].push_back("abs");
+        results[8].push_back("10");
+        results[8].push_back("*");
     }
 
     return results;
@@ -6313,7 +6416,7 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 
 //https://dl.acm.org/doi/pdf/10.1145/3449639.3459345?casa_token=Np-_TMqxeJEAAAAA:8u-d6UyINV6Ex02kG9LthsQHAXMh2oxx3M4FG8ioP0hGgstIW45X8b709XOuaif5D_DVOm_FwFo
 //https://core.ac.uk/download/pdf/6651886.pdf
-void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&), size_t num_diff_eqns, const Eigen::MatrixXf& data, const std::vector<int>& depth, const std::string expression_type = "prefix", size_t num_consts_diff = 0, const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool use_const_pieces = false, int numDataCols = 0, const std::vector<std::vector<std::string>>& seed_expressions = {})
+void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&), size_t num_diff_eqns, const Eigen::MatrixXf& data, const std::vector<int>& depth, const std::string expression_type = "prefix", size_t num_consts_diff = 0, const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool use_const_pieces = false, int numDataCols = 0, const std::vector<std::vector<std::string>>& seed_expressions = {}, bool exit_early = false)
 {
 
     if (num_threads == 0)
@@ -6322,6 +6425,18 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
         num_threads = ((temp <= 1) ? 1 : temp);
         printf("num_threads = %u\n", num_threads);
     }
+    if (exit_early)
+    {
+        if (num_threads != 1)
+        {
+            throw std::runtime_error("Error, make sure `num_threads = 1` when setting `exit_early=true`!");
+        }
+        else if (num_consts_diff > 0)
+        {
+            throw std::runtime_error("Error, make sure `num_consts_diff = 0` when setting `exit_early=true`!");
+        }
+    }
+
 
     std::vector<std::thread> threads(num_threads);
     std::latch sync_point(num_threads);
@@ -6338,7 +6453,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
     /*
      Inside of thread:
      */
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &numDataCols, &seed_expressions, &best_MSE]()
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &numDataCols, &seed_expressions, &exit_early, &best_MSE]()
     {
         std::random_device rand_dev;
         std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
@@ -6375,10 +6490,10 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
         {
 //            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
 //            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
-            if ((score > max_score) || (x.pos_dist(generator) < P(score-max_score)))
+            if ((score > max_score) || (x.pos_dist(generator) < P(score-max_score)) || (exit_early))
             {
                 current = x.pieces; //update current expression
-                if (score > max_score)
+                if ((score > max_score) || (exit_early))
                 {
                     max_score = score;
                     std::scoped_lock str_lock(Board::thread_locker);
@@ -6392,8 +6507,10 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
                     std::cout << "Best score = " << score << ", MSE = " << best_MSE << '\n';
                     std::cout << "Best expression = " << best_expression << '\n';
                     std::cout << "Best expression (original format) = " << orig_expression << '\n';
-                    std::cout << "Best diff result = " << best_expr_result << '\n';
-                    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
+                    std::cout << "Best differential equation parameters = " << x.print_diff_params() << '\n';
+                    std::cout << "Best expression parameters = " << x.print_expression_params() << '\n';
+                    std::cout << "Total system result = " << best_expr_result << '\n';
+                    std::cout << "Total system result (original format) = " << orig_expr_result << '\n';
                 }
             }
             else
@@ -6582,7 +6699,10 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
         }
         reset_const_token_labels();
         updateScore();
-
+        if (exit_early)
+        {
+            exit(1);
+        }
         for (float i = 0; (timeElapsedSince(start_time) < time); i++)
         {
             if (i && (static_cast<int>(i)%50000 == 0))
@@ -7586,6 +7706,10 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), size_
                 std::cout << "Best expression (original format) = " << orig_expression << '\n';
                 std::cout << "Best diff result = " << best_expr_result << '\n';
                 std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
+                std::cout << "Best differential equation parameters = " << x.print_diff_params() << '\n';
+                std::cout << "Best expression parameters = " << x.print_expression_params() << '\n';
+                std::cout << "Total system result = " << best_expr_result << '\n';
+                std::cout << "Total system result (original format) = " << orig_expr_result << '\n';
             }
 
             for (int jdx = 0; jdx < x.pieces.size(); jdx++)
@@ -7620,14 +7744,13 @@ int main()
 //    float threshold = 0.0223f;
 //    auto data = createMeshgridVectors(101, 1, {0.0001f}, {10.0f});
 //    RandomSearch(VortexRadialProfile /*differential equation to solve*/, 3 /*number of equations in differential equation system*/, data /*data used to solve differential equation*/, std::vector<int>{7} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts_diff: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/, 0 /*number of data columns that constitute labels and not independent variables/features*/);
-    float threshold = 0.0f;
+    float threshold = 0.001f;
     Eigen::MatrixXf data(127, 3);
     data << -10.43428828745382, 0.0012964163037524623, -0.0010561600135938624, -10.317688181744055, 0.0012964163037524623, -0.0010590449646629705, -10.201088076034292, 0.0012964163037524623, -0.001061929915732083, -10.084487970324528, 0.0012964163037524623, -0.0010807860775096723, -9.967887864614763, 0.0012964163037524623, -0.0011318227224482134, -8.91848691322689, 0.0012964163037524623, -0.0010936643774922638, -8.801886807517125, 0.0012964163037524623, -0.0010965493285613778, -8.68528670180736, 0.0012964163037524623, -0.0010994342796304824, -8.568686596097598, 0.0012964163037524623, -0.0010915881967886473, -8.481236516815274, 0.0012964163037524623, -0.0010761774391480077, -7.460985591854841, 0.0012964163037524623, -0.0007317424693321756, -7.344385486145076, 0.0012964163037524623, -0.0006616950327002919, -7.2277853804353125, 0.0012964163037524623, -0.0006260437338381488, -7.111185274725549, 0.0012964163037524623, -0.0005903924349760059, -7.023735195443225, 0.0012964163037524623, -0.0005636539608293984, -6.003484270482792, 0.0012964163037524623, -0.0002904584970633939, -5.886884164773028, 0.0012964163037524623, -0.0002933434481325109, -5.770284059063264, 0.0012964163037524623, -0.00029622839920161436, -5.6536839533535, 0.0012964163037524623, -0.0002634502321286223, -5.566233874071178, 0.0012964163037524623, -0.00014361535924022599, -5.04153339837724, -0.0023812961476865346, 0.0005753938780901555, -4.487682896255862, -0.0023812961476865346, 0.0025630321446362203, -4.371082790546097, -0.0023812961476865346, 0.003170470816595319, -4.254482684836333, -0.004220152373406005, 0.0039049987818705924, -4.13788257912657, -0.0023812961476865346, 0.004744215952619693, -3.1370650051177638, -0.0477397497154341, 0.015162386082458477, -3.0301815748838123, -0.04651384556495444, 0.017571736480597892, -3.0301815748838123, -0.059385839144990904, 0.017571736480597892, -2.9135814691740496, -0.0612246953707104, 0.020200118733113566, -2.9135814691740496, -0.0722578327250274, 0.020200118733113566, -2.826131389891726, -0.0722578327250274, 0.022171405422500352, -2.272280887770348, -0.20097776852539212, 0.03380538107006965, -2.204264159439653, -0.2193663307825871, 0.03703478194098867, -2.1556807820605837, -0.23959374926550153, 0.039341496848788016, -2.1265307556331425, -0.22672175568546504, 0.04072552579346761, -1.864180517786174, -0.3664748288401468, 0.05165624361142156, -1.864180517786174, -0.3811856786459028, 0.05165624361142156, -1.835030491358733, -0.40692966580597567, 0.0529119057852572, -1.7961637894554787, -0.3958965284516587, 0.05212629254610853, -1.7767304385038507, -0.3738302537430248, 0.05316534620334737, -1.7767304385038507, -0.42899594051460965, 0.05316534620334737, -1.7378637366005965, -0.41673689900981303, 0.05538744310479808, -1.5143802006568823, -0.5503604514120964, 0.06859392065655061, -1.5143802006568823, -0.5632324449921329, 0.06859392065655061, -1.456080147802, -0.5797821510236083, 0.07148952152552111, -1.4269301213745589, -0.6092038506351203, 0.07068320834571716, -1.4269301213745589, -0.5650713012178524, 0.07068320834571716, -1.3880634194713046, -0.5944930008293643, 0.07399308257283442, -1.2520299628099139, -0.6643695374067052, 0.07771025027470406, -1.096563155196895, -0.7342460739840461, 0.08765946352014711, -1.0382631023420146, -0.75631234869268, 0.09068147600343156, -1.0188297513903866, -0.7342460739840461, 0.09032323761866505, -0.9605296985355043, -0.763667773595558, 0.09139473856823228, -0.9313796721080632, -0.7765397671755945, 0.0949841086018029, -0.34837914355924404, -0.8813545720416058, 0.1078952792642798, -0.2900790907043618, -0.8923877093959227, 0.1081109856961209, -0.2317790378494795, -0.8850322844930447, 0.1083264085954597, -0.11517893213971497, -0.8887099969444838, 0.10825685757412504, -0.11517893213971497, -0.8997431342988007, 0.10825685757412504, 0.0014211735700477846, -0.8960654218473618, 0.10889242358867447, 0.4095215435542219, -0.8776768595901667, 0.10071037481903938, 0.7301718342560726, -0.8261888852700209, 0.09222130882213057, 0.7593218606835137, -0.8133168916899844, 0.0907023965524053, 0.817621913538396, -0.8004448981099479, 0.09121769317212448, 0.8467719399658353, -0.8151557479157039, 0.09057423883080643, 0.8759219663932765, -0.7857340483041919, 0.08956661658439113, 0.9050719928207176, -0.8004448981099479, 0.08778230764296704, 0.9439386947239718, -0.7710231984984359, 0.08540322905440165, 0.9633720456755999, -0.7894117607556309, 0.08421368976011888, 1.2840223363774506, -0.6423032626980713, 0.07096278110376601, 1.2840223363774506, -0.6551752562781077, 0.07096278110376601, 1.2937390118532637, -0.6239147004408763, 0.07102632037452986, 1.352039064708146, -0.6018484257322423, 0.06793381671873283, 1.371472415659774, -0.6239147004408763, 0.06690298216680045, 1.4297724685146562, -0.5944930008293643, 0.06381047851100341, 1.4297724685146562, -0.6055261381836813, 0.06381047851100341, 1.6046726270793013, -0.4657730650289996, 0.0563485619345576, 1.6435393289825555, -0.45473992767468263, 0.054811139292982716, 1.7018393818374378, -0.43267365296604865, 0.049947734849127005, 1.7212727327890658, -0.45473992767468263, 0.05004382699481444, 1.779572785643948, -0.41796280316029266, 0.04866441212888443, 1.779572785643948, -0.42899594051460965, 0.04866441212888443, 1.954472944208593, -0.28924286735992794, 0.04236496314010472, 1.9933396461118473, -0.27820973000561094, 0.040965085587042566, 2.0710730499183576, -0.256143455296977, 0.0381653304809182, 2.0710730499183576, -0.270854305102733, 0.0381653304809182, 2.0710730499183576, -0.28188744245704994, 0.0381653304809182, 2.109939751821612, -0.2402067013407414, 0.03676545292785605, 2.1876731556281204, -0.23039946813690404, 0.03396569782173175, 2.333423287765326, -0.1715560689138802, 0.030854610209602847, 2.6346402275155505, -0.10167953233653931, 0.021605693132999516, 2.712373631322059, -0.10167953233653931, 0.01973791820879841, 2.7415236577495, -0.08696868253078335, 0.019037502612222985, 2.7998237106043806, -0.0722578327250274, 0.017636671419072176, 2.8289737370318218, -0.08329097007934436, 0.01693625582249675, 3.7326245562824916, -0.013414433502003498, 0.007472265835869461, 3.849224661992256, -0.006059008599125504, 0.006376637533005264, 3.849224661992256, -0.017092145953442495, 0.006376637533005264, 3.9658247677020206, -0.006059008599125504, 0.005281009230141067, 4.082424873411785, -0.006059008599125504, 0.004185380927276871, 4.199024979121546, -0.006059008599125504, 0.0038337565701724525, 4.315625084831311, -0.006059008599125504, 0.002806815055583041, 4.432225190541075, -0.0005424399219670362, 0.0018962403086712788, 4.54882529625084, 0.0012964163037524623, 0.0022326809651833437, 4.665425401960604, 0.0012964163037524623, 0.0014163423316503833, 4.752875481242928, 0.0012964163037524623, 0.001872028283842192, 5.77312640620336, -0.0005424399219670362, -0.0005818385550432711, 5.889726511913125, 0.0012964163037524623, -0.000584723506112388, 6.006326617622889, 0.0012964163037524623, -0.0005876084571814913, 6.12292672333265, 0.0012964163037524623, -0.0006079755495703998, 6.239526829042415, 0.0012964163037524623, -0.0006811290130572356, 7.23062772757541, 0.0012964163037524623, -0.00136232556390265, 7.347227833285174, 0.0012964163037524623, -0.0015817304103852947, 7.463827938994935, 0.0012964163037524623, -0.0018011352568679273, 7.5804280447047, 0.0012964163037524623, -0.001939549782349283, 7.667878123987023, 0.0012964163037524623, -0.0019254043838014701, 8.163428573253519, 0.0012964163037524623, -0.0017486845884493267, 8.688129048947456, 0.0012964163037524623, -0.0015615695110176451, 8.80472915465722, 0.0012964163037524623, -0.001650762588452242, 8.921329260366985, 0.0012964163037524623, -0.001896787283102471, 9.03792936607675, 0.0012964163037524623, -0.001610327152429707, 9.154529471786514, 0.0012964163037524623, -0.0015408317932039549, 9.65007992105301, 0.0012964163037524623, -0.0015530928352476675, 10.145630370319505, 0.0012964163037524623, -0.00156535387729138, 10.26223047602927, 0.0012964163037524623, -0.0015682388283604879, 10.378830581739034, 0.0012964163037524623, -0.0015711237794295918, 10.466280661021358, -0.0023812961476865346, -0.0015732874927314232;
     std::cout << "data = " << data << '\n';
 
-//    RandomSearch(SolitonWaveFengEq14and15Laser /*differential equation to solve*/, 9 /*number of equations in differential equation system*/, data /*data used to solve differential equation*/, std::vector<int>{4, 4} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts_diff: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/, 2 /*number of data columns that constitute labels and not independent variables/features*/);
-//    SimulatedAnnealing(SolitonWaveFengEq14and15Laser /*differential equation to solve*/, 9 /*number of equations in differential equation system*/, data /*data used to solve differential equation*/, std::vector<int>{4, 4} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts_diff: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/, 2 /*number of data columns that constitute labels and not independent variables/features*/, {} /*seed expressions*/);
-    SimulatedAnnealing(SolitonWaveFengEq14and15Laser /*differential equation to solve*/, 9 /*number of equations in differential equation system*/, data /*data used to solve differential equation*/, std::vector<int>{4, 4} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 1 /*num_consts_diff: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/, 2 /*number of data columns that constitute labels and not independent variables/features*/, {split("1.559132 cos x0 0.774245 * sech *"), split("x0 sech 0.157922 4 cos ^ * sech")} /*seed expressions*/);
+//    RandomSearch(SolitonWaveFengEq14and15Laser /*differential equation to solve*/, 9 /*number of equations in differential equation system*/, data /*data used to solve differential equation*/, std::vector<int>{4, 4} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 1 /*num_consts_diff: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/, 2 /*number of data columns that constitute labels and not independent variables/features*/);
+    SimulatedAnnealing(SolitonWaveFengEq14and15Laser /*differential equation to solve*/, 9 /*number of equations in differential equation system*/, data /*data used to solve differential equation*/, std::vector<int>{4, 4} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 1 /*num_consts_diff: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 1 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/, 2 /*number of data columns that constitute labels and not independent variables/features*/, {split("10.466281 sech x0 sech tanh 4 / -"), split("3.458594 x0 sech sin * sech")} /*seed expressions*/, false /*whether to exit right after computing the score for the seed epxression (default `false`)*/);
 
     return 0;
 }

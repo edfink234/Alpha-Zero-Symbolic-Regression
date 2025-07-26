@@ -25,11 +25,11 @@ class UnaryNode(Node):
         self.child = None
         
 def is_operator(token):
-    return token in {"cos", "exp", "sqrt", "sin", "asin", "arcsin", "log", "tanh", "acos", "arccos", "~", "+", "-", "*", "/", "^", "ln", "sech", "conj"}
+    return token in {"cos", "exp", "sqrt", "sin", "asin", "arcsin", "log", "tanh", "acos", "arccos", "~", "+", "-", "*", "/", "^", "ln", "sech", "conj", "abs"}
 def is_binary_operator(token):
     return token in {'+', '-', '*', '/', '^'}
 def is_unary_operator(token):
-    return token in {"cos", "exp", "sqrt", "sin", "asin", "arcsin", "log", "tanh", "acos", "arccos", "~", "ln", "sech", "conj"}
+    return token in {"cos", "exp", "sqrt", "sin", "asin", "arcsin", "log", "tanh", "acos", "arccos", "~", "ln", "sech", "conj", "abs"}
 
 
 def rpn_to_infix(rpn_expression):

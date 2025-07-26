@@ -13,7 +13,7 @@ std::vector<int> grasp;
 
 bool is_unary(const std::string& token)
 {
-    return (unary_operators.find(token) != unary_operators.end());
+    return ((unary_operators.find(token) != unary_operators.end()) || (token == "abs"));
 }
 
 bool is_binary(const std::string& token)
@@ -490,6 +490,12 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
 //            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
 //        }
     }
+    else if (expression[low] == "abs") // abs x
+    {
+        new_expression.push_back(expression[low]); // abs
+        int temp = low+1+grasp[low+1];
+        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // abs x
+    }
     else
     {
         for (int i = low; i <= up; i++)
@@ -784,6 +790,13 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                     else if (expression[i] == "sqrt")
                     {
                         expression[i] = simplifyString(std::to_string(sqrt(std::stof(expression[i+1]))));
+                        expression.erase(expression.begin() + i + 1);
+                        simplified = true;
+                        break;
+                    }
+                    else if (expression[i] == "abs")
+                    {
+                        expression[i] = simplifyString(std::to_string(abs(std::stof(expression[i+1]))));
                         expression.erase(expression.begin() + i + 1);
                         simplified = true;
                         break;
@@ -1831,11 +1844,11 @@ int main()
     printf("after: ");print_container(test_expr);
     puts("");
     
-//    test_expr = {"/", "sech", "~", "/", "~", "tanh", "cos", "x", "sin", "+", "0", "0", "0"};
-//    printf("before: ");print_container(test_expr);
-//    simplifyPN(test_expr);
-//    printf("after: ");print_container(test_expr);
-//    puts("");
+    test_expr = {"/", "sech", "~", "/", "~", "tanh", "cos", "x", "sin", "+", "0", "0", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
 }
 //g++ -std=c++20 -o PrefixSimplifyPrev PrefixSimplifyPrev.cpp
 

@@ -13,7 +13,7 @@ std::vector<int> grasp;
 
 bool is_unary(const std::string& token)
 {
-    return (unary_operators.find(token) != unary_operators.end());
+    return ((unary_operators.find(token) != unary_operators.end()) || (token == "abs"));
 }
 
 bool is_binary(const std::string& token)
@@ -468,6 +468,11 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             new_expression.push_back(expression[up]);
         }
     }
+    else if (expression[up] == "abs") //x abs
+    {
+        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
+        new_expression.push_back(expression[up]); //abs
+    }
     else
     {
         for (int i = low; i <= up; i++)
@@ -766,6 +771,13 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
                     else if (expression[i] == "sqrt")
                     {
                         expression[i] = simplifyString(std::to_string(sqrt(std::stof(expression[i-1]))));
+                        expression.erase(expression.begin() + i - 1);
+                        simplified = true;
+                        break;
+                    }
+                    else if (expression[i] == "abs")
+                    {
+                        expression[i] = simplifyString(std::to_string(abs(Stof(expression[i-1]))));
                         expression.erase(expression.begin() + i - 1);
                         simplified = true;
                         break;
