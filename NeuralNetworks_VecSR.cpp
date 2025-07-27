@@ -103,7 +103,7 @@ public:
 
         for (size_t i = 0; i < this->num_columns - 1; i++) //for each column
         {
-            this->features["x"+std::to_string(i)] = Eigen::VectorXf(this->num_rows);
+            this->features["x"+std::to_string(i)] = Eigen::VectorXf(this->num_rows); //create a key-value pair of the form ("x{i}": Vector(num_rows))
             for (size_t j = 0; j < this->num_rows; j++)
             {
                 this->features["x"+std::to_string(i)](j) = this->data(j,i);
@@ -233,7 +233,7 @@ struct Board
             {
                 //puts("here at 224");
                 Board::data = theData;
-                
+                std::cout << "Board::data = " << Board::data << '\n';
                 Board::__num_features = data[0].size() - 1;
                 Board::__input_vars.clear();
                 Board::expression_set.clear();
@@ -1234,10 +1234,26 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                     std::cout << "Best expression = " << best_expression << '\n';
                     std::cout << "Best expression (original format) = " << orig_expression << '\n';
                 }
+                else if (std::isnan(score))
+                {
+                    printf("score is nan\r");
+                }
                 else if (doneGeneratingInitPop)
                 {
+//                    exit(1);
                     //TODO: figure out why score is nan here!!!
                     //TODO: Also figure out if/how simplification is possible, might require recalculating the depth in mutation and crossover function calls.
+                    static int countPrints = 0;
+                    std::scoped_lock str_lock(Board::thread_locker);
+                    std::cout << "pieces = " << x.srnn.pieces << ", score = "
+                    << score << '\n';
+                    if (++countPrints > 100)
+                    {
+                        exit(1);
+                    }
+                }
+                else
+                {
                     std::scoped_lock str_lock(Board::thread_locker);
                     std::cout << "pieces = " << x.srnn.pieces << ", score = "
                     << score << '\n';
@@ -1260,7 +1276,10 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                 }
                 
                 updateScore();
-                individuals.push_back(std::make_pair(x.srnn.pieces, score));
+                if (!std::isnan(score))
+                {
+                    individuals.push_back(std::make_pair(x.srnn.pieces, score));
+                }
                 x.srnn.pieces.clear();
             }
             {
@@ -1968,7 +1987,7 @@ int main()
 //...
 //-1.3 -2.2 Hemberg_2(-1.3, -2.2)
     
-    GP(generateData(20 /*rows*/, 3 /*columns*/, Hemberg_2 /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f), 5 /*fixed depth*/, "postfix", true /*cache*/, 100 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 0 /*num threads*/, {2,10,5,5,1} /*Neural Network number of perceptrons in i'th layers */, std::deque<std::string>{"sigmoid", "sigmoid", "none", "none"}, 10 /*num_epochs*/,/* bias = */ 1.0f, /*eta = */ 0.5f, /*theta = */ 0.01f, /*gamma = */ 0.9f, /*beta_1 = */ 0.9f, /*beta_2 = */ 0.999f, /*lambda = */ 0.01f);
+    GP(generateData(20 /*rows*/, 3 /*columns*/, Hemberg_2 /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f), 5 /*fixed depth*/, "postfix", true /*cache*/, 100 /*time to run the algorithm in seconds*/, 4 /*number of equally spaced points in time to sample the best score thus far*/, "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/, 1 /*number of runs*/, 1 /*num threads*/, {2,10,5,5,1} /*Neural Network number of perceptrons in i'th layers */, std::deque<std::string>{"sigmoid", "sigmoid", "none", "none"}, 10 /*num_epochs*/,/* bias = */ 1.0f, /*eta = */ 0.5f, /*theta = */ 0.01f, /*gamma = */ 0.9f, /*beta_1 = */ 0.9f, /*beta_2 = */ 0.999f, /*lambda = */ 0.01f);
     
 
     return 0;

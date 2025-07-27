@@ -217,7 +217,6 @@ float MultiLayerPerceptron::mse(const Eigen::VectorXf& x, const Eigen::VectorXf&
 // Run a single (x,y) pair with the backpropagation algorithm.
 float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& y)
 {
-    
     // Backpropagation Step by Step:
     
     // STEP 1: Feed a sample to the network `this->run(x)`
@@ -335,7 +334,7 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
                     
                     this->network[i][j].weights[k] = this->expression_evaluator(this->network[i][j].weights[k], this->d[i][j], this->values[i-1][k], this->d_nest[i][j], this->network[i][j].velocities[k], this->network[i][j].gradients[k], g_t_k, this->network[i][j].expt_grad_squared[k], delta_w_t_k, this->network[i][j].expt_weight_squared[k], delta_w_t_k_ada_delta, this->network[i][j].m[k], this->network[i][j].v[k], m_t_k_hat, v_t_k_hat);
                     
-//                    float expression_evaluator(float w_k = 0.0f, float d_ij = 0.0f, float value = 0.0f, float d_ij_nest = 0.0f, float velocity_k = 0.0f, float gradient_k = 0.0f, float g_t_k = 0.0f, float expt_grad_squared_k = 0.0f, float delta_w_t_k = 0.0f, float expt_weight_squared_k = 0.0f, float delta_w_t_k_ada_delta = 0.0f, float m_t_k = 0.0f, float v_t_k = 0.0f, float m_t_k_hat = 0.0f, float v_t_k_hat = 0.0f);
+//                    float expression_evaluator(float w_k = 0.0f, float d_ij = 0.0f, float value = 0.0f, float d_ij_nest = 0.0f, float velocity_k = 0.0f, float gradient_k = 0.0f, float g_t_k = 0.0f, float expt_grad_squared_k = 0.0f, float delta_w_t_k = 0.0f, float expt_weight_squared_k = 0.0f, float delta_w_t_k_ada_delta = 0.0f, float m_t_k = 0.0f, float v_t_k = 0.0f, float m_t_k_hat = 0.0f, float v_t_k_hat = 0.0f, const Eigen::VectorXf& params = {});
                 }
                 else if (this->weight_update == "AdaGrad")
                 {
