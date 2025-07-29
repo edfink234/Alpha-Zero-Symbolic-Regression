@@ -315,7 +315,7 @@ def test_visualize():
             os.system(f"open -a Xcode {file_name}.tex")
             os.system(f"open -a Safari {file_name}.pdf")
     else:
-        plot_rpn_expression_tree("value eta cos * tanh d_ij_nest velocity_k acos ^ acos expt_grad_squared_k velocity_k v_t_k delta_w_t_k / + + / +".split(), save = save)
+        plot_rpn_expression_tree("d_ij_nest epsilon sqrt tanh * gamma acos tanh sin m_t_k / *".split(), save = save)
 #        plot_pn_expression_tree("~ asin sin - d_ij_nest sqrt g_t_k".split(), save = save)
 
 if __name__ == "__main__":

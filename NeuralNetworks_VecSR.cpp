@@ -83,6 +83,17 @@ std::ostream& operator<<(std::ostream& os, const std::vector<T>& vec)
     return os;
 }
 
+template <typename T>
+std::string vec_to_str(const std::vector<T>& vec)
+{
+    std::stringstream ss;
+    for (const auto& i: vec)
+    {
+        ss << i << ' ';
+    }
+    return ss.str();
+}
+
 class Data
 {
     Eigen::MatrixXf data;
@@ -1208,7 +1219,7 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
             sync_point.arrive_and_wait();
             Board secondary_one((depth > 0) ? depth-1 : 0, expression_type, cache), secondary_two((depth > 0) ? depth-1 : 0, expression_type, cache); //For crossover and mutations
             float score = 0.0f, mut_prob = 0.8f, rand_mut_cross;
-            constexpr int init_population = 100;
+            constexpr int init_population = 5;
             std::vector<std::pair<std::vector<std::string>, float>> individuals;
             std::pair<std::vector<std::string>, float> individual_1, individual_2;
             std::vector<std::pair<int, int>> sub_exprs_1, sub_exprs_2;
@@ -1234,10 +1245,6 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                     std::cout << "Best expression = " << best_expression << '\n';
                     std::cout << "Best expression (original format) = " << orig_expression << '\n';
                 }
-                else if (std::isnan(score))
-                {
-                    printf("score is nan\r");
-                }
                 else if (doneGeneratingInitPop)
                 {
 //                    exit(1);
@@ -1261,10 +1268,10 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
             };
             
             //Step 1, generate init_population expressions
-            for (int i = 0; i < init_population; i++)
+            for (int i = 0; i < init_population;)
             {
 //                puts("hi");
-
+                x.srnn.pieces.clear();
                 while ((score = x.complete_status()) == -1) //this while-loop generates one weight-update-rule expression
                 {
                     temp_legal_moves = x.get_legal_moves(); //the legal moves
@@ -1279,8 +1286,9 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                 if (!std::isnan(score))
                 {
                     individuals.push_back(std::make_pair(x.srnn.pieces, score));
+                    i++;
                 }
-                x.srnn.pieces.clear();
+                
             }
             {
                 doneGeneratingInitPop = true;
@@ -1312,6 +1320,10 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                 secondary_one.get_indices(sub_exprs_1, x.srnn.pieces);
                 
                 //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `mut_ind`
+                if (!sub_exprs_1.size()) //If sub_exprs_1 is empty
+                {
+                    throw std::runtime_error("\nSecondary pieces = \n" + vec_to_str(secondary_one.srnn.pieces) + "Primary pieces = \n" + vec_to_str(x.srnn.pieces) + "\nSecondary pieces = " + std::to_string(secondary_one.srnn.pieces.size()) + "\nPrimary pieces size = " + std::to_string(x.srnn.pieces.size()));
+                }
                 std::uniform_int_distribution<int> distribution(0, sub_exprs_1.size() - 1);
                 int mut_ind = distribution(generator);
                 
@@ -1401,6 +1413,10 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                 individuals.push_back(std::make_pair(x.srnn.pieces, score)); //adding the first cross-over'd individual to the expression population
             };
 
+            if (!x.srnn.pieces.size())
+            {
+                throw std::runtime_error("Primary pieces size = 0");
+            }
             for (/*int ngen = 0*/; (timeElapsedSince(start_time) < time); /*ngen++*/)
             {
     //            if (ngen && (ngen%5 == 0))
