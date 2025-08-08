@@ -402,6 +402,65 @@ float VarianceSum(const std::vector<Eigen::VectorXf>& vec)
     return temp;
 }
 
+/*
+||=== Build file: "no target" in "no project" (compiler: unknown) ===|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp||In function 'bool isZero(const Eigen::VectorXf&, float)':|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|415|warning: comparison of integer expressions of different signedness: 'size_t' {aka 'long long unsigned int'} and 'Eigen::EigenBase<Eigen::Matrix<float, -1, 1> >::Index' {aka 'long long int'} [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp||In function 'bool isZero(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::Matrix<float, -1, 1> >, -1>&, float)':|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|431|warning: comparison of integer expressions of different signedness: 'size_t' {aka 'long long unsigned int'} and 'Eigen::EigenBase<Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<float, -1, 1> >, -1, 1, 0, -1, 1> >::Index' {aka 'long long int'} [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp||In function 'bool isConstant(const Eigen::VectorXf&, float)':|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|451|warning: comparison of integer expressions of different signedness: 'size_t' {aka 'long long unsigned int'} and 'Eigen::EigenBase<Eigen::Matrix<float, -1, 1> >::Index' {aka 'long long int'} [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp||In function 'bool isConstant(Eigen::Vector<Eigen::AutoDiffScalar<Eigen::Matrix<float, -1, 1> >, -1>&, float)':|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|467|warning: comparison of integer expressions of different signedness: 'size_t' {aka 'long long unsigned int'} and 'Eigen::EigenBase<Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<float, -1, 1> >, -1, 1, 0, -1, 1> >::Index' {aka 'long long int'} [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp||In constructor 'Board::Board(std::vector<std::vector<std::__cxx11::basic_string<char> > > (*)(Board&), size_t, bool, const std::vector<int>&, const std::string&, size_t, std::string, int, std::string, const Eigen::MatrixXf&, bool, bool, bool, float, bool, bool, int)':|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|725|warning: comparison of integer expressions of different signedness: 'int' and 'size_t' {aka 'long long unsigned int'} [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp||In member function 'std::string Board::print_expression_params()':|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|861|warning: comparison of integer expressions of different signedness: 'size_t' {aka 'long long unsigned int'} and 'Eigen::EigenBase<Eigen::Matrix<float, -1, 1> >::Index' {aka 'long long int'} [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp||In member function 'void Board::graspSimplifyPrefixHelper(std::vector<std::__cxx11::basic_string<char> >&, int, int, std::vector<int>&, std::vector<std::__cxx11::basic_string<char> >&, bool)':|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|1273|warning: comparison of integer expressions of different signedness: 'int' and 'std::vector<std::__cxx11::basic_string<char> >::size_type' {aka 'long long unsigned int'} [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|1305|warning: comparison of integer expressions of different signedness: 'int' and 'std::vector<std::__cxx11::basic_string<char> >::size_type' {aka 'long long unsigned int'} [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp||In member function 'std::pair<int, bool> Board::getRPNdepth(const std::vector<std::__cxx11::basic_string<char> >&, int, size_t, size_t, bool, bool, bool, bool)':|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|2516|warning: comparison of integer expressions of different signedness: 'std::vector<std::vector<int> >::size_type' {aka 'long long unsigned int'} and 'int' [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|2644|warning: comparison of integer expressions of different signedness: 'std::vector<std::vector<int> >::size_type' {aka 'long long unsigned int'} and 'int' [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp||In member function 'std::vector<std::__cxx11::basic_string<char> > Board::get_legal_moves(int)':|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|2672|warning: comparison of integer expressions of different signedness: 'std::vector<int>::size_type' {aka 'long long unsigned int'} and 'int' [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp||In member function 'std::string Board::_to_infix(bool)':|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|2810|warning: comparison of integer expressions of different signedness: 'int' and 'size_t' {aka 'long long unsigned int'} [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp||In member function 'std::string Board::expression(bool)':|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|2865|warning: comparison of integer expressions of different signedness: 'int' and 'size_t' {aka 'long long unsigned int'} [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp||In member function 'std::string Board::_to_infix(const std::vector<std::vector<std::__cxx11::basic_string<char> > >&, bool)':|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|2927|warning: comparison of integer expressions of different signedness: 'int' and 'size_t' {aka 'long long unsigned int'} [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp||In member function 'std::string Board::expression(const std::vector<std::vector<std::__cxx11::basic_string<char> > >&, bool)':|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|2939|warning: comparison of integer expressions of different signedness: 'int' and 'size_t' {aka 'long long unsigned int'} [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp||In member function 'float Board::operator()(Eigen::VectorXf&, Eigen::VectorXf&)':|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|3487|warning: comparison of integer expressions of different signedness: 'size_t' {aka 'long long unsigned int'} and 'Eigen::EigenBase<Eigen::Matrix<float, -1, 1> >::Index' {aka 'long long int'} [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|3488|warning: comparison of integer expressions of different signedness: 'size_t' {aka 'long long unsigned int'} and 'int' [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|3489|warning: comparison of integer expressions of different signedness: 'Eigen::EigenBase<Eigen::Matrix<float, -1, 1> >::Index' {aka 'long long int'} and 'size_t' {aka 'long long unsigned int'} [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp||In member function 'float Board::fitFunctionToData()':|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|3657|warning: comparison of integer expressions of different signedness: 'int' and 'std::vector<std::vector<std::__cxx11::basic_string<char> > >::size_type' {aka 'long long unsigned int'} [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|3734|warning: comparison of integer expressions of different signedness: 'int' and 'std::vector<std::vector<std::__cxx11::basic_string<char> > >::size_type' {aka 'long long unsigned int'} [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|3820|warning: comparison of integer expressions of different signedness: 'int' and 'std::vector<std::vector<std::__cxx11::basic_string<char> > >::size_type' {aka 'long long unsigned int'} [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp||In member function 'float Board::complete_status(int, bool)':|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|3848|warning: comparison of integer expressions of different signedness: 'std::vector<std::vector<int> >::size_type' {aka 'long long unsigned int'} and 'int' [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|3849|warning: comparison of integer expressions of different signedness: 'std::vector<int>::size_type' {aka 'long long unsigned int'} and 'int' [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|3859|warning: comparison of integer expressions of different signedness: 'std::vector<std::vector<int> >::size_type' {aka 'long long unsigned int'} and 'int' [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|3865|warning: comparison of integer expressions of different signedness: 'int' and 'std::vector<std::vector<std::__cxx11::basic_string<char> > >::size_type' {aka 'long long unsigned int'} [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|3879|warning: comparison of integer expressions of different signedness: 'int' and 'std::vector<std::vector<std::__cxx11::basic_string<char> > >::size_type' {aka 'long long unsigned int'} [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|3889|warning: comparison of integer expressions of different signedness: 'int' and 'std::vector<std::vector<std::__cxx11::basic_string<char> > >::size_type' {aka 'long long unsigned int'} [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|3895|warning: comparison of integer expressions of different signedness: 'int' and 'std::vector<std::vector<std::__cxx11::basic_string<char> > >::size_type' {aka 'long long unsigned int'} [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|3927|warning: comparison of integer expressions of different signedness: 'int' and 'std::vector<std::vector<std::__cxx11::basic_string<char> > >::size_type' {aka 'long long unsigned int'} [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|3941|warning: comparison of integer expressions of different signedness: 'int' and 'size_t' {aka 'long long unsigned int'} [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp||In function 'std::vector<std::vector<std::__cxx11::basic_string<char> > > SolitonWaveFengEq14and15Laser(Board&)':|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|5487|warning: comparison of integer expressions of different signedness: 'int' and 'std::vector<std::vector<std::__cxx11::basic_string<char> > >::size_type' {aka 'long long unsigned int'} [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|6536|warning: comparison of integer expressions of different signedness: 'int' and 'size_t' {aka 'long long unsigned int'} [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|6543|warning: comparison of integer expressions of different signedness: 'int' and 'size_t' {aka 'long long unsigned int'} [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|6683|warning: comparison of integer expressions of different signedness: 'std::vector<std::vector<std::__cxx11::basic_string<char> > >::size_type' {aka 'long long unsigned int'} and 'int' [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|7686|warning: comparison of integer expressions of different signedness: 'boost::unordered::concurrent_flat_map<std::__cxx11::basic_string<char>, Eigen::Matrix<float, -1, 1> >::size_type' {aka 'long long unsigned int'} and 'int' [-Wsign-compare]|
+C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|7714|warning: comparison of integer expressions of different signedness: 'int' and 'std::vector<std::vector<std::__cxx11::basic_string<char> > >::size_type' {aka 'long long unsigned int'} [-Wsign-compare]|
+||=== Build finished: 0 error(s), 36 warning(s) (0 minute(s), 38 second(s)) ===|
+
+*/
+
 bool isZero(const Eigen::VectorXf& vec, float tolerance = 1e-5f)
 {
     if (vec.size() <= 1)
@@ -692,7 +751,7 @@ struct Board
     std::vector<std::string> derivat;// Vector to store the derivative.
     bool visualize_exploration, is_primary;
     std::vector<std::vector<std::string>> (*diffeq)(Board&); //differential equation we want to solve
-    size_t num_diff_eqns; //number of equations in the system `diffeq`, TODO: initialize in constructor!
+    size_t num_diff_eqns; //number of equations in the system `diffeq`
     std::vector<std::vector<std::string>> diffeq_result;
     float isConstTol;
     bool simplify_original;
@@ -3650,6 +3709,21 @@ struct Board
         return improved;
     }
 
+    //Returns `true` if each expression in `this->pieces` with parameters `this->params`
+    //has variance greater than or equal to `this->isConstTol`.
+    //Otherwise it returns `false`.
+    bool passesConstantThreshold()
+    {
+        for (int jdx = 0; jdx < this->pieces.size(); jdx++) //loops over each generated symbolic expression
+        {
+            if (isConstant(expression_evaluator(this->params, this->pieces[jdx]), this->isConstTol))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
     float fitFunctionToData()
     {
         float score = 0.0f;
@@ -3693,7 +3767,7 @@ struct Board
                 }
             }
             Eigen::VectorXf expression_eval = expression_evaluator(this->params, this->pieces[jdx]);
-            if ((Board::__num_features == 1) && isConstant(expression_eval, this->isConstTol)) //Ignore the trivial solution (1-d functions)!
+            if (/*(Board::__num_features == 1) && */isConstant(expression_eval, this->isConstTol)) //Ignore the trivial solution (1-d functions)!
             {
                 this->MSE_curr = FLT_MAX;
                 return score;
@@ -3731,11 +3805,11 @@ struct Board
         if (this->params.size())
         {
             this->diffeq_result = diffeq(*this);
+            assert(this->diffeq_result.size() == this->num_diff_eqns);
             for (int jdx = 0; jdx < this->diffeq_result.size(); jdx++)
             {
                 ((this->expression_type == "prefix") ? simplifyPN(this->diffeq_result[jdx]) : simplifyRPN(this->diffeq_result[jdx]));
             }
-            assert(this->diffeq_result.size() == this->num_diff_eqns);
             bool improved = true;
             if (this->fit_method == "LBFGS")
             {
@@ -3751,7 +3825,7 @@ struct Board
             }
             Eigen::VectorXf temp_vec; //need to have a back-up vector in case `improved == false` so we can get the score of the expression we just built.
 
-            if (improved) //If improved, update the expression_dict with this->params, TODO: add a check here in addition to `improved` to also make sure `this->isConstTol` wasn't violated in the process of optimizing
+            if (improved && this->passesConstantThreshold()) //If improved, update the expression_dict with this->params, TODO: add a check here in addition to `improved` to also make sure `this->isConstTol` wasn't violated in the process of optimizing
             {
                 //If the `Board::max_expression_dict_sz` hasn't been exceeded, add it to `Board::expression_dict`
                 if (Board::expression_dict.contains(this->expression_string)) //If the expression has been visited before (it's already in `Board::expression_dict`)
@@ -5472,7 +5546,7 @@ struct Board
 // Postfix: n(ξ) 1 / 1 - x1 - 2 ^
  Postfix: n(ξ) 1 / 1 - x1 - abs
 
- Infix: abs((tanh(u)*((1/sech(u)) - α*const0)) - x2)
+ Infix: 10*abs((tanh(u)*((1/sech(u)) - α*const0)) - x2)
 // Postfix: u tanh 1 u sech / α const0 * - * x2 - 2 ^
  Postfix: u tanh 1 u sech / α const0 * - * x2 - abs 10 *
 
@@ -5489,7 +5563,6 @@ std::vector<std::vector<std::string>> SolitonWaveFengEq14and15Laser(Board& x)
     temp.reserve(100);
     temp_prime.reserve(100);
     std::vector<int> grasp;
-    std::vector<std::string> R_prime;
     /*
       For parameters commented-out below (first 2 equations only):
        - Best score = 0.997519, MSE = 2.17869e+27
@@ -5526,13 +5599,14 @@ std::vector<std::vector<std::string>> SolitonWaveFengEq14and15Laser(Board& x)
         - Best score = 9.99802, MSE = 0.00198078
         - Best expression = (cos(1.559132) * sech((x0 * 0.774245))), sech((sech(x0) * (0.157922 ^ cos(4))))
         - Best expression (original format) = 1.559132 cos x0 0.774245 * sech *, x0 sech 0.157922 4 cos ^ * sech
-     
+
      For parameters below (same configuration as the one right above but adding `10 *` at the end of last equation and changing threshold `this->isConstTol` to 0.001 instead of 0 and changing `^ 2` to `abs` in last 3 equations
-       - Best score = 8.81304, MSE = 0.20431
-       - Best expression = (sech(10.466281) - (tanh(sech(x0)) / 4)), sech((3.458594 * sin(sech(x0))))
-       - Best expression (original format) = 10.466281 sech x0 sech tanh 4 / -, 3.458594 x0 sech sin * sech
-       - Best differential equation parameters = {(const0, 4.05498)}
-       - Best expression parameters = {}
+        - Best score = 8.94096, MSE = 0.0602338
+        - Best expression = (tanh(tanh(sech(x0))) / ((4 + -10.434288) - (tanh(x0) / exp(1)))), sech((sqrt(10.466281) * (sech(x0) ^ tanh(2))))
+        - Best expression (original format) = x0 sech tanh tanh 4 -10.434288 + x0 tanh 1 exp / - /, 10.466281 sqrt x0 sech 2 tanh ^ * sech
+        - Best differential equation parameters = {(const0, 5.22145)}
+        - Best expression parameters = {}
+
     */
     constexpr const char* rho = "0.000544662309"; // 1/1836, Figs 10-11 caption, https://www.bing.com/search?q=9.1e-31%2F%201.67e-27%20&qs=n&form=QBRE&sp=-1&ghc=1&lq=0&pq=9.1e-31%2F%201.67e-27%20&sc=0-18&sk=&cvid=09FAD78B6CC6414E98D1BED802D49D1C
     constexpr const char* omega_squared_factor_for_omega_0_point_8_omega_pe = "0.64"; //0.8^2 ω_{pe} = 0.64 ω_{pe}, Figs 10-11 caption "ω = 0.8*ω_{pe}", ω_{pe} = (4*pi*(n_e=n)*(q_e^2))/(m_e), see "III. PROPAGATION MODES"
@@ -5543,7 +5617,7 @@ std::vector<std::vector<std::string>> SolitonWaveFengEq14and15Laser(Board& x)
     constexpr const char* alpha = alpha_0;
 //    constexpr const char* one_plus_rho_i_times_alpha_for_rho_i_1_over_1836_alpha_0 = "1.0002178649237472767"; //1 + ρ_i*0.4 = 1.0002178649237472767
 //    constexpr const char* one_plus_rho_i_times_alpha = one_plus_rho_i_times_alpha_for_rho_i_1_over_1836_alpha_0; //1 + ρ_i*α
-//    constexpr const char* const0 = "4.058336";
+    //constexpr const char* const0 = "4.06461";
     constexpr const char* const0 = "const0";
 //    std::string infty = std::numeric_limits<float>::infinity();
 
@@ -5855,7 +5929,8 @@ std::vector<std::vector<std::string>> SolitonWaveFengEq14and15Laser(Board& x)
         results[8].push_back("10");
         results[8].push_back("*");
     }
-
+//    results[0] = results[8];
+//    results.resize(1);
     return results;
 }
 
@@ -5961,6 +6036,128 @@ std::vector<std::vector<std::string>> VortexRadialProfile(Board& x)
         result.push_back("sqrt");
         result.push_back(mu);
         results.push_back(result);
+    }
+    else if (x.expression_type == "postfix")
+    {
+        //1 2 / R'' * 1 2 r * / R' * + mu S S * 2 r r * * / - R * + R R * R * -
+        result.push_back("1");
+        result.push_back("2");
+        result.push_back("/");
+        x.derivePostfix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
+        R_prime = x.derivat;
+        x.derivePostfix(0, R_prime.size()-1, "x0", R_prime, grasp); //derivat will store second derivative of R_prime
+        for (const std::string& i: x.derivat) //R''
+        {
+            result.push_back(i);
+        }
+        result.push_back("*");
+        result.push_back("1");
+        result.push_back("2");
+        result.push_back("x0"); //r
+        result.push_back("*");
+        result.push_back("/");
+        for (const std::string& i: R_prime) //R'
+        {
+            result.push_back(i);
+        }
+        result.push_back("*");
+        result.push_back("+");
+        result.push_back(mu);
+        result.push_back(S);
+        result.push_back(S);
+        result.push_back("*");
+        result.push_back("2");
+        result.push_back("x0"); //r
+        result.push_back("x0"); //r
+        result.push_back("*");
+        result.push_back("*");
+        result.push_back("/");
+        result.push_back("-");
+        for (const std::string& i: x.pieces[0]) //R
+        {
+            result.push_back(i);
+        }
+        result.push_back("*");
+        result.push_back("+");
+        for (const std::string& i: x.pieces[0]) //R
+        {
+            result.push_back(i);
+        }
+        for (const std::string& i: x.pieces[0]) //R
+        {
+            result.push_back(i);
+        }
+        result.push_back("*");
+        for (const std::string& i: x.pieces[0]) //R
+        {
+            result.push_back(i);
+        }
+        result.push_back("*");
+        result.push_back("-");
+        results.push_back(result);
+
+        //R(0)
+        result.clear();
+        for (size_t i = 0; i < x.pieces[0].size(); i++)
+        {
+            if (x.pieces[0][i] == "x0")
+            {
+                result.push_back("0");
+            }
+            else
+            {
+                result.push_back(x.pieces[0][i]);
+            }
+        }
+        results.push_back(result);
+
+        //R(∞) mu sqrt -
+        result.clear();
+
+        for (size_t i = 0; i < x.pieces[0].size(); i++)
+        {
+            if (x.pieces[0][i] == "x0")
+            {
+                result.push_back(infty);
+            }
+            else
+            {
+                result.push_back(x.pieces[0][i]);
+            }
+        }
+
+        result.push_back(mu);
+        result.push_back("sqrt");
+        result.push_back("-");
+        results.push_back(result);
+
+
+
+    }
+    return results;
+}
+/*
+ Infix: μ*f + ν*f*f - f*f*f - f - 2*∂^2f/∂r^2 - ∂^4f/∂r^4 - ((1/r) * ((2*(∂^3f/∂r^3)) + ((1/r)*(∂^2f/∂r^2)) - ((1/(r*r))*(∂f/∂r)) + ((1/(r*r))*(∂^3f/∂θ^2∂r)) - ((2/(r*r*r))*(∂^2f/∂θ^2)) + (2*(∂f/∂r)))) - ((1/(r*r)) * ((2*(∂^4f/∂θ^2∂r^2)) + ((1/r)*(∂^3f/∂θ^2∂r)) + ((1/(r*r))*(∂^4f/∂θ^4)) - (2*(∂^2f/∂r^2)) + (2*(∂^2f/∂θ^2)))) - ((2/(r*r*r)) * ((∂f/∂r) - (2*(∂^3f/∂θ^2∂r)) + ((3/r)*(∂^2f/∂θ^2))))
+ 
+Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -
+
+{x0: r, x1: θ}
+{x.pieces[0]: f}
+*/
+std::vector<std::vector<std::string>> SwiftHohenberg(Board& x)
+{
+    std::vector<std::vector<std::string>> results;
+    std::vector<std::string> result;
+    result.reserve(100);
+    std::vector<int> grasp;
+    std::vector<std::string> R_prime;
+    std::string mu = "1";
+    std::string nu = "1";
+    std::string infty = std::to_string(FLT_MAX);
+
+    if (x.expression_type == "prefix")
+    {
+        throw std::invalid_argument("Prefix not implemented yet for this SolitonWaveFengEq14and15Laser function!");
     }
     else if (x.expression_type == "postfix")
     {
@@ -6512,6 +6709,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
                     std::cout << "Total system result = " << best_expr_result << '\n';
                     std::cout << "Total system result (original format) = " << orig_expr_result << '\n';
                 }
+                //TODO: Output the MSE for each equation in the system you are trying to solve!
             }
             else
             {
@@ -7742,16 +7940,32 @@ int main()
 {
     constexpr double time = 1000000;
 //    float threshold = 0.0223f;
-    float threshold = 0.0f;
-    auto data = createMeshgridVectors(101, 1, {0.0001f}, {10.0f});
-    RandomSearch(VortexRadialProfile /*differential equation to solve*/, 3 /*number of equations in differential equation system*/, data /*data used to solve differential equation*/, std::vector<int>{7} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts_diff: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/, 0 /*number of data columns that constitute labels and not independent variables/features*/);
-//    float threshold = 0.001f;
-//    Eigen::MatrixXf data(127, 3);
-//    data << -10.43428828745382, 0.0012964163037524623, -0.0010561600135938624, -10.317688181744055, 0.0012964163037524623, -0.0010590449646629705, -10.201088076034292, 0.0012964163037524623, -0.001061929915732083, -10.084487970324528, 0.0012964163037524623, -0.0010807860775096723, -9.967887864614763, 0.0012964163037524623, -0.0011318227224482134, -8.91848691322689, 0.0012964163037524623, -0.0010936643774922638, -8.801886807517125, 0.0012964163037524623, -0.0010965493285613778, -8.68528670180736, 0.0012964163037524623, -0.0010994342796304824, -8.568686596097598, 0.0012964163037524623, -0.0010915881967886473, -8.481236516815274, 0.0012964163037524623, -0.0010761774391480077, -7.460985591854841, 0.0012964163037524623, -0.0007317424693321756, -7.344385486145076, 0.0012964163037524623, -0.0006616950327002919, -7.2277853804353125, 0.0012964163037524623, -0.0006260437338381488, -7.111185274725549, 0.0012964163037524623, -0.0005903924349760059, -7.023735195443225, 0.0012964163037524623, -0.0005636539608293984, -6.003484270482792, 0.0012964163037524623, -0.0002904584970633939, -5.886884164773028, 0.0012964163037524623, -0.0002933434481325109, -5.770284059063264, 0.0012964163037524623, -0.00029622839920161436, -5.6536839533535, 0.0012964163037524623, -0.0002634502321286223, -5.566233874071178, 0.0012964163037524623, -0.00014361535924022599, -5.04153339837724, -0.0023812961476865346, 0.0005753938780901555, -4.487682896255862, -0.0023812961476865346, 0.0025630321446362203, -4.371082790546097, -0.0023812961476865346, 0.003170470816595319, -4.254482684836333, -0.004220152373406005, 0.0039049987818705924, -4.13788257912657, -0.0023812961476865346, 0.004744215952619693, -3.1370650051177638, -0.0477397497154341, 0.015162386082458477, -3.0301815748838123, -0.04651384556495444, 0.017571736480597892, -3.0301815748838123, -0.059385839144990904, 0.017571736480597892, -2.9135814691740496, -0.0612246953707104, 0.020200118733113566, -2.9135814691740496, -0.0722578327250274, 0.020200118733113566, -2.826131389891726, -0.0722578327250274, 0.022171405422500352, -2.272280887770348, -0.20097776852539212, 0.03380538107006965, -2.204264159439653, -0.2193663307825871, 0.03703478194098867, -2.1556807820605837, -0.23959374926550153, 0.039341496848788016, -2.1265307556331425, -0.22672175568546504, 0.04072552579346761, -1.864180517786174, -0.3664748288401468, 0.05165624361142156, -1.864180517786174, -0.3811856786459028, 0.05165624361142156, -1.835030491358733, -0.40692966580597567, 0.0529119057852572, -1.7961637894554787, -0.3958965284516587, 0.05212629254610853, -1.7767304385038507, -0.3738302537430248, 0.05316534620334737, -1.7767304385038507, -0.42899594051460965, 0.05316534620334737, -1.7378637366005965, -0.41673689900981303, 0.05538744310479808, -1.5143802006568823, -0.5503604514120964, 0.06859392065655061, -1.5143802006568823, -0.5632324449921329, 0.06859392065655061, -1.456080147802, -0.5797821510236083, 0.07148952152552111, -1.4269301213745589, -0.6092038506351203, 0.07068320834571716, -1.4269301213745589, -0.5650713012178524, 0.07068320834571716, -1.3880634194713046, -0.5944930008293643, 0.07399308257283442, -1.2520299628099139, -0.6643695374067052, 0.07771025027470406, -1.096563155196895, -0.7342460739840461, 0.08765946352014711, -1.0382631023420146, -0.75631234869268, 0.09068147600343156, -1.0188297513903866, -0.7342460739840461, 0.09032323761866505, -0.9605296985355043, -0.763667773595558, 0.09139473856823228, -0.9313796721080632, -0.7765397671755945, 0.0949841086018029, -0.34837914355924404, -0.8813545720416058, 0.1078952792642798, -0.2900790907043618, -0.8923877093959227, 0.1081109856961209, -0.2317790378494795, -0.8850322844930447, 0.1083264085954597, -0.11517893213971497, -0.8887099969444838, 0.10825685757412504, -0.11517893213971497, -0.8997431342988007, 0.10825685757412504, 0.0014211735700477846, -0.8960654218473618, 0.10889242358867447, 0.4095215435542219, -0.8776768595901667, 0.10071037481903938, 0.7301718342560726, -0.8261888852700209, 0.09222130882213057, 0.7593218606835137, -0.8133168916899844, 0.0907023965524053, 0.817621913538396, -0.8004448981099479, 0.09121769317212448, 0.8467719399658353, -0.8151557479157039, 0.09057423883080643, 0.8759219663932765, -0.7857340483041919, 0.08956661658439113, 0.9050719928207176, -0.8004448981099479, 0.08778230764296704, 0.9439386947239718, -0.7710231984984359, 0.08540322905440165, 0.9633720456755999, -0.7894117607556309, 0.08421368976011888, 1.2840223363774506, -0.6423032626980713, 0.07096278110376601, 1.2840223363774506, -0.6551752562781077, 0.07096278110376601, 1.2937390118532637, -0.6239147004408763, 0.07102632037452986, 1.352039064708146, -0.6018484257322423, 0.06793381671873283, 1.371472415659774, -0.6239147004408763, 0.06690298216680045, 1.4297724685146562, -0.5944930008293643, 0.06381047851100341, 1.4297724685146562, -0.6055261381836813, 0.06381047851100341, 1.6046726270793013, -0.4657730650289996, 0.0563485619345576, 1.6435393289825555, -0.45473992767468263, 0.054811139292982716, 1.7018393818374378, -0.43267365296604865, 0.049947734849127005, 1.7212727327890658, -0.45473992767468263, 0.05004382699481444, 1.779572785643948, -0.41796280316029266, 0.04866441212888443, 1.779572785643948, -0.42899594051460965, 0.04866441212888443, 1.954472944208593, -0.28924286735992794, 0.04236496314010472, 1.9933396461118473, -0.27820973000561094, 0.040965085587042566, 2.0710730499183576, -0.256143455296977, 0.0381653304809182, 2.0710730499183576, -0.270854305102733, 0.0381653304809182, 2.0710730499183576, -0.28188744245704994, 0.0381653304809182, 2.109939751821612, -0.2402067013407414, 0.03676545292785605, 2.1876731556281204, -0.23039946813690404, 0.03396569782173175, 2.333423287765326, -0.1715560689138802, 0.030854610209602847, 2.6346402275155505, -0.10167953233653931, 0.021605693132999516, 2.712373631322059, -0.10167953233653931, 0.01973791820879841, 2.7415236577495, -0.08696868253078335, 0.019037502612222985, 2.7998237106043806, -0.0722578327250274, 0.017636671419072176, 2.8289737370318218, -0.08329097007934436, 0.01693625582249675, 3.7326245562824916, -0.013414433502003498, 0.007472265835869461, 3.849224661992256, -0.006059008599125504, 0.006376637533005264, 3.849224661992256, -0.017092145953442495, 0.006376637533005264, 3.9658247677020206, -0.006059008599125504, 0.005281009230141067, 4.082424873411785, -0.006059008599125504, 0.004185380927276871, 4.199024979121546, -0.006059008599125504, 0.0038337565701724525, 4.315625084831311, -0.006059008599125504, 0.002806815055583041, 4.432225190541075, -0.0005424399219670362, 0.0018962403086712788, 4.54882529625084, 0.0012964163037524623, 0.0022326809651833437, 4.665425401960604, 0.0012964163037524623, 0.0014163423316503833, 4.752875481242928, 0.0012964163037524623, 0.001872028283842192, 5.77312640620336, -0.0005424399219670362, -0.0005818385550432711, 5.889726511913125, 0.0012964163037524623, -0.000584723506112388, 6.006326617622889, 0.0012964163037524623, -0.0005876084571814913, 6.12292672333265, 0.0012964163037524623, -0.0006079755495703998, 6.239526829042415, 0.0012964163037524623, -0.0006811290130572356, 7.23062772757541, 0.0012964163037524623, -0.00136232556390265, 7.347227833285174, 0.0012964163037524623, -0.0015817304103852947, 7.463827938994935, 0.0012964163037524623, -0.0018011352568679273, 7.5804280447047, 0.0012964163037524623, -0.001939549782349283, 7.667878123987023, 0.0012964163037524623, -0.0019254043838014701, 8.163428573253519, 0.0012964163037524623, -0.0017486845884493267, 8.688129048947456, 0.0012964163037524623, -0.0015615695110176451, 8.80472915465722, 0.0012964163037524623, -0.001650762588452242, 8.921329260366985, 0.0012964163037524623, -0.001896787283102471, 9.03792936607675, 0.0012964163037524623, -0.001610327152429707, 9.154529471786514, 0.0012964163037524623, -0.0015408317932039549, 9.65007992105301, 0.0012964163037524623, -0.0015530928352476675, 10.145630370319505, 0.0012964163037524623, -0.00156535387729138, 10.26223047602927, 0.0012964163037524623, -0.0015682388283604879, 10.378830581739034, 0.0012964163037524623, -0.0015711237794295918, 10.466280661021358, -0.0023812961476865346, -0.0015732874927314232;
-//    std::cout << "data = " << data << '\n';
-//
-////    RandomSearch(SolitonWaveFengEq14and15Laser /*differential equation to solve*/, 9 /*number of equations in differential equation system*/, data /*data used to solve differential equation*/, std::vector<int>{4, 4} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 1 /*num_consts_diff: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/, 2 /*number of data columns that constitute labels and not independent variables/features*/);
-//    SimulatedAnnealing(SolitonWaveFengEq14and15Laser /*differential equation to solve*/, 9 /*number of equations in differential equation system*/, data /*data used to solve differential equation*/, std::vector<int>{4, 4} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 1 /*num_consts_diff: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 1 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/, 2 /*number of data columns that constitute labels and not independent variables/features*/, {split("10.466281 sech x0 sech tanh 4 / -"), split("3.458594 x0 sech sin * sech")} /*seed expressions*/, false /*whether to exit right after computing the score for the seed epxression (default `false`)*/);
+//    auto data = createMeshgridVectors(101, 1, {0.0001f}, {10.0f});
+//    RandomSearch(VortexRadialProfile /*differential equation to solve*/, 3 /*number of equations in differential equation system*/, data /*data used to solve differential equation*/, std::vector<int>{7} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts_diff: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/, 0 /*number of data columns that constitute labels and not independent variables/features*/);
+    float threshold = 0.001f;
+    Eigen::MatrixXf data(127, 3);
+    data << -10.43428828745382, 0.0012964163037524623, -0.0010561600135938624, -10.317688181744055, 0.0012964163037524623, -0.0010590449646629705, -10.201088076034292, 0.0012964163037524623, -0.001061929915732083, -10.084487970324528, 0.0012964163037524623, -0.0010807860775096723, -9.967887864614763, 0.0012964163037524623, -0.0011318227224482134, -8.91848691322689, 0.0012964163037524623, -0.0010936643774922638, -8.801886807517125, 0.0012964163037524623, -0.0010965493285613778, -8.68528670180736, 0.0012964163037524623, -0.0010994342796304824, -8.568686596097598, 0.0012964163037524623, -0.0010915881967886473, -8.481236516815274, 0.0012964163037524623, -0.0010761774391480077, -7.460985591854841, 0.0012964163037524623, -0.0007317424693321756, -7.344385486145076, 0.0012964163037524623, -0.0006616950327002919, -7.2277853804353125, 0.0012964163037524623, -0.0006260437338381488, -7.111185274725549, 0.0012964163037524623, -0.0005903924349760059, -7.023735195443225, 0.0012964163037524623, -0.0005636539608293984, -6.003484270482792, 0.0012964163037524623, -0.0002904584970633939, -5.886884164773028, 0.0012964163037524623, -0.0002933434481325109, -5.770284059063264, 0.0012964163037524623, -0.00029622839920161436, -5.6536839533535, 0.0012964163037524623, -0.0002634502321286223, -5.566233874071178, 0.0012964163037524623, -0.00014361535924022599, -5.04153339837724, -0.0023812961476865346, 0.0005753938780901555, -4.487682896255862, -0.0023812961476865346, 0.0025630321446362203, -4.371082790546097, -0.0023812961476865346, 0.003170470816595319, -4.254482684836333, -0.004220152373406005, 0.0039049987818705924, -4.13788257912657, -0.0023812961476865346, 0.004744215952619693, -3.1370650051177638, -0.0477397497154341, 0.015162386082458477, -3.0301815748838123, -0.04651384556495444, 0.017571736480597892, -3.0301815748838123, -0.059385839144990904, 0.017571736480597892, -2.9135814691740496, -0.0612246953707104, 0.020200118733113566, -2.9135814691740496, -0.0722578327250274, 0.020200118733113566, -2.826131389891726, -0.0722578327250274, 0.022171405422500352, -2.272280887770348, -0.20097776852539212, 0.03380538107006965, -2.204264159439653, -0.2193663307825871, 0.03703478194098867, -2.1556807820605837, -0.23959374926550153, 0.039341496848788016, -2.1265307556331425, -0.22672175568546504, 0.04072552579346761, -1.864180517786174, -0.3664748288401468, 0.05165624361142156, -1.864180517786174, -0.3811856786459028, 0.05165624361142156, -1.835030491358733, -0.40692966580597567, 0.0529119057852572, -1.7961637894554787, -0.3958965284516587, 0.05212629254610853, -1.7767304385038507, -0.3738302537430248, 0.05316534620334737, -1.7767304385038507, -0.42899594051460965, 0.05316534620334737, -1.7378637366005965, -0.41673689900981303, 0.05538744310479808, -1.5143802006568823, -0.5503604514120964, 0.06859392065655061, -1.5143802006568823, -0.5632324449921329, 0.06859392065655061, -1.456080147802, -0.5797821510236083, 0.07148952152552111, -1.4269301213745589, -0.6092038506351203, 0.07068320834571716, -1.4269301213745589, -0.5650713012178524, 0.07068320834571716, -1.3880634194713046, -0.5944930008293643, 0.07399308257283442, -1.2520299628099139, -0.6643695374067052, 0.07771025027470406, -1.096563155196895, -0.7342460739840461, 0.08765946352014711, -1.0382631023420146, -0.75631234869268, 0.09068147600343156, -1.0188297513903866, -0.7342460739840461, 0.09032323761866505, -0.9605296985355043, -0.763667773595558, 0.09139473856823228, -0.9313796721080632, -0.7765397671755945, 0.0949841086018029, -0.34837914355924404, -0.8813545720416058, 0.1078952792642798, -0.2900790907043618, -0.8923877093959227, 0.1081109856961209, -0.2317790378494795, -0.8850322844930447, 0.1083264085954597, -0.11517893213971497, -0.8887099969444838, 0.10825685757412504, -0.11517893213971497, -0.8997431342988007, 0.10825685757412504, 0.0014211735700477846, -0.8960654218473618, 0.10889242358867447, 0.4095215435542219, -0.8776768595901667, 0.10071037481903938, 0.7301718342560726, -0.8261888852700209, 0.09222130882213057, 0.7593218606835137, -0.8133168916899844, 0.0907023965524053, 0.817621913538396, -0.8004448981099479, 0.09121769317212448, 0.8467719399658353, -0.8151557479157039, 0.09057423883080643, 0.8759219663932765, -0.7857340483041919, 0.08956661658439113, 0.9050719928207176, -0.8004448981099479, 0.08778230764296704, 0.9439386947239718, -0.7710231984984359, 0.08540322905440165, 0.9633720456755999, -0.7894117607556309, 0.08421368976011888, 1.2840223363774506, -0.6423032626980713, 0.07096278110376601, 1.2840223363774506, -0.6551752562781077, 0.07096278110376601, 1.2937390118532637, -0.6239147004408763, 0.07102632037452986, 1.352039064708146, -0.6018484257322423, 0.06793381671873283, 1.371472415659774, -0.6239147004408763, 0.06690298216680045, 1.4297724685146562, -0.5944930008293643, 0.06381047851100341, 1.4297724685146562, -0.6055261381836813, 0.06381047851100341, 1.6046726270793013, -0.4657730650289996, 0.0563485619345576, 1.6435393289825555, -0.45473992767468263, 0.054811139292982716, 1.7018393818374378, -0.43267365296604865, 0.049947734849127005, 1.7212727327890658, -0.45473992767468263, 0.05004382699481444, 1.779572785643948, -0.41796280316029266, 0.04866441212888443, 1.779572785643948, -0.42899594051460965, 0.04866441212888443, 1.954472944208593, -0.28924286735992794, 0.04236496314010472, 1.9933396461118473, -0.27820973000561094, 0.040965085587042566, 2.0710730499183576, -0.256143455296977, 0.0381653304809182, 2.0710730499183576, -0.270854305102733, 0.0381653304809182, 2.0710730499183576, -0.28188744245704994, 0.0381653304809182, 2.109939751821612, -0.2402067013407414, 0.03676545292785605, 2.1876731556281204, -0.23039946813690404, 0.03396569782173175, 2.333423287765326, -0.1715560689138802, 0.030854610209602847, 2.6346402275155505, -0.10167953233653931, 0.021605693132999516, 2.712373631322059, -0.10167953233653931, 0.01973791820879841, 2.7415236577495, -0.08696868253078335, 0.019037502612222985, 2.7998237106043806, -0.0722578327250274, 0.017636671419072176, 2.8289737370318218, -0.08329097007934436, 0.01693625582249675, 3.7326245562824916, -0.013414433502003498, 0.007472265835869461, 3.849224661992256, -0.006059008599125504, 0.006376637533005264, 3.849224661992256, -0.017092145953442495, 0.006376637533005264, 3.9658247677020206, -0.006059008599125504, 0.005281009230141067, 4.082424873411785, -0.006059008599125504, 0.004185380927276871, 4.199024979121546, -0.006059008599125504, 0.0038337565701724525, 4.315625084831311, -0.006059008599125504, 0.002806815055583041, 4.432225190541075, -0.0005424399219670362, 0.0018962403086712788, 4.54882529625084, 0.0012964163037524623, 0.0022326809651833437, 4.665425401960604, 0.0012964163037524623, 0.0014163423316503833, 4.752875481242928, 0.0012964163037524623, 0.001872028283842192, 5.77312640620336, -0.0005424399219670362, -0.0005818385550432711, 5.889726511913125, 0.0012964163037524623, -0.000584723506112388, 6.006326617622889, 0.0012964163037524623, -0.0005876084571814913, 6.12292672333265, 0.0012964163037524623, -0.0006079755495703998, 6.239526829042415, 0.0012964163037524623, -0.0006811290130572356, 7.23062772757541, 0.0012964163037524623, -0.00136232556390265, 7.347227833285174, 0.0012964163037524623, -0.0015817304103852947, 7.463827938994935, 0.0012964163037524623, -0.0018011352568679273, 7.5804280447047, 0.0012964163037524623, -0.001939549782349283, 7.667878123987023, 0.0012964163037524623, -0.0019254043838014701, 8.163428573253519, 0.0012964163037524623, -0.0017486845884493267, 8.688129048947456, 0.0012964163037524623, -0.0015615695110176451, 8.80472915465722, 0.0012964163037524623, -0.001650762588452242, 8.921329260366985, 0.0012964163037524623, -0.001896787283102471, 9.03792936607675, 0.0012964163037524623, -0.001610327152429707, 9.154529471786514, 0.0012964163037524623, -0.0015408317932039549, 9.65007992105301, 0.0012964163037524623, -0.0015530928352476675, 10.145630370319505, 0.0012964163037524623, -0.00156535387729138, 10.26223047602927, 0.0012964163037524623, -0.0015682388283604879, 10.378830581739034, 0.0012964163037524623, -0.0015711237794295918, 10.466280661021358, -0.0023812961476865346, -0.0015732874927314232;
+    std::cout << "data = " << data << '\n';
+
+//    RandomSearch(SolitonWaveFengEq14and15Laser /*differential equation to solve*/, 9 /*number of equations in differential equation system*/, data /*data used to solve differential equation*/, std::vector<int>{4, 4} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 1 /*num_consts_diff: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/, 2 /*number of data columns that constitute labels and not independent variables/features*/);
+    SimulatedAnnealing(SolitonWaveFengEq14and15Laser /*differential equation to solve*/,
+       9 /*number of equations in differential equation system*/,
+       data /*data used to solve differential equation*/,
+       std::vector<int>{4, 4} /*fixed depths of generated solution*/,
+       "postfix" /*expression representation*/,
+       1 /*num_consts_diff: number of constants in differential equation*/,
+       "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
+       5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/,
+       true /*cache*/,
+       time /*time to run the algorithm in seconds*/,
+       0 /*num threads*/,
+       true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+       threshold /*threshold for which solutions cannot be constant*/,
+       true /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+       2 /*number of data columns that constitute labels and not independent variables/features*/,
+       2 /*number of data columns that constitute labels and not independent variables/features*/,
+       {split("x0 sech tanh tanh 4 -10.434288 + x0 tanh 1 exp / - /"), split("10.466281 sqrt x0 sech 2 tanh ^ * sech")} /*seed expressions*/,
+       false /*whether to exit right after computing the score for the seed epxression (default `false`)*/);
 
     return 0;
 }
@@ -7761,3 +7975,17 @@ int main()
 //g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd PrefixPostfixMultiThreadDiffSimplifySR_Nd.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
 
 //g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd PrefixPostfixMultiThreadDiffSimplifySR_Nd.cpp -g -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
+
+//git push --set-upstream origin PrefixPostfixSymbolicDifferentiator
+
+//C:\msys64\ucrt64\bin\g++.exe -std=c++1z -IC:\Users\finkelsteine\test_codes\eigen\ -IC:\Users\finkelsteine\test_codes\eigen\unsupported -IC:\Users\finkelsteine\test_codes\boost_1_88_0 -IC:\Users\finkelsteine\test_codes\LBFGSpp\include -c C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp -o C:\Users\finkelsteine\test_codes\hello_with_numbers.o
+//C:\msys64\ucrt64\bin\g++.exe  -o C:\Users\finkelsteine\test_codes\hello_with_numbers.exe C:\Users\finkelsteine\test_codes\hello_with_numbers.o  -O2
+//C:\msys64\ucrt64\bin\g++.exe  -o C:\Users\finkelsteine\test_codes\hello_with_numbers.exe C:\Users\finkelsteine\test_codes\hello_with_numbers.o  -g
+
+//To unzip file: Expand-Archive -Path "C:\Users\finkelsteine\test_codes\boost_1_88_0.zip" -DestinationPath "C:\Users\finkelsteine\test_codes"
+//To count how many instances of a string (in this case "stof" occur in a file (in this case `hello.cpp`):
+// - (Get-Content -Path "C:\Users\finkelsteine\test_codes\hello.cpp" | Select-String -Pattern "stof").Count
+//To launch Python: C:\Users\finkelsteine\AppData\Local\Programs\Python\Launcher\py.exe
+//To get the diff between two files: Compare-Object (Get-Content -Path "C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp") (Get-Content -Path "C:\Users\finkelsteine\test_codes\hello_with_numbers.txt")
+//To install with pip: C:\Users\finkelsteine\AppData\Local\Programs\Python\Launcher\py.exe -m pip install plotdigitizer
+//To change the path variable, do $env:Path="newpath"

@@ -6,7 +6,7 @@ from numpy.random import choice
 from time import time
 from matplotlib.animation import FuncAnimation
 import os
-import sys
+import dot2tex
 
 class Node:
     def __init__(self, value, unique_id):
@@ -25,11 +25,11 @@ class UnaryNode(Node):
         self.child = None
         
 def is_operator(token):
-    return token in {"cos", "exp", "sqrt", "sin", "asin", "arcsin", "log", "tanh", "acos", "arccos", "~", "+", "-", "*", "/", "^", "ln", "sech", "conj", "abs"}
+    return is_binary_operator(token) or is_unary_operator(token)
 def is_binary_operator(token):
-    return token in {'+', '-', '*', '/', '^'}
+    return token in {'+', '-', '*', '/', '^', 'MYCDOT'}
 def is_unary_operator(token):
-    return token in {"cos", "exp", "sqrt", "sin", "asin", "arcsin", "log", "tanh", "acos", "arccos", "~", "ln", "sech", "conj", "abs"}
+    return token in {"cos", "exp", "sqrt", "sin", "asin", "arcsin", "log", "tanh", "acos", "arccos", "~", "ln", "MYBRACKETSQRT", "tan", "MYCOS", "MYSIN", "MYTAN"}
 
 
 def rpn_to_infix(rpn_expression):
@@ -136,7 +136,7 @@ def getRPNdepth(expression):
 
 called = False
 implot = None
-def plot_pn_expression_tree(expression: list[str], block = False, save = False):
+def plot_pn_expression_tree(expression: list[str], save = False):
     global called, implot
 
     def build_tree(expression_tokens):
@@ -190,16 +190,16 @@ def plot_pn_expression_tree(expression: list[str], block = False, save = False):
         graph.write_svg('expression_tree_PN_Hemberg2008_expr_5.svg')
     else:
         graph.write_png('expression_tree.png')
-        if called == False or block == True:
-            implot = plt.imshow(plt.imread('expression_tree.png'))
-            called = True
-        else:
-            implot.set_data(plt.imread('expression_tree.png'))
+#        if called == False or block == True:
+        implot = plt.imshow(plt.imread('expression_tree.png'))
+#            called = True
+#        else:
+        implot.set_data(plt.imread('expression_tree.png'))
         plt.axis('off')
         plt.title(f"{' '.join(expression)}, depth = {getPNdepth(expression)[0]}")
-        plt.show(block = block)
+        plt.show(block = True)
 
-def plot_rpn_expression_tree(expression: list[str], block = False, save = False, filename = "", title = ""):
+def plot_rpn_expression_tree(expression: list[str], save = False, filename = "", title = "", tolatex = False, to_pdf = False):
     global called, implot
 
     def build_tree(expression_tokens):
@@ -249,119 +249,100 @@ def plot_rpn_expression_tree(expression: list[str], block = False, save = False,
     graph = pydot.Dot(graph_type='graph')
     plot_tree(expression_tree, graph)
     
+    
     if save:
         graph.set('label', title)
         graph.set('labelloc', 't')  # Set label location to "top"
         graph.write_svg(filename)
+        print(f"Image file saved as {filename}")
+        if tolatex:
+            # Export to tex
+            replace_dict = {"MYTAU": r"\tau", "MYTHETA": r"\theta", "MYETA": r"\eta", "MYCDOT": r"\cdot", "MYNESTEROV": r"\text{Nesterov}", "MYSIGMA": r"\sigma", "MYEPSILON": r"\epsilon", "MYFRAC": r"\frac", "MYBRACKETSQRT": r"\sqrt{}", "MYSQRT": r"\sqrt", "MYHSPACE": r"\hspace", "MYGAMMA": r"\gamma", "MYLEFT": r"\left", "MYRIGHT": r"\right", "MYTEXTA": r"\text{A}", "MYTEXTDADELTA": r"\text{dadelta}", "MYDELTA": r"\Delta ", "MYMUADAM": r"\widehat{\mu}_{j,m,t=\tau}", "MYNUADAM": r"\widehat{\nu}_{j,m,t=\tau}", "MYSIN": r"\sin", "MYCOS": r"\cos", "MYTAN": r"\tan", "MYLAMBDA": r"\lambda"}
+            texcode = dot2tex.dot2tex(graph.to_string(),format='tikz',texmode='math',crop=True)
+            for replacement in replace_dict:
+                texcode = texcode.replace(replacement, replace_dict[replacement])
+#            texcode = texcode.replace(r"\usepackage{amsmath}", r"\usepackage{amsmath}""\n"r"\usepackage{scalerel}""\n")
+            filename = filename[:filename.find('.')]+".tex"
+            with open(f"{filename}", "w") as f:
+                f.write(texcode)
+            print(f"Latex file saved as {filename}")
+            if to_pdf:
+                status = os.system(f"/Library/TeX/texbin/pdflatex {filename}")
+                if not status:
+                    print(f"Pdf file saved as {filename.replace('.tex','.pdf')}")
     else:
         graph.write_png('expression_tree.png')
-        if called == False or block == True:
-            implot = plt.imshow(plt.imread('expression_tree.png'))
-            called = True
-        else:
-            implot.set_data(plt.imread('expression_tree.png'))
+        implot = plt.imshow(plt.imread('expression_tree.png'))
         plt.axis('off')
-        plt.title(f"{' '.join(expression)}, depth = {getRPNdepth(expression)[0]}")
-        plt.show(block = block)
+        plt.title(title if title else f"{' '.join(expression)}, depth = {getRPNdepth(expression)[0]}")
+        plt.show()
 
-# Example usage:
 def test_visualize():
-#    # Example usage:
     save = False
-    
     if save:
-#        plot_pn_expression_tree("- + + - + - + / * 30 ^ x 2 * - 10 x y ^ x 4 * / 4 5 ^ x 3 / ^ y 2 2 * 2 y / 8 + + 2 ^ x 2 ^ y 2 / ^ y 3 2 x", block=False, save = save)
-#        os.system("rsvg-convert -f pdf -o expression_tree_PN_Hemberg2008_expr_5.pdf expression_tree_PN_Hemberg2008_expr_5.svg")
-        
-        plot_rpn_expression_tree("I I tanh t sqrt ^ ^ I t 0.2 y * / + sech x y 2 I ^ + + sech * -", block=False, save = save, filename = "/Users/edwardfinkelstein/AIFeynmanExpressionTrees/AE601/Case1BestTree.svg", title = r"((I ^ (tanh(I) ^ sqrt(t))) - (sech((I + (t / (0.2 * y)))) * sech((x + (y + (2 ^ I)))))), depth = 6")
-        plot_rpn_expression_tree("I 1 I sqrt asin ^ ^ 2 6.283185 / x y + + t 20.000000 * t 0 + * / sech +", block=False, save = save, filename = "/Users/edwardfinkelstein/AIFeynmanExpressionTrees/AE601/Case2ImprovedTree.svg", title = r"((I ^ (1 ^ asin(sqrt(I)))) + sech((((2 / 6.283185) + (x + y)) / ((t * 20.000000) * (t + 0))))), depth = 5")
-#        os.system("rsvg-convert -f pdf -o /Users/edwardfinkelstein/AIFeynmanExpressionTrees/AE601/Case1BestTree.pdf Case1BestTree.svg")
-#        plot_rpn_expression_tree("I 0.2 t ^ π log log sech 0.2 0.0 x y 0.1 + / / + + / ^", block=False, save = save, filename = "/Users/edwardfinkelstein/AIFeynmanExpressionTrees/AE601/Case2BestTree.svg", title = r"(I ^ ((0.2 ^ t) / (sech(log(log(π))) + (0.2 + (0.000000 / (x / (y + 0.100000))))))), depth = 7")
-#        os.system("rsvg-convert -f pdf -o /Users/edwardfinkelstein/AIFeynmanExpressionTrees/AE601/Case2BestTree.pdf Case2BestTree.svg")
-        
-    else:
-#        print("hi")
 #        print(pn_to_infix(" - - + / ^ x 3 5 / ^ y 3 2 y x".split()))
 #        print(rpn_to_infix("y y x * * cos y +"))
-#        while True:
-        try:
-#                plot_pn_expression_tree("+ cos cos x * 1.031240 + 0.008202 * 1.919085 - cos I - cos x cos cos * x + I I".split(), block=False, save = save)
-#                plot_rpn_expression_tree("I cos 0.427738 * 4.779139 y - 0.390789 x 0.637794 t * - + 0.598703 t cos 1.463665 cos t + 1.063828 I + x 0.031570 x + 1.493230 - * * + - * * + *".split(), block=False, save = save)
-#                plot_rpn_expression_tree("q Ef * m omega_0 2 ^ omega 2 ^ - *  /".split(), block=False, save = save)
-#                plot_pn_expression_tree("- * ~ sin x 1 * ^ x 1 / 1 x".split(), block=True, save = save)
-#            plot_rpn_expression_tree("i u_t * 1 2 / u_xx u_yy + * + u conj u * u * -".split(), block=True, save = save)
-#                x_real = "+ x y"
-#                x_imag = "* x cos y"
-#                plot_pn_expression_tree(("+ " + x_real + " * i " + x_imag).split(), block=True, save = save)
-                '''
-                depth_real  depth_imag  total_depth
-                2           2           4
-                3           2           4
-                4           2           5
-                4           3           5
-                4           4           6 
-                2           3           5
-                2           4           6
-                3           3           5
-                3           4           6 
-                '''
-#                x_real = "x y +"
-#                x_imag = "x y cos *"
-#                plot_rpn_expression_tree((x_real + " i " + x_imag + " * +").split(), block=True, save = save)
-#                plot_pn_expression_tree(("/ * - x_0 x0 x3 * sigma sigma").split(), block=True, save = save) #✅
-#                plot_pn_expression_tree(("/ * - y_0 x1 x3 * sigma sigma").split(), block=True, save = save) #✅
-#                plot_rpn_expression_tree(("x_0 x0 - x3 * sigma sigma * /").split(), block=True, save = save) #✅
-#                plot_rpn_expression_tree(("y_0 x1 - x0 x_0 - x_0 x0 - * x1 y_0 - x1 y_0 - * - exp * sigma sigma * /").split(), block=True, save = save) ✅
-#                plot_rpn_expression_tree(("y_0 x1 - x3 * sigma sigma * /").split(), block=True, save = save) #✅
-#                plot_pn_expression_tree(("* - y_0 x1 * 2 x3").split(), block=True, save = save)
-                
-            
-#                plot_rpn_expression_tree("T_t 1 y y * - T_x * + kappa T_{xx} T_{yy} + * -".split(), block=True, save = save)
-#                plot_pn_expression_tree(("- + T_t * - 1 * y y T_x * kappa + T_{xx} T_{yy}").split(), block=True, save = save)
-#                plot_rpn_expression_tree("T_t 4 y * sin T_x * + 4 x * cos T_y * + kappa T_{xx} T_{yy} + * -".split(), block=True, save = save)
-#                plot_pn_expression_tree(("- + + T_t * sin * 4 y T_x * cos * 4 x T_y * kappa + T_{xx} T_{yy}").split(), block=True, save = save)
-#                plot_rpn_expression_tree("I I ^ y cos x tanh - + t I I ^ + I I tanh ^ / /".split(), block=True, save = save)
-#                plot_rpn_expression_tree("6.283185 0.100000 * 0.100000 20.000000 x1 x2 x0 - - + + ^".split(), block=True, save = save)
-#                plot_pn_expression_tree(("+ + - V_t * const0 V_x / * const1 V + const2 V * * const3 V C").split(), block=True, save = save)
-#                plot_pn_expression_tree(("+ - C_t * const4 C_x * * const3 V C").split(), block=True, save = save)
-#                plot_rpn_expression_tree("V_t const0 V_x * - const1 V * const2 V + / const3 V C * * + +".split(), block=True, save = save)
-#                plot_rpn_expression_tree("C_t const4 C_x * - const3 V C * * +".split(), block=True, save = save)
+        file_names = ("GradientDescent", "HeavyBall", "Nesterov", "AdaGrad", "RMSProp", "AdaDelta", "Adam", "AdamW",\
+         #"nasty_edward_equation"\
+         )
+        expressions = (r"w_{j,m,t=MYTAU-1} MYETA g_{j,m,t=MYTAU} MYCDOT +", \
+                       r"w_{j,m,t=MYTAU-1} MYTHETA v_{j,m,t=MYTAU-1} MYCDOT MYETA g_{j,m,t=MYTAU} MYCDOT + +", \
+                       r"w_{j,m,t=MYTAU-1} MYTHETA v_{j,m,t=MYTAU-1} MYCDOT MYETA d_{j}^{MYNESTEROV} y_{i,m,t=MYTAU} MYCDOT MYCDOT + +", \
+                       r"w_{j,m,t=MYTAU-1} MYETA g_{j,m,t=MYTAU} MYCDOT MYSIGMA_{MYHSPACE{-.05cm}g^{2}_{j,m}} MYEPSILON + MYBRACKETSQRT / +", \
+                       r"w_{j,m,t=MYTAU-1} MYETA g_{j,m,t=MYTAU} MYCDOT EMYLEFT[g_{j,m}^2MYRIGHT]_{t=MYTAU} MYEPSILON + MYBRACKETSQRT / +", \
+                       r"w_{j,m,t=MYTAU-1} MYDELTAw^{MYTEXTAMYHSPACE{-.018cm}MYTEXTDADELTA}_{j,m,t=MYTAU} -", \
+                       r"w_{j,m,t=MYTAU-1} MYETA MYMUADAM MYCDOT MYNUADAM MYEPSILON + MYBRACKETSQRT / +", \
+                       r"w_{j,m,t=MYTAU-1} MYETA  MYLAMBDA w_{j,m,t=MYTAU-1} MYCDOT MYMUADAM MYNUADAM MYBRACKETSQRT MYEPSILON + /  + MYCDOT +",\
+                       #r"x 3 x MYCOS x MYSIN MYSIN - MYCDOT + MYTAN MYCOS MYSIN", \
 
-                
-#                plot_rpn_expression_tree("f_hat' A ϵ x * - sech A ϵ x * - sech * B D x * - sech B D x * - sech * * -".split(), block=True, save = save)
-#                plot_rpn_expression_tree("x0 cos x0 x0 sin ~ * - x0 cos x0 cos * / x0 x0 cos / sech x0 x0 cos / sech * * 1 x0 x0 cos / tanh x0 x0 cos / tanh * - sqrt / ~ x0 x0 cos / tanh acos sin ~ *", block=True, save = save, title = r"((I ^ (tanh(I) ^ sqrt(t))) - (sech((I + (t / (0.2 * y)))) * sech((x + (y + (2 ^ I)))))), depth = 6")
-#                plot_rpn_expression_tree("y' A y * + y y * 1 y y * + / + B y(x0-const3) * C y(x0-const3) * ~ exp * -", block=True, save = save, title = r"B y(x0 - const3) * C y(x0 - const3) * ~ exp *")
-#                    plot_pn_expression_tree(("+", "+", "-", "*", "^", "exp", "log", "20.000000", "/", "x1", "-", "~", "0", "exp", "x0", "*", "ln", "exp", "log", "20.000000", "/", "-", "-", "~", "0", "exp", "x0", "*", "x1", "~", "0", "*", "-", "~", "0", "exp", "x0", "-", "~", "0", "exp", "x0", "*", "-0.214359", "*", "^", "exp", "log", "20.000000", "/", "x1", "-", "~", "0", "exp", "x0", "*", "ln", "exp", "log", "20.000000", "/", "~", "*", "x1", "-", "~", "0", "exp", "x0", "*", "-", "~", "0", "exp", "x0", "-", "~", "0", "exp", "x0", "/", "*", "0.001370", "^", "exp", "log", "20.000000", "/", "x1", "-", "~", "0", "exp", "x0", "+", "1.244282", "^", "exp", "log", "20.000000", "/", "x1", "-", "~", "0", "exp", "x0", "*", "*", "1.238819", "^", "exp", "log", "20.000000", "/", "x1", "-", "~", "0", "exp", "x0", "sech", "exp", "*", "0.805109", "+", "x0", "x1"), block=True, save = save)
-#                    plot_pn_expression_tree(("+ + - * ^ 19.999996 / x1 ~ exp x0 * 2.995732 / - ~ exp x0 * x1 -0.000000 * ~ exp x0 ~ exp x0 * -0.214359 * ^ 19.999996 / x1 ~ exp x0 * 2.995732 / ~ * x1 ~ exp x0 * ~ exp x0 ~ exp x0 / * 0.001370 ^ 19.999996 / x1 ~ exp x0 + 1.244282 ^ 19.999996 / x1 ~ exp x0 * * 1.238819 ^ 19.999996 / x1 ~ exp x0 sech exp * 0.805109 + x0 x1 ").split(), block=True, save = save)
-#                plot_pn_expression_tree(("+ + - * ^ exp log 20.000000 / x1 - ~ 0 exp x0 * ln exp log 20.000000 / - - ~ 0 exp x0 * x1 ~ 0 * - ~ 0 exp x0 - ~ 0 exp x0 * -0.214359 * ^ exp log 20.000000 / x1 - ~ 0 exp x0 * ln exp log 20.000000 / ~ * x1 - ~ 0 exp x0 * - ~ 0 exp x0 - ~ 0 exp x0 / * 0.001370 ^ exp log 20.000000 / x1 - ~ 0 exp x0 + 1.244282 ^ exp log 20.000000 / x1 - ~ 0 exp x0 * * 1.238819 ^ exp log 20.000000 / x1 - ~ 0 exp x0 sech exp * 0.805109 + x0 x1 ").split(), block=True, save = save)
-#                plot_rpn_expression_tree(["x0", "cos", "x0", "x0", "sin", "~", "*", "-", "x0", "cos", "x0", "cos", "*", "/", "x0", "x0", "cos", "/", "sech", "x0", "x0", "cos", "/", "sech", "*", "*", "1", "x0", "x0", "cos", "/", "tanh", "x0", "x0", "cos", "/", "tanh", "*", "-", "sqrt", "/", "~", "x0", "x0", "cos", "/", "tanh", "acos", "sin", "~", "*"], block=True, save = save)
-#                plot_rpn_expression_tree(['x0', 'tanh', '4', '*', 'cos'], block=True, save = save)
-#                plot_rpn_expression_tree(['x0', '0.999487', '+', '4.176018', '4', 'sech', '-', '^'], block=True, save = save)
-#                plot_pn_expression_tree("ln cos tanh - 4 / x0 0.648054".split(), block=True, save = save)
-#                plot_rpn_expression_tree("0 x x * 1 x x + tanh 0 ^ x * * 1 x x + tanh x * * / * ^ cos 1 - sin".split(), block=True, save = save)
-#                plot_rpn_expression_tree("∂v_z/∂t (∂v_z/∂x) v_x * + (∂v_z/∂y) v_y * + (∂v_z/∂z) v_z * + (∂p/∂z) ρ / + ν ∂^2v_z/∂x^2 ∂^2v_z/∂y^2 + ∂^2v_z/∂z^2 + * - f_z -N".split(), block=True, save = save)
-#                plot_rpn_expression_tree("1 2 / 0.999862 -0.858407 + x0 -0.841471 ^ ^ 0.999862 -0.858407 + ln x0 -0.841471 ^ 1 ~ x0 x0 * / -0.841471 * * x0 -0.841471 ^ 1 x0 / -0.841471 * * 1 x0 / -0.841471 * * + * * 0.999862 -0.858407 + x0 -0.841471 ^ ^ 0.999862 -0.858407 + ln x0 -0.841471 ^ 1 x0 / -0.841471 * * * * 0.999862 -0.858407 + ln x0 -0.841471 ^ 1 x0 / -0.841471 * * * * + * 1 2 x0 * / 0.999862 -0.858407 + x0 -0.841471 ^ ^ 0.999862 -0.858407 + ln x0 -0.841471 ^ 1 x0 / -0.841471 * * * * * + 1 1 1 * 2 x0 x0 * * / - 0.999862 -0.858407 + x0 -0.841471 ^ ^ * + 0.999862 -0.858407 + x0 -0.841471 ^ ^ 0.999862 -0.858407 + x0 -0.841471 ^ ^ * 0.999862 -0.858407 + x0 -0.841471 ^ ^ * -".split(), block=True, save = save)
-#                plot_rpn_expression_tree(["x", "x", "+", "x", "x", "-", "-", "asin", "tanh", "sin", "x", "x", "-", "*", "0", "/", "tanh", "0", "/", "~", "sech"], block=True, save = save)
-                plot_rpn_expression_tree("0.000100 1.000000 + 0.000100 x0 1 x0 + - - -".split(), block=True, save = save) #3*x + 2*y - 2*z -> {3, 2, -2}
-#                ['12', '4', '2', '0', '0', '0', '6', '4', '2', '0', '0', '0', '0']
-#                plot_pn_expression_tree(["/", "sech", "~", "/", "~", "tanh", "cos", "x", "sin", "+", "0", "0", "0"], block=True, save = save)
-                
-#                ((x+y)-z) + (((x+y) - z) + x)
-        except KeyboardInterrupt:
-#            
-            plt.close()
-            exit()
+                       )
+        titles = (r"w_{j,m,t=MYTAU} = w_{j,m,t=MYTAU-1} + MYETA MYCDOT g_{j,m,t=MYTAU}", \
+                  r"w_{j,m,t=MYTAU} = w_{j,m,t=MYTAU-1} + MYTHETA MYCDOT v_{j,m,t=MYTAU-1} + MYETA MYCDOT g_{j,m,t=MYTAU}", \
+                  r"w_{j,m,t=MYTAU} = w_{j,m,t=MYTAU-1} + MYTHETA MYCDOT v_{j,m,t=MYTAU-1} + MYETA MYCDOT d_{j}^{MYNESTEROV} MYCDOT y_{i,m,t=MYTAU}", \
+                  r"w_{j,m,t=MYTAU} = w_{j,m,t=MYTAU-1} + MYFRAC{MYETA MYCDOT g_{j,m,t=MYTAU}}{MYSQRT{MYSIGMA_{MYHSPACE{-.05cm}g^{2}_{j,m}} + MYEPSILON}}", \
+                  r"w_{j,m,t=MYTAU} = w_{j,m,t=MYTAU-1} + MYFRAC{MYETA MYCDOT g_{j,m,t=MYTAU}}{MYSQRT{EMYLEFT[g_{j,m}^2MYRIGHT]_{t=MYTAU} + MYEPSILON}}", \
+                  r"w_{j,m,t=MYTAU} = w_{j,m,t=MYTAU-1} - MYDELTAw^{MYTEXTAMYHSPACE{-.018cm}MYTEXTDADELTA}_{j,m,t=MYTAU}", \
+                  r"w_{j,m,t=MYTAU} = w_{j,m,t=MYTAU-1} + MYFRAC{MYETA MYCDOT MYMUADAM}{MYSQRT{MYNUADAM} + MYEPSILON}", \
+                  r"w_{j,m,t=MYTAU} = w_{j,m,t=MYTAU-1} + MYETA MYCDOT MYLEFT(MYLAMBDA MYCDOT w_{j,m,t=MYTAU-1} + MYFRAC{MYMUADAM}{MYSQRT{MYNUADAM} + MYEPSILON}MYRIGHT)",\
+                  #r"f(x) = MYSIN(MYCOS(MYTAN(x+3 MYCDOT (MYCOS(x) - MYSIN(MYSIN(x)))))",
+                  )
+                  
+                  
+                  
+        for file_name, expression, title in zip(file_names, expressions, titles):
+#        for file_name, expression, title in [list(zip(file_names, expressions, titles))[-1]]:
+            plot_rpn_expression_tree(expression = expression, save = True, filename = f"{file_name}.svg", title = title, tolatex=True, to_pdf=True)
+            os.system(f"open -a Xcode {file_name}.tex")
+            os.system(f"open -a Safari {file_name}.pdf")
+    else:
+        plot_rpn_expression_tree("μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -".split(), save = save, title = r"Swift-Hohenberg 2D Polar Coordinates", tolatex = True, to_pdf = True, filename = "SwiftHohenberg2DPolarCoordinates.pdf")
+#        plot_pn_expression_tree("~ asin sin - d_ij_nest sqrt g_t_k".split(), save = save)
 
 if __name__ == "__main__":
-
     test_visualize()
 
 
-#-((x - x_0)*(x - x_0)) = -(x^2 - 2*x*x_0 + x_0^2)
-#(x - x_0)*(x_0 - x) = x*x_0 - x^2 - x_0^2 + x*x_0 = -(x^2 - 2*x*x_0 + x_0^2)
-        
-f(x) 
-
-
-
-g(x)
+#pieces = ~ asin sin - d_ij_nest sqrt g_t_k , score = nan
+#pieces = / + delta_w_t_k w_k sqrt exp sin ^ m_t_k_hat v_t_k , score = nan
+#pieces = cos ln ^ theta ~ / w_k d_ij , score = nan
+#pieces = tanh cos ln - epsilon * w_k delta_w_t_k_ada_delta , score = nan
+#pieces = acos sqrt * asin v_t_k_hat ln * beta_2 delta_w_t_k_ada_delta , score = nan
+#pieces = / theta acos sin cos sin d_ij_nest , score = nan
+#pieces = ^ v_t_k / asin value ln asin cos d_ij_nest , score = nan
+#pieces = tanh sin ln sin ln v_t_k , score = nan
+#pieces = ln ^ w_k acos / value asin velocity_k , score = nan
+#pieces = exp cos sin acos ~ v_t_k , score = nan
+#pieces = cos ~ / m_t_k - d_ij_nest sin gamma , score = nan
+#pieces = * d_ij_nest + ln acos acos v_t_k_hat + cos g_t_k delta_w_t_k , score = nan
+#pieces = tanh asin ~ sqrt ^ t delta_w_t_k_ada_delta , score = nan
+#pieces = ^ expt_weight_squared_k + gamma ln - exp delta_w_t_k velocity_k , score = nan
+#pieces = ^ gradient_k + beta_1 sin cos - v_t_k_hat delta_w_t_k_ada_delta , score = nan
+#pieces = ln ln + g_t_k cos ln eta , score = nan
+#pieces = / - m_t_k t ^ beta_1 tanh exp exp beta_1 , score = nan
+#pieces = cos ~ ^ expt_weight_squared_k + exp v_t_k value , score = nan
+#pieces = acos cos sin sqrt sin beta_2 , score = nan
+#pieces = ln - v_t_k tanh ln ln gradient_k , score = nan
+#pieces = sqrt exp asin acos sin d_ij_nest , score = nan
+#pieces = sin acos sin ^ m_t_k_hat sin t , score = nan
+#pieces = sin asin + delta_w_t_k sin ~ m_t_k_hat , score = nan
+#pieces = - velocity_k * delta_w_t_k asin sqrt / gradient_k v_t_k , score = nan
