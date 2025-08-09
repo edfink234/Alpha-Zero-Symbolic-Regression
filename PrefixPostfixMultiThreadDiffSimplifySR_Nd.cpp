@@ -6146,8 +6146,9 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 */
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x)
 {
+    //TODO: Probably wanna make these containers you need here attributes of x so you're not potentially allocating memory from scratch (save for `x.pieces`) every time you wanna build the system
     std::vector<std::vector<std::string>> results;
-    std::vector<std::string> result;
+    std::vector<std::string> result, dfd1;
     result.reserve(100);
     std::vector<int> grasp;
     std::vector<std::string> R_prime;
@@ -6161,98 +6162,56 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x)
     }
     else if (x.expression_type == "postfix")
     {
-        //1 2 / R'' * 1 2 r * / R' * + mu S S * 2 r r * * / - R * + R R * R * -
-        result.push_back("1");
-        result.push_back("2");
-        result.push_back("/");
-        x.derivePostfix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
-        R_prime = x.derivat;
-        x.derivePostfix(0, R_prime.size()-1, "x0", R_prime, grasp); //derivat will store second derivative of R_prime
-        for (const std::string& i: x.derivat) //R''
+        //μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -
+        
+        result.push_back(mu); //μ
+        for (const std::string& i: x.pieces[0]) //f
         {
             result.push_back(i);
         }
-        result.push_back("*");
-        result.push_back("1");
-        result.push_back("2");
-        result.push_back("x0"); //r
-        result.push_back("*");
-        result.push_back("/");
-        for (const std::string& i: R_prime) //R'
+        result.push_back("*"); //*
+        result.push_back(nu); //ν
+        for (const std::string& i: x.pieces[0]) //f
         {
             result.push_back(i);
         }
-        result.push_back("*");
-        result.push_back("+");
-        result.push_back(mu);
-        result.push_back(S);
-        result.push_back(S);
-        result.push_back("*");
-        result.push_back("2");
-        result.push_back("x0"); //r
-        result.push_back("x0"); //r
-        result.push_back("*");
-        result.push_back("*");
-        result.push_back("/");
+        result.push_back("*"); //*
+        for (const std::string& i: x.pieces[0]) //f
+        {
+            result.push_back(i);
+        }
+        result.push_back("*"); //*
+        for (const std::string& i: x.pieces[0]) //f
+        {
+            result.push_back(i);
+        }
+        for (const std::string& i: x.pieces[0]) //f
+        {
+            result.push_back(i);
+        }
+        for (const std::string& i: x.pieces[0]) //f
+        {
+            result.push_back(i);
+        }
+        result.push_back("*"); //*
+        result.push_back("*"); //*
+        result.push_back("*"); //-
+        result.push_back("*"); //+
+        for (const std::string& i: x.pieces[0]) //f
+        {
+            result.push_back(i);
+        }
         result.push_back("-");
-        for (const std::string& i: x.pieces[0]) //R
-        {
-            result.push_back(i);
-        }
-        result.push_back("*");
-        result.push_back("+");
-        for (const std::string& i: x.pieces[0]) //R
-        {
-            result.push_back(i);
-        }
-        for (const std::string& i: x.pieces[0]) //R
-        {
-            result.push_back(i);
-        }
-        result.push_back("*");
-        for (const std::string& i: x.pieces[0]) //R
-        {
-            result.push_back(i);
-        }
-        result.push_back("*");
-        result.push_back("-");
-        results.push_back(result);
-
-        //R(0)
-        result.clear();
-        for (size_t i = 0; i < x.pieces[0].size(); i++)
-        {
-            if (x.pieces[0][i] == "x0")
-            {
-                result.push_back("0");
-            }
-            else
-            {
-                result.push_back(x.pieces[0][i]);
-            }
-        }
-        results.push_back(result);
-
-        //R(∞) mu sqrt -
-        result.clear();
-
-        for (size_t i = 0; i < x.pieces[0].size(); i++)
-        {
-            if (x.pieces[0][i] == "x0")
-            {
-                result.push_back(infty);
-            }
-            else
-            {
-                result.push_back(x.pieces[0][i]);
-            }
-        }
-
-        result.push_back(mu);
-        result.push_back("sqrt");
-        result.push_back("-");
-        results.push_back(result);
-
+        result.push_back("2");
+        
+        //μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -
+        
+        
+        
+        
+//        x.derivePostfix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
+        
+        
 
 
     }
@@ -6923,7 +6882,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
             Perturbation(rand_depths, i);
         }
     };
-
+    //Starting the threads each with a separate version of `func`
     for (unsigned int i = 0; i < num_threads; i++)
     {
         threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
