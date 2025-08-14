@@ -8126,25 +8126,25 @@ int main()
 //To change the path variable, do $env:Path="newpath"
 
 
-SimulatedAnnealing(SwiftHohenberg /*differential equation to solve*/,
-   1 /*number of equations in differential equation system*/,
-   data1 /*data used to solve differential equation*/,
-   std::vector<int>{4} /*fixed depths of generated solution*/,
-   "postfix" /*expression representation*/,
-   0 /*num_consts_diff: number of constants in differential equation*/,
-   "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
-   5 /*number of fit iterations*/,
-   "naive_numerical" /*method for computing the gradient*/,
-   true /*cache*/,
-   time /*time to run the algorithm in seconds*/,
-   1 /*num threads*/,
-   true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
-   threshold /*threshold for which solutions cannot be constant*/,
-   false /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
-   false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
-   0 /*number of data columns that constitute labels and not independent variables/features*/,
-                   {},//{split("6.283190 10.000000 * ~ exp x1 cos x0 sqrt + ^")} /*seed expressions*/,
-   false /*whether to exit right after computing the score for the seed epxression (default `false`)*/);
+//SimulatedAnnealing(SwiftHohenberg /*differential equation to solve*/,
+//   1 /*number of equations in differential equation system*/,
+//   data1 /*data used to solve differential equation*/,
+//   std::vector<int>{4} /*fixed depths of generated solution*/,
+//   "postfix" /*expression representation*/,
+//   0 /*num_consts_diff: number of constants in differential equation*/,
+//   "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
+//   5 /*number of fit iterations*/,
+//   "naive_numerical" /*method for computing the gradient*/,
+//   true /*cache*/,
+//   time /*time to run the algorithm in seconds*/,
+//   1 /*num threads*/,
+//   true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+//   threshold /*threshold for which solutions cannot be constant*/,
+//   false /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+//   false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
+//   0 /*number of data columns that constitute labels and not independent variables/features*/,
+//                   {},//{split("6.283190 10.000000 * ~ exp x1 cos x0 sqrt + ^")} /*seed expressions*/,
+//   false /*whether to exit right after computing the score for the seed epxression (default `false`)*/);
 
 //void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&), size_t num_diff_eqns, const Eigen::MatrixXd& data, const std::vector<int>& depth, const std::string expression_type = "prefix", size_t num_consts_diff = 0, const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0, bool const_tokens = false, double isConstTol = 1e-1f, bool use_const_pieces = false, bool simplifyOriginal = false, int numDataCols = 0, const std::vector<std::vector<std::string>>& seed_expressions = {}, bool exit_early = false)
 //auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &seed_expressions, &exit_early, &best_MSE]()
