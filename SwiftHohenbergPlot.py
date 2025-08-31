@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sympy import *
-from numpy import sqrt, exp, cos
+from numpy import sqrt, exp, cos, sin
 sech = lambda x: 1.0/np.cosh(x)
 
 PrintFormula = False
@@ -35,8 +35,7 @@ theta_centers = 0.5 * (theta_edges[:-1] + theta_edges[1:])
 R, Theta = np.meshgrid(r_centers, theta_centers)
 
 # Evaluate function on cell centers
-Z = (exp(-((6.283190 * 10.000000))) ** (cos(Theta) + sqrt(R)))
-
+Z = ((((Theta * 10.000000) - 43.47847366333008) / 185.5887837532312) + (0.4000400020000667 - ((sin(R) * sin(R)) * -2.2831900000000003)))
 # Convert edges to Cartesian
 X_edges = R_edges * np.cos(Theta_edges)
 Y_edges = R_edges * np.sin(Theta_edges)

@@ -35,6 +35,7 @@
 #include <unsupported/Eigen/AutoDiff>
 #include <boost/unordered/concurrent_flat_map.hpp>
 #define DBL_MAX std::numeric_limits<double>::max()
+#define RANDOM_SEED 10
 
 /*
 Search Directories to add:
@@ -74,7 +75,28 @@ double Stod(const std::string& param)
         }
     }
 }
-
+std::string to_string_general(double v)
+{
+    if (std::isnan(v))
+    {
+        return "nan";
+    }
+    if (std::isinf(v))
+    {
+        return (v < 0 ? "-inf" : "inf");
+    }
+    thread_local std::string out(32, '\0'); // start with a small buffer
+    while (true)
+    {
+        auto [p, ec] = std::to_chars(out.data(), out.data() + out.size(), v, std::chars_format::general);
+        if (ec == std::errc{})
+        {
+            out.resize(p - out.data());
+            return out;
+        }
+        out.resize(out.size() * 2);            // grow and retry (rare)
+    }
+}
 // https://www.geeksforgeeks.org/cpp/how-to-split-string-by-delimiter-in-cpp/
 std::vector<std::string> split(const std::string& str)
 {
@@ -749,6 +771,7 @@ struct Board
     int num_fit_iter;
     int num_objectives;
     double MSE_curr;
+    std::vector<double> MSE_curr_vec;
     std::string fit_method;
     std::string fit_grad_method;
 
@@ -1110,7 +1133,7 @@ struct Board
             graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true);
             int second_arg_idx_high = new_expression.size();
             int step;
-
+            
             if (new_expression[first_arg_idx_high] == "0") //+/- x 0 -> x
             {
                 //puts("hi 177");
@@ -1124,7 +1147,7 @@ struct Board
                 }
                 new_expression.erase(new_expression.begin() + op_idx); //remove +/- operator at beginning
             }
-
+            
             else if (new_expression[first_arg_idx_low] == "0")
             {
                 if (expression[low] == "+") //+ 0 y -> y
@@ -1139,7 +1162,7 @@ struct Board
                     new_expression.erase(new_expression.begin() + first_arg_idx_low); //'0'
                 }
             }
-
+            
             else if ((expression[low] == "-") && ((step = (second_arg_idx_high - first_arg_idx_high)) == (first_arg_idx_high - first_arg_idx_low)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) //- x x
             {
                 //puts("hi 221");
@@ -1209,12 +1232,12 @@ struct Board
                 new_expression[op_idx] = "nan"; //change '/' to 'nan'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
-            else if (new_expression[first_arg_idx_high] == "0") // / x 0 -> inf (because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to / x 0, which is 0)
-            {
-                //puts("hi 282");
-                new_expression[op_idx] = (new_expression[first_arg_idx_low] != "~") ? "inf": "-inf"; //change '/' to 'inf' or '-inf'
-                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
-            }
+    //        else if (new_expression[first_arg_idx_high] == "0") // / x 0 -> inf (because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to / x 0, which is 0) //TODO: Remove -> not always true!
+    //        {
+    //            //puts("hi 282");
+    //            new_expression[op_idx] = (new_expression[first_arg_idx_low] != "~") ? "inf": "-inf"; //change '/' to 'inf' or '-inf'
+    //            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+    //        }
             else if (new_expression[first_arg_idx_low] == "0") // / 0 x -> 0
             {
                 //puts("hi 295");
@@ -1242,7 +1265,7 @@ struct Board
                 new_expression[op_idx] = "1"; //change "-" to "1";
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.begin() + second_arg_idx_high);
             }
-
+            
             //TODO:
                 /*
                 x*y       y
@@ -1267,12 +1290,12 @@ struct Board
                 new_expression[op_idx] = "1"; //change '^' to '1'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
-            else if (new_expression[first_arg_idx_low] == "0") // ^ 0 x -> 0 (x > 0 assumed)
-            {
-                //puts("hi 340");
-                new_expression[op_idx] = "0"; //change '^' to '0'
-                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
-            }
+    //        else if (new_expression[first_arg_idx_low] == "0") // ^ 0 x -> 0 (x > 0 assumed) //TODO: Remove -> not always true!
+    //        {
+    //            //puts("hi 340");
+    //            new_expression[op_idx] = "0"; //change '^' to '0'
+    //            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+    //        }
             else if (new_expression[first_arg_idx_high] == "1") // ^ x 1 -> x (because, since prefix operators come at the beginning, if the beginning of the second argument of '^' is 1, then the whole second argument MUST be 1, therefore the expression reduces to ^ x 1, which is 1)
             {
                 //puts("hi 346");
@@ -1399,13 +1422,32 @@ struct Board
                 new_expression[op_idx] = "0"; //change '~' to '0'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
-            //TODO: Uncomment and test this!
-    //        else if (new_expression[first_arg_idx_low] == "inf") // ~ inf -> -inf
-    //        {
-    //            //puts("hi 487");
-    //            new_expression[op_idx] = "-inf"; //change '~' to '-inf'
-    //            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
-    //        }
+            else if (new_expression[first_arg_idx_low] == "inf") // ~ inf -> -inf
+            {
+                //puts("hi 507");
+                new_expression[op_idx] = "-inf"; //change '~' to '-inf'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+        }
+        else if (expression[low] == "exp") // exp x
+        {
+            int op_idx = new_expression.size();
+            new_expression.push_back(expression[low]); // exp
+            int temp = low+1+grasp[low+1];
+            int first_arg_idx_low = new_expression.size();
+            graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // exp x
+            if (new_expression[first_arg_idx_low] == "0") // exp 0 -> 1
+            {
+                //puts("hi 521");
+                new_expression[op_idx] = "1"; //change 'exp' to '1'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression[first_arg_idx_low] == "inf") // exp inf -> inf
+            {
+                //puts("hi 527");
+                new_expression[op_idx] = "inf"; //change 'exp' to 'inf'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
         }
         else if (expression[low] == "abs") // abs x
         {
@@ -1446,49 +1488,49 @@ struct Board
                     {
                         isdouble1 = isdouble(expression[i+1]);
                         isdouble2 = isdouble(expression[i+2]);
-
+                        
                         if (isdouble1 && isdouble2)
                         {
                             if (expression[i] == "+")
                             {
-                                expression[i] = simplifyString(std::to_string(Stod(expression[i+1]) + Stod(expression[i+2])));
+                                expression[i] = simplifyString(to_string_general(Stod(expression[i+1]) + Stod(expression[i+2])));
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                                 simplified = true;
                                 break;
                             }
                             else if (expression[i] == "-")
                             {
-                                expression[i] = simplifyString(std::to_string(Stod(expression[i+1]) - Stod(expression[i+2])));
+                                expression[i] = simplifyString(to_string_general(Stod(expression[i+1]) - Stod(expression[i+2])));
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                                 simplified = true;
                                 break;
                             }
                             else if (expression[i] == "*")
                             {
-                                expression[i] = simplifyString(std::to_string(Stod(expression[i+1]) * Stod(expression[i+2])));
+                                expression[i] = simplifyString(to_string_general(Stod(expression[i+1]) * Stod(expression[i+2])));
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                                 simplified = true;
                                 break;
                             }
                             else if (expression[i] == "/")
                             {
-                                expression[i] = simplifyString(std::to_string(Stod(expression[i+1]) / Stod(expression[i+2])));
+                                expression[i] = simplifyString(to_string_general(Stod(expression[i+1]) / Stod(expression[i+2])));
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                                 simplified = true;
                                 break;
                             }
                             else if (expression[i] == "^")
                             {
-                                expression[i] = simplifyString(std::to_string(std::powf(Stod(expression[i+1]), Stod(expression[i+2]))));
+                                expression[i] = simplifyString(to_string_general(std::powf(Stod(expression[i+1]), Stod(expression[i+2]))));
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                                 simplified = true;
                                 break;
                             }
                         }
-
+                        
                         isConst1 = is_const(expression[i+1]);
                         isConst2 = is_const(expression[i+2]);
-
+                        
                         if ((isConst1 && isConst2) && ((expression[i+1].find("nan") != std::string::npos) || (expression[i+2].find("nan") != std::string::npos))) //binary_op nan x = binary_op x nan = nan
                         {
                             //puts("hi 570");
@@ -1638,88 +1680,88 @@ struct Board
                             }
                         }
                     }
-
+                    
                     else if (is_unary(expression[i]) && isdouble(expression[i+1]))
                     {
                         if (expression[i] == "cos")
                         {
-                            expression[i] = simplifyString(std::to_string(cos(Stod(expression[i+1]))));
+                            expression[i] = simplifyString(to_string_general(cos(Stod(expression[i+1]))));
                             expression.erase(expression.begin() + i + 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "~")
                         {
-                            expression[i] = simplifyString(std::to_string(-(Stod(expression[i+1]))));
+                            expression[i] = simplifyString(to_string_general(-(Stod(expression[i+1]))));
                             expression.erase(expression.begin() + i + 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "sin")
                         {
-                            expression[i] = simplifyString(std::to_string(sin(Stod(expression[i+1]))));
+                            expression[i] = simplifyString(to_string_general(sin(Stod(expression[i+1]))));
                             expression.erase(expression.begin() + i + 1);
                             simplified = true;
                             break;
                         }
                         else if ((expression[i] == "ln") || (expression[i] == "log"))
                         {
-                            expression[i] = simplifyString(std::to_string(log(Stod(expression[i+1])))); // Natural log (ln)
+                            expression[i] = simplifyString(to_string_general(log(Stod(expression[i+1])))); // Natural log (ln)
                             expression.erase(expression.begin() + i + 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "asin" || expression[i] == "arcsin")
                         {
-                            expression[i] = simplifyString(std::to_string(asin(Stod(expression[i+1]))));
+                            expression[i] = simplifyString(to_string_general(asin(Stod(expression[i+1]))));
                             expression.erase(expression.begin() + i + 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "acos" || expression[i] == "arccos")
                         {
-                            expression[i] = simplifyString(std::to_string(acos(Stod(expression[i+1]))));
+                            expression[i] = simplifyString(to_string_general(acos(Stod(expression[i+1]))));
                             expression.erase(expression.begin() + i + 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "exp")
                         {
-                            expression[i] = simplifyString(std::to_string(exp(Stod(expression[i+1]))));
+                            expression[i] = simplifyString(to_string_general(exp(Stod(expression[i+1]))));
                             expression.erase(expression.begin() + i + 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "sech")
                         {
-                            expression[i] = simplifyString(std::to_string(1 / cosh(Stod(expression[i+1])))); // sech(x) = 1 / cosh(x)
+                            expression[i] = simplifyString(to_string_general(1 / cosh(Stod(expression[i+1])))); // sech(x) = 1 / cosh(x)
                             expression.erase(expression.begin() + i + 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "tanh")
                         {
-                            expression[i] = simplifyString(std::to_string(tanh(Stod(expression[i+1]))));
+                            expression[i] = simplifyString(to_string_general(tanh(Stod(expression[i+1]))));
                             expression.erase(expression.begin() + i + 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "sqrt")
                         {
-                            expression[i] = simplifyString(std::to_string(sqrt(Stod(expression[i+1]))));
+                            expression[i] = simplifyString(to_string_general(sqrt(Stod(expression[i+1]))));
                             expression.erase(expression.begin() + i + 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "abs")
                         {
-                            expression[i] = simplifyString(std::to_string(abs(Stod(expression[i+1]))));
+                            expression[i] = simplifyString(to_string_general(abs(Stod(expression[i+1]))));
                             expression.erase(expression.begin() + i + 1);
                             simplified = true;
                             break;
                         }
                     }
-
+                    
                     else if (is_unary(expression[i]))
                     {
                         if (expression[i] == "~" && expression[i+1] == "~")
@@ -1779,6 +1821,14 @@ struct Board
                             simplified = true;
                             break;
                         }
+                        //TODO: uncomment the below!
+    //                    else if ((expression[i] == "sech") && (expression[i+1] == "~")) //sech(-x) = sech(x)
+    //                    {
+    //                        //puts("hi 708");
+    //                        expression.erase(expression.begin() + i + 1); // Remove the '~'
+    //                        simplified = true;
+    //                        break;
+    //                    }
                     }
                 }
             }
@@ -1816,14 +1866,14 @@ struct Board
             graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true);
             int second_arg_idx_high = new_expression.size();
             int step;
-
+            
             if (new_expression.back() == "0") // x 0 +/- -> x
             {
                 //puts("hi 181");
                 new_expression.pop_back();
             }
-
-            else if (new_expression[first_arg_idx_high - 1] == "0") // 0 x +/- -> x +/-
+            
+            else if (new_expression[first_arg_idx_high - 1] == "0")
             {
                 //puts("hi 184");
                 //erase elements from new_expression[first_arg_idx_low] to new_expression[first_arg_idx_high-1] inclusive
@@ -1834,14 +1884,14 @@ struct Board
                     new_expression.push_back("~"); //0 y - -> y ~
                 }
             }
-
+            
             else if ((expression[up] == "-") && ((step = (first_arg_idx_high - first_arg_idx_low)) == (second_arg_idx_high - first_arg_idx_high)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) //x x - -> 0
             {
                 //puts("hi 215");
                 new_expression[first_arg_idx_low] = "0"; //change first symbol of x to 0
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.begin() + second_arg_idx_high); //erase the rest of x and y
             }
-
+            
             else
             {
                 new_expression.push_back(expression[up]);
@@ -1855,7 +1905,7 @@ struct Board
             graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
             //int second_arg_idx_high = new_expression.size();
             //int step;
-
+            
             if (new_expression.back() == "0") // x 0 * -> 0 (because, since postfix operators come at the end, if the end of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 *, which is 0)
             {
                 //puts("hi 235");
@@ -1891,19 +1941,18 @@ struct Board
             graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
             int second_arg_idx_high = new_expression.size();
             int step;
-            //TODO: There's an issue with how / is being handled here..., if the left or right sub-tree (represented by the symbol `x`) hasn't been simplified; it might be 0, so there's a possibility that the result of x 0 / could actually be nan as well, same goes for 0 x /
             if ((new_expression.back() == "0") && (new_expression[first_arg_idx_high - 1] == "0")) // 0 0 / -> nan
             {
                 //puts("hi 279");
                 new_expression[first_arg_idx_low] = "nan";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
             }
-            else if (new_expression.back() == "0") // x 0 / -> inf (because, since postfix operators come at the end, if the end of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 /, which is inf)
-            {
-                //puts("hi 280");
-                new_expression[first_arg_idx_low] = (new_expression[first_arg_idx_high - 1] == "~") ? "-inf" : "inf";
-                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
-            }
+    //        else if (new_expression.back() == "0") // x 0 / -> inf (because, since postfix operators come at the end, if the end of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 /, which is inf) //TODO: Remove -> not always true (or make nan if it becomes such a bottleneck?)!
+    //        {
+    //            //puts("hi 280");
+    //            new_expression[first_arg_idx_low] = (new_expression[first_arg_idx_high - 1] == "~") ? "-inf" : "inf";
+    //            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+    //        }
             else if (new_expression[first_arg_idx_high - 1] == "0") //0 x / -> 0 (because, since postfix operators come at the end, if the end of the first argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to 0 x /, which is 0)
             {
                 //puts("hi 286");
@@ -1940,19 +1989,19 @@ struct Board
             graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
             //int second_arg_idx_high = new_expression.size();
             //int step;
-
+            
             if (new_expression.back() == "0") // x 0 ^ -> 1 (because, since postfix operators come at the end, if the end of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 ^, which is 1)
             {
                 //puts("hi 318");
                 new_expression[first_arg_idx_low] = "1";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
             }
-            else if (new_expression[first_arg_idx_high - 1] == "0") //0 x ^ -> 0 (because, since postfix operators come at the end, if the end of the first argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to 0 x ^, which is 0) (assume x > 0)
-            {
-                //puts("hi 324");
-                new_expression[first_arg_idx_low] = "0";
-                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
-            }
+    //        else if (new_expression[first_arg_idx_high - 1] == "0") //0 x ^ -> 0 (because, since postfix operators come at the end, if the end of the first argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to 0 x ^, which is 0) (assume x > 0) //TODO: Remove -> not always true!
+    //        {
+    //            //puts("hi 324");
+    //            new_expression[first_arg_idx_low] = "0";
+    //            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+    //        }
             else if (new_expression.back() == "1") // x 1 ^ -> x (because, since postfix operators come at the end, if the end of the second argument of '^' is 1, then the whole second argument MUST be 1, therefore the expression reduces to x 1 ^, which is x)
             {
                 //puts("hi 330");
@@ -1979,6 +2028,7 @@ struct Board
                 new_expression[first_arg_idx_low] = "1";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
             }
+            //TODO: Add cos(inf) -> nan
             else
             {
                 new_expression.push_back(expression[up]);
@@ -1994,6 +2044,7 @@ struct Board
                 new_expression[first_arg_idx_low] = "0";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
             }
+            //TODO: Add sin(inf) -> nan
             else
             {
                 new_expression.push_back(expression[up]);
@@ -2075,13 +2126,33 @@ struct Board
                 new_expression[first_arg_idx_low] = "0";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
             }
-            //TODO: Uncomment and test this!
-    //        if (new_expression.back() == "inf") // inf ~ -> -inf (because, since postfix operators come at the end, if the end of the argument of '~' is inf, then the whole argument MUST be inf, therefore the expression reduces to inf ~, which is -inf)
-    //        {
-    ////            puts("hi 445");
-    //            new_expression[first_arg_idx_low] = "-inf";
-    //            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
-    //        }
+            if (new_expression.back() == "inf") // inf ~ -> -inf (because, since postfix operators come at the end, if the end of the argument of '~' is inf, then the whole argument MUST be inf, therefore the expression reduces to inf ~, which is -inf)
+            {
+                //puts("hi 507");
+                new_expression[first_arg_idx_low] = "-inf";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            }
+            else
+            {
+                new_expression.push_back(expression[up]);
+            }
+        }
+        else if (expression[up] == "exp") //x exp
+        {
+            int first_arg_idx_low = new_expression.size();
+            graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
+            if (new_expression.back() == "0") // 0 exp -> 1 (because, since postfix operators come at the end, if the end of the argument of 'exp' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 exp, which is 1)
+            {
+                //puts("hi 524");
+                new_expression[first_arg_idx_low] = "1";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            }
+            if (new_expression.back() == "inf") // inf exp -> inf (because, since postfix operators come at the end, if the end of the argument of '~' is inf, then the whole argument MUST be inf, therefore the expression reduces to inf ~, which is -inf)
+            {
+                //puts("hi 530");
+                new_expression[first_arg_idx_low] = "inf";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            }
             else
             {
                 new_expression.push_back(expression[up]);
@@ -2125,52 +2196,53 @@ struct Board
                     {
                         isdouble1 = isdouble(expression[i-1]);
                         isdouble2 = isdouble(expression[i-2]);
-
+                        
                         if (isdouble1 && isdouble2)
                         {
                             if (expression[i] == "+")
                             {
-                                expression[i] = simplifyString(std::to_string(Stod(expression[i-2]) + Stod(expression[i-1])));
+                                expression[i] = simplifyString(to_string_general(Stod(expression[i-2]) + Stod(expression[i-1])));
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
                                 break;
                             }
                             else if (expression[i] == "-")
                             {
-                                expression[i] = simplifyString(std::to_string(Stod(expression[i-2]) - Stod(expression[i-1])));
+                                expression[i] = simplifyString(to_string_general(Stod(expression[i-2]) - Stod(expression[i-1])));
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
                                 break;
                             }
                             else if (expression[i] == "*")
                             {
-                                expression[i] = simplifyString(std::to_string(Stod(expression[i-2]) * Stod(expression[i-1])));
+                                expression[i] = simplifyString(to_string_general(Stod(expression[i-2]) * Stod(expression[i-1])));
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
                                 break;
                             }
                             else if (expression[i] == "/")
                             {
-                                expression[i] = simplifyString(std::to_string(Stod(expression[i-2]) / Stod(expression[i-1])));
+                                expression[i] = simplifyString(to_string_general(Stod(expression[i-2]) / Stod(expression[i-1])));
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
                                 break;
                             }
                             else if (expression[i] == "^")
                             {
-                                expression[i] = simplifyString(std::to_string(std::powf(Stod(expression[i-2]), Stod(expression[i-1]))));
+                                expression[i] = simplifyString(to_string_general(std::powf(Stod(expression[i-2]), Stod(expression[i-1]))));
+    //                            printf("hi 566, res = %s\n", expression[i].c_str());
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
                                 break;
                             }
                         }
-
+                        
                         isConst1 = is_const(expression[i-1]);
                         isConst2 = is_const(expression[i-2]);
-
+                        
                         if ((isConst1 && isConst2) && ((expression[i-1].find("nan") != std::string::npos) || (expression[i-2].find("nan") != std::string::npos))) //x nan binary_op = nan x binary_op = nan
                         {
-                            //puts("hi 549");
+    //                        puts("hi 549");
                             expression[i] = "nan";
                             expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                             simplified = true;
@@ -2297,7 +2369,7 @@ struct Board
                             }
                             else if (expression[i-2] == "0" && isConst1) // "0 x ^" -> "0" (x > 0)
                             {
-                                //puts("hi 215");
+    //                            puts("hi 215");
                                 expression[i] = "0";
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
@@ -2321,88 +2393,88 @@ struct Board
                             }
                         }
                     }
-
+                    
                     else if (is_unary(expression[i]) && isdouble(expression[i-1]))
                     {
                         if (expression[i] == "cos")
                         {
-                            expression[i] = simplifyString(std::to_string(cos(Stod(expression[i-1]))));
+                            expression[i] = simplifyString(to_string_general(cos(Stod(expression[i-1]))));
                             expression.erase(expression.begin() + i - 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "~")
                         {
-                            expression[i] = simplifyString(std::to_string(-(Stod(expression[i-1]))));
+                            expression[i] = simplifyString(to_string_general(-(Stod(expression[i-1]))));
                             expression.erase(expression.begin() + i - 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "sin")
                         {
-                            expression[i] = simplifyString(std::to_string(sin(Stod(expression[i-1]))));
+                            expression[i] = simplifyString(to_string_general(sin(Stod(expression[i-1]))));
                             expression.erase(expression.begin() + i - 1);
                             simplified = true;
                             break;
                         }
                         else if ((expression[i] == "ln") || (expression[i] == "log"))
                         {
-                            expression[i] = simplifyString(std::to_string(log(Stod(expression[i-1])))); // Natural log (ln)
+                            expression[i] = simplifyString(to_string_general(log(Stod(expression[i-1])))); // Natural log (ln)
                             expression.erase(expression.begin() + i - 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "asin" || expression[i] == "arcsin")
                         {
-                            expression[i] = simplifyString(std::to_string(asin(Stod(expression[i-1]))));
+                            expression[i] = simplifyString(to_string_general(asin(Stod(expression[i-1]))));
                             expression.erase(expression.begin() + i - 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "acos" || expression[i] == "arccos")
                         {
-                            expression[i] = simplifyString(std::to_string(acos(Stod(expression[i-1]))));
+                            expression[i] = simplifyString(to_string_general(acos(Stod(expression[i-1]))));
                             expression.erase(expression.begin() + i - 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "exp")
                         {
-                            expression[i] = simplifyString(std::to_string(exp(Stod(expression[i-1]))));
+                            expression[i] = simplifyString(to_string_general(exp(Stod(expression[i-1]))));
                             expression.erase(expression.begin() + i - 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "sech")
                         {
-                            expression[i] = simplifyString(std::to_string(1 / cosh(Stod(expression[i-1])))); // sech(x) = 1 / cosh(x)
+                            expression[i] = simplifyString(to_string_general(1 / cosh(Stod(expression[i-1])))); // sech(x) = 1 / cosh(x)
                             expression.erase(expression.begin() + i - 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "tanh")
                         {
-                            expression[i] = simplifyString(std::to_string(tanh(Stod(expression[i-1]))));
+                            expression[i] = simplifyString(to_string_general(tanh(Stod(expression[i-1]))));
                             expression.erase(expression.begin() + i - 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "sqrt")
                         {
-                            expression[i] = simplifyString(std::to_string(sqrt(Stod(expression[i-1]))));
+                            expression[i] = simplifyString(to_string_general(sqrt(Stod(expression[i-1]))));
                             expression.erase(expression.begin() + i - 1);
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "abs")
                         {
-                            expression[i] = simplifyString(std::to_string(abs(Stod(expression[i-1]))));
+                            expression[i] = simplifyString(to_string_general(abs(Stod(expression[i-1]))));
                             expression.erase(expression.begin() + i - 1);
                             simplified = true;
                             break;
                         }
                     }
-
+                    
                     else if (is_unary(expression[i]))
                     {
                         if (expression[i] == "~" && expression[i-1] == "~")
@@ -2836,16 +2908,24 @@ struct Board
         std::stack<std::string> stack;
         bool is_prefix = (expression_type == "prefix");
         std::string result, token;
-
-        for (int i = (is_prefix ? (static_cast<int>(pieces[idx].size()) - 1) : 0); (is_prefix ? (i >= 0) : (i < static_cast<int>(pieces[idx].size()))); (is_prefix ? (i--) : (i++)))
+        int sz = static_cast<int>((this->simplify_original) ? this->pieces[idx].size() : this->temp_pieces[idx].size());
+        for (int i = (is_prefix ? (sz - 1) : 0); (is_prefix ? (i >= 0) : (i < sz)); (is_prefix ? (i--) : (i++)))
         {
-            token = pieces[idx][i];
+            token = ((this->simplify_original) ? this->pieces[idx][i] : this->temp_pieces[idx][i]);
 //            puts(("\ntoken = "+token+"\n").c_str());
             if (is_const(token)) // leaf
             {
                 if (token.compare(0, 5, "const") == 0 && show_consts)
                 {
-                    stack.push(std::to_string((this->params)(std::stoi(token.substr(5)))));
+                    try
+                    {
+                        stack.push(std::to_string((this->params)(std::stoi(token.substr(5)))));
+                    }
+                    catch (std::invalid_argument& e)
+                    {
+                        printf("stoi in `std::string _to_infix(int idx, bool show_consts = true)` failed.\ntoken = %s\nerror = %s\nexiting\n", token.c_str(), e.what());
+                        exit(1);
+                    }
                 }
                 else
                 {
@@ -2883,7 +2963,7 @@ struct Board
     std::string _to_infix(bool show_consts = true)
     {
         std::string temp;
-        size_t sz = pieces.size() - 1;
+        int sz = static_cast<int>((this->simplify_original) ? (this->pieces.size() - 1) : (this->temp_pieces.size() - 1));
         for (int jdx = 0; jdx < sz; jdx++)
         {
             temp += _to_infix(jdx, show_consts) + ", ";
@@ -2896,15 +2976,23 @@ struct Board
     std::string expression(int idx, bool show_consts = true)
     {
         std::string temp, token;
-        temp.reserve(2*pieces[idx].size());
-        size_t sz = pieces[idx].size() - 1;
+        temp.reserve(2*((this->simplify_original) ? this->pieces[idx].size() : this->temp_pieces[idx].size()));
+        size_t sz = ((this->simplify_original) ? this->pieces[idx].size() : this->temp_pieces[idx].size()) - 1;
         for (size_t i = 0; i <= sz; i++)
         {
-            token = pieces[idx][i];
+            token = ((this->simplify_original) ? this->pieces[idx][i] : this->temp_pieces[idx][i]);
 
             if ((token.compare(0, 5, "const") == 0) && show_consts)
             {
-                temp += ((i!=sz) ? std::to_string((this->params)(std::stoi(token.substr(5)))) + " " : std::to_string((this->params)(std::stoi(token.substr(5)))));
+                try
+                {
+                    temp += ((i!=sz) ? std::to_string((this->params)(std::stoi(token.substr(5)))) + " " : std::to_string((this->params)(std::stoi(token.substr(5)))));
+                }
+                catch (std::invalid_argument& e)
+                {
+                    printf("stoi in `std::string expression(int idx, bool show_consts = true)` failed.\ntoken = %s\nerror = %s\nexiting\n", token.c_str(), e.what());
+                    exit(1);
+                }
             }
             else
             {
@@ -2938,7 +3026,7 @@ struct Board
     std::string expression(bool show_consts = true)
     {
         std::string temp;
-        size_t sz = pieces.size() - 1;
+        int sz = static_cast<int>((this->simplify_original) ? (this->pieces.size() - 1) : (this->temp_pieces.size() - 1));
         for (int jdx = 0; jdx < sz; jdx++)
         {
             temp += expression(jdx, show_consts) + ", ";
@@ -3793,44 +3881,41 @@ struct Board
                 }
             }
             Eigen::VectorXd expression_eval = expression_evaluator(this->params, this->pieces[jdx]);
-            if (/*(Board::__num_features == 1) && */isConstant(expression_eval, this->isConstTol)) //Ignore the trivial solution (1-d functions)!
+            std::vector<int> grasp;
+            for (const std::string& i: Board::__input_vars)
             {
-                this->MSE_curr = DBL_MAX;
-                return score;
-            }
-            else if (Board::__num_features > 1)
-            {
-                std::vector<int> grasp;
-                for (const std::string& i: Board::__input_vars)
+                //Below, we're checking if the independent variable `i` is present in the expression `this->pieces[jdx]`.
+                //We checked "x0" above; hence, the `(i != "x0")` bit.
+                if (std::find(this->pieces[jdx].begin(), this->pieces[jdx].end(), i) == this->pieces[jdx].end())
                 {
-                    //Below, we're checking if the independent variable `i` is present in the expression `this->pieces[jdx]`.
-                    //We checked "x0" above; hence, the `(i != "x0")` bit.
-                    if ((i != "x0") && std::find(this->pieces[jdx].begin(), this->pieces[jdx].end(), i) == this->pieces[jdx].end())
-                    {
-                        //then `this->pieces[jdx]` does not depend on `i` so it is a trivial expression -> get out of dodge!
-                        this->MSE_curr = DBL_MAX;
-                        return score;
-                    }
-                    //If the variable `i` is found, we then test the derivative wrt `i` to check if it's 0 within `this->isConstTol` tolerance.
-                    if (this->expression_type == "prefix")
-                    {
-                        this->derivePrefix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
-                    }
-                    else //postfix
-                    {
-                        this->derivePostfix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
-                    }
-                    if (isZero(expression_evaluator(this->params, this->derivat), this->isConstTol)) //Ignore the trivial solution (N-d functions)!
-                    {
-                        this->MSE_curr = DBL_MAX;
-                        return score;
-                    }
+                    //then `this->pieces[jdx]` does not depend on `i` so it is a trivial expression -> get out of dodge!
+                    this->MSE_curr = DBL_MAX;
+                    return score;
+                }
+                //If the variable `i` is found, we then test the derivative wrt `i` to check if it's 0 within `this->isConstTol` tolerance.
+                if (this->expression_type == "prefix")
+                {
+                    this->derivePrefix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
+                }
+                else //postfix
+                {
+                    this->derivePostfix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
+                }
+                if (isZero(expression_evaluator(this->params, this->derivat), this->isConstTol)) //Ignore the trivial solution (N-d functions)!
+                {
+                    this->MSE_curr = DBL_MAX;
+                    return score;
                 }
             }
         }
-        if (this->params.size())
+        //Now that we've weeded out bad expressions, we fit/evaluate
+        if (this->params.size()) //fit and evaluate
         {
             this->diffeq_result = diffeq(*this);
+            if (this->MSE_curr_vec.size() != this->diffeq_result.size())
+            {
+                this->MSE_curr_vec.assign(this->diffeq_result.size(), 0);
+            }
             assert(this->diffeq_result.size() == this->num_diff_eqns);
             for (int jdx = 0; jdx < this->diffeq_result.size(); jdx++)
             {
@@ -3878,60 +3963,55 @@ struct Board
                 temp_vec.setOnes(this->params.size());
             }
             std::vector<Eigen::VectorXd> expression_eval = expression_evaluator(temp_vec, this->diffeq_result);
-            score = loss_func(expression_eval[0]);
-//            std::cout << "expression values for (" << this->_to_infix(this->diffeq_result[0], false) << ") = " << hstack(Board::data["x0"], expression_eval[0]) << "\nand params = " << temp_vec << "\nand pieces[0] = " << this->_to_infix(this->pieces[0], false) << '\n';
-            if (isInvalid(score))
+
+            score = 0.0;
+            this->MSE_curr = MSE(expression_eval[0]);
+            if (isInvalid(this->MSE_curr))
             {
                 this->MSE_curr = DBL_MAX;
                 return 0.0;
             }
-            else
-            {
-                assert(score >= 0.0);
-            }
+            this->MSE_curr_vec[0] = this->MSE_curr;
 
-            this->MSE_curr = (1.0/score) - 1.0;
-            double temp;
             for (size_t jdx = 1; jdx < expression_eval.size(); ++jdx)
             {
-                temp = loss_func(expression_eval[jdx]);
-
-                if (isInvalid(temp))
+                this->MSE_curr_vec[jdx] = MSE(expression_eval[jdx]);
+                if (isInvalid(this->MSE_curr_vec[jdx]))
                 {
                     this->MSE_curr = DBL_MAX;
                     return 0.0;
                 }
-                else
-                {
-                    assert(temp >= 0.0);
-                }
-                score += temp;
-                this->MSE_curr += (1.0/temp) - 1.0;
+                this->MSE_curr += this->MSE_curr_vec[jdx];
+
             }
+            score = 1.0/(1.0+this->MSE_curr);
             this->params = temp_vec; //copy `temp_vec` back into `this->params` for displaying purposes
         }
-        else
+        else //just evaluate
         {
             this->diffeq_result = diffeq(*this);
+            if (this->MSE_curr_vec.size() != this->diffeq_result.size())
+            {
+                this->MSE_curr_vec.assign(this->diffeq_result.size(), 0);
+            }
             assert(this->diffeq_result.size() == this->num_diff_eqns);
             score = 0.0;
-            double temp;
             this->MSE_curr = 0.0;
             for (int jdx = 0; jdx < this->diffeq_result.size(); jdx++)
             {
                 ((this->expression_type == "prefix") ? simplifyPN(this->diffeq_result[jdx]) : simplifyRPN(this->diffeq_result[jdx]));
                 auto temp_data = expression_evaluator(this->params, this->diffeq_result[jdx]);
-                temp = loss_func(temp_data);
-                if (isInvalid(temp))
+
+                this->MSE_curr_vec[jdx] = MSE(temp_data);
+                if (isInvalid(this->MSE_curr_vec[jdx]))
                 {
                     this->MSE_curr = DBL_MAX;
                     return 0.0;
                 }
-                score += temp;
-                this->MSE_curr += ((1.0/temp) - 1.0);
+                this->MSE_curr += this->MSE_curr_vec[jdx];
             }
+            score = 1.0/(1.0+this->MSE_curr);
         }
-
         return score;
     }
 
@@ -3943,6 +4023,7 @@ struct Board
      where 0 <= score <= 1 and -1 if not complete or if
      the desired depth has not been reached.
      */
+    //TODO: maybe only fit the constants of the ones that give with all consts = 1 like some percentage of the best thus-far (like maybe 80%)...?
     double complete_status(int idx, bool cache = true)
     {
         assert(this->stack.size() > idx);
@@ -4044,6 +4125,7 @@ struct Board
                                     }
                                     else //MAYBE: Might be able to remove this else-statement itf.
                                     {
+                                        assert((token.size() > 5));
                                         std::string int_suffix = token.substr(5);
                                         int temp_idx = std::stoi(int_suffix);
                                         if (temp_idx >= this->num_consts_diff)
@@ -4083,7 +4165,8 @@ struct Board
                 double res = fitFunctionToData();
                 if (!this->simplify_original) //nah there's a bug here with consts
                 {
-                    this->pieces = this->temp_pieces;
+                    //this->pieces = this->temp_pieces;
+                    this->pieces.swap(this->temp_pieces);
                 }
                 return res;
             }
@@ -5555,211 +5638,9 @@ struct Board
     }
 };
 
-std::vector<std::vector<std::string>> VortexRadialProfile(Board& x)
-{
-    std::vector<std::vector<std::string>> results;
-    std::vector<std::string> result;
-    result.reserve(100);
-    std::vector<int> grasp;
-    std::vector<std::string> R_prime;
-    std::string mu = "1";
-    std::string S = "1";
-    std::string infty = std::to_string(DBL_MAX);
-
-    if (x.expression_type == "prefix")
-    {
-        //- + + * / 1 2 R'' * / 1 * 2 r R' * - mu / * S S * * 2 r r R * * R R R
-        result.push_back("-");
-        result.push_back("+");
-        result.push_back("+");
-        result.push_back("*");
-        result.push_back("/");
-        result.push_back("1");
-        result.push_back("2");
-        x.derivePrefix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
-        R_prime = x.derivat;
-        x.derivePrefix(0, R_prime.size()-1, "x0", R_prime, grasp); //derivat will store second derivative of R_prime
-        for (const std::string& i: x.derivat) //R''
-        {
-            result.push_back(i);
-        }
-        result.push_back("*");
-        result.push_back("/");
-        result.push_back("1");
-        result.push_back("*");
-        result.push_back("2");
-        result.push_back("x0"); //r
-        for (const std::string& i: R_prime) //R'
-        {
-            result.push_back(i);
-        }
-        result.push_back("*");
-        result.push_back("-");
-        result.push_back(mu);
-        result.push_back("/");
-        result.push_back("*");
-        result.push_back(S);
-        result.push_back(S);
-        result.push_back("*");
-        result.push_back("*");
-        result.push_back("2");
-        result.push_back("x0"); //r
-        result.push_back("x0"); //r
-        for (const std::string& i: x.pieces[0]) //R
-        {
-            result.push_back(i);
-        }
-        result.push_back("*");
-        result.push_back("*");
-        for (const std::string& i: x.pieces[0]) //R
-        {
-            result.push_back(i);
-        }
-        for (const std::string& i: x.pieces[0]) //R
-        {
-            result.push_back(i);
-        }
-        for (const std::string& i: x.pieces[0]) //R
-        {
-            result.push_back(i);
-        }
-        results.push_back(result);
-
-        //R(0)
-        result.clear();
-        for (size_t i = 0; i < x.pieces[0].size(); i++)
-        {
-            if (x.pieces[0][i] == "x0")
-            {
-                result.push_back("0");
-            }
-            else
-            {
-                result.push_back(x.pieces[0][i]);
-            }
-        }
-        results.push_back(result);
-
-        //- R(∞) sqrt mu
-        result.clear();
-        result.push_back("-");
-        for (size_t i = 0; i < x.pieces[0].size(); i++)
-        {
-            if (x.pieces[0][i] == "x0")
-            {
-                result.push_back(infty);
-            }
-            else
-            {
-                result.push_back(x.pieces[0][i]);
-            }
-        }
-        result.push_back("sqrt");
-        result.push_back(mu);
-        results.push_back(result);
-    }
-    else if (x.expression_type == "postfix")
-    {
-        //1 2 / R'' * 1 2 r * / R' * + mu S S * 2 r r * * / - R * + R R * R * -
-        result.push_back("1");
-        result.push_back("2");
-        result.push_back("/");
-        x.derivePostfix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
-        R_prime = x.derivat;
-        x.derivePostfix(0, R_prime.size()-1, "x0", R_prime, grasp); //derivat will store second derivative of R_prime
-        for (const std::string& i: x.derivat) //R''
-        {
-            result.push_back(i);
-        }
-        result.push_back("*");
-        result.push_back("1");
-        result.push_back("2");
-        result.push_back("x0"); //r
-        result.push_back("*");
-        result.push_back("/");
-        for (const std::string& i: R_prime) //R'
-        {
-            result.push_back(i);
-        }
-        result.push_back("*");
-        result.push_back("+");
-        result.push_back(mu);
-        result.push_back(S);
-        result.push_back(S);
-        result.push_back("*");
-        result.push_back("2");
-        result.push_back("x0"); //r
-        result.push_back("x0"); //r
-        result.push_back("*");
-        result.push_back("*");
-        result.push_back("/");
-        result.push_back("-");
-        for (const std::string& i: x.pieces[0]) //R
-        {
-            result.push_back(i);
-        }
-        result.push_back("*");
-        result.push_back("+");
-        for (const std::string& i: x.pieces[0]) //R
-        {
-            result.push_back(i);
-        }
-        for (const std::string& i: x.pieces[0]) //R
-        {
-            result.push_back(i);
-        }
-        result.push_back("*");
-        for (const std::string& i: x.pieces[0]) //R
-        {
-            result.push_back(i);
-        }
-        result.push_back("*");
-        result.push_back("-");
-        results.push_back(result);
-
-        //R(0)
-        result.clear();
-        for (size_t i = 0; i < x.pieces[0].size(); i++)
-        {
-            if (x.pieces[0][i] == "x0")
-            {
-                result.push_back("0");
-            }
-            else
-            {
-                result.push_back(x.pieces[0][i]);
-            }
-        }
-        results.push_back(result);
-
-        //R(∞) mu sqrt -
-        result.clear();
-
-        for (size_t i = 0; i < x.pieces[0].size(); i++)
-        {
-            if (x.pieces[0][i] == "x0")
-            {
-                result.push_back(infty);
-            }
-            else
-            {
-                result.push_back(x.pieces[0][i]);
-            }
-        }
-
-        result.push_back(mu);
-        result.push_back("sqrt");
-        result.push_back("-");
-        results.push_back(result);
-
-
-
-    }
-    return results;
-}
 /*
  Infix: μ*f + ν*f*f - f*f*f - f - 2*∂^2f/∂r^2 - ∂^4f/∂r^4 - ((1/r) * ((2*(∂^3f/∂r^3)) + ((1/r)*(∂^2f/∂r^2)) - ((1/(r*r))*(∂f/∂r)) + ((1/(r*r))*(∂^3f/∂θ^2∂r)) - ((2/(r*r*r))*(∂^2f/∂θ^2)) + (2*(∂f/∂r)))) - ((1/(r*r)) * ((2*(∂^4f/∂θ^2∂r^2)) + ((1/r)*(∂^3f/∂θ^2∂r)) + ((1/(r*r))*(∂^4f/∂θ^4)) - (2*(∂^2f/∂r^2)) + (2*(∂^2f/∂θ^2)))) - ((2/(r*r*r)) * ((∂f/∂r) - (2*(∂^3f/∂θ^2∂r)) + ((3/r)*(∂^2f/∂θ^2))))
- 
+
 Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -
 
 {x0: r, x1: θ}
@@ -5775,13 +5656,13 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x)
     result.reserve(500);
     std::vector<int> grasp;
     std::vector<std::string> R_prime;
-    std::string mu = "1";
-    std::string nu = "1";
+    std::string mu = "1"; //"const0"; //
+    std::string nu = "1"; //"const1"; //
     std::string infty = std::to_string(DBL_MAX);
 
     if (x.expression_type == "prefix")
     {
-        throw std::invalid_argument("Prefix not implemented yet for this SolitonWaveFengEq14and15Laser function!");
+        throw std::invalid_argument("Prefix not implemented yet for this SwiftHohenberg function!");
     }
     else if (x.expression_type == "postfix")
     {
@@ -6338,9 +6219,29 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 
 //https://dl.acm.org/doi/pdf/10.1145/3449639.3459345?casa_token=Np-_TMqxeJEAAAAA:8u-d6UyINV6Ex02kG9LthsQHAXMh2oxx3M4FG8ioP0hGgstIW45X8b709XOuaif5D_DVOm_FwFo
 //https://core.ac.uk/download/pdf/6651886.pdf
-void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&), size_t num_diff_eqns, const Eigen::MatrixXd& data, const std::vector<int>& depth, const std::string expression_type = "prefix", size_t num_consts_diff = 0, const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0, bool const_tokens = false, double isConstTol = 1e-1, bool use_const_pieces = false, bool simplifyOriginal = false, int numDataCols = 0, const std::vector<std::vector<std::string>>& seed_expressions = {}, bool exit_early = false)
+void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
+                        size_t num_diff_eqns,
+                        const Eigen::MatrixXd& data,
+                        const std::vector<int>& depth,
+                        const std::string expression_type = "prefix",
+                        size_t num_consts_diff = 0,
+                        const std::string method = "LevenbergMarquardt",
+                        const int num_fit_iter = 1,
+                        const std::string& fit_grad_method = "naive_numerical",
+                        const bool cache = true,
+                        const double time = 120.0 /*time to run the algorithm in seconds*/,
+                        unsigned int num_threads = 0,
+                        bool const_tokens = false,
+                        double isConstTol = 1e-1,
+                        bool use_const_pieces = false,
+                        bool simplifyOriginal = false,
+                        int numDataCols = 0,
+                        const std::vector<std::vector<std::string>>& seed_expressions = {},
+                        bool exit_early = false,
+                        int custom_rand_seed = -1,
+                        const char* MSE_file_name = "")
 {
-
+    assert(simplifyOriginal == false);
     if (num_threads == 0)
     {
         unsigned int temp = std::thread::hardware_concurrency();
@@ -6369,16 +6270,26 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
     std::atomic<double> max_score{0.0};
     std::atomic<double> best_MSE{DBL_MAX};
     std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
+    std::vector<double> best_mse_vec;
 
     auto start_time = Clock::now();
 
     /*
      Inside of thread:
      */
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &seed_expressions, &exit_early, &best_MSE]()
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &seed_expressions, &exit_early, &custom_rand_seed, &best_MSE, &best_mse_vec]()
     {
         std::random_device rand_dev;
-        std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
+        #if RANDOM_SEED < 0
+            std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
+        #else
+            std::mt19937 generator;
+            generator.seed(RANDOM_SEED);
+        #endif
+        if (custom_rand_seed >= 0)
+        {
+            generator.seed(custom_rand_seed);
+        }
         Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols);
         sync_point.arrive_and_wait();
         Board secondary(diffeq, num_diff_eqns, false, std::vector<int>(depth.size(), 0), expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols); //For perturbations
@@ -6398,7 +6309,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
 
         size_t temp_sz;
 //        std::string expression, orig_expression, best_expression;
-        constexpr double T_max = 10.;
+        constexpr double T_max = 0.1;//0.1;
         constexpr double T_min = 0.012;
         constexpr double ratio = T_min/T_max;
         double T = T_max;
@@ -6411,7 +6322,6 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
         auto updateScore = [&](double r = 1.0)
         {
 //            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
-//            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
             if ((score > max_score) || (x.pos_dist(generator) < P(score-max_score)) || (exit_early))
             {
                 current = x.pieces; //update current expression
@@ -6420,6 +6330,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
                     max_score = score;
                     std::scoped_lock str_lock(Board::thread_locker);
                     best_MSE = x.MSE_curr;
+                    best_mse_vec = x.MSE_curr_vec;
                     best_expression = x._to_infix();
                     orig_expression = x.expression();
                     best_expr_result = x._to_infix(x.diffeq_result);
@@ -6427,6 +6338,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
                     std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
                     std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
                     std::cout << "Best score = " << score << ", MSE = " << best_MSE << '\n';
+                    std::cout << "Mean-squared error for each equation: " << best_mse_vec << '\n';
                     std::cout << "Best expression = " << best_expression << '\n';
                     std::cout << "Best expression (original format) = " << orig_expression << '\n';
                     std::cout << "Best differential equation parameters = " << x.print_diff_params() << '\n';
@@ -6434,13 +6346,13 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
                     std::cout << "Total system result = " << best_expr_result << '\n';
                     std::cout << "Total system result (original format) = " << orig_expr_result << '\n';
                 }
-                //TODO: Output the MSE for each equation in the system you are trying to solve!
             }
             else
             {
                 x.pieces = current; //reset perturbed state to current state
             }
-            T = r*T;
+            T = std::max(T_min, r*T);
+//            printf("T = %e\n", T);
         };
 
         //performs the transformation "const{>=x.num_consts_diff}" -> "const"
@@ -6457,7 +6369,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
                         if (int_suffix.size())
                         {
                             int int_suffix_num = std::stoi(int_suffix);
-                            if (int_suffix_num >= x.num_consts_diff) //then it's a const that belongs to pieces -> reset it
+                            if (int_suffix_num >= x.num_consts_diff) //then it's a const that belongs EXCLUSIVELY to pieces -> reset it
                             {
                                 token = "const";
                             }
@@ -6573,7 +6485,8 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
                 {
                     throw(std::runtime_error("score = "+std::to_string(score)));
                 }
-                updateScore(pow(ratio, 1.0/(i+1.0)));
+//                updateScore(pow(ratio, 1.0/(i+1.0)));
+                updateScore(0.9);
             }
         };
 
@@ -6595,10 +6508,10 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
                     }
                 }
                 auto depth_and_completion = ((x.expression_type == "prefix") ? x.getPNdepth(x.pieces[jdx], jdx) : x.getRPNdepth(x.pieces[jdx], jdx));
-                assert(depth_and_completion.first <= x.n[jdx]);
+                assert(depth_and_completion.first == x.n[jdx]);
                 assert(depth_and_completion.second);
-                x.n[jdx] = depth_and_completion.first;
-                rand_depth_dists[jdx] = std::uniform_int_distribution<int>(0, depth_and_completion.first);
+                //x.n[jdx] = depth_and_completion.first;
+                rand_depth_dists[jdx] = std::uniform_int_distribution<int>(0, x.n[jdx]);
                 rand_depths[jdx] = rand_depth_dists[jdx](generator);
             }
         }
@@ -6615,8 +6528,8 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
                                              +std::to_string(depth_and_completion.first));
                 }
                 assert(depth_and_completion.second);
-                x.n[jdx] = depth_and_completion.first;
-                rand_depth_dists[jdx] = std::uniform_int_distribution<int>(0, depth_and_completion.first);
+                //x.n[jdx] = depth_and_completion.first;
+                rand_depth_dists[jdx] = std::uniform_int_distribution<int>(0, x.n[jdx]);
             }
             score = x.complete_status(x.pieces.size() - 1, false);
             //std::cout << "score = " << score << '\n';
@@ -6663,6 +6576,14 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
     std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
     std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
     std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
+    if (strlen(MSE_file_name))
+    {
+        // Open file in append mode
+        std::ofstream out(MSE_file_name, std::ios::app);
+        out << best_mse_vec << '\n';
+        out.close();
+    }
+    std::cout << "Mean-squared error for each equation: " << best_mse_vec << '\n';
     std::cout << "Best expression = " << best_expression << '\n';
     std::cout << "Best expression (original format) = " << orig_expression << '\n';
     std::cout << "Best diff result = " << best_expr_result << '\n';
@@ -7545,7 +7466,22 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
 //    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
 //}
 
-void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), size_t num_diff_eqns, const Eigen::MatrixXd& data, const std::vector<int>& depth, const std::string expression_type = "prefix", size_t num_consts_diff = 0, const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0, bool const_tokens = false, double isConstTol = 1e-1, bool use_const_pieces = false, int numDataCols = 0)
+void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&),
+                  size_t num_diff_eqns,
+                  const Eigen::MatrixXd& data,
+                  const std::vector<int>& depth,
+                  const std::string expression_type = "prefix",
+                  size_t num_consts_diff = 0,
+                  const std::string method = "LevenbergMarquardt",
+                  const int num_fit_iter = 1,
+                  const std::string& fit_grad_method = "naive_numerical",
+                  const bool cache = true,
+                  const double time = 120.0 /*time to run the algorithm in seconds*/,
+                  unsigned int num_threads = 0,
+                  bool const_tokens = false,
+                  double isConstTol = 1e-1,
+                  bool use_const_pieces = false,
+                  int numDataCols = 0)
 {
     if (num_threads == 0)
     {
@@ -7563,6 +7499,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), size_
     std::atomic<double> max_score{0.0};
     std::atomic<double> best_MSE{DBL_MAX};
     std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
+    std::vector<double> best_mse_vec;
 
     auto start_time = Clock::now();
 
@@ -7570,7 +7507,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), size_
      Inside of thread:
      */
 
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &use_const_pieces, &numDataCols, &isConstTol, &best_MSE]()
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &use_const_pieces, &numDataCols, &isConstTol, &best_MSE, &best_mse_vec]()
     {
         std::random_device rand_dev;
         std::mt19937 thread_local generator(rand_dev()); // Mersenne Twister random number generator
@@ -7619,6 +7556,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), size_
                 max_score = score;
                 std::scoped_lock str_lock(Board::thread_locker);
                 best_MSE = x.MSE_curr;
+                best_mse_vec = x.MSE_curr_vec;
                 best_expression = x._to_infix();
                 orig_expression = x.expression();
                 best_expr_result = x._to_infix(x.diffeq_result);
@@ -7626,6 +7564,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), size_
                 std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
                 std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
                 std::cout << "Best score = " << score << ", MSE = " << best_MSE << '\n';
+                std::cout << "Mean-squared error for each equation: " << best_mse_vec << '\n';
                 std::cout << "Best expression = " << best_expression << '\n';
                 std::cout << "Best expression (original format) = " << orig_expression << '\n';
                 std::cout << "Best diff result = " << best_expr_result << '\n';
@@ -7656,40 +7595,117 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&), size_
     std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
     std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
     std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
+    std::cout << "Mean-squared error for each equation: " << best_mse_vec << '\n';
     std::cout << "Best expression = " << best_expression << '\n';
     std::cout << "Best expression (original format) = " << orig_expression << '\n';
     std::cout << "Best diff result = " << best_expr_result << '\n';
     std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
 }
 
-int main()
+int get_random_seed(int argc, char *argv[])
 {
-    constexpr double time = 1000000;
+    int random_seed = RANDOM_SEED;
+    if (argc == 2)
+    {
+        try
+        {
+            random_seed = std::stoi(argv[1]);
+        }
+        catch (std::exception& e)
+        {
+            std::cout << "Error when doing `std::stoi(argv[1])`,\nmessage = "
+            << e.what() << '\n';
+            exit(1);
+        }
+    }
+    return random_seed;
+}
+
+int main(int argc, char *argv[])
+{
+    int random_seed = get_random_seed(argc, argv);
+    printf("Random seed set to %d%s", random_seed, std::string(10, '\n').c_str());
+    constexpr double time = 120;
+    double threshold = 1.0;
+    auto data1 = createMeshgridVectors(33, 2, {0.0001, 0.0}, {10.0, 6.28319});
+//    RandomSearch(SwiftHohenberg /*differential equation to solve*/,
+//                 1 /*number of equations in differential equation system*/,
+//                 data1 /*data used to solve differential equation*/,
+//                 std::vector<int>{4} /*fixed depths of generated solution*/,
+//                 "postfix" /*expression representation*/,
+//                 0 /*num_consts_diff: number of constants in differential equation*/,
+//                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
+//                 5 /*number of fit iterations*/,
+//                 "naive_numerical" /*method for computing the gradient*/,
+//                 true /*cache*/,
+//                 time /*time to run the algorithm in seconds*/,
+//                 0 /*num threads*/,
+//                 true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+//                 threshold /*threshold for which solutions cannot be constant*/,
+//                 true /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+//                 0 /*number of data columns that constitute labels and not independent variables/features*/);
+    SimulatedAnnealing(SwiftHohenberg /*differential equation to solve*/,
+        1 /*number of equations in differential equation system*/,
+        data1 /*data used to solve differential equation*/,
+        std::vector<int>{5} /*fixed depths of generated solution*/,
+        "postfix" /*expression representation*/,
+        0/*2*/ /*num_consts_diff: number of constants in differential equation*/,
+        "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
+        5 /*number of fit iterations*/,
+        "naive_numerical" /*method for computing the gradient*/,
+        true /*cache*/,
+        time /*time to run the algorithm in seconds*/,
+        0 /*num threads*/,
+        true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+        threshold /*threshold for which solutions cannot be constant*/,
+        true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+        false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
+        0 /*number of data columns that constitute labels and not independent variables/features*/,
+        {split("x1 10.000000 * 4 6.283190 2 ^ + - 2 ln 1 6.283190 sech / * / 0.000100 exp 10.000000 4 / / x1 sin x0 sin * 4 6.283190 - * - +")} /*seed expressions*/,
+        false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
+        random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
+        "" /*file to save MSE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
+
 //    double threshold = 0.0223;
 //    auto data = createMeshgridVectors(101, 1, {0.0001}, {10.0});
-//    RandomSearch(VortexRadialProfile /*differential equation to solve*/, 3 /*number of equations in differential equation system*/, data /*data used to solve differential equation*/, std::vector<int>{7} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts_diff: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/, 0 /*number of data columns that constitute labels and not independent variables/features*/);
-    auto data1 = createMeshgridVectors(33, 2, {0.0001, 0.0}, {10.0, 6.28319});
-    double threshold = 1.0;
-//    RandomSearch(SwiftHohenberg /*differential equation to solve*/, 1 /*number of equations in differential equation system*/, data1 /*data used to solve differential equation*/, std::vector<int>{4} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts_diff: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, false /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/, 0 /*number of data columns that constitute labels and not independent variables/features*/);
-    SimulatedAnnealing(SwiftHohenberg /*differential equation to solve*/,
-       1 /*number of equations in differential equation system*/,
-       data1 /*data used to solve differential equation*/,
-       std::vector<int>{5} /*fixed depths of generated solution*/,
-       "postfix" /*expression representation*/,
-       0 /*num_consts_diff: number of constants in differential equation*/,
-       "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
-       5 /*number of fit iterations*/,
-       "naive_numerical" /*method for computing the gradient*/,
-       true /*cache*/,
-       time /*time to run the algorithm in seconds*/,
-       0 /*num threads*/,
-       true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
-       threshold /*threshold for which solutions cannot be constant*/,
-       false /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
-       false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
-       0 /*number of data columns that constitute labels and not independent variables/features*/,
-       {split("x1 10.000000 * 4 6.283190 2 ^ + - 2 ln 1 6.283190 sech / * / 0.000100 exp 10.000000 4 / / x1 sin x0 sin * 4 6.283190 - * - +")},//{split("6.283190 10.000000 * ~ exp x1 cos x0 sqrt + ^")} /*seed expressions*/,
-       false /*whether to exit right after computing the score for the seed epxression (default `false`)*/);
+//    RandomSearch(VortexRadialProfile /*differential equation to solve*/,
+//                 3 /*number of equations in differential equation system*/,
+//                 data /*data used to solve differential equation*/,
+//                 std::vector<int>{21} /*fixed depths of generated solution*/,
+//                 "prefix" /*expression representation*/,
+//                 0 /*num_consts_diff: number of constants in differential equation*/,
+//                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
+//                 5 /*number of fit iterations*/,
+//                 "naive_numerical" /*method for computing the gradient*/,
+//                 true /*cache*/,
+//                 time /*time to run the algorithm in seconds*/,
+//                 0 /*num threads*/,
+//                 true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+//                 threshold /*threshold for which solutions cannot be constant*/,
+//                 true /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+//                 0 /*number of data columns that constitute labels and not independent variables/features*/);
+
+//    SimulatedAnnealing(VortexRadialProfile /*differential equation to solve*/,
+//             3 /*number of equations in differential equation system*/,
+//             data /*data used to solve differential equation*/,
+//             std::vector<int>{13} /*fixed depths of generated solution*/,
+//             "prefix" /*expression representation*/,
+//             0/*2*/ /*num_consts_diff: number of constants in differential equation*/,
+//             "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
+//             5 /*number of fit iterations*/,
+//             "naive_numerical" /*method for computing the gradient*/,
+//             true /*cache*/,
+//             time /*time to run the algorithm in seconds*/,
+//             0 /*num threads*/,
+//             true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+//             threshold /*threshold for which solutions cannot be constant*/,
+//             true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+//             false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
+//             0 /*number of data columns that constitute labels and not independent variables/features*/,
+//             {} /*seed expressions*/,
+//             false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
+//             random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
+//             "" /*file to save MSE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
 
     return 0;
 }
@@ -7697,5 +7713,29 @@ int main()
 //git push --set-upstream origin PrefixPostfixSymbolicDifferentiator
 
 //g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd_double PrefixPostfixMultiThreadDiffSimplifySR_Nd_double.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
-
 //g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd_double PrefixPostfixMultiThreadDiffSimplifySR_Nd_double.cpp -g -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
+
+/*
+Compile: Make sure you did $env:Path += ";C:\msys64\ucrt64\bin\" by inspecting $env:Path, then do the two lines below
+g++.exe -O2 -std=c++1z -IC:\Users\finkelsteine\test_codes\LBFGSpp\include -IC:\Users\finkelsteine\test_codes\boost_1_88_0 -IC:\Users\finkelsteine\test_codes\eigen\unsupported -IC:\Users\finkelsteine\test_codes\eigen\ -c C:\Users\finkelsteine\test_codes\hello_with_numbers_double.cpp -o C:\Users\finkelsteine\test_codes\hello_with_numbers_double.o
+g++.exe  -o C:\Users\finkelsteine\test_codes\hello_with_numbers_double.exe C:\Users\finkelsteine\test_codes\hello_with_numbers_double.o  -O2
+*/
+
+//To run this file in Windows PowerShell, MAKE SURE ";C:\msys64\ucrt64\bin\" is in $env:Path
+//(by doing $env:Path, and, if it's not there, do $env:Path += ";C:\msys64\ucrt64\bin\"),
+//then do:
+//& 'C:\Program Files (x86)\CodeBlocks\cb_console_runner.exe' .\hello_with_numbers_double.exe
+//or
+//.\hello_with_numbers_double.exe
+
+//To unzip file: Expand-Archive -Path "C:\Users\finkelsteine\test_codes\boost_1_88_0.zip" -DestinationPath "C:\Users\finkelsteine\test_codes"
+//To count how many instances of a string (in this case "stof" occur in a file (in this case `hello.cpp`):
+// - (Get-Content -Path "C:\Users\finkelsteine\test_codes\hello.cpp" | Select-String -Pattern "stof").Count
+//To launch Python: C:\Users\finkelsteine\AppData\Local\Programs\Python\Launcher\py.exe
+//To get the diff between two files: Compare-Object (Get-Content -Path "C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp") (Get-Content -Path "C:\Users\finkelsteine\test_codes\hello_with_numbers.txt")
+//To change the path variable, do $env:Path="newpath"
+//To install with pip: C:\Users\finkelsteine\AppData\Local\Programs\Python\Launcher\py.exe -m pip install plotdigitizer
+
+
+
+

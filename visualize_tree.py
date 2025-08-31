@@ -316,34 +316,9 @@ def test_visualize():
             os.system(f"open -a Safari {file_name}.pdf")
     else:
 #        plot_rpn_expression_tree("μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -".split(), save = save, title = r"Swift-Hohenberg 2D Polar Coordinates", tolatex = True, to_pdf = True, filename = "SwiftHohenberg2DPolarCoordinates.pdf")
-        plot_rpn_expression_tree("x1 10.000000 * 4 6.283190 2 ^ + - 2 ln 1 6.283190 sech / * /".split(), save = save, title = r"Example", tolatex = True, to_pdf = True, filename = "Example.pdf")
-#        plot_pn_expression_tree("~ asin sin - d_ij_nest sqrt g_t_k".split(), save = save)
+        plot_rpn_expression_tree("const0 sech x0 / 2 / 0.4 - tanh 1 const0 sech x0 / 2 / 0.4 - sech / 0.4 - *".split(), save = save, title = r"Example", tolatex = True, to_pdf = True, filename = "Example.pdf")
+                                  const0 sech -10.434288 / 2 / 0.4 5.22145 * - tanh 1 const0 sech -10.434288 / 2 / 0.4 5.22145 * - sech / 0.4 5.22145 * - *
+#        plot_pn_expression_tree("+ + - * ^ 20.000000 / x1 ~ exp x0 * 2.995732273553991 / ~ exp x0 * ~ exp x0 ~ exp x0 * -0.214359 * ^ 20.000000 / x1 ~ exp x0 * 2.995732273553991 / ~ * x1 ~ exp x0 * ~ exp x0 ~ exp x0 / * 0.001370 ^ 20.000000 / x1 ~ exp x0 + 1.244282 ^ 20.000000 / x1 ~ exp x0 * * 1.238819 ^ 20.000000 / x1 ~ exp x0 sech exp * 0.805109 + x0 x1".split(), save = save)
 
 if __name__ == "__main__":
     test_visualize()
-
-
-#pieces = ~ asin sin - d_ij_nest sqrt g_t_k , score = nan
-#pieces = / + delta_w_t_k w_k sqrt exp sin ^ m_t_k_hat v_t_k , score = nan
-#pieces = cos ln ^ theta ~ / w_k d_ij , score = nan
-#pieces = tanh cos ln - epsilon * w_k delta_w_t_k_ada_delta , score = nan
-#pieces = acos sqrt * asin v_t_k_hat ln * beta_2 delta_w_t_k_ada_delta , score = nan
-#pieces = / theta acos sin cos sin d_ij_nest , score = nan
-#pieces = ^ v_t_k / asin value ln asin cos d_ij_nest , score = nan
-#pieces = tanh sin ln sin ln v_t_k , score = nan
-#pieces = ln ^ w_k acos / value asin velocity_k , score = nan
-#pieces = exp cos sin acos ~ v_t_k , score = nan
-#pieces = cos ~ / m_t_k - d_ij_nest sin gamma , score = nan
-#pieces = * d_ij_nest + ln acos acos v_t_k_hat + cos g_t_k delta_w_t_k , score = nan
-#pieces = tanh asin ~ sqrt ^ t delta_w_t_k_ada_delta , score = nan
-#pieces = ^ expt_weight_squared_k + gamma ln - exp delta_w_t_k velocity_k , score = nan
-#pieces = ^ gradient_k + beta_1 sin cos - v_t_k_hat delta_w_t_k_ada_delta , score = nan
-#pieces = ln ln + g_t_k cos ln eta , score = nan
-#pieces = / - m_t_k t ^ beta_1 tanh exp exp beta_1 , score = nan
-#pieces = cos ~ ^ expt_weight_squared_k + exp v_t_k value , score = nan
-#pieces = acos cos sin sqrt sin beta_2 , score = nan
-#pieces = ln - v_t_k tanh ln ln gradient_k , score = nan
-#pieces = sqrt exp asin acos sin d_ij_nest , score = nan
-#pieces = sin acos sin ^ m_t_k_hat sin t , score = nan
-#pieces = sin asin + delta_w_t_k sin ~ m_t_k_hat , score = nan
-#pieces = - velocity_k * delta_w_t_k asin sqrt / gradient_k v_t_k , score = nan

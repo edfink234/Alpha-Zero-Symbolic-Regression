@@ -461,6 +461,23 @@ C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|7714|warning: comparison
 
 */
 
+template<typename Derived>
+typename Derived::Scalar median( Eigen::DenseBase<Derived>& d )
+{
+    auto r {d.reshaped()};
+    std::sort(r.begin(), r.end());
+    return (r.size() % 2 == 0) ?
+            r.segment((r.size()-2)/2, 2).mean() :
+            r(r.size()/2);
+}
+
+template<typename Derived>
+typename Derived::Scalar median(const Eigen::DenseBase<Derived>& d)
+{
+    typename Derived::PlainObject m {d.replicate(1,1)};
+    return median(m);
+}
+
 bool isZero(const Eigen::VectorXf& vec, float tolerance = 1e-5f)
 {
     if (vec.size() <= 1)
@@ -478,7 +495,7 @@ bool isZero(const Eigen::VectorXf& vec, float tolerance = 1e-5f)
             return true; // Return true if any NaN is present in values
         }
     }
-    return (vec.array().abs().maxCoeff() <= tolerance);
+    return ((vec.array().abs().maxCoeff() <= tolerance) && (median(vec) <= tolerance));
 }
 
 bool isZero(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::Dynamic>& vec, float tolerance = 1e-5f)
@@ -494,7 +511,7 @@ bool isZero(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXf>, Eigen::D
             return true; // Return true if any NaN is present in values
         }
     }
-    return (((vec.array()).abs().maxCoeff()) <= tolerance);
+    return ((vec.array().abs().maxCoeff() <= tolerance) && (median(vec) <= tolerance));
 }
 
 bool isConstant(const Eigen::VectorXf& vec, float tolerance = 1e-5f)
@@ -694,6 +711,35 @@ float loss_func(const Eigen::VectorXf& actual, const Eigen::VectorXf& predicted)
     return (1.0f/(1.0f+MSE(actual, predicted)));
 }
 
+//performs the transformation "const{>=num_consts_diff}" -> "const"
+//on each such token in pieces
+void reset_const_token_labels(std::vector<std::vector<std::string>>& pieces, size_t num_consts_diff)
+{
+    for (std::vector<std::string>& x_expr: pieces)
+    {
+        for (std::string& token: x_expr)
+        {
+            if (token.compare(0, 5, "const") == 0)
+            {
+                std::string int_suffix = token.substr(5);
+                if (int_suffix.size())
+                {
+                    int int_suffix_num = std::stoi(int_suffix);
+                    if (int_suffix_num >= num_consts_diff) //then it's a const that belongs to pieces -> reset it
+                    {
+                        token = "const";
+                    }
+                    else
+                    {
+                        //Below we test that token is of the form `const{0 <= num < num_consts_diff}`
+                        assert(((0 <= int_suffix_num) && (int_suffix_num < num_consts_diff)));
+                    }
+                }
+            }
+        }
+    }
+};
+
 struct Board
 {
     static boost::concurrent_flat_map<std::string, Eigen::VectorXf> inline expression_dict;
@@ -747,7 +793,8 @@ struct Board
     std::string expression_type, expression_string;
     size_t num_consts_diff;
     static std::mutex inline thread_locker; //static because it needs to protect static members
-    std::vector<std::vector<std::string>> pieces; // Create the empty expression list.
+    //TODO: MAYBE SEE IF YOU CAN CHANGE `std::string` to `const char*` here?
+    std::vector<std::vector<std::string>> pieces, temp_pieces; // Create the empty expression list and a backup
     std::vector<std::string> derivat;// Vector to store the derivative.
     bool visualize_exploration, is_primary;
     std::vector<std::vector<std::string>> (*diffeq)(Board&); //differential equation we want to solve
@@ -3965,6 +4012,15 @@ struct Board
                         ((this->expression_type == "prefix") ? simplifyPN(this->pieces[jdx]) : simplifyRPN(this->pieces[jdx])); //simplify expression
                     }
                 }
+                else
+                {
+                    this->temp_pieces = this->pieces;
+                    for (int jdx = 0; jdx < this->pieces.size(); jdx++)
+                    {
+                        ((this->expression_type == "prefix") ? simplifyPN(this->pieces[jdx]) : simplifyRPN(this->pieces[jdx])); //simplify expression
+                    }
+                    reset_const_token_labels(this->pieces, this->num_consts_diff);
+                }
                 if (this->num_consts_diff || this->use_const_pieces) //If I have tokens that need to be optimized
                 {
                     this->expression_string.clear();
@@ -4052,7 +4108,12 @@ struct Board
                     }
                     assert((this->params.size() == piece_const_counter));
                 }
-                return fitFunctionToData();
+                float res = fitFunctionToData();
+                if (!this->simplify_original) //nah there's a bug here with consts
+                {
+                    this->pieces = this->temp_pieces;
+                }
+                return res;
             }
             return 0.0f;
         }
@@ -6727,7 +6788,7 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 
 //https://dl.acm.org/doi/pdf/10.1145/3449639.3459345?casa_token=Np-_TMqxeJEAAAAA:8u-d6UyINV6Ex02kG9LthsQHAXMh2oxx3M4FG8ioP0hGgstIW45X8b709XOuaif5D_DVOm_FwFo
 //https://core.ac.uk/download/pdf/6651886.pdf
-void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&), size_t num_diff_eqns, const Eigen::MatrixXf& data, const std::vector<int>& depth, const std::string expression_type = "prefix", size_t num_consts_diff = 0, const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool use_const_pieces = false, int numDataCols = 0, const std::vector<std::vector<std::string>>& seed_expressions = {}, bool exit_early = false)
+void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&), size_t num_diff_eqns, const Eigen::MatrixXf& data, const std::vector<int>& depth, const std::string expression_type = "prefix", size_t num_consts_diff = 0, const std::string method = "LevenbergMarquardt", const int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, unsigned int num_threads = 0, bool const_tokens = false, float isConstTol = 1e-1f, bool use_const_pieces = false, bool simplifyOriginal = false, int numDataCols = 0, const std::vector<std::vector<std::string>>& seed_expressions = {}, bool exit_early = false)
 {
 
     if (num_threads == 0)
@@ -6764,13 +6825,13 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
     /*
      Inside of thread:
      */
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &numDataCols, &seed_expressions, &exit_early, &best_MSE]()
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &seed_expressions, &exit_early, &best_MSE]()
     {
         std::random_device rand_dev;
         std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, false, numDataCols);
+        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols);
         sync_point.arrive_and_wait();
-        Board secondary(diffeq, num_diff_eqns, false, std::vector<int>(depth.size(), 0), expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, false, numDataCols); //For perturbations
+        Board secondary(diffeq, num_diff_eqns, false, std::vector<int>(depth.size(), 0), expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols); //For perturbations
         assert(secondary.pieces.size() == secondary.n.size());
         assert(secondary.pieces.size() == x.pieces.size());
         assert(secondary.pieces.size() == x.n.size());
@@ -8058,12 +8119,12 @@ int main()
 //    auto data = createMeshgridVectors(101, 1, {0.0001f}, {10.0f});
 //    RandomSearch(VortexRadialProfile /*differential equation to solve*/, 3 /*number of equations in differential equation system*/, data /*data used to solve differential equation*/, std::vector<int>{7} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts_diff: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/, 0 /*number of data columns that constitute labels and not independent variables/features*/);
     auto data1 = createMeshgridVectors(33, 2, {0.0001f, 0.0f}, {10.0f, 6.28319f});
-    float threshold = 1e6f;
+    float threshold = 1.0f;
 //    RandomSearch(SwiftHohenberg /*differential equation to solve*/, 1 /*number of equations in differential equation system*/, data1 /*data used to solve differential equation*/, std::vector<int>{4} /*fixed depths of generated solution*/, "postfix" /*expression representation*/, 0 /*num_consts_diff: number of constants in differential equation*/, "LevenbergMarquardt" /*fit method if expression contains const tokens*/, 5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/, true /*cache*/, time /*time to run the algorithm in seconds*/, 0 /*num threads*/, true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/, threshold /*threshold for which solutions cannot be constant*/, true /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/, 0 /*number of data columns that constitute labels and not independent variables/features*/);
     SimulatedAnnealing(SwiftHohenberg /*differential equation to solve*/,
        1 /*number of equations in differential equation system*/,
        data1 /*data used to solve differential equation*/,
-       std::vector<int>{4} /*fixed depths of generated solution*/,
+       std::vector<int>{6} /*fixed depths of generated solution*/,
        "postfix" /*expression representation*/,
        0 /*num_consts_diff: number of constants in differential equation*/,
        "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -8075,9 +8136,10 @@ int main()
        true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
        threshold /*threshold for which solutions cannot be constant*/,
        false /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+       false /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/,
        0 /*number of data columns that constitute labels and not independent variables/features*/,
        {split("6.283190 10.000000 * ~ exp x1 cos x0 sqrt + ^")} /*seed expressions*/,
-       true /*whether to exit right after computing the score for the seed epxression (default `false`)*/);
+       false /*whether to exit right after computing the score for the seed epxression (default `false`)*/);
     
 //    Eigen::MatrixXf data(127, 3);
 //    data << -10.43428828745382, 0.0012964163037524623, -0.0010561600135938624, -10.317688181744055, 0.0012964163037524623, -0.0010590449646629705, -10.201088076034292, 0.0012964163037524623, -0.001061929915732083, -10.084487970324528, 0.0012964163037524623, -0.0010807860775096723, -9.967887864614763, 0.0012964163037524623, -0.0011318227224482134, -8.91848691322689, 0.0012964163037524623, -0.0010936643774922638, -8.801886807517125, 0.0012964163037524623, -0.0010965493285613778, -8.68528670180736, 0.0012964163037524623, -0.0010994342796304824, -8.568686596097598, 0.0012964163037524623, -0.0010915881967886473, -8.481236516815274, 0.0012964163037524623, -0.0010761774391480077, -7.460985591854841, 0.0012964163037524623, -0.0007317424693321756, -7.344385486145076, 0.0012964163037524623, -0.0006616950327002919, -7.2277853804353125, 0.0012964163037524623, -0.0006260437338381488, -7.111185274725549, 0.0012964163037524623, -0.0005903924349760059, -7.023735195443225, 0.0012964163037524623, -0.0005636539608293984, -6.003484270482792, 0.0012964163037524623, -0.0002904584970633939, -5.886884164773028, 0.0012964163037524623, -0.0002933434481325109, -5.770284059063264, 0.0012964163037524623, -0.00029622839920161436, -5.6536839533535, 0.0012964163037524623, -0.0002634502321286223, -5.566233874071178, 0.0012964163037524623, -0.00014361535924022599, -5.04153339837724, -0.0023812961476865346, 0.0005753938780901555, -4.487682896255862, -0.0023812961476865346, 0.0025630321446362203, -4.371082790546097, -0.0023812961476865346, 0.003170470816595319, -4.254482684836333, -0.004220152373406005, 0.0039049987818705924, -4.13788257912657, -0.0023812961476865346, 0.004744215952619693, -3.1370650051177638, -0.0477397497154341, 0.015162386082458477, -3.0301815748838123, -0.04651384556495444, 0.017571736480597892, -3.0301815748838123, -0.059385839144990904, 0.017571736480597892, -2.9135814691740496, -0.0612246953707104, 0.020200118733113566, -2.9135814691740496, -0.0722578327250274, 0.020200118733113566, -2.826131389891726, -0.0722578327250274, 0.022171405422500352, -2.272280887770348, -0.20097776852539212, 0.03380538107006965, -2.204264159439653, -0.2193663307825871, 0.03703478194098867, -2.1556807820605837, -0.23959374926550153, 0.039341496848788016, -2.1265307556331425, -0.22672175568546504, 0.04072552579346761, -1.864180517786174, -0.3664748288401468, 0.05165624361142156, -1.864180517786174, -0.3811856786459028, 0.05165624361142156, -1.835030491358733, -0.40692966580597567, 0.0529119057852572, -1.7961637894554787, -0.3958965284516587, 0.05212629254610853, -1.7767304385038507, -0.3738302537430248, 0.05316534620334737, -1.7767304385038507, -0.42899594051460965, 0.05316534620334737, -1.7378637366005965, -0.41673689900981303, 0.05538744310479808, -1.5143802006568823, -0.5503604514120964, 0.06859392065655061, -1.5143802006568823, -0.5632324449921329, 0.06859392065655061, -1.456080147802, -0.5797821510236083, 0.07148952152552111, -1.4269301213745589, -0.6092038506351203, 0.07068320834571716, -1.4269301213745589, -0.5650713012178524, 0.07068320834571716, -1.3880634194713046, -0.5944930008293643, 0.07399308257283442, -1.2520299628099139, -0.6643695374067052, 0.07771025027470406, -1.096563155196895, -0.7342460739840461, 0.08765946352014711, -1.0382631023420146, -0.75631234869268, 0.09068147600343156, -1.0188297513903866, -0.7342460739840461, 0.09032323761866505, -0.9605296985355043, -0.763667773595558, 0.09139473856823228, -0.9313796721080632, -0.7765397671755945, 0.0949841086018029, -0.34837914355924404, -0.8813545720416058, 0.1078952792642798, -0.2900790907043618, -0.8923877093959227, 0.1081109856961209, -0.2317790378494795, -0.8850322844930447, 0.1083264085954597, -0.11517893213971497, -0.8887099969444838, 0.10825685757412504, -0.11517893213971497, -0.8997431342988007, 0.10825685757412504, 0.0014211735700477846, -0.8960654218473618, 0.10889242358867447, 0.4095215435542219, -0.8776768595901667, 0.10071037481903938, 0.7301718342560726, -0.8261888852700209, 0.09222130882213057, 0.7593218606835137, -0.8133168916899844, 0.0907023965524053, 0.817621913538396, -0.8004448981099479, 0.09121769317212448, 0.8467719399658353, -0.8151557479157039, 0.09057423883080643, 0.8759219663932765, -0.7857340483041919, 0.08956661658439113, 0.9050719928207176, -0.8004448981099479, 0.08778230764296704, 0.9439386947239718, -0.7710231984984359, 0.08540322905440165, 0.9633720456755999, -0.7894117607556309, 0.08421368976011888, 1.2840223363774506, -0.6423032626980713, 0.07096278110376601, 1.2840223363774506, -0.6551752562781077, 0.07096278110376601, 1.2937390118532637, -0.6239147004408763, 0.07102632037452986, 1.352039064708146, -0.6018484257322423, 0.06793381671873283, 1.371472415659774, -0.6239147004408763, 0.06690298216680045, 1.4297724685146562, -0.5944930008293643, 0.06381047851100341, 1.4297724685146562, -0.6055261381836813, 0.06381047851100341, 1.6046726270793013, -0.4657730650289996, 0.0563485619345576, 1.6435393289825555, -0.45473992767468263, 0.054811139292982716, 1.7018393818374378, -0.43267365296604865, 0.049947734849127005, 1.7212727327890658, -0.45473992767468263, 0.05004382699481444, 1.779572785643948, -0.41796280316029266, 0.04866441212888443, 1.779572785643948, -0.42899594051460965, 0.04866441212888443, 1.954472944208593, -0.28924286735992794, 0.04236496314010472, 1.9933396461118473, -0.27820973000561094, 0.040965085587042566, 2.0710730499183576, -0.256143455296977, 0.0381653304809182, 2.0710730499183576, -0.270854305102733, 0.0381653304809182, 2.0710730499183576, -0.28188744245704994, 0.0381653304809182, 2.109939751821612, -0.2402067013407414, 0.03676545292785605, 2.1876731556281204, -0.23039946813690404, 0.03396569782173175, 2.333423287765326, -0.1715560689138802, 0.030854610209602847, 2.6346402275155505, -0.10167953233653931, 0.021605693132999516, 2.712373631322059, -0.10167953233653931, 0.01973791820879841, 2.7415236577495, -0.08696868253078335, 0.019037502612222985, 2.7998237106043806, -0.0722578327250274, 0.017636671419072176, 2.8289737370318218, -0.08329097007934436, 0.01693625582249675, 3.7326245562824916, -0.013414433502003498, 0.007472265835869461, 3.849224661992256, -0.006059008599125504, 0.006376637533005264, 3.849224661992256, -0.017092145953442495, 0.006376637533005264, 3.9658247677020206, -0.006059008599125504, 0.005281009230141067, 4.082424873411785, -0.006059008599125504, 0.004185380927276871, 4.199024979121546, -0.006059008599125504, 0.0038337565701724525, 4.315625084831311, -0.006059008599125504, 0.002806815055583041, 4.432225190541075, -0.0005424399219670362, 0.0018962403086712788, 4.54882529625084, 0.0012964163037524623, 0.0022326809651833437, 4.665425401960604, 0.0012964163037524623, 0.0014163423316503833, 4.752875481242928, 0.0012964163037524623, 0.001872028283842192, 5.77312640620336, -0.0005424399219670362, -0.0005818385550432711, 5.889726511913125, 0.0012964163037524623, -0.000584723506112388, 6.006326617622889, 0.0012964163037524623, -0.0005876084571814913, 6.12292672333265, 0.0012964163037524623, -0.0006079755495703998, 6.239526829042415, 0.0012964163037524623, -0.0006811290130572356, 7.23062772757541, 0.0012964163037524623, -0.00136232556390265, 7.347227833285174, 0.0012964163037524623, -0.0015817304103852947, 7.463827938994935, 0.0012964163037524623, -0.0018011352568679273, 7.5804280447047, 0.0012964163037524623, -0.001939549782349283, 7.667878123987023, 0.0012964163037524623, -0.0019254043838014701, 8.163428573253519, 0.0012964163037524623, -0.0017486845884493267, 8.688129048947456, 0.0012964163037524623, -0.0015615695110176451, 8.80472915465722, 0.0012964163037524623, -0.001650762588452242, 8.921329260366985, 0.0012964163037524623, -0.001896787283102471, 9.03792936607675, 0.0012964163037524623, -0.001610327152429707, 9.154529471786514, 0.0012964163037524623, -0.0015408317932039549, 9.65007992105301, 0.0012964163037524623, -0.0015530928352476675, 10.145630370319505, 0.0012964163037524623, -0.00156535387729138, 10.26223047602927, 0.0012964163037524623, -0.0015682388283604879, 10.378830581739034, 0.0012964163037524623, -0.0015711237794295918, 10.466280661021358, -0.0023812961476865346, -0.0015732874927314232;
@@ -8091,13 +8153,15 @@ int main()
 //       "postfix" /*expression representation*/,
 //       1 /*num_consts_diff: number of constants in differential equation*/,
 //       "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
-//       5 /*number of fit iterations*/, "naive_numerical" /*method for computing the gradient*/,
+//       5 /*number of fit iterations*/,
+//       "naive_numerical" /*method for computing the gradient*/,
 //       true /*cache*/,
 //       time /*time to run the algorithm in seconds*/,
 //       0 /*num threads*/,
 //       true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
 //       threshold /*threshold for which solutions cannot be constant*/,
 //       true /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+//       false /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/,
 //       2 /*number of data columns that constitute labels and not independent variables/features*/,
 //       {split("x0 sech tanh tanh 4 -10.434288 + x0 tanh 1 exp / - /"), split("10.466281 sqrt x0 sech 2 tanh ^ * sech")} /*seed expressions*/,
 //       false /*whether to exit right after computing the score for the seed epxression (default `false`)*/);
@@ -8151,3 +8215,4 @@ int main()
 //Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols);
 //sync_point.arrive_and_wait();
 //Board secondary(diffeq, num_diff_eqns, false, std::vector<int>(depth.size(), 0), expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols); //For perturbations
+//TODO: Hide this file from git commit history so it doesn't show publicly. So find a way to have git back it up but not make it publicly visible like all the other files in the repo.

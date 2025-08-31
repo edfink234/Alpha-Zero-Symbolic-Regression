@@ -16,6 +16,28 @@ bool is_unary(const std::string& token)
     return ((unary_operators.find(token) != unary_operators.end()) || (token == "abs"));
 }
 
+std::string to_string_general(double v)
+{
+    if (std::isnan(v))
+    {
+        return "nan";
+    }
+    if (std::isinf(v))
+    {
+        return (v < 0 ? "-inf" : "inf");
+    }
+    thread_local std::string out(32, '\0'); // start with a small buffer
+    while (true)
+    {
+        auto [p, ec] = std::to_chars(out.data(), out.data() + out.size(), v, std::chars_format::general);
+        if (ec == std::errc{})
+        {
+            out.resize(p - out.data());
+            return out;
+        }
+        out.resize(out.size() * 2);            // grow and retry (rare)
+    }
+}
 bool is_binary(const std::string& token)
 {
     return (binary_operators.find(token) != binary_operators.end());
@@ -33,28 +55,28 @@ void print_container(const std::vector<std::string>& c)
     std::cout << '\n';
 }
 
-float Stof(const std::string& param)
+double Stod(const std::string& param)
 {
     try
     {
-        float val = std::stof(param);
+        double val = std::stod(param);
         return val;
     }
     catch (const std::out_of_range&)
     {
         if (!param.empty() && param[0] == '-')
         {
-            return -std::numeric_limits<float>::infinity();
+            return -std::numeric_limits<double>::infinity();
         }
         else
         {
-            return std::numeric_limits<float>::infinity();
+            return std::numeric_limits<double>::infinity();
         }
     }
 }
 
 //https://medium.com/@ryan_forrester_/c-check-if-string-is-number-practical-guide-c7ba6db2febf
-bool isFloat(const std::string& s)
+bool isdouble(const std::string& s)
 {
     enum State { START, INT, FRAC, EXP, EXP_NUM };
     State state = START;
@@ -312,12 +334,12 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "nan"; //change '/' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_high] == "0") // / x 0 -> inf (because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to / x 0, which is 0)
-        {
-            //puts("hi 282");
-            new_expression[op_idx] = (new_expression[first_arg_idx_low] != "~") ? "inf": "-inf"; //change '/' to 'inf' or '-inf'
-            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
-        }
+//        else if (new_expression[first_arg_idx_high] == "0") // / x 0 -> inf (because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to / x 0, which is 0) //TODO: Remove -> not always true!
+//        {
+//            //puts("hi 282");
+//            new_expression[op_idx] = (new_expression[first_arg_idx_low] != "~") ? "inf": "-inf"; //change '/' to 'inf' or '-inf'
+//            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+//        }
         else if (new_expression[first_arg_idx_low] == "0") // / 0 x -> 0
         {
             //puts("hi 295");
@@ -370,12 +392,12 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "1"; //change '^' to '1'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_low] == "0") // ^ 0 x -> 0 (x > 0 assumed)
-        {
-            //puts("hi 340");
-            new_expression[op_idx] = "0"; //change '^' to '0'
-            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
-        }
+//        else if (new_expression[first_arg_idx_low] == "0") // ^ 0 x -> 0 (x > 0 assumed) //TODO: Remove -> not always true!
+//        {
+//            //puts("hi 340");
+//            new_expression[op_idx] = "0"; //change '^' to '0'
+//            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+//        }
         else if (new_expression[first_arg_idx_high] == "1") // ^ x 1 -> x (because, since prefix operators come at the beginning, if the beginning of the second argument of '^' is 1, then the whole second argument MUST be 1, therefore the expression reduces to ^ x 1, which is 1)
         {
             //puts("hi 346");
@@ -502,13 +524,32 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "0"; //change '~' to '0'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        //TODO: Uncomment and test this!
-//        else if (new_expression[first_arg_idx_low] == "inf") // ~ inf -> -inf
-//        {
-//            //puts("hi 487");
-//            new_expression[op_idx] = "-inf"; //change '~' to '-inf'
-//            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
-//        }
+        else if (new_expression[first_arg_idx_low] == "inf") // ~ inf -> -inf
+        {
+            //puts("hi 507");
+            new_expression[op_idx] = "-inf"; //change '~' to '-inf'
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
+    }
+    else if (expression[low] == "exp") // exp x
+    {
+        int op_idx = new_expression.size();
+        new_expression.push_back(expression[low]); // exp
+        int temp = low+1+grasp[low+1];
+        int first_arg_idx_low = new_expression.size();
+        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // exp x
+        if (new_expression[first_arg_idx_low] == "0") // exp 0 -> 1
+        {
+            //puts("hi 521");
+            new_expression[op_idx] = "1"; //change 'exp' to '1'
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
+        else if (new_expression[first_arg_idx_low] == "inf") // exp inf -> inf
+        {
+            //puts("hi 527");
+            new_expression[op_idx] = "inf"; //change 'exp' to 'inf'
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
     }
     else if (expression[low] == "abs") // abs x
     {
@@ -537,7 +578,7 @@ void graspSimplifyPrefix(std::vector<std::string>& expression, int low, int up, 
 void simplifyPN_Helper(std::vector<std::string>& expression)
 {
     bool simplified = true;
-    bool isFloat1, isFloat2, isConst1, isConst2;
+    bool isdouble1, isdouble2, isConst1, isConst2;
     while (simplified)
     {
         simplified = false;
@@ -547,42 +588,42 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
             {
                 if (is_binary(expression[i]))
                 {
-                    isFloat1 = isFloat(expression[i+1]);
-                    isFloat2 = isFloat(expression[i+2]);
+                    isdouble1 = isdouble(expression[i+1]);
+                    isdouble2 = isdouble(expression[i+2]);
                     
-                    if (isFloat1 && isFloat2)
+                    if (isdouble1 && isdouble2)
                     {
                         if (expression[i] == "+")
                         {
-                            expression[i] = simplifyString(std::to_string(Stof(expression[i+1]) + Stof(expression[i+2])));
+                            expression[i] = simplifyString(to_string_general(Stod(expression[i+1]) + Stod(expression[i+2])));
                             expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "-")
                         {
-                            expression[i] = simplifyString(std::to_string(Stof(expression[i+1]) - Stof(expression[i+2])));
+                            expression[i] = simplifyString(to_string_general(Stod(expression[i+1]) - Stod(expression[i+2])));
                             expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "*")
                         {
-                            expression[i] = simplifyString(std::to_string(Stof(expression[i+1]) * Stof(expression[i+2])));
+                            expression[i] = simplifyString(to_string_general(Stod(expression[i+1]) * Stod(expression[i+2])));
                             expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "/")
                         {
-                            expression[i] = simplifyString(std::to_string(Stof(expression[i+1]) / Stof(expression[i+2])));
+                            expression[i] = simplifyString(to_string_general(Stod(expression[i+1]) / Stod(expression[i+2])));
                             expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                             simplified = true;
                             break;
                         }
                         else if (expression[i] == "^")
                         {
-                            expression[i] = simplifyString(std::to_string(std::powf(Stof(expression[i+1]), Stof(expression[i+2]))));
+                            expression[i] = simplifyString(to_string_general(std::powf(Stod(expression[i+1]), Stod(expression[i+2]))));
                             expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                             simplified = true;
                             break;
@@ -742,81 +783,81 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                     }
                 }
                 
-                else if (is_unary(expression[i]) && isFloat(expression[i+1]))
+                else if (is_unary(expression[i]) && isdouble(expression[i+1]))
                 {
                     if (expression[i] == "cos")
                     {
-                        expression[i] = simplifyString(std::to_string(cos(Stof(expression[i+1]))));
+                        expression[i] = simplifyString(to_string_general(cos(Stod(expression[i+1]))));
                         expression.erase(expression.begin() + i + 1);
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "~")
                     {
-                        expression[i] = simplifyString(std::to_string(-(Stof(expression[i+1]))));
+                        expression[i] = simplifyString(to_string_general(-(Stod(expression[i+1]))));
                         expression.erase(expression.begin() + i + 1);
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "sin")
                     {
-                        expression[i] = simplifyString(std::to_string(sin(Stof(expression[i+1]))));
+                        expression[i] = simplifyString(to_string_general(sin(Stod(expression[i+1]))));
                         expression.erase(expression.begin() + i + 1);
                         simplified = true;
                         break;
                     }
                     else if ((expression[i] == "ln") || (expression[i] == "log"))
                     {
-                        expression[i] = simplifyString(std::to_string(log(Stof(expression[i+1])))); // Natural log (ln)
+                        expression[i] = simplifyString(to_string_general(log(Stod(expression[i+1])))); // Natural log (ln)
                         expression.erase(expression.begin() + i + 1);
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "asin" || expression[i] == "arcsin")
                     {
-                        expression[i] = simplifyString(std::to_string(asin(Stof(expression[i+1]))));
+                        expression[i] = simplifyString(to_string_general(asin(Stod(expression[i+1]))));
                         expression.erase(expression.begin() + i + 1);
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "acos" || expression[i] == "arccos")
                     {
-                        expression[i] = simplifyString(std::to_string(acos(Stof(expression[i+1]))));
+                        expression[i] = simplifyString(to_string_general(acos(Stod(expression[i+1]))));
                         expression.erase(expression.begin() + i + 1);
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "exp")
                     {
-                        expression[i] = simplifyString(std::to_string(exp(Stof(expression[i+1]))));
+                        expression[i] = simplifyString(to_string_general(exp(Stod(expression[i+1]))));
                         expression.erase(expression.begin() + i + 1);
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "sech")
                     {
-                        expression[i] = simplifyString(std::to_string(1 / cosh(Stof(expression[i+1])))); // sech(x) = 1 / cosh(x)
+                        expression[i] = simplifyString(to_string_general(1 / cosh(Stod(expression[i+1])))); // sech(x) = 1 / cosh(x)
                         expression.erase(expression.begin() + i + 1);
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "tanh")
                     {
-                        expression[i] = simplifyString(std::to_string(tanh(Stof(expression[i+1]))));
+                        expression[i] = simplifyString(to_string_general(tanh(Stod(expression[i+1]))));
                         expression.erase(expression.begin() + i + 1);
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "sqrt")
                     {
-                        expression[i] = simplifyString(std::to_string(sqrt(Stof(expression[i+1]))));
+                        expression[i] = simplifyString(to_string_general(sqrt(Stod(expression[i+1]))));
                         expression.erase(expression.begin() + i + 1);
                         simplified = true;
                         break;
                     }
                     else if (expression[i] == "abs")
                     {
-                        expression[i] = simplifyString(std::to_string(abs(Stof(expression[i+1]))));
+                        expression[i] = simplifyString(to_string_general(abs(Stod(expression[i+1]))));
                         expression.erase(expression.begin() + i + 1);
                         simplified = true;
                         break;
@@ -882,6 +923,14 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                         simplified = true;
                         break;
                     }
+                    //TODO: uncomment the below!
+//                    else if ((expression[i] == "sech") && (expression[i+1] == "~")) //sech(-x) = sech(x)
+//                    {
+//                        //puts("hi 708");
+//                        expression.erase(expression.begin() + i + 1); // Remove the '~'
+//                        simplified = true;
+//                        break;
+//                    }
                 }
             }
         }
@@ -1869,6 +1918,42 @@ int main()
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
+        
+    test_expr = {"~", "/", "sech", "~", "/", "~", "tanh", "cos", "x", "sin", "+", "0", "0", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"~", "/", "tanh", "~", "/", "~", "tanh", "cos", "x", "sin", "+", "0", "0", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"exp", "/", "tanh", "~", "/", "~", "tanh", "cos", "x", "sin", "+", "0", "0", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"exp", "/", "sech", "~", "/", "~", "tanh", "cos", "x", "sin", "+", "0", "0", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"exp", "*", "tanh", "~", "/", "~", "tanh", "cos", "x", "sin", "+", "0", "0", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"exp", "*", "sech", "~", "/", "~", "tanh", "cos", "x", "sin", "+", "0", "0", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
 }
 //g++ -std=c++20 -o PrefixSimplify PrefixSimplify.cpp
 
@@ -1876,3 +1961,4 @@ int main()
 //https://dl.acm.org/
 //simplification of polish notation expressions articles
 // ! objdump -d -M intel PrefixSimplify
+//TODO: Number of uncommited simplifcations so far: 5
