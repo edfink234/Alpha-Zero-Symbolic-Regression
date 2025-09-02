@@ -35,7 +35,7 @@ theta_centers = 0.5 * (theta_edges[:-1] + theta_edges[1:])
 R, Theta = np.meshgrid(r_centers, theta_centers)
 
 # Evaluate function on cell centers
-Z = ((((Theta * 10.000000) - 43.47847366333008) / 185.5887837532312) + (0.4000400020000667 - ((sin(R) * sin(R)) * -2.2831900000000003)))
+Z = ((((Theta * 10.000000) - 43.47847366333008) / 185.5887837532312) + (0.4000400020000667 - ((sin(Theta) * sin(R)) * 1.5707963267948966)))
 # Convert edges to Cartesian
 X_edges = R_edges * np.cos(Theta_edges)
 Y_edges = R_edges * np.sin(Theta_edges)

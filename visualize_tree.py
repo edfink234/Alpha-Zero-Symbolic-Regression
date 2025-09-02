@@ -316,8 +316,7 @@ def test_visualize():
             os.system(f"open -a Safari {file_name}.pdf")
     else:
 #        plot_rpn_expression_tree("μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -".split(), save = save, title = r"Swift-Hohenberg 2D Polar Coordinates", tolatex = True, to_pdf = True, filename = "SwiftHohenberg2DPolarCoordinates.pdf")
-        plot_rpn_expression_tree("const0 sech x0 / 2 / 0.4 - tanh 1 const0 sech x0 / 2 / 0.4 - sech / 0.4 - *".split(), save = save, title = r"Example", tolatex = True, to_pdf = True, filename = "Example.pdf")
-                                  const0 sech -10.434288 / 2 / 0.4 5.22145 * - tanh 1 const0 sech -10.434288 / 2 / 0.4 5.22145 * - sech / 0.4 5.22145 * - *
+        plot_rpn_expression_tree("x1 10.000000 * 4 6.283190 2 ^ + - 2 ln 1 6.283190 sech / * / 0.000100 exp 10.000000 4 / / x1 sin x0 sin * 4 6.283190 - * - +".split(), save = save, title = r"Example", tolatex = True, to_pdf = True, filename = "Example.pdf")
 #        plot_pn_expression_tree("+ + - * ^ 20.000000 / x1 ~ exp x0 * 2.995732273553991 / ~ exp x0 * ~ exp x0 ~ exp x0 * -0.214359 * ^ 20.000000 / x1 ~ exp x0 * 2.995732273553991 / ~ * x1 ~ exp x0 * ~ exp x0 ~ exp x0 / * 0.001370 ^ 20.000000 / x1 ~ exp x0 + 1.244282 ^ 20.000000 / x1 ~ exp x0 * * 1.238819 ^ 20.000000 / x1 ~ exp x0 sech exp * 0.805109 + x0 x1".split(), save = save)
 
 if __name__ == "__main__":

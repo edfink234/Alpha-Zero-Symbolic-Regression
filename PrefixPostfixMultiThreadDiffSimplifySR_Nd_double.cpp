@@ -35,7 +35,7 @@
 #include <unsupported/Eigen/AutoDiff>
 #include <boost/unordered/concurrent_flat_map.hpp>
 #define DBL_MAX std::numeric_limits<double>::max()
-#define RANDOM_SEED 10
+#define RANDOM_SEED -1
 
 /*
 Search Directories to add:
@@ -75,6 +75,43 @@ double Stod(const std::string& param)
         }
     }
 }
+
+//Checks if vector `x` has size > 0 and all elements in `x` have size > 0
+template <typename T>
+bool all_check(const T& x)
+{
+    if (x.size() == 0)
+    {
+        return false;
+    }
+    for (const auto& w : x)
+    {
+        if (w.size() == 0)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+//Checks if vector of vectors `y` has size > 0 and all vectors in `y` have size > 0
+template <typename T>
+bool all_checks(const T& y)
+{
+    if (y.size() == 0)
+    {
+        return false;
+    }
+    for (const auto& x : y)
+    {
+        if (!all_check(x))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 std::string to_string_general(double v)
 {
     if (std::isnan(v))
@@ -578,10 +615,10 @@ class Data
     Eigen::MatrixXd data;
     std::unordered_map<std::string, Eigen::VectorXd> features;
     std::vector<Eigen::VectorXd> rows;
-    long num_columns, num_rows;
 
 public:
 
+    long num_columns, num_rows;
     Data() = default; //so we can have a static Data attribute
 
     // Assignment operator
@@ -751,7 +788,7 @@ struct Board
     static std::unordered_set<std::string> inline __unary_operators_uset;
     static std::unordered_set<std::string> inline __binary_operators_uset;
     static std::vector<std::string> inline __operators;
-    static std::vector<std::string> inline __other_tokens;
+    static std::vector<std::string> inline __other_tokens; //denotes the other leaf-nodes besides the input variables
     static std::vector<std::string> inline __tokens;
     Eigen::VectorXd params; //store the parameters of the expression of the current episode after it's completed
     static Data inline data;
@@ -763,7 +800,6 @@ struct Board
     static std::uniform_int_distribution<int> inline binary_dist; // A random integer generator which generates an index corresponding to a binary operator
     static std::uniform_int_distribution<int> inline leaf_dist; // A random integer generator which generates an index corresponding to an operand
 
-    static int inline action_size;
     static std::once_flag inline initialization_flag;  // Flag for std::call_once
     static std::unordered_map<std::string, std::pair<std::string, std::string>> inline feature_mins_maxes;
 
@@ -774,6 +810,7 @@ struct Board
     std::vector<double> MSE_curr_vec;
     std::string fit_method;
     std::string fit_grad_method;
+    std::unordered_map<std::string, Eigen::VectorXd> subs_dict;
 
     bool cache;
     bool use_const_pieces;
@@ -789,13 +826,13 @@ struct Board
     std::vector<std::vector<std::string>> pieces, temp_pieces; // Create the empty expression list and a backup
     std::vector<std::string> derivat;// Vector to store the derivative.
     bool visualize_exploration, is_primary;
-    std::vector<std::vector<std::string>> (*diffeq)(Board&); //differential equation we want to solve
+    std::vector<std::vector<std::string>> (*diffeq)(Board&, bool); //differential equation we want to solve
     size_t num_diff_eqns; //number of equations in the system `diffeq`
     std::vector<std::vector<std::string>> diffeq_result;
     double isConstTol;
     bool simplify_original;
 
-    Board(std::vector<std::vector<std::string>> (*diffeq)(Board&), size_t num_diff_eqns, bool primary = true, const std::vector<int>& depth = {},
+    Board(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool), size_t num_diff_eqns, bool primary = true, const std::vector<int>& depth = {},
           const std::string& expression_type = "prefix", size_t num_consts_diff = 0, std::string fitMethod = "LevenbergMarquardt", int numFitIter = 1,
           std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXd& theData = {}, bool visualize_exploration = false, bool cache = false,
           bool const_tokens = false, double isConstTol = 1e-1, bool use_const_pieces = false, bool simplifyOriginal = true,
@@ -844,6 +881,7 @@ struct Board
             std::call_once(initialization_flag, [&]()
             {
                 Board::data = theData;
+                assert((Board::data.num_rows > 0));
                 Board::__num_features = Board::data[0].size() - numDataCols;
                 assert(Board::__num_features > 0);
                 printf("Number of features = %d\n", Board::__num_features);
@@ -869,17 +907,21 @@ struct Board
                 {
                     Board::__operators.push_back(i);
                 }
-                Board::__other_tokens = {"0", "1", "2", "4"};
-                for (const std::string& i: Board::__input_vars)
+                
+                if (const_tokens) //then add non-optimizable constants only
                 {
-                    std::string minCoeff_i = std::to_string(Board::data[i].minCoeff());
-                    std::string maxCoeff_i = std::to_string(Board::data[i].maxCoeff());
-                    Board::__other_tokens.push_back(minCoeff_i); //add smallest element
-                    Board::__other_tokens.push_back(maxCoeff_i); //add largest element
-                    feature_mins_maxes[i] = std::make_pair(minCoeff_i, maxCoeff_i);
-                    std::cout << "feature_mins_maxes[" << i << "] = " << feature_mins_maxes[i] << '\n';
+                    Board::__other_tokens = {"0", "1", "2", "4"};
+                    for (const std::string& i: Board::__input_vars)
+                    {
+                        std::string minCoeff_i = std::to_string(Board::data[i].minCoeff());
+                        std::string maxCoeff_i = std::to_string(Board::data[i].maxCoeff());
+                        Board::__other_tokens.push_back(minCoeff_i); //add smallest element
+                        Board::__other_tokens.push_back(maxCoeff_i); //add largest element
+                        feature_mins_maxes[i] = std::make_pair(minCoeff_i, maxCoeff_i);
+                        std::cout << "feature_mins_maxes[" << i << "] = " << feature_mins_maxes[i] << '\n';
+                    }
                 }
-                if (this->use_const_pieces) //first add "const" if requested
+                if (this->use_const_pieces) //then add "const"
                 {
                     Board::__other_tokens.push_back("const");
                 }
@@ -898,21 +940,18 @@ struct Board
                     Board::__tokens.push_back(i);
                 }
                 assert((!(this->num_consts_diff || this->use_const_pieces)) || (Board::__tokens.back().compare(0, 5, "const") == 0));
-                Board::action_size = Board::__tokens.size();
-
                 Board::una_bin_leaf_legal_moves_dict.clear();
-                if (const_tokens)
-                {
-                    //Then include fixed constants, the non-differential equation optimizable constant `const` (if use_const_pieces == true),
-                    //AND `this->num_consts_diff` optimizable constant tokens (const0, const1, ..., const{this->num_consts_diff}) that can be optimized.
-                    Board::una_bin_leaf_legal_moves_dict[true][true][true] = Board::__tokens;
-                }
-
-                else
-                {
-                    Board::una_bin_leaf_legal_moves_dict[true][true][true] = Board::__operators;
-                }
-
+                /*
+                 [true][true][true]
+                 [true][true][false]
+                 [true][false][true]
+                 [true][false][false]
+                 [false][true][true]
+                 [false][true][false]
+                 [false][false][true]
+                 [false][false][false]
+                 */
+                Board::una_bin_leaf_legal_moves_dict[true][true][true] = Board::__tokens;
                 Board::una_bin_leaf_legal_moves_dict[true][true][false] = Board::__operators;
                 Board::una_bin_leaf_legal_moves_dict[true][false][true] = Board::__unary_operators; //1
                 Board::una_bin_leaf_legal_moves_dict[true][false][false] = Board::__unary_operators;
@@ -924,19 +963,12 @@ struct Board
                     Board::una_bin_leaf_legal_moves_dict[true][false][true].push_back(i); //1
                     Board::una_bin_leaf_legal_moves_dict[false][true][true].push_back(i); //2
                     Board::una_bin_leaf_legal_moves_dict[false][false][true].push_back(i); //3
-                    if (!const_tokens) //without constants (optimizable or not), the only leaf nodes will be the input variables
-                    {
-                        Board::una_bin_leaf_legal_moves_dict[true][true][true].push_back(i);
-                    }
                 }
-                if (const_tokens)
+                for (const std::string &i: Board::__other_tokens)
                 {
-                    for (const std::string &i: Board::__other_tokens)
-                    {
-                        Board::una_bin_leaf_legal_moves_dict[true][false][true].push_back(i); //1
-                        Board::una_bin_leaf_legal_moves_dict[false][true][true].push_back(i); //2
-                        Board::una_bin_leaf_legal_moves_dict[false][false][true].push_back(i); //3
-                    }
+                    Board::una_bin_leaf_legal_moves_dict[true][false][true].push_back(i); //1
+                    Board::una_bin_leaf_legal_moves_dict[false][true][true].push_back(i); //2
+                    Board::una_bin_leaf_legal_moves_dict[false][false][true].push_back(i); //3
                 }
                 Board::num_unary_ops = Board::__unary_operators.size();
                 Board::num_binary_ops = Board::__binary_operators.size();
@@ -3307,6 +3339,10 @@ struct Board
                 {
                     stack.push(Eigen::VectorXd::Ones(Board::data.numRows())*Stod(token));
                 }
+                else if (this->subs_dict.size() && this->subs_dict.count(token))
+                {
+                    stack.push(this->subs_dict.at(token));
+                }
                 else
                 {
                     stack.push(Board::data[token]);
@@ -3564,7 +3600,7 @@ struct Board
         size_t sz = pieces.size();
         std::vector<Eigen::VectorXd> temp(sz);
 
-        for (size_t idx = 0; idx < sz; idx++)
+        for (size_t idx = 0; idx < sz; idx++) //looping over each equation
         {
             temp[idx] = expression_evaluator(params, pieces[idx]);
         }
@@ -3911,7 +3947,8 @@ struct Board
         //Now that we've weeded out bad expressions, we fit/evaluate
         if (this->params.size()) //fit and evaluate
         {
-            this->diffeq_result = diffeq(*this);
+            assert(this->num_consts_diff || this->use_const_pieces);
+            this->diffeq_result = diffeq(*this, true);
             if (this->MSE_curr_vec.size() != this->diffeq_result.size())
             {
                 this->MSE_curr_vec.assign(this->diffeq_result.size(), 0);
@@ -3989,7 +4026,8 @@ struct Board
         }
         else //just evaluate
         {
-            this->diffeq_result = diffeq(*this);
+            this->diffeq_result = diffeq(*this, false);
+            all_checks(this->diffeq_result);
             if (this->MSE_curr_vec.size() != this->diffeq_result.size())
             {
                 this->MSE_curr_vec.assign(this->diffeq_result.size(), 0);
@@ -4128,10 +4166,7 @@ struct Board
                                         assert((token.size() > 5));
                                         std::string int_suffix = token.substr(5);
                                         int temp_idx = std::stoi(int_suffix);
-                                        if (temp_idx >= this->num_consts_diff)
-                                        {
-                                            throw std::runtime_error("Somehow, there's a const token with a suffix integer equal to " + std::to_string(temp_idx));
-                                        }
+                                        assert((temp_idx < this->num_consts_diff) && ("Somehow, there's a const token with a suffix integer equal to " + std::to_string(temp_idx)).c_str());
                                     }
                                 }
                             }
@@ -4158,12 +4193,8 @@ struct Board
                     }
                     assert((this->params.size() == piece_const_counter));
                 }
-//                if (!this->simplify_original)
-//                {
-//                    this->pieces = this->temp_pieces;
-//                }
                 double res = fitFunctionToData();
-                if (!this->simplify_original) //nah there's a bug here with consts
+                if (!this->simplify_original)
                 {
                     //this->pieces = this->temp_pieces;
                     this->pieces.swap(this->temp_pieces);
@@ -5638,6 +5669,207 @@ struct Board
     }
 };
 
+
+std::vector<std::vector<std::string>> VortexRadialProfile(Board& x, bool fit)
+{
+    std::vector<std::vector<std::string>> results;
+    std::vector<std::string> result;
+    result.reserve(100);
+    std::vector<int> grasp;
+    std::vector<std::string> R_prime;
+    std::string mu = "1";
+    std::string S = "1";
+    std::string infty = std::to_string(DBL_MAX);
+
+    if (x.expression_type == "prefix")
+    {
+        //- + + * / 1 2 R'' * / 1 * 2 r R' * - mu / * S S * * 2 r r R * * R R R
+        result.push_back("-");
+        result.push_back("+");
+        result.push_back("+");
+        result.push_back("*");
+        result.push_back("/");
+        result.push_back("1");
+        result.push_back("2");
+        x.derivePrefix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
+        R_prime = x.derivat;
+        x.derivePrefix(0, R_prime.size()-1, "x0", R_prime, grasp); //derivat will store second derivative of R_prime
+        for (const std::string& i: x.derivat) //R''
+        {
+            result.push_back(i);
+        }
+        result.push_back("*");
+        result.push_back("/");
+        result.push_back("1");
+        result.push_back("*");
+        result.push_back("2");
+        result.push_back("x0"); //r
+        for (const std::string& i: R_prime) //R'
+        {
+            result.push_back(i);
+        }
+        result.push_back("*");
+        result.push_back("-");
+        result.push_back(mu);
+        result.push_back("/");
+        result.push_back("*");
+        result.push_back(S);
+        result.push_back(S);
+        result.push_back("*");
+        result.push_back("*");
+        result.push_back("2");
+        result.push_back("x0"); //r
+        result.push_back("x0"); //r
+        for (const std::string& i: x.pieces[0]) //R
+        {
+            result.push_back(i);
+        }
+        result.push_back("*");
+        result.push_back("*");
+        for (const std::string& i: x.pieces[0]) //R
+        {
+            result.push_back(i);
+        }
+        for (const std::string& i: x.pieces[0]) //R
+        {
+            result.push_back(i);
+        }
+        for (const std::string& i: x.pieces[0]) //R
+        {
+            result.push_back(i);
+        }
+        results.push_back(result);
+
+        //R(0)
+        result.clear();
+        for (size_t i = 0; i < x.pieces[0].size(); i++)
+        {
+            if (x.pieces[0][i] == "x0")
+            {
+                result.push_back("0");
+            }
+            else
+            {
+                result.push_back(x.pieces[0][i]);
+            }
+        }
+        results.push_back(result);
+
+        //- R(∞) sqrt mu
+        result.clear();
+        result.push_back("-");
+        for (size_t i = 0; i < x.pieces[0].size(); i++)
+        {
+            if (x.pieces[0][i] == "x0")
+            {
+                result.push_back(infty);
+            }
+            else
+            {
+                result.push_back(x.pieces[0][i]);
+            }
+        }
+        result.push_back("sqrt");
+        result.push_back(mu);
+        results.push_back(result);
+    }
+    else if (x.expression_type == "postfix")
+    {
+        //1 2 / R'' * 1 2 r * / R' * + mu S S * 2 r r * * / - R * + R R * R * -
+        result.push_back("1");
+        result.push_back("2");
+        result.push_back("/");
+        x.derivePostfix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
+        R_prime = x.derivat;
+        x.derivePostfix(0, R_prime.size()-1, "x0", R_prime, grasp); //derivat will store second derivative of R_prime
+        for (const std::string& i: x.derivat) //R''
+        {
+            result.push_back(i);
+        }
+        result.push_back("*");
+        result.push_back("1");
+        result.push_back("2");
+        result.push_back("x0"); //r
+        result.push_back("*");
+        result.push_back("/");
+        for (const std::string& i: R_prime) //R'
+        {
+            result.push_back(i);
+        }
+        result.push_back("*");
+        result.push_back("+");
+        result.push_back(mu);
+        result.push_back(S);
+        result.push_back(S);
+        result.push_back("*");
+        result.push_back("2");
+        result.push_back("x0"); //r
+        result.push_back("x0"); //r
+        result.push_back("*");
+        result.push_back("*");
+        result.push_back("/");
+        result.push_back("-");
+        for (const std::string& i: x.pieces[0]) //R
+        {
+            result.push_back(i);
+        }
+        result.push_back("*");
+        result.push_back("+");
+        for (const std::string& i: x.pieces[0]) //R
+        {
+            result.push_back(i);
+        }
+        for (const std::string& i: x.pieces[0]) //R
+        {
+            result.push_back(i);
+        }
+        result.push_back("*");
+        for (const std::string& i: x.pieces[0]) //R
+        {
+            result.push_back(i);
+        }
+        result.push_back("*");
+        result.push_back("-");
+        results.push_back(result);
+
+        //R(0)
+        result.clear();
+        for (size_t i = 0; i < x.pieces[0].size(); i++)
+        {
+            if (x.pieces[0][i] == "x0")
+            {
+                result.push_back("0");
+            }
+            else
+            {
+                result.push_back(x.pieces[0][i]);
+            }
+        }
+        results.push_back(result);
+
+        //R(∞) mu sqrt -
+        result.clear();
+
+        for (size_t i = 0; i < x.pieces[0].size(); i++)
+        {
+            if (x.pieces[0][i] == "x0")
+            {
+                result.push_back(infty);
+            }
+            else
+            {
+                result.push_back(x.pieces[0][i]);
+            }
+        }
+
+        result.push_back(mu);
+        result.push_back("sqrt");
+        result.push_back("-");
+        results.push_back(result);
+    }
+    return results;
+}
+
 /*
  Infix: μ*f + ν*f*f - f*f*f - f - 2*∂^2f/∂r^2 - ∂^4f/∂r^4 - ((1/r) * ((2*(∂^3f/∂r^3)) + ((1/r)*(∂^2f/∂r^2)) - ((1/(r*r))*(∂f/∂r)) + ((1/(r*r))*(∂^3f/∂θ^2∂r)) - ((2/(r*r*r))*(∂^2f/∂θ^2)) + (2*(∂f/∂r)))) - ((1/(r*r)) * ((2*(∂^4f/∂θ^2∂r^2)) + ((1/r)*(∂^3f/∂θ^2∂r)) + ((1/(r*r))*(∂^4f/∂θ^4)) - (2*(∂^2f/∂r^2)) + (2*(∂^2f/∂θ^2)))) - ((2/(r*r*r)) * ((∂f/∂r) - (2*(∂^3f/∂θ^2∂r)) + ((3/r)*(∂^2f/∂θ^2))))
 
@@ -5645,17 +5877,22 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 
 {x0: r, x1: θ}
 {x.pieces[0]: f}
+ 
+ This version will return the evaluated expression
+ in a hopefully more efficient way.
 */
-std::vector<std::vector<std::string>> SwiftHohenberg(Board& x)
+std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
-    //TODO: Probably wanna make these containers you need here attributes of x so you're not potentially allocating memory from scratch (save for `x.pieces`) every time you wanna build the system
     std::vector<std::vector<std::string>> results;
-    std::vector<std::string> result, dfdr1, d2fdr2, d3fdr3, d4fdr4,
-    dfdtheta1, d2fdtheta2, d3fdtheta3, d4fdtheta4,
-    df3dtheta2dr1;
+    thread_local std::vector<std::string> result, dfdr1, d2fdr2, d3fdr3, d4fdr4,
+    dfdtheta1, d2fdtheta2, d3fdtheta3, d4fdtheta4, df3dtheta2dr1;
+    result.clear(); dfdr1.clear(); d2fdr2.clear(); d3fdr3.clear(); d4fdr4.clear();
+    dfdtheta1.clear(); d2fdtheta2.clear(); d3fdtheta3.clear(); d4fdtheta4.clear(); df3dtheta2dr1.clear();
     result.reserve(500);
-    std::vector<int> grasp;
-    std::vector<std::string> R_prime;
+    thread_local std::vector<int> grasp;
+    grasp.clear();
+    grasp.reserve(500);
+    
     std::string mu = "1"; //"const0"; //
     std::string nu = "1"; //"const1"; //
     std::string infty = std::to_string(DBL_MAX);
@@ -5666,53 +5903,104 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x)
     }
     else if (x.expression_type == "postfix")
     {
+        //TODO: Handle Fit = false and Fit = True separately
         //μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -
         result.push_back(mu); // μ
-        for (const std::string& i: x.pieces[0]) // f
+        if (fit)
         {
-            result.push_back(i);
+            for (const std::string& i: x.pieces[0]) // f
+            {
+                result.push_back(i);
+            }
+        }
+        else
+        {
+            x.subs_dict["f"] = x.expression_evaluator(x.params, x.pieces[0]);
+            result.push_back("f"); // f
         }
         result.push_back("*"); // *
         result.push_back(nu); // ν
-        for (const std::string& i: x.pieces[0]) // f
+        if (fit)
         {
-            result.push_back(i);
+            for (const std::string& i: x.pieces[0]) // f
+            {
+                result.push_back(i);
+            }
+        }
+        else
+        {
+            result.push_back("f"); // f
         }
         result.push_back("*"); // *
-        for (const std::string& i: x.pieces[0]) // f
+        if (fit)
         {
-            result.push_back(i);
+            for (const std::string& i: x.pieces[0]) // f
+            {
+                result.push_back(i);
+            }
+        }
+        else
+        {
+            result.push_back("f"); // f
         }
         result.push_back("*"); // *
-        for (const std::string& i: x.pieces[0]) // f
+        if (fit)
         {
-            result.push_back(i);
+            for (const std::string& i: x.pieces[0]) // f
+            {
+                result.push_back(i);
+            }
+            for (const std::string& i: x.pieces[0]) // f
+            {
+                result.push_back(i);
+            }
+            for (const std::string& i: x.pieces[0]) // f
+            {
+                result.push_back(i);
+            }
         }
-        for (const std::string& i: x.pieces[0]) // f
+        else
         {
-            result.push_back(i);
-        }
-        for (const std::string& i: x.pieces[0]) // f
-        {
-            result.push_back(i);
+            result.push_back("f"); // f
+            result.push_back("f"); // f
+            result.push_back("f"); // f
         }
         result.push_back("*"); // *
         result.push_back("*"); // *
         result.push_back("-"); // -
         result.push_back("+"); // +
-        for (const std::string& i: x.pieces[0]) // f
+        if (fit)
         {
-            result.push_back(i);
+            for (const std::string& i: x.pieces[0]) // f
+            {
+                result.push_back(i);
+            }
+        }
+        else
+        {
+            result.push_back("f"); // f
         }
         result.push_back("-"); // -
         result.push_back("2"); // 2
         x.derivePostfix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
         dfdr1 = x.derivat;
+        if (!fit)
+        {
+            x.subs_dict["dfdr1"] = x.expression_evaluator(x.params, dfdr1);
+        }
         x.derivePostfix(0, dfdr1.size()-1, "x0", dfdr1, grasp);
         d2fdr2 = x.derivat;
-        for (const std::string& i: d2fdr2) // ∂^2f/∂r^2
+        if (fit)
         {
-            result.push_back(i);
+            for (const std::string& i: d2fdr2) // ∂^2f/∂r^2
+            {
+                result.push_back(i);
+            }
+        }
+        else
+        {
+            x.subs_dict["d2fdr2"] = x.expression_evaluator(x.params, d2fdr2);
+            result.push_back("d2fdr2"); // ∂^2f/∂r^2
         }
         result.push_back("*"); // *
         result.push_back("-"); // -
@@ -5731,16 +6019,30 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x)
             result.push_back(i);
         }
         result.push_back("*"); // *
-        for (const std::string& i: d2fdr2) // ∂^2f/∂r^2
+        if (fit)
         {
-            result.push_back(i);
+            for (const std::string& i: d2fdr2) // ∂^2f/∂r^2
+            {
+                result.push_back(i);
+            }
+        }
+        else
+        {
+            result.push_back("d2fdr2"); // ∂^2f/∂r^2
         }
         result.push_back("x0"); // r
         result.push_back("/"); // /
         result.push_back("+"); // +
-        for (const std::string& i: dfdr1) // ∂f/∂r
+        if (fit)
         {
-            result.push_back(i);
+            for (const std::string& i: dfdr1) // ∂f/∂r
+            {
+                result.push_back(i);
+            }
+        }
+        else
+        {
+            result.push_back("dfdr1"); // ∂f/∂r
         }
         result.push_back("x0"); // r
         result.push_back("x0"); // r
@@ -5753,18 +6055,33 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x)
         d2fdtheta2 = x.derivat;
         x.derivePostfix(0, d2fdtheta2.size()-1, "x0", d2fdtheta2, grasp);
         df3dtheta2dr1 = x.derivat;
-        for (const std::string& i: df3dtheta2dr1) // ∂^3f/∂θ^2∂r
+        if (fit)
         {
-            result.push_back(i);
+            for (const std::string& i: df3dtheta2dr1) // ∂^3f/∂θ^2∂r
+            {
+                result.push_back(i);
+            }
+        }
+        else
+        {
+            x.subs_dict["df3dtheta2dr1"] = x.expression_evaluator(x.params, df3dtheta2dr1);
+            result.push_back("df3dtheta2dr1"); // ∂^3f/∂θ^2∂r
         }
         result.push_back("x0"); // r
         result.push_back("x0"); // r
         result.push_back("*"); // *
         result.push_back("/"); // /
         result.push_back("2"); // 2
-        for (const std::string& i: d2fdr2) // ∂^2f/∂r^2
+        if (fit)
         {
-            result.push_back(i);
+            for (const std::string& i: d2fdr2) // ∂^2f/∂r^2
+            {
+                result.push_back(i);
+            }
+        }
+        else
+        {
+            result.push_back("d2fdr2"); // ∂^2f/∂r^2
         }
         result.push_back("*"); // *
         result.push_back("x0"); // r
@@ -5775,9 +6092,16 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x)
         result.push_back("/"); // /
         result.push_back("-"); // -
         result.push_back("2"); // 2
-        for (const std::string& i: dfdr1) // ∂f/∂r
+        if (fit)
         {
-            result.push_back(i);
+            for (const std::string& i: dfdr1) // ∂f/∂r
+            {
+                result.push_back(i);
+            }
+        }
+        else
+        {
+            result.push_back("dfdr1"); // ∂f/∂r
         }
         result.push_back("*"); // *
         result.push_back("+"); // +
@@ -5792,9 +6116,16 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x)
             result.push_back(i);
         }
         result.push_back("*"); // *
-        for (const std::string& i: df3dtheta2dr1) // ∂^3f/∂θ^2∂r
+        if (fit)
         {
-            result.push_back(i);
+            for (const std::string& i: df3dtheta2dr1) // ∂^3f/∂θ^2∂r
+            {
+                result.push_back(i);
+            }
+        }
+        else
+        {
+            result.push_back("df3dtheta2dr1"); // ∂^3f/∂θ^2∂r
         }
         result.push_back("x0"); // r
         result.push_back("/"); // /
@@ -5813,16 +6144,31 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x)
         result.push_back("/"); // /
         result.push_back("+"); // +
         result.push_back("2"); // 2
-        for (const std::string& i: d2fdr2) // ∂^2f/∂r^2
+        if (fit)
         {
-            result.push_back(i);
+            for (const std::string& i: d2fdr2) // ∂^2f/∂r^2
+            {
+                result.push_back(i);
+            }
+        }
+        else
+        {
+            result.push_back("d2fdr2"); // ∂^2f/∂r^2
         }
         result.push_back("*"); // *
         result.push_back("-"); // -
         result.push_back("2"); // 2
-        for (const std::string& i: d2fdtheta2) // ∂^2f/∂θ^2
+        if (fit)
         {
-            result.push_back(i);
+            for (const std::string& i: d2fdtheta2) // ∂^2f/∂θ^2
+            {
+                result.push_back(i);
+            }
+        }
+        else
+        {
+            x.subs_dict["d2fdtheta2"] = x.expression_evaluator(x.params, d2fdtheta2);
+            result.push_back("d2fdtheta2"); // ∂^2f/∂θ^2
         }
         result.push_back("*"); // *
         result.push_back("+"); // +
@@ -5838,23 +6184,44 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x)
         result.push_back("x0"); // r
         result.push_back("*"); // *
         result.push_back("/"); // /
-        for (const std::string& i: dfdr1) // ∂f/∂r
+        if (fit)
         {
-            result.push_back(i);
+            for (const std::string& i: dfdr1) // ∂f/∂r
+            {
+                result.push_back(i);
+            }
+        }
+        else
+        {
+            result.push_back("dfdr1"); // ∂f/∂r
         }
         result.push_back("2"); // 2
-        for (const std::string& i: df3dtheta2dr1) // ∂^3f/∂θ^2∂r
+        if (fit)
         {
-            result.push_back(i);
+            for (const std::string& i: df3dtheta2dr1) // ∂^3f/∂θ^2∂r
+            {
+                result.push_back(i);
+            }
+        }
+        else
+        {
+            result.push_back("df3dtheta2dr1"); // ∂^3f/∂θ^2∂r
         }
         result.push_back("*"); // *
         result.push_back("-"); // -
         result.push_back("3"); // 3
         result.push_back("x0"); // r
         result.push_back("/"); // /
-        for (const std::string& i: d2fdtheta2) // ∂^2f/∂θ^2
+        if (fit)
         {
-            result.push_back(i);
+            for (const std::string& i: d2fdtheta2) // ∂^2f/∂θ^2
+            {
+                result.push_back(i);
+            }
+        }
+        else
+        {
+            result.push_back("d2fdtheta2"); // ∂^2f/∂θ^2
         }
         result.push_back("*"); // *
         result.push_back("+"); // +
@@ -5866,7 +6233,7 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x)
 }
 
 //x0 -> x, x1 -> y, x2 -> t
-std::vector<std::vector<std::string>> TwoDAdvectionDiffusion_1(Board& x)
+std::vector<std::vector<std::string>> TwoDAdvectionDiffusion_1(Board& x, bool fit)
 {
     std::vector<std::vector<std::string>> results;
     std::vector<std::string> result;
@@ -5960,7 +6327,7 @@ std::vector<std::vector<std::string>> TwoDAdvectionDiffusion_1(Board& x)
 }
 
 //x0 -> x, x1 -> y, x2 -> t
-std::vector<std::vector<std::string>> TwoDAdvectionDiffusion_2(Board& x)
+std::vector<std::vector<std::string>> TwoDAdvectionDiffusion_2(Board& x, bool fit)
 {
     std::vector<std::vector<std::string>> results;
     std::vector<std::string> result;
@@ -6080,7 +6447,7 @@ std::vector<std::vector<std::string>> TwoDAdvectionDiffusion_2(Board& x)
 }
 
 //x0 -> x, x1 -> y, x2 -> t
-std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
+std::vector<std::vector<std::string>> sech_squared_trial(Board& x, bool fit)
 {
     std::vector<std::vector<std::string>> results;
     std::vector<std::string> result;
@@ -6219,7 +6586,7 @@ std::vector<std::vector<std::string>> sech_squared_trial(Board& x)
 
 //https://dl.acm.org/doi/pdf/10.1145/3449639.3459345?casa_token=Np-_TMqxeJEAAAAA:8u-d6UyINV6Ex02kG9LthsQHAXMh2oxx3M4FG8ioP0hGgstIW45X8b709XOuaif5D_DVOm_FwFo
 //https://core.ac.uk/download/pdf/6651886.pdf
-void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
+void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
                         size_t num_diff_eqns,
                         const Eigen::MatrixXd& data,
                         const std::vector<int>& depth,
@@ -6309,7 +6676,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
 
         size_t temp_sz;
 //        std::string expression, orig_expression, best_expression;
-        constexpr double T_max = 0.1;//0.1;
+        constexpr double T_max = 1.;
         constexpr double T_min = 0.012;
         constexpr double ratio = T_min/T_max;
         double T = T_max;
@@ -6415,6 +6782,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
                     {
                         piece_to_replace_with = Board::una_bin_leaf_legal_moves_dict[false][false][true][Board::leaf_dist(generator)];
                     }
+                    assert(piece_to_replace_with.size());
                     std::swap(x.pieces[jdx][piece_to_perturb_idx], piece_to_replace_with);
                 }
                 else
@@ -6427,10 +6795,10 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
 
                         assert(temp_sz);
                         std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
-                        {
-                            secondary.pieces[jdx].emplace_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
-                        }
+                        secondary.pieces[jdx].emplace_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
+                        assert(secondary.pieces[jdx].back().size());
                     }
+                    assert(secondary.pieces[jdx].size());
                     if (jdx < secondary.num_objectives - 1)
                     {
                         assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces[jdx], jdx) : secondary.getRPNdepth(secondary.pieces[jdx], jdx)).first == secondary.n[jdx]);
@@ -6446,16 +6814,10 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
                         //Step 2b: Else, start by identifying the starting and stopping index pairs of all depth `secondary.n[jdx] sub-expressions
                         //in `x.pieces[jdx]` and store them in an std::vector<std::pair<int, int>> called `sub_exprs`.
                         secondary.get_indices(sub_exprs, x.pieces[jdx], jdx); //TODO: Change this so that it actually chooses the larger tree of the two to swap from so we can still simplify and reduce chances of floating point bs.
-                        if (!sub_exprs.size())
-                        {
-                            throw std::runtime_error("sub_exprs empty, x.n["+std::to_string(jdx)+"] = "+std::to_string(x.n[jdx])
-                                                     + ", secondary.n[" +std::to_string(jdx)+ "] = " +std::to_string(secondary.n[jdx]));
-                        }
-                        else if (secondary.n[jdx] > x.n[jdx])
-                        {
-                            throw std::runtime_error("(secondary.n[jdx] > x.n[jdx]), x.n["+std::to_string(jdx)+"] = "+std::to_string(x.n[jdx])
-                                                     + ", secondary.n[" +std::to_string(jdx)+ "] = " +std::to_string(secondary.n[jdx]));
-                        }
+                        assert ((sub_exprs.size()) && ("sub_exprs empty, x.n["
+                           + std::to_string(jdx) + "] = " + std::to_string(x.n[jdx])
+                           + ", secondary.n[" + std::to_string(jdx)+ "] = " + std::to_string(secondary.n[jdx])).c_str());
+                        assert((secondary.n[jdx] <= x.n[jdx]) && ("(secondary.n[jdx] > x.n[jdx]), x.n[" + std::to_string(jdx) + "] = "+ std::to_string(x.n[jdx]) + ", secondary.n[" + std::to_string(jdx)+ "] = " + std::to_string(secondary.n[jdx])).c_str());
                         //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `pert_ind`
                         std::uniform_int_distribution<int> distribution(0, sub_exprs.size() - 1);
                         int pert_ind = distribution(generator);
@@ -6465,6 +6827,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
                         auto end = x.pieces[jdx].begin() + std::min(sub_exprs[pert_ind].second, static_cast<int>(x.pieces[jdx].size()));
                         x.pieces[jdx].erase(start, end+1);
                         x.pieces[jdx].insert(start, secondary.pieces[jdx].begin(), secondary.pieces[jdx].end()); //could be a move operation: secondary.pieces doesn't need to be in a defined state after this->params, or erase+insert -> replace?
+                        assert(x.pieces[jdx].size() && x.pieces.size());
                         auto depth_and_completion = ((x.expression_type == "prefix") ? x.getPNdepth(x.pieces[jdx], jdx) : x.getRPNdepth(x.pieces[jdx], jdx));
                         if (depth_and_completion.first != x.n[jdx])
                         {
@@ -6521,16 +6884,15 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
             for (int jdx = 0; jdx < x.num_objectives; jdx++)
             {
                 x.pieces[jdx] = seed_expressions[jdx];
+                all_check(x.pieces[jdx]);
                 auto depth_and_completion = ((x.expression_type == "prefix") ? x.getPNdepth(x.pieces[jdx], jdx) : x.getRPNdepth(x.pieces[jdx], jdx));
-                if (depth_and_completion.first > x.n[jdx])
-                {
-                    throw std::runtime_error("Seed expression depth of x.pieces["+std::to_string(jdx)+"] = "
-                                             +std::to_string(depth_and_completion.first));
-                }
+                assert((depth_and_completion.first <= x.n[jdx]) && ("Seed expression depth of x.pieces[" + std::to_string(jdx) + "] = " + std::to_string(depth_and_completion.first)).c_str());
                 assert(depth_and_completion.second);
                 //x.n[jdx] = depth_and_completion.first;
                 rand_depth_dists[jdx] = std::uniform_int_distribution<int>(0, x.n[jdx]);
+                assert(x.pieces[jdx].size());
             }
+            assert((x.pieces.size() == x.num_objectives) && (x.pieces.size()));
             score = x.complete_status(x.pieces.size() - 1, false);
             //std::cout << "score = " << score << '\n';
         }
@@ -7466,7 +7828,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&),
 //    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
 //}
 
-void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&),
+void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
                   size_t num_diff_eqns,
                   const Eigen::MatrixXd& data,
                   const std::vector<int>& depth,
@@ -7625,13 +7987,13 @@ int main(int argc, char *argv[])
 {
     int random_seed = get_random_seed(argc, argv);
     printf("Random seed set to %d%s", random_seed, std::string(10, '\n').c_str());
-    constexpr double time = 120;
+    constexpr double time = 60.0;
     double threshold = 1.0;
     auto data1 = createMeshgridVectors(33, 2, {0.0001, 0.0}, {10.0, 6.28319});
 //    RandomSearch(SwiftHohenberg /*differential equation to solve*/,
 //                 1 /*number of equations in differential equation system*/,
 //                 data1 /*data used to solve differential equation*/,
-//                 std::vector<int>{4} /*fixed depths of generated solution*/,
+//                 std::vector<int>{3} /*fixed depths of generated solution*/,
 //                 "postfix" /*expression representation*/,
 //                 0 /*num_consts_diff: number of constants in differential equation*/,
 //                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -7642,7 +8004,7 @@ int main(int argc, char *argv[])
 //                 0 /*num threads*/,
 //                 true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
 //                 threshold /*threshold for which solutions cannot be constant*/,
-//                 true /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+//                 false /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
 //                 0 /*number of data columns that constitute labels and not independent variables/features*/);
     SimulatedAnnealing(SwiftHohenberg /*differential equation to solve*/,
         1 /*number of equations in differential equation system*/,
@@ -7661,7 +8023,7 @@ int main(int argc, char *argv[])
         true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
         false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
         0 /*number of data columns that constitute labels and not independent variables/features*/,
-        {split("x1 10.000000 * 4 6.283190 2 ^ + - 2 ln 1 6.283190 sech / * / 0.000100 exp 10.000000 4 / / x1 sin x0 sin * 4 6.283190 - * - +")} /*seed expressions*/,
+        {split("0.036072414924183116 0.4000400020000667 x1 sin x0 sin * 1.5707963267948966 * - +")} /*seed expressions*/,
         false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
         random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
         "" /*file to save MSE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
@@ -7671,8 +8033,8 @@ int main(int argc, char *argv[])
 //    RandomSearch(VortexRadialProfile /*differential equation to solve*/,
 //                 3 /*number of equations in differential equation system*/,
 //                 data /*data used to solve differential equation*/,
-//                 std::vector<int>{21} /*fixed depths of generated solution*/,
-//                 "prefix" /*expression representation*/,
+//                 std::vector<int>{10} /*fixed depths of generated solution*/,
+//                 "postfix" /*expression representation*/,
 //                 0 /*num_consts_diff: number of constants in differential equation*/,
 //                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
 //                 5 /*number of fit iterations*/,
@@ -7688,7 +8050,7 @@ int main(int argc, char *argv[])
 //    SimulatedAnnealing(VortexRadialProfile /*differential equation to solve*/,
 //             3 /*number of equations in differential equation system*/,
 //             data /*data used to solve differential equation*/,
-//             std::vector<int>{13} /*fixed depths of generated solution*/,
+//             std::vector<int>{20} /*fixed depths of generated solution*/,
 //             "prefix" /*expression representation*/,
 //             0/*2*/ /*num_consts_diff: number of constants in differential equation*/,
 //             "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -7706,7 +8068,7 @@ int main(int argc, char *argv[])
 //             false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
 //             random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
 //             "" /*file to save MSE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
-
+    
     return 0;
 }
 
