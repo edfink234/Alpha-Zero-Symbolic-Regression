@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sympy import *
 from numpy import sqrt, exp, cos, sin
+from mpl_toolkits.mplot3d import Axes3D
+
 sech = lambda x: 1.0/np.cosh(x)
 
 PrintFormula = False
@@ -11,44 +13,48 @@ SH, r, theta, mu, nu = symbols('\\text{SwiftHohenberg} r theta \\mu \\nu')
 # Define the function f as a function of r and theta
 f = Function('f')(r, theta)
 
-# Calculate the first Laplacian (Laplacian of f)
+# Calculate the first Laplacian
 laplacian_f = diff(f, r, 2) + (1/r) * diff(f, r) + (1/(r**2)) * diff(f, theta, 2)
 
-# Calculate the double Laplacian (Laplacian of the first Laplacian)
+# Calculate the double Laplacian
 double_laplacian_f = diff(laplacian_f, r, 2) + (1/r) * diff(laplacian_f, r) + (1/(r**2)) * diff(laplacian_f, theta, 2)
 
 swift_hohenberg = mu*f + nu*f*f - f*f*f - (f + 2*laplacian_f + double_laplacian_f)
 
-if PrintFormula:                
+if PrintFormula:
     print(sp.multiline_latex(SH, swift_hohenberg, 2).replace(r"\frac", r"\dfrac"))
 
 # Create edges instead of centers
-r_edges = np.linspace(0.0001, 10, 34)         # 34 = 33 + 1
+r_edges = np.linspace(0.0001, 10, 34)
 theta_edges = np.linspace(0, 2*np.pi, 34)
 
-# Compute 2D grid of cell edges
-R_edges, Theta_edges = np.meshgrid(r_edges, theta_edges)
-
-# Compute centers (optional, for evaluating function)
+# Compute centers
 r_centers = 0.5 * (r_edges[:-1] + r_edges[1:])
 theta_centers = 0.5 * (theta_edges[:-1] + theta_edges[1:])
 R, Theta = np.meshgrid(r_centers, theta_centers)
 
 # Evaluate function on cell centers
-Z = ((((Theta * 10.000000) - 43.47847366333008) / 185.5887837532312) + (0.4000400020000667 - ((sin(Theta) * sin(R)) * 1.5707963267948966)))
-# Convert edges to Cartesian
-X_edges = R_edges * np.cos(Theta_edges)
-Y_edges = R_edges * np.sin(Theta_edges)
+Z = ((Theta / 8) - (np.sin(Theta) * (1.0000085830688477 * np.sin(R))))
 
-# Plot using pcolormesh with edges
-plt.figure(figsize=(6, 6))
-ax_obj = plt.pcolormesh(X_edges, Y_edges, Z, cmap='viridis', norm = "log")
-print(ax_obj)
-plt.colorbar(label='f(r, θ)')
-plt.axis('equal')
-#print(*dir(ax_obj), sep = '\n')
-#plt.title(r'$f(r, θ) = \dfrac{\theta}{10000^{1 / \sqrt{r}}}$')
-plt.savefig("SwiftHohenberg2D.pdf")
-from os import system 
-system("open SwiftHohenberg2D.pdf")
+# Convert to Cartesian
+X = R * np.cos(Theta)
+Y = R * np.sin(Theta)
 
+# 3D Plot
+fig = plt.figure(figsize=(10, 8))
+ax = fig.add_subplot(111, projection="3d")
+
+surf = ax.plot_surface(X, Y, Z, cmap="viridis", edgecolor="none", alpha=0.9)
+ax.set_xlabel("x")
+ax.set_ylabel("y")
+ax.set_zlabel("f(r,θ)")
+ax.set_title("Swift-Hohenberg 2D Pattern (3D Surface)")
+fig.colorbar(surf, shrink=0.5, aspect=10, label="f(r, θ)")
+
+# Improve viewing angle
+ax.view_init(elev=35, azim=235)
+
+plt.tight_layout()
+plt.savefig("SwiftHohenberg2D.png", dpi=5*96)
+from os import system
+system("open SwiftHohenberg2D.png")

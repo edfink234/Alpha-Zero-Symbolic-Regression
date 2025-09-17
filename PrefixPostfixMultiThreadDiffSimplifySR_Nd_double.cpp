@@ -19,11 +19,11 @@
 #include <chrono>
 #include <fstream>
 #include <iomanip>
-//#include <cdouble>
 #include <cassert>
 #include <thread>
 #include <mutex>
 #include <atomic>
+#include <charconv>
 //#include <latch>
 #include <tuple>
 #include <functional>
@@ -36,6 +36,8 @@
 #include <boost/unordered/concurrent_flat_map.hpp>
 #define DBL_MAX std::numeric_limits<double>::max()
 #define RANDOM_SEED -1
+
+//TODO: Need to make this robust againt -Wnarrow and
 
 /*
 Search Directories to add:
@@ -267,7 +269,7 @@ bool isdouble(const std::string& s)
 // std::vector<double> max must have size == cols
 Eigen::MatrixXd createLinspaceMatrix(int rows, int cols, std::vector<double> min_vec, std::vector<double> max_vec)
 {
-    assert((cols == static_cast<int>(min_vec.size())) && (cols == static_cast<int>(max_vec.size())));
+    assert( (cols == static_cast<int>(min_vec.size())) && (cols == static_cast<int>(max_vec.size())) );
     Eigen::MatrixXd mat(rows, cols);
     for (int col = 0; col < cols; ++col)
     {
@@ -291,6 +293,7 @@ std::vector<double> linspace(double min_val, double max_val, int num_points)
     return linspaced;
 }
 
+//`std::vector<double> min_vec` and `std::vector<double> max_vec` must have `size == col`
 Eigen::MatrixXd createMeshgridWithLambda(int rows, int cols, std::vector<double> min_vec, std::vector<double> max_vec, const std::function<double(const Eigen::RowVectorXd&)>& lambda)
 {
     assert((cols == static_cast<int>(min_vec.size())) && (cols == static_cast<int>(max_vec.size())));
@@ -344,7 +347,6 @@ Eigen::MatrixXd createMeshgridWithLambda(int rows, int cols, std::vector<double>
     return matrix;
 }
 
-
 Eigen::MatrixXd addColumnWithLambda(const Eigen::MatrixXd& matrix, const std::function<double(const Eigen::RowVectorXd&)>& lambda) {
     // Get the number of rows and columns of the input matrix
     int rows = matrix.rows();
@@ -357,16 +359,22 @@ Eigen::MatrixXd addColumnWithLambda(const Eigen::MatrixXd& matrix, const std::fu
     newMatrix.block(0, 0, rows, cols) = matrix;
 
     // Apply the lambda function to each row and store the result in the last column
-    for (int i = 0; i < rows; ++i) {
+    for (int i = 0; i < rows; ++i)
+    {
         newMatrix(i, cols) = lambda(matrix.row(i));
     }
 
     return newMatrix;
 }
 
+/*
+    In the function below, `min_vec` and `max_vec` are the min and max vals for each attribute,
+    `num_cols` is the number of attributes, and `rows` is the number of linearly-spaced data-points
+*/
 Eigen::MatrixXd createMeshgridVectors(int rows, int cols, std::vector<double> min_vec, std::vector<double> max_vec)
 {
-    assert((cols == static_cast<int>(min_vec.size())) && (cols == static_cast<int>(max_vec.size())));
+    assert((min_vec.size() < INT_MAX) && (max_vec.size() < INT_MAX));
+    assert( (cols == static_cast<int>(min_vec.size())) && (cols == static_cast<int>(max_vec.size())) );
 
     // Create linspaces for each variable (column)
     std::vector<std::vector<double>> linspaces;
@@ -522,7 +530,8 @@ C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp|7714|warning: comparison
 */
 
 template<typename Derived>
-typename Derived::Scalar median( Eigen::DenseBase<Derived>& d ){
+typename Derived::Scalar median( Eigen::DenseBase<Derived>& d )
+{
     auto r { d.reshaped() };
     std::sort( r.begin(), r.end() );
     return r.size() % 2 == 0 ?
@@ -531,7 +540,8 @@ typename Derived::Scalar median( Eigen::DenseBase<Derived>& d ){
 }
 
 template<typename Derived>
-typename Derived::Scalar median( const Eigen::DenseBase<Derived>& d ){
+typename Derived::Scalar median( const Eigen::DenseBase<Derived>& d )
+{
     typename Derived::PlainObject m { d.replicate(1,1) };
     return median(m);
 }
@@ -546,7 +556,7 @@ bool isZero(const Eigen::VectorXd& vec, double tolerance = 1e-5)
     {
         return true; // Return true if any NaN is present so it'll be weeded out
     }
-    for (size_t i = 0; i < vec.size(); ++i)
+    for (decltype(vec.size()) i = 0; i < vec.size(); ++i)
     {
         if (isInvalid(vec[i]))
         {
@@ -562,7 +572,7 @@ bool isZero(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXd>, Eigen::D
     {
         return true; // A vector with 0 or 1 element is trivially constant
     }
-    for (size_t i = 0; i < vec.size(); ++i)
+    for (decltype(vec.size()) i = 0; i < vec.size(); ++i)
     {
         if (isInvalid(vec[i].value()))
         {
@@ -582,7 +592,7 @@ bool isConstant(const Eigen::VectorXd& vec, double tolerance = 1e-5)
     {
         return true; // Return true if any NaN is present so it'll be weeded out
     }
-    for (size_t i = 0; i < vec.size(); ++i)
+    for (decltype(vec.size()) i = 0; i < vec.size(); ++i)
     {
         if (isInvalid(vec[i]))
         {
@@ -598,7 +608,7 @@ bool isConstant(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXd>, Eige
     {
         return true; // A vector with 0 or 1 element is trivially constant
     }
-    for (size_t i = 0; i < vec.size(); ++i)
+    for (decltype(vec.size()) i = 0; i < vec.size(); ++i)
     {
         if (isInvalid(vec[i].value()))
         {
@@ -608,7 +618,6 @@ bool isConstant(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXd>, Eige
     auto firstElement = vec(0);
     return (vec.array() - firstElement).abs().maxCoeff() <= tolerance;
 }
-
 
 class Data
 {
@@ -701,15 +710,15 @@ void print_container(const std::vector<std::string>& c, int low, int up)
     puts("");
 }
 
-double MSE(const Eigen::VectorXd& actual)
+double SNE(const Eigen::VectorXd& actual)
 {
     return actual.squaredNorm();
 }
 
-double MSE(const std::vector<Eigen::VectorXd>& actual)
+double SNE(const std::vector<Eigen::VectorXd>& actual)
 {
     double temp = 0.0;
-    for (size_t i = 0; i < actual.size(); i++)
+    for (decltype(actual.size()) i = 0; i < actual.size(); ++i)
     {
         temp += actual[i].squaredNorm();
     }
@@ -717,14 +726,14 @@ double MSE(const std::vector<Eigen::VectorXd>& actual)
     return temp;
 }
 
-double MSE(const std::vector<Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXd>, Eigen::Dynamic>>& actual)
+double SNE(const std::vector<Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXd>, Eigen::Dynamic>>& actual)
 {
     double temp = 0.0;
     size_t count = 0;
 
     for (const auto& vec : actual)
     {
-        for (int i = 0; i < vec.size(); ++i)
+        for (decltype(vec.size()) i = 0; i < vec.size(); ++i)
         {
             // Access the value of the AutoDiffScalar element
             temp += vec[i].value() * vec[i].value();
@@ -735,38 +744,39 @@ double MSE(const std::vector<Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXd
     return count > 0 ? temp / count : DBL_MAX;
 }
 
-double MSE(const Eigen::VectorXd& actual, const Eigen::VectorXd& predicted)
+double SNE(const Eigen::VectorXd& actual, const Eigen::VectorXd& predicted)
 {
-    if (actual.size() != predicted.size())
-    {
-        throw std::invalid_argument("Vectors must be of the same size");
-    }
+//    if (actual.size() != predicted.size())
+//    {
+//        throw std::invalid_argument("Vectors must be of the same size");
+//    }
+    assert((actual.size() == predicted.size()) && "Vectors must be of the same size");
     return (actual - predicted).squaredNorm();
 }
 
-Eigen::AutoDiffScalar<Eigen::VectorXd> MSE(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXd>, Eigen::Dynamic>& actual)
+Eigen::AutoDiffScalar<Eigen::VectorXd> SNE(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXd>, Eigen::Dynamic>& actual)
 {
     return actual.squaredNorm();
 }
 
 double loss_func(const Eigen::VectorXd& actual)
 {
-    return (1.0/(1.0+MSE(actual)));
+    return (1.0/(1.0+SNE(actual)));
 }
 
 double loss_func(const std::vector<Eigen::VectorXd>& actual)
 {
-    double mse = 0.0;
-    for (size_t i = 0; i < actual.size(); i++)
+    double sne = 0.0;
+    for (decltype(actual.size()) i = 0; i < actual.size(); ++i)
     {
-        mse += MSE(actual[i]);
+        sne += SNE(actual[i]);
     }
-    return (1.0/(1.0+mse));
+    return (1.0/(1.0+sne));
 }
 
 double loss_func(const Eigen::VectorXd& actual, const Eigen::VectorXd& predicted)
 {
-    return (1.0/(1.0+MSE(actual, predicted)));
+    return (1.0/(1.0+SNE(actual, predicted)));
 }
 
 struct Board
@@ -806,8 +816,8 @@ struct Board
     size_t reserve_amount;
     int num_fit_iter;
     int num_objectives;
-    double MSE_curr;
-    std::vector<double> MSE_curr_vec;
+    double SNE_curr;
+    std::vector<double> SNE_curr_vec;
     std::string fit_method;
     std::string fit_grad_method;
     std::unordered_map<std::string, Eigen::VectorXd> subs_dict;
@@ -842,7 +852,7 @@ struct Board
     {
         assert(n.size());
         this->num_objectives = n.size();
-        size_t max_n = n[0];
+        int max_n = n[0];
         int counter = 0;
         for (int i: n)
         {
@@ -907,7 +917,7 @@ struct Board
                 {
                     Board::__operators.push_back(i);
                 }
-                
+
                 if (const_tokens) //then add non-optimizable constants only
                 {
                     Board::__other_tokens = {"0", "1", "2", "4"};
@@ -990,7 +1000,9 @@ struct Board
         std::stringstream outstringstream;
         outstringstream << '{';
         constexpr const char* const_label = "const";
-        for (size_t i = this->num_consts_diff; i < this->params.size(); i++)
+        //below is really just `for(type i = this->num_consts_diff; i < this->params.size(); i++)`,
+        //where `type` is just the type of `this->params.size()`
+        for (decltype(this->params.size()) i = static_cast<decltype(this->params.size())>(this->num_consts_diff); i < this->params.size(); i++)
         {
             outstringstream << '(' << const_label+std::to_string(i) << ", " << this->params[i] << "), ";
         }
@@ -1023,15 +1035,19 @@ struct Board
 
     std::string operator[](size_t index) const
     {
-        if (index < Board::__tokens.size())
-        {
-            return Board::__tokens[index];
-        }
-        throw std::out_of_range("Index out of range");
+        assert((index < Board::__tokens.size()));
+        return Board::__tokens[index];
+//        if (index < Board::__tokens.size())
+//        {
+//            return Board::__tokens[index];
+//        }
+//        throw std::out_of_range("Index out of range");
     }
 
     int __num_binary_ops(int i) const
     {
+        assert(pieces.size() <= INT_MAX);
+        assert((i >= 0) && (i < static_cast<int>(pieces.size())));
         int count = 0;
         for (const std::string& token : pieces[i])
         {
@@ -1045,6 +1061,8 @@ struct Board
 
     int __num_unary_ops(int i) const
     {
+        assert(pieces.size() <= INT_MAX);
+        assert((i >= 0) && (i < static_cast<int>(pieces.size())));
         int count = 0;
         for (const std::string& token : pieces[i])
         {
@@ -1059,7 +1077,8 @@ struct Board
     int __num_leaves(int i) const
     {
         int count = 0;
-
+        assert(pieces.size() <= INT_MAX);
+        assert((i >= 0) && (i < static_cast<int>(pieces.size())));
         for (const std::string& token : pieces[i])
         {
             if (!is_unary(token) && !is_binary(token))
@@ -1088,6 +1107,8 @@ struct Board
 
     int __num_consts(int jdx) const
     {
+        assert(pieces.size() <= INT_MAX);
+        assert((jdx >= 0) && (jdx < static_cast<int>(pieces.size())));
         int count = 0;
         for (const std::string& piece: this->pieces[jdx])
         {
@@ -1165,7 +1186,7 @@ struct Board
             graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true);
             int second_arg_idx_high = new_expression.size();
             int step;
-            
+
             if (new_expression[first_arg_idx_high] == "0") //+/- x 0 -> x
             {
                 //puts("hi 177");
@@ -1179,7 +1200,7 @@ struct Board
                 }
                 new_expression.erase(new_expression.begin() + op_idx); //remove +/- operator at beginning
             }
-            
+
             else if (new_expression[first_arg_idx_low] == "0")
             {
                 if (expression[low] == "+") //+ 0 y -> y
@@ -1194,7 +1215,7 @@ struct Board
                     new_expression.erase(new_expression.begin() + first_arg_idx_low); //'0'
                 }
             }
-            
+
             else if ((expression[low] == "-") && ((step = (second_arg_idx_high - first_arg_idx_high)) == (first_arg_idx_high - first_arg_idx_low)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) //- x x
             {
                 //puts("hi 221");
@@ -1264,12 +1285,15 @@ struct Board
                 new_expression[op_idx] = "nan"; //change '/' to 'nan'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
-    //        else if (new_expression[first_arg_idx_high] == "0") // / x 0 -> inf (because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to / x 0, which is 0) //TODO: Remove -> not always true!
-    //        {
-    //            //puts("hi 282");
-    //            new_expression[op_idx] = (new_expression[first_arg_idx_low] != "~") ? "inf": "-inf"; //change '/' to 'inf' or '-inf'
-    //            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
-    //        }
+            else if (new_expression[first_arg_idx_high] == "0") // / x 0 -> inf (because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to / x 0, which is 0) //TODO: Remove -> not always true!
+            {
+                //puts("hi 282");
+                //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
+                //for now we weed it out because annoying not to; giving this up seems like the better deal...
+                //TODO: need to retest this in simplification script
+                new_expression[op_idx] = "nan";//(new_expression[first_arg_idx_low] != "~") ? "inf": "-inf"; //change '/' to 'inf' or '-inf'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
             else if (new_expression[first_arg_idx_low] == "0") // / 0 x -> 0
             {
                 //puts("hi 295");
@@ -1297,7 +1321,7 @@ struct Board
                 new_expression[op_idx] = "1"; //change "-" to "1";
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.begin() + second_arg_idx_high);
             }
-            
+
             //TODO:
                 /*
                 x*y       y
@@ -1322,12 +1346,15 @@ struct Board
                 new_expression[op_idx] = "1"; //change '^' to '1'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
-    //        else if (new_expression[first_arg_idx_low] == "0") // ^ 0 x -> 0 (x > 0 assumed) //TODO: Remove -> not always true!
-    //        {
-    //            //puts("hi 340");
-    //            new_expression[op_idx] = "0"; //change '^' to '0'
-    //            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
-    //        }
+            else if (new_expression[first_arg_idx_low] == "0") // ^ 0 x -> 0 (x > 0 assumed) //TODO: Remove -> not always true!
+            {
+                //puts("hi 340");
+                //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
+                //for now we weed it out because annoying not to; giving this up seems like the better deal...
+                //TODO: need to retest this in simplification script
+                new_expression[op_idx] = "nan";//new_expression[op_idx] = "0"; //change '^' to '0'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
             else if (new_expression[first_arg_idx_high] == "1") // ^ x 1 -> x (because, since prefix operators come at the beginning, if the beginning of the second argument of '^' is 1, then the whole second argument MUST be 1, therefore the expression reduces to ^ x 1, which is 1)
             {
                 //puts("hi 346");
@@ -1520,7 +1547,7 @@ struct Board
                     {
                         isdouble1 = isdouble(expression[i+1]);
                         isdouble2 = isdouble(expression[i+2]);
-                        
+
                         if (isdouble1 && isdouble2)
                         {
                             if (expression[i] == "+")
@@ -1559,10 +1586,10 @@ struct Board
                                 break;
                             }
                         }
-                        
+
                         isConst1 = is_const(expression[i+1]);
                         isConst2 = is_const(expression[i+2]);
-                        
+
                         if ((isConst1 && isConst2) && ((expression[i+1].find("nan") != std::string::npos) || (expression[i+2].find("nan") != std::string::npos))) //binary_op nan x = binary_op x nan = nan
                         {
                             //puts("hi 570");
@@ -1712,7 +1739,7 @@ struct Board
                             }
                         }
                     }
-                    
+
                     else if (is_unary(expression[i]) && isdouble(expression[i+1]))
                     {
                         if (expression[i] == "cos")
@@ -1793,7 +1820,7 @@ struct Board
                             break;
                         }
                     }
-                    
+
                     else if (is_unary(expression[i]))
                     {
                         if (expression[i] == "~" && expression[i+1] == "~")
@@ -1898,13 +1925,13 @@ struct Board
             graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true);
             int second_arg_idx_high = new_expression.size();
             int step;
-            
+
             if (new_expression.back() == "0") // x 0 +/- -> x
             {
                 //puts("hi 181");
                 new_expression.pop_back();
             }
-            
+
             else if (new_expression[first_arg_idx_high - 1] == "0")
             {
                 //puts("hi 184");
@@ -1916,14 +1943,14 @@ struct Board
                     new_expression.push_back("~"); //0 y - -> y ~
                 }
             }
-            
+
             else if ((expression[up] == "-") && ((step = (first_arg_idx_high - first_arg_idx_low)) == (second_arg_idx_high - first_arg_idx_high)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) //x x - -> 0
             {
                 //puts("hi 215");
                 new_expression[first_arg_idx_low] = "0"; //change first symbol of x to 0
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.begin() + second_arg_idx_high); //erase the rest of x and y
             }
-            
+
             else
             {
                 new_expression.push_back(expression[up]);
@@ -1937,7 +1964,7 @@ struct Board
             graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
             //int second_arg_idx_high = new_expression.size();
             //int step;
-            
+
             if (new_expression.back() == "0") // x 0 * -> 0 (because, since postfix operators come at the end, if the end of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 *, which is 0)
             {
                 //puts("hi 235");
@@ -2021,7 +2048,7 @@ struct Board
             graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
             //int second_arg_idx_high = new_expression.size();
             //int step;
-            
+
             if (new_expression.back() == "0") // x 0 ^ -> 1 (because, since postfix operators come at the end, if the end of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 ^, which is 1)
             {
                 //puts("hi 318");
@@ -2228,7 +2255,7 @@ struct Board
                     {
                         isdouble1 = isdouble(expression[i-1]);
                         isdouble2 = isdouble(expression[i-2]);
-                        
+
                         if (isdouble1 && isdouble2)
                         {
                             if (expression[i] == "+")
@@ -2268,10 +2295,10 @@ struct Board
                                 break;
                             }
                         }
-                        
+
                         isConst1 = is_const(expression[i-1]);
                         isConst2 = is_const(expression[i-2]);
-                        
+
                         if ((isConst1 && isConst2) && ((expression[i-1].find("nan") != std::string::npos) || (expression[i-2].find("nan") != std::string::npos))) //x nan binary_op = nan x binary_op = nan
                         {
     //                        puts("hi 549");
@@ -2425,7 +2452,7 @@ struct Board
                             }
                         }
                     }
-                    
+
                     else if (is_unary(expression[i]) && isdouble(expression[i-1]))
                     {
                         if (expression[i] == "cos")
@@ -2506,7 +2533,7 @@ struct Board
                             break;
                         }
                     }
-                    
+
                     else if (is_unary(expression[i]))
                     {
                         if (expression[i] == "~" && expression[i-1] == "~")
@@ -2694,7 +2721,7 @@ struct Board
         {
             stop = expression.size();
         }
-        assert(this->stack.size() > idx);
+        assert(this->stack.size() > static_cast<decltype(this->stack.size())>(idx));
 
         if (!cache)
         {
@@ -2822,7 +2849,7 @@ struct Board
                 }
                 else //leaf
                 {
-                    assert(this->stack.size() > idx);
+                    assert(this->stack.size() > static_cast<decltype(this->stack.size())>(idx));
 //                    std::cout << "this->stack.size() = " << this->stack.size() << '\n';
                     this->stack[idx].push_back(1);
                 }
@@ -2850,7 +2877,7 @@ struct Board
 
     std::vector<std::string> get_legal_moves(int idx)
     {
-        assert(n.size() > idx);
+        assert(n.size() > static_cast<decltype(n.size())>(idx));
         if (this->expression_type == "prefix")
         {
             if (this->pieces[idx].empty()) //At the beginning, self.pieces[idx] is empty, so the only legal moves are the operators...
@@ -3124,8 +3151,8 @@ struct Board
         {
             return temp;
         }
-        size_t sz = pieces.size() - 1;
-        for (int jdx = 0; jdx < sz; jdx++)
+        decltype(pieces.size()) sz = pieces.size() - 1;
+        for (decltype(pieces.size()) jdx = 0; jdx < sz; jdx++)
         {
             temp += _to_infix(pieces[jdx], show_consts) + ", ";
         }
@@ -3140,8 +3167,8 @@ struct Board
         {
             return temp;
         }
-        size_t sz = pieces.size() - 1;
-        for (int jdx = 0; jdx < sz; jdx++)
+        decltype(pieces.size()) sz = pieces.size() - 1;
+        for (decltype(pieces.size()) jdx = 0; jdx < sz; jdx++)
         {
             temp += expression(pieces[jdx], show_consts) + ", ";
         }
@@ -3310,13 +3337,14 @@ struct Board
                 if (token.compare(0, 5, "const") == 0)
                 {
                     int temp_idx = std::stoi(token.substr(5));
-                    if (temp_idx >= params.size())
-                    {
-                        throw std::runtime_error("\ntemp_idx = "+std::to_string(temp_idx)
-                                                 +"\nparams.size() = "+std::to_string(params.size())
-                                                 +"\nnum_consts = "+std::to_string(this->__num_consts())
-                                                 +"\nBoard::expression_dict.size() = "+std::to_string(Board::expression_dict.size()));
-                    }
+                    assert(temp_idx < params.size());
+//                    if (temp_idx >= params.size())
+//                    {
+//                        throw std::runtime_error("\ntemp_idx = "+std::to_string(temp_idx)
+//                                                 +"\nparams.size() = "+std::to_string(params.size())
+//                                                 +"\nnum_consts = "+std::to_string(this->__num_consts())
+//                                                 +"\nBoard::expression_dict.size() = "+std::to_string(Board::expression_dict.size()));
+//                    }
                     stack.push(Eigen::VectorXd::Ones(Board::data.numRows())*params(temp_idx));
                 }
                 else if (token == "0")
@@ -3621,7 +3649,7 @@ struct Board
 
     Eigen::AutoDiffScalar<Eigen::VectorXd> grad_func(std::vector<Eigen::AutoDiffScalar<Eigen::VectorXd>>& inputs)
     {
-        return MSE(expression_evaluator(inputs, this->diffeq_result));
+        return SNE(expression_evaluator(inputs, this->diffeq_result));
     }
 
     /*
@@ -3634,7 +3662,7 @@ struct Board
         {
             assert(grad.size() == x.size());
             double grad_piece_prefactor = this->isConstTol/(Board::data.numRows()*this->num_objectives);
-            double mse = MSE(expression_evaluator(x, this->diffeq_result));
+            double sne = SNE(expression_evaluator(x, this->diffeq_result));
             if (this->fit_grad_method == "naive_numerical")
             {
                 double low_b, temp, low_inv_var_b;
@@ -3648,14 +3676,14 @@ struct Board
                     {
                         low_inv_var_b /= VarianceSum(this->expression_evaluator(x, this->pieces)); //larger variance in SR expressions -> smaller penalty
                     }
-                    low_b = MSE(expression_evaluator(x, this->diffeq_result)) + low_inv_var_b;
+                    low_b = SNE(expression_evaluator(x, this->diffeq_result)) + low_inv_var_b;
                     x(i) = temp + 0.00001;
                     low_inv_var_b = grad_piece_prefactor;
                     if (low_inv_var_b)
                     {
                         low_inv_var_b /= VarianceSum(this->expression_evaluator(x, this->pieces)); //larger variance in SR expressions -> smaller penalty
                     }
-                    grad(i) = ((MSE(expression_evaluator(x, this->diffeq_result)) + low_inv_var_b) - low_b) / 0.00002;
+                    grad(i) = ((SNE(expression_evaluator(x, this->diffeq_result)) + low_inv_var_b) - low_b) / 0.00002;
                     x(i) = temp;
                 }
             }
@@ -3672,7 +3700,7 @@ struct Board
                 }
                 grad = grad_func(inputs).derivatives();
             }
-            return mse;
+            return sne;
         }
         else if (this->fit_method == "LevenbergMarquardt")
         {
@@ -3688,23 +3716,24 @@ struct Board
             {
                 expr_eval_var = Variance(this->expression_evaluator(x, this->pieces)); //std::vector<Eigen::VectorXd>
             }
-            size_t num_cols = temp.size(), num_rows = temp[0].size();
-            size_t num_piece_cols = expr_eval_var.size();
-            size_t num_piece_vals = num_piece_cols*num_rows;
+            decltype(temp.size()) num_cols = temp.size();
+            decltype(temp[0].size()) num_rows = temp[0].size();
+            decltype(expr_eval_var.size()) num_piece_cols = expr_eval_var.size();
+            auto num_piece_vals = num_piece_cols*num_rows;
             double grad_piece_prefactor = (this->isConstTol) ? (this->isConstTol/(num_piece_vals)) : 0.0;
-            size_t total_cols = num_cols + num_piece_cols;
+            auto total_cols = num_cols + num_piece_cols;
             assert((!expr_eval_var.size()) || (num_rows == expr_eval_var[0].size()));
-            assert(num_piece_cols == ((this->isConstTol) ? this->num_objectives : 0));
-            assert(grad.size() == num_rows*total_cols);
-            for (size_t kdx = 0; kdx < num_rows; kdx++) //for each row
+            assert(num_piece_cols == static_cast<decltype(num_piece_cols)>((this->isConstTol) ? this->num_objectives : 0));
+            assert(grad.size() == static_cast<decltype(grad.size())>(num_rows*total_cols));
+            for (decltype(num_rows) kdx = 0; kdx < num_rows; kdx++) //for each row
             {
-                for (size_t ldx = 0; ldx < num_cols; ldx++) //first loop over each differential equation value
+                for (decltype(num_cols) ldx = 0; ldx < num_cols; ldx++) //first loop over each differential equation value
                 {
                     grad(kdx*total_cols + ldx) = temp[ldx][kdx]; // Assign values directly
                 }
                 if (this->isConstTol)
                 {
-                    for (size_t ldx = num_cols, mdx = 0; ldx < total_cols; ldx++, mdx++) //then loop over each SR-expression value
+                    for (decltype(total_cols) ldx = num_cols, mdx = 0; ldx < total_cols; ldx++, mdx++) //then loop over each SR-expression value
                     {
                         grad(kdx*total_cols + ldx) = (grad_piece_prefactor / expr_eval_var[mdx][kdx]);
                     }
@@ -3750,7 +3779,7 @@ struct Board
         double fx;
 
         Eigen::VectorXd eigenVec = this->params;
-        double mse = MSE(expression_evaluator(this->params, this->diffeq_result));
+        double sne = SNE(expression_evaluator(this->params, this->diffeq_result));
         try
         {
             solver.minimize((*this), eigenVec, fx);
@@ -3758,10 +3787,10 @@ struct Board
         catch (std::runtime_error& e){}
         catch (std::invalid_argument& e){}
 
-        //printf("mse = %f -> fx = %f\n", mse, fx);
-        if (fx < mse)
+        //printf("sne = %f -> fx = %f\n", sne, fx);
+        if (fx < sne)
         {
-            //printf("mse = %f -> fx = %f\n", mse, fx);
+            //printf("sne = %f -> fx = %f\n", sne, fx);
             this->params = eigenVec;
             improved = true;
         }
@@ -3781,7 +3810,7 @@ struct Board
         double fx;
 
         Eigen::VectorXd eigenVec = this->params;
-        double mse = MSE(expression_evaluator(this->params, this->diffeq_result));
+        double sne = SNE(expression_evaluator(this->params, this->diffeq_result));
         try
         {
             solver.minimize((*this), eigenVec, fx, Eigen::VectorXd::Constant(eigenVec.size(), -std::numeric_limits<double>::infinity()), Eigen::VectorXd::Constant(eigenVec.size(), std::numeric_limits<double>::infinity()));
@@ -3791,10 +3820,10 @@ struct Board
         catch (std::invalid_argument& e){}
         catch (std::logic_error& e){}
 
-        //printf("mse = %f -> fx = %f\n", mse, fx);
-        if (fx < mse)
+        //printf("sne = %f -> fx = %f\n", sne, fx);
+        if (fx < sne)
         {
-            //printf("mse = %f -> fx = %f\n", mse, fx);
+            //printf("sne = %f -> fx = %f\n", sne, fx);
             this->params = eigenVec;
             improved = true;
         }
@@ -3843,12 +3872,12 @@ struct Board
         bool improved = false;
         auto start_time = Clock::now();
         Eigen::LevenbergMarquardt<decltype(*this), double> lm(*this);
-        double score_before = MSE(expression_evaluator(this->params, this->diffeq_result));
+        double score_before = SNE(expression_evaluator(this->params, this->diffeq_result));
         lm.parameters.maxfev = this->num_fit_iter;
         //std::cout << "ftol (Cost function change) = " << lm.parameters.ftol << '\n';
         //std::cout << "xtol (Parameters change) = " << lm.parameters.xtol << '\n';
         lm.minimize(this->params);
-        double score_after = MSE(expression_evaluator(this->params, this->diffeq_result));
+        double score_after = SNE(expression_evaluator(this->params, this->diffeq_result));
         if (score_after < score_before)
         {
             //printf("score_before = %f -> score_after = %f\n", score_before, score_after);
@@ -3864,7 +3893,7 @@ struct Board
     //Otherwise it returns `false`.
     bool passesConstantThreshold()
     {
-        for (int jdx = 0; jdx < this->pieces.size(); jdx++) //loops over each generated symbolic expression
+        for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++) //loops over each generated symbolic expression
         {
             if (isConstant(expression_evaluator(this->params, this->pieces[jdx]), this->isConstTol))
             {
@@ -3878,7 +3907,7 @@ struct Board
     {
         double score = 0.0;
         bool depends_symb_on_x0 = false;
-        for (int jdx = 0; jdx < this->pieces.size(); jdx++) //loops over each generated symbolic expression
+        for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++) //loops over each generated symbolic expression
         {
             //This block below checks if `this->pieces[jdx]` depends on `x0`.
             {
@@ -3893,7 +3922,7 @@ struct Board
                             if (((piece[i] == 'n') && (piece[i+1] == 'a') && (piece[i+2] == 'n')) ||
                                 ((piece[i] == 'i') && (piece[i+1] == 'n') && (piece[i+2] == 'f')))
                             {
-                                this->MSE_curr = DBL_MAX;
+                                this->SNE_curr = DBL_MAX;
                                 return score;
                             }
                             //checks if next 3 characters are 'x', '0', * or *, 'x', '0'
@@ -3912,7 +3941,7 @@ struct Board
                 //We reject the solution if it doesn't depend on `x0`
                 if (!depends_symb_on_x0)
                 {
-                    this->MSE_curr = DBL_MAX;
+                    this->SNE_curr = DBL_MAX;
                     return score;
                 }
             }
@@ -3925,7 +3954,7 @@ struct Board
                 if (std::find(this->pieces[jdx].begin(), this->pieces[jdx].end(), i) == this->pieces[jdx].end())
                 {
                     //then `this->pieces[jdx]` does not depend on `i` so it is a trivial expression -> get out of dodge!
-                    this->MSE_curr = DBL_MAX;
+                    this->SNE_curr = DBL_MAX;
                     return score;
                 }
                 //If the variable `i` is found, we then test the derivative wrt `i` to check if it's 0 within `this->isConstTol` tolerance.
@@ -3939,7 +3968,7 @@ struct Board
                 }
                 if (isZero(expression_evaluator(this->params, this->derivat), this->isConstTol)) //Ignore the trivial solution (N-d functions)!
                 {
-                    this->MSE_curr = DBL_MAX;
+                    this->SNE_curr = DBL_MAX;
                     return score;
                 }
             }
@@ -3949,12 +3978,12 @@ struct Board
         {
             assert(this->num_consts_diff || this->use_const_pieces);
             this->diffeq_result = diffeq(*this, true);
-            if (this->MSE_curr_vec.size() != this->diffeq_result.size())
+            if (this->SNE_curr_vec.size() != this->diffeq_result.size())
             {
-                this->MSE_curr_vec.assign(this->diffeq_result.size(), 0);
+                this->SNE_curr_vec.assign(this->diffeq_result.size(), 0);
             }
-            assert(this->diffeq_result.size() == this->num_diff_eqns);
-            for (int jdx = 0; jdx < this->diffeq_result.size(); jdx++)
+            assert(this->diffeq_result.size() == static_cast<decltype(this->diffeq_result.size())>(this->num_diff_eqns));
+            for (decltype(this->diffeq_result.size()) jdx = 0; jdx < this->diffeq_result.size(); jdx++)
             {
                 ((this->expression_type == "prefix") ? simplifyPN(this->diffeq_result[jdx]) : simplifyRPN(this->diffeq_result[jdx]));
             }
@@ -4002,53 +4031,53 @@ struct Board
             std::vector<Eigen::VectorXd> expression_eval = expression_evaluator(temp_vec, this->diffeq_result);
 
             score = 0.0;
-            this->MSE_curr = MSE(expression_eval[0]);
-            if (isInvalid(this->MSE_curr))
+            this->SNE_curr = SNE(expression_eval[0]);
+            if (isInvalid(this->SNE_curr))
             {
-                this->MSE_curr = DBL_MAX;
+                this->SNE_curr = DBL_MAX;
                 return 0.0;
             }
-            this->MSE_curr_vec[0] = this->MSE_curr;
+            this->SNE_curr_vec[0] = this->SNE_curr;
 
             for (size_t jdx = 1; jdx < expression_eval.size(); ++jdx)
             {
-                this->MSE_curr_vec[jdx] = MSE(expression_eval[jdx]);
-                if (isInvalid(this->MSE_curr_vec[jdx]))
+                this->SNE_curr_vec[jdx] = SNE(expression_eval[jdx]);
+                if (isInvalid(this->SNE_curr_vec[jdx]))
                 {
-                    this->MSE_curr = DBL_MAX;
+                    this->SNE_curr = DBL_MAX;
                     return 0.0;
                 }
-                this->MSE_curr += this->MSE_curr_vec[jdx];
+                this->SNE_curr += this->SNE_curr_vec[jdx];
 
             }
-            score = 1.0/(1.0+this->MSE_curr);
+            score = 1.0/(1.0+this->SNE_curr);
             this->params = temp_vec; //copy `temp_vec` back into `this->params` for displaying purposes
         }
         else //just evaluate
         {
             this->diffeq_result = diffeq(*this, false);
             all_checks(this->diffeq_result);
-            if (this->MSE_curr_vec.size() != this->diffeq_result.size())
+            if (this->SNE_curr_vec.size() != this->diffeq_result.size())
             {
-                this->MSE_curr_vec.assign(this->diffeq_result.size(), 0);
+                this->SNE_curr_vec.assign(this->diffeq_result.size(), 0);
             }
-            assert(this->diffeq_result.size() == this->num_diff_eqns);
+            assert(this->diffeq_result.size() == static_cast<decltype(this->diffeq_result.size())>(this->num_diff_eqns));
             score = 0.0;
-            this->MSE_curr = 0.0;
-            for (int jdx = 0; jdx < this->diffeq_result.size(); jdx++)
+            this->SNE_curr = 0.0;
+            for (decltype(this->diffeq_result.size()) jdx = 0; jdx < this->diffeq_result.size(); jdx++)
             {
                 ((this->expression_type == "prefix") ? simplifyPN(this->diffeq_result[jdx]) : simplifyRPN(this->diffeq_result[jdx]));
                 auto temp_data = expression_evaluator(this->params, this->diffeq_result[jdx]);
 
-                this->MSE_curr_vec[jdx] = MSE(temp_data);
-                if (isInvalid(this->MSE_curr_vec[jdx]))
+                this->SNE_curr_vec[jdx] = SNE(temp_data);
+                if (isInvalid(this->SNE_curr_vec[jdx]))
                 {
-                    this->MSE_curr = DBL_MAX;
+                    this->SNE_curr = DBL_MAX;
                     return 0.0;
                 }
-                this->MSE_curr += this->MSE_curr_vec[jdx];
+                this->SNE_curr += this->SNE_curr_vec[jdx];
             }
-            score = 1.0/(1.0+this->MSE_curr);
+            score = 1.0/(1.0+this->SNE_curr);
         }
         return score;
     }
@@ -4064,8 +4093,8 @@ struct Board
     //TODO: maybe only fit the constants of the ones that give with all consts = 1 like some percentage of the best thus-far (like maybe 80%)...?
     double complete_status(int idx, bool cache = true)
     {
-        assert(this->stack.size() > idx);
-        assert(n.size() > idx);
+        assert(this->stack.size() > static_cast<decltype(this->stack.size())>(idx));
+        assert(n.size() > static_cast<decltype(n.size())>(idx));
         if (this->pieces[idx].empty())
         {
             this->stack[idx] = std::vector<int>();
@@ -4075,13 +4104,13 @@ struct Board
                 this->depth[idx] = 0, this->num_binary[idx] = 0, this->num_leaves[idx] = 0;
             }
         }
-        assert(this->stack.size() > idx);
+        assert(this->stack.size() > static_cast<decltype(this->stack.size())>(idx));
         auto [depth, complete] =  ((this->expression_type == "prefix") ? getPNdepth(pieces[idx], idx, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/) : getRPNdepth(pieces[idx], idx, 0 /*start*/, 0 /*stop*/, this->cache && cache /*cache*/, true /*modify*/)); //structured binding :)
         if (!complete || depth < this->n[idx]) //Expression not complete
         {
             return -1.0;
         }
-        else if (idx < this->pieces.size() - 1)
+        else if (idx < (static_cast<long long>(this->pieces.size()) - 1))
         {
             return 0.0;
         }
@@ -4095,7 +4124,7 @@ struct Board
             {
                 if (this->simplify_original)
                 {
-                    for (int jdx = 0; jdx < this->pieces.size(); jdx++)
+                    for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++)
                     {
                         ((this->expression_type == "prefix") ? simplifyPN(this->pieces[jdx]) : simplifyRPN(this->pieces[jdx])); //simplify expression
                     }
@@ -4103,7 +4132,7 @@ struct Board
                 else
                 {
                     this->temp_pieces = this->pieces;
-                    for (int jdx = 0; jdx < this->pieces.size(); jdx++)
+                    for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++)
                     {
                         ((this->expression_type == "prefix") ? simplifyPN(this->pieces[jdx]) : simplifyRPN(this->pieces[jdx])); //simplify expression
                     }
@@ -4113,7 +4142,7 @@ struct Board
                     this->expression_string.clear();
                     this->expression_string.reserve(8*pieces.size());
 
-                    for (int jdx = 0; jdx < this->pieces.size(); jdx++)
+                    for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++)
                     {
                         for (const std::string& token: this->pieces[jdx])
                         {
@@ -4151,7 +4180,7 @@ struct Board
                     int piece_const_counter = this->num_consts_diff;
                     if (this->use_const_pieces)
                     {
-                        for (int jdx = 0; jdx < this->pieces.size(); jdx++)
+                        for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++)
                         {
                             for (std::string& token: this->pieces[jdx])
                             {
@@ -4166,7 +4195,14 @@ struct Board
                                         assert((token.size() > 5));
                                         std::string int_suffix = token.substr(5);
                                         int temp_idx = std::stoi(int_suffix);
-                                        assert((temp_idx < this->num_consts_diff) && ("Somehow, there's a const token with a suffix integer equal to " + std::to_string(temp_idx)).c_str());
+                                        //the differential equation constants are const0, const1, ..., const{this->num_consts_diff-1},
+                                        //and the constant tokens in the candidate solutions are simply const without an integer suffix,
+                                        //so if we find something like const{(val>=this->num_consts_diff)} then that's unexpected
+                                        assert((static_cast<decltype(this->num_consts_diff)>(temp_idx) < this->num_consts_diff));
+                                        if (static_cast<decltype(this->num_consts_diff)>(temp_idx) >= this->num_consts_diff)
+                                        {
+                                            throw std::runtime_error(("Somehow, there's a const token with a suffix integer equal to " + std::to_string(temp_idx)));
+                                        }
                                     }
                                 }
                             }
@@ -4258,6 +4294,7 @@ struct Board
     //depth `this->n[idx]` sub-expression in the expression individual
     void get_indices(std::vector<std::pair<int, int>>& sub_exprs, std::vector<std::string>& individual, int idx)
     {
+        assert(individual.size());
         int temp;
         int sz = static_cast<int>(individual.size());
         for (int k = 0; k < sz; k++)
@@ -5669,6 +5706,450 @@ struct Board
     }
 };
 
+/*
+||===================================================================================================================================||
+|| Equations from here (14-15): https://pubs.aip.org/aip/pop/article/23/3/032102/1015921/Laser-propagation-and-soliton-generation-in ||
+||===================================================================================================================================||
+
+ Infix: ∂^2(tanh(u)*((1/sech(u)) - α))/∂ξ^2 + ω_squared_factor*n*(tanh(u)*((1/sech(u)) - α)) - (n/(1+ρ_i*α))*(tanh(u)*(1+(ρ_i/sech(u))))
+ Postfix: u tanh 1 u sech / α - * ∂^2/∂ξ^2 ω_squared_factor n * u tanh 1 u sech / α - * * + n 1 ρ_i α * + / u tanh 1 ρ_i u sech / + * * -
+
+ Infix: c_s_squared*ln(n) - ρ_i*((1-(1/sech(u))) + (α/2)*tanh^2(u) - (ρ_i*((tanh(u)*((1/sech(u)) - α))^2))/(2*(1+ρ_i*α)))
+ Postfix: c_s_squared n ln * ρ_i 1 1 u sech / - α 2 / u tanh 2 ^ * + ρ_i u tanh 1 u sech / α - * 2 ^ * 2 1 ρ_i α * + * / - * -
+
+ Infix: tanh(u(ξ_min))*((1/sech(u(ξ_min))) - α*const0)
+ Postfix: u(ξ_min) tanh 1 u(ξ_min) sech / α const0 * - *
+
+ Infix: tanh(u(ξ_max))*((1/sech(u(ξ_max))) - α*const0)
+ Postfix: u(ξ_max) tanh 1 u(ξ_max) sech / α const0 * - *
+
+ Infix: ((1/sech(u(ξ_min))) - α*const0*sech^2(u(ξ_min)))*∂u(x_min)/∂ξ
+ Postfix: 1 u(ξ_min) sech / α const0 * u(ξ_min) sech 2 ^ * - ∂u(x_min)/∂ξ *
+
+ Infix: ((1/sech(u(ξ_max))) - α*const0*sech^2(u(ξ_max)))*∂u(x_max)/∂ξ
+ Postfix: 1 u(ξ_max) sech / α const0 * u(ξ_max) sech 2 ^ * - ∂u(x_max)/∂ξ *
+
+// Infix: (tanh(u)*((1/sech(u)) - α))^2
+// Postfix: u tanh 1 u sech / α - * 2 ^
+
+ Infix: abs(n(ξ) - n(-ξ))
+// Postfix: n(ξ) n(-ξ) - 2 ^
+ Postfix: n(ξ) n(-ξ) - abs
+
+ Infix: abs(((n(ξ)/1) - 1) - x1)
+// Postfix: n(ξ) 1 / 1 - x1 - 2 ^
+ Postfix: n(ξ) 1 / 1 - x1 - abs
+
+ Infix: 10*abs((tanh(u)*((1/sech(u)) - α*const0)) - x2)
+// Postfix: u tanh 1 u sech / α const0 * - * x2 - 2 ^
+ Postfix: u tanh 1 u sech / α const0 * - * x2 - abs 10 *
+
+ {x0: ξ}
+ {x.pieces[0]: u, x.pieces[1]: n}
+
+*/
+std::vector<std::vector<std::string>> SolitonWaveFengEq14and15Laser(Board& x, bool fit)
+{
+    assert(x.feature_mins_maxes.size() && "const_tokens must be true for this equation to use feature_mins_maxes!");
+    //std::vector<std::vector<std::string>> results(10); //2 equations for the ODE, 4 equations for the boundary conditions, 2 equations for symmetry of a(u) and n respectively, 2 equations for data
+    std::vector<std::vector<std::string>> results(9); //2 equations for the ODE, 4 equations for the boundary conditions, 1 equation for symmetry of n respectively, 2 equations for data
+    for (decltype(results.size()) i = 0; i < results.size(); i++){results[i].reserve(100);}
+    std::vector<std::string> temp, temp_prime;
+    temp.reserve(100);
+    temp_prime.reserve(100);
+    std::vector<int> grasp;
+    /*
+      For parameters commented-out below (first 2 equations only):
+       - Best score = 0.997519, SNE = 2.17869e+27
+       - Best expression = ((-0.416147 * x0) / -31.415920), tanh(sech(x0))
+
+        //constexpr const char* rho = "0.000544662309"; // 1/1836, Figs 10-11 caption, https://www.bing.com/search?q=9.1e-31%2F%201.67e-27%20&qs=n&form=QBRE&sp=-1&ghc=1&lq=0&pq=9.1e-31%2F%201.67e-27%20&sc=0-18&sk=&cvid=09FAD78B6CC6414E98D1BED802D49D1C
+        //constexpr const char* omega_squared_factor_for_omega_0_point_8_omega_pe = "2.26016865e-7"; //0.8^2 * 4*pi*(q_e^2 / m_e), Figs 10-11 caption "ω = 0.8*ω_{pe}", ω_{pe} = (4*pi*(n_e=n)*(q_e^2))/(m_e), see "III. PROPAGATION MODES", https://www.bing.com/search?q=(((-1.6e-19)%5E2)%2F(9.109382902843941771e-31))*(.8%5E2)*(4*pi)&qs=n&form=QBRE&sp=-1&lq=0&pq=(((-1.6e-19)%5E2)%2F(9.109382902843941771e-31))*(.8%5E2)*(4*pi)&sc=0-57&sk=&cvid=E84D46D8A3F04F38ABE1297CC3515859
+        //constexpr const char* omega_squared_factor = omega_squared_factor_for_omega_0_point_8_omega_pe;
+        //constexpr const char* cs_squared_factor_for_rho_i_1_over_1836_v_te_0_point_05c_v_ti_0_point_001c = "2.12255036e11"; //(2.99792458e8*2.99792458e8)*(((.05*.05)/1836) + (.001*.001)), https://www.bing.com/search?q=(2.99792458e8*2.99792458e8)*(((.05*.05)%2F1836)%20%2B%20(.001*.001))&qs=n&form=QBRE&sp=-1&lq=0&pq=(2.99792458e8*2.99792458e8)*(((.05*.05)%2F1836)%20%2B%20(.001*.001))&sc=0-60&sk=&cvid=A05685C4D5D440BC9810452F04051A5E
+        //constexpr const char* cs_squared = cs_squared_factor_for_rho_i_1_over_1836_v_te_0_point_05c_v_ti_0_point_001c;
+        //constexpr const char* alpha_0 = "0";
+        //constexpr const char* alpha = alpha_0;
+        //constexpr const char* one_plus_rho_i_times_alpha_for_rho_i_1_over_1836_alpha_0 = "1"; //1 + ρ_i*0 = 1
+        //constexpr const char* one_plus_rho_i_times_alpha = one_plus_rho_i_times_alpha_for_rho_i_1_over_1836_alpha_0; //1 + ρ_i*α
+    */
+
+    /*
+      For parameters below (first 6 equations only)
+        - Best score = 5.1745, SNE = 3.46556
+        - Best expression = arccos((0.000004 ^ sech(x0))), exp(~(sin(cos(x0))))
+        - Best expression (original format) = 0.000004 x0 sech ^ arccos, x0 cos sin ~ exp
+
+      For parameters below (first 8 equations)
+        - Best score = 7.99935, SNE = 0.000654101
+        - Best expression = (1 / (-10.594090 / arcsin(sech(x0)))), cos((sech(x0) - (cos(1) - sech(x0))))
+        - Best expression (original format) = 1 -10.594090 x0 sech arcsin / /, x0 sech 1 cos x0 sech - - cos
+
+      For parameters below (all 10 equations)
+        - Best score = 9.99802, SNE = 0.00198078
+        - Best expression = (cos(1.559132) * sech((x0 * 0.774245))), sech((sech(x0) * (0.157922 ^ cos(4))))
+        - Best expression (original format) = 1.559132 cos x0 0.774245 * sech *, x0 sech 0.157922 4 cos ^ * sech
+
+      For parameters below (first 6 equations and last 3 equations WITH `const0`)
+        - Best score = 9.99802, SNE = 0.00198078
+        - Best expression = (cos(1.559132) * sech((x0 * 0.774245))), sech((sech(x0) * (0.157922 ^ cos(4))))
+        - Best expression (original format) = 1.559132 cos x0 0.774245 * sech *, x0 sech 0.157922 4 cos ^ * sech
+
+     For parameters below (same configuration as the one right above but adding `10 *` at the end of last equation and changing threshold `this->isConstTol` to 0.001 instead of 0 and changing `^ 2` to `abs` in last 3 equations
+        - Best score = 8.94096, SNE = 0.0602338
+        - Best expression = (tanh(tanh(sech(x0))) / (-6.466281 - (tanh(x0) / 2.616570))), sech((3.235163 * (sech(x0) ^ 0.964028)))
+        - Best expression (original format) = x0 sech tanh tanh -6.466281 x0 tanh 2.616570 / - /, 3.235163 x0 sech 0.964028 ^ * sech
+        - Best differential equation parameters = {(const0, 5.23438)}
+        - Best expression parameters = {}
+            - Equation 1 SNE: 0.0206838
+            - Equation 2 SNE: 2.59327e-10
+            - Equation 3 SNE: 1.5193e-08
+            - Equation 4 SNE: 9.7235e-09
+            - Equation 5 SNE: 1.5193e-08
+            - Equation 6 SNE: 9.7235e-09
+            - Equation 7 SNE: 0
+            - Equation 8 SNE: 0.021413
+            - Equation 9 SNE: 0.0178037
+    */
+    constexpr const char* rho = "0.000544662309"; // 1/1836, Figs 10-11 caption, https://www.bing.com/search?q=9.1e-31%2F%201.67e-27%20&qs=n&form=QBRE&sp=-1&ghc=1&lq=0&pq=9.1e-31%2F%201.67e-27%20&sc=0-18&sk=&cvid=09FAD78B6CC6414E98D1BED802D49D1C
+    constexpr const char* omega_squared_factor_for_omega_0_point_8_omega_pe = "0.64"; //0.8^2 ω_{pe} = 0.64 ω_{pe}, Figs 10-11 caption "ω = 0.8*ω_{pe}", ω_{pe} = (4*pi*(n_e=n)*(q_e^2))/(m_e), see "III. PROPAGATION MODES"
+    constexpr const char* omega_squared_factor = omega_squared_factor_for_omega_0_point_8_omega_pe;
+    constexpr const char* cs_squared_factor_for_rho_i_1_over_1836_v_te_0_point_05c_v_ti_0_point_001c = "2.36165577e-6"; //Figure 10: (((.05*.05)/1836) + (.001*.001)), https://www.bing.com/search?q=(((.05*.05)%2F1836)%20%2B%20(.001*.001))&qs=n&form=QBRE&sp=-1&lq=0&pq=(((.05*.05)%2F1836)%20%2B%20(.001*.001))&sc=1-32&sk=&cvid=C563F2D3B3AB42BAA438BCD2FAF6F307&ajf=10
+    constexpr const char* cs_squared = cs_squared_factor_for_rho_i_1_over_1836_v_te_0_point_05c_v_ti_0_point_001c;
+    constexpr const char* alpha_0 = "0.4";
+    constexpr const char* alpha = alpha_0;
+//    constexpr const char* one_plus_rho_i_times_alpha_for_rho_i_1_over_1836_alpha_0 = "1.0002178649237472767"; //1 + ρ_i*0.4 = 1.0002178649237472767
+////    constexpr const char* one_plus_rho_i_times_alpha = one_plus_rho_i_times_alpha_for_rho_i_1_over_1836_alpha_0; //1 + ρ_i*α
+    constexpr const char* const0 = "5.22145";
+//    constexpr const char* const0 = "const0";
+//    std::string infty = std::numeric_limits<float>::infinity();
+
+    if (x.expression_type == "prefix")
+    {
+        throw std::invalid_argument("Prefix not implemented yet for this SolitonWaveFengEq14and15Laser function!");
+    }
+    else if (x.expression_type == "postfix")
+    {
+        //u tanh 1 u sech / α - * ∂^2/∂ξ^2 ω_squared_factor n * u tanh 1 u sech / α - * * + n 1 ρ_i α * + / u tanh 1 ρ_i u sech / + * * -
+        for (const std::string& i: x.pieces[0]) // u
+        {
+            temp.push_back(i);
+        }
+        temp.push_back("tanh"); // tanh
+        temp.push_back("1"); // 1
+        for (const std::string& i: x.pieces[0]) // u
+        {
+            temp.push_back(i);
+        }
+        temp.push_back("sech"); // sech
+        temp.push_back("/"); // /
+        temp.push_back(alpha); // α
+        temp.push_back("-"); // -
+        temp.push_back("*"); // *
+        //temp now contains: u tanh 1 u sech / α - *
+        x.derivePostfix(0, temp.size()-1, "x0", temp, grasp);
+        temp_prime = x.derivat;
+        x.derivePostfix(0, temp_prime.size()-1, "x0", temp_prime, grasp);
+        for (const std::string& i: x.derivat) // u tanh 1 u sech / α - * ∂^2/∂ξ^2
+        {
+            results[0].push_back(i);
+        }
+        results[0].push_back(omega_squared_factor); // ω_squared_factor
+        for (const std::string& i: x.pieces[1]) // n
+        {
+            results[0].push_back(i);
+        }
+        results[0].push_back("*"); // *
+        for (const std::string& i: temp) // u tanh 1 u sech / α - *
+        {
+            results[0].push_back(i);
+        }
+        results[0].push_back("*"); // *
+        results[0].push_back("+"); // +
+        for (const std::string& i: x.pieces[1]) // n
+        {
+            results[0].push_back(i);
+        }
+        results[0].push_back("1"); // 1
+        results[0].push_back(rho); // ρ_i
+        results[0].push_back(alpha); // α
+        results[0].push_back("*"); // *
+        results[0].push_back("+"); // +
+        results[0].push_back("/"); // /
+        for (const std::string& i: x.pieces[0]) // u
+        {
+            results[0].push_back(i);
+        }
+        results[0].push_back("tanh"); // tanh
+        results[0].push_back("1"); // 1
+        results[0].push_back(rho); // ρ_i
+        for (const std::string& i: x.pieces[0]) // u
+        {
+            results[0].push_back(i);
+        }
+        results[0].push_back("sech"); // sech
+        results[0].push_back("/"); // /
+        results[0].push_back("+"); // +
+        results[0].push_back("*"); // *
+        results[0].push_back("*"); // *
+        results[0].push_back("-"); // -
+        //c_s_squared n ln * ρ_i 1 1 u sech / - α 2 / u tanh 2 ^ * + ρ_i u tanh 1 u sech / α - * 2 ^ * 2 1 ρ_i α * + * / - * -
+        results[1].push_back(cs_squared); // c_s_squared
+        for (const std::string& i: x.pieces[1]) // n
+        {
+            results[1].push_back(i);
+        }
+        results[1].push_back("ln"); // ln
+        results[1].push_back("*"); // *
+        results[1].push_back(rho); // ρ_i
+        results[1].push_back("1"); // 1
+        results[1].push_back("1"); // 1
+        for (const std::string& i: x.pieces[0]) // u
+        {
+            results[1].push_back(i);
+        }
+        results[1].push_back("sech"); // sech
+        results[1].push_back("/"); // /
+        results[1].push_back("-"); // -
+        results[1].push_back(alpha); // α
+        results[1].push_back("2"); // 2
+        results[1].push_back("/"); // /
+        for (const std::string& i: x.pieces[0]) // u
+        {
+            results[1].push_back(i);
+        }
+        results[1].push_back("tanh"); // tanh
+        results[1].push_back("2"); // 2
+        results[1].push_back("^"); // ^
+        results[1].push_back("*"); // *
+        results[1].push_back("+"); // +
+        results[1].push_back(rho); // ρ_i
+        for (const std::string& i: temp) // u tanh 1 u sech / α - *
+        {
+            results[1].push_back(i);
+        }
+        results[1].push_back("2"); // 2
+        results[1].push_back("^"); // ^
+        results[1].push_back("*"); // *
+        results[1].push_back("2"); // 2
+        results[1].push_back("1"); // 1
+        results[1].push_back(rho); // ρ_i
+        results[1].push_back(alpha); // α
+        results[1].push_back("*"); // *
+        results[1].push_back("+"); // +
+        results[1].push_back("*"); // *
+        results[1].push_back("/"); // /
+        results[1].push_back("-"); // -
+        results[1].push_back("*"); // *
+        results[1].push_back("-"); // -
+        //u(ξ_min) tanh 1 u(ξ_min) sech / α const0 * - *
+        assert(results[2].size() == 0);
+        size_t temp_idx = 0;
+        for (const std::string& i: temp) //u(ξ_min) tanh 1 u(ξ_min) sech / α const0 * - *
+        {
+            if (i == "x0")
+            {
+                results[2].push_back(x.feature_mins_maxes[i].first);
+            }
+            else if ((i == alpha) && (temp_idx==temp.size() - 3))
+            {
+                results[2].push_back(alpha);
+                results[2].push_back(const0);
+                results[2].push_back("*");
+            }
+            else
+            {
+                results[2].push_back(i);
+            }
+            temp_idx++;
+        } //u tanh 1 u sech / α - *
+//        if ((2+temp.size()) != results[2].size())
+//        {
+//            std::scoped_lock error_lock(Board::thread_locker);
+//            std::cout << "\ntemp = " << temp << "\nresults[2] = " << results[2] << '\n';
+//            throw std::runtime_error(std::string("temp.size() = ")+std::to_string(temp.size())+", results[2].size() = "
+//                                     + std::to_string(results[2].size())+"\n");
+//        }
+        assert((2+temp.size()) == results[2].size()); //sanity check
+        //u(ξ_max) tanh 1 u(ξ_max) sech / α const0 * - *
+        temp_idx = 0;
+        for (const std::string& i: temp) // u(ξ_max) tanh 1 u(ξ_max) sech / α const0 * - *
+        {
+            if (i == "x0")
+            {
+                results[3].push_back(x.feature_mins_maxes[i].second);
+            }
+            else if ((i == alpha) && (temp_idx==temp.size() - 3))
+            {
+                results[3].push_back(alpha);
+                results[3].push_back(const0);
+                results[3].push_back("*");
+            }
+            else
+            {
+                results[3].push_back(i);
+            }
+            temp_idx++;
+        }
+        assert((2+temp.size()) == results[3].size()); //sanity check
+        //1 u(ξ_min) sech / α const0 * u(ξ_min) sech 2 ^ * - ∂u(x_min)/∂ξ *
+        results[4].push_back("1"); // 1
+        for (const std::string& i: x.pieces[0]) // u
+        {
+            if (i == "x0")
+            {
+                results[4].push_back(x.feature_mins_maxes[i].first);
+            }
+            else
+            {
+                results[4].push_back(i);
+            }
+        }
+        results[4].push_back("sech"); // sech
+        results[4].push_back("/"); // /
+        results[4].push_back(alpha); // α
+        results[4].push_back(const0); // const0
+        results[4].push_back("*"); // *
+        for (const std::string& i: x.pieces[0]) // u
+        {
+            if (i == "x0")
+            {
+                results[4].push_back(x.feature_mins_maxes[i].first);
+            }
+            else
+            {
+                results[4].push_back(i);
+            }
+        }
+        results[4].push_back("sech"); // sech
+        results[4].push_back("2"); // 2
+        results[4].push_back("^"); // ^
+        results[4].push_back("*"); // *
+        results[4].push_back("-"); // -
+        x.derivePostfix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
+        //now `x.derivat` stores ∂u/∂ξ
+        for (const std::string& i: x.derivat) // ∂u(x_min)/∂ξ
+        {
+            if (i == "x0")
+            {
+                results[4].push_back(x.feature_mins_maxes[i].first);
+            }
+            else
+            {
+                results[4].push_back(i);
+            }
+        }
+        results[4].push_back("*"); // *
+        //1 u(ξ_max) sech / α const0 * u(ξ_max) sech 2 ^ * - ∂u(x_max)/∂ξ *
+        results[5].push_back("1"); // 1
+        for (const std::string& i: x.pieces[0]) // u(ξ_max)
+        {
+            if (i == "x0")
+            {
+                results[5].push_back(x.feature_mins_maxes[i].second);
+            }
+            else
+            {
+                results[5].push_back(i);
+            }
+        }
+        results[5].push_back("sech"); // sech
+        results[5].push_back("/"); // /
+        results[5].push_back(alpha); // α
+        results[5].push_back(const0); // const0
+        results[5].push_back("*"); // *
+        for (const std::string& i: x.pieces[0]) // u(ξ_max)
+        {
+            if (i == "x0")
+            {
+                results[5].push_back(x.feature_mins_maxes[i].second);
+            }
+            else
+            {
+                results[5].push_back(i);
+            }
+        }
+        results[5].push_back("sech"); // sech
+        results[5].push_back("2"); // 2
+        results[5].push_back("^"); // ^
+        results[5].push_back("*"); // *
+        results[5].push_back("-"); // -
+        for (const std::string& i: x.derivat) // ∂u(x_max)/∂ξ
+        {
+            if (i == "x0")
+            {
+                results[5].push_back(x.feature_mins_maxes[i].second);
+            }
+            else
+            {
+                results[5].push_back(i);
+            }
+        }
+        results[5].push_back("*"); // *
+        //u tanh 1 u sech / α - * 2 ^
+//        for (const std::string& i: temp) // u tanh 1 u sech / α - *
+//        {
+//            results[6].push_back(i);
+//        }
+//        results[6].push_back("2");
+//        results[6].push_back("^");
+        //n(ξ) n(-ξ) - 2 ^
+        //n(ξ) n(-ξ) - abs
+        for (const std::string& i: x.pieces[1]) //n(ξ)
+        {
+            results[6].push_back(i);
+        }
+        for (const std::string& i: x.pieces[1]) //n(-ξ)
+        {
+            results[6].push_back(i);
+            if (i == "x0")
+            {
+                results[6].push_back("~");
+            }
+        }
+        results[6].push_back("-");
+        //results[6].push_back("2");
+        //results[6].push_back("^");
+        results[6].push_back("abs");
+        //n(ξ) 1 / 1 - x1 - 2 ^
+        //n(ξ) 1 / 1 - x1 - abs
+        for (const std::string& i: x.pieces[1]) //n(ξ)
+        {
+            results[7].push_back(i);
+        }
+        results[7].push_back("1");
+        results[7].push_back("/");
+        results[7].push_back("1");
+        results[7].push_back("-");
+        results[7].push_back("x1");
+        results[7].push_back("-");
+        //results[7].push_back("2");
+        //results[7].push_back("^");
+        results[7].push_back("abs");
+        //u tanh 1 u sech / α const0 * - * x2 - abs 10 *
+        temp_idx = 0;
+        for (const std::string& i: temp) // u tanh 1 u sech / α const0 * - *
+        {
+            results[8].push_back(i);
+            if ((i == alpha) && (temp_idx==temp.size() - 3))
+            {
+                results[8].push_back(const0);
+                results[8].push_back("*");
+            }
+            temp_idx++;
+        }
+        results[8].push_back("x2");
+        results[8].push_back("-");
+        //results[8].push_back("2");
+        //results[8].push_back("^");
+        results[8].push_back("abs");
+        results[8].push_back("10");
+        results[8].push_back("*");
+    }
+//    results[0] = results[8];
+//    results.resize(1);
+    return results;
+}
 
 std::vector<std::vector<std::string>> VortexRadialProfile(Board& x, bool fit)
 {
@@ -5877,7 +6358,7 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 
 {x0: r, x1: θ}
 {x.pieces[0]: f}
- 
+
  This version will return the evaluated expression
  in a hopefully more efficient way.
 */
@@ -5892,7 +6373,7 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
     thread_local std::vector<int> grasp;
     grasp.clear();
     grasp.reserve(500);
-    
+
     std::string mu = "1"; //"const0"; //
     std::string nu = "1"; //"const1"; //
     std::string infty = std::to_string(DBL_MAX);
@@ -5901,9 +6382,9 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
     {
         throw std::invalid_argument("Prefix not implemented yet for this SwiftHohenberg function!");
     }
+    //TODO: Here we're just at the tip of the iceberg, we're storing results for one evaluation of the system that are used repeatedly, but many parts of this system do not change as f changes, so they can be computed just once!
     else if (x.expression_type == "postfix")
     {
-        //TODO: Handle Fit = false and Fit = True separately
         //μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -
         result.push_back(mu); // μ
         if (fit)
@@ -6606,7 +7087,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                         const std::vector<std::vector<std::string>>& seed_expressions = {},
                         bool exit_early = false,
                         int custom_rand_seed = -1,
-                        const char* MSE_file_name = "")
+                        const char* SNE_file_name = "")
 {
     assert(simplifyOriginal == false);
     if (num_threads == 0)
@@ -6614,6 +7095,16 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
         unsigned int temp = std::thread::hardware_concurrency();
         num_threads = ((temp <= 1) ? 1 : temp);
         printf("num_threads = %u\n", num_threads);
+    }
+    if ( ((RANDOM_SEED >= 0) || (custom_rand_seed >= 0)) && (num_threads > 1))
+    {
+        std::cout << "Warning, fixing the random seed will make every thread do the same annealing.\nDo you want to continue anyway (y/n)? ";
+        char ans;
+        std::cin >> ans;
+        if ((ans != 'y') && (ans != 'Y'))
+        {
+            exit(1);
+        }
     }
     if (exit_early)
     {
@@ -6635,16 +7126,16 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
      Outside of thread:
     */
     std::atomic<double> max_score{0.0};
-    std::atomic<double> best_MSE{DBL_MAX};
+    std::atomic<double> best_SNE{DBL_MAX};
     std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
-    std::vector<double> best_mse_vec;
+    std::vector<double> best_sne_vec;
 
     auto start_time = Clock::now();
 
     /*
      Inside of thread:
      */
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &seed_expressions, &exit_early, &custom_rand_seed, &best_MSE, &best_mse_vec]()
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &seed_expressions, &exit_early, &custom_rand_seed, &best_SNE, &best_sne_vec]()
     {
         std::random_device rand_dev;
         #if RANDOM_SEED < 0
@@ -6663,6 +7154,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
         assert(secondary.pieces.size() == secondary.n.size());
         assert(secondary.pieces.size() == x.pieces.size());
         assert(secondary.pieces.size() == x.n.size());
+        assert(secondary.num_objectives == x.num_objectives);
         double score = 0.0, check_point_score = 0.0;
 
         std::vector<std::vector<std::string>> current(depth.size());
@@ -6676,10 +7168,12 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
 
         size_t temp_sz;
 //        std::string expression, orig_expression, best_expression;
-        constexpr double T_max = 1.;
-        constexpr double T_min = 0.012;
-        constexpr double ratio = T_min/T_max;
+        constexpr double T_max = 0.0;
+        constexpr double T_min = 0.0;
+        assert((T_max >= T_min) && (T_max >= 0.0) && (T_min >= 0.0));
+        constexpr double ratio = (T_max > 0.0) ? (T_min/T_max) : std::numeric_limits<double>::infinity();
         double T = T_max;
+        bool update_current = false;
 
         auto P = [&](double delta)
         {
@@ -6689,23 +7183,27 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
         auto updateScore = [&](double r = 1.0)
         {
 //            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
-            if ((score > max_score) || (x.pos_dist(generator) < P(score-max_score)) || (exit_early))
+            update_current = ((score > max_score)
+                              || ((T > 0.0) ? (x.pos_dist(generator) < P(score-max_score)) : false)
+                              || (exit_early));
+
+            if (update_current)
             {
                 current = x.pieces; //update current expression
-                if ((score > max_score) || (exit_early))
+                if ((score > max_score) || exit_early)
                 {
                     max_score = score;
                     std::scoped_lock str_lock(Board::thread_locker);
-                    best_MSE = x.MSE_curr;
-                    best_mse_vec = x.MSE_curr_vec;
+                    best_SNE = x.SNE_curr;
+                    best_sne_vec = x.SNE_curr_vec;
                     best_expression = x._to_infix();
                     orig_expression = x.expression();
                     best_expr_result = x._to_infix(x.diffeq_result);
                     orig_expr_result = x.expression(x.diffeq_result);
                     std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
                     std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-                    std::cout << "Best score = " << score << ", MSE = " << best_MSE << '\n';
-                    std::cout << "Mean-squared error for each equation: " << best_mse_vec << '\n';
+                    std::cout << "Best score = " << score << ", SNE = " << best_SNE << '\n';
+                    std::cout << "Mean-squared error for each equation: " << best_sne_vec << '\n';
                     std::cout << "Best expression = " << best_expression << '\n';
                     std::cout << "Best expression (original format) = " << orig_expression << '\n';
                     std::cout << "Best differential equation parameters = " << x.print_diff_params() << '\n';
@@ -6736,14 +7234,14 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                         if (int_suffix.size())
                         {
                             int int_suffix_num = std::stoi(int_suffix);
-                            if (int_suffix_num >= x.num_consts_diff) //then it's a const that belongs EXCLUSIVELY to pieces -> reset it
+                            if (int_suffix_num >= static_cast<int>(x.num_consts_diff)) //then it's a const that belongs EXCLUSIVELY to pieces -> reset it
                             {
                                 token = "const";
                             }
                             else
                             {
                                 //Below we test that token is of the form `const{0 <= num < x.num_consts_diff}`
-                                assert(((0 <= int_suffix_num) && (int_suffix_num < x.num_consts_diff)));
+                                assert(((0 <= int_suffix_num) && (int_suffix_num < static_cast<int>(x.num_consts_diff))));
                             }
                         }
                     }
@@ -6757,6 +7255,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
             //Step 1: Generate a random depth-n sub-expression `secondary_one.pieces`
             sub_exprs.clear();
             secondary.n = n;
+
             for (int jdx = 0; jdx < secondary.num_objectives; jdx++)
             {
                 //Pre-validation: clears and sanity check
@@ -6814,10 +7313,15 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                         //Step 2b: Else, start by identifying the starting and stopping index pairs of all depth `secondary.n[jdx] sub-expressions
                         //in `x.pieces[jdx]` and store them in an std::vector<std::pair<int, int>> called `sub_exprs`.
                         secondary.get_indices(sub_exprs, x.pieces[jdx], jdx); //TODO: Change this so that it actually chooses the larger tree of the two to swap from so we can still simplify and reduce chances of floating point bs.
-                        assert ((sub_exprs.size()) && ("sub_exprs empty, x.n["
-                           + std::to_string(jdx) + "] = " + std::to_string(x.n[jdx])
-                           + ", secondary.n[" + std::to_string(jdx)+ "] = " + std::to_string(secondary.n[jdx])).c_str());
-                        assert((secondary.n[jdx] <= x.n[jdx]) && ("(secondary.n[jdx] > x.n[jdx]), x.n[" + std::to_string(jdx) + "] = "+ std::to_string(x.n[jdx]) + ", secondary.n[" + std::to_string(jdx)+ "] = " + std::to_string(secondary.n[jdx])).c_str());
+
+//                        if (!sub_exprs.size())
+//                        {
+//                            throw std::runtime_error(("sub_exprs empty, x.n["
+//                           + std::to_string(jdx) + "] = " + std::to_string(x.n[jdx])
+//                           + ", secondary.n[" + std::to_string(jdx)+ "] = " + std::to_string(secondary.n[jdx])));
+//                        }
+                        assert ((sub_exprs.size()));
+                        assert((secondary.n[jdx] <= x.n[jdx]));
                         //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `pert_ind`
                         std::uniform_int_distribution<int> distribution(0, sub_exprs.size() - 1);
                         int pert_ind = distribution(generator);
@@ -6829,12 +7333,13 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                         x.pieces[jdx].insert(start, secondary.pieces[jdx].begin(), secondary.pieces[jdx].end()); //could be a move operation: secondary.pieces doesn't need to be in a defined state after this->params, or erase+insert -> replace?
                         assert(x.pieces[jdx].size() && x.pieces.size());
                         auto depth_and_completion = ((x.expression_type == "prefix") ? x.getPNdepth(x.pieces[jdx], jdx) : x.getRPNdepth(x.pieces[jdx], jdx));
-                        if (depth_and_completion.first != x.n[jdx])
-                        {
-                            throw std::runtime_error("(depth_and_completion.first != x.n[jdx]), x.n["+std::to_string(jdx)+"] = "+std::to_string(x.n[jdx])
-                                                     + ", secondary.n[" +std::to_string(jdx)+ "] = " +std::to_string(secondary.n[jdx])
-                                                     + ", depth_and_completion.first = "+std::to_string(depth_and_completion.first));
-                        }
+//                        if (depth_and_completion.first != x.n[jdx])
+//                        {
+//                            throw std::runtime_error("(depth_and_completion.first != x.n[jdx]), x.n["+std::to_string(jdx)+"] = "+std::to_string(x.n[jdx])
+//                                                     + ", secondary.n[" +std::to_string(jdx)+ "] = " +std::to_string(secondary.n[jdx])
+//                                                     + ", depth_and_completion.first = "+std::to_string(depth_and_completion.first));
+//                        }
+                        assert(depth_and_completion.first == x.n[jdx]);
                     }
                 }
                 //Step 5: Reset const token labels in pieces
@@ -6844,10 +7349,11 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                 }
                 //Step 6: Evaluate the new mutated `x.pieces` and update score if needed
                 score = x.complete_status(x.pieces.size() - 1, false);
-                if (score < 0.0)
-                {
-                    throw(std::runtime_error("score = "+std::to_string(score)));
-                }
+//                if (score < 0.0)
+//                {
+//                    throw(std::runtime_error("score = "+std::to_string(score)));
+//                }
+                assert(score >= 0.0);
 //                updateScore(pow(ratio, 1.0/(i+1.0)));
                 updateScore(0.9);
             }
@@ -6862,13 +7368,10 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                 {
                     temp_legal_moves = x.get_legal_moves(jdx); //the legal moves
                     temp_sz = temp_legal_moves.size(); //the number of legal moves
-
                     assert(temp_sz);
                     std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
-                    {
-                        x.pieces[jdx].emplace_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
-                        current[jdx].push_back(x.pieces[jdx].back());
-                    }
+                    x.pieces[jdx].emplace_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
+                    current[jdx].push_back(x.pieces[jdx].back());
                 }
                 auto depth_and_completion = ((x.expression_type == "prefix") ? x.getPNdepth(x.pieces[jdx], jdx) : x.getRPNdepth(x.pieces[jdx], jdx));
                 assert(depth_and_completion.first == x.n[jdx]);
@@ -6880,11 +7383,12 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
         }
         else
         {
-            assert(x.pieces.size() == x.num_objectives);
+            assert(x.pieces.size() == decltype(x.pieces.size())(x.num_objectives));
             for (int jdx = 0; jdx < x.num_objectives; jdx++)
             {
                 x.pieces[jdx] = seed_expressions[jdx];
-                all_check(x.pieces[jdx]);
+                current[jdx] = seed_expressions[jdx];
+                assert(all_check(x.pieces[jdx]));
                 auto depth_and_completion = ((x.expression_type == "prefix") ? x.getPNdepth(x.pieces[jdx], jdx) : x.getRPNdepth(x.pieces[jdx], jdx));
                 assert((depth_and_completion.first <= x.n[jdx]) && ("Seed expression depth of x.pieces[" + std::to_string(jdx) + "] = " + std::to_string(depth_and_completion.first)).c_str());
                 assert(depth_and_completion.second);
@@ -6892,19 +7396,21 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                 rand_depth_dists[jdx] = std::uniform_int_distribution<int>(0, x.n[jdx]);
                 assert(x.pieces[jdx].size());
             }
-            assert((x.pieces.size() == x.num_objectives) && (x.pieces.size()));
+            assert(all_checks(x.pieces));
+            assert((x.pieces.size() == static_cast<decltype(x.pieces.size())>(x.num_objectives)) && (x.pieces.size()));
             score = x.complete_status(x.pieces.size() - 1, false);
             //std::cout << "score = " << score << '\n';
         }
         reset_const_token_labels();
-        updateScore();
+        updateScore(1.0);
+        assert(all_checks(x.pieces));
         if (exit_early)
         {
             exit(1);
         }
         for (double i = 0; (timeElapsedSince(start_time) < time); i++)
         {
-            if (i && (static_cast<int>(i)%50000 == 0))
+            if ((T > 0.0) && i && (static_cast<int>(i)%50000 == 0))
             {
 //                std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
                 if (check_point_score == max_score)
@@ -6917,10 +7423,16 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                 }
                 check_point_score = max_score;
             }
+            else if (i && (static_cast<int>(i)%1000000 == 0))
+            {
+                std::scoped_lock progress_lock(Board::thread_locker);
+                std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+            }
             for (int jdx = 0; jdx < x.num_objectives; jdx++)
             {
                 rand_depths[jdx] = rand_depth_dists[jdx](generator);
             }
+            assert(all_checks(x.pieces));
             Perturbation(rand_depths, i);
         }
     };
@@ -6937,15 +7449,15 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
 
     std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
     std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-    std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
-    if (strlen(MSE_file_name))
+    std::cout << "Best score = " << max_score << ", SNE = " << best_SNE << '\n';
+    if (strlen(SNE_file_name))
     {
         // Open file in append mode
-        std::ofstream out(MSE_file_name, std::ios::app);
-        out << best_mse_vec << '\n';
+        std::ofstream out(SNE_file_name, std::ios::app);
+        out << best_sne_vec << '\n';
         out.close();
     }
-    std::cout << "Mean-squared error for each equation: " << best_mse_vec << '\n';
+    std::cout << "Mean-squared error for each equation: " << best_sne_vec << '\n';
     std::cout << "Best expression = " << best_expression << '\n';
     std::cout << "Best expression (original format) = " << orig_expression << '\n';
     std::cout << "Best diff result = " << best_expr_result << '\n';
@@ -6968,7 +7480,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
 //     Outside of thread:
 //     */
 //    std::atomic<double> max_score{0.0};
-//    std::atomic<double> best_MSE{DBL_MAX};
+//    std::atomic<double> best_SNE{DBL_MAX};
 //    std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
 //
 //    auto start_time = Clock::now();
@@ -6977,7 +7489,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
 //     Inside of thread:
 //     */
 //
-//    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &best_MSE]()
+//    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &best_SNE]()
 //    {
 //        std::random_device rand_dev;
 //        std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
@@ -7005,13 +7517,13 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
 //            {
 //                max_score = score;
 //                std::scoped_lock str_lock(Board::thread_locker);
-//                best_MSE = x.MSE_curr;
+//                best_SNE = x.SNE_curr;
 //                best_expression = x._to_infix();
 //                orig_expression = x.expression();
 //                best_expr_result = x._to_infix(x.diffeq_result);
 //                orig_expr_result = x.expression(x.diffeq_result);
 //                std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
-//                std::cout << "Best score = " << score << ", MSE = " << best_MSE << '\n';
+//                std::cout << "Best score = " << score << ", SNE = " << best_SNE << '\n';
 //                std::cout << "Best expression = " << best_expression << '\n';
 //                std::cout << "Best expression (original format) = " << orig_expression << '\n';
 //                std::cout << "Best diff result = " << best_expr_result << '\n';
@@ -7229,7 +7741,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
 //
 //    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
 //    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-//    std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
+//    std::cout << "Best score = " << max_score << ", SNE = " << best_SNE << '\n';
 //    std::cout << "Best expression = " << best_expression << '\n';
 //    std::cout << "Best expression (original format) = " << orig_expression << '\n';
 //    std::cout << "Best diff result = " << best_expr_result << '\n';
@@ -7252,7 +7764,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
 //     */
 //
 //    std::atomic<double> max_score{0.0};
-//    std::atomic<double> best_MSE{DBL_MAX};
+//    std::atomic<double> best_SNE{DBL_MAX};
 //    std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
 //
 //    auto start_time = Clock::now();
@@ -7261,7 +7773,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
 //     Inside of thread:
 //     */
 //
-//    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &best_MSE]()
+//    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &best_SNE]()
 //    {
 //        std::random_device rand_dev;
 //        std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
@@ -7370,12 +7882,12 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
 //                }
 //                max_score = score;
 //                std::scoped_lock str_lock(Board::thread_locker);
-//                best_MSE = x.MSE_curr;
+//                best_SNE = x.SNE_curr;
 //                best_expression = x._to_infix();
 //                orig_expression = x.expression();
 //                best_expr_result = x._to_infix(x.diffeq_result);
 //                orig_expr_result = x.expression(x.diffeq_result);
-//                std::cout << "Best score = " << score << ", MSE = " << best_MSE << '\n';
+//                std::cout << "Best score = " << score << ", SNE = " << best_SNE << '\n';
 //                std::cout << "Best expression = " << best_expression << '\n';
 //                std::cout << "Best expression (original format) = " << orig_expression << '\n';
 //                std::cout << "Best diff result = " << best_expr_result << '\n';
@@ -7398,7 +7910,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
 //
 //    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
 //    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-//    std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
+//    std::cout << "Best score = " << max_score << ", SNE = " << best_SNE << '\n';
 //    std::cout << "Best expression = " << best_expression << '\n';
 //    std::cout << "Best expression (original format) = " << orig_expression << '\n';
 //    std::cout << "Best diff result = " << best_expr_result << '\n';
@@ -7421,7 +7933,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
 //     Outside of thread:
 //     */
 //    std::atomic<double> max_score{0.0};
-//    std::atomic<double> best_MSE{DBL_MAX};
+//    std::atomic<double> best_SNE{DBL_MAX};
 //
 //    std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
 //
@@ -7435,7 +7947,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
 //    boost::concurrent_flat_map<std::string, boost::concurrent_flat_map<std::string, int>> Nsa;
 //    boost::concurrent_flat_map<std::string, int> Ns;
 //
-//    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &best_MSE, &Qsa, &Nsa, &Ns]()
+//    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &best_SNE, &Qsa, &Nsa, &Ns]()
 //    {
 //        std::random_device rand_dev;
 //        std::mt19937 thread_local generator(rand_dev());
@@ -7628,7 +8140,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
 //            {
 //                max_score = score;
 //                std::scoped_lock str_lock(Board::thread_locker);
-//                best_MSE = x.MSE_curr;
+//                best_SNE = x.SNE_curr;
 //                best_expression = x._to_infix();
 //                orig_expression = x.expression();
 //                best_expr_result = x._to_infix(x.diffeq_result);
@@ -7651,7 +8163,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
 //
 //    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
 //    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-//    std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
+//    std::cout << "Best score = " << max_score << ", SNE = " << best_SNE << '\n';
 //    std::cout << "Best expression = " << best_expression << '\n';
 //    std::cout << "Best expression (original format) = " << orig_expression << '\n';
 //    std::cout << "Best diff result = " << best_expr_result << '\n';
@@ -7674,7 +8186,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
 //     Outside of thread:
 //     */
 //    std::atomic<double> max_score{0.0};
-//    std::atomic<double> best_MSE{DBL_MAX};
+//    std::atomic<double> best_SNE{DBL_MAX};
 //    std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
 //
 //    auto start_time = Clock::now();
@@ -7683,7 +8195,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
 //     Inside of thread:
 //     */
 //
-//    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &best_MSE]()
+//    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &best_SNE]()
 //    {
 //        std::random_device rand_dev;
 //        std::mt19937 thread_local generator(rand_dev());
@@ -7792,13 +8304,13 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
 //            {
 //                max_score = score;
 //                std::scoped_lock str_lock(Board::thread_locker);
-//                best_MSE = x.MSE_curr;
+//                best_SNE = x.SNE_curr;
 //                best_expression = x._to_infix();
 //                orig_expression = x.expression();
 //                best_expr_result = x._to_infix(x.diffeq_result);
 //                orig_expr_result = x.expression(x.diffeq_result);
 //                std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
-//                std::cout << "Best score = " << score << ", MSE = " << best_MSE << '\n';
+//                std::cout << "Best score = " << score << ", SNE = " << best_SNE << '\n';
 //                std::cout << "Best expression = " << best_expression << '\n';
 //                std::cout << "Best expression (original format) = " << orig_expression << '\n';
 //                std::cout << "Best diff result = " << best_expr_result << '\n';
@@ -7821,7 +8333,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
 //
 //    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
 //    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-//    std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
+//    std::cout << "Best score = " << max_score << ", SNE = " << best_SNE << '\n';
 //    std::cout << "Best expression = " << best_expression << '\n';
 //    std::cout << "Best expression (original format) = " << orig_expression << '\n';
 //    std::cout << "Best diff result = " << best_expr_result << '\n';
@@ -7859,9 +8371,9 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
      */
 
     std::atomic<double> max_score{0.0};
-    std::atomic<double> best_MSE{DBL_MAX};
+    std::atomic<double> best_SNE{DBL_MAX};
     std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
-    std::vector<double> best_mse_vec;
+    std::vector<double> best_sne_vec;
 
     auto start_time = Clock::now();
 
@@ -7869,7 +8381,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
      Inside of thread:
      */
 
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &use_const_pieces, &numDataCols, &isConstTol, &best_MSE, &best_mse_vec]()
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &use_const_pieces, &numDataCols, &isConstTol, &best_SNE, &best_sne_vec]()
     {
         std::random_device rand_dev;
         std::mt19937 thread_local generator(rand_dev()); // Mersenne Twister random number generator
@@ -7907,7 +8419,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
             }
 //            printf("score = %f\n", score);
 
-            if (Board::expression_dict.size() > n_count)
+            if (Board::expression_dict.size() > static_cast<decltype(Board::expression_dict.size())>(n_count))
             {
                 std::scoped_lock str_lock(Board::thread_locker);
                 std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
@@ -7917,16 +8429,16 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
             {
                 max_score = score;
                 std::scoped_lock str_lock(Board::thread_locker);
-                best_MSE = x.MSE_curr;
-                best_mse_vec = x.MSE_curr_vec;
+                best_SNE = x.SNE_curr;
+                best_sne_vec = x.SNE_curr_vec;
                 best_expression = x._to_infix();
                 orig_expression = x.expression();
                 best_expr_result = x._to_infix(x.diffeq_result);
                 orig_expr_result = x.expression(x.diffeq_result);
                 std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
                 std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-                std::cout << "Best score = " << score << ", MSE = " << best_MSE << '\n';
-                std::cout << "Mean-squared error for each equation: " << best_mse_vec << '\n';
+                std::cout << "Best score = " << score << ", SNE = " << best_SNE << '\n';
+                std::cout << "Mean-squared error for each equation: " << best_sne_vec << '\n';
                 std::cout << "Best expression = " << best_expression << '\n';
                 std::cout << "Best expression (original format) = " << orig_expression << '\n';
                 std::cout << "Best diff result = " << best_expr_result << '\n';
@@ -7937,7 +8449,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
                 std::cout << "Total system result (original format) = " << orig_expr_result << '\n';
             }
 
-            for (int jdx = 0; jdx < x.pieces.size(); jdx++)
+            for (decltype(x.pieces.size()) jdx = 0; jdx < x.pieces.size(); jdx++)
             {
                 x.pieces[jdx].clear();
             }
@@ -7956,8 +8468,8 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
 
     std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
     std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-    std::cout << "Best score = " << max_score << ", MSE = " << best_MSE << '\n';
-    std::cout << "Mean-squared error for each equation: " << best_mse_vec << '\n';
+    std::cout << "Best score = " << max_score << ", SNE = " << best_SNE << '\n';
+    std::cout << "Mean-squared error for each equation: " << best_sne_vec << '\n';
     std::cout << "Best expression = " << best_expression << '\n';
     std::cout << "Best expression (original format) = " << orig_expression << '\n';
     std::cout << "Best diff result = " << best_expr_result << '\n';
@@ -7987,7 +8499,7 @@ int main(int argc, char *argv[])
 {
     int random_seed = get_random_seed(argc, argv);
     printf("Random seed set to %d%s", random_seed, std::string(10, '\n').c_str());
-    constexpr double time = 60.0;
+    constexpr double time = 10.0;
     double threshold = 1.0;
     auto data1 = createMeshgridVectors(33, 2, {0.0001, 0.0}, {10.0, 6.28319});
 //    RandomSearch(SwiftHohenberg /*differential equation to solve*/,
@@ -8023,10 +8535,10 @@ int main(int argc, char *argv[])
         true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
         false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
         0 /*number of data columns that constitute labels and not independent variables/features*/,
-        {split("0.036072414924183116 0.4000400020000667 x1 sin x0 sin * 1.5707963267948966 * - +")} /*seed expressions*/,
+        {split("x1 8 / x1 sin 0 0 + 1.0000085830688477 + x0 sin * * -")} /*seed expressions*/,
         false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
         random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
-        "" /*file to save MSE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
+        "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
 
 //    double threshold = 0.0223;
 //    auto data = createMeshgridVectors(101, 1, {0.0001}, {10.0});
@@ -8067,8 +8579,51 @@ int main(int argc, char *argv[])
 //             {} /*seed expressions*/,
 //             false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
 //             random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
-//             "" /*file to save MSE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
-    
+//             "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
+
+//    double threshold = 0.001;
+//    Eigen::MatrixXd data(127, 3);
+//    data << -10.43428828745382, 0.0012964163037524623, -0.0010561600135938624, -10.317688181744055, 0.0012964163037524623, -0.0010590449646629705, -10.201088076034292, 0.0012964163037524623, -0.001061929915732083, -10.084487970324528, 0.0012964163037524623, -0.0010807860775096723, -9.967887864614763, 0.0012964163037524623, -0.0011318227224482134, -8.91848691322689, 0.0012964163037524623, -0.0010936643774922638, -8.801886807517125, 0.0012964163037524623, -0.0010965493285613778, -8.68528670180736, 0.0012964163037524623, -0.0010994342796304824, -8.568686596097598, 0.0012964163037524623, -0.0010915881967886473, -8.481236516815274, 0.0012964163037524623, -0.0010761774391480077, -7.460985591854841, 0.0012964163037524623, -0.0007317424693321756, -7.344385486145076, 0.0012964163037524623, -0.0006616950327002919, -7.2277853804353125, 0.0012964163037524623, -0.0006260437338381488, -7.111185274725549, 0.0012964163037524623, -0.0005903924349760059, -7.023735195443225, 0.0012964163037524623, -0.0005636539608293984, -6.003484270482792, 0.0012964163037524623, -0.0002904584970633939, -5.886884164773028, 0.0012964163037524623, -0.0002933434481325109, -5.770284059063264, 0.0012964163037524623, -0.00029622839920161436, -5.6536839533535, 0.0012964163037524623, -0.0002634502321286223, -5.566233874071178, 0.0012964163037524623, -0.00014361535924022599, -5.04153339837724, -0.0023812961476865346, 0.0005753938780901555, -4.487682896255862, -0.0023812961476865346, 0.0025630321446362203, -4.371082790546097, -0.0023812961476865346, 0.003170470816595319, -4.254482684836333, -0.004220152373406005, 0.0039049987818705924, -4.13788257912657, -0.0023812961476865346, 0.004744215952619693, -3.1370650051177638, -0.0477397497154341, 0.015162386082458477, -3.0301815748838123, -0.04651384556495444, 0.017571736480597892, -3.0301815748838123, -0.059385839144990904, 0.017571736480597892, -2.9135814691740496, -0.0612246953707104, 0.020200118733113566, -2.9135814691740496, -0.0722578327250274, 0.020200118733113566, -2.826131389891726, -0.0722578327250274, 0.022171405422500352, -2.272280887770348, -0.20097776852539212, 0.03380538107006965, -2.204264159439653, -0.2193663307825871, 0.03703478194098867, -2.1556807820605837, -0.23959374926550153, 0.039341496848788016, -2.1265307556331425, -0.22672175568546504, 0.04072552579346761, -1.864180517786174, -0.3664748288401468, 0.05165624361142156, -1.864180517786174, -0.3811856786459028, 0.05165624361142156, -1.835030491358733, -0.40692966580597567, 0.0529119057852572, -1.7961637894554787, -0.3958965284516587, 0.05212629254610853, -1.7767304385038507, -0.3738302537430248, 0.05316534620334737, -1.7767304385038507, -0.42899594051460965, 0.05316534620334737, -1.7378637366005965, -0.41673689900981303, 0.05538744310479808, -1.5143802006568823, -0.5503604514120964, 0.06859392065655061, -1.5143802006568823, -0.5632324449921329, 0.06859392065655061, -1.456080147802, -0.5797821510236083, 0.07148952152552111, -1.4269301213745589, -0.6092038506351203, 0.07068320834571716, -1.4269301213745589, -0.5650713012178524, 0.07068320834571716, -1.3880634194713046, -0.5944930008293643, 0.07399308257283442, -1.2520299628099139, -0.6643695374067052, 0.07771025027470406, -1.096563155196895, -0.7342460739840461, 0.08765946352014711, -1.0382631023420146, -0.75631234869268, 0.09068147600343156, -1.0188297513903866, -0.7342460739840461, 0.09032323761866505, -0.9605296985355043, -0.763667773595558, 0.09139473856823228, -0.9313796721080632, -0.7765397671755945, 0.0949841086018029, -0.34837914355924404, -0.8813545720416058, 0.1078952792642798, -0.2900790907043618, -0.8923877093959227, 0.1081109856961209, -0.2317790378494795, -0.8850322844930447, 0.1083264085954597, -0.11517893213971497, -0.8887099969444838, 0.10825685757412504, -0.11517893213971497, -0.8997431342988007, 0.10825685757412504, 0.0014211735700477846, -0.8960654218473618, 0.10889242358867447, 0.4095215435542219, -0.8776768595901667, 0.10071037481903938, 0.7301718342560726, -0.8261888852700209, 0.09222130882213057, 0.7593218606835137, -0.8133168916899844, 0.0907023965524053, 0.817621913538396, -0.8004448981099479, 0.09121769317212448, 0.8467719399658353, -0.8151557479157039, 0.09057423883080643, 0.8759219663932765, -0.7857340483041919, 0.08956661658439113, 0.9050719928207176, -0.8004448981099479, 0.08778230764296704, 0.9439386947239718, -0.7710231984984359, 0.08540322905440165, 0.9633720456755999, -0.7894117607556309, 0.08421368976011888, 1.2840223363774506, -0.6423032626980713, 0.07096278110376601, 1.2840223363774506, -0.6551752562781077, 0.07096278110376601, 1.2937390118532637, -0.6239147004408763, 0.07102632037452986, 1.352039064708146, -0.6018484257322423, 0.06793381671873283, 1.371472415659774, -0.6239147004408763, 0.06690298216680045, 1.4297724685146562, -0.5944930008293643, 0.06381047851100341, 1.4297724685146562, -0.6055261381836813, 0.06381047851100341, 1.6046726270793013, -0.4657730650289996, 0.0563485619345576, 1.6435393289825555, -0.45473992767468263, 0.054811139292982716, 1.7018393818374378, -0.43267365296604865, 0.049947734849127005, 1.7212727327890658, -0.45473992767468263, 0.05004382699481444, 1.779572785643948, -0.41796280316029266, 0.04866441212888443, 1.779572785643948, -0.42899594051460965, 0.04866441212888443, 1.954472944208593, -0.28924286735992794, 0.04236496314010472, 1.9933396461118473, -0.27820973000561094, 0.040965085587042566, 2.0710730499183576, -0.256143455296977, 0.0381653304809182, 2.0710730499183576, -0.270854305102733, 0.0381653304809182, 2.0710730499183576, -0.28188744245704994, 0.0381653304809182, 2.109939751821612, -0.2402067013407414, 0.03676545292785605, 2.1876731556281204, -0.23039946813690404, 0.03396569782173175, 2.333423287765326, -0.1715560689138802, 0.030854610209602847, 2.6346402275155505, -0.10167953233653931, 0.021605693132999516, 2.712373631322059, -0.10167953233653931, 0.01973791820879841, 2.7415236577495, -0.08696868253078335, 0.019037502612222985, 2.7998237106043806, -0.0722578327250274, 0.017636671419072176, 2.8289737370318218, -0.08329097007934436, 0.01693625582249675, 3.7326245562824916, -0.013414433502003498, 0.007472265835869461, 3.849224661992256, -0.006059008599125504, 0.006376637533005264, 3.849224661992256, -0.017092145953442495, 0.006376637533005264, 3.9658247677020206, -0.006059008599125504, 0.005281009230141067, 4.082424873411785, -0.006059008599125504, 0.004185380927276871, 4.199024979121546, -0.006059008599125504, 0.0038337565701724525, 4.315625084831311, -0.006059008599125504, 0.002806815055583041, 4.432225190541075, -0.0005424399219670362, 0.0018962403086712788, 4.54882529625084, 0.0012964163037524623, 0.0022326809651833437, 4.665425401960604, 0.0012964163037524623, 0.0014163423316503833, 4.752875481242928, 0.0012964163037524623, 0.001872028283842192, 5.77312640620336, -0.0005424399219670362, -0.0005818385550432711, 5.889726511913125, 0.0012964163037524623, -0.000584723506112388, 6.006326617622889, 0.0012964163037524623, -0.0005876084571814913, 6.12292672333265, 0.0012964163037524623, -0.0006079755495703998, 6.239526829042415, 0.0012964163037524623, -0.0006811290130572356, 7.23062772757541, 0.0012964163037524623, -0.00136232556390265, 7.347227833285174, 0.0012964163037524623, -0.0015817304103852947, 7.463827938994935, 0.0012964163037524623, -0.0018011352568679273, 7.5804280447047, 0.0012964163037524623, -0.001939549782349283, 7.667878123987023, 0.0012964163037524623, -0.0019254043838014701, 8.163428573253519, 0.0012964163037524623, -0.0017486845884493267, 8.688129048947456, 0.0012964163037524623, -0.0015615695110176451, 8.80472915465722, 0.0012964163037524623, -0.001650762588452242, 8.921329260366985, 0.0012964163037524623, -0.001896787283102471, 9.03792936607675, 0.0012964163037524623, -0.001610327152429707, 9.154529471786514, 0.0012964163037524623, -0.0015408317932039549, 9.65007992105301, 0.0012964163037524623, -0.0015530928352476675, 10.145630370319505, 0.0012964163037524623, -0.00156535387729138, 10.26223047602927, 0.0012964163037524623, -0.0015682388283604879, 10.378830581739034, 0.0012964163037524623, -0.0015711237794295918, 10.466280661021358, -0.0023812961476865346, -0.0015732874927314232;
+//    std::cout << "data = " << data << '\n';
+//    SimulatedAnnealing(SolitonWaveFengEq14and15Laser /*differential equation to solve*/,
+//        9 /*number of equations in differential equation system*/,
+//        data /*data used to solve differential equation*/,
+//        std::vector<int>{4, 4} /*fixed depths of generated solution*/,
+//        "postfix" /*expression representation*/,
+//        0 /*num_consts_diff: number of constants in differential equation*/,
+//        "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
+//        5 /*number of fit iterations*/,
+//        "naive_numerical" /*method for computing the gradient*/,
+//        true /*cache*/,
+//        time /*time to run the algorithm in seconds*/,
+//        0 /*num threads*/,
+//        true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+//        threshold /*threshold for which solutions cannot be constant*/,
+//        false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+//        false, /*Whether to simplify the ORIGINAL expression on every iteration (perturbation) of the seed expression vector; if false a copy is maintained so that simplification on this->pieces can still happen*/
+//        2 /*number of data columns that constitute labels and not independent variables/features*/,
+//        {split("x0 sech tanh tanh -6.466281 x0 tanh 2.616570 / - /"), split("3.235163 x0 sech 0.964028 ^ * sech")} /*seed expressions*/,
+//        false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
+//        random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
+//        "");// "SNE_vals.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
+//    RandomSearch(SolitonWaveFengEq14and15Laser /*differential equation to solve*/,
+//        9 /*number of equations in differential equation system*/,
+//        data /*data used to solve differential equation*/,
+//        std::vector<int>{4, 4} /*fixed depths of generated solution*/,
+//        "postfix" /*expression representation*/,
+//        0 /*num_consts_diff: number of constants in differential equation*/,
+//        "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
+//        5 /*number of fit iterations*/,
+//        "naive_numerical" /*method for computing the gradient*/,
+//        true /*cache*/,
+//        time /*time to run the algorithm in seconds*/,
+//        0 /*num threads*/,
+//        true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+//        threshold /*threshold for which solutions cannot be constant*/,
+//        false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+//         2 /*number of data columns that constitute labels and not independent variables/features*/);
+
+
     return 0;
 }
 
@@ -8079,7 +8634,7 @@ int main(int argc, char *argv[])
 
 /*
 Compile: Make sure you did $env:Path += ";C:\msys64\ucrt64\bin\" by inspecting $env:Path, then do the two lines below
-g++.exe -O2 -std=c++1z -IC:\Users\finkelsteine\test_codes\LBFGSpp\include -IC:\Users\finkelsteine\test_codes\boost_1_88_0 -IC:\Users\finkelsteine\test_codes\eigen\unsupported -IC:\Users\finkelsteine\test_codes\eigen\ -c C:\Users\finkelsteine\test_codes\hello_with_numbers_double.cpp -o C:\Users\finkelsteine\test_codes\hello_with_numbers_double.o
+g++.exe -O2 -std=c++1z -IC:\Users\finkelsteine\test_codes\LBFGSpp\include -IC:\Users\finkelsteine\test_codes\boost_1_88_0 -IC:\Users\finkelsteine\test_codes\eigen\unsupported -IC:\Users\finkelsteine\test_codes\eigen\ -c C:\Users\finkelsteine\test_codes\hello_with_numbers_double.cpp -o C:\Users\finkelsteine\test_codes\hello_with_numbers_double.o -Wall
 g++.exe  -o C:\Users\finkelsteine\test_codes\hello_with_numbers_double.exe C:\Users\finkelsteine\test_codes\hello_with_numbers_double.o  -O2
 */
 
