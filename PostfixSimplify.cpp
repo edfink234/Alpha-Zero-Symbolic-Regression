@@ -1,3 +1,4 @@
+//TODO: Include `nan x bin_op` = `x nan bin_op` = `nan un_op` = `nan`; needs to be first case to test for each "block"
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -325,12 +326,15 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
         }
-//        else if (new_expression.back() == "0") // x 0 / -> inf (because, since postfix operators come at the end, if the end of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 /, which is inf) //TODO: Remove -> not always true (or make nan if it becomes such a bottleneck?)!
-//        {
-//            //puts("hi 280");
-//            new_expression[first_arg_idx_low] = (new_expression[first_arg_idx_high - 1] == "~") ? "-inf" : "inf";
-//            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
-//        }
+        else if (new_expression.back() == "0") // x 0 / -> nan (for now, because, since postfix operators come at the end, if the end of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 /, which is, for now, assumed to be nan for simplicity)
+        {
+            //puts("hi 280");
+            //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
+            //for now we weed it out because annoying not to; giving this up seems like the better deal...
+            //TODO: need to retest this in simplification script
+            new_expression[first_arg_idx_low] = "nan";//(new_expression[first_arg_idx_high - 1] == "~") ? "-inf" : "inf";
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+        }
         else if (new_expression[first_arg_idx_high - 1] == "0") //0 x / -> 0 (because, since postfix operators come at the end, if the end of the first argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to 0 x /, which is 0)
         {
             //puts("hi 286");
@@ -374,12 +378,15 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             new_expression[first_arg_idx_low] = "1";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
         }
-//        else if (new_expression[first_arg_idx_high - 1] == "0") //0 x ^ -> 0 (because, since postfix operators come at the end, if the end of the first argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to 0 x ^, which is 0) (assume x > 0) //TODO: Remove -> not always true!
-//        {
-//            //puts("hi 324");
-//            new_expression[first_arg_idx_low] = "0";
-//            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
-//        }
+        else if (new_expression[first_arg_idx_high - 1] == "0") //0 x ^ -> nan (for now, because, since postfix operators come at the end, if the end of the first argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to 0 x ^, which is, for now, assumed to be nan for simplicity)
+        {
+            //puts("hi 324");
+            //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
+            //for now we weed it out because annoying not to; giving this up seems like the better deal...
+            //TODO: need to retest this in simplification script
+            new_expression[first_arg_idx_low] = "nan";// "0";
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+        }
         else if (new_expression.back() == "1") // x 1 ^ -> x (because, since postfix operators come at the end, if the end of the second argument of '^' is 1, then the whole second argument MUST be 1, therefore the expression reduces to x 1 ^, which is x)
         {
             //puts("hi 330");
@@ -1931,6 +1938,30 @@ int main()
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
+    
+    test_expr = {"1", "x", "x", "*", "+", "0", "/", "~", "cos", "sin"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "x", "sin", "x", "*", "+", "0", "/", "~", "exp", "tanh"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"0", "1", "x", "x", "*", "+", "^", "~", "cos", "sin"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"0", "1", "x", "x", "tanh", "*", "+", "^", "~", "cos", "sin"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
 }
 
 //g++ -std=c++20 -o PostfixSimplify PostfixSimplify.cpp
@@ -1938,5 +1969,3 @@ int main()
 //https://stackoverflow.com/questions/20153412/simplification-algorithm-for-reverse-polish-notation
 //https://dl.acm.org/
 //simplification of polish notation expressions articles
-
-//TODO: Number of uncommited simplifcations so far: 5

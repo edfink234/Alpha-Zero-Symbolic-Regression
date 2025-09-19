@@ -1,3 +1,4 @@
+//TODO: Include `bin_op nan x` = `bin_op x nan` = `un_op nan` = `nan`; needs to be first case to test for each "block"
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -38,7 +39,6 @@ std::string to_string_general(double v)
         out.resize(out.size() * 2);            // grow and retry (rare)
     }
 }
-
 bool is_binary(const std::string& token)
 {
     return (binary_operators.find(token) != binary_operators.end());
@@ -236,7 +236,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true);
         int second_arg_idx_high = new_expression.size();
         int step;
-        
+
         if (new_expression[first_arg_idx_high] == "0") //+/- x 0 -> x
         {
             //puts("hi 177");
@@ -250,7 +250,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             }
             new_expression.erase(new_expression.begin() + op_idx); //remove +/- operator at beginning
         }
-        
+
         else if (new_expression[first_arg_idx_low] == "0")
         {
             if (expression[low] == "+") //+ 0 y -> y
@@ -265,7 +265,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
                 new_expression.erase(new_expression.begin() + first_arg_idx_low); //'0'
             }
         }
-        
+
         else if ((expression[low] == "-") && ((step = (second_arg_idx_high - first_arg_idx_high)) == (first_arg_idx_high - first_arg_idx_low)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) //- x x
         {
             //puts("hi 221");
@@ -328,19 +328,22 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); // / x y
         int second_arg_idx_high = new_expression.size();
         int step;
-        //TODO: There's an issue with how / is being handled here..., if the left or right sub-tree (represented by the symbol `x`) hasn't been simplified; it might be 0, so there's a possibility that the result of / x 0 could actually be nan as well, same goes for / 0 x
+        //MARK: There's an issue with how / is being handled here..., if the left or right sub-tree (represented by the symbol `x`) hasn't been simplified; it might be 0, so there's a possibility that the result of / x 0 could actually be nan as well, same goes for / 0 x
         if ((new_expression[first_arg_idx_low] == "0") && (new_expression[first_arg_idx_high] == "0")) // / 0 0 -> nan
         {
             //puts("hi 290");
             new_expression[op_idx] = "nan"; //change '/' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-//        else if (new_expression[first_arg_idx_high] == "0") // / x 0 -> inf (because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to / x 0, which is 0) //TODO: Remove -> not always true!
-//        {
-//            //puts("hi 282");
-//            new_expression[op_idx] = (new_expression[first_arg_idx_low] != "~") ? "inf": "-inf"; //change '/' to 'inf' or '-inf'
-//            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
-//        }
+        else if (new_expression[first_arg_idx_high] == "0") // / x 0 -> nan (for now, because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to / x 0, which is, for now, assumed to be nan for simplicity)
+        {
+            //puts("hi 282");
+            //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
+            //for now we weed it out because annoying not to; giving this up seems like the better deal...
+            //TODO: need to retest this in simplification script
+            new_expression[op_idx] = "nan";//(new_expression[first_arg_idx_low] != "~") ? "inf": "-inf"; //change '/' to 'inf' or '-inf'
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
         else if (new_expression[first_arg_idx_low] == "0") // / 0 x -> 0
         {
             //puts("hi 295");
@@ -368,7 +371,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "1"; //change "-" to "1";
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.begin() + second_arg_idx_high);
         }
-        
+
         //TODO:
             /*
             x*y       y
@@ -393,12 +396,15 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "1"; //change '^' to '1'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-//        else if (new_expression[first_arg_idx_low] == "0") // ^ 0 x -> 0 (x > 0 assumed) //TODO: Remove -> not always true!
-//        {
-//            //puts("hi 340");
-//            new_expression[op_idx] = "0"; //change '^' to '0'
-//            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
-//        }
+        else if (new_expression[first_arg_idx_low] == "0") // ^ 0 x -> nan (for now)
+        {
+            //puts("hi 340");
+            //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
+            //for now we weed it out because annoying not to; giving this up seems like the better deal...
+            //TODO: need to retest this in simplification script
+            new_expression[op_idx] = "nan";//new_expression[op_idx] = "0"; //change '^' to '0'
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
         else if (new_expression[first_arg_idx_high] == "1") // ^ x 1 -> x (because, since prefix operators come at the beginning, if the beginning of the second argument of '^' is 1, then the whole second argument MUST be 1, therefore the expression reduces to ^ x 1, which is 1)
         {
             //puts("hi 346");
@@ -1955,11 +1961,34 @@ int main()
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
+    
+    test_expr = {"exp", "*", "sech", "~", "/", "~", "tanh", "cos", "x", "sin", "/", "0", "0", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"cos", "+", "tanh", "~", "/", "~", "tanh", "cos", "x", "sin", "/", "x", "0", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"tanh", "/", "sin", "~", "/", "~", "tanh", "cos", "x", "sin", "^", "0", "cos", "x", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"exp", "/", "sech", "~", "/", "~", "tanh", "cos", "x", "sin", "^", "0", "+", "x", "x", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
 }
 //g++ -std=c++20 -o PrefixSimplifyPrev PrefixSimplifyPrev.cpp
 
 //https://stackoverflow.com/questions/20153412/simplification-algorithm-for-reverse-polish-notation
 //https://dl.acm.org/
 //simplification of polish notation expressions articles
-// ! objdump -d -M intel PrefixSimplifyPrev
-//TODO: Number of uncommited simplifcations so far: 5
+// ! objdump -d -M intel PrefixSimplify

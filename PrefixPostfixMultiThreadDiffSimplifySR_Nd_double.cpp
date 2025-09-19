@@ -890,6 +890,10 @@ struct Board
         {
             std::call_once(initialization_flag, [&]()
             {
+                if (use_const_pieces)
+                {
+                    assert(const_tokens);
+                }
                 Board::data = theData;
                 assert((Board::data.num_rows > 0));
                 Board::__num_features = Board::data[0].size() - numDataCols;
@@ -1278,14 +1282,14 @@ struct Board
             graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); // / x y
             int second_arg_idx_high = new_expression.size();
             int step;
-            //TODO: There's an issue with how / is being handled here..., if the left or right sub-tree (represented by the symbol `x`) hasn't been simplified; it might be 0, so there's a possibility that the result of / x 0 could actually be nan as well, same goes for / 0 x
+            //MARK: There's an issue with how / is being handled here..., if the left or right sub-tree (represented by the symbol `x`) hasn't been simplified; it might be 0, so there's a possibility that the result of / x 0 could actually be nan as well, same goes for / 0 x
             if ((new_expression[first_arg_idx_low] == "0") && (new_expression[first_arg_idx_high] == "0")) // / 0 0 -> nan
             {
                 //puts("hi 290");
                 new_expression[op_idx] = "nan"; //change '/' to 'nan'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
-            else if (new_expression[first_arg_idx_high] == "0") // / x 0 -> inf (because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to / x 0, which is 0) //TODO: Remove -> not always true!
+            else if (new_expression[first_arg_idx_high] == "0") // / x 0 -> nan (for now, because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to / x 0, which is, for now, assumed to be nan for simplicity)
             {
                 //puts("hi 282");
                 //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
@@ -1346,7 +1350,7 @@ struct Board
                 new_expression[op_idx] = "1"; //change '^' to '1'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
-            else if (new_expression[first_arg_idx_low] == "0") // ^ 0 x -> 0 (x > 0 assumed) //TODO: Remove -> not always true!
+            else if (new_expression[first_arg_idx_low] == "0") // ^ 0 x -> nan (for now)
             {
                 //puts("hi 340");
                 //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
@@ -2006,12 +2010,15 @@ struct Board
                 new_expression[first_arg_idx_low] = "nan";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
             }
-    //        else if (new_expression.back() == "0") // x 0 / -> inf (because, since postfix operators come at the end, if the end of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 /, which is inf) //TODO: Remove -> not always true (or make nan if it becomes such a bottleneck?)!
-    //        {
-    //            //puts("hi 280");
-    //            new_expression[first_arg_idx_low] = (new_expression[first_arg_idx_high - 1] == "~") ? "-inf" : "inf";
-    //            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
-    //        }
+            else if (new_expression.back() == "0") // x 0 / -> nan (for now, because, since postfix operators come at the end, if the end of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 /, which is, for now, assumed to be nan for simplicity)
+            {
+                //puts("hi 280");
+                //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
+                //for now we weed it out because annoying not to; giving this up seems like the better deal...
+                //TODO: need to retest this in simplification script
+                new_expression[first_arg_idx_low] = "nan";//(new_expression[first_arg_idx_high - 1] == "~") ? "-inf" : "inf";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            }
             else if (new_expression[first_arg_idx_high - 1] == "0") //0 x / -> 0 (because, since postfix operators come at the end, if the end of the first argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to 0 x /, which is 0)
             {
                 //puts("hi 286");
@@ -2055,12 +2062,15 @@ struct Board
                 new_expression[first_arg_idx_low] = "1";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
             }
-    //        else if (new_expression[first_arg_idx_high - 1] == "0") //0 x ^ -> 0 (because, since postfix operators come at the end, if the end of the first argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to 0 x ^, which is 0) (assume x > 0) //TODO: Remove -> not always true!
-    //        {
-    //            //puts("hi 324");
-    //            new_expression[first_arg_idx_low] = "0";
-    //            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
-    //        }
+            else if (new_expression[first_arg_idx_high - 1] == "0") //0 x ^ -> nan (for now, because, since postfix operators come at the end, if the end of the first argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to 0 x ^, which is, for now, assumed to be nan for simplicity)
+            {
+                //puts("hi 324");
+                //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
+                //for now we weed it out because annoying not to; giving this up seems like the better deal...
+                //TODO: need to retest this in simplification script
+                new_expression[first_arg_idx_low] = "nan";// "0";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            }
             else if (new_expression.back() == "1") // x 1 ^ -> x (because, since postfix operators come at the end, if the end of the second argument of '^' is 1, then the whole second argument MUST be 1, therefore the expression reduces to x 1 ^, which is x)
             {
                 //puts("hi 330");
@@ -3735,7 +3745,7 @@ struct Board
                 {
                     for (decltype(total_cols) ldx = num_cols, mdx = 0; ldx < total_cols; ldx++, mdx++) //then loop over each SR-expression value
                     {
-                        grad(kdx*total_cols + ldx) = (grad_piece_prefactor / expr_eval_var[mdx][kdx]);
+                        grad(kdx*total_cols + ldx) = ((10.0 * grad_piece_prefactor) / expr_eval_var[mdx][kdx]);
                     }
                 }
             }
@@ -8499,13 +8509,13 @@ int main(int argc, char *argv[])
 {
     int random_seed = get_random_seed(argc, argv);
     printf("Random seed set to %d%s", random_seed, std::string(10, '\n').c_str());
-    constexpr double time = 10.0;
+    constexpr double time = 600.0;
     double threshold = 1.0;
-    auto data1 = createMeshgridVectors(33, 2, {0.0001, 0.0}, {10.0, 6.28319});
+    auto data1 = createMeshgridVectors(330, 2, {0.0001, 0.0}, {10.0, 6.28319});
 //    RandomSearch(SwiftHohenberg /*differential equation to solve*/,
 //                 1 /*number of equations in differential equation system*/,
 //                 data1 /*data used to solve differential equation*/,
-//                 std::vector<int>{3} /*fixed depths of generated solution*/,
+//                 std::vector<int>{13} /*fixed depths of generated solution*/,
 //                 "postfix" /*expression representation*/,
 //                 0 /*num_consts_diff: number of constants in differential equation*/,
 //                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -8521,7 +8531,7 @@ int main(int argc, char *argv[])
     SimulatedAnnealing(SwiftHohenberg /*differential equation to solve*/,
         1 /*number of equations in differential equation system*/,
         data1 /*data used to solve differential equation*/,
-        std::vector<int>{5} /*fixed depths of generated solution*/,
+        std::vector<int>{4} /*fixed depths of generated solution*/,
         "postfix" /*expression representation*/,
         0/*2*/ /*num_consts_diff: number of constants in differential equation*/,
         "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -8535,7 +8545,7 @@ int main(int argc, char *argv[])
         true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
         false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
         0 /*number of data columns that constitute labels and not independent variables/features*/,
-        {split("x1 8 / x1 sin 0 0 + 1.0000085830688477 + x0 sin * * -")} /*seed expressions*/,
+        {split("x1 8 / x1 sin 1.0000132758892615 x0 sin * * -")} /*seed expressions*/,
         false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
         random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
         "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
@@ -8545,8 +8555,8 @@ int main(int argc, char *argv[])
 //    RandomSearch(VortexRadialProfile /*differential equation to solve*/,
 //                 3 /*number of equations in differential equation system*/,
 //                 data /*data used to solve differential equation*/,
-//                 std::vector<int>{10} /*fixed depths of generated solution*/,
-//                 "postfix" /*expression representation*/,
+//                 std::vector<int>{3} /*fixed depths of generated solution*/,
+//                 "prefix" /*expression representation*/,
 //                 0 /*num_consts_diff: number of constants in differential equation*/,
 //                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
 //                 5 /*number of fit iterations*/,
@@ -8562,8 +8572,8 @@ int main(int argc, char *argv[])
 //    SimulatedAnnealing(VortexRadialProfile /*differential equation to solve*/,
 //             3 /*number of equations in differential equation system*/,
 //             data /*data used to solve differential equation*/,
-//             std::vector<int>{20} /*fixed depths of generated solution*/,
-//             "prefix" /*expression representation*/,
+//             std::vector<int>{6} /*fixed depths of generated solution*/,
+//             "postfix" /*expression representation*/,
 //             0/*2*/ /*num_consts_diff: number of constants in differential equation*/,
 //             "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
 //             5 /*number of fit iterations*/,
@@ -8599,7 +8609,7 @@ int main(int argc, char *argv[])
 //        0 /*num threads*/,
 //        true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
 //        threshold /*threshold for which solutions cannot be constant*/,
-//        false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+//        true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
 //        false, /*Whether to simplify the ORIGINAL expression on every iteration (perturbation) of the seed expression vector; if false a copy is maintained so that simplification on this->pieces can still happen*/
 //        2 /*number of data columns that constitute labels and not independent variables/features*/,
 //        {split("x0 sech tanh tanh -6.466281 x0 tanh 2.616570 / - /"), split("3.235163 x0 sech 0.964028 ^ * sech")} /*seed expressions*/,
@@ -8609,7 +8619,7 @@ int main(int argc, char *argv[])
 //    RandomSearch(SolitonWaveFengEq14and15Laser /*differential equation to solve*/,
 //        9 /*number of equations in differential equation system*/,
 //        data /*data used to solve differential equation*/,
-//        std::vector<int>{4, 4} /*fixed depths of generated solution*/,
+//        std::vector<int>{6, 30} /*fixed depths of generated solution*/,
 //        "postfix" /*expression representation*/,
 //        0 /*num_consts_diff: number of constants in differential equation*/,
 //        "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -8620,7 +8630,7 @@ int main(int argc, char *argv[])
 //        0 /*num threads*/,
 //        true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
 //        threshold /*threshold for which solutions cannot be constant*/,
-//        false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+//        true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
 //         2 /*number of data columns that constitute labels and not independent variables/features*/);
 
 
@@ -8656,3 +8666,4 @@ g++.exe  -o C:\Users\finkelsteine\test_codes\hello_with_numbers_double.exe C:\Us
 
 
 
+//a half built garden
