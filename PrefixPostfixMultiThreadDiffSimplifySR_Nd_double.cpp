@@ -6368,9 +6368,6 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 
 {x0: r, x1: θ}
 {x.pieces[0]: f}
-
- This version will return the evaluated expression
- in a hopefully more efficient way.
 */
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {

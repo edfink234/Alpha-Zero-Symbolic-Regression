@@ -215,7 +215,9 @@ void setPrefixGR(const std::vector<std::string>& prefix, std::vector<int>& grasp
         grasp.push_back(GR(k, prefix));
     }
 }
-
+//((1+5) * 1) -> 1 5 1 * +, + 1 * 5 1 -> traverse into a tree data-structure -> apply simplification algorithm
+//-> traverse tree again to get prefix/postfix simplified expression -> convert to infix
+//prefix/postifx -> simplified prefix/postfix
 void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, int up, std::vector<int>& grasp, std::vector<std::string>& new_expression, bool setGRvar = false)
 {
     if (!setGRvar)
@@ -581,7 +583,18 @@ void graspSimplifyPrefix(std::vector<std::string>& expression, int low, int up, 
     graspSimplifyPrefixHelper(expression, low, up, grasp, new_expression, false);
     expression = new_expression;
 }
+//scans entire `expression` for the following:
+//     bin_op number1 number2 -> numberResult
+//     un_op number1 -> numberResult
+//the function repeatedly iterates over `expression` until no more
+//instances of the above are found.
 
+
+
+//+ cos - + 1 3 x + * cos 2 sin 3 + arcsin - 8 7 sin tanh cos * 3 4
+//+ cos - 4 x + * cos 2 sin 3 + arcsin - 8 7 sin tanh cos * 3 4
+//+ cos - 4 x + * -0.42 sin 3 + arcsin - 8 7 sin tanh cos * 3 4
+//+ cos - 4 x + * -0.42 0.41 + arcsin - 8 7 sin tanh cos * 3 4
 void simplifyPN_Helper(std::vector<std::string>& expression)
 {
     bool simplified = true;
