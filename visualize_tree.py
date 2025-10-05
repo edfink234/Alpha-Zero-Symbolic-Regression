@@ -317,7 +317,10 @@ def test_visualize():
     else:
 #        plot_rpn_expression_tree("μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -".split(), save = save, title = r"Swift-Hohenberg 2D Polar Coordinates", tolatex = True, to_pdf = True, filename = "SwiftHohenberg2DPolarCoordinates.pdf")
 #        plot_rpn_expression_tree("x1 8 / x1 sin 1.0000132758892615 x0 sin * * -".split(), save = save, title = r"Example", tolatex = True, to_pdf = True, filename = "Example.pdf")
-        plot_pn_expression_tree("exp * sech ~ / ~ tanh cos x sin / 0 0 0".split(), save = save)
+        plot_pn_expression_tree("exp / sech ~ / ~ tanh cos x sin ^ 0 + x x 0 ".split(), save = save)
+#        plot_rpn_expression_tree("G m_1 m_2 * r r * / * x y + * cos".split(), save = save, title = r"G m_1 m_2 * r r * / * x y + * cos", tolatex = True, to_pdf = True, filename = "Example.pdf")
 
 if __name__ == "__main__":
     test_visualize()
+
+

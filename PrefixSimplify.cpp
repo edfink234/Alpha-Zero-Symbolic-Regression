@@ -1,4 +1,4 @@
-//TODO: Include `bin_op nan x` = `bin_op x nan` = `un_op nan` = `nan`; needs to be first case to test for each "block"
+//TODO: Include `un_op nan` = `nan`; needs to be first case to test for each "block"
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -362,7 +362,6 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             //puts("hi 282");
             //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
             //for now we weed it out because annoying not to; giving this up seems like the better deal...
-            //TODO: need to retest this in simplification script
             new_expression[op_idx] = "nan";//(new_expression[first_arg_idx_low] != "~") ? "inf": "-inf"; //change '/' to 'inf' or '-inf'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
@@ -429,7 +428,6 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             //puts("hi 340");
             //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
             //for now we weed it out because annoying not to; giving this up seems like the better deal...
-            //TODO: need to retest this in simplification script
             new_expression[op_idx] = "nan";//new_expression[op_idx] = "0"; //change '^' to '0'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
@@ -461,7 +459,13 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         int temp = low+1+grasp[low+1];
         int first_arg_idx_low = new_expression.size();
         graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // cos x
-        if (new_expression[first_arg_idx_low] == "0") // cos 0 -> 1
+        if (new_expression[first_arg_idx_low] == "nan") // cos nan -> nan
+        {
+            puts("hi 464");
+            new_expression[op_idx] = "nan"; //change 'cos' to 'nan'
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
+        else if (new_expression[first_arg_idx_low] == "0") // cos 0 -> 1
         {
             //puts("hi 374");
             new_expression[op_idx] = "1"; //change 'cos' to '1'
@@ -475,7 +479,13 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         int temp = low+1+grasp[low+1];
         int first_arg_idx_low = new_expression.size();
         graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // sin x
-        if (new_expression[first_arg_idx_low] == "0") // sin 0 -> 0
+        if (new_expression[first_arg_idx_low] == "nan") // sin nan -> nan
+        {
+            puts("hi 484");
+            new_expression[op_idx] = "nan"; //change 'sin' to 'nan'
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
+        else if (new_expression[first_arg_idx_low] == "0") // sin 0 -> 0
         {
             //puts("hi 388");
             new_expression[op_idx] = "0"; //change 'sin' to '0'
@@ -489,7 +499,13 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         int temp = low+1+grasp[low+1];
         int first_arg_idx_low = new_expression.size();
         graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // tanh x
-        if (new_expression[first_arg_idx_low] == "0") // tanh 0 -> 0
+        if (new_expression[first_arg_idx_low] == "nan") // tanh nan -> nan
+        {
+            puts("hi 504");
+            new_expression[op_idx] = "nan"; //change 'tanh' to 'nan'
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
+        else if (new_expression[first_arg_idx_low] == "0") // tanh 0 -> 0
         {
             //puts("hi 402");
             new_expression[op_idx] = "0"; //change 'tanh' to '0'
@@ -527,7 +543,13 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
 //            new_expression[op_idx] = "nan"; //change 'sech' to 'nan'
 //            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
 //        }
-        if (new_expression[first_arg_idx_low] == "0") // sech 0 -> 1
+        if (new_expression[first_arg_idx_low] == "nan") // sech nan -> nan
+        {
+            puts("hi 548");
+            new_expression[op_idx] = "nan"; //change 'sech' to 'nan'
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
+        else if (new_expression[first_arg_idx_low] == "0") // sech 0 -> 1
         {
             //puts("hi 416");
             new_expression[op_idx] = "1"; //change 'sech' to '1'
@@ -565,7 +587,13 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
 //            new_expression[op_idx] = "nan"; //change '~' to 'nan'
 //            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
 //        }
-        if (new_expression[first_arg_idx_low] == "0") // ~ 0 -> 0
+        if (new_expression[first_arg_idx_low] == "nan") // ~ nan -> nan
+        {
+            puts("hi 592");
+            new_expression[op_idx] = "nan"; //change '~' to 'nan'
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
+        else if (new_expression[first_arg_idx_low] == "0") // ~ 0 -> 0
         {
 //            puts("hi 466");
             new_expression[op_idx] = "0"; //change '~' to '0'
@@ -585,7 +613,13 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         int temp = low+1+grasp[low+1];
         int first_arg_idx_low = new_expression.size();
         graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // exp x
-        if (new_expression[first_arg_idx_low] == "0") // exp 0 -> 1
+        if (new_expression[first_arg_idx_low] == "nan") // exp nan -> nan
+        {
+            puts("hi 618");
+            new_expression[op_idx] = "nan"; //change 'exp' to 'nan'
+            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+        }
+        else if (new_expression[first_arg_idx_low] == "0") // exp 0 -> 1
         {
             //puts("hi 521");
             new_expression[op_idx] = "1"; //change 'exp' to '1'
@@ -2110,9 +2144,14 @@ int main()
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
+    
+    //TODO: Add test cases for cos, sin, tanh, sech, ~, exp (2 for each -> 12 in total)
+    
+    //MARK: For the above TODO, we just need to make sure the outputs of the 12 test-cases we implement above are correct, since I already checked the new simplifications agreed and improved the robustness of PrefixSimplifyPrev; thus, I have already updated PrefixSimplifyPrev.cpp to match this one (PrefixSimplify.cpp)
 }
 //g++ -std=c++20 -o PrefixSimplify PrefixSimplify.cpp
 //MARK: Number of non-production-tested simplifications so far: 4
+//MARK: Number of non-here-tested simplifications so far: 6
 //https://stackoverflow.com/questions/20153412/simplification-algorithm-for-reverse-polish-notation
 //https://dl.acm.org/
 //simplification of polish notation expressions articles
