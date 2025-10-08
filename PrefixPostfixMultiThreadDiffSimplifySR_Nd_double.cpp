@@ -1219,7 +1219,15 @@ struct Board
                     new_expression.erase(new_expression.begin() + first_arg_idx_low); //'0'
                 }
             }
-
+            
+            else if ((new_expression[first_arg_idx_low] == "nan") || (new_expression[first_arg_idx_high] == "nan")) //+/- nan x -> nan, +/- x nan -> nan, +/- nan nan -> nan
+            {
+                //puts("hi 273");
+                assert(new_expression[op_idx] == expression[low]);
+                new_expression[op_idx] = "nan"; //change "+/-" to "nan";
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.begin() + second_arg_idx_high);
+            }
+            
             else if ((expression[low] == "-") && ((step = (second_arg_idx_high - first_arg_idx_high)) == (first_arg_idx_high - first_arg_idx_low)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) //- x x
             {
                 //puts("hi 221");
@@ -1239,7 +1247,13 @@ struct Board
             graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); //* x y
             //int second_arg_idx_high = new_expression.size();
             //int step;
-            if (new_expression[first_arg_idx_high] == "0") //* x 0 -> 0 (because, since prefix operators come at the beginning, if the beginning of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to * x 0, which is 0)
+            if ((new_expression[first_arg_idx_high] == "nan") || (new_expression[first_arg_idx_low] == "nan")) //* nan x -> nan, * x nan -> nan, * nan nan -> nan
+            {
+                //puts("hi 300");
+                new_expression[op_idx] = "nan"; //change '*' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression[first_arg_idx_high] == "0") //* x 0 -> 0 (because, since prefix operators come at the beginning, if the beginning of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to * x 0, which is 0)
             {
                 //puts("hi 239");
                 new_expression[op_idx] = "0"; //change '*' to '0'
@@ -1282,8 +1296,14 @@ struct Board
             graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); // / x y
             int second_arg_idx_high = new_expression.size();
             int step;
-            //MARK: There's an issue with how / is being handled here..., if the left or right sub-tree (represented by the symbol `x`) hasn't been simplified; it might be 0, so there's a possibility that the result of / x 0 could actually be nan as well, same goes for / 0 x
-            if ((new_expression[first_arg_idx_low] == "0") && (new_expression[first_arg_idx_high] == "0")) // / 0 0 -> nan
+            
+            if ((new_expression[first_arg_idx_low] == "nan") || (new_expression[first_arg_idx_high] == "nan")) // / nan x -> nan, / x nan -> nan, / nan nan -> nan
+            {
+                //puts("hi 350");
+                new_expression[op_idx] = "nan"; //change '/' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if ((new_expression[first_arg_idx_low] == "0") && (new_expression[first_arg_idx_high] == "0")) // / 0 0 -> nan
             {
                 //puts("hi 290");
                 new_expression[op_idx] = "nan"; //change '/' to 'nan'
@@ -1294,7 +1314,6 @@ struct Board
                 //puts("hi 282");
                 //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
                 //for now we weed it out because annoying not to; giving this up seems like the better deal...
-                //TODO: need to retest this in simplification script
                 new_expression[op_idx] = "nan";//(new_expression[first_arg_idx_low] != "~") ? "inf": "-inf"; //change '/' to 'inf' or '-inf'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
@@ -1336,15 +1355,21 @@ struct Board
         else if (expression[low] == "^") // ^ x y
         {
             int op_idx = new_expression.size();
-            new_expression.push_back(expression[low]); // /
+            new_expression.push_back(expression[low]); // ^
             int temp = low+1+grasp[low+1];
             int first_arg_idx_low = new_expression.size();
-            graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // / x
+            graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // ^ x
             int first_arg_idx_high = new_expression.size();
-            graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); // / x y
+            graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); // ^ x y
             //int second_arg_idx_high = new_expression.size();
             //int step;
-            if (new_expression[first_arg_idx_high] == "0") //^ x 0 -> 1 (because, since prefix operators come at the beginning, if the beginning of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to ^ x 0, which is 1)
+            if ((new_expression[first_arg_idx_low] == "nan") || (new_expression[first_arg_idx_high] == "nan")) // ^ nan x -> nan, ^ x nan -> nan, ^ nan nan -> nan
+            {
+                //puts("hi 417");
+                new_expression[op_idx] = "nan"; //change '^' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression[first_arg_idx_high] == "0") //^ x 0 -> 1 (because, since prefix operators come at the beginning, if the beginning of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to ^ x 0, which is 1)
             {
                 //puts("hi 334");
                 new_expression[op_idx] = "1"; //change '^' to '1'
@@ -1355,7 +1380,6 @@ struct Board
                 //puts("hi 340");
                 //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
                 //for now we weed it out because annoying not to; giving this up seems like the better deal...
-                //TODO: need to retest this in simplification script
                 new_expression[op_idx] = "nan";//new_expression[op_idx] = "0"; //change '^' to '0'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
@@ -1387,9 +1411,15 @@ struct Board
             int temp = low+1+grasp[low+1];
             int first_arg_idx_low = new_expression.size();
             graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // cos x
-            if (new_expression[first_arg_idx_low] == "0") // cos 0 -> 1
+            if (new_expression[first_arg_idx_low] == "nan") // cos nan -> nan
             {
-                //puts("hi 374");
+                //puts("hi 464");
+                new_expression[op_idx] = "nan"; //change 'cos' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression[first_arg_idx_low] == "0") // cos 0 -> 1
+            {
+    //            puts("hi 374");
                 new_expression[op_idx] = "1"; //change 'cos' to '1'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
@@ -1401,7 +1431,13 @@ struct Board
             int temp = low+1+grasp[low+1];
             int first_arg_idx_low = new_expression.size();
             graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // sin x
-            if (new_expression[first_arg_idx_low] == "0") // sin 0 -> 0
+            if (new_expression[first_arg_idx_low] == "nan") // sin nan -> nan
+            {
+                //puts("hi 484");
+                new_expression[op_idx] = "nan"; //change 'sin' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression[first_arg_idx_low] == "0") // sin 0 -> 0
             {
                 //puts("hi 388");
                 new_expression[op_idx] = "0"; //change 'sin' to '0'
@@ -1415,7 +1451,13 @@ struct Board
             int temp = low+1+grasp[low+1];
             int first_arg_idx_low = new_expression.size();
             graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // tanh x
-            if (new_expression[first_arg_idx_low] == "0") // tanh 0 -> 0
+            if (new_expression[first_arg_idx_low] == "nan") // tanh nan -> nan
+            {
+                //puts("hi 504");
+                new_expression[op_idx] = "nan"; //change 'tanh' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression[first_arg_idx_low] == "0") // tanh 0 -> 0
             {
                 //puts("hi 402");
                 new_expression[op_idx] = "0"; //change 'tanh' to '0'
@@ -1447,7 +1489,14 @@ struct Board
             int temp = low+1+grasp[low+1];
             int first_arg_idx_low = new_expression.size();
             graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // sech x
-            if (new_expression[first_arg_idx_low] == "0") // sech 0 -> 1
+
+            if (new_expression[first_arg_idx_low] == "nan") // sech nan -> nan
+            {
+                //puts("hi 548");
+                new_expression[op_idx] = "nan"; //change 'sech' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression[first_arg_idx_low] == "0") // sech 0 -> 1
             {
                 //puts("hi 416");
                 new_expression[op_idx] = "1"; //change 'sech' to '1'
@@ -1479,7 +1528,14 @@ struct Board
             int temp = low+1+grasp[low+1];
             int first_arg_idx_low = new_expression.size();
             graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // ~ x
-            if (new_expression[first_arg_idx_low] == "0") // ~ 0 -> 0
+
+            if (new_expression[first_arg_idx_low] == "nan") // ~ nan -> nan
+            {
+                //puts("hi 592");
+                new_expression[op_idx] = "nan"; //change '~' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression[first_arg_idx_low] == "0") // ~ 0 -> 0
             {
     //            puts("hi 466");
                 new_expression[op_idx] = "0"; //change '~' to '0'
@@ -1499,7 +1555,13 @@ struct Board
             int temp = low+1+grasp[low+1];
             int first_arg_idx_low = new_expression.size();
             graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // exp x
-            if (new_expression[first_arg_idx_low] == "0") // exp 0 -> 1
+            if (new_expression[first_arg_idx_low] == "nan") // exp nan -> nan
+            {
+                //puts("hi 618");
+                new_expression[op_idx] = "nan"; //change 'exp' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression[first_arg_idx_low] == "0") // exp 0 -> 1
             {
                 //puts("hi 521");
                 new_expression[op_idx] = "1"; //change 'exp' to '1'
@@ -1535,7 +1597,16 @@ struct Board
         graspSimplifyPrefixHelper(expression, low, up, grasp, new_expression, false);
         expression = new_expression;
     }
-
+    
+    //scans entire `expression` for the following:
+    //     bin_op number1 number2 -> numberResult
+    //     un_op number1 -> numberResult
+    //the function repeatedly iterates over `expression` until no more
+    //instances of the above are found.
+    //+ cos - + 1 3 x + * cos 2 sin 3 + arcsin - 8 7 sin tanh cos * 3 4
+    //+ cos - 4 x + * cos 2 sin 3 + arcsin - 8 7 sin tanh cos * 3 4
+    //+ cos - 4 x + * -0.42 sin 3 + arcsin - 8 7 sin tanh cos * 3 4
+    //+ cos - 4 x + * -0.42 0.41 + arcsin - 8 7 sin tanh cos * 3 4
     void simplifyPN_Helper(std::vector<std::string>& expression)
     {
         bool simplified = true;
@@ -1551,7 +1622,7 @@ struct Board
                     {
                         isdouble1 = isdouble(expression[i+1]);
                         isdouble2 = isdouble(expression[i+2]);
-
+                        
                         if (isdouble1 && isdouble2)
                         {
                             if (expression[i] == "+")
@@ -1590,10 +1661,10 @@ struct Board
                                 break;
                             }
                         }
-
+                        
                         isConst1 = is_const(expression[i+1]);
                         isConst2 = is_const(expression[i+2]);
-
+                        
                         if ((isConst1 && isConst2) && ((expression[i+1].find("nan") != std::string::npos) || (expression[i+2].find("nan") != std::string::npos))) //binary_op nan x = binary_op x nan = nan
                         {
                             //puts("hi 570");
@@ -1743,7 +1814,7 @@ struct Board
                             }
                         }
                     }
-
+                    
                     else if (is_unary(expression[i]) && isdouble(expression[i+1]))
                     {
                         if (expression[i] == "cos")
@@ -1824,7 +1895,7 @@ struct Board
                             break;
                         }
                     }
-
+                    
                     else if (is_unary(expression[i]))
                     {
                         if (expression[i] == "~" && expression[i+1] == "~")
@@ -1912,7 +1983,6 @@ struct Board
         } while (size_before != size_after);
     }
 
-
     void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, int up, std::vector<int>& grasp, std::vector<std::string>& new_expression, bool setGRvar = false)
     {
         if (!setGRvar)
@@ -1929,13 +1999,13 @@ struct Board
             graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true);
             int second_arg_idx_high = new_expression.size();
             int step;
-
+            
             if (new_expression.back() == "0") // x 0 +/- -> x
             {
                 //puts("hi 181");
                 new_expression.pop_back();
             }
-
+            
             else if (new_expression[first_arg_idx_high - 1] == "0")
             {
                 //puts("hi 184");
@@ -1947,14 +2017,21 @@ struct Board
                     new_expression.push_back("~"); //0 y - -> y ~
                 }
             }
-
+            
+            else if ((new_expression[first_arg_idx_high - 1] == "nan") || (new_expression.back() == "nan")) //nan x +/- -> nan, x nan +/- -> nan, nan nan +/- -> nan
+            {
+                //puts("hi 269");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            }
+            
             else if ((expression[up] == "-") && ((step = (first_arg_idx_high - first_arg_idx_low)) == (second_arg_idx_high - first_arg_idx_high)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) //x x - -> 0
             {
                 //puts("hi 215");
                 new_expression[first_arg_idx_low] = "0"; //change first symbol of x to 0
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.begin() + second_arg_idx_high); //erase the rest of x and y
             }
-
+            
             else
             {
                 new_expression.push_back(expression[up]);
@@ -1968,8 +2045,14 @@ struct Board
             graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
             //int second_arg_idx_high = new_expression.size();
             //int step;
-
-            if (new_expression.back() == "0") // x 0 * -> 0 (because, since postfix operators come at the end, if the end of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 *, which is 0)
+            
+            if ((new_expression[first_arg_idx_high - 1] == "nan") || (new_expression.back() == "nan")) //nan x * -> nan, x nan * -> nan, nan nan * -> nan
+            {
+                //puts("hi 297");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            }
+            else if (new_expression.back() == "0") // x 0 * -> 0 (because, since postfix operators come at the end, if the end of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 *, which is 0)
             {
                 //puts("hi 235");
                 new_expression[first_arg_idx_low] = "0";
@@ -2004,7 +2087,14 @@ struct Board
             graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
             int second_arg_idx_high = new_expression.size();
             int step;
-            if ((new_expression.back() == "0") && (new_expression[first_arg_idx_high - 1] == "0")) // 0 0 / -> nan
+            
+            if ((new_expression[first_arg_idx_high - 1] == "nan") || (new_expression.back() == "nan")) //nan x / -> nan, x nan / -> nan, nan nan / -> nan
+            {
+                //puts("hi 339");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            }
+            else if ((new_expression.back() == "0") && (new_expression[first_arg_idx_high - 1] == "0")) // 0 0 / -> nan
             {
                 //puts("hi 279");
                 new_expression[first_arg_idx_low] = "nan";
@@ -2015,7 +2105,6 @@ struct Board
                 //puts("hi 280");
                 //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
                 //for now we weed it out because annoying not to; giving this up seems like the better deal...
-                //TODO: need to retest this in simplification script
                 new_expression[first_arg_idx_low] = "nan";//(new_expression[first_arg_idx_high - 1] == "~") ? "-inf" : "inf";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
             }
@@ -2055,8 +2144,14 @@ struct Board
             graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
             //int second_arg_idx_high = new_expression.size();
             //int step;
-
-            if (new_expression.back() == "0") // x 0 ^ -> 1 (because, since postfix operators come at the end, if the end of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 ^, which is 1)
+            
+            if ((new_expression[first_arg_idx_high - 1] == "nan") || (new_expression.back() == "nan")) //nan x ^ -> nan, x nan ^ -> nan, nan nan ^ -> nan
+            {
+                //puts("hi 397");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            }
+            else if (new_expression.back() == "0") // x 0 ^ -> 1 (because, since postfix operators come at the end, if the end of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 ^, which is 1)
             {
                 //puts("hi 318");
                 new_expression[first_arg_idx_low] = "1";
@@ -2067,7 +2162,6 @@ struct Board
                 //puts("hi 324");
                 //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
                 //for now we weed it out because annoying not to; giving this up seems like the better deal...
-                //TODO: need to retest this in simplification script
                 new_expression[first_arg_idx_low] = "nan";// "0";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
             }
@@ -2091,11 +2185,18 @@ struct Board
         {
             int first_arg_idx_low = new_expression.size();
             graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
-            if (new_expression.back() == "0") // 0 cos -> 1 (because, since postfix operators come at the end, if the end of the argument of 'cos' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 cos, which is 1)
+            
+            if (new_expression.back() == "nan") // nan cos -> nan (because, since postfix operators come at the end, if the end of the argument of 'cos' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan cos, which is nan)
+            {
+                //puts("hi 439");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression.back() == "0") // 0 cos -> 1 (because, since postfix operators come at the end, if the end of the argument of 'cos' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 cos, which is 1)
             {
                 //puts("hi 350");
                 new_expression[first_arg_idx_low] = "1";
-                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
             }
             //TODO: Add cos(inf) -> nan
             else
@@ -2107,11 +2208,18 @@ struct Board
         {
             int first_arg_idx_low = new_expression.size();
             graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
-            if (new_expression.back() == "0") // 0 sin -> 0 (because, since postfix operators come at the end, if the end of the argument of 'sin' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 sin, which is 0)
+            
+            if (new_expression.back() == "nan") // nan sin -> nan (because, since postfix operators come at the end, if the end of the argument of 'sin' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan sin, which is nan)
+            {
+                //puts("hi 462");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression.back() == "0") // 0 sin -> 0 (because, since postfix operators come at the end, if the end of the argument of 'sin' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 sin, which is 0)
             {
                 //puts("hi 365");
                 new_expression[first_arg_idx_low] = "0";
-                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
             }
             //TODO: Add sin(inf) -> nan
             else
@@ -2123,29 +2231,36 @@ struct Board
         {
             int first_arg_idx_low = new_expression.size();
             graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
-            if (new_expression.back() == "0") // 0 tanh -> 0 (because, since postfix operators come at the end, if the end of the argument of 'tanh' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 tanh, which is 0)
+            
+            if (new_expression.back() == "nan") // nan tanh -> nan (because, since postfix operators come at the end, if the end of the argument of 'tanh' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan tanh, which is nan)
+            {
+                //puts("hi 485");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression.back() == "0") // 0 tanh -> 0 (because, since postfix operators come at the end, if the end of the argument of 'tanh' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 tanh, which is 0)
             {
                 //puts("hi 380");
                 new_expression[first_arg_idx_low] = "0";
-                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
             }
             else if (new_expression.back() == "inf") // inf tanh -> 1 (because, since postfix operators come at the end, if the end of the argument of 'tanh' is inf, then the whole argument MUST be inf, therefore the expression reduces to inf tanh, which is 1)
             {
                 //puts("hi 386");
                 new_expression[first_arg_idx_low] = "1";
-                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
             }
             else if (new_expression.back() == "-inf") // -inf tanh -> -1 (because, since postfix operators come at the end, if the end of the argument of 'tanh' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf tanh, which is -1)
             {
                 //puts("hi 392");
                 new_expression[first_arg_idx_low] = "-1";
-                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
             }
             else if ((new_expression.back() == "~") && (new_expression.size() >= 2) && ((*(new_expression.end() - 2)) == "inf")) // inf ~ tanh -> -1 (because, since postfix operators come at the end, if the end of the argument of 'tanh' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf tanh, which is -1)
             {
                 //puts("hi 392");
                 new_expression[first_arg_idx_low] = "-1";
-                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
             }
             else
             {
@@ -2156,29 +2271,36 @@ struct Board
         {
             int first_arg_idx_low = new_expression.size();
             graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
-            if (new_expression.back() == "0") // 0 sech -> 1 (because, since postfix operators come at the end, if the end of the argument of 'sech' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 sech, which is 1)
+            
+            if (new_expression.back() == "nan") // nan sech -> nan (because, since postfix operators come at the end, if the end of the argument of 'sech' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan sech, which is nan)
+            {
+                //puts("hi 525");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression.back() == "0") // 0 sech -> 1 (because, since postfix operators come at the end, if the end of the argument of 'sech' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 sech, which is 1)
             {
                 //puts("hi 395");
                 new_expression[first_arg_idx_low] = "1";
-                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
             }
             else if (new_expression.back() == "inf") // inf sech -> 0 (because, since postfix operators come at the end, if the end of the argument of 'sech' is inf, then the whole argument MUST be inf, therefore the expression reduces to inf sech, which is 0)
             {
     //            puts("hi 419");
                 new_expression[first_arg_idx_low] = "0";
-                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
             }
             else if (new_expression.back() == "-inf") // -inf sech -> 0 (because, since postfix operators come at the end, if the end of the argument of 'sech' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf sech, which is 0)
             {
                 //puts("hi 425");
                 new_expression[first_arg_idx_low] = "0";
-                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
             }
             else if ((new_expression.back() == "~") && (new_expression.size() >= 2) && ((*(new_expression.end() - 2)) == "inf")) // inf ~ sech -> 0 (because, since postfix operators come at the end, if the end of the argument of 'sech' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf sech, which is 0)
             {
                 //puts("hi 431");
                 new_expression[first_arg_idx_low] = "0";
-                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
             }
             else
             {
@@ -2189,17 +2311,24 @@ struct Board
         {
             int first_arg_idx_low = new_expression.size();
             graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
-            if (new_expression.back() == "0") // 0 ~ -> 0 (because, since postfix operators come at the end, if the end of the argument of '~' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 ~, which is 0)
+            
+            if (new_expression.back() == "nan") // nan ~ -> nan (because, since postfix operators come at the end, if the end of the argument of '~' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan ~, which is nan)
+            {
+                //puts("hi 565");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression.back() == "0") // 0 ~ -> 0 (because, since postfix operators come at the end, if the end of the argument of '~' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 ~, which is 0)
             {
     //            puts("hi 445");
                 new_expression[first_arg_idx_low] = "0";
-                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
             }
             if (new_expression.back() == "inf") // inf ~ -> -inf (because, since postfix operators come at the end, if the end of the argument of '~' is inf, then the whole argument MUST be inf, therefore the expression reduces to inf ~, which is -inf)
             {
                 //puts("hi 507");
                 new_expression[first_arg_idx_low] = "-inf";
-                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
             }
             else
             {
@@ -2210,17 +2339,24 @@ struct Board
         {
             int first_arg_idx_low = new_expression.size();
             graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
-            if (new_expression.back() == "0") // 0 exp -> 1 (because, since postfix operators come at the end, if the end of the argument of 'exp' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 exp, which is 1)
+            
+            if (new_expression.back() == "nan") // nan exp -> nan (because, since postfix operators come at the end, if the end of the argument of 'exp' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan exp, which is nan)
+            {
+                //puts("hi 593");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression.back() == "0") // 0 exp -> 1 (because, since postfix operators come at the end, if the end of the argument of 'exp' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 exp, which is 1)
             {
                 //puts("hi 524");
                 new_expression[first_arg_idx_low] = "1";
-                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
             }
             if (new_expression.back() == "inf") // inf exp -> inf (because, since postfix operators come at the end, if the end of the argument of '~' is inf, then the whole argument MUST be inf, therefore the expression reduces to inf ~, which is -inf)
             {
                 //puts("hi 530");
                 new_expression[first_arg_idx_low] = "inf";
-                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
             }
             else
             {
@@ -2249,7 +2385,14 @@ struct Board
         graspSimplifyPostfixHelper(expression, low, up, grasp, new_expression, false);
         expression = new_expression;
     }
-
+    
+    // 0 0 0 1 + - * tanh sech 1 /
+    // 0 0 1 - * tanh sech 1 /
+    // 0 -1 * tanh sech 1 /
+    // 0 tanh sech 1 /
+    // 0 sech 1 /
+    // 1 1 /
+    // 1
     void simplifyRPN_Helper(std::vector<std::string>& expression)
     {
         bool simplified = true;
@@ -2265,7 +2408,7 @@ struct Board
                     {
                         isdouble1 = isdouble(expression[i-1]);
                         isdouble2 = isdouble(expression[i-2]);
-
+                        
                         if (isdouble1 && isdouble2)
                         {
                             if (expression[i] == "+")
@@ -2305,10 +2448,10 @@ struct Board
                                 break;
                             }
                         }
-
+                        
                         isConst1 = is_const(expression[i-1]);
                         isConst2 = is_const(expression[i-2]);
-
+                        
                         if ((isConst1 && isConst2) && ((expression[i-1].find("nan") != std::string::npos) || (expression[i-2].find("nan") != std::string::npos))) //x nan binary_op = nan x binary_op = nan
                         {
     //                        puts("hi 549");
@@ -2462,7 +2605,7 @@ struct Board
                             }
                         }
                     }
-
+                    
                     else if (is_unary(expression[i]) && isdouble(expression[i-1]))
                     {
                         if (expression[i] == "cos")
@@ -2543,7 +2686,7 @@ struct Board
                             break;
                         }
                     }
-
+                    
                     else if (is_unary(expression[i]))
                     {
                         if (expression[i] == "~" && expression[i-1] == "~")
@@ -8509,43 +8652,44 @@ int main(int argc, char *argv[])
     constexpr double time = 600.0;
     double threshold = 1.0;
     auto data1 = createMeshgridVectors(330, 2, {0.0001, 0.0}, {10.0, 6.28319});
-//    RandomSearch(SwiftHohenberg /*differential equation to solve*/,
-//                 1 /*number of equations in differential equation system*/,
-//                 data1 /*data used to solve differential equation*/,
-//                 std::vector<int>{13} /*fixed depths of generated solution*/,
-//                 "postfix" /*expression representation*/,
-//                 0 /*num_consts_diff: number of constants in differential equation*/,
-//                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
-//                 5 /*number of fit iterations*/,
-//                 "naive_numerical" /*method for computing the gradient*/,
-//                 true /*cache*/,
-//                 time /*time to run the algorithm in seconds*/,
-//                 0 /*num threads*/,
-//                 true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
-//                 threshold /*threshold for which solutions cannot be constant*/,
-//                 false /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
-//                 0 /*number of data columns that constitute labels and not independent variables/features*/);
-    SimulatedAnnealing(SwiftHohenberg /*differential equation to solve*/,
-        1 /*number of equations in differential equation system*/,
-        data1 /*data used to solve differential equation*/,
-        std::vector<int>{4} /*fixed depths of generated solution*/,
-        "postfix" /*expression representation*/,
-        0/*2*/ /*num_consts_diff: number of constants in differential equation*/,
-        "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
-        5 /*number of fit iterations*/,
-        "naive_numerical" /*method for computing the gradient*/,
-        true /*cache*/,
-        time /*time to run the algorithm in seconds*/,
-        0 /*num threads*/,
-        true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
-        threshold /*threshold for which solutions cannot be constant*/,
-        true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
-        false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
-        0 /*number of data columns that constitute labels and not independent variables/features*/,
-        {split("x1 8 / x1 sin 1.0000132758892615 x0 sin * * -")} /*seed expressions*/,
-        false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
-        random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
-        "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
+    //TODO: Test the new changes! 2-4 tests per func-line; either 2 postfix + 2 prefix or 2 postfix
+    RandomSearch(SwiftHohenberg /*differential equation to solve*/,
+                 1 /*number of equations in differential equation system*/,
+                 data1 /*data used to solve differential equation*/,
+                 std::vector<int>{13} /*fixed depths of generated solution*/,
+                 "postfix" /*expression representation*/,
+                 0 /*num_consts_diff: number of constants in differential equation*/,
+                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
+                 5 /*number of fit iterations*/,
+                 "naive_numerical" /*method for computing the gradient*/,
+                 true /*cache*/,
+                 time /*time to run the algorithm in seconds*/,
+                 0 /*num threads*/,
+                 true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                 threshold /*threshold for which solutions cannot be constant*/,
+                 false /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                 0 /*number of data columns that constitute labels and not independent variables/features*/);
+//    SimulatedAnnealing(SwiftHohenberg /*differential equation to solve*/,
+//        1 /*number of equations in differential equation system*/,
+//        data1 /*data used to solve differential equation*/,
+//        std::vector<int>{4} /*fixed depths of generated solution*/,
+//        "postfix" /*expression representation*/,
+//        0/*2*/ /*num_consts_diff: number of constants in differential equation*/,
+//        "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
+//        5 /*number of fit iterations*/,
+//        "naive_numerical" /*method for computing the gradient*/,
+//        true /*cache*/,
+//        time /*time to run the algorithm in seconds*/,
+//        0 /*num threads*/,
+//        true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+//        threshold /*threshold for which solutions cannot be constant*/,
+//        true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+//        false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
+//        0 /*number of data columns that constitute labels and not independent variables/features*/,
+//        {split("x1 8 / x1 sin 1.0000132758892615 x0 sin * * -")} /*seed expressions*/,
+//        false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
+//        random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
+//        "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
 
 //    double threshold = 0.0223;
 //    auto data = createMeshgridVectors(101, 1, {0.0001}, {10.0});

@@ -1,4 +1,3 @@
-//TODO: Include `un_op nan` = `nan`; needs to be first case to test for each "block"
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -537,12 +536,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         int temp = low+1+grasp[low+1];
         int first_arg_idx_low = new_expression.size();
         graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // sech x
-//        if (new_expression[first_arg_idx_low] == "nan") // sech nan -> nan
-//        {
-////            puts("hi 466");
-//            new_expression[op_idx] = "nan"; //change 'sech' to 'nan'
-//            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
-//        }
+
         if (new_expression[first_arg_idx_low] == "nan") // sech nan -> nan
         {
             //puts("hi 548");
@@ -581,12 +575,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         int temp = low+1+grasp[low+1];
         int first_arg_idx_low = new_expression.size();
         graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // ~ x
-//        if (new_expression[first_arg_idx_low] == "nan") // ~ nan -> nan
-//        {
-////            puts("hi 466");
-//            new_expression[op_idx] = "nan"; //change '~' to 'nan'
-//            new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
-//        }
+
         if (new_expression[first_arg_idx_low] == "nan") // ~ nan -> nan
         {
             //puts("hi 592");
@@ -655,14 +644,12 @@ void graspSimplifyPrefix(std::vector<std::string>& expression, int low, int up, 
     graspSimplifyPrefixHelper(expression, low, up, grasp, new_expression, false);
     expression = new_expression;
 }
+
 //scans entire `expression` for the following:
 //     bin_op number1 number2 -> numberResult
 //     un_op number1 -> numberResult
 //the function repeatedly iterates over `expression` until no more
 //instances of the above are found.
-
-
-
 //+ cos - + 1 3 x + * cos 2 sin 3 + arcsin - 8 7 sin tanh cos * 3 4
 //+ cos - 4 x + * cos 2 sin 3 + arcsin - 8 7 sin tanh cos * 3 4
 //+ cos - 4 x + * -0.42 sin 3 + arcsin - 8 7 sin tanh cos * 3 4
@@ -2145,7 +2132,6 @@ int main()
     printf("after: ");print_container(test_expr);
     puts("");
     
-    //TODO: Add test cases for cos, sin, tanh, sech, ~, exp (2 for each -> 12 in total)
     test_expr = {"cos", "^", "sech", "asin", "-", "apple", "tanh", "sech", "acos", "arccos", "+", "apple", "2", "nan"};
     printf("before: ");print_container(test_expr);
     simplifyPN(test_expr);

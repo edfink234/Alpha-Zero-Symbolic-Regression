@@ -1,4 +1,3 @@
-//TODO: Include `nan x bin_op` = `x nan bin_op` = `nan un_op` = `nan`; needs to be first case to test for each "block"
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -264,6 +263,13 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             }
         }
         
+        else if ((new_expression[first_arg_idx_high - 1] == "nan") || (new_expression.back() == "nan")) //nan x +/- -> nan, x nan +/- -> nan, nan nan +/- -> nan
+        {
+            //puts("hi 269");
+            new_expression[first_arg_idx_low] = "nan";
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+        }
+        
         else if ((expression[up] == "-") && ((step = (first_arg_idx_high - first_arg_idx_low)) == (second_arg_idx_high - first_arg_idx_high)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) //x x - -> 0
         {
             //puts("hi 215");
@@ -285,7 +291,13 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         //int second_arg_idx_high = new_expression.size();
         //int step;
         
-        if (new_expression.back() == "0") // x 0 * -> 0 (because, since postfix operators come at the end, if the end of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 *, which is 0)
+        if ((new_expression[first_arg_idx_high - 1] == "nan") || (new_expression.back() == "nan")) //nan x * -> nan, x nan * -> nan, nan nan * -> nan
+        {
+            //puts("hi 297");
+            new_expression[first_arg_idx_low] = "nan";
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+        }
+        else if (new_expression.back() == "0") // x 0 * -> 0 (because, since postfix operators come at the end, if the end of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 *, which is 0)
         {
             //puts("hi 235");
             new_expression[first_arg_idx_low] = "0";
@@ -320,7 +332,14 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
         int second_arg_idx_high = new_expression.size();
         int step;
-        if ((new_expression.back() == "0") && (new_expression[first_arg_idx_high - 1] == "0")) // 0 0 / -> nan
+        
+        if ((new_expression[first_arg_idx_high - 1] == "nan") || (new_expression.back() == "nan")) //nan x / -> nan, x nan / -> nan, nan nan / -> nan
+        {
+            //puts("hi 339");
+            new_expression[first_arg_idx_low] = "nan";
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+        }
+        else if ((new_expression.back() == "0") && (new_expression[first_arg_idx_high - 1] == "0")) // 0 0 / -> nan
         {
             //puts("hi 279");
             new_expression[first_arg_idx_low] = "nan";
@@ -331,7 +350,6 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             //puts("hi 280");
             //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
             //for now we weed it out because annoying not to; giving this up seems like the better deal...
-            //TODO: need to retest this in simplification script
             new_expression[first_arg_idx_low] = "nan";//(new_expression[first_arg_idx_high - 1] == "~") ? "-inf" : "inf";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
         }
@@ -372,7 +390,13 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         //int second_arg_idx_high = new_expression.size();
         //int step;
         
-        if (new_expression.back() == "0") // x 0 ^ -> 1 (because, since postfix operators come at the end, if the end of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 ^, which is 1)
+        if ((new_expression[first_arg_idx_high - 1] == "nan") || (new_expression.back() == "nan")) //nan x ^ -> nan, x nan ^ -> nan, nan nan ^ -> nan
+        {
+            //puts("hi 397");
+            new_expression[first_arg_idx_low] = "nan";
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+        }
+        else if (new_expression.back() == "0") // x 0 ^ -> 1 (because, since postfix operators come at the end, if the end of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 ^, which is 1)
         {
             //puts("hi 318");
             new_expression[first_arg_idx_low] = "1";
@@ -383,7 +407,6 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             //puts("hi 324");
             //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
             //for now we weed it out because annoying not to; giving this up seems like the better deal...
-            //TODO: need to retest this in simplification script
             new_expression[first_arg_idx_low] = "nan";// "0";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
         }
@@ -407,11 +430,18 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
     {
         int first_arg_idx_low = new_expression.size();
         graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
-        if (new_expression.back() == "0") // 0 cos -> 1 (because, since postfix operators come at the end, if the end of the argument of 'cos' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 cos, which is 1)
+        
+        if (new_expression.back() == "nan") // nan cos -> nan (because, since postfix operators come at the end, if the end of the argument of 'cos' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan cos, which is nan)
+        {
+            //puts("hi 439");
+            new_expression[first_arg_idx_low] = "nan";
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+        }
+        else if (new_expression.back() == "0") // 0 cos -> 1 (because, since postfix operators come at the end, if the end of the argument of 'cos' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 cos, which is 1)
         {
             //puts("hi 350");
             new_expression[first_arg_idx_low] = "1";
-            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         //TODO: Add cos(inf) -> nan
         else
@@ -423,11 +453,18 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
     {
         int first_arg_idx_low = new_expression.size();
         graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
-        if (new_expression.back() == "0") // 0 sin -> 0 (because, since postfix operators come at the end, if the end of the argument of 'sin' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 sin, which is 0)
+        
+        if (new_expression.back() == "nan") // nan sin -> nan (because, since postfix operators come at the end, if the end of the argument of 'sin' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan sin, which is nan)
+        {
+            //puts("hi 462");
+            new_expression[first_arg_idx_low] = "nan";
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+        }
+        else if (new_expression.back() == "0") // 0 sin -> 0 (because, since postfix operators come at the end, if the end of the argument of 'sin' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 sin, which is 0)
         {
             //puts("hi 365");
             new_expression[first_arg_idx_low] = "0";
-            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         //TODO: Add sin(inf) -> nan
         else
@@ -439,29 +476,36 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
     {
         int first_arg_idx_low = new_expression.size();
         graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
-        if (new_expression.back() == "0") // 0 tanh -> 0 (because, since postfix operators come at the end, if the end of the argument of 'tanh' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 tanh, which is 0)
+        
+        if (new_expression.back() == "nan") // nan tanh -> nan (because, since postfix operators come at the end, if the end of the argument of 'tanh' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan tanh, which is nan)
+        {
+            //puts("hi 485");
+            new_expression[first_arg_idx_low] = "nan";
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+        }
+        else if (new_expression.back() == "0") // 0 tanh -> 0 (because, since postfix operators come at the end, if the end of the argument of 'tanh' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 tanh, which is 0)
         {
             //puts("hi 380");
             new_expression[first_arg_idx_low] = "0";
-            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if (new_expression.back() == "inf") // inf tanh -> 1 (because, since postfix operators come at the end, if the end of the argument of 'tanh' is inf, then the whole argument MUST be inf, therefore the expression reduces to inf tanh, which is 1)
         {
             //puts("hi 386");
             new_expression[first_arg_idx_low] = "1";
-            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if (new_expression.back() == "-inf") // -inf tanh -> -1 (because, since postfix operators come at the end, if the end of the argument of 'tanh' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf tanh, which is -1)
         {
             //puts("hi 392");
             new_expression[first_arg_idx_low] = "-1";
-            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if ((new_expression.back() == "~") && (new_expression.size() >= 2) && ((*(new_expression.end() - 2)) == "inf")) // inf ~ tanh -> -1 (because, since postfix operators come at the end, if the end of the argument of 'tanh' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf tanh, which is -1)
         {
             //puts("hi 392");
             new_expression[first_arg_idx_low] = "-1";
-            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else
         {
@@ -472,29 +516,36 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
     {
         int first_arg_idx_low = new_expression.size();
         graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
-        if (new_expression.back() == "0") // 0 sech -> 1 (because, since postfix operators come at the end, if the end of the argument of 'sech' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 sech, which is 1)
+        
+        if (new_expression.back() == "nan") // nan sech -> nan (because, since postfix operators come at the end, if the end of the argument of 'sech' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan sech, which is nan)
+        {
+            //puts("hi 525");
+            new_expression[first_arg_idx_low] = "nan";
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+        }
+        else if (new_expression.back() == "0") // 0 sech -> 1 (because, since postfix operators come at the end, if the end of the argument of 'sech' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 sech, which is 1)
         {
             //puts("hi 395");
             new_expression[first_arg_idx_low] = "1";
-            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if (new_expression.back() == "inf") // inf sech -> 0 (because, since postfix operators come at the end, if the end of the argument of 'sech' is inf, then the whole argument MUST be inf, therefore the expression reduces to inf sech, which is 0)
         {
 //            puts("hi 419");
             new_expression[first_arg_idx_low] = "0";
-            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if (new_expression.back() == "-inf") // -inf sech -> 0 (because, since postfix operators come at the end, if the end of the argument of 'sech' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf sech, which is 0)
         {
             //puts("hi 425");
             new_expression[first_arg_idx_low] = "0";
-            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if ((new_expression.back() == "~") && (new_expression.size() >= 2) && ((*(new_expression.end() - 2)) == "inf")) // inf ~ sech -> 0 (because, since postfix operators come at the end, if the end of the argument of 'sech' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf sech, which is 0)
         {
             //puts("hi 431");
             new_expression[first_arg_idx_low] = "0";
-            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else
         {
@@ -505,17 +556,24 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
     {
         int first_arg_idx_low = new_expression.size();
         graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
-        if (new_expression.back() == "0") // 0 ~ -> 0 (because, since postfix operators come at the end, if the end of the argument of '~' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 ~, which is 0)
+        
+        if (new_expression.back() == "nan") // nan ~ -> nan (because, since postfix operators come at the end, if the end of the argument of '~' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan ~, which is nan)
+        {
+            //puts("hi 565");
+            new_expression[first_arg_idx_low] = "nan";
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+        }
+        else if (new_expression.back() == "0") // 0 ~ -> 0 (because, since postfix operators come at the end, if the end of the argument of '~' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 ~, which is 0)
         {
 //            puts("hi 445");
             new_expression[first_arg_idx_low] = "0";
-            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         if (new_expression.back() == "inf") // inf ~ -> -inf (because, since postfix operators come at the end, if the end of the argument of '~' is inf, then the whole argument MUST be inf, therefore the expression reduces to inf ~, which is -inf)
         {
             //puts("hi 507");
             new_expression[first_arg_idx_low] = "-inf";
-            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else
         {
@@ -526,17 +584,24 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
     {
         int first_arg_idx_low = new_expression.size();
         graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
-        if (new_expression.back() == "0") // 0 exp -> 1 (because, since postfix operators come at the end, if the end of the argument of 'exp' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 exp, which is 1)
+        
+        if (new_expression.back() == "nan") // nan exp -> nan (because, since postfix operators come at the end, if the end of the argument of 'exp' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan exp, which is nan)
+        {
+            //puts("hi 593");
+            new_expression[first_arg_idx_low] = "nan";
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+        }
+        else if (new_expression.back() == "0") // 0 exp -> 1 (because, since postfix operators come at the end, if the end of the argument of 'exp' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 exp, which is 1)
         {
             //puts("hi 524");
             new_expression[first_arg_idx_low] = "1";
-            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         if (new_expression.back() == "inf") // inf exp -> inf (because, since postfix operators come at the end, if the end of the argument of '~' is inf, then the whole argument MUST be inf, therefore the expression reduces to inf ~, which is -inf)
         {
             //puts("hi 530");
             new_expression[first_arg_idx_low] = "inf";
-            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else
         {
@@ -565,6 +630,7 @@ void graspSimplifyPostfix(std::vector<std::string>& expression, int low, int up,
     graspSimplifyPostfixHelper(expression, low, up, grasp, new_expression, false);
     expression = new_expression;
 }
+
 // 0 0 0 1 + - * tanh sech 1 /
 // 0 0 1 - * tanh sech 1 /
 // 0 -1 * tanh sech 1 /
@@ -1962,10 +2028,142 @@ int main()
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
+    
+    test_expr = {"x", "0", "1", "x", "x", "*", "+", "^", "~", "cos", "sin", "+"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "x", "*", "0", "1", "x", "x", "tanh", "*", "+", "^", "~", "cos", "sin", "+"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"z", "cos", "0", "1", "x", "x", "*", "+", "^", "~", "cos", "sin", "-"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "x", "+", "0", "1", "x", "x", "tanh", "*", "+", "^", "~", "cos", "sin", "-"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"z", "sech", "tanh", "0", "1", "x", "x", "*", "+", "^", "~", "cos", "sin", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "x", "+", "sin", "0", "1", "x", "x", "tanh", "*", "+", "^", "~", "cos", "sin", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"y", "tanh", "sin", "asin", "0", "1", "x", "x", "*", "+", "^", "~", "cos", "sin", "/"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "x", "/", "sech", "arcsin", "0", "1", "x", "x", "tanh", "*", "+", "^", "~", "cos", "sin", "/"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"y", "sech", "sech", "sech", "0", "1", "x", "x", "*", "+", "^", "~", "cos", "sin", "^"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "x", "^", "sech", "arcsin", "0", "1", "x", "x", "tanh", "*", "+", "^", "~", "cos", "sin", "^"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"y", "sech", "sech", "sech", "0", "1", "x", "x", "*", "+", "^", "~", "cos", "sin", "^", "cos"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "x", "^", "sech", "arcsin", "cos", "tanh", "0", "1", "x", "x", "tanh", "*", "+", "^", "~", "cos", "sin", "^", "cos"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"y", "sech", "sech", "sech", "0", "1", "0", "-", "x", "x", "*", "+", "^", "~", "cos", "sin", "^", "sin"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "x", "^", "sech", "arcsin", "cos", "tanh", "0", "1", "x", "x", "+", "x", "tanh", "*", "+", "^", "~", "cos", "sin", "^", "sin"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"y", "y", "*", "sin", "sech", "sech", "sech", "0", "1", "0", "-", "x", "x", "*", "+", "^", "~", "cos", "sin", "^", "sin", "tanh"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "x", "x", "^", "^", "sech", "arcsin", "cos", "tanh", "0", "1", "x", "x", "+", "x", "tanh", "*", "+", "^", "~", "cos", "sin", "^", "sin", "tanh"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"y", "y", "2", "^", "*", "sin", "sech", "sech", "sech", "0", "1", "0", "-", "x", "x", "*", "+", "^", "~", "cos", "sin", "^", "sin", "sech"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "x", "x", "^", "^", "sech", "arcsin", "cos", "tanh", "0", "0", "-", "1", "x", "x", "+", "x", "+", "x", "tanh", "*", "+", "^", "~", "cos", "sin", "^", "sin", "sech"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"y", "y", "2", "1", "+", "^", "*", "sin", "sech", "sech", "sech", "0", "1", "0", "-", "x", "x", "*", "+", "^", "~", "cos", "sin", "^", "sin", "exp"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "x", "x", "-", "^", "sech", "arcsin", "cos", "tanh", "0", "0", "-", "1", "x", "x", "+", "x", "+", "x", "tanh", "*", "+", "^", "~", "cos", "sin", "^", "sin", "exp"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"y", "y", "2", "1", "x", "+", "+", "^", "*", "sin", "tanh", "sech", "sech", "0", "1", "0", "-", "x", "x", "*", "+", "^", "~", "cos", "sin", "^", "sin", "~"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "2", "-", "x", "y", "/", "^", "sech", "arccos", "cos", "tanh", "0", "0", "-", "1", "x", "x", "+", "x", "+", "x", "tanh", "*", "+", "^", "~", "cos", "sin", "^", "sin", "~"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
 }
 
 //g++ -std=c++20 -o PostfixSimplifyPrev PostfixSimplifyPrev.cpp
-
+//MARK: Number of non-production-tested simplifications so far: 10
 //https://stackoverflow.com/questions/20153412/simplification-algorithm-for-reverse-polish-notation
 //https://dl.acm.org/
 //simplification of polish notation expressions articles
