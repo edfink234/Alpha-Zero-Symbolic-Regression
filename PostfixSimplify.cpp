@@ -264,6 +264,13 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             }
         }
         
+//        else if ((new_expression[first_arg_idx_high - 1] == "nan") || (new_expression.back() == "nan")) //nan x +/- -> x nan +/- -> nan
+//        {
+//            puts("hi 269");
+//            new_expression[first_arg_idx_low] = "0";
+//            new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
+//        }
+        
         else if ((expression[up] == "-") && ((step = (first_arg_idx_high - first_arg_idx_low)) == (second_arg_idx_high - first_arg_idx_high)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) //x x - -> 0
         {
             //puts("hi 215");

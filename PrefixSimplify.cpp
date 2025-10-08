@@ -461,13 +461,13 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // cos x
         if (new_expression[first_arg_idx_low] == "nan") // cos nan -> nan
         {
-            puts("hi 464");
+            //puts("hi 464");
             new_expression[op_idx] = "nan"; //change 'cos' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
         else if (new_expression[first_arg_idx_low] == "0") // cos 0 -> 1
         {
-            //puts("hi 374");
+//            puts("hi 374");
             new_expression[op_idx] = "1"; //change 'cos' to '1'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
@@ -481,7 +481,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // sin x
         if (new_expression[first_arg_idx_low] == "nan") // sin nan -> nan
         {
-            puts("hi 484");
+            //puts("hi 484");
             new_expression[op_idx] = "nan"; //change 'sin' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
@@ -501,7 +501,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // tanh x
         if (new_expression[first_arg_idx_low] == "nan") // tanh nan -> nan
         {
-            puts("hi 504");
+            //puts("hi 504");
             new_expression[op_idx] = "nan"; //change 'tanh' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
@@ -545,7 +545,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
 //        }
         if (new_expression[first_arg_idx_low] == "nan") // sech nan -> nan
         {
-            puts("hi 548");
+            //puts("hi 548");
             new_expression[op_idx] = "nan"; //change 'sech' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
@@ -589,7 +589,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
 //        }
         if (new_expression[first_arg_idx_low] == "nan") // ~ nan -> nan
         {
-            puts("hi 592");
+            //puts("hi 592");
             new_expression[op_idx] = "nan"; //change '~' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
@@ -615,7 +615,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // exp x
         if (new_expression[first_arg_idx_low] == "nan") // exp nan -> nan
         {
-            puts("hi 618");
+            //puts("hi 618");
             new_expression[op_idx] = "nan"; //change 'exp' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
@@ -2146,12 +2146,80 @@ int main()
     puts("");
     
     //TODO: Add test cases for cos, sin, tanh, sech, ~, exp (2 for each -> 12 in total)
+    test_expr = {"cos", "^", "sech", "asin", "-", "apple", "tanh", "sech", "acos", "arccos", "+", "apple", "2", "nan"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
     
-    //MARK: For the above TODO, we just need to make sure the outputs of the 12 test-cases we implement above are correct, since I already checked the new simplifications agreed and improved the robustness of PrefixSimplifyPrev; thus, I have already updated PrefixSimplifyPrev.cpp to match this one (PrefixSimplify.cpp)
+    test_expr = {"cos", "^", "nan", "sech", "+", "1", "+", "x", "tanh", "-", "2", "^", "x", "2"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"sin", "^", "sech", "acos", "-", "apple", "tanh", "sech", "acos", "arccos", "+", "apple", "2", "nan"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"sin", "^", "nan", "tanh", "+", "1", "+", "x", "tanh", "-", "2", "^", "x", "2"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"tanh", "*", "sech", "acos", "-", "apple", "tanh", "sech", "acos", "arccos", "+", "apple", "2", "nan"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"tanh", "*", "nan", "tanh", "+", "1", "+", "x", "tanh", "-", "3", "^", "x", "2"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"sech", "+", "sech", "acos", "-", "orange", "tanh", "sech", "acos", "arccos", "+", "apple", "2", "nan"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"sech", "-", "nan", "tanh", "+", "3", "+", "x", "tanh", "-", "3", "cos", "^", "x", "2"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"~", "sech", "+", "sech", "acos", "-", "orange", "tanh", "sech", "acos", "arccos", "+", "apple", "2", "nan"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"~", "sech", "-", "nan", "tanh", "+", "3", "+", "x", "tanh", "-", "3", "sin", "^", "x", "2"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"exp", "~", "sech", "+", "sech", "acos", "-", "orange", "tanh", "sin", "arccos", "arccos", "-", "apple", "2", "nan"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"exp", "~", "sech", "-", "nan", "arcsin", "-", "30", "+", "x", "tanh", "-", "3", "sin", "^", "x", "2"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
 }
 //g++ -std=c++20 -o PrefixSimplify PrefixSimplify.cpp
-//MARK: Number of non-production-tested simplifications so far: 4
-//MARK: Number of non-here-tested simplifications so far: 6
+//MARK: Number of non-production-tested simplifications so far: 10
 //https://stackoverflow.com/questions/20153412/simplification-algorithm-for-reverse-polish-notation
 //https://dl.acm.org/
 //simplification of polish notation expressions articles
