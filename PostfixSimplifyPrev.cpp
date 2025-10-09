@@ -1,3 +1,4 @@
+//TODO: Need a more robust way to check numerical-string equality (e.g. `x == 0` won't work here if e.g. x is -0.0000 -> need a function to do this instead, most likely)
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -62,7 +63,7 @@ double Stod(const std::string& param)
 {
     try
     {
-        double val = std::stof(param);
+        double val = std::stod(param);
         return val;
     }
     catch (const std::out_of_range&)
@@ -686,7 +687,7 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
                         }
                         else if (expression[i] == "^")
                         {
-                            expression[i] = simplifyString(to_string_general(std::powf(Stod(expression[i-2]), Stod(expression[i-1]))));
+                            expression[i] = simplifyString(to_string_general(std::pow(Stod(expression[i-2]), Stod(expression[i-1]))));
 //                            printf("hi 566, res = %s\n", expression[i].c_str());
                             expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                             simplified = true;
@@ -2163,7 +2164,6 @@ int main()
 }
 
 //g++ -std=c++20 -o PostfixSimplifyPrev PostfixSimplifyPrev.cpp
-//MARK: Number of non-production-tested simplifications so far: 10
 //https://stackoverflow.com/questions/20153412/simplification-algorithm-for-reverse-polish-notation
 //https://dl.acm.org/
 //simplification of polish notation expressions articles
