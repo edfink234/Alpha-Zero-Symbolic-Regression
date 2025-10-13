@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from sympy import *
 from numpy import sqrt, exp, cos, sin
 from mpl_toolkits.mplot3d import Axes3D
-
+show = True
 sech = lambda x: 1.0/np.cosh(x)
 
 PrintFormula = False
@@ -55,6 +55,9 @@ fig.colorbar(surf, shrink=0.5, aspect=10, label="f(r, θ)")
 ax.view_init(elev=35, azim=235)
 
 plt.tight_layout()
-plt.savefig("SwiftHohenberg2D.png", dpi=5*96)
-from os import system
-system("open SwiftHohenberg2D.png")
+if show:
+    plt.show()
+else:
+    plt.savefig("SwiftHohenberg2D.png", dpi=5*96)
+    from os import system
+    system("open SwiftHohenberg2D.png")

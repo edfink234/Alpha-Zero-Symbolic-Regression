@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <charconv>
 #include <unordered_set>
 #include <string>
 #include <cmath>
@@ -39,6 +40,7 @@ std::string to_string_general(double v)
         out.resize(out.size() * 2);            // grow and retry (rare)
     }
 }
+
 bool is_binary(const std::string& token)
 {
     return (binary_operators.find(token) != binary_operators.end());
@@ -122,6 +124,93 @@ bool isdouble(const std::string& s)
     }
     return has_digits && (state == INT || state == FRAC || state == EXP_NUM);
 }
+
+//https://stackoverflow.com/a/16826908
+int fast_atoi(const char* str)
+{
+    int val = 0;
+    while( *str )
+    {
+        val = val*10 + (*str++ - '0');
+    }
+    return val;
+}
+
+/*
+ Check is two strings that hold either integers or floating-point
+ numbers are equal
+ 
+ Examples
+ ========
+checkEqual( "0.000", "0") -> True
+checkEqual( "0.000", "-0") -> True
+checkEqual( "0.0001", "-0") -> False
+checkEqual( "0.000", "1") -> False
+checkEqual( "-1.000", "-1") -> True
+checkEqual( "-2.", "-2") -> True
+checkEqual( "0", "0.") -> True
+checkEqual( "   0", "-0.") -> True
+checkEqual( "  0.00", "-0") -> True
+checkEqual( " 1.0   ", "1") -> True
+checkEqual( "-1.000", "-1") -> True
+checkEqual( "-2.", "-2") -> True
+checkEqual( "-1.000", "-1") -> True
+checkEqual( "-2.", "-2") -> True
+checkEqual( "-1.000", "-1") -> False
+checkEqual( "-2.00000   ", "-2") -> True
+ */
+//bool checkEqual(const std::string& x, const std::string& y)
+//{
+//    auto x_sz = x.size();
+//    auto y_sz = y.size();
+//    assert(x_sz && y_sz); //making sure x and y are both non-empty
+//    assert(y.find('.') == std::string::npos); //making sure the second argument is not a float
+//
+//    auto e_idx = x.find('e');
+//    if (e_idx == std::string::npos)
+//    {
+//        e_idx = x.find('E');
+//    }
+//    auto dec_idx = x.find('.');
+//    
+//    if (e_idx != std::string::npos) //if there's an 'e' or 'E' in the string `x`
+//    {
+//        if (dec_idx != std::string::npos)
+//        {
+//            assert(e_idx > dec_idx); //a decimal cannot come after 'e' or 'E'
+//            //iterate from the character right after '.' up to but not including the ('e' or 'E')
+//            int exp_num = fast_atoi(x.substr(e_idx+1).c_str());
+//            //TODO: Need to "move" the decimal in `x` from `dec_idx` to `dec_idx + exp_num`, get rid of `e...` part, then check if the resulting string is equal to the string `y`.
+//        }
+//    }
+//    else if (e_idx == (x_sz - 1)) //if `x` has 'e' or 'E' as the last character
+//    {
+//        return false; //then `x` is invalid
+//    }
+//    else if (dec_idx != std::string::npos) //if `x` is a regular decimal number
+//    {
+//        if (x.substr(0, dec_idx) != y) //if the part before the decimal in `x` is not equal to `y`
+//        {
+//            return false;
+//        }
+//        //Then, we just iterate from after the decimal to the end and make sure
+//        //all of the digits after the decimal are 0
+//        for (decltype(dec_idx) i = (dec_idx + 1); i < x.size(); i++)
+//        {
+//            if (x[i] != '0')
+//            {
+//                return false;
+//            }
+//        }
+//        return true;
+//    }
+//    else //if `x` is an integer
+//    {
+//        return (x==y);
+//    }
+//    
+//    return no_x_dec ? (x==y) : nums_after_x_dec_are_all_zero;
+//}
 
 std::string simplifyString(const std::string& x)
 {
@@ -2200,6 +2289,12 @@ int main()
     puts("");
     
     test_expr = {"exp", "~", "sech", "-", "nan", "arcsin", "-", "30", "+", "x", "tanh", "-", "3", "sin", "^", "x", "2"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"*", "x", "-0.000"};
     printf("before: ");print_container(test_expr);
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);

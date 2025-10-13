@@ -1,0 +1,20 @@
+It's so surprising and impressive to me that my symbolic regression found this. I feel like this is novel; it shows that maybe Pinns are not the answer; that we should instead search for the hidden simple structure and use that and our knowledge to find more complicated ones that we can understand reason about and perturb towards more elegant and exact solutions.
+
+I want to make a submission to this Call for Papers here (https://ai-2-ase.github.io/cop/). It would need to be a 4-8 page paper. I think I can do a brief explanation of the symbolic regression method I used to obtain this simple expression, along with the interval arithmetic I did ala the pyinterval library (https://pyinterval.readthedocs.io/en/latest/). I would need to include the following script hyperlinks in the report:
+
+ - `PrefixPostfixMultiThreadDiffSimplifySR_Nd_double.cpp` -> the symbolic regression file that found this approximate analytical solution to this equation
+ - `SwiftHohenbergPlot.py` -> plots the SR approximate analytical solution
+ - `swift_hohenberg2D.py` -> the script that verifies the accuracy of the solution found in my SR script and uses it as an initial guess to scipy's least_squares
+ - `swift_hohenberg2D_interval_test.py` -> Uses interval arithmetic to verify that the solution is likely accurate within reasonable numerical-roundoff error-bounds, with the help of the pyinterval library (https://pyinterval.readthedocs.io/en/latest/)
+
+These scripts include the SR code used to find the approximate analytical solution as well as scripts to plot the initial guess, verify it's accuracy with pyinterval's interval arithmetic and sympy, and use it as an initial guess to scipy's least_squares.
+
+Additionally, as an extension this paper, it would be nice to see if I can use this approximate analytical solution as a starting point with some "knowledge" embedded within that initial guess to improve it's accuracy wrt the residual.
+
+Nevertheless, what I want to show with this paper is that SR can discover simple, analytical approximations, contrasted to the complexity of PINNs, without any prior knowledge with certain constraints. Please include an "experimental details" section or something to this liking where I can list the SR settings used for the equation discovery.
+
+Attached, I provide some papers to help with writing this 4-8 page paper, below. Please provide the raw-latex code of your draft paper to document my findings.
+
+Papers:
+ - Latex code for paper `Deducing Closed-Form Expressions for Bright-Solitons in Strongly Magnetized Plasmas with Physics Informed Symbolic Regression (PISR)`
+ - 
