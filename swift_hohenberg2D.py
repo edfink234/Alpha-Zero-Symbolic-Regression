@@ -19,7 +19,7 @@ f = None
 if GENERIC:
     f = Function('f')(r, theta)
 else:
-    f = ((theta / 8) - (sin(theta) * (1.0000132758892615 * sin(r)))) - 0.004215563501922511
+    f = (((0.148475282221305 * theta) - (sin(theta) * (1.0000132758892615 * sin(r)))) - 0.0922858190550785)
 
 latex_f = sp.latex(f)
 latex_f = latex_f.replace(r"(r", r"(\sqrt{x^2 + y^2}")

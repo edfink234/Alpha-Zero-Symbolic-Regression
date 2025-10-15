@@ -167,6 +167,7 @@ Eigen::MatrixXd load_csv(const std::string& path, int rows, int cols)
     Eigen::MatrixXd data(rows, cols);
     std::string line;
     int i = 0;
+    std::getline(file, line); //header row
     while (std::getline(file, line))
     {
         std::stringstream ss(line);
@@ -174,7 +175,15 @@ Eigen::MatrixXd load_csv(const std::string& path, int rows, int cols)
         int j = 0;
         while (std::getline(ss, cell, ','))
         {
-            data(i, j++) = std::stod(cell);
+            try
+            {
+                data(i, j++) = std::stod(cell);
+            }
+            catch (const std::invalid_argument& e)
+            {
+                std::cout << "Error caught at element (" << i << ',' << j << ")\n";
+            }
+            
         }
         i++;
     }
@@ -8733,7 +8742,7 @@ namespace ExampleProblems
                 false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
                 0 /*number of data columns that constitute labels and not independent variables/features*/,
-                {split("0.148475282221305 x1 * x1 sin 1.0000132758892615 x0 sin * * - 0.0947276987056584 -")} /*seed expressions*/,
+                {split("0.148475282221305 x1 * x1 sin 1.0000132758892615 x0 sin * * - 0.0922858190550785 -")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
@@ -8842,7 +8851,9 @@ namespace ExampleProblems
     void WildfireSpreadTSTest(int random_seed, const char* algorithm, double time)
     {
         double threshold = 1e-5;
-        Eigen::MatrixXd data = load_csv("/Users/edwardfinkelstein/SDSU_UCI/UCIFall2025/CS274E/8006177/WildfireSpreadTS/2020/fire_23654679/fire_23654679_with_target.csv", 2756544, 27);
+        Eigen::MatrixXd data = load_csv("/Users/edwardfinkelstein/SDSU_UCI/UCIFall2025/CS274E/8006177/WildfireSpreadTS/2020/fire_23654679/fire_23654679_with_target.csv", 2756544, 28);
+        std::cout << "Data loaded!\nFirst 10 rows\n=============\n";
+        std::cout << data.topRows(10);
     }
 };
 
@@ -8879,7 +8890,7 @@ int main(int argc, char *argv[])
     constexpr const char* algorithm = "SimulatedAnnealing";
     constexpr double time = 60000.0;
     printf("Random seed set to %d%s", random_seed, std::string(10, '\n').c_str());
-    ProblemOption choice = ProblemOption::SwiftHohenberg;
+    ProblemOption choice = ProblemOption::WildfireSpreadTS;
     
     switch (choice)
     {

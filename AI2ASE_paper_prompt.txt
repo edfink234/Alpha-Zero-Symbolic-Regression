@@ -54,11 +54,11 @@ Steady-state SH equation
 Below is the best expression my SR found for $f$ wrt mean-squared error:
 
 ```
-Best expression = ((x1 / 8) - (sin(x1) * (1.0000132758892615 * sin(x0))))
-Best expression (original format) = x1 8 / x1 sin 1.0000132758892615 x0 sin * * -
+Best expression = (((0.148475282221305 * x1) - (sin(x1) * (1.0000132758892615 * sin(x0)))) - 0.0922858190550785)
+Best expression (original format) = 0.148475282221305 x1 * x1 sin 1.0000132758892615 x0 sin * * - 0.0922858190550785 -
 ```
 
-the mse on the meshgrid `np.meshgrid(np.linspace(0.01, 10, 330), np.linspace(0, 6.28319, 330))` for the above best-expression is `mean-squared_error = 0.12788603227754974`. Please include this and also a figure showcasing a plot of this in the report; the image file shall be titled `SwiftHohenberg2D.pdf`.
+the mse on the meshgrid `np.meshgrid(np.linspace(0.01, 10, 330), np.linspace(0, 6.28319, 330))` for the above best-expression is `mean-squared_error = 0.12587338033708562`. Please include this and also a figure showcasing a plot of this in the report; the image file shall be titled `SwiftHohenberg2D.pdf`.
 
 Also, please include the least_squares study of using the best expression SR found above as an initial seed; so show a plot and include the error value that it converged to.
 
