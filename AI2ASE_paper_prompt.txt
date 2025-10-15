@@ -1,20 +1,69 @@
-It's so surprising and impressive to me that my symbolic regression found this. I feel like this is novel; it shows that maybe Pinns are not the answer; that we should instead search for the hidden simple structure and use that and our knowledge to find more complicated ones that we can understand reason about and perturb towards more elegant and exact solutions.
+Unfortunately, none of your proposals worked, so my SR is smarter than you for this, it appears. 🎉 lol.
 
-I want to make a submission to this Call for Papers here (https://ai-2-ase.github.io/cop/). It would need to be a 4-8 page paper. I think I can do a brief explanation of the symbolic regression method I used to obtain this simple expression, along with the interval arithmetic I did ala the pyinterval library (https://pyinterval.readthedocs.io/en/latest/). I would need to include the following script hyperlinks in the report:
+Anyway, I want to make a submission to the call for papers here (https://ai-2-ase.github.io/cop/). It would need to be a 4-8 page paper. I think I can do a brief explanation of the symbolic regression method I used to obtain this simple expression, along with the interval arithmetic I did ala the pyinterval library (https://pyinterval.readthedocs.io/en/latest/). I would need to include the following script hyperlinks in the report:
 
- - `PrefixPostfixMultiThreadDiffSimplifySR_Nd_double.cpp` -> the symbolic regression file that found this approximate analytical solution to this equation
- - `SwiftHohenbergPlot.py` -> plots the SR approximate analytical solution
- - `swift_hohenberg2D.py` -> the script that verifies the accuracy of the solution found in my SR script and uses it as an initial guess to scipy's least_squares
- - `swift_hohenberg2D_interval_test.py` -> Uses interval arithmetic to verify that the solution is likely accurate within reasonable numerical-roundoff error-bounds, with the help of the pyinterval library (https://pyinterval.readthedocs.io/en/latest/)
+ - `PrefixPostfixMultiThreadDiffSimplifySR_Nd_double.cpp` -> the symbolic regression file that found this approximate analytical solution to this equation, (link: )
+ - `SwiftHohenbergPlot.py` -> plots the SR approximate analytical solution, (link: )
+ - `swift_hohenberg2D.py` -> the script that verifies the accuracy of the solution found in my SR script and uses it as an initial guess to scipy's least_squares, (link: )
+ - `swift_hohenberg2D_interval_test.py` -> Uses interval arithmetic to verify that the solution MSE is accurate within reasonable numerical-roundoff error-bounds, with the help of the pyinterval library (https://pyinterval.readthedocs.io/en/latest/), (link: )
 
-These scripts include the SR code used to find the approximate analytical solution as well as scripts to plot the initial guess, verify it's accuracy with pyinterval's interval arithmetic and sympy, and use it as an initial guess to scipy's least_squares.
+These scripts include the SR code used to find the approximate analytical solution, as well as scripts to plot the initial guess, verify it's accuracy with pyinterval's interval arithmetic and sympy, and use it as an initial guess to scipy's least_squares. I include these files attached with `.txt` extensions so you can open them.
 
-Additionally, as an extension this paper, it would be nice to see if I can use this approximate analytical solution as a starting point with some "knowledge" embedded within that initial guess to improve it's accuracy wrt the residual.
+What I want to show with this paper is that SR can discover simple, analytical approximations, contrasted to the complexity of PINNs, without \emph{any} prior knowledge besides the governing equation, and that the best result is often times simple, contrary to our prior belief. Also, I want to show people that the expression obtain with this PISR method can be used as an initial seed for scipy `least_squares`
 
-Nevertheless, what I want to show with this paper is that SR can discover simple, analytical approximations, contrasted to the complexity of PINNs, without any prior knowledge with certain constraints. Please include an "experimental details" section or something to this liking where I can list the SR settings used for the equation discovery.
+Please include an "experimental details" section or something to this liking where I can list the SR settings used for the equation discovery.
 
-Attached, I provide some papers to help with writing this 4-8 page paper, below. Please provide the raw-latex code of your draft paper to document my findings.
+Attached, I provide the latex code for my latest preprint, "Deducing Closed-Form Expressions for Bright-Solitons in Strongly Magnetized Plasmas with Physics Informed Symbolic Regression (PISR)", attached as the file `main.txt`, to help with writing this 4-8 page paper. Please use this liberally to help since it's a good preprint 😊.
 
-Papers:
- - Latex code for paper `Deducing Closed-Form Expressions for Bright-Solitons in Strongly Magnetized Plasmas with Physics Informed Symbolic Regression (PISR)`
- - 
+Please provide the raw-latex code of your draft paper to document my findings. 
+
+Please use the template attached `AAAI 2026 Press Formatting Instructions for Authors Using LaTeX` for this 4-8 page report as this is the template I have to follow afaik (the call-for-papers link is here: https://ai-2-ase.github.io/cop/). 
+
+The template you need to use for the report is the attached file called "anonymous-submission-latex-2026.txt"
+
+Below is the equation I solved with symbolic regression, without any starting guess; Please include some of this below in the 4-8 page report:
+
+```
+Steady-state SH equation
+
+\begin{align*}
+0 &= -(1+\Delta)^2 f + \mu f + \nu f^2 - f^3 \\ &= -(1+\Delta)(1+\Delta) f + \mu f + \nu f^2 - f^3 \\ 
+&= -\left(1 + 2\Delta + \Delta^2 \right) f + \mu f + \nu f^2 - f^3 \\ 
+&= -f -2\Delta f - \Delta^2 f + \mu f + \nu f^2 - f^3  \\
+&= \mu f + \nu f^2 - f^3 -f -2\Delta f  - \Delta^2 f  
+\\[0.25cm]
+&= \mu f{\left(r,\theta \right)} + \nu f^{2}{\left(r,\theta \right)} \\
+& - f^{3}{\left(r,\theta \right)} - f{\left(r,\theta \right)} \\
+& - 2 \dfrac{\partial^{2}}{\partial r^{2}} f{\left(r,\theta \right)} - \dfrac{\partial^{4}}{\partial r^{4}} f{\left(r,\theta \right)} \\
+& - \dfrac{\dfrac{\partial^{3}}{\partial r^{3}} f{\left(r,\theta \right)} + \dfrac{\dfrac{\partial^{2}}{\partial r^{2}} f{\left(r,\theta \right)}}{r} - \dfrac{\dfrac{\partial}{\partial r} f{\left(r,\theta \right)}}{r^{2}} + \dfrac{\dfrac{\partial^{3}}{\partial \theta^{2}\partial r} f{\left(r,\theta \right)}}{r^{2}} - \dfrac{2 \dfrac{\partial^{2}}{\partial \theta^{2}} f{\left(r,\theta \right)}}{r^{3}}}{r} - \dfrac{2 \dfrac{\partial}{\partial r} f{\left(r,\theta \right)}}{r} \\
+& - \dfrac{\dfrac{\partial^{3}}{\partial r^{3}} f{\left(r,\theta \right)}}{r} - \dfrac{\dfrac{\partial^{4}}{\partial \theta^{2}\partial r^{2}} f{\left(r,\theta \right)} + \dfrac{\dfrac{\partial^{3}}{\partial \theta^{2}\partial r} f{\left(r,\theta \right)}}{r} + \dfrac{\dfrac{\partial^{4}}{\partial \theta^{4}} f{\left(r,\theta \right)}}{r^{2}}}{r^{2}} \\
+& + \dfrac{2 \dfrac{\partial^{2}}{\partial r^{2}} f{\left(r,\theta \right)}}{r^{2}} - \dfrac{2 \dfrac{\partial^{2}}{\partial \theta^{2}} f{\left(r,\theta \right)}}{r^{2}} \\
+& - \dfrac{\dfrac{\partial^{4}}{\partial \theta^{2}\partial r^{2}} f{\left(r,\theta \right)}}{r^{2}} - \dfrac{2 \dfrac{\partial}{\partial r} f{\left(r,\theta \right)}}{r^{3}} \\
+& + \dfrac{4 \dfrac{\partial^{3}}{\partial \theta^{2}\partial r} f{\left(r,\theta \right)}}{r^{3}} - \dfrac{6 \dfrac{\partial^{2}}{\partial \theta^{2}} f{\left(r,\theta \right)}}{r^{4}} 
+\end{align*}
+\begin{align*}
+0 &= \mu f{\left(r,\theta \right)} + \nu f^{2}{\left(r,\theta \right)} \\
+& - f^{3}{\left(r,\theta \right)} - f{\left(r,\theta \right)} \\
+& - 2 \dfrac{\partial^{2}}{\partial r^{2}} f{\left(r,\theta \right)} - \dfrac{\partial^{4}}{\partial r^{4}} f{\left(r,\theta \right)} \\
+& - \dfrac{2\dfrac{\partial^{3}}{\partial r^{3}} f{\left(r,\theta \right)} + \dfrac{\dfrac{\partial^{2}}{\partial r^{2}} f{\left(r,\theta \right)}}{r} - \dfrac{\dfrac{\partial}{\partial r} f{\left(r,\theta \right)}}{r^{2}} + \dfrac{\dfrac{\partial^{3}}{\partial \theta^{2}\partial r} f{\left(r,\theta \right)}}{r^{2}} - \dfrac{2 \dfrac{\partial^{2}}{\partial \theta^{2}} f{\left(r,\theta \right)}}{r^{3}} + 2 \dfrac{\partial}{\partial r} f{\left(r,\theta \right)}}{r} \\
+& - \dfrac{2\dfrac{\partial^{4}}{\partial \theta^{2}\partial r^{2}} f{\left(r,\theta \right)} + \dfrac{\dfrac{\partial^{3}}{\partial \theta^{2}\partial r} f{\left(r,\theta \right)}}{r} + \dfrac{\dfrac{\partial^{4}}{\partial \theta^{4}} f{\left(r,\theta \right)}}{r^{2}} - 2 \dfrac{\partial^{2}}{\partial r^{2}} f{\left(r,\theta \right)} + 2 \dfrac{\partial^{2}}{\partial \theta^{2}} f{\left(r,\theta \right)} }{r^{2}} \\
+& -\dfrac{2}{r^3}\left(\dfrac{\partial}{\partial r} f{\left(r,\theta \right)} - 2 \dfrac{\partial^{3}}{\partial \theta^{2}\partial r} f{\left(r,\theta \right)} + \dfrac{3 \dfrac{\partial^{2}}{\partial \theta^{2}} f{\left(r,\theta \right)}}{r}\right) 
+\end{align*}
+```
+
+Below is the best expression my SR found for $f$ wrt mean-squared error:
+
+```
+Best expression = ((x1 / 8) - (sin(x1) * (1.0000132758892615 * sin(x0))))
+Best expression (original format) = x1 8 / x1 sin 1.0000132758892615 x0 sin * * -
+```
+
+the mse on the meshgrid `np.meshgrid(np.linspace(0.01, 10, 330), np.linspace(0, 6.28319, 330))` for the above best-expression is `mean-squared_error = 0.12788603227754974`. Please include this and also a figure showcasing a plot of this in the report; the image file shall be titled `SwiftHohenberg2D.pdf`.
+
+Also, please include the least_squares study of using the best expression SR found above as an initial seed; so show a plot and include the error value that it converged to.
+
+Please also include the corresponding .bib file for the latex code for the report you end up producing. For a starter, I attach the file `PrefixPostfixPaper.bib` (with a `.txt` extension so you can open it); please use this liberally as you see fit.
+
+Success!!! 
+
+And please let me know if you have any questions when producing the latex code for the report (and the corresponding `.bib` file)!

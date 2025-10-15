@@ -136,7 +136,7 @@ def getRPNdepth(expression):
 
 called = False
 implot = None
-def plot_pn_expression_tree(expression: list[str], save = False):
+def plot_pn_expression_tree(expression: list[str], save = False, include_expression_in_title = True):
     global called, implot
 
     def build_tree(expression_tokens):
@@ -185,7 +185,7 @@ def plot_pn_expression_tree(expression: list[str], save = False):
     plot_tree(expression_tree, graph)
     
     if save:
-        graph.set('label', f"{' '.join(expression)}, depth = {getPNdepth(expression)[0]}")
+        graph.set('label', f"{' '.join(expression)}, depth = {getPNdepth(expression)[0]}" if include_expression_in_title else f"depth = {getPNdepth(expression)[0]}")
         graph.set('labelloc', 't')  # Set label location to "top"
         graph.write_svg('expression_tree_PN_Hemberg2008_expr_5.svg')
     else:
@@ -196,10 +196,10 @@ def plot_pn_expression_tree(expression: list[str], save = False):
 #        else:
         implot.set_data(plt.imread('expression_tree.png'))
         plt.axis('off')
-        plt.title(f"{' '.join(expression)}, depth = {getPNdepth(expression)[0]}")
+        plt.title(f"{' '.join(expression)}, depth = {getPNdepth(expression)[0]}" if include_expression_in_title else f"depth = {getPNdepth(expression)[0]}")
         plt.show(block = True)
 
-def plot_rpn_expression_tree(expression: list[str], save = False, filename = "", title = "", tolatex = False, to_pdf = False):
+def plot_rpn_expression_tree(expression: list[str], save = False, filename = "", title = "", tolatex = False, to_pdf = False, include_expression_in_title = True):
     global called, implot
 
     def build_tree(expression_tokens):
@@ -274,7 +274,7 @@ def plot_rpn_expression_tree(expression: list[str], save = False, filename = "",
         graph.write_png('expression_tree.png')
         implot = plt.imshow(plt.imread('expression_tree.png'))
         plt.axis('off')
-        plt.title(title if title else f"{' '.join(expression)}, depth = {getRPNdepth(expression)[0]}")
+        plt.title(title if title else f"{' '.join(expression)}, depth = {getRPNdepth(expression)[0]}" if include_expression_in_title else f"depth = {getRPNdepth(expression)[0]}")
         plt.show()
 
 def test_visualize():
@@ -317,10 +317,13 @@ def test_visualize():
     else:
 #        plot_rpn_expression_tree("μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -".split(), save = save, title = r"Swift-Hohenberg 2D Polar Coordinates", tolatex = True, to_pdf = True, filename = "SwiftHohenberg2DPolarCoordinates.pdf")
 #        plot_rpn_expression_tree("x1 8 / x1 sin 1.0000132758892615 x0 sin * * -".split(), save = save, title = r"Example", tolatex = True, to_pdf = True, filename = "Example.pdf")
-        plot_pn_expression_tree("* ^ * + 4 1 sin cos x + 2 sin sin x 0".split(), save = save)
-#        plot_rpn_expression_tree("1 2 - x y / ^ sech arccos cos tanh 0 0 - 1 x x + x + x tanh * + ^ ~ cos sin ^ sin ~".split(), save = save, title = r"title", tolatex = True, to_pdf = True, filename = "Example.pdf")
-
+#        plot_pn_expression_tree("* ^ * + 4 1 sin cos x + 2 sin sin x 0".split(), save = save)
+        plot_rpn_expression_tree("0.148475282221305 x1 * x1 sin 1.0000132758892615 x0 sin * * - 0.0947276987056584 -".split(), save = save, tolatex = True, to_pdf = True, filename = "Example.pdf", include_expression_in_title = False)
+#                               0.148475282221305*x1 - 1.00001327588926*sin(x0)*sin(x1) - 0.0947276987056584
 if __name__ == "__main__":
     test_visualize()
+
+
+#.35 * sin(x1) * sech( (x0 - 5.0)/3.0 ) * sin(1.00*x0)
 
 

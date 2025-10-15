@@ -1,0 +1,686 @@
+@misc{radwan2024comparisonrecentalgorithmssymbolic,
+      title={A Comparison of Recent Algorithms for Symbolic Regression to Genetic Programming}, 
+      author={Yousef A. Radwan and Gabriel Kronberger and Stephan Winkler},
+      year={2024},
+      eprint={2406.03585},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2406.03585}, 
+}
+
+@article{doi:10.1137/0916069,
+author = {Byrd, Richard H. and Lu, Peihuang and Nocedal, Jorge and Zhu, Ciyou},
+title = {A Limited Memory Algorithm for Bound Constrained Optimization},
+journal = {SIAM Journal on Scientific Computing},
+volume = {16},
+number = {5},
+pages = {1190-1208},
+year = {1995},
+doi = {10.1137/0916069},
+
+URL = { 
+    
+        https://doi.org/10.1137/0916069
+    
+    
+
+},
+eprint = { 
+    
+        https://doi.org/10.1137/0916069
+    
+    
+
+}
+,
+    abstract = { An algorithm for solving large nonlinear optimization problems with simple bounds is described. It is based on the gradient projection method and uses a limited memory BFGS matrix to approximate the Hessian of the objective function. It is shown how to take advantage of the form of the limited memory approximation to implement the algorithm efficiently. The results of numerical tests on a set of large problems are reported. }
+}
+
+@article{83b09f23-b20e-3617-8f72-24765b713f7b,
+ ISSN = {0033569X, 15524485},
+ URL = {http://www.jstor.org/stable/43633451},
+ author = {KENNETH LEVENBERG},
+ journal = {Quarterly of Applied Mathematics},
+ number = {2},
+ pages = {164--168},
+ publisher = {Brown University},
+ title = {A METHOD FOR THE SOLUTION OF CERTAIN NON-LINEAR PROBLEMS IN LEAST SQUARES},
+ urldate = {2023-12-17},
+ volume = {2},
+ year = {1944}
+}
+
+@article{doi:10.1137/0111030,
+author = {Marquardt, Donald W.},
+title = {An Algorithm for Least-Squares Estimation of Nonlinear Parameters},
+journal = {Journal of the Society for Industrial and Applied Mathematics},
+volume = {11},
+number = {2},
+pages = {431-441},
+year = {1963},
+doi = {10.1137/0111030},
+
+URL = { 
+    
+        https://doi.org/10.1137/0111030
+    
+    
+
+},
+eprint = { 
+    
+        https://doi.org/10.1137/0111030
+    
+    
+
+}
+
+}
+
+@misc{lacava2021contemporarysymbolicregressionmethods,
+      title={Contemporary Symbolic Regression Methods and their Relative Performance}, 
+      author={William La Cava and Patryk Orzechowski and Bogdan Burlacu and Fabrício Olivetti de França and Marco Virgolin and Ying Jin and Michael Kommenda and Jason H. Moore},
+      year={2021},
+      eprint={2107.14351},
+      archivePrefix={arXiv},
+      primaryClass={cs.NE},
+      url={https://arxiv.org/abs/2107.14351}, 
+}
+
+@misc{oh2023geneticprogrammingbasedsymbolic,
+      title={Genetic Programming Based Symbolic Regression for Analytical Solutions to Differential Equations}, 
+      author={Hongsup Oh and Roman Amici and Geoffrey Bomarito and Shandian Zhe and Robert Kirby and Jacob Hochhalter},
+      year={2023},
+      eprint={2302.03175},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2302.03175}, 
+}
+
+@inproceedings{10.1145/3520304.3534031,
+author = {Randall, David L. and Townsend, Tyler S. and Hochhalter, Jacob D. and Bomarito, Geoffrey F.},
+title = {Bingo: A Customizable Framework for Symbolic Regression with Genetic Programming},
+year = {2022},
+isbn = {9781450392686},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3520304.3534031},
+doi = {10.1145/3520304.3534031},
+abstract = {In this paper, we introduce Bingo, a flexible and customizable yet performant Python framework for symbolic regression with genetic programming. Bingo maintains a modular code structure for simple abstraction and easily swappable components. Fitness functions, selection methods, and constant optimization methods allow for easy problem-specific customization. Bingo also maintains several features for increased efficiency such as parallelism, equation simplification, and a C++ backend. We compare Bingo's performance to other genetic programming for symbolic regression (GPSR) methods to show that it is both competitive and flexible.},
+booktitle = {Proceedings of the Genetic and Evolutionary Computation Conference Companion},
+pages = {2282–2288},
+numpages = {7},
+keywords = {symbolic regression, genetic programming, genetic programming for symbolic regression},
+location = {Boston, Massachusetts},
+series = {GECCO '22}
+}
+
+@misc{paszke2019pytorchimperativestylehighperformance,
+      title={PyTorch: An Imperative Style, High-Performance Deep Learning Library}, 
+      author={Adam Paszke and Sam Gross and Francisco Massa and Adam Lerer and James Bradbury and Gregory Chanan and Trevor Killeen and Zeming Lin and Natalia Gimelshein and Luca Antiga and Alban Desmaison and Andreas Köpf and Edward Yang and Zach DeVito and Martin Raison and Alykhan Tejani and Sasank Chilamkurthy and Benoit Steiner and Lu Fang and Junjie Bai and Soumith Chintala},
+      year={2019},
+      eprint={1912.01703},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/1912.01703}, 
+}
+
+@article{Manti_2024,
+    doi = {10.1088/2632-2153/ad1af2},
+    url = {https://dx.doi.org/10.1088/2632-2153/ad1af2},
+    year = {2024},
+    publisher = {IOP Publishing},
+    volume = {5},
+    number = {1},
+    pages = {015005},
+    author = {Simone Manti and Alessandro Lucantonio},
+    title = {Discovering interpretable physical models using symbolic regression and discrete exterior calculus},
+    journal = {Machine Learning: Science and Technology}
+}
+
+@article{10.5555/2503308.2503311,
+author = {Fortin, F\'{e}lix-Antoine and De Rainville, Fran\c{c}ois-Michel and Gardner, Marc-Andr\'{e} Gardner and Parizeau, Marc and Gagn\'{e}, Christian},
+title = {DEAP: evolutionary algorithms made easy},
+year = {2012},
+issue_date = {January 2012},
+publisher = {JMLR.org},
+volume = {13},
+number = {1},
+issn = {1532-4435},
+abstract = {DEAP is a novel evolutionary computation framework for rapid prototyping and testing of ideas. Its design departs from most other existing frameworks in that it seeks to make algorithms explicit and data structures transparent, as opposed to the more common black-box frameworks. Freely available with extensive documentation at http://deap.gel.ulaval.ca, DEAP is an open source project under an LGPL license.},
+journal = {J. Mach. Learn. Res.},
+month = jul,
+pages = {2171–2175},
+numpages = {5},
+keywords = {software tools, distributed evolutionary algorithms}
+}
+
+@inproceedings{10.5555/3291168.3291210,
+author = {Moritz, Philipp and Nishihara, Robert and Wang, Stephanie and Tumanov, Alexey and Liaw, Richard and Liang, Eric and Elibol, Melih and Yang, Zongheng and Paul, William and Jordan, Michael I. and Stoica, Ion},
+title = {Ray: a distributed framework for emerging AI applications},
+year = {2018},
+isbn = {9781931971478},
+publisher = {USENIX Association},
+address = {USA},
+abstract = {The next generation of AI applications will continuously interact with the environment and learn from these interactions. These applications impose new and demanding systems requirements, both in terms of performance and flexibility. In this paper, we consider these requirements and present Ray--a distributed system to address them. Ray implements a unified interface that can express both task-parallel and actor-based computations, supported by a single dynamic execution engine. To meet the performance requirements, Ray employs a distributed scheduler and a distributed and fault-tolerant store to manage the system's control state. In our experiments, we demonstrate scaling beyond 1.8 million tasks per second and better performance than existing specialized systems for several challenging reinforcement learning applications.},
+booktitle = {Proceedings of the 13th USENIX Conference on Operating Systems Design and Implementation},
+pages = {561–577},
+numpages = {17},
+location = {Carlsbad, CA, USA},
+series = {OSDI'18}
+}
+@software{jax2018github,
+  author = {James Bradbury and Roy Frostig and Peter Hawkins and Matthew James Johnson and Chris Leary and Dougal Maclaurin and George Necula and Adam Paszke and Jake Vander{P}las and Skye Wanderman-{M}ilne and Qiao Zhang},
+  title = {{JAX}: composable transformations of {P}ython+{N}um{P}y programs},
+  url = {http://github.com/jax-ml/jax},
+  version = {0.3.13},
+  year = {2018},
+}
+@article{Biscani2020,
+  doi = {10.21105/joss.02338},
+  url = {https://doi.org/10.21105/joss.02338},
+  year = {2020},
+  publisher = {The Open Journal},
+  volume = {5},
+  number = {53},
+  pages = {2338},
+  author = {Francesco Biscani and Dario Izzo},
+  title = {A parallel global multiobjective framework for optimization: pagmo},
+  journal = {Journal of Open Source Software}
+}
+
+@article{desilva2020,
+doi = {10.21105/joss.02104},
+url = {https://doi.org/10.21105/joss.02104},
+year = {2020},
+publisher = {The Open Journal},
+volume = {5},
+number = {49},
+pages = {2104},
+author = {Brian de Silva and Kathleen Champion and Markus Quade and Jean-Christophe Loiseau and J. Kutz and Steven Brunton},
+title = {PySINDy: A Python package for the sparse identification of nonlinear dynamical systems from data},
+journal = {Journal of Open Source Software}
+}
+
+@article{Kaptanoglu2022,
+doi = {10.21105/joss.03994},
+url = {https://doi.org/10.21105/joss.03994},
+year = {2022},
+publisher = {The Open Journal},
+volume = {7},
+number = {69},
+pages = {3994},
+author = {Alan A. Kaptanoglu and Brian M. de Silva and Urban Fasel and Kadierdan Kaheman and Andy J. Goldschmidt and Jared Callaham and Charles B. Delahunt and Zachary G. Nicolaou and Kathleen Champion and Jean-Christophe Loiseau and J. Nathan Kutz and Steven L. Brunton},
+title = {PySINDy: A comprehensive Python package for robust sparse system identification},
+journal = {Journal of Open Source Software}
+}
+
+@InProceedings{10.1007/978-3-642-57201-2_12,
+author="Fischer, Herbert
+and Warsitz, Hubert",
+editor="Ganzha, Victor G.
+and Mayr, Ernst W.
+and Vorozhtsov, Evgenii V.",
+title="Complexity of Derivatives Generated by Symbolic Differentiation",
+booktitle="Computer Algebra in Scientific Computing",
+year="2000",
+publisher="Springer Berlin Heidelberg",
+address="Berlin, Heidelberg",
+pages="129--144",
+abstract="The computational solution of many mathematical problems involves derivatives. Programs for computing derivatives may be (1) hand-Coded, (2) set up via function calls and divided differences, or (3) obtained using symbolic differentiation. In practice, the divided differences approach is still the standard technique. But in many cases, derivatives can be computed cheaper and more accurately by symbolic differentiation. In this paper we investigate the complexity of algorithms for computing derivatives of rational functions. In particular, we deal with the forward mode and the reverse mode of symbolic differentiation. We discuss bounds on the amount of work within the described algorithms in terms of rational operations.",
+isbn="978-3-642-57201-2"
+}
+
+@book{tan2000symbolicc,
+  title={SymbolicC++:An Introduction to Computer Algebra using Object-Oriented Programming: An Introduction to Computer Algebra Using Object-Oriented Programming},
+  author={Tan, K.S. and Steeb, W.H. and Hardy, Y.},
+  isbn={9781852332600},
+  lccn={99089474},
+  url={https://books.google.com/books?id=3K0LaDyA9K0C},
+  year={2000},
+  publisher={Springer London}
+}
+
+@misc{Mathematica,
+  author = {Wolfram Research{,} Inc.},
+  title = {Mathematica, {V}ersion 14.1},
+  url = {https://www.wolfram.com/mathematica},
+  note = {Champaign, IL, 2024}
+}
+
+@article{10.7717/peerj-cs.103,
+     title = {SymPy: symbolic computing in Python},
+     author = {Meurer, Aaron and Smith, Christopher P. and Paprocki, Mateusz and \v{C}ert\'{i}k, Ond\v{r}ej and Kirpichev, Sergey B. and Rocklin, Matthew and Kumar, AMiT and Ivanov, Sergiu and Moore, Jason K. and Singh, Sartaj and Rathnayake, Thilina and Vig, Sean and Granger, Brian E. and Muller, Richard P. and Bonazzi, Francesco and Gupta, Harsh and Vats, Shivam and Johansson, Fredrik and Pedregosa, Fabian and Curry, Matthew J. and Terrel, Andy R. and Rou\v{c}ka, \v{S}t\v{e}p\'{a}n and Saboo, Ashutosh and Fernando, Isuru and Kulal, Sumith and Cimrman, Robert and Scopatz, Anthony},
+     year = 2017,
+     month = jan,
+     keywords = {Python, Computer algebra system, Symbolics},
+     abstract = {
+                SymPy is an open source computer algebra system written in pure Python. It is built with a focus on extensibility and ease of use, through both interactive and programmatic applications. These characteristics have led SymPy to become a popular symbolic library for the scientific Python ecosystem. This paper presents the architecture of SymPy, a description of its features, and a discussion of select submodules. The supplementary material provide additional examples and further outline details of the architecture and features of SymPy.
+             },
+     volume = 3,
+     pages = {e103},
+     journal = {PeerJ Computer Science},
+     issn = {2376-5992},
+     url = {https://doi.org/10.7717/peerj-cs.103},
+     doi = {10.7717/peerj-cs.103}
+    }
+
+@article{PredragV2001,
+author = {Predrag V. Krtolica, Predrag S. Stanimirović},
+journal = {The Yugoslav Journal of Operations Research},
+keywords = {reverse Polish notation; grasp of the operator},
+language = {eng},
+number = {21},
+pages = {61-75},
+publisher = {Faculty of Organizational Sciences},
+title = {Symbolic Derivation Without Using Expression Trees},
+url = {http://eudml.org/doc/261576},
+volume = {11},
+year = {2001},
+}
+
+@misc{AdvectionDiffusion2D,
+	author = {Noam M. Buckman},
+	title = {{T}he linear convection-diffusion equation in two dimensions},
+	howpublished = {\url{https://nbuckman.scripts.mit.edu:444/homepage/wp-content/uploads/2016/03/Convection-Diffusion-Paper-PDF.pdf}},
+	year = {2016},
+    month = {3}
+}
+
+@inproceedings{wbb14,
+author = {Winkler, S. and Bicher, M. and Breitenecker, F.},
+title = {Convection-diffusion simulation in two different dimensions},
+booktitle = {Tagungsband ASIM 2014 22 Symposium Simulationstechnik},
+year = {2014},
+publisher = {ARGESIM/ASIM},
+editor = {J. Wittmann and C. Deatcu},
+pages = {31-38},
+note = {http://hdl.handle.net/20.500.12708/41360},
+}
+
+@misc{finkelstein2024generalizedfixeddepthprefixpostfix,
+      title={Generalized Fixed-Depth Prefix and Postfix Symbolic Regression Grammars}, 
+      author={Edward Finkelstein},
+      year={2024},
+      eprint={2410.08137},
+      archivePrefix={arXiv},
+      primaryClass={cs.SC},
+      url={https://arxiv.org/abs/2410.08137}, 
+}
+
+@misc{sun2023symbolicphysicslearnerdiscovering,
+      title={Symbolic Physics Learner: Discovering governing equations via Monte Carlo tree search}, 
+      author={Fangzheng Sun and Yang Liu and Jian-Xun Wang and Hao Sun},
+      year={2023},
+      eprint={2205.13134},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/2205.13134}, 
+}
+
+@misc{BoostLibrary,
+    author = "Boost",
+    year   = 2024,
+    title  = "{Boost C++ Libraries}",
+    howpublished = "\url{http://www.boost.org/}"
+}
+
+@MISC{eigenweb,
+author = {Ga\"{e}l Guennebaud and Beno\^{i}t Jacob and others},
+title = {Eigen v3},
+howpublished = {http://eigen.tuxfamily.org},
+ year = {2010}
+}
+
+@misc{virgolin2022symbolicregressionnphard,
+      title={Symbolic Regression is NP-hard}, 
+      author={Marco Virgolin and Solon P. Pissis},
+      year={2022},
+      eprint={2207.01018},
+      archivePrefix={arXiv},
+      primaryClass={cs.NE},
+      url={https://arxiv.org/abs/2207.01018}, 
+}
+
+@article{PenenkoAlexeyDiscreteAnalyticalSimulation,
+author = {Penenko, Alexey and Penenko, Vladimir and Nuterman, Roman and Mahura, Alexander},
+year = {2014},
+month = {01},
+pages = {},
+title = {Discrete-Analytical Algorithms for Atmospheric Transport and Chemistry Simulation and Chemical Data Assimilation},
+journal = {DMI Sci.Report 14-02, ISBN:978-87-7478-654-2, 26p}
+}
+
+@software{maple,
+  author = {{Maplesoft, a division of Waterloo Maple Inc..}},
+  title = {Maple},
+  url = {https://hadoop.apache.org},
+  version = {2019},
+  address = {Waterloo, Ontario},
+  date = {2019},
+}
+
+@book{Kivshar1998,
+  author = {Kivshar, Yuri S. and Agrawal, Govind P.},
+  title = {Optical Solitons: From Fibers to Photonic Crystals},
+  year = {2003},
+  publisher = {Academic Press},
+  edition = {1st}
+}
+
+@book{Agrawal2007,
+  author = {Agrawal, Govind P.},
+  title = {Nonlinear Fiber Optics},
+  year = {2007},
+  publisher = {Academic Press},
+  edition = {4th}
+}
+
+@article{Dalfovo1999,
+  title = {\href{https://link.aps.org/doi/10.1103/RevModPhys.71.463}{Theory of Bose-Einstein condensation in trapped gases}},
+  author = {Dalfovo, Franco and Giorgini, Stefano and Pitaevskii, Lev P. and Stringari, Sandro},
+  journal = {Rev. Mod. Phys.},
+  volume = {71},
+  issue = {3},
+  pages = {463--512},
+  numpages = {0},
+  year = {1999},
+  month = {Apr},
+  publisher = {American Physical Society},
+  doi = {10.1103/RevModPhys.71.463},
+  url = {https://link.aps.org/doi/10.1103/RevModPhys.71.463}
+}
+
+
+@article{Pegoraro2000Nonlinear,
+  title = {\href{https://www.cambridge.org/core/services/aop-cambridge-core/content/view/03CF846F1E57D3008F92A322EFB24E5D/S0263034600183053a.pdf/nonlinear_electromagnetic_phenomena_in_the_relativistic_interaction_of_ultrahigh_intensity_laser_pulses_with_plasmas.pdf}{Nonlinear electromagnetic phenomena in the relativistic interaction of ultrahigh intensity laser pulses with plasmas}},
+  author = {Pegoraro, F. and Bulanov, S. V. and Califano, F. and Esirkepov, T. Zh. and Liseikina, T. V. and Naumova, N. M. and Ruhl, H. and Vshivkov, V. A.},
+  journal = {Laser and Particle Beams},
+  volume = {18},
+  number = {3},
+  pages = {381--387},
+  year = {2000},
+  doi = {10.1017/S0263034600183053},
+  publisher = {Cambridge University Press}
+}
+
+@article{Esarey2009,
+  title = {\href{https://link.aps.org/doi/10.1103/RevModPhys.81.1229}{Physics of laser-driven plasma-based electron accelerators}},
+  author = {Esarey, E. and Schroeder, C. B. and Leemans, W. P.},
+  journal = {Rev. Mod. Phys.},
+  volume = {81},
+  issue = {3},
+  pages = {1229--1285},
+  numpages = {0},
+  year = {2009},
+  month = {Aug},
+  publisher = {American Physical Society},
+  doi = {10.1103/RevModPhys.81.1229},
+  url = {https://link.aps.org/doi/10.1103/RevModPhys.81.1229}
+}
+
+@book{Atzeni2004,
+    author = {Atzeni, Stefano and Meyer-ter-Vehn, Jürgen},
+    title = {\href{https://doi.org/10.1093/acprof:oso/9780198562641.001.0001}{The Physics of Inertial Fusion: BeamPlasma Interaction, Hydrodynamics, Hot Dense Matter}},
+    publisher = {Oxford University Press},
+    year = {2004},
+    month = {06},
+    abstract = {The book is devoted to targets for nuclear fusion by inertial confinement and to the various branches of physics involved. It first discusses fusion reactions and general requirements for fusion energy production. It then introduces and illustrates the concept of inertial confinement fusion by spherical implosion, followed by detailed treatments of the physics of fusion ignition and burn, and of energy gain. The next part of the book is mostly devoted to the underlying physics involved in inertial fusion, and covers hydrodynamics, hydrodynamic stability, radiative transport and equations-of-state of hot dense matter, laser and ion beam interaction with plasma. It discusses different approaches to inertial fusion (direct-drive by laser, indirect-drive by laser or ion beams), including recent developments in fast ignition. The goal of the book is to give an introduction to this subject, and also to provide practical results even when derived on the basis of simplified models.},
+    isbn = {9780198562641},
+    doi = {10.1093/acprof:oso/9780198562641.001.0001},
+    url = {https://doi.org/10.1093/acprof:oso/9780198562641.001.0001},
+}
+
+@inproceedings{Taflove1995ComputationalET,
+  title={\href{https://api.semanticscholar.org/CorpusID:56592124}{Computational Electrodynamics the Finite-Difference Time-Domain Method}},
+  author={Allen Taflove},
+  year={1995},
+  url={https://api.semanticscholar.org/CorpusID:56592124}
+}
+
+@book{Vlasov1961,
+author={Vlasov, A. A.},
+title={\href{http://catalog.hathitrust.org/api/volumes/oclc/1892414.html}{Many-particle theory and its application to plasma}},
+year={1961},
+publisher={Gordon and Breach},
+address={New York},
+url={http://catalog.hathitrust.org/api/volumes/oclc/1892414.html},
+language={English}
+}
+
+@article{Dawson1983,
+  title = {\href {https://link.aps.org/doi/10.1103/RevModPhys.55.403}{Particle simulation of plasmas}},
+  author = {Dawson, John M.},
+  journal = {Rev. Mod. Phys.},
+  volume = {55},
+  issue = {2},
+  pages = {403--447},
+  numpages = {0},
+  year = {1983},
+  month = {Apr},
+  publisher = {American Physical Society},
+  doi = {10.1103/RevModPhys.55.403},
+  url = {https://link.aps.org/doi/10.1103/RevModPhys.55.403}
+}
+
+@book{Winsberg2010,
+    author = {Winsberg, Eric},
+    title = {\href{https://doi.org/10.7208/chicago/9780226902050.001.0001}{Science in the Age of Computer Simulation}},
+    publisher = {University of Chicago Press},
+    year = {2010},
+    month = {10},
+    abstract = {Computer simulation was first pioneered as a scientific tool in meteorology and nuclear physics in the period following World War II, but it has grown rapidly to become indispensible in a wide variety of scientific disciplines, including astrophysics, high-energy physics, climate science, engineering, ecology, and economics. Digital computer simulation helps study phenomena of great complexity, but how much do we know about the limits and possibilities of this new scientific practice? How do simulations compare to traditional experiments? And are they reliable? This book seeks to answer these questions. Scrutinizing these issues with a philosophical lens, it explores the impact of simulation on such issues as the nature of scientific evidence; the role of values in science; the nature and role of fictions in science; and the relationship between simulation and experiment, theories and data, and theories at different levels of description.},
+    isbn = {9780226902029},
+    doi = {10.7208/chicago/9780226902050.001.0001},
+    url = {https://doi.org/10.7208/chicago/9780226902050.001.0001},
+}
+
+@inbook{Whitham1999,
+publisher = {John Wiley \& Sons, Ltd},
+isbn = {9781118032954},
+title = {Front Matter},
+booktitle = {Linear and Nonlinear Waves},
+  author = {Whitham, Gerald Beresford},
+  title = {\href{https://onlinelibrary.wiley.com/doi/abs/10.1002/9781118032954}{Linear and Nonlinear Waves}},
+doi = {https://doi.org/10.1002/9781118032954.fmatter},
+url = {https://onlinelibrary.wiley.com/doi/abs/10.1002/9781118032954},
+eprint = {https://onlinelibrary.wiley.com/doi/pdf/10.1002/9781118032954},
+year = {1999}
+}
+
+@ARTICLE{Davidson1972,
+  author={Davidson, Ronald C. and Scherer, John E.},
+  journal={IEEE Transactions on Plasma Science}, 
+  title={\href{https://ieeexplore.ieee.org/document/4316080}{Methods in Nonlinear Plasma Theory}}, 
+  year={1973},
+  volume={1},
+  number={1},
+  pages={58-58},
+  keywords={Plasmas},
+  doi={10.1109/TPS.1973.4316080}}
+
+
+@Inbook{Buchberger1985,
+author="Bose, N. K.",
+title="Gr{\"o}bner Bases: An Algorithmic Method in Polynomial Ideal Theory",
+bookTitle="\href{https://doi.org/10.1007/978-94-017-0275-1\_4}{Multidimensional Systems Theory and Applications}",
+year="1995",
+publisher="Springer Netherlands",
+address="Dordrecht",
+pages="89--127",
+isbn="978-94-017-0275-1",
+doi="10.1007/978-94-017-0275-1\_4",
+url="https://doi.org/10.1007/978-94-017-0275-1\_4"
+}
+
+@book{Davenport1988,
+  author = {Davenport, James H. and Siret, Yvon and Tournier, {\'E}velyne},
+  title = {Computer Algebra: Systems and Algorithms for Algebraic Computation},
+  year = {1988},
+  publisher = {Academic Press}
+}
+
+@article{Moses1971,
+  author = {Moses, Joel},
+  title = {Symbolic integration: The stormy decade},
+  journal = {Communications of the ACM},
+  year = {1971},
+  volume = {14},
+  number = {8},
+  pages = {548-560}
+}
+
+@article{Hearn1973,
+  author = {Hearn, Anthony C.},
+  title = {Reduce 2: A system and language for algebraic manipulation},
+  journal = {Proceedings of the second symposium on Symbolic and algebraic manipulation},
+  year = {1971},
+  pages = {128-133}
+}
+
+@article{Plaisted1978,
+  author = {Plaisted, David A.},
+  title = {Some polynomial and integer divisibility problems are {NP}-hard},
+  journal = {Theoretical Computer Science},
+  year = {1978},
+  volume = {8},
+  number = {1},
+  pages = {1-17}
+}
+
+@article{Stoutemyer1985,
+  author = {Stoutemyer, David R.},
+  title = {Which algebraic manipulation language is best?},
+  journal = {Symbolic Computation},
+  year = {1985},
+  pages = {1-17}
+}
+
+@book{Feigenbaum1963,
+    Author = {Feigenbaum, Edward A. and Feldman, Julian},
+    Title = {Computers and Thought},
+    Publisher = {McGraw-Hill},
+    Year = {1963}
+}
+
+@article{Kamienny2023DeepGS,
+  title={Deep Generative Symbolic Regression with Monte-Carlo-Tree-Search},
+  author={Pierre-Alexandre Kamienny and Guillaume Lample and Sylvain Lamprier and M. Virgolin},
+  journal={ArXiv},
+  year={2023},
+  volume={abs/2302.11223},
+  url={https://api.semanticscholar.org/CorpusID:257078719}
+}
+
+@article{FengLaserPaper,
+    author = {Feng, W. and Li, J. Q. and Kishimoto, Y.},
+    title = {Laser propagation and soliton generation in strongly magnetized plasmas},
+    journal = {Physics of Plasmas},
+    volume = {23},
+    number = {3},
+    pages = {032102},
+    year = {2016},
+    month = {03},
+    abstract = {The propagation characteristics of various laser modes with different polarization, as well as the soliton generation in strongly magnetized plasmas are studied numerically through one-dimensional (1D) particle-in-cell (PIC) simulations and analytically by solving the laser wave equation. PIC simulations show that the laser heating efficiency substantially depends on the magnetic field strength, the propagation modes of the laser pulse and their intensities. Generally, large amplitude laser can efficiently heat the plasma with strong magnetic field. Theoretical analyses on the linear propagation of the laser pulse in both under-dense and over-dense magnetized plasmas are well confirmed by the numerical observations. Most interestingly, it is found that a standing or moving soliton with frequency lower than the laser frequency is generated in certain magnetic field strength and laser intensity range, which can greatly enhance the laser heating efficiency. The range of magnetic field strength for the right-hand circularly polarized (RCP) soliton formation with high and low frequencies is identified by solving the soliton equations including the contribution of ion's motion and the finite temperature effects under the quasi-neutral approximation. In the limit of immobile ions, the RCP soliton tends to be peaked and stronger as the magnetic field increases, while the enhanced soliton becomes broader as the temperature increases. These findings in 1D model are well validated by 2D simulations.},
+    issn = {1070-664X},
+    doi = {10.1063/1.4942789},
+    url = {https://doi.org/10.1063/1.4942789},
+    eprint = {https://pubs.aip.org/aip/pop/article-pdf/doi/10.1063/1.4942789/14894543/032102\_1\_online.pdf},
+}
+
+@article{FengTheoryPaper,
+    author = {Feng, W. and Li, J. Q. and Kishimoto, Y.},
+    title = {Theory on bright and dark soliton formation in strongly magnetized plasmas},
+    journal = {Physics of Plasmas},
+    volume = {23},
+    number = {9},
+    pages = {092115},
+    year = {2016},
+    month = {09},
+    abstract = {The existence and properties of bright and dark solitons in strongly magnetized warm plasmas are investigated analytically. These solitons are solutions to a four-dimensional Hamiltonian system with zero and non-zero boundary conditions. Based on the dynamical systems theory, the parametric domains of magnetic field and soliton frequency for the existence of bright and dark solitons in both cold and warm plasmas are identified. It is found that the temperature effects play an important role in determining the parametric domains and properties of the solitons. Specifically, the temperature effects make it possible for the existence of multi-hump dark solitons and remove the constraint on magnetic field and soliton frequency caused by the non-negative condition of the density profile. The numerical integration of the soliton equations shows that the bright soliton amplitude increases with magnetic field while the dark soliton amplitude decreases with it. For both bright and dark solitons, the temperature effects suppress the soliton amplitude.},
+    issn = {1070-664X},
+    doi = {10.1063/1.4962846},
+    url = {https://doi.org/10.1063/1.4962846},
+    eprint = {https://pubs.aip.org/aip/pop/article-pdf/doi/10.1063/1.4962846/16143047/092115\_1\_online.pdf},
+}
+
+@MISC {559660,
+    TITLE = {Why is the Median Less Sensitive to Extreme Values Compared to the Mean?},
+    AUTHOR = {Aksakal (https://stats.stackexchange.com/users/36041/aksakal)},
+    HOWPUBLISHED = {Cross Validated},
+    NOTE = {URL:https://stats.stackexchange.com/q/559660 (version: 2022-01-10)},
+    EPRINT = {https://stats.stackexchange.com/q/559660},
+    URL = {https://stats.stackexchange.com/q/559660}
+}
+
+@book{10.5555/286076,
+author = {Muchnick, Steven S.},
+title = {Advanced compiler design and implementation},
+year = {1998},
+isbn = {1558603204},
+publisher = {Morgan Kaufmann Publishers Inc.},
+address = {San Francisco, CA, USA}
+}
+
+@ELECTRONIC{maxima,
+author = {Maxima},
+year = {2025},
+title = {Maxima, a Computer Algebra System.  Version 5.48.1},
+address = {https://maxima.sourceforge.io/},
+url = {https://maxima.sourceforge.io/},
+owner = {maxima},
+timestamp = {2025.07.29}
+}
+
+﻿@Article{Das2025,
+author={Das, Joy
+and Bhaumik, Bivas
+and De, Soumen
+and Changdar, Satyasaran},
+title={Physics-informed neural network with symbolic regression for deriving analytical approximate solutions to nonlinear partial differential equations},
+journal={Neural Computing and Applications},
+year={2025},
+month={Jul},
+day={06},
+abstract={This work explores an interpretable approach based on physics-informed neural networks (PINNs) combined with symbolic regression (SR) to determine mathematical expressions for the predicted solutions of nonlinear partial differential equations that describe arterial blood flow influenced by external magnetic fields. PINNs are excellent at capturing the underlying physics, but can be computationally intensive and hard to interpret. The predictive power of PINN has been combined with evolutionary symbolic regression using PySR, an open-source Python module that employs genetic programming and customizable mathematical operators, including trigonometric, exponential, and arithmetic functions. This hybrid approach enables the derivation of concise, transparent mathematical expressions that closely replicate the behavior of these complex systems. This blend of PINNs and symbolic regression helps us to better understand how pulsatile blood flow and magnetic fields interact in the viscoelastic arterial circulation. The comparison graphs of the SR model and the PINN-predicted data at different time scales signify a better fit for the discovered mathematical expressions with data. As illustrated by the low mean squared error and statistical validation on residual losses, the symbolic expressions are extremely accurate and quick enough for real-time execution. Additionally, the solutions provided by the PINN are validated numerically to demonstrate the effectiveness of the proposed method. Our results demonstrate that combining symbolic regression with PINNs provides practical and interpretable solutions in biofluid mechanics, offering a more transparent and reliable alternative to traditional methods.},
+issn={1433-3058},
+doi={10.1007/s00521-025-11450-9},
+url={https://doi.org/10.1007/s00521-025-11450-9}
+}
+
+﻿@Article{Karniadakis2021,
+author={Karniadakis, George Em
+and Kevrekidis, Ioannis G.
+and Lu, Lu
+and Perdikaris, Paris
+and Wang, Sifan
+and Yang, Liu},
+title={Physics-informed machine learning},
+journal={Nature Reviews Physics},
+year={2021},
+month={Jun},
+day={01},
+volume={3},
+number={6},
+pages={422-440},
+abstract={Despite great progress in simulating multiphysics problems using the numerical discretization of partial differential equations (PDEs), one still cannot seamlessly incorporate noisy data into existing algorithms, mesh generation remains complex, and high-dimensional problems governed by parameterized PDEs cannot be tackled. Moreover, solving inverse problems with hidden physics is often prohibitively expensive and requires different formulations and elaborate computer codes. Machine learning has emerged as a promising alternative, but training deep neural networks requires big data, not always available for scientific problems. Instead, such networks can be trained from additional information obtained by enforcing the physical laws (for example, at random points in the continuous space-time domain). Such physics-informed learning integrates (noisy) data and mathematical models, and implements them through neural networks or other kernel-based regression networks. Moreover, it may be possible to design specialized network architectures that automatically satisfy some of the physical invariants for better accuracy, faster training and improved generalization. Here, we review some of the prevailing trends in embedding physics into machine learning, present some of the current capabilities and limitations and discuss diverse applications of physics-informed learning both for forward and inverse problems, including discovering hidden physics and tackling high-dimensional problems.},
+issn={2522-5820},
+doi={10.1038/s42254-021-00314-5},
+url={https://doi.org/10.1038/s42254-021-00314-5}
+}
+
+@misc{lbfgspp,
+  author       = {Yixuan Qiu},
+  title        = {LBFGS++: A Header-only C++ Library for L-BFGS and L-BFGS-B Algorithms},
+  year         = {2023},
+  url          = {https://lbfgspp.statr.me/}
+}
+
+@article{ohana2024well,
+  title={The well: a large-scale collection of diverse physics simulations for machine learning},
+  author={Ohana, Ruben and McCabe, Michael and Meyer, Lucas and Morel, Rudy and Agocs, Fruzsina and Beneitez, Miguel and Berger, Marsha and Burkhart, Blakesly and Dalziel, Stuart and Fielding, Drummond and others},
+  journal={Advances in Neural Information Processing Systems},
+  volume={37},
+  pages={44989--45037},
+  year={2024}
+}

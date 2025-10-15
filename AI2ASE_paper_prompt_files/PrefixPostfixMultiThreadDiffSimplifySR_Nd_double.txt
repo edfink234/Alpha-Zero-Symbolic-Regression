@@ -37,7 +37,7 @@
 #define DBL_MAX std::numeric_limits<double>::max()
 #define RANDOM_SEED -1
 
-//TODO: Need to make this robust againt -Wnarrow
+//TODO: Need to make this robust againt -Wnarrow and
 
 /*
 Search Directories to add:
@@ -159,26 +159,6 @@ std::vector<std::string> split(const std::string& str)
     }
 
     return vec;
-}
-
-Eigen::MatrixXd load_csv(const std::string& path, int rows, int cols)
-{
-    std::ifstream file(path);
-    Eigen::MatrixXd data(rows, cols);
-    std::string line;
-    int i = 0;
-    while (std::getline(file, line))
-    {
-        std::stringstream ss(line);
-        std::string cell;
-        int j = 0;
-        while (std::getline(ss, cell, ','))
-        {
-            data(i, j++) = std::stod(cell);
-        }
-        i++;
-    }
-    return data;
 }
 
 namespace std
@@ -8719,7 +8699,7 @@ namespace ExampleProblems
             SimulatedAnnealing(SwiftHohenberg /*differential equation to solve*/,
                 1 /*number of equations in differential equation system*/,
                 data1 /*data used to solve differential equation*/,
-                std::vector<int>{5} /*fixed depths of generated solution*/,
+                std::vector<int>{4} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0/*2*/ /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -8733,7 +8713,7 @@ namespace ExampleProblems
                 false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
                 0 /*number of data columns that constitute labels and not independent variables/features*/,
-                {split("0.148475282221305 x1 * x1 sin 1.0000132758892615 x0 sin * * - 0.0947276987056584 -")} /*seed expressions*/,
+                {split("x1 8 / x1 sin 1.0000132758892615 x0 sin * * -")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
@@ -8839,11 +8819,6 @@ namespace ExampleProblems
                 "");// "SNE_vals.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
         }
     }
-    void WildfireSpreadTSTest(int random_seed, const char* algorithm, double time)
-    {
-        double threshold = 1e-5;
-        Eigen::MatrixXd data = load_csv("/Users/edwardfinkelstein/SDSU_UCI/UCIFall2025/CS274E/8006177/WildfireSpreadTS/2020/fire_23654679/fire_23654679_with_target.csv", 2756544, 27);
-    }
 };
 
 int get_random_seed(int argc, char *argv[])
@@ -8865,19 +8840,13 @@ int get_random_seed(int argc, char *argv[])
     return random_seed;
 }
 
-enum class ProblemOption
-{
-    SwiftHohenberg,
-    VortexRadialProfile,
-    SolitonWaveFengEq14and15Laser,
-    WildfireSpreadTS
-};
+enum class ProblemOption {SwiftHohenberg, VortexRadialProfile, SolitonWaveFengEq14and15Laser};
 
 int main(int argc, char *argv[])
 {
     int random_seed = get_random_seed(argc, argv);
     constexpr const char* algorithm = "SimulatedAnnealing";
-    constexpr double time = 60000.0;
+    constexpr double time = 600.0;
     printf("Random seed set to %d%s", random_seed, std::string(10, '\n').c_str());
     ProblemOption choice = ProblemOption::SwiftHohenberg;
     
@@ -8891,9 +8860,6 @@ int main(int argc, char *argv[])
             break;
         case ProblemOption::SolitonWaveFengEq14and15Laser:
             ExampleProblems::SolitonWaveFengEq14and15LaserTest(random_seed, algorithm, time);
-            break;
-        case ProblemOption::WildfireSpreadTS:
-            ExampleProblems::WildfireSpreadTSTest(random_seed, algorithm, time);
             break;
         default:
             break;

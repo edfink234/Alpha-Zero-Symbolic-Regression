@@ -14,12 +14,11 @@ r, theta = symbols('r theta')
 mu, nu = 1, 1
 # Define the function f as a function of r and theta
 GENERIC = False
-PERIODIC_IN_THETA = False
 f = None
 if GENERIC:
     f = Function('f')(r, theta)
 else:
-    f = ((theta / 8) - (sin(theta) * (1.0000132758892615 * sin(r)))) - 0.004215563501922511
+    f = ((theta / 8) - (sin(theta) * (1.0000132758892615 * sin(r))))
 
 latex_f = sp.latex(f)
 latex_f = latex_f.replace(r"(r", r"(\sqrt{x^2 + y^2}")
@@ -107,16 +106,9 @@ r_vals, theta_vals = np.meshgrid(r_vec, th_vec, indexing='ij')
 
 # --- Finite-difference helpers (2nd-order one-sided in r and theta) ---
 def dtheta2(F):
-    if PERIODIC_IN_THETA:
-        Fm1 = np.roll(F, 1, axis=1)
-        Fp1 = np.roll(F, -1, axis=1)
-        return (Fm1 - 2.0*F + Fp1) / (dth**2)
-    else:
-        G = np.empty_like(F)
-        G[:, 1:-1] = (F[:, 2:] - 2.0*F[:, 1:-1] + F[:, :-2]) / (dth**2)
-        G[:, 0]  = ( 2.0*F[:, 0]  - 5.0*F[:, 1]  + 4.0*F[:, 2]  - F[:, 3]  ) / (dth**2)
-        G[:, -1] = ( 2.0*F[:, -1] - 5.0*F[:, -2] + 4.0*F[:, -3] - F[:, -4] ) / (dth**2)
-        return G
+    Fm1 = np.roll(F, 1, axis=1)
+    Fp1 = np.roll(F, -1, axis=1)
+    return (Fm1 - 2.0*F + Fp1) / (dth**2)
 
 #f'(x) = (f(x+h)-f(x))/h -> f''(x) = (f'(x+h) - f'(x))/h
 def dr_first(F):
