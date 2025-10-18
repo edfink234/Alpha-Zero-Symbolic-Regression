@@ -7,8 +7,10 @@ from numpy import linspace
 from itertools import product
 import math
 
-r_float_vals = linspace(0.01, 10, 3).tolist()
-theta_float_vals = linspace(0, 2*math.pi, 3).tolist()
+N = 330
+PERIODIC_IN_THETA = True
+r_float_vals = linspace(0.01, 10, N).tolist()
+theta_float_vals = linspace(0, 2*math.pi, N).tolist()
 
 r_vals = [interval[i-0.00000000000001, i+0.00000000000001] for i in r_float_vals] #MARK: Changing the starting r to 1e-2 instead of 1e-4 solves the upper-bound blowup issue!
 theta_vals = [interval[i-0.00000000000001, i+0.00000000000001] for i in theta_float_vals]
@@ -17,12 +19,10 @@ SH = symbols('\\text{SwiftHohenberg} r theta mu nu')
 r, theta = symbols('r theta')
 mu, nu = 1, 1
 
-f_val_func = lambda r_val, theta_val: -1.00001716621136*(0.124998927125603*theta_val - sin(r_val)*sin(theta_val))**2*(0.125*theta_val - 1.00000858306885*sin(r_val)*sin(theta_val)) + 1.00001716621136*(0.124998927125603*theta_val - sin(r_val)*sin(theta_val))**2 - (-1.00000858306885*sin(r_val) + 1.00000858306885*cos(r_val)/r_val - 3.00002574920654*sin(r_val)/r_val**2 - 6.00005149841309*cos(r_val)/r_val**3 + 6.00005149841309*sin(r_val)/r_val**4)*sin(theta_val) - 2.0000171661377*sin(r_val)*sin(theta_val) - (1.00000858306885*sin(theta_val)*cos(r_val) + 1.00000858306885*sin(r_val)*sin(theta_val)/r_val + 2.0000171661377*sin(theta_val)*cos(r_val)/r_val**2 - 2.0000171661377*sin(r_val)*sin(theta_val)/r_val**3)/r_val + 2.0000171661377*sin(theta_val)*cos(r_val)/r_val - 1.00000858306885*(-sin(r_val) + cos(r_val)/r_val - sin(r_val)/r_val**2)*sin(theta_val)/r_val**2 - 2.0000171661377*sin(r_val)*sin(theta_val)/r_val**2
+f_val_func = lambda r_val, theta_val: -(sin(r_val) - cos(r_val)/r_val + 3.0*sin(r_val)/r_val**2 + 6.0*cos(r_val)/r_val**3 - 6.0*sin(r_val)/r_val**4)*sin(theta_val) - sin(r_val)**3*sin(theta_val)**3 + sin(r_val)**2*sin(theta_val)**2 + 2.0*sin(r_val)*sin(theta_val) - (-sin(theta_val)*cos(r_val) - sin(r_val)*sin(theta_val)/r_val - 2.0*sin(theta_val)*cos(r_val)/r_val**2 + 2.0*sin(r_val)*sin(theta_val)/r_val**3)/r_val - 2.0*sin(theta_val)*cos(r_val)/r_val - (sin(r_val) - cos(r_val)/r_val + sin(r_val)/r_val**2)*sin(theta_val)/r_val**2 + 2.0*sin(r_val)*sin(theta_val)/r_val**2 if PERIODIC_IN_THETA else -1.00002655195477*(0.148473311106068*theta_val - sin(r_val)*sin(theta_val) - 0.0922845938950294)**2*(0.148475282221305*theta_val - 1.00001327588926*sin(r_val)*sin(theta_val) - 0.0922858190550785) + 1.00002655195477*(0.148473311106068*theta_val - sin(r_val)*sin(theta_val) - 0.0922845938950294)**2 - (-1.00001327588926*sin(r_val) + 1.00001327588926*cos(r_val)/r_val - 3.00003982766778*sin(r_val)/r_val**2 - 6.00007965533557*cos(r_val)/r_val**3 + 6.00007965533557*sin(r_val)/r_val**4)*sin(theta_val) - 2.00002655177852*sin(r_val)*sin(theta_val) - (1.00001327588926*sin(theta_val)*cos(r_val) + 1.00001327588926*sin(r_val)*sin(theta_val)/r_val + 2.00002655177852*sin(theta_val)*cos(r_val)/r_val**2 - 2.00002655177852*sin(r_val)*sin(theta_val)/r_val**3)/r_val + 2.00002655177852*sin(theta_val)*cos(r_val)/r_val - 1.00001327588926*(-sin(r_val) + cos(r_val)/r_val - sin(r_val)/r_val**2)*sin(theta_val)/r_val**2 - 2.00002655177852*sin(r_val)*sin(theta_val)/r_val**2
 
-for (r_val, theta_val) in product(r_float_vals, theta_float_vals):
-    print(r_val, theta_val, f_val_func(r_val, theta_val))
-
-exit();
+#for (r_val, theta_val) in product(r_float_vals, theta_float_vals):
+#    print(r_val, theta_val, f_val_func(r_val, theta_val))
 
 f_vals = []
 max_disp = 0

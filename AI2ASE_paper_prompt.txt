@@ -9,17 +9,15 @@ Anyway, I want to make a submission to the call for papers here (https://ai-2-as
 
 These scripts include the SR code used to find the approximate analytical solution, as well as scripts to plot the initial guess, verify it's accuracy with pyinterval's interval arithmetic and sympy, and use it as an initial guess to scipy's least_squares. I include these files attached with `.txt` extensions so you can open them.
 
-What I want to show with this paper is that SR can discover simple, analytical approximations, contrasted to the complexity of PINNs, without \emph{any} prior knowledge besides the governing equation, and that the best result is often times simple, contrary to our prior belief. Also, I want to show people that the expression obtain with this PISR method can be used as an initial seed for scipy `least_squares`
+What I want to show with this paper is that SR can discover simple, analytical approximations, contrasted to the complexity of PINNs, without \emph{any} prior knowledge besides the governing equation, and that the best result is often times simple, contrary to our prior belief. Also, I want to show people that the expression obtain with this PISR method can be used as an initial seed for scipy `least_squares`.
 
 Please include an "experimental details" section or something to this liking where I can list the SR settings used for the equation discovery.
 
-Attached, I provide the latex code for my latest preprint, "Deducing Closed-Form Expressions for Bright-Solitons in Strongly Magnetized Plasmas with Physics Informed Symbolic Regression (PISR)", attached as the file `main.txt`, to help with writing this 4-8 page paper. Please use this liberally to help since it's a good preprint 😊.
+Attached, I provide the latex code for my latest preprint, "Deducing Closed-Form Expressions for Bright-Solitons in Strongly Magnetized Plasmas with Physics Informed Symbolic Regression (PISR)", attached as the file `main.txt`, to help with writing this 4-8 page paper. Please follow this as much as possible to help since it's a good preprint 😊.
 
 Please provide the raw-latex code of your draft paper to document my findings. 
 
-Please use the template attached `AAAI 2026 Press Formatting Instructions for Authors Using LaTeX` for this 4-8 page report as this is the template I have to follow afaik (the call-for-papers link is here: https://ai-2-ase.github.io/cop/). 
-
-The template you need to use for the report is the attached file called "anonymous-submission-latex-2026.txt"
+Please use the template `AAAI 2026 Press Formatting Instructions for Authors Using LaTeX` for this 4-8 page report as this is the template I have to follow afaik (the call-for-papers link is here: https://ai-2-ase.github.io/cop/). This template that you need to use for the report is the attached file called "anonymous-submission-latex-2026.txt". Again though, the structure of the report should be like my preprint (the attached file "main.txt") because it's good and it's me!
 
 Below is the equation I solved with symbolic regression, without any starting guess; Please include some of this below in the 4-8 page report:
 

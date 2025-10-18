@@ -882,14 +882,14 @@ struct Board
     std::vector<std::vector<std::string>> diffeq_result;
     double isConstTol;
     bool simplify_original;
+    bool mustHaveAllFeatures;
 
     Board(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool), size_t num_diff_eqns, bool primary = true, const std::vector<int>& depth = {},
           const std::string& expression_type = "prefix", size_t num_consts_diff = 0, std::string fitMethod = "LevenbergMarquardt", int numFitIter = 1,
           std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXd& theData = {}, bool visualize_exploration = false, bool cache = false,
           bool const_tokens = false, double isConstTol = 1e-1, bool use_const_pieces = false, bool simplifyOriginal = true,
-          int numDataCols = 0) :
-        gen{rd()}, vel_dist{-1.0, 1.0}, pos_dist{0.0, 1.0}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, n{depth},
-        is_primary{primary}, simplify_original{simplifyOriginal}
+          int numDataCols = 0, bool must_have_all_features = true) :
+        gen{rd()}, vel_dist{-1.0, 1.0}, pos_dist{0.0, 1.0}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, n{depth}, is_primary{primary}, simplify_original{simplifyOriginal}, mustHaveAllFeatures{must_have_all_features}
     {
         assert(n.size());
         this->num_objectives = n.size();
@@ -4101,69 +4101,72 @@ struct Board
     {
         double score = 0.0;
         bool depends_symb_on_x0 = false;
-        for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++) //loops over each generated symbolic expression
+        if (this->mustHaveAllFeatures) //If all of the
         {
-            //This block below checks if `this->pieces[jdx]` depends on `x0`.
+            for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++) //loops over each generated symbolic expression
             {
-                depends_symb_on_x0 = false;
-                for (const auto& piece: this->pieces[jdx])
+                //This block below checks if `this->pieces[jdx]` depends on `x0`.
                 {
-                    if (piece != "x0")
+                    depends_symb_on_x0 = false;
+                    for (const auto& piece: this->pieces[jdx])
                     {
-                        for (int i = 0; i < static_cast<int>(piece.size())-2; i++)
+                        if (piece != "x0")
                         {
-                            //checks if next 3 characters are 'n', 'a', 'n' or 'i', 'n', 'f'
-                            if (((piece[i] == 'n') && (piece[i+1] == 'a') && (piece[i+2] == 'n')) ||
-                                ((piece[i] == 'i') && (piece[i+1] == 'n') && (piece[i+2] == 'f')))
+                            for (int i = 0; i < static_cast<int>(piece.size())-2; i++)
                             {
-                                this->SNE_curr = DBL_MAX;
-                                return score;
-                            }
-                            //checks if next 3 characters are 'x', '0', * or *, 'x', '0'
-                            else if (((piece[i] == 'x') && (piece[i+1] == '0')) ||
-                                    ((piece[i+1] == 'x') && (piece[i+2] == '0')))
-                            {
-                                depends_symb_on_x0 = true;
+                                //checks if next 3 characters are 'n', 'a', 'n' or 'i', 'n', 'f'
+                                if (((piece[i] == 'n') && (piece[i+1] == 'a') && (piece[i+2] == 'n')) ||
+                                    ((piece[i] == 'i') && (piece[i+1] == 'n') && (piece[i+2] == 'f')))
+                                {
+                                    this->SNE_curr = DBL_MAX;
+                                    return score;
+                                }
+                                //checks if next 3 characters are 'x', '0', * or *, 'x', '0'
+                                else if (((piece[i] == 'x') && (piece[i+1] == '0')) ||
+                                        ((piece[i+1] == 'x') && (piece[i+2] == '0')))
+                                {
+                                    depends_symb_on_x0 = true;
+                                }
                             }
                         }
+                        else
+                        {
+                            depends_symb_on_x0 = true;
+                        }
                     }
-                    else
+                    //We reject the solution if it doesn't depend on `x0`
+                    if (!depends_symb_on_x0)
                     {
-                        depends_symb_on_x0 = true;
+                        this->SNE_curr = DBL_MAX;
+                        return score;
                     }
                 }
-                //We reject the solution if it doesn't depend on `x0`
-                if (!depends_symb_on_x0)
+                Eigen::VectorXd expression_eval = expression_evaluator(this->params, this->pieces[jdx]);
+                std::vector<int> grasp;
+                //MARK: Might want to add `passesConstantThreshold` here in the future...
+                for (const std::string& i: Board::__input_vars)
                 {
-                    this->SNE_curr = DBL_MAX;
-                    return score;
-                }
-            }
-            Eigen::VectorXd expression_eval = expression_evaluator(this->params, this->pieces[jdx]);
-            std::vector<int> grasp;
-            //MARK: Might want to add `passesConstantThreshold` here in the future...
-            for (const std::string& i: Board::__input_vars)
-            {
-                //Below, we're checking if the independent variable `i` is present in the expression `this->pieces[jdx]`.
-                if (std::find(this->pieces[jdx].begin(), this->pieces[jdx].end(), i) == this->pieces[jdx].end())
-                {
-                    //then `this->pieces[jdx]` does not depend on `i` so it is a trivial expression -> get out of dodge!
-                    this->SNE_curr = DBL_MAX;
-                    return score;
-                }
-                //If the variable `i` is found, we then test the derivative wrt `i` to check if it's 0 within `this->isConstTol` tolerance.
-                if (this->expression_type == "prefix")
-                {
-                    this->derivePrefix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
-                }
-                else //postfix
-                {
-                    this->derivePostfix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
-                }
-                if (isZero(expression_evaluator(this->params, this->derivat), this->isConstTol)) //Ignore the trivial solution (N-d functions)!
-                {
-                    this->SNE_curr = DBL_MAX;
-                    return score;
+                    //Below, we're checking if the independent variable `i` is present in the expression `this->pieces[jdx]`.
+                    if (std::find(this->pieces[jdx].begin(), this->pieces[jdx].end(), i) == this->pieces[jdx].end())
+                    {
+                        //then `this->pieces[jdx]` does not depend on `i` so it is a trivial expression -> get out of dodge!
+                        this->SNE_curr = DBL_MAX;
+                        return score;
+                    }
+                    //If the variable `i` is found, we then test the derivative wrt `i` to check if it's 0 within `this->isConstTol` tolerance.
+                    if (this->expression_type == "prefix")
+                    {
+                        this->derivePrefix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
+                    }
+                    else //postfix
+                    {
+                        this->derivePostfix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
+                    }
+                    if (isZero(expression_evaluator(this->params, this->derivat), this->isConstTol)) //Ignore the trivial solution (N-d functions)!
+                    {
+                        this->SNE_curr = DBL_MAX;
+                        return score;
+                    }
                 }
             }
         }
@@ -4250,7 +4253,7 @@ struct Board
         else //just evaluate
         {
             this->diffeq_result = diffeq(*this, false);
-            all_checks(this->diffeq_result);
+            assert(all_checks(this->diffeq_result));
             if (this->SNE_curr_vec.size() != this->diffeq_result.size())
             {
                 this->SNE_curr_vec.assign(this->diffeq_result.size(), 0);
@@ -5901,6 +5904,49 @@ struct Board
 };
 
 /*
+ Infix: ((1/(1-exp(~f))) - x26)**2
+ Prefix: ^ - / 1 - 1 exp ~ f x26 2
+ Postfix: 1 1 f ~ exp - / x26 - 2 ^
+ 
+ // {x0: VIIRS_band_M11, x1: VIIRS_band_I2, x2: VIIRS_band_I1, x3: NDVI, x4: EVI2, x5: total_precipitation, x6: wind_speed, x7: wind_direction, x8: min_temperature, x9: max_temperature, x10: energy_release_component, x11: specific_humidity, x12: slope, x13: aspect, x14: elevation, x15: palmer_drought_severity_index, x16: landcover_class, x17: forecast_total_precipitation, x18: forecast_wind_speed, x19: forecast_wind_direction, x20: forecast_temperature, x21: forecast_specific_humidity, x22: active_fire, x23: row, x24: col, x25: date}
+ // {x.pieces[0]: f}
+ */
+std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
+{
+    std::vector<std::vector<std::string>> results(1); //For now, simply comparing 𝛔(f(\vec{x})) with x
+    for (decltype(results.size()) i = 0; i < results.size(); i++){results[i].reserve(100);}
+    if (x.expression_type == "prefix")
+    {
+        //Prefix: ^ - / 1 - 1 exp ~ f x26 2
+        results[0] = {"^", "-", "/", "1", "-", "1", "exp", "~"}; // ^ - / 1 - 1 exp ~
+        for (const std::string& i: x.pieces[0]) // f
+        {
+            results[0].push_back(i);
+        }
+        results[0].push_back("x26"); // x26
+        results[0].push_back("2"); // 2
+    }
+    else if (x.expression_type == "postfix")
+    {
+        //Postfix: 1 1 f ~ exp - / x26 - 2 ^
+        results[0] = {"1", "1"}; // 1 1
+        for (const std::string& i: x.pieces[0]) // f
+        {
+            results[0].push_back(i);
+        }
+        results[0].push_back("~"); // ~
+        results[0].push_back("exp"); // exp
+        results[0].push_back("-"); // -
+        results[0].push_back("/"); // /
+        results[0].push_back("x26"); // x26
+        results[0].push_back("-"); // -
+        results[0].push_back("2"); // 2
+        results[0].push_back("^"); // ^
+    }
+    return results;
+}
+
+/*
 ||===================================================================================================================================||
 || Equations from here (14-15): https://pubs.aip.org/aip/pop/article/23/3/032102/1015921/Laser-propagation-and-soliton-generation-in ||
 ||===================================================================================================================================||
@@ -7306,6 +7352,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                         bool use_const_pieces = false,
                         bool simplifyOriginal = false,
                         int numDataCols = 0,
+                        bool mustHaveAllFeatures = true,
                         const std::vector<std::vector<std::string>>& seed_expressions = {},
                         bool exit_early = false,
                         int custom_rand_seed = -1,
@@ -7357,7 +7404,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
     /*
      Inside of thread:
      */
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &seed_expressions, &exit_early, &custom_rand_seed, &best_SNE, &best_sne_vec]()
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &seed_expressions, &exit_early, &custom_rand_seed, &best_SNE, &best_sne_vec]()
     {
         std::random_device rand_dev;
         #if RANDOM_SEED < 0
@@ -7370,9 +7417,9 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
         {
             generator.seed(custom_rand_seed);
         }
-        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols);
+        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols, mustHaveAllFeatures);
         sync_point.arrive_and_wait();
-        Board secondary(diffeq, num_diff_eqns, false, std::vector<int>(depth.size(), 0), expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols); //For perturbations
+        Board secondary(diffeq, num_diff_eqns, false, std::vector<int>(depth.size(), 0), expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols, mustHaveAllFeatures); //For perturbations
         assert(secondary.pieces.size() == secondary.n.size());
         assert(secondary.pieces.size() == x.pieces.size());
         assert(secondary.pieces.size() == x.n.size());
@@ -8577,7 +8624,8 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
                   bool const_tokens = false,
                   double isConstTol = 1e-1,
                   bool use_const_pieces = false,
-                  int numDataCols = 0)
+                  int numDataCols = 0,
+                  bool mustHaveAllFeatures = true)
 {
     if (num_threads == 0)
     {
@@ -8603,12 +8651,12 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
      Inside of thread:
      */
 
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &use_const_pieces, &numDataCols, &isConstTol, &best_SNE, &best_sne_vec]()
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &use_const_pieces, &numDataCols, &mustHaveAllFeatures, &isConstTol, &best_SNE, &best_sne_vec]()
     {
         std::random_device rand_dev;
         std::mt19937 thread_local generator(rand_dev()); // Mersenne Twister random number generator
 
-        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, true, numDataCols);
+        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, true, numDataCols, mustHaveAllFeatures);
 
         sync_point.arrive_and_wait();
         double score = 0.0;
@@ -8721,7 +8769,8 @@ namespace ExampleProblems
                          true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
                          threshold /*threshold for which solutions cannot be constant*/,
                          true /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
-                         0 /*number of data columns that constitute labels and not independent variables/features*/);
+                         0 /*number of data columns that constitute labels and not independent variables/features*/,
+                         true /*whether or not to include ALL of the features in all of the generated expressions*/);
         }
         else
         {
@@ -8742,6 +8791,7 @@ namespace ExampleProblems
                 false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
                 0 /*number of data columns that constitute labels and not independent variables/features*/,
+                true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {split("0.148475282221305 x1 * x1 sin 1.0000132758892615 x0 sin * * - 0.0922858190550785 -")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -8770,31 +8820,33 @@ namespace ExampleProblems
                          true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
                          threshold /*threshold for which solutions cannot be constant*/,
                          false /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
-                         0 /*number of data columns that constitute labels and not independent variables/features*/);
+                         0 /*number of data columns that constitute labels and not independent variables/features*/,
+                         true /*whether or not to include ALL of the features in all of the generated expressions*/);
         }
         else
         {
             SimulatedAnnealing(VortexRadialProfile /*differential equation to solve*/,
-                     3 /*number of equations in differential equation system*/,
-                     data /*data used to solve differential equation*/,
-                     std::vector<int>{7} /*fixed depths of generated solution*/,
-                     "prefix" /*expression representation*/,
-                     0/*2*/ /*num_consts_diff: number of constants in differential equation*/,
-                     "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
-                     5 /*number of fit iterations*/,
-                     "naive_numerical" /*method for computing the gradient*/,
-                     true /*cache*/,
-                     time /*time to run the algorithm in seconds*/,
-                     0 /*num threads*/,
-                     true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
-                     threshold /*threshold for which solutions cannot be constant*/,
-                     false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
-                     false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
-                     0 /*number of data columns that constitute labels and not independent variables/features*/,
-                     {} /*seed expressions*/,
-                     false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
-                     random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
-                     "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
+                3 /*number of equations in differential equation system*/,
+                data /*data used to solve differential equation*/,
+                std::vector<int>{7} /*fixed depths of generated solution*/,
+                "prefix" /*expression representation*/,
+                0/*2*/ /*num_consts_diff: number of constants in differential equation*/,
+                "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
+                5 /*number of fit iterations*/,
+                "naive_numerical" /*method for computing the gradient*/,
+                true /*cache*/,
+                time /*time to run the algorithm in seconds*/,
+                0 /*num threads*/,
+                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                threshold /*threshold for which solutions cannot be constant*/,
+                false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
+                0 /*number of data columns that constitute labels and not independent variables/features*/,
+                true /*whether or not to include ALL of the features in all of the generated expressions*/,
+                {} /*seed expressions*/,
+                false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
+                random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
+                "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
         }
     }
 
@@ -8821,7 +8873,8 @@ namespace ExampleProblems
                 true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
                 true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
-                 2 /*number of data columns that constitute labels and not independent variables/features*/);
+                 2 /*number of data columns that constitute labels and not independent variables/features*/,
+                 true /*whether or not to include ALL of the features in all of the generated expressions*/);
         }
         else
         {
@@ -8842,6 +8895,7 @@ namespace ExampleProblems
                 false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the ORIGINAL expression on every iteration (perturbation) of the seed expression vector; if false a copy is maintained so that simplification on this->pieces can still happen*/
                 2 /*number of data columns that constitute labels and not independent variables/features*/,
+                true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {split("x0 sech tanh tanh -6.466281 x0 tanh 2.616570 / - /"), split("3.235163 x0 sech 0.964028 ^ * sech")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -8851,9 +8905,54 @@ namespace ExampleProblems
     void WildfireSpreadTSTest(int random_seed, const char* algorithm, double time)
     {
         double threshold = 1e-5;
-        Eigen::MatrixXd data = load_csv("/Users/edwardfinkelstein/SDSU_UCI/UCIFall2025/CS274E/8006177/WildfireSpreadTS/2020/fire_23654679/fire_23654679_with_target.csv", 2756544, 28);
+        Eigen::MatrixXd data = load_csv("/Users/edwardfinkelstein/SDSU_UCI/UCIFall2025/CS274E/8006177/WildfireSpreadTS/2020/fire_23654679/fire_23654679_with_target_bin.csv", 2756544, 27);
         std::cout << "Data loaded!\nFirst 10 rows\n=============\n";
-        std::cout << data.topRows(10);
+        std::cout << data.topRows(10) << '\n';
+        if (strcmp(algorithm, "RandomSearch") == 0)
+        {
+            RandomSearch(WildfireSpreadTS /*differential equation to solve*/,
+                1 /*number of equations in differential equation system*/,
+                data /*data used to solve differential equation*/,
+                std::vector<int>{5} /*fixed depths of generated solution*/,
+                "postfix" /*expression representation*/,
+                0 /*num_consts_diff: number of constants in differential equation*/,
+                "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
+                5 /*number of fit iterations*/,
+                "naive_numerical" /*method for computing the gradient*/,
+                true /*cache*/,
+                time /*time to run the algorithm in seconds*/,
+                0 /*num threads*/,
+                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                threshold /*threshold for which solutions cannot be constant*/,
+                true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                 1 /*number of data columns that constitute labels and not independent variables/features*/,
+                 false /*whether or not to include ALL of the features in all of the generated expressions*/);
+        }
+        else
+        {
+            SimulatedAnnealing(WildfireSpreadTS /*differential equation to solve*/,
+                1 /*number of equations in differential equation system*/,
+                data /*data used to solve differential equation*/,
+                std::vector<int>{5} /*fixed depths of generated solution*/,
+                "postfix" /*expression representation*/,
+                0 /*num_consts_diff: number of constants in differential equation*/,
+                "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
+                5 /*number of fit iterations*/,
+                "naive_numerical" /*method for computing the gradient*/,
+                true /*cache*/,
+                time /*time to run the algorithm in seconds*/,
+                0 /*num threads*/,
+                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                threshold /*threshold for which solutions cannot be constant*/,
+                false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                false, /*Whether to simplify the ORIGINAL expression on every iteration (perturbation) of the seed expression vector; if false a copy is maintained so that simplification on this->pieces can still happen*/
+                1 /*number of data columns that constitute labels and not independent variables/features*/,
+                false /*whether or not to include ALL of the features in all of the generated expressions*/,
+                {} /*seed expressions*/,
+                false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
+                random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
+                "");// "SNE_vals.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
+        }
     }
 };
 

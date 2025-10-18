@@ -6,6 +6,7 @@ from mpl_toolkits.mplot3d import Axes3D
 show = False
 sech = lambda x: 1.0/np.cosh(x)
 
+PERIODIC_IN_THETA = False
 PrintFormula = False
 # Define the polar coordinates
 SH, r, theta, mu, nu = symbols('\\text{SwiftHohenberg} r theta \\mu \\nu')
@@ -25,8 +26,9 @@ if PrintFormula:
     print(sp.multiline_latex(SH, swift_hohenberg, 2).replace(r"\frac", r"\dfrac"))
 
 # Create edges instead of centers
-r_edges = np.linspace(0.01, 10, 34)
-theta_edges = np.linspace(0, 2*np.pi, 34)
+N = 331
+r_edges = np.linspace(0.01, 10, N)
+theta_edges = np.linspace(0, 2*np.pi, N)
 
 # Compute centers
 r_centers = 0.5 * (r_edges[:-1] + r_edges[1:])
@@ -34,7 +36,7 @@ theta_centers = 0.5 * (theta_edges[:-1] + theta_edges[1:])
 R, Theta = np.meshgrid(r_centers, theta_centers)
 
 # Evaluate function on cell centers
-Z = ((Theta / 8) - (np.sin(Theta) * (1.0000132758892615 * np.sin(R))))
+Z = sin(R)*sin(Theta) if PERIODIC_IN_THETA else (((0.148475282221305 * Theta) - (np.sin(Theta) * (1.0000132758892615 * np.sin(R)))) - 0.0922858190550785)
 
 # Convert to Cartesian
 X = R * np.cos(Theta)
@@ -47,9 +49,9 @@ ax = fig.add_subplot(111, projection="3d")
 surf = ax.plot_surface(X, Y, Z, cmap="viridis", edgecolor="none", alpha=0.9)
 ax.set_xlabel("x")
 ax.set_ylabel("y")
-ax.set_zlabel("f(r,θ)")
+ax.set_zlabel(r"$f(r,\theta)$")
 ax.set_title("Swift-Hohenberg 2D Pattern")
-fig.colorbar(surf, shrink=0.5, aspect=10, label="f(r, θ)")
+fig.colorbar(surf, shrink=0.5, aspect=10, label=r"$f(r,\theta) = \sin(r)\sin(\theta)$" if PERIODIC_IN_THETA else r"$f(r,\theta) = 0.148\cdot\theta - \sin\theta\,\sin r - 0.092$")
 
 # Improve viewing angle
 ax.view_init(elev=35, azim=235)
@@ -58,6 +60,6 @@ plt.tight_layout()
 if show:
     plt.show()
 else:
-    plt.savefig("SwiftHohenberg2D.pdf")
+    plt.savefig(f"SwiftHohenberg2D{'Periodic' if PERIODIC_IN_THETA else 'NonPeriodic'}.pdf")
     from os import system
-    system("open SwiftHohenberg2D.pdf")
+    system(f"open SwiftHohenberg2D{'Periodic' if PERIODIC_IN_THETA else 'NonPeriodic'}.pdf")

@@ -4,6 +4,7 @@ import numpy as np
 from sympy.utilities.lambdify import lambdify
 from scipy.optimize import least_squares
 from numpy import linalg as LA
+from math import pi
 import matplotlib.pyplot as plt
 
 sech=lambda x:1/cosh(x)
@@ -14,12 +15,13 @@ r, theta = symbols('r theta')
 mu, nu = 1, 1
 # Define the function f as a function of r and theta
 GENERIC = False
-PERIODIC_IN_THETA = False
+PERIODIC_IN_THETA = True
+COMPUTE_NUMERIC = False
 f = None
 if GENERIC:
     f = Function('f')(r, theta)
 else:
-    f = (((0.148475282221305 * theta) - (sin(theta) * (1.0000132758892615 * sin(r)))) - 0.0922858190550785)
+    f = sin(theta)*sin(r) if PERIODIC_IN_THETA else (((0.148475282221305 * theta) - (sin(theta) * (1.0000132758892615 * sin(r)))) - 0.0922858190550785)
 
 latex_f = sp.latex(f)
 latex_f = latex_f.replace(r"(r", r"(\sqrt{x^2 + y^2}")
@@ -34,14 +36,14 @@ double_laplacian_f = diff(laplacian_f, r, 2) + (1/r) * diff(laplacian_f, r) + (1
 
 swift_hohenberg = mu*f + nu*f*f - f*f*f - (f + 2*laplacian_f + double_laplacian_f)
 
-print(f"swift_hohenberg = {swift_hohenberg.evalf()}")
+print(f"swift_hohenberg = {str(swift_hohenberg.evalf()).replace('r','r_val').replace('theta', 'theta_val')}")
 
 # print(*swift_hohenberg.args, sep="\n")
 r_vals, theta_vals = [None]*2
 func_vals = None
 N = 330
 if not GENERIC:
-    r_vals, theta_vals = np.meshgrid(np.linspace(0.01, 10, N), np.linspace(0, 6.28319, N))
+    r_vals, theta_vals = np.meshgrid(np.linspace(0.01, 10, N), np.linspace(0, 2*pi, N))
     f_SR = lambdify((r, theta), f)
     f_SR_r = lambdify((r, theta), f_r := diff(f, r))
     f_SR_theta = lambdify((r, theta), f_theta := diff(f, theta))
@@ -65,25 +67,11 @@ if not GENERIC:
     mean_squared_error = squared_norm_error / func_vals.size
     print(f"mean-squared_error = {mean_squared_error}")
 
-exit()
+if not COMPUTE_NUMERIC:
+    exit()
+
 #ROOT-FINDING#
 ##############
-'''
-Given `f` defined above, your assignment is
-to use this vector as an initial seed to find a 
-numerical root vector for the solution of the `swift_hohenberg`
-equation object defined above. Feel free to use numpy and/or scipy
-functions to accomplish this
-'''
-
-#TODO: Your code goes here:
-
-#IDEA: We want to solve find a vector `f` s.t. F(f(x), x) ~ 0 as
-#much as possible, where `F` is the equation `swift_hohenberg`
-#we're trying to solve.
-
-#MARK: Next time, Start looking at last response from here:
-#https://chatgpt.com/share/e/68e2efd0-839c-8012-b832-5519f7059393
 
 # Build grids (overwrite any previous r_vals/theta_vals for the solver part)
 Nr = N
@@ -92,7 +80,7 @@ th_vec = np.linspace(0.0, 2.0*np.pi, Nth, endpoint=False)  # periodic, no duplic
 r_edges = np.linspace(0.0, 10.0, Nr + 1)                   # edges include r=0
 r_vec   = 0.5*(r_edges[:-1] + r_edges[1:])                 # midpoints: strictly r>0
 func_vals = func(r_vec, th_vec)
-print(f"Mean-squared error = {(LA.norm(func_vals.flatten())**2) / func_vals.size}")
+#print(f"Mean-squared error = {(LA.norm(func_vals.flatten())**2) / func_vals.size}")
 #print(f"r_vec = {r_vec}")
 dr  = float(r_edges[1] - r_edges[0])
 dth = float(th_vec[1] - th_vec[0])
@@ -215,4 +203,4 @@ fig.colorbar(surf, shrink=0.5, aspect=10, label="f(r, θ)")
 
 ax.view_init(elev=35, azim=235)
 plt.tight_layout()
-plt.show()
+plt.savefig(f"LeastSquaresSeededBySRSolve{'Periodic' if PERIODIC_IN_THETA else 'NonPeriodic'}.pdf")
