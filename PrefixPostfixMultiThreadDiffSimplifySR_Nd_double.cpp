@@ -168,7 +168,7 @@ Eigen::MatrixXd load_csv(const std::string& path, int rows, int cols)
     std::string line;
     int i = 0;
     std::getline(file, line); //header row
-    while (std::getline(file, line))
+    while (std::getline(file, line) && (i < rows))
     {
         std::stringstream ss(line);
         std::string cell;
@@ -684,7 +684,9 @@ public:
             {
                 this->features["x"+std::to_string(i)](j) = this->data(j,i);
             }
+//            printf("this->features[x%ld].sum() = %lf\n", i, this->features["x"+std::to_string(i)].sum());
         }
+//        exit(1);
         this->rows.resize(this->num_rows);
 
         for (long i = 0; i < num_rows; i++)
@@ -884,11 +886,24 @@ struct Board
     bool simplify_original;
     bool mustHaveAllFeatures;
 
-    Board(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool), size_t num_diff_eqns, bool primary = true, const std::vector<int>& depth = {},
-          const std::string& expression_type = "prefix", size_t num_consts_diff = 0, std::string fitMethod = "LevenbergMarquardt", int numFitIter = 1,
-          std::string fitGradMethod = "naive_numerical", const Eigen::MatrixXd& theData = {}, bool visualize_exploration = false, bool cache = false,
-          bool const_tokens = false, double isConstTol = 1e-1, bool use_const_pieces = false, bool simplifyOriginal = true,
-          int numDataCols = 0, bool must_have_all_features = true) :
+    Board(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
+          size_t num_diff_eqns,
+          bool primary = true,
+          const std::vector<int>& depth = {},
+          const std::string& expression_type = "prefix",
+          size_t num_consts_diff = 0,
+          std::string fitMethod = "LevenbergMarquardt",
+          int numFitIter = 1,
+          std::string fitGradMethod = "naive_numerical",
+          const Eigen::MatrixXd& theData = {},
+          bool visualize_exploration = false,
+          bool cache = false,
+          bool const_tokens = false,
+          double isConstTol = 1e-1,
+          bool use_const_pieces = false,
+          bool simplifyOriginal = true,
+          int numDataCols = 0,
+          bool must_have_all_features = true) :
         gen{rd()}, vel_dist{-1.0, 1.0}, pos_dist{0.0, 1.0}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, n{depth}, is_primary{primary}, simplify_original{simplifyOriginal}, mustHaveAllFeatures{must_have_all_features}
     {
         assert(n.size());
@@ -1028,6 +1043,7 @@ struct Board
                 Board::num_unary_ops = Board::__unary_operators.size();
                 Board::num_binary_ops = Board::__binary_operators.size();
                 Board::num_leaf_operands = Board::una_bin_leaf_legal_moves_dict[false][false][true].size();
+                std::cout << "Board::leaf_operands = " << Board::una_bin_leaf_legal_moves_dict[false][false][true] << '\n';
                 std::cout << "Board::num_unary_ops = " << Board::num_unary_ops << '\n';
                 std::cout << "Board::num_binary_ops = " << Board::num_binary_ops << '\n';
                 std::cout << "Board::num_leaf_operands = " << Board::num_leaf_operands << '\n';
@@ -4074,7 +4090,7 @@ struct Board
         double score_after = SNE(expression_evaluator(this->params, this->diffeq_result));
         if (score_after < score_before)
         {
-            //printf("score_before = %f -> score_after = %f\n", score_before, score_after);
+//            printf("score_before = %f -> score_after = %f\n", score_before, score_after);
             improved = true;
         }
         //std::cout << "Iterations = " << lm.nfev << '\n';
@@ -4101,7 +4117,8 @@ struct Board
     {
         double score = 0.0;
         bool depends_symb_on_x0 = false;
-        if (this->mustHaveAllFeatures) //If all of the
+        //If all of the features must be non-trivially in each expression in the vector of expressions `pieces`
+        if (this->mustHaveAllFeatures)
         {
             for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++) //loops over each generated symbolic expression
             {
@@ -4177,7 +4194,7 @@ struct Board
             this->diffeq_result = diffeq(*this, true);
             if (this->SNE_curr_vec.size() != this->diffeq_result.size())
             {
-                this->SNE_curr_vec.assign(this->diffeq_result.size(), 0);
+                this->SNE_curr_vec.assign(this->diffeq_result.size(), 0); //one sne value initialized to 0 per equation in the system we're trying to solve.
             }
             assert(this->diffeq_result.size() == static_cast<decltype(this->diffeq_result.size())>(this->num_diff_eqns));
             for (decltype(this->diffeq_result.size()) jdx = 0; jdx < this->diffeq_result.size(); jdx++)
@@ -5908,41 +5925,86 @@ struct Board
  Prefix: ^ - / 1 - 1 exp ~ f x26 2
  Postfix: 1 1 f ~ exp - / x26 - 2 ^
  
- // {x0: VIIRS_band_M11, x1: VIIRS_band_I2, x2: VIIRS_band_I1, x3: NDVI, x4: EVI2, x5: total_precipitation, x6: wind_speed, x7: wind_direction, x8: min_temperature, x9: max_temperature, x10: energy_release_component, x11: specific_humidity, x12: slope, x13: aspect, x14: elevation, x15: palmer_drought_severity_index, x16: landcover_class, x17: forecast_total_precipitation, x18: forecast_wind_speed, x19: forecast_wind_direction, x20: forecast_temperature, x21: forecast_specific_humidity, x22: active_fire, x23: row, x24: col, x25: date}
+ // {x0: VIIRS_band_M11, x1: VIIRS_band_I2, x2: VIIRS_band_I1, x3: NDVI, x4: EVI2, x5: total_precipitation, x6: wind_speed, x7: wind_direction, x8: min_temperature, x9: max_temperature, x10: energy_release_component, x11: specific_humidity, x12: slope, x13: aspect, x14: elevation, x15: palmer_drought_severity_index, x16: landcover_class, x17: forecast_total_precipitation, x18: forecast_wind_speed, x19: forecast_wind_direction, x20: forecast_temperature, x21: forecast_specific_humidity, x22: active_fire, x23: row, x24: col, x25: date, x26: next_day_active_fire_bin}
+ // Want to predict x26 given {x0, x1, ..., x25}
  // {x.pieces[0]: f}
  */
 std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
 {
-    std::vector<std::vector<std::string>> results(1); //For now, simply comparing 𝛔(f(\vec{x})) with x
-    for (decltype(results.size()) i = 0; i < results.size(); i++){results[i].reserve(100);}
+    std::vector<std::vector<std::string>> results(x.num_objectives); //For now, simply comparing 𝛔(f(\vec{x})) with x
+    thread_local std::vector<std::string> p_expr;
+    thread_local bool prefactors_computed = false;
+    constexpr const char* eps = "1e-12";
+    const thread_local double num_ones = x["x26"].sum(); //since x26 (i.e. `next_day_active_fire_bin`) is just a vector of 0's and 1's
+    const thread_local double num_zeroes = Board::data.num_rows - num_ones;
+    thread_local const std::string w1 = to_string_general(-Board::data.num_rows / (2.0 * num_ones));
+    thread_local const std::string w0 = to_string_general(-Board::data.num_rows / (2.0 * num_zeroes));
+    
+    /*
+     - Best score = 6.3652e-09, SNE = 1.57104e+08
+     - Squared-norm error for each equation: 1.57104e+08
+     - Best expression = (((9736.000000 - x7) + (x22 * -3.225653)) + ((x20 + x5) * -17064.107062))
+     - Best expression (original format) = 9736.000000 x7 - x22 -3.225653 * + x20 x5 + -17064.107062 * +
+     */
+    
+    p_expr.clear();
+    p_expr.reserve(100);
+    for (decltype(results.size()) i = 0; i < results.size(); i++)
+    {
+        results[i].reserve(100);
+    }
+
     if (x.expression_type == "prefix")
     {
-        //Prefix: ^ - / 1 - 1 exp ~ f x26 2
-        results[0] = {"^", "-", "/", "1", "-", "1", "exp", "~"}; // ^ - / 1 - 1 exp ~
+        //Prefix: + term1 term2
+        if (!prefactors_computed)
+        {
+            //prefac_term_1 = w1 * x26
+            //prefac_term2 = w0 * (1.0 - x26)
+            x.subs_dict["prefac_term_1"] = x.expression_evaluator(x.params, std::vector<std::string>{"*", w1, "x26"}); //* w1 x26
+            x.subs_dict["prefac_term_2"] = x.expression_evaluator(x.params, std::vector<std::string>{"*", w0, "-", "1", "x26"}); //* w0 - 1 x26
+        }
+        p_expr = {"/", "1", "-", "1", "exp", "~"}; // / 1 - 1 exp ~
         for (const std::string& i: x.pieces[0]) // f
         {
-            results[0].push_back(i);
+            p_expr.push_back(i);
         }
-        results[0].push_back("x26"); // x26
-        results[0].push_back("2"); // 2
+        x.subs_dict["p"] = x.expression_evaluator(x.params, p_expr);
+
+        //term1 = * prefac_term_1 log + p eps
+        x.subs_dict["term1"] = x.expression_evaluator(x.params, {"*", "prefac_term_1", "log", "+", "p", eps});
+        //term2 = * prefac_term_2 log + - 1 p eps
+        x.subs_dict["term2"] = x.expression_evaluator(x.params, {"*", "prefac_term_2", "log", "+", "-", "1", "p", eps});
+        results[0] = {"+", "term1", "term2"};
     }
     else if (x.expression_type == "postfix")
     {
-        //Postfix: 1 1 f ~ exp - / x26 - 2 ^
-        results[0] = {"1", "1"}; // 1 1
+        //Postfix: term1 term2 +
+        if (!prefactors_computed)
+        {
+            //prefac_term_1 = w1 * x26
+            //prefac_term2 = w0 * (1.0 - x26)
+            x.subs_dict["prefac_term_1"] = x.expression_evaluator(x.params, std::vector<std::string>{w1, "x26", "*"}); //w1 x26 *
+            x.subs_dict["prefac_term_2"] = x.expression_evaluator(x.params, std::vector<std::string>{w0, "1", "x26", "-", "*"}); //w0 1 x26 - *
+        }
+        //p = 1 1 f ~ exp - /
+        p_expr = {"1", "1"}; // 1 1
         for (const std::string& i: x.pieces[0]) // f
         {
-            results[0].push_back(i);
+            p_expr.push_back(i);
         }
-        results[0].push_back("~"); // ~
-        results[0].push_back("exp"); // exp
-        results[0].push_back("-"); // -
-        results[0].push_back("/"); // /
-        results[0].push_back("x26"); // x26
-        results[0].push_back("-"); // -
-        results[0].push_back("2"); // 2
-        results[0].push_back("^"); // ^
+        p_expr.push_back("~"); // ~
+        p_expr.push_back("exp"); // exp
+        p_expr.push_back("-"); // -
+        p_expr.push_back("/"); // /
+        x.subs_dict["p"] = x.expression_evaluator(x.params, p_expr);
+        //term1 = prefac_term_1 p eps + log *
+        x.subs_dict["term1"] = x.expression_evaluator(x.params, {"prefac_term_1", "p", eps, "+", "log", "*"});
+        //term2 = prefac_term_2 1 p - eps + log *
+        x.subs_dict["term2"] = x.expression_evaluator(x.params, {"prefac_term_2", "1", "p", "-", eps, "+", "log", "*"});
+        results[0] = {"term1", "term2", "+"};
     }
+    prefactors_computed = true;
     return results;
 }
 
@@ -6627,11 +6689,11 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
     {
         throw std::invalid_argument("Prefix not implemented yet for this SwiftHohenberg function!");
     }
-    //TODO: Here we're just at the tip of the iceberg, we're storing results for one evaluation of the system that are used repeatedly, but many parts of this system do not change as f changes, so they can be computed just once!
     else if (x.expression_type == "postfix")
     {
         //μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -
         result.push_back(mu); // μ
+        //TODO: Need to really re-examine if this `if (fit) {} else {}` is really necessary since I am pretty sure that the consts in `f` are optimized independent of the `vector<string>` that `f` contains
         if (fit) //need to push_back each token since eval(f) will change as the consts in f are optimized
         {
             for (const std::string& i: x.pieces[0]) // f
@@ -8718,6 +8780,11 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
                 std::cout << "Total system result = " << best_expr_result << '\n';
                 std::cout << "Total system result (original format) = " << orig_expr_result << '\n';
             }
+//            else
+//            {
+//                std::cout << "expression = " << x._to_infix() << '\n';
+//                std::cout << "score = " << score << '\n';
+//            }
 
             for (decltype(x.pieces.size()) jdx = 0; jdx < x.pieces.size(); jdx++)
             {
@@ -8913,7 +8980,7 @@ namespace ExampleProblems
             RandomSearch(WildfireSpreadTS /*differential equation to solve*/,
                 1 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{5} /*fixed depths of generated solution*/,
+                std::vector<int>{3} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -8933,7 +9000,7 @@ namespace ExampleProblems
             SimulatedAnnealing(WildfireSpreadTS /*differential equation to solve*/,
                 1 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{5} /*fixed depths of generated solution*/,
+                std::vector<int>{3} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -8944,11 +9011,11 @@ namespace ExampleProblems
                 0 /*num threads*/,
                 true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
-                false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the ORIGINAL expression on every iteration (perturbation) of the seed expression vector; if false a copy is maintained so that simplification on this->pieces can still happen*/
                 1 /*number of data columns that constitute labels and not independent variables/features*/,
                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
-                {} /*seed expressions*/,
+                {split("9740.372938 0 + -1405.000000 x18 / + x20 x5 + -15659.107062 0 + * +")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 "");// "SNE_vals.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);

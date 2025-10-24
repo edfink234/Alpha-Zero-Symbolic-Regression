@@ -15,8 +15,8 @@ r, theta = symbols('r theta')
 mu, nu = 1, 1
 # Define the function f as a function of r and theta
 GENERIC = False
-PERIODIC_IN_THETA = True
-COMPUTE_NUMERIC = False
+PERIODIC_IN_THETA = False
+COMPUTE_NUMERIC = True
 f = None
 if GENERIC:
     f = Function('f')(r, theta)
@@ -74,6 +74,7 @@ if not COMPUTE_NUMERIC:
 ##############
 
 # Build grids (overwrite any previous r_vals/theta_vals for the solver part)
+N = 50
 Nr = N
 Nth = N
 th_vec = np.linspace(0.0, 2.0*np.pi, Nth, endpoint=False)  # periodic, no duplicate endpoint
