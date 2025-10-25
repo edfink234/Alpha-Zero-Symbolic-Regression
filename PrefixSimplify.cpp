@@ -1,4 +1,3 @@
-//TODO: Need a more robust way to check numerical-string equality (e.g. `x == 0` won't work here if e.g. x is -0.0000 -> need a function to do this instead, most likely)
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -7,6 +6,7 @@
 #include <string>
 #include <cmath>
 #include <cassert>
+#include <boost/spirit/include/qi.hpp>
 
 const std::unordered_set<std::string> unary_operators = {"cos", "~", "sin", "log", "ln", "asin", "arcsin", "acos", "arccos", "exp", "sech", "tanh", "sqrt"};
 const std::unordered_set<std::string> binary_operators = {"+", "-", "*", "/", "^"};
@@ -58,6 +58,7 @@ void print_container(const std::vector<std::string>& c)
     std::cout << '\n';
 }
 
+//MARK: Might be able to replace this with `parse_double_spirit`
 double Stod(const std::string& param)
 {
     try
@@ -126,38 +127,20 @@ bool isdouble(const std::string& s)
 }
 
 //https://stackoverflow.com/a/16826908
-int fast_atoi(const char* str)
-{
-    int val = 0;
-    while( *str )
-    {
-        val = val*10 + (*str++ - '0');
-    }
-    return val;
-}
+//int fast_atoi(const char* str)
+//{
+//    int val = 0;
+//    while( *str )
+//    {
+//        val = val*10 + (*str++ - '0');
+//    }
+//    return val;
+//}
 
 /*
  Check is two strings that hold either integers or floating-point
  numbers are equal
  
- Examples
- ========
-checkEqual( "0.000", "0") -> True
-checkEqual( "0.000", "-0") -> True
-checkEqual( "0.0001", "-0") -> False
-checkEqual( "0.000", "1") -> False
-checkEqual( "-1.000", "-1") -> True
-checkEqual( "-2.", "-2") -> True
-checkEqual( "0", "0.") -> True
-checkEqual( "   0", "-0.") -> True
-checkEqual( "  0.00", "-0") -> True
-checkEqual( " 1.0   ", "1") -> True
-checkEqual( "-1.000", "-1") -> True
-checkEqual( "-2.", "-2") -> True
-checkEqual( "-1.000", "-1") -> True
-checkEqual( "-2.", "-2") -> True
-checkEqual( "-1.000", "-1") -> False
-checkEqual( "-2.00000   ", "-2") -> True
  */
 //bool checkEqual(const std::string& x, const std::string& y)
 //{
@@ -211,6 +194,29 @@ checkEqual( "-2.00000   ", "-2") -> True
 //    
 //    return no_x_dec ? (x==y) : nums_after_x_dec_are_all_zero;
 //}
+
+bool parse_double_spirit(const std::string& s, double& out)
+{
+    namespace qi   = boost::spirit::qi;
+    namespace ascii= boost::spirit::ascii;
+
+    auto f = s.begin(), l = s.end();
+    // Skip leading/trailing ASCII whitespace; require full consumption (eoi).
+    // qi::double_ already yields ±inf/NaN where appropriate.
+    bool ok = qi::phrase_parse(f, l, qi::double_ >> qi::eoi, ascii::space, out);
+    return ok; // f==l guaranteed by eoi
+}
+
+bool checkEqual(const std::string &str1, const std::string &str2)
+{
+    if (!isdouble(str1))
+    {
+        return false;
+    }
+    double val1; parse_double_spirit(str1, val1);
+    double val2 = (str2 == "0") ? 0.0 : 1.0;
+    return (val1 == val2);
+}
 
 std::string simplifyString(const std::string& x)
 {
@@ -328,7 +334,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         int second_arg_idx_high = new_expression.size();
         int step;
 
-        if (new_expression[first_arg_idx_high] == "0") //+/- x 0 -> x
+        if (checkEqual(new_expression[first_arg_idx_high], "0")) //+/- x 0 -> x
         {
             //puts("hi 177");
             if (first_arg_idx_high == static_cast<int>(new_expression.size()) - 1)
@@ -342,7 +348,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression.erase(new_expression.begin() + op_idx); //remove +/- operator at beginning
         }
 
-        else if (new_expression[first_arg_idx_low] == "0")
+        else if (checkEqual(new_expression[first_arg_idx_low], "0"))
         {
             if (expression[low] == "+") //+ 0 y -> y
             {
@@ -390,13 +396,13 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "nan"; //change '*' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_high] == "0") //* x 0 -> 0 (because, since prefix operators come at the beginning, if the beginning of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to * x 0, which is 0)
+        else if (checkEqual(new_expression[first_arg_idx_high], "0")) //* x 0 -> 0 (because, since prefix operators come at the beginning, if the beginning of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to * x 0, which is 0)
         {
             //puts("hi 239");
             new_expression[op_idx] = "0"; //change '*' to '0'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_low] == "0") //* 0 x -> 0
+        else if (checkEqual(new_expression[first_arg_idx_low], "0")) //* 0 x -> 0
         {
             //puts("hi 245");
             new_expression[op_idx] = "0"; //change '*' to '0'
@@ -440,13 +446,13 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "nan"; //change '/' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if ((new_expression[first_arg_idx_low] == "0") && (new_expression[first_arg_idx_high] == "0")) // / 0 0 -> nan
+        else if ((checkEqual(new_expression[first_arg_idx_low], "0")) && (checkEqual(new_expression[first_arg_idx_high], "0"))) // / 0 0 -> nan
         {
             //puts("hi 290");
             new_expression[op_idx] = "nan"; //change '/' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_high] == "0") // / x 0 -> nan (for now, because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to / x 0, which is, for now, assumed to be nan for simplicity)
+        else if (checkEqual(new_expression[first_arg_idx_high], "0")) // / x 0 -> nan (for now, because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to / x 0, which is, for now, assumed to be nan for simplicity)
         {
             //puts("hi 282");
             //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
@@ -454,7 +460,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "nan";//(new_expression[first_arg_idx_low] != "~") ? "inf": "-inf"; //change '/' to 'inf' or '-inf'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_low] == "0") // / 0 x -> 0
+        else if (checkEqual(new_expression[first_arg_idx_low], "0")) // / 0 x -> 0
         {
             //puts("hi 295");
             new_expression[op_idx] = "0"; //change '/' to '0'
@@ -506,13 +512,13 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "nan"; //change '^' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_high] == "0") //^ x 0 -> 1 (because, since prefix operators come at the beginning, if the beginning of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to ^ x 0, which is 1)
+        else if (checkEqual(new_expression[first_arg_idx_high], "0")) //^ x 0 -> 1 (because, since prefix operators come at the beginning, if the beginning of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to ^ x 0, which is 1)
         {
             //puts("hi 334");
             new_expression[op_idx] = "1"; //change '^' to '1'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_low] == "0") // ^ 0 x -> nan (for now)
+        else if (checkEqual(new_expression[first_arg_idx_low], "0")) // ^ 0 x -> nan (for now)
         {
             //puts("hi 340");
             //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
@@ -520,7 +526,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "nan";//new_expression[op_idx] = "0"; //change '^' to '0'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_high] == "1") // ^ x 1 -> x (because, since prefix operators come at the beginning, if the beginning of the second argument of '^' is 1, then the whole second argument MUST be 1, therefore the expression reduces to ^ x 1, which is 1)
+        else if (checkEqual(new_expression[first_arg_idx_high], "1")) // ^ x 1 -> x (because, since prefix operators come at the beginning, if the beginning of the second argument of '^' is 1, then the whole second argument MUST be 1, therefore the expression reduces to ^ x 1, which is 1)
         {
             //puts("hi 346");
             //erase the '1' at the end
@@ -554,7 +560,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "nan"; //change 'cos' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_low] == "0") // cos 0 -> 1
+        else if (checkEqual(new_expression[first_arg_idx_low], "0")) // cos 0 -> 1
         {
 //            puts("hi 374");
             new_expression[op_idx] = "1"; //change 'cos' to '1'
@@ -574,7 +580,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "nan"; //change 'sin' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_low] == "0") // sin 0 -> 0
+        else if (checkEqual(new_expression[first_arg_idx_low], "0")) // sin 0 -> 0
         {
             //puts("hi 388");
             new_expression[op_idx] = "0"; //change 'sin' to '0'
@@ -594,7 +600,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "nan"; //change 'tanh' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_low] == "0") // tanh 0 -> 0
+        else if (checkEqual(new_expression[first_arg_idx_low], "0")) // tanh 0 -> 0
         {
             //puts("hi 402");
             new_expression[op_idx] = "0"; //change 'tanh' to '0'
@@ -633,7 +639,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "nan"; //change 'sech' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_low] == "0") // sech 0 -> 1
+        else if (checkEqual(new_expression[first_arg_idx_low], "0")) // sech 0 -> 1
         {
             //puts("hi 416");
             new_expression[op_idx] = "1"; //change 'sech' to '1'
@@ -672,7 +678,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "nan"; //change '~' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_low] == "0") // ~ 0 -> 0
+        else if (checkEqual(new_expression[first_arg_idx_low], "0")) // ~ 0 -> 0
         {
 //            puts("hi 466");
             new_expression[op_idx] = "0"; //change '~' to '0'
@@ -698,7 +704,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "nan"; //change 'exp' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_low] == "0") // exp 0 -> 1
+        else if (checkEqual(new_expression[first_arg_idx_low], "0")) // exp 0 -> 1
         {
             //puts("hi 521");
             new_expression[op_idx] = "1"; //change 'exp' to '1'
@@ -819,14 +825,14 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+1] == "0") //- 0 x -> ~ x
+                        else if (checkEqual(expression[i+1], "0")) //- 0 x -> ~ x
                         {
                             expression[i] = "~";
                             expression.erase(expression.begin() + i + 1);
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+2] == "0" && isConst1) //- x 0 -> x
+                        else if (checkEqual(expression[i+2], "0") && isConst1) //- x 0 -> x
                         {
                             expression[i] = expression[i+1];
                             expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
@@ -836,7 +842,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                     }
                     else if (expression[i] == "*")
                     {
-                        if (expression[i+1] == "0" && isConst2) //* 0 x -> 0
+                        if (checkEqual(expression[i+1], "0") && isConst2) //* 0 x -> 0
                         {
                             //puts("hi 131");
                             expression[i] = "0";
@@ -844,7 +850,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+2] == "0" && isConst1) //* x 0 -> 0
+                        else if (checkEqual(expression[i+2], "0") && isConst1) //* x 0 -> 0
                         {
                             //puts("hi 139");
                             expression[i] = "0";
@@ -852,7 +858,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+1] == "1" && isConst2) //* 1 x -> x
+                        else if (checkEqual(expression[i+1], "1") && isConst2) //* 1 x -> x
                         {
                             //puts("hi 147");
                             expression[i] = expression[i+2];
@@ -860,7 +866,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+2] == "1" && isConst1) //* x 1 -> x
+                        else if (checkEqual(expression[i+2], "1") && isConst1) //* x 1 -> x
                         {
                             //puts("hi 155");
                             expression[i] = expression[i+1];
@@ -871,7 +877,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                     }
                     else if (expression[i] == "+")
                     {
-                        if (expression[i+1] == "0" && isConst2) //+ 0 x -> x
+                        if (checkEqual(expression[i+1], "0") && isConst2) //+ 0 x -> x
                         {
                             //puts("hi 167");
                             expression[i] = expression[i+2];
@@ -879,7 +885,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+2] == "0" && isConst1) //+ x 0 -> x
+                        else if (checkEqual(expression[i+2], "0") && isConst1) //+ x 0 -> x
                         {
                             //puts("hi 175");
                             expression[i] = expression[i+1];
@@ -890,7 +896,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                     }
                     else if (expression[i] == "/")
                     {
-                        if (expression[i+1] == "0" && isConst2) // / 0 x -> 0
+                        if (checkEqual(expression[i+1], "0") && isConst2) // / 0 x -> 0
                         {
                             //puts("hi 187");
                             expression[i] = "0";
@@ -898,7 +904,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+2] == "1" && isConst1) // / x 1 -> x
+                        else if (checkEqual(expression[i+2], "1") && isConst1) // / x 1 -> x
                         {
                             //puts("hi 195");
                             expression[i] = expression[i+1];
@@ -917,7 +923,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                     }
                     else if (expression[i] == "^")
                     {
-                        if (expression[i+2] == "0" && isConst1) // ^ x 0 -> 1
+                        if (checkEqual(expression[i+2], "0") && isConst1) // ^ x 0 -> 1
                         {
                             //puts("hi 223");
                             expression[i] = "1";
@@ -925,7 +931,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+1] == "0" && isConst2) // ^ 0 x -> 0 (x > 0)
+                        else if (checkEqual(expression[i+1], "0") && isConst2) // ^ 0 x -> 0 (x > 0)
                         {
                             //puts("hi 215");
                             expression[i] = "0";
@@ -933,7 +939,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+1] == "1" && isConst2) // ^ 1 x -> 1
+                        else if (checkEqual(expression[i+1], "1") && isConst2) // ^ 1 x -> 1
                         {
                             //puts("hi 231");
                             expression[i] = "1";
@@ -941,7 +947,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+2] == "1" && isConst1) // ^ x 1 -> x
+                        else if (checkEqual(expression[i+2], "1") && isConst1) // ^ x 1 -> x
                         {
                             //puts("hi 239");
                             expression[i] = expression[i+1];
@@ -2089,7 +2095,7 @@ int main()
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-        
+    
     test_expr = {"~", "/", "sech", "~", "/", "~", "tanh", "cos", "x", "sin", "+", "0", "0", "0"};
     printf("before: ");print_container(test_expr);
     simplifyPN(test_expr);
@@ -2294,13 +2300,23 @@ int main()
     printf("after: ");print_container(test_expr);
     puts("");
     
+    //TODO: Add 58 test-cases
+    
     test_expr = {"*", "x", "-0.000"};
     printf("before: ");print_container(test_expr);
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
+    
+    test_expr = {"+", "+", "-", "9736", "x7", "/", "-100.051731", "^", "-0.000000", "x15", "*", "+", "x20", "*", "1075.000000", "x5", "-17064.107062"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+
 }
-//g++ -std=c++20 -o PrefixSimplify PrefixSimplify.cpp
+
+//g++ -std=c++20 -o PrefixSimplify PrefixSimplify.cpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include
 //https://stackoverflow.com/questions/20153412/simplification-algorithm-for-reverse-polish-notation
 //https://dl.acm.org/
 //simplification of polish notation expressions articles

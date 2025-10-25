@@ -4116,61 +4116,39 @@ struct Board
     double fitFunctionToData()
     {
         double score = 0.0;
-        bool depends_symb_on_x0 = false;
-        //If all of the features must be non-trivially in each expression in the vector of expressions `pieces`
-        if (this->mustHaveAllFeatures)
+        for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++) //loop over each generated symbolic expression
         {
-            for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++) //loops over each generated symbolic expression
+            //This block below checks if `this->pieces[jdx]` has nans or infs.
+            for (const auto& piece: this->pieces[jdx])
             {
-                //This block below checks if `this->pieces[jdx]` depends on `x0`.
+                assert(piece.size());
+                for (int i = 0; i < static_cast<int>(piece.size())-2; i++)
                 {
-                    depends_symb_on_x0 = false;
-                    for (const auto& piece: this->pieces[jdx])
-                    {
-                        if (piece != "x0")
-                        {
-                            for (int i = 0; i < static_cast<int>(piece.size())-2; i++)
-                            {
-                                //checks if next 3 characters are 'n', 'a', 'n' or 'i', 'n', 'f'
-                                if (((piece[i] == 'n') && (piece[i+1] == 'a') && (piece[i+2] == 'n')) ||
-                                    ((piece[i] == 'i') && (piece[i+1] == 'n') && (piece[i+2] == 'f')))
-                                {
-                                    this->SNE_curr = DBL_MAX;
-                                    return score;
-                                }
-                                //checks if next 3 characters are 'x', '0', * or *, 'x', '0'
-                                else if (((piece[i] == 'x') && (piece[i+1] == '0')) ||
-                                        ((piece[i+1] == 'x') && (piece[i+2] == '0')))
-                                {
-                                    depends_symb_on_x0 = true;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            depends_symb_on_x0 = true;
-                        }
-                    }
-                    //We reject the solution if it doesn't depend on `x0`
-                    if (!depends_symb_on_x0)
+                    //checks if next 3 characters are 'n', 'a', 'n' or 'i', 'n', 'f'
+                    if (((piece[i] == 'n') && (piece[i+1] == 'a') && (piece[i+2] == 'n')) ||
+                        ((piece[i] == 'i') && (piece[i+1] == 'n') && (piece[i+2] == 'f')))
                     {
                         this->SNE_curr = DBL_MAX;
                         return score;
                     }
                 }
+            }
+            //If all of the features must be non-trivially in each expression in the vector of expressions `pieces`
+            if (this->mustHaveAllFeatures)
+            {
                 Eigen::VectorXd expression_eval = expression_evaluator(this->params, this->pieces[jdx]);
                 std::vector<int> grasp;
                 //MARK: Might want to add `passesConstantThreshold` here in the future...
                 for (const std::string& i: Board::__input_vars)
                 {
-                    //Below, we're checking if the independent variable `i` is present in the expression `this->pieces[jdx]`.
+                    //If the independent variable `i` is NOT present in the expression `this->pieces[jdx]`...
                     if (std::find(this->pieces[jdx].begin(), this->pieces[jdx].end(), i) == this->pieces[jdx].end())
                     {
-                        //then `this->pieces[jdx]` does not depend on `i` so it is a trivial expression -> get out of dodge!
+                        //then `this->pieces[jdx]` does not depend on `i`, so this is a trivial expression -> get out of dodge!
                         this->SNE_curr = DBL_MAX;
                         return score;
                     }
-                    //If the variable `i` is found, we then test the derivative wrt `i` to check if it's 0 within `this->isConstTol` tolerance.
+                    //If the variable `i` is found, we then test the derivative wrt, `i` to check if it's 0 within `this->isConstTol` tolerance.
                     if (this->expression_type == "prefix")
                     {
                         this->derivePrefix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
@@ -4368,7 +4346,7 @@ struct Board
                     if (!Board::expression_dict.contains(this->expression_string)) //If the generated expression has NOT been generated before...
                     {
                         //insert it into the shared dictionary of `{expressions: best_fit_params}` key-value pairs...
-                        try //MAYBE: Might be able to remove this try-catch block itf.
+                        try //MARK: Might be able to remove this try-catch block itf.
                         {
                             if (Board::expression_dict.size() < Board::max_expression_dict_sz) //if the capacity of the shared dict has not been exceeded.
                             {
@@ -5941,10 +5919,17 @@ std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
     thread_local const std::string w0 = to_string_general(-Board::data.num_rows / (2.0 * num_zeroes));
     
     /*
-     - Best score = 6.3652e-09, SNE = 1.57104e+08
-     - Squared-norm error for each equation: 1.57104e+08
-     - Best expression = (((9736.000000 - x7) + (x22 * -3.225653)) + ((x20 + x5) * -17064.107062))
-     - Best expression (original format) = 9736.000000 x7 - x22 -3.225653 * + x20 x5 + -17064.107062 * +
+     "Best"
+     - Best score = 9.86112e-09, SNE = 1.01408e+08
+     - Squared-norm error for each equation: 1.01408e+08
+     - Best expression = (((9736 - x7) + (-100.051731 / (-0.000000 ^ x15))) + ((x20 + (1075.000000 * x5)) * -17064.107062))
+     - Best expression (original format) = 9736 x7 - -100.051731 -0.000000 x15 ^ / + x20 1075.000000 x5 * + -17064.107062 * +
+     
+     "Non-bs best"
+     - Best score = 7.54292e-09, SNE = 1.32575e+08
+     - Squared-norm error for each equation: 1.32575e+08
+     - Best expression = (((9736 - x7) + ((4.372938 / x12) * ln(x11))) + ((x20 + (x5 * 16.000000)) * ((x22 * -843.000000) + -17064.107062)))
+     - Best expression (original format) = 9736 x7 - 4.372938 x12 / x11 ln * + x20 x5 16.000000 * + x22 -843.000000 * -17064.107062 + * +
      */
     
     p_expr.clear();
@@ -9000,7 +8985,7 @@ namespace ExampleProblems
             SimulatedAnnealing(WildfireSpreadTS /*differential equation to solve*/,
                 1 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{3} /*fixed depths of generated solution*/,
+                std::vector<int>{4} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -9011,11 +8996,12 @@ namespace ExampleProblems
                 0 /*num threads*/,
                 true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
-                true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the ORIGINAL expression on every iteration (perturbation) of the seed expression vector; if false a copy is maintained so that simplification on this->pieces can still happen*/
                 1 /*number of data columns that constitute labels and not independent variables/features*/,
                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
-                {split("9740.372938 0 + -1405.000000 x18 / + x20 x5 + -15659.107062 0 + * +")} /*seed expressions*/,
+                //{split("9736 x7 - 4.372938 x12 / x11 ln * + x20 x5 16.000000 * + x22 -843.000000 * -17064.107062 + * +")} /*seed expressions*/,
+                {split("9736 x7 - -100.051731 -0.000000 x15 ^ / + x20 1075.000000 x5 * + -17064.107062 * +")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 "");// "SNE_vals.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
