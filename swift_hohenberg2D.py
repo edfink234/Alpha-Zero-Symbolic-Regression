@@ -15,13 +15,13 @@ r, theta = symbols('r theta')
 mu, nu = 1, 1
 # Define the function f as a function of r and theta
 GENERIC = False
-PERIODIC_IN_THETA = False
-COMPUTE_NUMERIC = True
+PERIODIC_IN_THETA = True
+COMPUTE_NUMERIC = False
 f = None
 if GENERIC:
     f = Function('f')(r, theta)
 else:
-    f = sin(theta)*sin(r) if PERIODIC_IN_THETA else (((0.148475282221305 * theta) - (sin(theta) * (1.0000132758892615 * sin(r)))) - 0.0922858190550785)
+    f = ((0.693868926928361 - (sin((0.010000 + theta)) * (1.0000132758892615 * sin(r)))) - (((theta / -10) * 0.02) + ((0.010000 ** (6.283190 + theta)) + 0.0922858190550785))) if PERIODIC_IN_THETA else (((0.148475282221305 * theta) - (sin(theta) * (1.0000132758892615 * sin(r)))) - 0.0922858190550785)
 
 latex_f = sp.latex(f)
 latex_f = latex_f.replace(r"(r", r"(\sqrt{x^2 + y^2}")

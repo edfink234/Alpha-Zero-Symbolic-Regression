@@ -30,11 +30,14 @@
 //#include <numbers>
 #include <LBFGS.h>
 #include <LBFGSB.h>
-
 #include <unsupported/Eigen/NonLinearOptimization>
 #include <unsupported/Eigen/AutoDiff>
 #include <boost/unordered/concurrent_flat_map.hpp>
-#define DBL_MAX std::numeric_limits<double>::max()
+#include <boost/spirit/include/qi.hpp> //For fast string-to-double conversion!
+
+#ifndef DBL_MAX
+    #define DBL_MAX std::numeric_limits<double>::max()
+#endif
 #define RANDOM_SEED -1
 
 //TODO: Need to make this robust againt -Wnarrow
@@ -292,6 +295,29 @@ bool isdouble(const std::string& s)
         }
     }
     return has_digits && (state == INT || state == FRAC || state == EXP_NUM);
+}
+
+bool parse_double_spirit(const std::string& s, double& out)
+{
+    namespace qi   = boost::spirit::qi;
+    namespace ascii= boost::spirit::ascii;
+
+    auto f = s.begin(), l = s.end();
+    // Skip leading/trailing ASCII whitespace; require full consumption (eoi).
+    // qi::double_ already yields ±inf/NaN where appropriate.
+    bool ok = qi::phrase_parse(f, l, qi::double_ >> qi::eoi, ascii::space, out);
+    return ok; // f==l guaranteed by eoi
+}
+
+bool checkEqual(const std::string &str1, const std::string &str2)
+{
+    if (!isdouble(str1))
+    {
+        return false;
+    }
+    double val1; parse_double_spirit(str1, val1);
+    double val2 = (str2 == "0") ? 0.0 : 1.0; //or "1"
+    return (val1 == val2);
 }
 
 // Function to create a matrix with linspace columns. std::vector<double> min and
@@ -1227,6 +1253,9 @@ struct Board
         return temp; //"x.0000000" (repeating) -> "x"
     }
 
+    //((1+5) * 1) -> 1 5 1 * +, + 1 * 5 1 -> traverse into a tree data-structure -> apply simplification algorithm
+    //-> traverse tree again to get prefix/postfix simplified expression -> convert to infix
+    //prefix/postifx -> simplified prefix/postfix
     void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, int up, std::vector<int>& grasp, std::vector<std::string>& new_expression, bool setGRvar = false)
     {
         if (!setGRvar)
@@ -1248,7 +1277,7 @@ struct Board
             int second_arg_idx_high = new_expression.size();
             int step;
 
-            if (new_expression[first_arg_idx_high] == "0") //+/- x 0 -> x
+            if (checkEqual(new_expression[first_arg_idx_high], "0")) //+/- x 0 -> x
             {
                 //puts("hi 177");
                 if (first_arg_idx_high == static_cast<int>(new_expression.size()) - 1)
@@ -1262,7 +1291,7 @@ struct Board
                 new_expression.erase(new_expression.begin() + op_idx); //remove +/- operator at beginning
             }
 
-            else if (new_expression[first_arg_idx_low] == "0")
+            else if (checkEqual(new_expression[first_arg_idx_low], "0"))
             {
                 if (expression[low] == "+") //+ 0 y -> y
                 {
@@ -1310,13 +1339,13 @@ struct Board
                 new_expression[op_idx] = "nan"; //change '*' to 'nan'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
-            else if (new_expression[first_arg_idx_high] == "0") //* x 0 -> 0 (because, since prefix operators come at the beginning, if the beginning of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to * x 0, which is 0)
+            else if (checkEqual(new_expression[first_arg_idx_high], "0")) //* x 0 -> 0 (because, since prefix operators come at the beginning, if the beginning of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to * x 0, which is 0)
             {
                 //puts("hi 239");
                 new_expression[op_idx] = "0"; //change '*' to '0'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
-            else if (new_expression[first_arg_idx_low] == "0") //* 0 x -> 0
+            else if (checkEqual(new_expression[first_arg_idx_low], "0")) //* 0 x -> 0
             {
                 //puts("hi 245");
                 new_expression[op_idx] = "0"; //change '*' to '0'
@@ -1360,13 +1389,13 @@ struct Board
                 new_expression[op_idx] = "nan"; //change '/' to 'nan'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
-            else if ((new_expression[first_arg_idx_low] == "0") && (new_expression[first_arg_idx_high] == "0")) // / 0 0 -> nan
+            else if ((checkEqual(new_expression[first_arg_idx_low], "0")) && (checkEqual(new_expression[first_arg_idx_high], "0"))) // / 0 0 -> nan
             {
                 //puts("hi 290");
                 new_expression[op_idx] = "nan"; //change '/' to 'nan'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
-            else if (new_expression[first_arg_idx_high] == "0") // / x 0 -> nan (for now, because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to / x 0, which is, for now, assumed to be nan for simplicity)
+            else if (checkEqual(new_expression[first_arg_idx_high], "0")) // / x 0 -> nan (for now, because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to / x 0, which is, for now, assumed to be nan for simplicity)
             {
                 //puts("hi 282");
                 //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
@@ -1374,7 +1403,7 @@ struct Board
                 new_expression[op_idx] = "nan";//(new_expression[first_arg_idx_low] != "~") ? "inf": "-inf"; //change '/' to 'inf' or '-inf'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
-            else if (new_expression[first_arg_idx_low] == "0") // / 0 x -> 0
+            else if (checkEqual(new_expression[first_arg_idx_low], "0")) // / 0 x -> 0
             {
                 //puts("hi 295");
                 new_expression[op_idx] = "0"; //change '/' to '0'
@@ -1426,13 +1455,13 @@ struct Board
                 new_expression[op_idx] = "nan"; //change '^' to 'nan'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
-            else if (new_expression[first_arg_idx_high] == "0") //^ x 0 -> 1 (because, since prefix operators come at the beginning, if the beginning of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to ^ x 0, which is 1)
+            else if (checkEqual(new_expression[first_arg_idx_high], "0")) //^ x 0 -> 1 (because, since prefix operators come at the beginning, if the beginning of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to ^ x 0, which is 1)
             {
                 //puts("hi 334");
                 new_expression[op_idx] = "1"; //change '^' to '1'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
-            else if (new_expression[first_arg_idx_low] == "0") // ^ 0 x -> nan (for now)
+            else if (checkEqual(new_expression[first_arg_idx_low], "0")) // ^ 0 x -> nan (for now)
             {
                 //puts("hi 340");
                 //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
@@ -1440,7 +1469,7 @@ struct Board
                 new_expression[op_idx] = "nan";//new_expression[op_idx] = "0"; //change '^' to '0'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
-            else if (new_expression[first_arg_idx_high] == "1") // ^ x 1 -> x (because, since prefix operators come at the beginning, if the beginning of the second argument of '^' is 1, then the whole second argument MUST be 1, therefore the expression reduces to ^ x 1, which is 1)
+            else if (checkEqual(new_expression[first_arg_idx_high], "1")) // ^ x 1 -> x (because, since prefix operators come at the beginning, if the beginning of the second argument of '^' is 1, then the whole second argument MUST be 1, therefore the expression reduces to ^ x 1, which is 1)
             {
                 //puts("hi 346");
                 //erase the '1' at the end
@@ -1474,7 +1503,7 @@ struct Board
                 new_expression[op_idx] = "nan"; //change 'cos' to 'nan'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
-            else if (new_expression[first_arg_idx_low] == "0") // cos 0 -> 1
+            else if (checkEqual(new_expression[first_arg_idx_low], "0")) // cos 0 -> 1
             {
     //            puts("hi 374");
                 new_expression[op_idx] = "1"; //change 'cos' to '1'
@@ -1494,7 +1523,7 @@ struct Board
                 new_expression[op_idx] = "nan"; //change 'sin' to 'nan'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
-            else if (new_expression[first_arg_idx_low] == "0") // sin 0 -> 0
+            else if (checkEqual(new_expression[first_arg_idx_low], "0")) // sin 0 -> 0
             {
                 //puts("hi 388");
                 new_expression[op_idx] = "0"; //change 'sin' to '0'
@@ -1514,7 +1543,7 @@ struct Board
                 new_expression[op_idx] = "nan"; //change 'tanh' to 'nan'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
-            else if (new_expression[first_arg_idx_low] == "0") // tanh 0 -> 0
+            else if (checkEqual(new_expression[first_arg_idx_low], "0")) // tanh 0 -> 0
             {
                 //puts("hi 402");
                 new_expression[op_idx] = "0"; //change 'tanh' to '0'
@@ -1553,7 +1582,7 @@ struct Board
                 new_expression[op_idx] = "nan"; //change 'sech' to 'nan'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
-            else if (new_expression[first_arg_idx_low] == "0") // sech 0 -> 1
+            else if (checkEqual(new_expression[first_arg_idx_low], "0")) // sech 0 -> 1
             {
                 //puts("hi 416");
                 new_expression[op_idx] = "1"; //change 'sech' to '1'
@@ -1592,7 +1621,7 @@ struct Board
                 new_expression[op_idx] = "nan"; //change '~' to 'nan'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
-            else if (new_expression[first_arg_idx_low] == "0") // ~ 0 -> 0
+            else if (checkEqual(new_expression[first_arg_idx_low], "0")) // ~ 0 -> 0
             {
     //            puts("hi 466");
                 new_expression[op_idx] = "0"; //change '~' to '0'
@@ -1618,7 +1647,7 @@ struct Board
                 new_expression[op_idx] = "nan"; //change 'exp' to 'nan'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
-            else if (new_expression[first_arg_idx_low] == "0") // exp 0 -> 1
+            else if (checkEqual(new_expression[first_arg_idx_low], "0")) // exp 0 -> 1
             {
                 //puts("hi 521");
                 new_expression[op_idx] = "1"; //change 'exp' to '1'
@@ -1654,7 +1683,7 @@ struct Board
         graspSimplifyPrefixHelper(expression, low, up, grasp, new_expression, false);
         expression = new_expression;
     }
-    
+
     //scans entire `expression` for the following:
     //     bin_op number1 number2 -> numberResult
     //     un_op number1 -> numberResult
@@ -1739,14 +1768,14 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i+1] == "0") //- 0 x -> ~ x
+                            else if (checkEqual(expression[i+1], "0")) //- 0 x -> ~ x
                             {
                                 expression[i] = "~";
                                 expression.erase(expression.begin() + i + 1);
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i+2] == "0" && isConst1) //- x 0 -> x
+                            else if (checkEqual(expression[i+2], "0") && isConst1) //- x 0 -> x
                             {
                                 expression[i] = expression[i+1];
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
@@ -1756,7 +1785,7 @@ struct Board
                         }
                         else if (expression[i] == "*")
                         {
-                            if (expression[i+1] == "0" && isConst2) //* 0 x -> 0
+                            if (checkEqual(expression[i+1], "0") && isConst2) //* 0 x -> 0
                             {
                                 //puts("hi 131");
                                 expression[i] = "0";
@@ -1764,7 +1793,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i+2] == "0" && isConst1) //* x 0 -> 0
+                            else if (checkEqual(expression[i+2], "0") && isConst1) //* x 0 -> 0
                             {
                                 //puts("hi 139");
                                 expression[i] = "0";
@@ -1772,7 +1801,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i+1] == "1" && isConst2) //* 1 x -> x
+                            else if (checkEqual(expression[i+1], "1") && isConst2) //* 1 x -> x
                             {
                                 //puts("hi 147");
                                 expression[i] = expression[i+2];
@@ -1780,7 +1809,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i+2] == "1" && isConst1) //* x 1 -> x
+                            else if (checkEqual(expression[i+2], "1") && isConst1) //* x 1 -> x
                             {
                                 //puts("hi 155");
                                 expression[i] = expression[i+1];
@@ -1791,7 +1820,7 @@ struct Board
                         }
                         else if (expression[i] == "+")
                         {
-                            if (expression[i+1] == "0" && isConst2) //+ 0 x -> x
+                            if (checkEqual(expression[i+1], "0") && isConst2) //+ 0 x -> x
                             {
                                 //puts("hi 167");
                                 expression[i] = expression[i+2];
@@ -1799,7 +1828,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i+2] == "0" && isConst1) //+ x 0 -> x
+                            else if (checkEqual(expression[i+2], "0") && isConst1) //+ x 0 -> x
                             {
                                 //puts("hi 175");
                                 expression[i] = expression[i+1];
@@ -1810,7 +1839,7 @@ struct Board
                         }
                         else if (expression[i] == "/")
                         {
-                            if (expression[i+1] == "0" && isConst2) // / 0 x -> 0
+                            if (checkEqual(expression[i+1], "0") && isConst2) // / 0 x -> 0
                             {
                                 //puts("hi 187");
                                 expression[i] = "0";
@@ -1818,7 +1847,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i+2] == "1" && isConst1) // / x 1 -> x
+                            else if (checkEqual(expression[i+2], "1") && isConst1) // / x 1 -> x
                             {
                                 //puts("hi 195");
                                 expression[i] = expression[i+1];
@@ -1837,7 +1866,7 @@ struct Board
                         }
                         else if (expression[i] == "^")
                         {
-                            if (expression[i+2] == "0" && isConst1) // ^ x 0 -> 1
+                            if (checkEqual(expression[i+2], "0") && isConst1) // ^ x 0 -> 1
                             {
                                 //puts("hi 223");
                                 expression[i] = "1";
@@ -1845,15 +1874,16 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i+1] == "0" && isConst2) // ^ 0 x -> 0 (x > 0)
+                            else if (checkEqual(expression[i+1], "0") && isConst2) // ^ 0 x -> 0 (x > 0)
                             {
+                                //TODO: Should change this to nan to be consistent with above!
                                 //puts("hi 215");
                                 expression[i] = "0";
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i+1] == "1" && isConst2) // ^ 1 x -> 1
+                            else if (checkEqual(expression[i+1], "1") && isConst2) // ^ 1 x -> 1
                             {
                                 //puts("hi 231");
                                 expression[i] = "1";
@@ -1861,7 +1891,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i+2] == "1" && isConst1) // ^ x 1 -> x
+                            else if (checkEqual(expression[i+2], "1") && isConst1) // ^ x 1 -> x
                             {
                                 //puts("hi 239");
                                 expression[i] = expression[i+1];
@@ -2040,6 +2070,8 @@ struct Board
         } while (size_before != size_after);
     }
 
+    //0 x x tanh sin cos + * -> 0 * (cos(sin(tanh(x)+x)
+    //e.g. 0*x, 1*x, x*0, x*1, x-x, x+0, 0+x, 0-x, x-0, ...
     void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, int up, std::vector<int>& grasp, std::vector<std::string>& new_expression, bool setGRvar = false)
     {
         if (!setGRvar)
@@ -2057,13 +2089,13 @@ struct Board
             int second_arg_idx_high = new_expression.size();
             int step;
             
-            if (new_expression.back() == "0") // x 0 +/- -> x
+            if (checkEqual(new_expression.back(), "0")) // x 0 +/- -> x
             {
                 //puts("hi 181");
                 new_expression.pop_back();
             }
             
-            else if (new_expression[first_arg_idx_high - 1] == "0")
+            else if (checkEqual(new_expression[first_arg_idx_high - 1], "0")) // 0 x +/- -> x
             {
                 //puts("hi 184");
                 //erase elements from new_expression[first_arg_idx_low] to new_expression[first_arg_idx_high-1] inclusive
@@ -2109,24 +2141,24 @@ struct Board
                 new_expression[first_arg_idx_low] = "nan";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
             }
-            else if (new_expression.back() == "0") // x 0 * -> 0 (because, since postfix operators come at the end, if the end of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 *, which is 0)
+            else if (checkEqual(new_expression.back(), "0")) // x 0 * -> 0 (because, since postfix operators come at the end, if the end of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 *, which is 0)
             {
                 //puts("hi 235");
                 new_expression[first_arg_idx_low] = "0";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
             }
-            else if (new_expression[first_arg_idx_high - 1] == "0") //0 x * -> 0 (because, since postfix operators come at the end, if the end of the first argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to 0 x *, which is 0)
+            else if (checkEqual(new_expression[first_arg_idx_high - 1], "0")) //0 x * -> 0 (because, since postfix operators come at the end, if the end of the first argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to 0 x *, which is 0)
             {
                 //puts("hi 241");
                 new_expression[first_arg_idx_low] = "0";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
             }
-            else if (new_expression.back() == "1") // x 1 * -> x (because, since postfix operators come at the end, if the end of the second argument of '*' is 1, then the whole second argument MUST be 1, therefore the expression reduces to x 1 *, which is x)
+            else if (checkEqual(new_expression.back(), "1")) // x 1 * -> x (because, since postfix operators come at the end, if the end of the second argument of '*' is 1, then the whole second argument MUST be 1, therefore the expression reduces to x 1 *, which is x)
             {
                 //puts("hi 247");
                 new_expression.pop_back(); //erase the '1'
             }
-            else if (new_expression[first_arg_idx_high - 1] == "1") //1 x * -> x (because, since postfix operators come at the end, if the end of the first argument of '*' is 1, then the whole first argument MUST be 1, therefore the expression reduces to 1 x *, which is x)
+            else if (checkEqual(new_expression[first_arg_idx_high - 1], "1")) //1 x * -> x (because, since postfix operators come at the end, if the end of the first argument of '*' is 1, then the whole first argument MUST be 1, therefore the expression reduces to 1 x *, which is x)
             {
                 //puts("hi 252");
                 new_expression.erase(new_expression.begin() + first_arg_idx_high - 1); //erase the '1'
@@ -2151,13 +2183,13 @@ struct Board
                 new_expression[first_arg_idx_low] = "nan";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
             }
-            else if ((new_expression.back() == "0") && (new_expression[first_arg_idx_high - 1] == "0")) // 0 0 / -> nan
+            else if ((checkEqual(new_expression.back(), "0")) && (checkEqual(new_expression[first_arg_idx_high - 1], "0"))) // 0 0 / -> nan
             {
                 //puts("hi 279");
                 new_expression[first_arg_idx_low] = "nan";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
             }
-            else if (new_expression.back() == "0") // x 0 / -> nan (for now, because, since postfix operators come at the end, if the end of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 /, which is, for now, assumed to be nan for simplicity)
+            else if (checkEqual(new_expression.back(), "0")) // x 0 / -> nan (for now, because, since postfix operators come at the end, if the end of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 /, which is, for now, assumed to be nan for simplicity)
             {
                 //puts("hi 280");
                 //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
@@ -2165,13 +2197,13 @@ struct Board
                 new_expression[first_arg_idx_low] = "nan";//(new_expression[first_arg_idx_high - 1] == "~") ? "-inf" : "inf";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
             }
-            else if (new_expression[first_arg_idx_high - 1] == "0") //0 x / -> 0 (because, since postfix operators come at the end, if the end of the first argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to 0 x /, which is 0)
+            else if (checkEqual(new_expression[first_arg_idx_high - 1], "0")) //0 x / -> 0 (because, since postfix operators come at the end, if the end of the first argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to 0 x /, which is 0)
             {
                 //puts("hi 286");
                 new_expression[first_arg_idx_low] = "0";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
             }
-            else if (new_expression.back() == "1") // x 1 / -> x (because, since postfix operators come at the end, if the end of the second argument of '/' is 1, then the whole second argument MUST be 1, therefore the expression reduces to x 1 /, which is x)
+            else if (checkEqual(new_expression.back(), "1")) // x 1 / -> x (because, since postfix operators come at the end, if the end of the second argument of '/' is 1, then the whole second argument MUST be 1, therefore the expression reduces to x 1 /, which is x)
             {
                 //puts("hi 292");
                 new_expression.pop_back(); //erase the '1'
@@ -2187,6 +2219,12 @@ struct Board
                 x*y       y
                 ---  -->  -
                 x*z       z
+                 
+                  x              1
+                ------ --> x * ------
+                number         number
+                 
+                x num * num1 * -> x num num1 * *
                 */
             else
             {
@@ -2208,13 +2246,13 @@ struct Board
                 new_expression[first_arg_idx_low] = "nan";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
             }
-            else if (new_expression.back() == "0") // x 0 ^ -> 1 (because, since postfix operators come at the end, if the end of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 ^, which is 1)
+            else if (checkEqual(new_expression.back(), "0")) // x 0 ^ -> 1 (because, since postfix operators come at the end, if the end of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 ^, which is 1)
             {
                 //puts("hi 318");
                 new_expression[first_arg_idx_low] = "1";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
             }
-            else if (new_expression[first_arg_idx_high - 1] == "0") //0 x ^ -> nan (for now, because, since postfix operators come at the end, if the end of the first argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to 0 x ^, which is, for now, assumed to be nan for simplicity)
+            else if (checkEqual(new_expression[first_arg_idx_high - 1], "0")) //0 x ^ -> nan (for now, because, since postfix operators come at the end, if the end of the first argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to 0 x ^, which is, for now, assumed to be nan for simplicity)
             {
                 //puts("hi 324");
                 //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
@@ -2222,12 +2260,12 @@ struct Board
                 new_expression[first_arg_idx_low] = "nan";// "0";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
             }
-            else if (new_expression.back() == "1") // x 1 ^ -> x (because, since postfix operators come at the end, if the end of the second argument of '^' is 1, then the whole second argument MUST be 1, therefore the expression reduces to x 1 ^, which is x)
+            else if (checkEqual(new_expression.back(), "1")) // x 1 ^ -> x (because, since postfix operators come at the end, if the end of the second argument of '^' is 1, then the whole second argument MUST be 1, therefore the expression reduces to x 1 ^, which is x)
             {
                 //puts("hi 330");
                 new_expression.pop_back(); //erase the '1'
             }
-            else if (new_expression[first_arg_idx_high - 1] == "1") //1 x ^ -> 1 (because, since postfix operators come at the end, if the end of the first argument of '^' is 1, then the whole second argument MUST be 1, therefore the expression reduces to 1 x ^, which is 1)
+            else if (checkEqual(new_expression[first_arg_idx_high - 1], "1")) //1 x ^ -> 1 (because, since postfix operators come at the end, if the end of the first argument of '^' is 1, then the whole second argument MUST be 1, therefore the expression reduces to 1 x ^, which is 1)
             {
                 //puts("hi 335");
                 new_expression[first_arg_idx_low] = "1";
@@ -2249,7 +2287,7 @@ struct Board
                 new_expression[first_arg_idx_low] = "nan";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
             }
-            else if (new_expression.back() == "0") // 0 cos -> 1 (because, since postfix operators come at the end, if the end of the argument of 'cos' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 cos, which is 1)
+            else if (checkEqual(new_expression.back(), "0")) // 0 cos -> 1 (because, since postfix operators come at the end, if the end of the argument of 'cos' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 cos, which is 1)
             {
                 //puts("hi 350");
                 new_expression[first_arg_idx_low] = "1";
@@ -2272,7 +2310,7 @@ struct Board
                 new_expression[first_arg_idx_low] = "nan";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
             }
-            else if (new_expression.back() == "0") // 0 sin -> 0 (because, since postfix operators come at the end, if the end of the argument of 'sin' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 sin, which is 0)
+            else if (checkEqual(new_expression.back(), "0")) // 0 sin -> 0 (because, since postfix operators come at the end, if the end of the argument of 'sin' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 sin, which is 0)
             {
                 //puts("hi 365");
                 new_expression[first_arg_idx_low] = "0";
@@ -2295,7 +2333,7 @@ struct Board
                 new_expression[first_arg_idx_low] = "nan";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
             }
-            else if (new_expression.back() == "0") // 0 tanh -> 0 (because, since postfix operators come at the end, if the end of the argument of 'tanh' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 tanh, which is 0)
+            else if (checkEqual(new_expression.back(), "0")) // 0 tanh -> 0 (because, since postfix operators come at the end, if the end of the argument of 'tanh' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 tanh, which is 0)
             {
                 //puts("hi 380");
                 new_expression[first_arg_idx_low] = "0";
@@ -2335,7 +2373,7 @@ struct Board
                 new_expression[first_arg_idx_low] = "nan";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
             }
-            else if (new_expression.back() == "0") // 0 sech -> 1 (because, since postfix operators come at the end, if the end of the argument of 'sech' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 sech, which is 1)
+            else if (checkEqual(new_expression.back(), "0")) // 0 sech -> 1 (because, since postfix operators come at the end, if the end of the argument of 'sech' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 sech, which is 1)
             {
                 //puts("hi 395");
                 new_expression[first_arg_idx_low] = "1";
@@ -2375,7 +2413,7 @@ struct Board
                 new_expression[first_arg_idx_low] = "nan";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
             }
-            else if (new_expression.back() == "0") // 0 ~ -> 0 (because, since postfix operators come at the end, if the end of the argument of '~' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 ~, which is 0)
+            else if (checkEqual(new_expression.back(), "0")) // 0 ~ -> 0 (because, since postfix operators come at the end, if the end of the argument of '~' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 ~, which is 0)
             {
     //            puts("hi 445");
                 new_expression[first_arg_idx_low] = "0";
@@ -2403,7 +2441,7 @@ struct Board
                 new_expression[first_arg_idx_low] = "nan";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
             }
-            else if (new_expression.back() == "0") // 0 exp -> 1 (because, since postfix operators come at the end, if the end of the argument of 'exp' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 exp, which is 1)
+            else if (checkEqual(new_expression.back(), "0")) // 0 exp -> 1 (because, since postfix operators come at the end, if the end of the argument of 'exp' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 exp, which is 1)
             {
                 //puts("hi 524");
                 new_expression[first_arg_idx_low] = "1";
@@ -2442,7 +2480,7 @@ struct Board
         graspSimplifyPostfixHelper(expression, low, up, grasp, new_expression, false);
         expression = new_expression;
     }
-    
+
     // 0 0 0 1 + - * tanh sech 1 /
     // 0 0 1 - * tanh sech 1 /
     // 0 -1 * tanh sech 1 /
@@ -2526,14 +2564,14 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i-2] == "0" && isConst1) //"0 x -" -> "x ~"
+                            else if (checkEqual(expression[i-2], "0") && isConst1) //"0 x -" -> "x ~"
                             {
                                 expression[i] = "~";
                                 expression.erase(expression.begin() + i - 2);
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i-1] == "0") //"x 0 -" -> "x"
+                            else if (checkEqual(expression[i-1], "0")) //"x 0 -" -> "x"
                             {
                                 expression[i] = expression[i-2];
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
@@ -2544,7 +2582,7 @@ struct Board
 
                         else if (expression[i] == "*")
                         {
-                            if (expression[i-2] == "0" && isConst1) //"0 x *" -> "0"
+                            if (checkEqual(expression[i-2], "0") && isConst1) //"0 x *" -> "0"
                             {
                                 //puts("hi 131");
                                 expression[i] = "0";
@@ -2552,7 +2590,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i-1] == "0" && isConst2) //"x 0 *" -> "0"
+                            else if (checkEqual(expression[i-1], "0") && isConst2) //"x 0 *" -> "0"
                             {
                                 //puts("hi 139");
                                 expression[i] = "0";
@@ -2560,7 +2598,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i-2] == "1" && isConst1) //"1 x *" -> "x"
+                            else if (checkEqual(expression[i-2], "1") && isConst1) //"1 x *" -> "x"
                             {
                                 //puts("hi 147");
                                 expression[i] = expression[i-1];
@@ -2568,7 +2606,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i-1] == "1" && isConst2) //"x 1 *" -> "x"
+                            else if (checkEqual(expression[i-1], "1") && isConst2) //"x 1 *" -> "x"
                             {
                                 //puts("hi 155");
                                 expression[i] = expression[i-2];
@@ -2580,7 +2618,7 @@ struct Board
 
                         else if (expression[i] == "+")
                         {
-                            if (expression[i-2] == "0" && isConst1) //"0 x +" -> "x"
+                            if (checkEqual(expression[i-2], "0") && isConst1) //"0 x +" -> "x"
                             {
                                 //puts("hi 167");
                                 expression[i] = expression[i-1];
@@ -2588,7 +2626,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i-1] == "0" && isConst2) //"x 0 +" -> "x"
+                            else if (checkEqual(expression[i-1], "0") && isConst2) //"x 0 +" -> "x"
                             {
                                 //puts("hi 175");
                                 expression[i] = expression[i-2];
@@ -2600,7 +2638,7 @@ struct Board
 
                         else if (expression[i] == "/")
                         {
-                            if (expression[i-2] == "0" && isConst1) // "0 x /" -> "0"
+                            if (checkEqual(expression[i-2], "0") && isConst1) // "0 x /" -> "0"
                             {
                                 //puts("hi 187");
                                 expression[i] = "0";
@@ -2608,7 +2646,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i-1] == "1" && isConst2) // "x 1 /" -> "x"
+                            else if (checkEqual(expression[i-1], "1") && isConst2) // "x 1 /" -> "x"
                             {
                                 //puts("hi 195");
                                 expression[i] = expression[i-2];
@@ -2628,7 +2666,7 @@ struct Board
 
                         else if (expression[i] == "^")
                         {
-                            if (expression[i-1] == "0" && isConst2) // "x 0 ^" -> "1"
+                            if (checkEqual(expression[i-1], "0") && isConst2) // "x 0 ^" -> "1"
                             {
                                 //puts("hi 223");
                                 expression[i] = "1";
@@ -2636,15 +2674,16 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i-2] == "0" && isConst1) // "0 x ^" -> "0" (x > 0)
+                            else if (checkEqual(expression[i-2], "0") && isConst1) // "0 x ^" -> "0" (x > 0)
                             {
+                                //TODO: Should change this to nan to be consistent with above!
     //                            puts("hi 215");
                                 expression[i] = "0";
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i-2] == "1" && isConst1) // "1 x ^" -> "1"
+                            else if (checkEqual(expression[i-2], "1") && isConst1) // "1 x ^" -> "1"
                             {
                                 //puts("hi 231");
                                 expression[i] = "1";
@@ -2652,7 +2691,7 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (expression[i-1] == "1" && isConst2) // "x 1 ^" -> "x"
+                            else if (checkEqual(expression[i-1], "1") && isConst2) // "x 1 ^" -> "x"
                             {
                                 //puts("hi 239");
                                 expression[i] = expression[i-2];
@@ -2807,7 +2846,7 @@ struct Board
             }
         }
     }
-
+    
     void simplifyRPN(std::vector<std::string>& expression)
     {
         size_t size_before, size_after;
@@ -5920,18 +5959,13 @@ std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
     
     /*
      "Best"
-     - Best score = 9.86112e-09, SNE = 1.01408e+08
-     - Squared-norm error for each equation: 1.01408e+08
-     - Best expression = (((9736 - x7) + (-100.051731 / (-0.000000 ^ x15))) + ((x20 + (1075.000000 * x5)) * -17064.107062))
-     - Best expression (original format) = 9736 x7 - -100.051731 -0.000000 x15 ^ / + x20 1075.000000 x5 * + -17064.107062 * +
-     
-     "Non-bs best"
-     - Best score = 7.54292e-09, SNE = 1.32575e+08
-     - Squared-norm error for each equation: 1.32575e+08
-     - Best expression = (((9736 - x7) + ((4.372938 / x12) * ln(x11))) + ((x20 + (x5 * 16.000000)) * ((x22 * -843.000000) + -17064.107062)))
-     - Best expression (original format) = 9736 x7 - 4.372938 x12 / x11 ln * + x20 x5 16.000000 * + x22 -843.000000 * -17064.107062 + * +
+     - Best score = 1.00922e-08, SNE = 9.90865e+07
+     - Squared-norm error for each equation: 9.90865e+07
+     - Best expression = (((9736 - (x7 / x20)) + (-100.051731 / (x5 ^ x15))) + ((x20 + (1075.000000 * x5)) * -17064.107062))
+     - Best expression (original format) = 9736 x7 x20 / - -100.051731 x5 x15 ^ / + x20 1075.000000 x5 * + -17064.107062 * +
      */
     
+    //TODO: Add |f|^2 and \sum_{double_val \in f} double_val^2 terms to results!
     p_expr.clear();
     p_expr.reserve(100);
     for (decltype(results.size()) i = 0; i < results.size(); i++)
@@ -5949,18 +5983,49 @@ std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
             x.subs_dict["prefac_term_1"] = x.expression_evaluator(x.params, std::vector<std::string>{"*", w1, "x26"}); //* w1 x26
             x.subs_dict["prefac_term_2"] = x.expression_evaluator(x.params, std::vector<std::string>{"*", w0, "-", "1", "x26"}); //* w0 - 1 x26
         }
-        p_expr = {"/", "1", "-", "1", "exp", "~"}; // / 1 - 1 exp ~
-        for (const std::string& i: x.pieces[0]) // f
+        if (fit)
         {
-            p_expr.push_back(i);
+            //+ * prefac_term_1 log + / 1 - 1 exp ~ f eps * prefac_term_2 log + - 1 / 1 - 1 exp ~ f eps
+            results[0] = {"+", "*", "prefac_term_1", "log", "+", "/", "1", "-", "1", "exp", "~"};
+            for (const std::string& i: x.pieces[0]) // f
+            {
+                results[0].push_back(i);
+            }
+            results[0].push_back(eps); // eps
+            results[0].push_back("*"); // *
+            results[0].push_back("prefac_term_2"); // prefac_term_2
+            results[0].push_back("log"); // log
+            results[0].push_back("+"); // +
+            results[0].push_back("-"); // -
+            results[0].push_back("1"); // 1
+            results[0].push_back("/"); // /
+            results[0].push_back("1"); // 1
+            results[0].push_back("-"); // -
+            results[0].push_back("1"); // 1
+            results[0].push_back("exp"); // exp
+            results[0].push_back("~"); // ~
+            for (const std::string& i: x.pieces[0]) // f
+            {
+                results[0].push_back(i);
+            }
+            results[0].push_back(eps); // eps
         }
-        x.subs_dict["p"] = x.expression_evaluator(x.params, p_expr);
+        else
+        {
+            p_expr = {"/", "1", "-", "1", "exp", "~"}; // / 1 - 1 exp ~
+            for (const std::string& i: x.pieces[0]) // f
+            {
+                p_expr.push_back(i);
+            }
+            x.subs_dict["p"] = x.expression_evaluator(x.params, p_expr);
 
-        //term1 = * prefac_term_1 log + p eps
-        x.subs_dict["term1"] = x.expression_evaluator(x.params, {"*", "prefac_term_1", "log", "+", "p", eps});
-        //term2 = * prefac_term_2 log + - 1 p eps
-        x.subs_dict["term2"] = x.expression_evaluator(x.params, {"*", "prefac_term_2", "log", "+", "-", "1", "p", eps});
-        results[0] = {"+", "term1", "term2"};
+            //term1 = * prefac_term_1 log + p eps
+            x.subs_dict["term1"] = x.expression_evaluator(x.params, {"*", "prefac_term_1", "log", "+", "p", eps});
+            //term2 = * prefac_term_2 log + - 1 p eps
+            x.subs_dict["term2"] = x.expression_evaluator(x.params, {"*", "prefac_term_2", "log", "+", "-", "1", "p", eps});
+            results[0] = {"+", "term1", "term2"};
+        }
+        //TODO: Need to change for when fit==true, else in that case nothing is done here because the dummy vars are already evaluated
     }
     else if (x.expression_type == "postfix")
     {
@@ -5972,22 +6037,60 @@ std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
             x.subs_dict["prefac_term_1"] = x.expression_evaluator(x.params, std::vector<std::string>{w1, "x26", "*"}); //w1 x26 *
             x.subs_dict["prefac_term_2"] = x.expression_evaluator(x.params, std::vector<std::string>{w0, "1", "x26", "-", "*"}); //w0 1 x26 - *
         }
-        //p = 1 1 f ~ exp - /
-        p_expr = {"1", "1"}; // 1 1
-        for (const std::string& i: x.pieces[0]) // f
+        if (fit)
         {
-            p_expr.push_back(i);
+            //prefac_term_1 1 1 f ~ exp - / eps + log * prefac_term_2 1 1 1 f ~ exp - / - eps + log * +
+            results[0] = {"prefac_term_1", "1", "1"};
+            for (const std::string& i: x.pieces[0]) // f
+            {
+                results[0].push_back(i);
+            }
+            results[0].push_back("~"); // ~
+            results[0].push_back("exp"); // exp
+            results[0].push_back("-"); // -
+            results[0].push_back("/"); // /
+            results[0].push_back(eps); // eps
+            results[0].push_back("+"); // +
+            results[0].push_back("log"); // log
+            results[0].push_back("*"); // *
+            results[0].push_back("prefac_term_2"); // prefac_term_2
+            results[0].push_back("1"); // 1
+            results[0].push_back("1"); // 1
+            results[0].push_back("1"); // 1
+            for (const std::string& i: x.pieces[0]) // f
+            {
+                results[0].push_back(i);
+            }
+            results[0].push_back("~"); // ~
+            results[0].push_back("exp"); // exp
+            results[0].push_back("-"); // -
+            results[0].push_back("/"); // /
+            results[0].push_back("-"); // -
+            results[0].push_back(eps); // eps
+            results[0].push_back("+"); // +
+            results[0].push_back("log"); // log
+            results[0].push_back("*"); // *
+            results[0].push_back("+"); // +
         }
-        p_expr.push_back("~"); // ~
-        p_expr.push_back("exp"); // exp
-        p_expr.push_back("-"); // -
-        p_expr.push_back("/"); // /
-        x.subs_dict["p"] = x.expression_evaluator(x.params, p_expr);
-        //term1 = prefac_term_1 p eps + log *
-        x.subs_dict["term1"] = x.expression_evaluator(x.params, {"prefac_term_1", "p", eps, "+", "log", "*"});
-        //term2 = prefac_term_2 1 p - eps + log *
-        x.subs_dict["term2"] = x.expression_evaluator(x.params, {"prefac_term_2", "1", "p", "-", eps, "+", "log", "*"});
-        results[0] = {"term1", "term2", "+"};
+        else
+        {
+            //p = 1 1 f ~ exp - /
+            p_expr = {"1", "1"}; // 1 1
+            for (const std::string& i: x.pieces[0]) // f
+            {
+                p_expr.push_back(i);
+            }
+            p_expr.push_back("~"); // ~
+            p_expr.push_back("exp"); // exp
+            p_expr.push_back("-"); // -
+            p_expr.push_back("/"); // /
+            x.subs_dict["p"] = x.expression_evaluator(x.params, p_expr);
+            //term1 = prefac_term_1 p eps + log *
+            x.subs_dict["term1"] = x.expression_evaluator(x.params, {"prefac_term_1", "p", eps, "+", "log", "*"});
+            //term2 = prefac_term_2 1 p - eps + log *
+            x.subs_dict["term2"] = x.expression_evaluator(x.params, {"prefac_term_2", "1", "p", "-", eps, "+", "log", "*"});
+            results[0] = {"term1", "term2", "+"};
+        }
     }
     prefactors_computed = true;
     return results;
@@ -6449,6 +6552,13 @@ std::vector<std::vector<std::string>> VortexRadialProfile(Board& x, bool fit)
     std::string S = "1";
     std::string infty = std::to_string(DBL_MAX);
 
+    /*
+     Best score = 0.972546, SNE = 0.0282288
+     Squared-norm error for each equation: 0.0282288 0 0
+     Best expression = sin(acos((sech(x0) ^ 0.625850140725043)))
+     Best expression (original format) = sin acos ^ sech x0 0.625850140725043
+     */
+    
     if (x.expression_type == "prefix")
     {
         //- + + * / 1 2 R'' * / 1 * 2 r R' * - mu / * S S * * 2 r r R * * R R R
@@ -6640,8 +6750,13 @@ std::vector<std::vector<std::string>> VortexRadialProfile(Board& x, bool fit)
 
 /*
  Infix: μ*f + ν*f*f - f*f*f - f - 2*∂^2f/∂r^2 - ∂^4f/∂r^4 - ((1/r) * ((2*(∂^3f/∂r^3)) + ((1/r)*(∂^2f/∂r^2)) - ((1/(r*r))*(∂f/∂r)) + ((1/(r*r))*(∂^3f/∂θ^2∂r)) - ((2/(r*r*r))*(∂^2f/∂θ^2)) + (2*(∂f/∂r)))) - ((1/(r*r)) * ((2*(∂^4f/∂θ^2∂r^2)) + ((1/r)*(∂^3f/∂θ^2∂r)) + ((1/(r*r))*(∂^4f/∂θ^4)) - (2*(∂^2f/∂r^2)) + (2*(∂^2f/∂θ^2)))) - ((2/(r*r*r)) * ((∂f/∂r) - (2*(∂^3f/∂θ^2∂r)) + ((3/r)*(∂^2f/∂θ^2))))
-
 Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -
+
+ Infix: f(r, θ=2*π) - f(r, θ = 0)
+ Postfix: f(r, θ=2*π) f(r, θ = 0) -
+ 
+ Infix: ∂f/∂θ(r, θ=2*π) - ∂f/∂θ(r, θ = 0)
+ Postfix: ∂f/∂θ(r, θ=2*π) ∂f/∂θ(r, θ = 0) -
 
 {x0: r, x1: θ}
 {x.pieces[0]: f}
@@ -6649,6 +6764,8 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
     std::vector<std::vector<std::string>> results;
+    results.reserve(3);
+    assert((x.num_diff_eqns == 3) && "SwiftHohenberg is a system of 3 equations!");
     thread_local std::vector<std::string> result, dfdr1, d2fdr2, d3fdr3, d4fdr4,
     dfdtheta1, d2fdtheta2, d3fdtheta3, d4fdtheta4, df3dtheta2dr1,
     prefac_temp;
@@ -6678,7 +6795,6 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
     {
         //μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -
         result.push_back(mu); // μ
-        //TODO: Need to really re-examine if this `if (fit) {} else {}` is really necessary since I am pretty sure that the consts in `f` are optimized independent of the `vector<string>` that `f` contains
         if (fit) //need to push_back each token since eval(f) will change as the consts in f are optimized
         {
             for (const std::string& i: x.pieces[0]) // f
@@ -7022,8 +7138,61 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
         result.push_back("+"); // +
         result.push_back("*"); // *
         result.push_back("-"); // -
+        results.push_back(result);
+        result.clear();
+        //f(r, θ=2*π) f(r, θ = 0) -
+        for (const std::string& i: x.pieces[0]) //f(r, θ=2*π)
+        {
+            if (i == "x1")
+            {
+                result.push_back("6.283185307179586");
+            }
+            else
+            {
+                result.push_back(i);
+            }
+        }
+        for (const std::string& i: x.pieces[0]) //f(r, θ = 0)
+        {
+            if (i == "x1")
+            {
+                result.push_back("0");
+            }
+            else
+            {
+                result.push_back(i);
+            }
+        }
+        result.push_back("-");
+        results.push_back(result);
+        result.clear();
+        //∂f/∂θ(r, θ=2*π) ∂f/∂θ(r, θ = 0) -
+        for (const std::string& i: dfdtheta1) //∂f/∂θ(r, θ=2*π)
+        {
+            if (i == "x1")
+            {
+                result.push_back("6.283185307179586");
+            }
+            else
+            {
+                result.push_back(i);
+            }
+        }
+        for (const std::string& i: dfdtheta1) //∂f/∂θ(r, θ = 0)
+        {
+            if (i == "x1")
+            {
+                result.push_back("0");
+            }
+            else
+            {
+                result.push_back(i);
+            }
+        }
+        result.push_back("-");
+        results.push_back(result);
+        result.clear();
     }
-    results.push_back(result);
     prefactors_computed = true;
     return results;
 }
@@ -8807,60 +8976,9 @@ namespace ExampleProblems
         if (strcmp(algorithm, "RandomSearch") == 0)
         {
             RandomSearch(SwiftHohenberg /*differential equation to solve*/,
-                         1 /*number of equations in differential equation system*/,
-                         data1 /*data used to solve differential equation*/,
-                         std::vector<int>{3} /*fixed depths of generated solution*/,
-                         "postfix" /*expression representation*/,
-                         0 /*num_consts_diff: number of constants in differential equation*/,
-                         "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
-                         5 /*number of fit iterations*/,
-                         "naive_numerical" /*method for computing the gradient*/,
-                         true /*cache*/,
-                         time /*time to run the algorithm in seconds*/,
-                         0 /*num threads*/,
-                         true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
-                         threshold /*threshold for which solutions cannot be constant*/,
-                         true /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
-                         0 /*number of data columns that constitute labels and not independent variables/features*/,
-                         true /*whether or not to include ALL of the features in all of the generated expressions*/);
-        }
-        else
-        {
-            SimulatedAnnealing(SwiftHohenberg /*differential equation to solve*/,
-                1 /*number of equations in differential equation system*/,
-                data1 /*data used to solve differential equation*/,
-                std::vector<int>{5} /*fixed depths of generated solution*/,
-                "postfix" /*expression representation*/,
-                0/*2*/ /*num_consts_diff: number of constants in differential equation*/,
-                "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
-                5 /*number of fit iterations*/,
-                "naive_numerical" /*method for computing the gradient*/,
-                true /*cache*/,
-                time /*time to run the algorithm in seconds*/,
-                0 /*num threads*/,
-                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
-                threshold /*threshold for which solutions cannot be constant*/,
-                false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
-                false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
-                0 /*number of data columns that constitute labels and not independent variables/features*/,
-                true /*whether or not to include ALL of the features in all of the generated expressions*/,
-                {split("0.148475282221305 x1 * x1 sin 1.0000132758892615 x0 sin * * - 0.0922858190550785 -")} /*seed expressions*/,
-                false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
-                random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
-                "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
-        }
-    }
-    
-    void VortexRadialProfileTest(int random_seed, const char* algorithm, double time)
-    {
-        double threshold = 0.0223;
-        auto data = createMeshgridVectors(101, 1, {0.0001}, {10.0});
-        if (strcmp(algorithm, "RandomSearch") == 0)
-        {
-            RandomSearch(VortexRadialProfile /*differential equation to solve*/,
                          3 /*number of equations in differential equation system*/,
-                         data /*data used to solve differential equation*/,
-                         std::vector<int>{23} /*fixed depths of generated solution*/,
+                         data1 /*data used to solve differential equation*/,
+                         std::vector<int>{4} /*fixed depths of generated solution*/,
                          "postfix" /*expression representation*/,
                          0 /*num_consts_diff: number of constants in differential equation*/,
                          "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -8877,10 +8995,61 @@ namespace ExampleProblems
         }
         else
         {
+            SimulatedAnnealing(SwiftHohenberg /*differential equation to solve*/,
+                3 /*number of equations in differential equation system*/,
+                data1 /*data used to solve differential equation*/,
+                std::vector<int>{5} /*fixed depths of generated solution*/,
+                "postfix" /*expression representation*/,
+                0/*2*/ /*num_consts_diff: number of constants in differential equation*/,
+                "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
+                5 /*number of fit iterations*/,
+                "naive_numerical" /*method for computing the gradient*/,
+                true /*cache*/,
+                time /*time to run the algorithm in seconds*/,
+                0 /*num threads*/,
+                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                threshold /*threshold for which solutions cannot be constant*/,
+                true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
+                0 /*number of data columns that constitute labels and not independent variables/features*/,
+                true /*whether or not to include ALL of the features in all of the generated expressions*/,
+                {split("0 0 + 0 0 + + 0 0 + 0 0.693868926928361 + + + 0.010000 x1 + sin 0 1.0000132758892615 + x0 sin * * - 0 x1 + -10 0 + / 0 0 + 0 0.02 + + * 0 0.020000 + 6.283190 x0 + ^ 0 0 + 0 0.0922858190550785 + + + + -")} /*seed expressions*/,
+                false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
+                random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
+                "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
+        }
+    }
+    
+    void VortexRadialProfileTest(int random_seed, const char* algorithm, double time)
+    {
+        double threshold = 0.0223;
+        auto data = createMeshgridVectors(101, 1, {0.0001}, {10.0});
+        if (strcmp(algorithm, "RandomSearch") == 0)
+        {
+            RandomSearch(VortexRadialProfile /*differential equation to solve*/,
+                         3 /*number of equations in differential equation system*/,
+                         data /*data used to solve differential equation*/,
+                         std::vector<int>{4} /*fixed depths of generated solution*/,
+                         "postfix" /*expression representation*/,
+                         0 /*num_consts_diff: number of constants in differential equation*/,
+                         "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
+                         5 /*number of fit iterations*/,
+                         "naive_numerical" /*method for computing the gradient*/,
+                         true /*cache*/,
+                         time /*time to run the algorithm in seconds*/,
+                         0 /*num threads*/,
+                         true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                         threshold /*threshold for which solutions cannot be constant*/,
+                         true /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                         0 /*number of data columns that constitute labels and not independent variables/features*/,
+                         true /*whether or not to include ALL of the features in all of the generated expressions*/);
+        }
+        else
+        {
             SimulatedAnnealing(VortexRadialProfile /*differential equation to solve*/,
                 3 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{7} /*fixed depths of generated solution*/,
+                std::vector<int>{17} /*fixed depths of generated solution*/,
                 "prefix" /*expression representation*/,
                 0/*2*/ /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -8891,7 +9060,7 @@ namespace ExampleProblems
                 0 /*num threads*/,
                 true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
-                false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
                 0 /*number of data columns that constitute labels and not independent variables/features*/,
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
@@ -8956,7 +9125,7 @@ namespace ExampleProblems
     }
     void WildfireSpreadTSTest(int random_seed, const char* algorithm, double time)
     {
-        double threshold = 1e-5;
+        double threshold = 0.0;
         Eigen::MatrixXd data = load_csv("/Users/edwardfinkelstein/SDSU_UCI/UCIFall2025/CS274E/8006177/WildfireSpreadTS/2020/fire_23654679/fire_23654679_with_target_bin.csv", 2756544, 27);
         std::cout << "Data loaded!\nFirst 10 rows\n=============\n";
         std::cout << data.topRows(10) << '\n';
@@ -8965,7 +9134,7 @@ namespace ExampleProblems
             RandomSearch(WildfireSpreadTS /*differential equation to solve*/,
                 1 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{3} /*fixed depths of generated solution*/,
+                std::vector<int>{4} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -8996,12 +9165,12 @@ namespace ExampleProblems
                 0 /*num threads*/,
                 true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
-                false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the ORIGINAL expression on every iteration (perturbation) of the seed expression vector; if false a copy is maintained so that simplification on this->pieces can still happen*/
                 1 /*number of data columns that constitute labels and not independent variables/features*/,
                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
-                //{split("9736 x7 - 4.372938 x12 / x11 ln * + x20 x5 16.000000 * + x22 -843.000000 * -17064.107062 + * +")} /*seed expressions*/,
-                {split("9736 x7 - -100.051731 -0.000000 x15 ^ / + x20 1075.000000 x5 * + -17064.107062 * +")} /*seed expressions*/,
+                {split("0 9736 + x7 x20 / - 0 -100.051731 + x5 x15 ^ / + 0 x20 + 1075.000000 x5 * + 0 0 + 0 -17064.107062 + + * +")} /*seed expressions*/,
+//                {split("+ + - + 0 9736 / x7 x20 / + 0 -100.051731 ^ x5 x15 * + + 0 x20 * 1075.000000 x5 + + 0 0 + 0 -17064.107062")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 "");// "SNE_vals.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
@@ -9040,23 +9209,24 @@ int main(int argc, char *argv[])
 {
     int random_seed = get_random_seed(argc, argv);
     constexpr const char* algorithm = "SimulatedAnnealing";
-    constexpr double time = 60000.0;
+    constexpr double time = 450.0;
     printf("Random seed set to %d%s", random_seed, std::string(10, '\n').c_str());
-    ProblemOption choice = ProblemOption::WildfireSpreadTS;
+    ProblemOption choice = ProblemOption::VortexRadialProfile;
+    //TODO: Tests done = 10/16, next = VortexRadialProfile, SimulatedAnnealing, 1
     
     switch (choice)
     {
         case ProblemOption::SwiftHohenberg:
             ExampleProblems::SwiftHohenbergTest(random_seed, algorithm, time);
             break;
+        case ProblemOption::WildfireSpreadTS:
+            ExampleProblems::WildfireSpreadTSTest(random_seed, algorithm, time);
+            break;
         case ProblemOption::VortexRadialProfile:
             ExampleProblems::VortexRadialProfileTest(random_seed, algorithm, time);
             break;
         case ProblemOption::SolitonWaveFengEq14and15Laser:
             ExampleProblems::SolitonWaveFengEq14and15LaserTest(random_seed, algorithm, time);
-            break;
-        case ProblemOption::WildfireSpreadTS:
-            ExampleProblems::WildfireSpreadTSTest(random_seed, algorithm, time);
             break;
         default:
             break;

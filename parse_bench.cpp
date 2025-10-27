@@ -33,6 +33,7 @@ static bool parse_double_stod(const std::string& s, double& out) {
 }
 
 int main(int argc, char** argv) {
+    assert(false);
     // Small corpus of “typical” numeric strings, plus some failures
     std::vector<std::string> samples = {
         "0", "1", "-1", "3.1415926535", "-2.718281828",
@@ -96,4 +97,4 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-//g++ -std=c++20 -O3 -march=native -DNDEBUG parse_bench.cpp -o parse_bench -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include
+//g++ -std=c++20 -O2 -march=native -DNDEBUG parse_bench.cpp -o parse_bench -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include
