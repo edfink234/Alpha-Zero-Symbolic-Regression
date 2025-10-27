@@ -1,12 +1,13 @@
-//TODO: Need a more robust way to check numerical-string equality (e.g. `x == 0` won't work here if e.g. x is -0.0000 -> need a function to do this instead, most likely)
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <charconv>
 #include <unordered_set>
 #include <string>
 #include <cmath>
 #include <charconv>
 #include <cassert>
+#include <boost/spirit/include/qi.hpp> //For fast string-to-double conversion!
 
 const std::unordered_set<std::string> unary_operators = {"cos", "~", "sin", "log", "ln", "asin", "arcsin", "acos", "arccos", "exp", "sech", "tanh", "sqrt"};
 const std::unordered_set<std::string> binary_operators = {"+", "-", "*", "/", "^"};
@@ -124,6 +125,29 @@ bool isdouble(const std::string& s)
         }
     }
     return has_digits && (state == INT || state == FRAC || state == EXP_NUM);
+}
+
+bool parse_double_spirit(const std::string& s, double& out)
+{
+    namespace qi   = boost::spirit::qi;
+    namespace ascii= boost::spirit::ascii;
+
+    auto f = s.begin(), l = s.end();
+    // Skip leading/trailing ASCII whitespace; require full consumption (eoi).
+    // qi::double_ already yields ±inf/NaN where appropriate.
+    bool ok = qi::phrase_parse(f, l, qi::double_ >> qi::eoi, ascii::space, out);
+    return ok; // f==l guaranteed by eoi
+}
+
+bool checkEqual(const std::string &str1, const std::string &str2)
+{
+    if (!isdouble(str1))
+    {
+        return false;
+    }
+    double val1; parse_double_spirit(str1, val1);
+    double val2 = (str2 == "0") ? 0.0 : 1.0; //or "1"
+    return (val1 == val2);
 }
 
 /*
@@ -246,13 +270,13 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         int second_arg_idx_high = new_expression.size();
         int step;
         
-        if (new_expression.back() == "0") // x 0 +/- -> x
+        if (checkEqual(new_expression.back(), "0")) // x 0 +/- -> x
         {
             //puts("hi 181");
             new_expression.pop_back();
         }
         
-        else if (new_expression[first_arg_idx_high - 1] == "0")
+        else if (checkEqual(new_expression[first_arg_idx_high - 1], "0")) // 0 x +/- -> x
         {
             //puts("hi 184");
             //erase elements from new_expression[first_arg_idx_low] to new_expression[first_arg_idx_high-1] inclusive
@@ -298,24 +322,24 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
         }
-        else if (new_expression.back() == "0") // x 0 * -> 0 (because, since postfix operators come at the end, if the end of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 *, which is 0)
+        else if (checkEqual(new_expression.back(), "0")) // x 0 * -> 0 (because, since postfix operators come at the end, if the end of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 *, which is 0)
         {
             //puts("hi 235");
             new_expression[first_arg_idx_low] = "0";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
         }
-        else if (new_expression[first_arg_idx_high - 1] == "0") //0 x * -> 0 (because, since postfix operators come at the end, if the end of the first argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to 0 x *, which is 0)
+        else if (checkEqual(new_expression[first_arg_idx_high - 1], "0")) //0 x * -> 0 (because, since postfix operators come at the end, if the end of the first argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to 0 x *, which is 0)
         {
             //puts("hi 241");
             new_expression[first_arg_idx_low] = "0";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
         }
-        else if (new_expression.back() == "1") // x 1 * -> x (because, since postfix operators come at the end, if the end of the second argument of '*' is 1, then the whole second argument MUST be 1, therefore the expression reduces to x 1 *, which is x)
+        else if (checkEqual(new_expression.back(), "1")) // x 1 * -> x (because, since postfix operators come at the end, if the end of the second argument of '*' is 1, then the whole second argument MUST be 1, therefore the expression reduces to x 1 *, which is x)
         {
             //puts("hi 247");
             new_expression.pop_back(); //erase the '1'
         }
-        else if (new_expression[first_arg_idx_high - 1] == "1") //1 x * -> x (because, since postfix operators come at the end, if the end of the first argument of '*' is 1, then the whole first argument MUST be 1, therefore the expression reduces to 1 x *, which is x)
+        else if (checkEqual(new_expression[first_arg_idx_high - 1], "1")) //1 x * -> x (because, since postfix operators come at the end, if the end of the first argument of '*' is 1, then the whole first argument MUST be 1, therefore the expression reduces to 1 x *, which is x)
         {
             //puts("hi 252");
             new_expression.erase(new_expression.begin() + first_arg_idx_high - 1); //erase the '1'
@@ -340,13 +364,13 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
         }
-        else if ((new_expression.back() == "0") && (new_expression[first_arg_idx_high - 1] == "0")) // 0 0 / -> nan
+        else if ((checkEqual(new_expression.back(), "0")) && (checkEqual(new_expression[first_arg_idx_high - 1], "0"))) // 0 0 / -> nan
         {
             //puts("hi 279");
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
         }
-        else if (new_expression.back() == "0") // x 0 / -> nan (for now, because, since postfix operators come at the end, if the end of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 /, which is, for now, assumed to be nan for simplicity)
+        else if (checkEqual(new_expression.back(), "0")) // x 0 / -> nan (for now, because, since postfix operators come at the end, if the end of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 /, which is, for now, assumed to be nan for simplicity)
         {
             //puts("hi 280");
             //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
@@ -354,13 +378,13 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             new_expression[first_arg_idx_low] = "nan";//(new_expression[first_arg_idx_high - 1] == "~") ? "-inf" : "inf";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
         }
-        else if (new_expression[first_arg_idx_high - 1] == "0") //0 x / -> 0 (because, since postfix operators come at the end, if the end of the first argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to 0 x /, which is 0)
+        else if (checkEqual(new_expression[first_arg_idx_high - 1], "0")) //0 x / -> 0 (because, since postfix operators come at the end, if the end of the first argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to 0 x /, which is 0)
         {
             //puts("hi 286");
             new_expression[first_arg_idx_low] = "0";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
         }
-        else if (new_expression.back() == "1") // x 1 / -> x (because, since postfix operators come at the end, if the end of the second argument of '/' is 1, then the whole second argument MUST be 1, therefore the expression reduces to x 1 /, which is x)
+        else if (checkEqual(new_expression.back(), "1")) // x 1 / -> x (because, since postfix operators come at the end, if the end of the second argument of '/' is 1, then the whole second argument MUST be 1, therefore the expression reduces to x 1 /, which is x)
         {
             //puts("hi 292");
             new_expression.pop_back(); //erase the '1'
@@ -376,6 +400,12 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             x*y       y
             ---  -->  -
             x*z       z
+             
+              x              1
+            ------ --> x * ------
+            number         number
+             
+            x num * num1 * -> x num num1 * *
             */
         else
         {
@@ -397,13 +427,13 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
         }
-        else if (new_expression.back() == "0") // x 0 ^ -> 1 (because, since postfix operators come at the end, if the end of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 ^, which is 1)
+        else if (checkEqual(new_expression.back(), "0")) // x 0 ^ -> 1 (because, since postfix operators come at the end, if the end of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to x 0 ^, which is 1)
         {
             //puts("hi 318");
             new_expression[first_arg_idx_low] = "1";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
         }
-        else if (new_expression[first_arg_idx_high - 1] == "0") //0 x ^ -> nan (for now, because, since postfix operators come at the end, if the end of the first argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to 0 x ^, which is, for now, assumed to be nan for simplicity)
+        else if (checkEqual(new_expression[first_arg_idx_high - 1], "0")) //0 x ^ -> nan (for now, because, since postfix operators come at the end, if the end of the first argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to 0 x ^, which is, for now, assumed to be nan for simplicity)
         {
             //puts("hi 324");
             //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
@@ -411,12 +441,12 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             new_expression[first_arg_idx_low] = "nan";// "0";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest of x and y
         }
-        else if (new_expression.back() == "1") // x 1 ^ -> x (because, since postfix operators come at the end, if the end of the second argument of '^' is 1, then the whole second argument MUST be 1, therefore the expression reduces to x 1 ^, which is x)
+        else if (checkEqual(new_expression.back(), "1")) // x 1 ^ -> x (because, since postfix operators come at the end, if the end of the second argument of '^' is 1, then the whole second argument MUST be 1, therefore the expression reduces to x 1 ^, which is x)
         {
             //puts("hi 330");
             new_expression.pop_back(); //erase the '1'
         }
-        else if (new_expression[first_arg_idx_high - 1] == "1") //1 x ^ -> 1 (because, since postfix operators come at the end, if the end of the first argument of '^' is 1, then the whole second argument MUST be 1, therefore the expression reduces to 1 x ^, which is 1)
+        else if (checkEqual(new_expression[first_arg_idx_high - 1], "1")) //1 x ^ -> 1 (because, since postfix operators come at the end, if the end of the first argument of '^' is 1, then the whole second argument MUST be 1, therefore the expression reduces to 1 x ^, which is 1)
         {
             //puts("hi 335");
             new_expression[first_arg_idx_low] = "1";
@@ -438,7 +468,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression.back() == "0") // 0 cos -> 1 (because, since postfix operators come at the end, if the end of the argument of 'cos' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 cos, which is 1)
+        else if (checkEqual(new_expression.back(), "0")) // 0 cos -> 1 (because, since postfix operators come at the end, if the end of the argument of 'cos' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 cos, which is 1)
         {
             //puts("hi 350");
             new_expression[first_arg_idx_low] = "1";
@@ -461,7 +491,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression.back() == "0") // 0 sin -> 0 (because, since postfix operators come at the end, if the end of the argument of 'sin' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 sin, which is 0)
+        else if (checkEqual(new_expression.back(), "0")) // 0 sin -> 0 (because, since postfix operators come at the end, if the end of the argument of 'sin' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 sin, which is 0)
         {
             //puts("hi 365");
             new_expression[first_arg_idx_low] = "0";
@@ -484,7 +514,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression.back() == "0") // 0 tanh -> 0 (because, since postfix operators come at the end, if the end of the argument of 'tanh' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 tanh, which is 0)
+        else if (checkEqual(new_expression.back(), "0")) // 0 tanh -> 0 (because, since postfix operators come at the end, if the end of the argument of 'tanh' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 tanh, which is 0)
         {
             //puts("hi 380");
             new_expression[first_arg_idx_low] = "0";
@@ -524,7 +554,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression.back() == "0") // 0 sech -> 1 (because, since postfix operators come at the end, if the end of the argument of 'sech' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 sech, which is 1)
+        else if (checkEqual(new_expression.back(), "0")) // 0 sech -> 1 (because, since postfix operators come at the end, if the end of the argument of 'sech' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 sech, which is 1)
         {
             //puts("hi 395");
             new_expression[first_arg_idx_low] = "1";
@@ -564,7 +594,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression.back() == "0") // 0 ~ -> 0 (because, since postfix operators come at the end, if the end of the argument of '~' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 ~, which is 0)
+        else if (checkEqual(new_expression.back(), "0")) // 0 ~ -> 0 (because, since postfix operators come at the end, if the end of the argument of '~' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 ~, which is 0)
         {
 //            puts("hi 445");
             new_expression[first_arg_idx_low] = "0";
@@ -592,7 +622,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression.back() == "0") // 0 exp -> 1 (because, since postfix operators come at the end, if the end of the argument of 'exp' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 exp, which is 1)
+        else if (checkEqual(new_expression.back(), "0")) // 0 exp -> 1 (because, since postfix operators come at the end, if the end of the argument of 'exp' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 exp, which is 1)
         {
             //puts("hi 524");
             new_expression[first_arg_idx_low] = "1";
@@ -715,14 +745,14 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i-2] == "0" && isConst1) //"0 x -" -> "x ~"
+                        else if (checkEqual(expression[i-2], "0") && isConst1) //"0 x -" -> "x ~"
                         {
                             expression[i] = "~";
                             expression.erase(expression.begin() + i - 2);
                             simplified = true;
                             break;
                         }
-                        else if (expression[i-1] == "0") //"x 0 -" -> "x"
+                        else if (checkEqual(expression[i-1], "0")) //"x 0 -" -> "x"
                         {
                             expression[i] = expression[i-2];
                             expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
@@ -733,7 +763,7 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
 
                     else if (expression[i] == "*")
                     {
-                        if (expression[i-2] == "0" && isConst1) //"0 x *" -> "0"
+                        if (checkEqual(expression[i-2], "0") && isConst1) //"0 x *" -> "0"
                         {
                             //puts("hi 131");
                             expression[i] = "0";
@@ -741,7 +771,7 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i-1] == "0" && isConst2) //"x 0 *" -> "0"
+                        else if (checkEqual(expression[i-1], "0") && isConst2) //"x 0 *" -> "0"
                         {
                             //puts("hi 139");
                             expression[i] = "0";
@@ -749,7 +779,7 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i-2] == "1" && isConst1) //"1 x *" -> "x"
+                        else if (checkEqual(expression[i-2], "1") && isConst1) //"1 x *" -> "x"
                         {
                             //puts("hi 147");
                             expression[i] = expression[i-1];
@@ -757,7 +787,7 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i-1] == "1" && isConst2) //"x 1 *" -> "x"
+                        else if (checkEqual(expression[i-1], "1") && isConst2) //"x 1 *" -> "x"
                         {
                             //puts("hi 155");
                             expression[i] = expression[i-2];
@@ -769,7 +799,7 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
 
                     else if (expression[i] == "+")
                     {
-                        if (expression[i-2] == "0" && isConst1) //"0 x +" -> "x"
+                        if (checkEqual(expression[i-2], "0") && isConst1) //"0 x +" -> "x"
                         {
                             //puts("hi 167");
                             expression[i] = expression[i-1];
@@ -777,7 +807,7 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i-1] == "0" && isConst2) //"x 0 +" -> "x"
+                        else if (checkEqual(expression[i-1], "0") && isConst2) //"x 0 +" -> "x"
                         {
                             //puts("hi 175");
                             expression[i] = expression[i-2];
@@ -789,7 +819,7 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
 
                     else if (expression[i] == "/")
                     {
-                        if (expression[i-2] == "0" && isConst1) // "0 x /" -> "0"
+                        if (checkEqual(expression[i-2], "0") && isConst1) // "0 x /" -> "0"
                         {
                             //puts("hi 187");
                             expression[i] = "0";
@@ -797,7 +827,7 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i-1] == "1" && isConst2) // "x 1 /" -> "x"
+                        else if (checkEqual(expression[i-1], "1") && isConst2) // "x 1 /" -> "x"
                         {
                             //puts("hi 195");
                             expression[i] = expression[i-2];
@@ -817,7 +847,7 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
 
                     else if (expression[i] == "^")
                     {
-                        if (expression[i-1] == "0" && isConst2) // "x 0 ^" -> "1"
+                        if (checkEqual(expression[i-1], "0") && isConst2) // "x 0 ^" -> "1"
                         {
                             //puts("hi 223");
                             expression[i] = "1";
@@ -825,15 +855,16 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i-2] == "0" && isConst1) // "0 x ^" -> "0" (x > 0)
+                        else if (checkEqual(expression[i-2], "0") && isConst1) // "0 x ^" -> "0" (x > 0)
                         {
+                            //TODO: Should change this to nan to be consistent with above!
 //                            puts("hi 215");
                             expression[i] = "0";
                             expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                             simplified = true;
                             break;
                         }
-                        else if (expression[i-2] == "1" && isConst1) // "1 x ^" -> "1"
+                        else if (checkEqual(expression[i-2], "1") && isConst1) // "1 x ^" -> "1"
                         {
                             //puts("hi 231");
                             expression[i] = "1";
@@ -841,7 +872,7 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i-1] == "1" && isConst2) // "x 1 ^" -> "x"
+                        else if (checkEqual(expression[i-1], "1") && isConst2) // "x 1 ^" -> "x"
                         {
                             //puts("hi 239");
                             expression[i] = expression[i-2];
@@ -2161,9 +2192,432 @@ int main()
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
+    
+    //TODO: Add 2 test-cases
+    test_expr = {"x", "x", "+", "0.00", "+"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "x", "+", "sin", "0.00e0", "-"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"0.0000000", "x", "x", "+", "+"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"0.0000e0", "x", "x", "+", "sin", "-"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "x", "+", "-0.000", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "x", "+", "sin", "tanh", "-0.00e0", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"0.0000000e0", "x", "x", "+", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"-0.0000e0", "x", "x", "+", "sin", "cos", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "x", "*", "1.000", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "x", "+", "sin", "tanh", "10000e-4", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1.0000000e0", "x", "x", "tanh", "+", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"100000e-5", "x", "x", "+", "sin", "asin", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"0.0000000e0", "x", "x", "+", "*", "0.00e0", "/"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"-0.", "sin", "-0.0000e0", "x", "x", "+", "sin", "cos", "*", "/"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "x", "/", "0.00000e0", "x", "x", "+", "*", "/"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "asin", "arccos", "acos", "-0.0000e0", "x", "x", "+", "sin", "cos", "*", "/"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"0.0000000e0", "x", "x", "+", "*", "apple", "/"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"-0.0000e0", "x", "x", "+", "sin", "cos", "*", "appleOrange", "sin", "cos", "tanh", "/"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "x", "*", "sin", "1.000", "/"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "yay", "+", "sin", "tanh", "10000e-4", "/"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "x", "+", "-0.00000e0", "x", "x", "+", "*", "^"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "asin", "arccos", "acos", "-0.00e0", "x", "x", "+", "sech", "cos", "*", "^"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"0.0000000e0", "x", "x", "+", "^"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"-0.0000e0", "x", "x1", "+", "sin", "cos", "^"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "x", "+", "x", "x", "/", "^"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "asin", "arccos", "acos", "x", "sin", "x", "sin", "/", "^"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "x", "x", "+", "^"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "-0.00e0", "+", "x", "x1", "+", "sin", "cos", "^"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1.000e0", "1", "x", "x", "+", "^", "-", "cos"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"10e-1", "1", "-0.00e0", "+", "x", "x1", "+", "sin", "cos", "^", "-", "cos"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1.0e0", "1.000e0", "1", "x", "x", "+", "^", "-", "cos", "-", "sin"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"100.e-2", "10e-1", "1", "-0.00e0", "+", "x", "x1", "+", "sin", "tanh", "^", "-", "cos", "-", "sin"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1.0e0", "1.000e0", "1", "x", "x", "+", "^", "-", "cos", "-", "sin", "tanh"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"100.e-2", "10e-1", "1", "-0.00e0", "+", "x", "x1", "+", "sin", "tanh", "^", "-", "cos", "-", "sin", "sin", "tanh"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1.0e0", "1.000e0", "1", "x", "x", "+", "^", "-", "cos", "-", "sin", "tanh", "tanh", "sech"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"100.e-2", "10e-1", "1", "-0.00e0", "+", "x", "x1", "+", "sin", "tanh", "^", "-", "cos", "-", "sin", "tanh", "tanh", "sech"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1.0e0", "1.000e0", "1", "x", "x", "+", "^", "-", "cos", "-", "sin", "tanh", "sin", "~"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"100.e-2", "10e-1", "1", "-0.00e0", "+", "x", "x1", "+", "sin", "tanh", "^", "-", "cos", "-", "sin", "sin", "tanh", "tanh", "~"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1.0e0", "1.000e0", "1", "x", "x", "+", "^", "-", "cos", "-", "sin", "tanh", "sin", "~", "exp"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"100.e-2", "10e-1", "1", "-0.00e0", "+", "x", "x1", "+", "sin", "tanh", "^", "-", "cos", "-", "sin", "sin", "tanh", "tanh", "~", "exp"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"-0.00e0", "xxxx", "-"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"0.000e0", "appleApple", "-"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"xxasdfasdfxx", "-0.000000e0", "-"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"appleApple123", "0.000000e0", "-"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"-0.00e0", "xxxasdfx", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"0.000000e0", "appleApple24523", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"xxasdfasdfxx", "-0.00000000e0", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"appleApple123", "-0.000000", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"100e-2", "xxxasdfx", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1000000e-6", "appleApple24523", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"xxasdfasdfxx", "1.00000000", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"appleApple123", "100000000e-8", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"-0.00e0", "xxxasdfx", "+"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"0.00000e0", "appleApple24523", "+"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"xxasdfasdfxx", "-0.00000000000e0", "+"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"appleApple1asdsq23", "0.000000e-0", "+"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"-0.000", "xxxasdfx", "/"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"0.00000000e-00", "appleApple24523", "/"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"xxasdfasdfxx", "1.00000000", "/"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"appleApple123", "10000000e-07", "/"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"xxasdfasdfxx", "-0.000000000e0", "^"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"appleApple1asdsq23", "0.0000e-0", "^"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"-0.000000e00", "xxxasdfx", "^"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"0.00000000e-0000", "x23", "^"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"xxasdfasdfxx", "1000000000e-09", "^"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"appleApple1asdsq23", "1.0000e-0", "^"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1.000000", "xxxasdfx", "^"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1.0", "x23", "^"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"9736", "x7", "-", "-100.051731", "-0.000000", "x15", "^", "/", "+", "x20", "1075.000000", "x5", "*", "+", "-17064.107062", "*", "+"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"0.000000e0", "0.010000", "x1", "+", "sin", "100000e-005", "x0", "sin", "*", "*", "-", "x1", "-10", "/", "0.02", "*", "0.010000", "6.283190", "x0", "+", "^", "0.0000", "+", "+", "-"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    //TODO: 0.7911530997475994 x0 x0 cos - sech sqrt 1.048576e+06 0 x0 10.000000 - ^ tanh 1.0001 / arccos log ~ 4 / cos cos ^ * ^, aka (0.7911530997475994 ^ (sqrt(sech((x0 - cos(x0)))) * (1.048576e+06 ^ cos(cos((~(log(arccos((tanh((0 ^ (x0 - 10.000000))) / 1.0001)))) / 4))))))
 }
 
-//g++ -std=c++20 -o PostfixSimplifyPrev PostfixSimplifyPrev.cpp
+//g++ -std=c++20 -o PostfixSimplifyPrev PostfixSimplifyPrev.cpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include
 //https://stackoverflow.com/questions/20153412/simplification-algorithm-for-reverse-polish-notation
 //https://dl.acm.org/
 //simplification of polish notation expressions articles

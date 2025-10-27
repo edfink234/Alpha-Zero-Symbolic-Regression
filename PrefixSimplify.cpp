@@ -2669,7 +2669,6 @@ int main()
 
 }
 
-//TODO: Number of non-production-tested simplifcations: 30
 //g++ -std=c++20 -o PrefixSimplify PrefixSimplify.cpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include
 //https://stackoverflow.com/questions/20153412/simplification-algorithm-for-reverse-polish-notation
 //https://dl.acm.org/

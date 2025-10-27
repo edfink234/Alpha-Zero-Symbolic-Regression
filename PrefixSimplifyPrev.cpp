@@ -1,11 +1,12 @@
-//TODO: Need a more robust way to check numerical-string equality (e.g. `x == 0` won't work here if e.g. x is -0.0000 -> need a function to do this instead, most likely)
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <charconv>
 #include <unordered_set>
 #include <string>
 #include <cmath>
 #include <cassert>
+#include <boost/spirit/include/qi.hpp> //For fast string-to-double conversion!
 
 const std::unordered_set<std::string> unary_operators = {"cos", "~", "sin", "log", "ln", "asin", "arcsin", "acos", "arccos", "exp", "sech", "tanh", "sqrt"};
 const std::unordered_set<std::string> binary_operators = {"+", "-", "*", "/", "^"};
@@ -39,6 +40,7 @@ std::string to_string_general(double v)
         out.resize(out.size() * 2);            // grow and retry (rare)
     }
 }
+
 bool is_binary(const std::string& token)
 {
     return (binary_operators.find(token) != binary_operators.end());
@@ -56,6 +58,7 @@ void print_container(const std::vector<std::string>& c)
     std::cout << '\n';
 }
 
+//MARK: Might be able to replace this with `parse_double_spirit`
 double Stod(const std::string& param)
 {
     try
@@ -65,6 +68,7 @@ double Stod(const std::string& param)
     }
     catch (const std::out_of_range&)
     {
+        //Return +/- infinity depending on the sign
         if (!param.empty() && param[0] == '-')
         {
             return -std::numeric_limits<double>::infinity();
@@ -75,6 +79,11 @@ double Stod(const std::string& param)
         }
     }
 }
+//stod is locale-dependent
+//Example: In the USA, 1.23 = 1 + 23/100
+//but in e.g. Europe `1.23` is written as `1,23`
+//Another example: In the USA, 1,230 = 1000 + 230
+//but in e.g. Europe `1,230` is written as `1.230`
 
 //https://medium.com/@ryan_forrester_/c-check-if-string-is-number-practical-guide-c7ba6db2febf
 bool isdouble(const std::string& s)
@@ -121,6 +130,98 @@ bool isdouble(const std::string& s)
         }
     }
     return has_digits && (state == INT || state == FRAC || state == EXP_NUM);
+}
+
+//https://stackoverflow.com/a/16826908
+//int fast_atoi(const char* str)
+//{
+//    int val = 0;
+//    while( *str )
+//    {
+//        val = val*10 + (*str++ - '0');
+//    }
+//    return val;
+//}
+
+/*
+ Check is two strings that hold either integers or floating-point
+ numbers are equal
+ 
+ */
+//bool checkEqual(const std::string& x, const std::string& y) //y is always either "0" or "1"
+//{
+//    auto x_sz = x.size();
+//    auto y_sz = y.size();
+//    assert(x_sz && y_sz); //making sure x and y are both non-empty
+//    assert(y.find('.') == std::string::npos); //making sure the second argument is not a float
+//
+//    auto e_idx = x.find('e');
+//    if (e_idx == std::string::npos)
+//    {
+//        e_idx = x.find('E');
+//    }
+//    auto dec_idx = x.find('.');
+//
+//    if (e_idx != std::string::npos) //if there's an 'e' or 'E' in the string `x`
+//    {
+//        if (dec_idx != std::string::npos)
+//        {
+//            assert(e_idx > dec_idx); //a decimal cannot come after 'e' or 'E'
+//            //iterate from the character right after '.' up to but not including the ('e' or 'E')
+//            int exp_num = fast_atoi(x.substr(e_idx+1).c_str());
+//            //TODO: Need to "move" the decimal in `x` from `dec_idx` to `dec_idx + exp_num`, get rid of `e...` part, then check if the resulting string is equal to the string `y`.
+//        }
+//    }
+//    else if (e_idx == (x_sz - 1)) //if `x` has 'e' or 'E' as the last character
+//    {
+//        return false; //then `x` is invalid
+//    }
+//    else if (dec_idx != std::string::npos) //if `x` is a regular decimal number
+//    {
+//        if (x.substr(0, dec_idx) != y) //if the part before the decimal in `x` is not equal to `y`
+//        {
+//            return false;
+//        }
+//        //Then, we just iterate from after the decimal to the end and make sure
+//        //all of the digits after the decimal are 0
+//        for (decltype(dec_idx) i = (dec_idx + 1); i < x.size(); i++)
+//        {
+//            if (x[i] != '0')
+//            {
+//                return false;
+//            }
+//        }
+//        return true;
+//    }
+//    else //if `x` is an integer
+//    {
+//        return (x==y);
+//    }
+//
+//    return no_x_dec ? (x==y) : nums_after_x_dec_are_all_zero;
+//}
+
+bool parse_double_spirit(const std::string& s, double& out)
+{
+    namespace qi   = boost::spirit::qi;
+    namespace ascii= boost::spirit::ascii;
+
+    auto f = s.begin(), l = s.end();
+    // Skip leading/trailing ASCII whitespace; require full consumption (eoi).
+    // qi::double_ already yields ±inf/NaN where appropriate.
+    bool ok = qi::phrase_parse(f, l, qi::double_ >> qi::eoi, ascii::space, out);
+    return ok; // f==l guaranteed by eoi
+}
+
+bool checkEqual(const std::string &str1, const std::string &str2)
+{
+    if (!isdouble(str1))
+    {
+        return false;
+    }
+    double val1; parse_double_spirit(str1, val1);
+    double val2 = (str2 == "0") ? 0.0 : 1.0; //or "1"
+    return (val1 == val2);
 }
 
 std::string simplifyString(const std::string& x)
@@ -239,7 +340,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         int second_arg_idx_high = new_expression.size();
         int step;
 
-        if (new_expression[first_arg_idx_high] == "0") //+/- x 0 -> x
+        if (checkEqual(new_expression[first_arg_idx_high], "0")) //+/- x 0 -> x
         {
             //puts("hi 177");
             if (first_arg_idx_high == static_cast<int>(new_expression.size()) - 1)
@@ -253,7 +354,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression.erase(new_expression.begin() + op_idx); //remove +/- operator at beginning
         }
 
-        else if (new_expression[first_arg_idx_low] == "0")
+        else if (checkEqual(new_expression[first_arg_idx_low], "0"))
         {
             if (expression[low] == "+") //+ 0 y -> y
             {
@@ -301,13 +402,13 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "nan"; //change '*' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_high] == "0") //* x 0 -> 0 (because, since prefix operators come at the beginning, if the beginning of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to * x 0, which is 0)
+        else if (checkEqual(new_expression[first_arg_idx_high], "0")) //* x 0 -> 0 (because, since prefix operators come at the beginning, if the beginning of the second argument of '*' is 0, then the whole second argument MUST be 0, therefore the expression reduces to * x 0, which is 0)
         {
             //puts("hi 239");
             new_expression[op_idx] = "0"; //change '*' to '0'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_low] == "0") //* 0 x -> 0
+        else if (checkEqual(new_expression[first_arg_idx_low], "0")) //* 0 x -> 0
         {
             //puts("hi 245");
             new_expression[op_idx] = "0"; //change '*' to '0'
@@ -351,13 +452,13 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "nan"; //change '/' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if ((new_expression[first_arg_idx_low] == "0") && (new_expression[first_arg_idx_high] == "0")) // / 0 0 -> nan
+        else if ((checkEqual(new_expression[first_arg_idx_low], "0")) && (checkEqual(new_expression[first_arg_idx_high], "0"))) // / 0 0 -> nan
         {
             //puts("hi 290");
             new_expression[op_idx] = "nan"; //change '/' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_high] == "0") // / x 0 -> nan (for now, because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to / x 0, which is, for now, assumed to be nan for simplicity)
+        else if (checkEqual(new_expression[first_arg_idx_high], "0")) // / x 0 -> nan (for now, because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 0, then the whole second argument MUST be 0, therefore the expression reduces to / x 0, which is, for now, assumed to be nan for simplicity)
         {
             //puts("hi 282");
             //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
@@ -365,7 +466,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "nan";//(new_expression[first_arg_idx_low] != "~") ? "inf": "-inf"; //change '/' to 'inf' or '-inf'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_low] == "0") // / 0 x -> 0
+        else if (checkEqual(new_expression[first_arg_idx_low], "0")) // / 0 x -> 0
         {
             //puts("hi 295");
             new_expression[op_idx] = "0"; //change '/' to '0'
@@ -417,13 +518,13 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "nan"; //change '^' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_high] == "0") //^ x 0 -> 1 (because, since prefix operators come at the beginning, if the beginning of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to ^ x 0, which is 1)
+        else if (checkEqual(new_expression[first_arg_idx_high], "0")) //^ x 0 -> 1 (because, since prefix operators come at the beginning, if the beginning of the second argument of '^' is 0, then the whole second argument MUST be 0, therefore the expression reduces to ^ x 0, which is 1)
         {
             //puts("hi 334");
             new_expression[op_idx] = "1"; //change '^' to '1'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_low] == "0") // ^ 0 x -> nan (for now)
+        else if (checkEqual(new_expression[first_arg_idx_low], "0")) // ^ 0 x -> nan (for now)
         {
             //puts("hi 340");
             //TODO: need to come up with a more robust way that actually checks if this is nan anywhere;
@@ -431,7 +532,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "nan";//new_expression[op_idx] = "0"; //change '^' to '0'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_high] == "1") // ^ x 1 -> x (because, since prefix operators come at the beginning, if the beginning of the second argument of '^' is 1, then the whole second argument MUST be 1, therefore the expression reduces to ^ x 1, which is 1)
+        else if (checkEqual(new_expression[first_arg_idx_high], "1")) // ^ x 1 -> x (because, since prefix operators come at the beginning, if the beginning of the second argument of '^' is 1, then the whole second argument MUST be 1, therefore the expression reduces to ^ x 1, which is 1)
         {
             //puts("hi 346");
             //erase the '1' at the end
@@ -465,7 +566,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "nan"; //change 'cos' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_low] == "0") // cos 0 -> 1
+        else if (checkEqual(new_expression[first_arg_idx_low], "0")) // cos 0 -> 1
         {
 //            puts("hi 374");
             new_expression[op_idx] = "1"; //change 'cos' to '1'
@@ -485,7 +586,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "nan"; //change 'sin' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_low] == "0") // sin 0 -> 0
+        else if (checkEqual(new_expression[first_arg_idx_low], "0")) // sin 0 -> 0
         {
             //puts("hi 388");
             new_expression[op_idx] = "0"; //change 'sin' to '0'
@@ -505,7 +606,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "nan"; //change 'tanh' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_low] == "0") // tanh 0 -> 0
+        else if (checkEqual(new_expression[first_arg_idx_low], "0")) // tanh 0 -> 0
         {
             //puts("hi 402");
             new_expression[op_idx] = "0"; //change 'tanh' to '0'
@@ -544,7 +645,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "nan"; //change 'sech' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_low] == "0") // sech 0 -> 1
+        else if (checkEqual(new_expression[first_arg_idx_low], "0")) // sech 0 -> 1
         {
             //puts("hi 416");
             new_expression[op_idx] = "1"; //change 'sech' to '1'
@@ -583,7 +684,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "nan"; //change '~' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_low] == "0") // ~ 0 -> 0
+        else if (checkEqual(new_expression[first_arg_idx_low], "0")) // ~ 0 -> 0
         {
 //            puts("hi 466");
             new_expression[op_idx] = "0"; //change '~' to '0'
@@ -609,7 +710,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
             new_expression[op_idx] = "nan"; //change 'exp' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
-        else if (new_expression[first_arg_idx_low] == "0") // exp 0 -> 1
+        else if (checkEqual(new_expression[first_arg_idx_low], "0")) // exp 0 -> 1
         {
             //puts("hi 521");
             new_expression[op_idx] = "1"; //change 'exp' to '1'
@@ -730,14 +831,14 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+1] == "0") //- 0 x -> ~ x
+                        else if (checkEqual(expression[i+1], "0")) //- 0 x -> ~ x
                         {
                             expression[i] = "~";
                             expression.erase(expression.begin() + i + 1);
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+2] == "0" && isConst1) //- x 0 -> x
+                        else if (checkEqual(expression[i+2], "0") && isConst1) //- x 0 -> x
                         {
                             expression[i] = expression[i+1];
                             expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
@@ -747,7 +848,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                     }
                     else if (expression[i] == "*")
                     {
-                        if (expression[i+1] == "0" && isConst2) //* 0 x -> 0
+                        if (checkEqual(expression[i+1], "0") && isConst2) //* 0 x -> 0
                         {
                             //puts("hi 131");
                             expression[i] = "0";
@@ -755,7 +856,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+2] == "0" && isConst1) //* x 0 -> 0
+                        else if (checkEqual(expression[i+2], "0") && isConst1) //* x 0 -> 0
                         {
                             //puts("hi 139");
                             expression[i] = "0";
@@ -763,7 +864,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+1] == "1" && isConst2) //* 1 x -> x
+                        else if (checkEqual(expression[i+1], "1") && isConst2) //* 1 x -> x
                         {
                             //puts("hi 147");
                             expression[i] = expression[i+2];
@@ -771,7 +872,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+2] == "1" && isConst1) //* x 1 -> x
+                        else if (checkEqual(expression[i+2], "1") && isConst1) //* x 1 -> x
                         {
                             //puts("hi 155");
                             expression[i] = expression[i+1];
@@ -782,7 +883,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                     }
                     else if (expression[i] == "+")
                     {
-                        if (expression[i+1] == "0" && isConst2) //+ 0 x -> x
+                        if (checkEqual(expression[i+1], "0") && isConst2) //+ 0 x -> x
                         {
                             //puts("hi 167");
                             expression[i] = expression[i+2];
@@ -790,7 +891,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+2] == "0" && isConst1) //+ x 0 -> x
+                        else if (checkEqual(expression[i+2], "0") && isConst1) //+ x 0 -> x
                         {
                             //puts("hi 175");
                             expression[i] = expression[i+1];
@@ -801,7 +902,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                     }
                     else if (expression[i] == "/")
                     {
-                        if (expression[i+1] == "0" && isConst2) // / 0 x -> 0
+                        if (checkEqual(expression[i+1], "0") && isConst2) // / 0 x -> 0
                         {
                             //puts("hi 187");
                             expression[i] = "0";
@@ -809,7 +910,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+2] == "1" && isConst1) // / x 1 -> x
+                        else if (checkEqual(expression[i+2], "1") && isConst1) // / x 1 -> x
                         {
                             //puts("hi 195");
                             expression[i] = expression[i+1];
@@ -828,7 +929,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                     }
                     else if (expression[i] == "^")
                     {
-                        if (expression[i+2] == "0" && isConst1) // ^ x 0 -> 1
+                        if (checkEqual(expression[i+2], "0") && isConst1) // ^ x 0 -> 1
                         {
                             //puts("hi 223");
                             expression[i] = "1";
@@ -836,15 +937,16 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+1] == "0" && isConst2) // ^ 0 x -> 0 (x > 0)
+                        else if (checkEqual(expression[i+1], "0") && isConst2) // ^ 0 x -> 0 (x > 0)
                         {
+                            //TODO: Should change this to nan to be consistent with above!
                             //puts("hi 215");
                             expression[i] = "0";
                             expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+1] == "1" && isConst2) // ^ 1 x -> 1
+                        else if (checkEqual(expression[i+1], "1") && isConst2) // ^ 1 x -> 1
                         {
                             //puts("hi 231");
                             expression[i] = "1";
@@ -852,7 +954,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
-                        else if (expression[i+2] == "1" && isConst1) // ^ x 1 -> x
+                        else if (checkEqual(expression[i+2], "1") && isConst1) // ^ x 1 -> x
                         {
                             //puts("hi 239");
                             expression[i] = expression[i+1];
@@ -2000,7 +2102,7 @@ int main()
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-        
+    
     test_expr = {"~", "/", "sech", "~", "/", "~", "tanh", "cos", "x", "sin", "+", "0", "0", "0"};
     printf("before: ");print_container(test_expr);
     simplifyPN(test_expr);
@@ -2204,9 +2306,371 @@ int main()
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
+        
+    test_expr = {"+", "+", "-", "9736", "x7", "/", "-100.051731", "^", "-0.000000", "x15", "*", "+", "x20", "*", "1075.000000", "x5", "-17064.107062"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"+", "x", "-0.000"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+
+    test_expr = {"-", "x", "-0.000"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"+", "-0.000", "sin", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+
+    test_expr = {"-", "-0.00000", "cos", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"*", "x", "-0.000"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"*", "sin", "+", "x", "x", "0.000"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"*", "-0.000", "^", "2", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"*", "0.000000e0", "sin", "+", "x", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"/", "-0.000", "*", "0.0000", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"/", "0.000000e0", "tanh", "*", "0.e0", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"/", "apple", "sin", "*", "0.0000e0", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"/", "watermelon", "sin", "tanh", "*", "0.e0", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"/", "-0.000e0", "*", "x", "+", "x", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"/", "0.000000e0", "tanh", "/", "sin", "x", "0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"^", "cos", "x", "sin", "*", "0.0000e0", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"^", "+", "x", "x1", "sin", "tanh", "*", "0.e0", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"^", "-0.0000e0", "+", "x1", "+", "x", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"^", "0.00000", "tanh", "/", "sech", "x22", "x0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"^", "sech", "x", "+", "1.000e0", "*", "0.0000e0", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"^", "+", "x", "x1", "-", "sin", "tanh", "*", "0.e0", "x", "~", "1.000000"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"cos", "*", "0.00000", "^", "sech", "x", "+", "1.000e0", "*", "0.0000e0", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"cos", "*", "^", "+", "x", "x1", "-", "sin", "tanh", "*", "0.e0", "x", "~", "1.000000", "0.000e0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"sin", "*", "0.00000", "^", "sech", "x", "+", "1.000e0", "*", "0.0000e0", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"sin", "*", "^", "+", "x", "x1", "-", "sin", "tanh", "*", "0.e0", "x", "~", "1.000000", "0.000e0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"tanh", "sin", "*", "0.00000", "^", "sech", "x", "+", "1.000e0", "*", "0.0000e0", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"tanh", "sin", "sin", "*", "^", "+", "x", "x1", "-", "sin", "tanh", "*", "0.e0", "x", "~", "1.000000", "0.000e0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"sech", "tanh", "sin", "*", "0.00000", "^", "sech", "x33", "+", "1.000e0", "*", "0.0000e0", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"sech", "tanh", "sin", "sin", "*", "^", "+", "x", "x2", "-", "sin", "tanh", "*", "0.e0", "x", "~", "1.000000", "0.000e0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"~", "tanh", "sin", "*", "0.00000", "^", "sech", "x", "+", "1.000e0", "*", "0.0000e0", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"~", "tanh", "sin", "tanh", "sin", "sin", "*", "^", "+", "x", "x1", "-", "sin", "tanh", "*", "0.e0", "x", "~", "1.000000", "0.000e0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"exp", "~", "tanh", "sin", "*", "0.00000", "^", "sech", "x345234234", "+", "1.000e0", "*", "0.0000e0", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"exp", "~", "tanh", "sin", "tanh", "sin", "sin", "*", "^", "+", "x111", "x1", "-", "sin", "tanh", "*", "0.e0", "x", "~", "1.000000", "0.000e0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"-", "0.0000", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"-", "-0.0000e0", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"-", "x", "0.000"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"-", "x12", "0.000e0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"*", "0.0000", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"*", "-0.0000e0", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"*", "x", "0.00000"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"*", "x12", "0.000e0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"*", "1.0000", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"*", "1.0000e0", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"*", "x", "1.00000"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"*", "x122", "1.00000e0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"+", "0.0000", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"+", "-0.0000e0", "x2"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"+", "x", "0.000000"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"+", "x112", "0.00000e0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"/", "0.0000e0", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"/", "-0", "x2"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"/", "x", "100000.0e-5"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"/", "x112", "1.00000"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"^", "x", "0.000000"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"^", "x112", "0.00000e0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"^", "0.0000e0", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"^", "-0.00e0", "x4"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"^", "x", "10000.0e-4"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"^", "x133", "1.00000e0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"^", "1000.0000e-3", "x"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+
 }
-//g++ -std=c++20 -o PrefixSimplifyPrev PrefixSimplifyPrev.cpp
+
+//g++ -std=c++20 -o PrefixSimplifyPrev PrefixSimplifyPrev.cpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include
 //https://stackoverflow.com/questions/20153412/simplification-algorithm-for-reverse-polish-notation
 //https://dl.acm.org/
 //simplification of polish notation expressions articles
-// ! objdump -d -M intel PrefixSimplify
+// ! objdump -d -M intel PrefixSimplifyPrev

@@ -1,4 +1,3 @@
-//TODO: Need a more robust way to check numerical-string equality (e.g. `x == 0` won't work here if e.g. x is -0.0000 -> need a function to do this instead, most likely)
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -2614,6 +2613,8 @@ int main()
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
+    
+    //TODO: 0.7911530997475994 x0 x0 cos - sech sqrt 1.048576e+06 0 x0 10.000000 - ^ tanh 1.0001 / arccos log ~ 4 / cos cos ^ * ^, aka (0.7911530997475994 ^ (sqrt(sech((x0 - cos(x0)))) * (1.048576e+06 ^ cos(cos((~(log(arccos((tanh((0 ^ (x0 - 10.000000))) / 1.0001)))) / 4))))))
 }
 
 //g++ -std=c++20 -o PostfixSimplify PostfixSimplify.cpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include
