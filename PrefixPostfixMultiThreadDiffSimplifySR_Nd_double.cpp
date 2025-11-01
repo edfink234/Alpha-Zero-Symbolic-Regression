@@ -5958,11 +5958,25 @@ std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
     thread_local const std::string w0 = to_string_general(-Board::data.num_rows / (2.0 * num_zeroes));
     
     /*
-     "Best"
-     - Best score = 1.00922e-08, SNE = 9.90865e+07
-     - Squared-norm error for each equation: 9.90865e+07
-     - Best expression = (((9736 - (x7 / x20)) + (-100.051731 / (x5 ^ x15))) + ((x20 + (1075.000000 * x5)) * -17064.107062))
-     - Best expression (original format) = 9736 x7 x20 / - -100.051731 x5 x15 ^ / + x20 1075.000000 x5 * + -17064.107062 * +
+     - Best score = 1.30311e-08, SNE = 7.67393e+07
+     - Squared-norm error for each equation: 7.67393e+07
+     - Best expression = ((((9736 - x22) - (x7 / x20)) + (-2.0200128e+07 / (x5 ^ x15))) + ((x20 + (x18 ^ -100.000000)) * ((x21 ^ x20) + (x16 + -17063.107062))))
+     - Best expression (original format) = 9736 x22 - x7 x20 / - -2.0200128e+07 x5 x15 ^ / + x20 x18 -100.000000 ^ + x21 x20 ^ x16 -17063.107062 + + * +
+    
+     ```
+        from sympy import symbols, cos, sin, tanh, sech, sympify, latex, multiline_latex
+        import re
+        replace_vars = lambda x: re.sub(r'\bx(\d+)\b', r'df["x\1"]', x)
+        align_rep = lambda x: x.replace('align*','align').replace(r'\\',r'\nonumber \\').replace(r"\end{align}", r"\label{eq:best_sr_eq_1}""\n"r"\end{align}")
+        f, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17, x18, x19, x20, x21, x22, x23, x24, x25 = symbols('f x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25')
+        func = '((((9736 - x22) - (x7 / x20)) + (-2.0200128e+07 / (x5 ^ x15))) + ((x20 + (x18 ^ -100.000000)) * ((x21 ^ x20) + (x16 + -17063.107062))))'
+        func = func.replace("^","**")
+        func_sym = sympify(func)
+        
+        print(f"func_sym = {align_rep(multiline_latex(f, func_sym, 2))}")
+        f_res = replace_vars(func)
+        print(f"f = {f_res}")
+     ```
      */
     
     //TODO: Add |f|^2 and \sum_{double_val \in f} double_val^2 terms to results!
@@ -6025,7 +6039,6 @@ std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
             x.subs_dict["term2"] = x.expression_evaluator(x.params, {"*", "prefac_term_2", "log", "+", "-", "1", "p", eps});
             results[0] = {"+", "term1", "term2"};
         }
-        //TODO: Need to change for when fit==true, else in that case nothing is done here because the dummy vars are already evaluated
     }
     else if (x.expression_type == "postfix")
     {
@@ -9175,8 +9188,8 @@ namespace ExampleProblems
                 false, /*Whether to simplify the ORIGINAL expression on every iteration (perturbation) of the seed expression vector; if false a copy is maintained so that simplification on this->pieces can still happen*/
                 1 /*number of data columns that constitute labels and not independent variables/features*/,
                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
-                {split("0 9736 + x7 x20 / - 0 -100.051731 + x5 x15 ^ / + 0 x20 + 1075.000000 x5 * + 0 0 + 0 -17064.107062 + + * +")} /*seed expressions*/,
-//                {split("+ + - + 0 9736 / x7 x20 / + 0 -100.051731 ^ x5 x15 * + + 0 x20 * 1075.000000 x5 + + 0 0 + 0 -17064.107062")} /*seed expressions*/,
+                {split("9736 x22 - x7 x20 / - 0 -2.0200128e+07 + x5 x15 ^ / + 0 x20 + x18 -100.000000 ^ + x21 x20 ^ x16 -17063.107062 + + * +")} /*seed expressions*/,
+//                {split("+ + - - 9736 x22 / x7 x20 / + 0 -100.051731 ^ x5 x15 * + + 0 x20 * 1075.000000 x5 + + 0 0 + 0 -17064.107062")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 "");// "SNE_vals.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
@@ -9215,7 +9228,7 @@ int main(int argc, char *argv[])
 {
     int random_seed = get_random_seed(argc, argv);
     constexpr const char* algorithm = "SimulatedAnnealing";
-    constexpr double time = 450.0;
+    constexpr double time = 6000000.;//450.0;
     printf("Random seed set to %d%s", random_seed, std::string(10, '\n').c_str());
     ProblemOption choice = ProblemOption::WildfireSpreadTS;
     

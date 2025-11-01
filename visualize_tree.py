@@ -30,7 +30,8 @@ def is_binary_operator(token):
     return token in {'+', '-', '*', '/', '^', 'MYCDOT'}
 def is_unary_operator(token):
     return token in {"cos", "exp", "sqrt", "sin", "asin", "arcsin", "log", "tanh", "acos", "arccos", "~", "ln", "MYBRACKETSQRT", "tan", "MYCOS", "MYSIN", "MYTAN", "sech"}
-
+def is_operand(token):
+    return not is_operator(token)
 
 def rpn_to_infix(rpn_expression):
     stack = []
@@ -134,6 +135,25 @@ def getRPNdepth(expression):
         complete = False #If the stack length is greater than 1 then expression is an INCOMPLETE RPN expression
     return stack.pop()-1, complete
 
+def complete_tree(expression, notation):
+    if notation == "prefix":
+        expr_depth = getPNdepth(expression)
+        temp_expr = []
+        for token_idx in range(len(expression)):
+            if is_operand(expression[token_idx]):
+                count = 0
+                temp_depth = expr_depth
+                temp_node = expression[token_idx]
+                while temp_depth == expr_depth:
+                    prev_count = count
+                    count = (1 if count==0 else count+2)
+                    temp_node = expression[token_idx]
+                    expression[token_idx:token_idx+count] = ['+', '0', *expression[token_idx:prev_count]]
+                    temp_depth = getPNdepth(expression)
+            else:
+                temp_expr.append(expression[token_idx])
+    return expression
+    
 called = False
 implot = None
 def plot_pn_expression_tree(expression: list[str], save = False, include_expression_in_title = True):
@@ -316,8 +336,10 @@ def test_visualize():
             os.system(f"open -a Safari {file_name}.pdf")
     else:
 #        plot_rpn_expression_tree("μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -".split(), save = save, title = r"Swift-Hohenberg 2D Polar Coordinates", tolatex = True, to_pdf = True, filename = "SwiftHohenberg2DPolarCoordinates.pdf")
-        plot_rpn_expression_tree("-3.2171440000000002 x0 sech 0.9640275800758169 ^ * sech".split(), save = save, title = "", tolatex = True, to_pdf = True, filename = "Example.pdf")
-#        plot_pn_expression_tree("+ + - + 0 9736 / x7 x20 / + 0 -100.051731 ^ x5 x15 * + + 0 x20 * 1075.000000 x5 + + 0 0 + 0 -17064.107062".split(), save = save)
+        plot_rpn_expression_tree("9736 x22 - x7 x20 / - 0 -2.0200128e+07 + x5 x15 ^ / + 0 x20 + x18 -100.000000 ^ + x21 x20 ^ x16 -17063.107062 + + * +".split(), save = save, title = "", tolatex = True, to_pdf = True, filename = "Example.pdf")
+#        plot_pn_expression_tree("+ + - - 9736 x22 / x7 x20 / + 0 -100.051731 ^ x5 x15 * + + 0 x20 * 1075.000000 x5 + + 0 0 + 0 -17064.107062".split(), save = save)
+#        print(complete_tree("".split(), "prefix"))
+#        plot_pn_expression_tree(complete_tree("9736 x22 - x7 x20 / - -2.0200128e+07 x5 x15 ^ / + x20 x18 -100.000000 ^ + x21 x20 ^ x16 -17063.107062 + + * +".split(), "prefix"), save = save)
         
         
 #        plot_rpn_expression_tree("0 9736 + 0 x7 + - 0 -100.051731 + x5 x15 ^ / + 0 x20 + 1075.000000 x5 * + 0 0 + 0 -17064.107062 + + * +".split(), save = save, tolatex = True, to_pdf = True, filename = "Example.pdf", include_expression_in_title = False)
