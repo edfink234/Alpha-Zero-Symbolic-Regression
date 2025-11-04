@@ -135,6 +135,7 @@ def getRPNdepth(expression):
         complete = False #If the stack length is greater than 1 then expression is an INCOMPLETE RPN expression
     return stack.pop()-1, complete
 
+#TODO: Fix!
 def complete_tree(expression, notation):
     if notation == "prefix":
         expr_depth = getPNdepth(expression)
@@ -336,13 +337,16 @@ def test_visualize():
             os.system(f"open -a Safari {file_name}.pdf")
     else:
 #        plot_rpn_expression_tree("μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -".split(), save = save, title = r"Swift-Hohenberg 2D Polar Coordinates", tolatex = True, to_pdf = True, filename = "SwiftHohenberg2DPolarCoordinates.pdf")
-        plot_rpn_expression_tree("9736 x22 - x7 x20 / - 0 -2.0200128e+07 + x5 x15 ^ / + 0 x20 + x18 -100.000000 ^ + x21 x20 ^ x16 -17063.107062 + + * +".split(), save = save, title = "", tolatex = True, to_pdf = True, filename = "Example.pdf")
+#        plot_rpn_expression_tree("9736 x22 - x7 x20 / - 0 -2.0200128e+07 + x5 x15 ^ / + 0.006210 x20 + x18 -88.959518 ^ + 0.002105 x20 ^ x6 -17053.440354 + + * +".split(), save = save, title = "", tolatex = True, to_pdf = True, filename = "Example.pdf")
 #        plot_pn_expression_tree("+ + - - 9736 x22 / x7 x20 / + 0 -100.051731 ^ x5 x15 * + + 0 x20 * 1075.000000 x5 + + 0 0 + 0 -17064.107062".split(), save = save)
 #        print(complete_tree("".split(), "prefix"))
 #        plot_pn_expression_tree(complete_tree("9736 x22 - x7 x20 / - -2.0200128e+07 x5 x15 ^ / + x20 x18 -100.000000 ^ + x21 x20 ^ x16 -17063.107062 + + * +".split(), "prefix"), save = save)
-        
-        
-#        plot_rpn_expression_tree("0 9736 + 0 x7 + - 0 -100.051731 + x5 x15 ^ / + 0 x20 + 1075.000000 x5 * + 0 0 + 0 -17064.107062 + + * +".split(), save = save, tolatex = True, to_pdf = True, filename = "Example.pdf", include_expression_in_title = False)
+
+#    do
+#        operand -> operand 0 + -> depth:getDepth(expr)
+#    while depth == original_depth
+    
+        plot_rpn_expression_tree("0 9740 + 20200101.000000 x15 ^ - x16 x6 / 1 x17 + ^ - 0 -3.225653 + 1075.000000 x10 ^ - 0 x5 + x18 2 - ^ / + x19 sech 0 x20 + + x22 x18 + 58.000000 x23 - ^ + x19 25.400000 * 0 -100 + + -88.959518 x22 * 0 -18139.580353999998 + + + * +".split(), save = save, tolatex = True, to_pdf = True, filename = "Example.pdf", include_expression_in_title = False)
 #                               0.148475282221305*x1 - 1.00001327588926*sin(x0)*sin(x1) - 0.0922858190550785
 if __name__ == "__main__":
     test_visualize()

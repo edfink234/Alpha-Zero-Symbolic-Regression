@@ -5958,10 +5958,10 @@ std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
     thread_local const std::string w0 = to_string_general(-Board::data.num_rows / (2.0 * num_zeroes));
     
     /*
-     - Best score = 1.30311e-08, SNE = 7.67393e+07
-     - Squared-norm error for each equation: 7.67393e+07
-     - Best expression = ((((9736 - x22) - (x7 / x20)) + (-2.0200128e+07 / (x5 ^ x15))) + ((x20 + (x18 ^ -100.000000)) * ((x21 ^ x20) + (x16 + -17063.107062))))
-     - Best expression (original format) = 9736 x22 - x7 x20 / - -2.0200128e+07 x5 x15 ^ / + x20 x18 -100.000000 ^ + x21 x20 ^ x16 -17063.107062 + + * +
+     Best score = 4.1156e-08, SNE = 2.42978e+07
+     Squared-norm error for each equation: 2.42978e+07
+     Best expression = ((((9740 - (20200101.000000 ^ x15)) - ((x16 / x6) ^ (1 + x17))) + ((-3.225653 - (1075.000000 ^ x10)) / (x5 ^ (x18 - 2)))) + (((sech(x19) + x20) + ((x22 + x18) ^ (58.000000 - x23))) * (((x19 * 25.400000) + -100) + ((-88.959518 * x22) + -18139.580353999998))))
+     Best expression (original format) = 9740 20200101.000000 x15 ^ - x16 x6 / 1 x17 + ^ - -3.225653 1075.000000 x10 ^ - x5 x18 2 - ^ / + x19 sech x20 + x22 x18 + 58.000000 x23 - ^ + x19 25.400000 * -100 + -88.959518 x22 * -18139.580353999998 + + * +
     
      ```
         from sympy import symbols, cos, sin, tanh, sech, sympify, latex, multiline_latex
@@ -5969,17 +5969,16 @@ std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
         replace_vars = lambda x: re.sub(r'\bx(\d+)\b', r'df["x\1"]', x)
         align_rep = lambda x: x.replace('align*','align').replace(r'\\',r'\nonumber \\').replace(r"\end{align}", r"\label{eq:best_sr_eq_1}""\n"r"\end{align}")
         f, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17, x18, x19, x20, x21, x22, x23, x24, x25 = symbols('f x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25')
-        func = '((((9736 - x22) - (x7 / x20)) + (-2.0200128e+07 / (x5 ^ x15))) + ((x20 + (x18 ^ -100.000000)) * ((x21 ^ x20) + (x16 + -17063.107062))))'
+        func = '((((9740 - (20200101.000000 ^ x15)) - ((x16 / x6) ^ (1 + x17))) + ((-3.225653 - (1075.000000 ^ x10)) / (x5 ^ (x18 - 2)))) + (((sech(x19) + x20) + ((x22 + x18) ^ (58.000000 - x23))) * (((x19 * 25.400000) + -100) + ((-88.959518 * x22) + -18139.580353999998))))'
         func = func.replace("^","**")
         func_sym = sympify(func)
-        
+
         print(f"func_sym = {align_rep(multiline_latex(f, func_sym, 2))}")
         f_res = replace_vars(func)
         print(f"f = {f_res}")
      ```
      */
     
-    //TODO: Add |f|^2 and \sum_{double_val \in f} double_val^2 terms to results!
     p_expr.clear();
     p_expr.reserve(100);
     for (decltype(results.size()) i = 0; i < results.size(); i++)
@@ -9173,7 +9172,7 @@ namespace ExampleProblems
             SimulatedAnnealing(WildfireSpreadTS /*differential equation to solve*/,
                 1 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{4} /*fixed depths of generated solution*/,
+                std::vector<int>{5} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -9184,11 +9183,11 @@ namespace ExampleProblems
                 0 /*num threads*/,
                 true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
-                true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the ORIGINAL expression on every iteration (perturbation) of the seed expression vector; if false a copy is maintained so that simplification on this->pieces can still happen*/
                 1 /*number of data columns that constitute labels and not independent variables/features*/,
                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
-                {split("9736 x22 - x7 x20 / - 0 -2.0200128e+07 + x5 x15 ^ / + 0 x20 + x18 -100.000000 ^ + x21 x20 ^ x16 -17063.107062 + + * +")} /*seed expressions*/,
+                {split("0 9740 + 20200101.000000 x15 ^ - x16 x6 / 1 x17 + ^ - 0 -3.225653 + 1075.000000 x10 ^ - 0 x5 + x18 2 - ^ / + x19 sech 0 x20 + + x22 x18 + 58.000000 x23 - ^ + x19 25.400000 * 0 -100 + + -88.959518 x22 * 0 -18139.580353999998 + + + * +")} /*seed expressions*/,
 //                {split("+ + - - 9736 x22 / x7 x20 / + 0 -100.051731 ^ x5 x15 * + + 0 x20 * 1075.000000 x5 + + 0 0 + 0 -17064.107062")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
