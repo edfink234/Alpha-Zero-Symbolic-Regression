@@ -346,7 +346,7 @@ def test_visualize():
 #        operand -> operand 0 + -> depth:getDepth(expr)
 #    while depth == original_depth
     
-        plot_rpn_expression_tree("0 9740 + 20200101.000000 x15 ^ - x16 x6 / 1 x17 + ^ - 0 -3.225653 + 1075.000000 x10 ^ - 0 x5 + x18 2 - ^ / + x19 sech 0 x20 + + x22 x18 + 58.000000 x23 - ^ + x19 25.400000 * 0 -100 + + -88.959518 x22 * 0 -18139.580353999998 + + + * +".split(), save = save, tolatex = True, to_pdf = True, filename = "Example.pdf", include_expression_in_title = False)
+        plot_rpn_expression_tree("x6 9740 + 20200101.000000 x15 ^ - 8.8 x6 / x7 279.200012 - ^ - 0 -3.225653 + 1075.000000 x10 ^ - 0 x5 + x18 2 - ^ / + x19 sech 0 x20 + + x18 sqrt 58.000000 x23 - ^ + x19 25.400000 * 0 -843 + + -1405.000000 x22 * 0 -18139.580353999998 + + + * +".split(), save = save, tolatex = True, to_pdf = True, filename = "Example.pdf", include_expression_in_title = False)
 #                               0.148475282221305*x1 - 1.00001327588926*sin(x0)*sin(x1) - 0.0922858190550785
 if __name__ == "__main__":
     test_visualize()
