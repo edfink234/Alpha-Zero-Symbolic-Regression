@@ -5958,10 +5958,10 @@ std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
     thread_local const std::string w0 = to_string_general(-Board::data.num_rows / (2.0 * num_zeroes));
     
     /*
-     Best score = 7.08419e-08, SNE = 1.41159e+07
-     Squared-norm error for each equation: 1.41159e+07
-     Best expression = (((((x6 + 9740) - (20200101.000000 ^ x15)) - ((8.8 / x6) ^ (x7 - 279.200012))) + ((-3.225653 - (1075.000000 ^ x10)) / (x5 ^ (x18 - 2)))) + (((sech(x19) + x20) + (sqrt(x18) ^ (58.000000 - x23))) * (((x19 * 25.400000) + -843) + ((-1405.000000 * x22) + -18139.580353999998))))
-     Best expression (original format) = x6 9740 + 20200101.000000 x15 ^ - 8.8 x6 / x7 279.200012 - ^ - -3.225653 1075.000000 x10 ^ - x5 x18 2 - ^ / + x19 sech x20 + x18 sqrt 58.000000 x23 - ^ + x19 25.400000 * -843 + -1405.000000 x22 * -18139.580353999998 + + * +
+     Best score = 1.31639e-07, SNE = 7.59655e+06
+     Squared-norm error for each equation: 7.59655e+06
+     Best expression = (((((8.711937268208748 + (x20 + 9740)) - ((x4 ^ x0) ^ (2118.000000 - x14))) - ((8.851731000000001 / x6) ^ ((4.372938 + x7) - 279.200012))) + ((-3.225653 - (1075 ^ x10)) / (x5 ^ (x18 - 2)))) + ((((x24 ^ (x0 - x2)) + ((20200101.000000 ^ x15) + x20)) + (sqrt(x18) ^ (63 - x23))) * ((((x19 + 0.006210) * 25.4) + -837.627062) + ((-1405 * x22) + -18327.436844999997))))
+     Best expression (original format) = 8.711937268208748 x20 9740 + + x4 x0 ^ 2118.000000 x14 - ^ - 8.851731000000001 x6 / 4.372938 x7 + 279.200012 - ^ - -3.225653 1075 x10 ^ - x5 x18 2 - ^ / + x24 x0 x2 - ^ 20200101.000000 x15 ^ x20 + + x18 sqrt 63 x23 - ^ + x19 0.006210 + 25.4 * -837.627062 + -1405 x22 * -18327.436844999997 + + * +
      ```
         from sympy import symbols, cos, sin, tanh, sech, sympify, latex, multiline_latex
         import re
@@ -9171,7 +9171,7 @@ namespace ExampleProblems
             SimulatedAnnealing(WildfireSpreadTS /*differential equation to solve*/,
                 1 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{5} /*fixed depths of generated solution*/,
+                std::vector<int>{6} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -9186,7 +9186,7 @@ namespace ExampleProblems
                 false, /*Whether to simplify the ORIGINAL expression on every iteration (perturbation) of the seed expression vector; if false a copy is maintained so that simplification on this->pieces can still happen*/
                 1 /*number of data columns that constitute labels and not independent variables/features*/,
                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
-                {split("x6 9740 + 20200101.000000 x15 ^ - 8.8 x6 / x7 279.200012 - ^ - 0 -3.225653 + 1075.000000 x10 ^ - 0 x5 + x18 2 - ^ / + x19 sech 0 x20 + + x18 sqrt 58.000000 x23 - ^ + x19 25.400000 * 0 -843 + + -1405.000000 x22 * 0 -18139.580353999998 + + + * +")} /*seed expressions*/,
+                {split("8.711937268208748 x20 9740 + + x4 x0 ^ 2118.000000 x14 - ^ - 8.851731000000001 x6 / 4.372938 x7 + 279.200012 - ^ - -3.225653 1075 x10 ^ - x5 x18 2 - ^ / + x24 x0 x2 - ^ 20200101.000000 x15 ^ x20 + + x18 sqrt 63 x23 - ^ + x19 0.006210 + 25.4 * -837.627062 + -1405 x22 * -18327.436844999997 + + * +")} /*seed expressions*/,
 //                {split("+ + - - 9736 x22 / x7 x20 / + 0 -100.051731 ^ x5 x15 * + + 0 x20 * 1075.000000 x5 + + 0 0 + 0 -17064.107062")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,

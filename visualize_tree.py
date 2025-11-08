@@ -346,12 +346,14 @@ def test_visualize():
 #        operand -> operand 0 + -> depth:getDepth(expr)
 #    while depth == original_depth
     
-        plot_rpn_expression_tree("x6 9740 + 20200101.000000 x15 ^ - 8.8 x6 / x7 279.200012 - ^ - 0 -3.225653 + 1075.000000 x10 ^ - 0 x5 + x18 2 - ^ / + x19 sech 0 x20 + + x18 sqrt 58.000000 x23 - ^ + x19 25.400000 * 0 -843 + + -1405.000000 x22 * 0 -18139.580353999998 + + + * +".split(), save = save, tolatex = True, to_pdf = True, filename = "Example.pdf", include_expression_in_title = False)
+        plot_rpn_expression_tree("0 x6 + 0 9740 + + 0 2.0200101e+07 + 0 x15 + ^ - 0 8.8 + 0 x6 + / 2.520000 x7 + 0 279.200012 + - ^ - 0 0 + 0 -3.225653 + + 0 1075 + 0 x10 + ^ - 0 0 + 0 x5 + + 0 x18 + 0 2 + - ^ / + 0 x19 + sech 0 0 + 0 x20 + + + 0 x18 + sqrt 0 62 + 0 x23 + - ^ + 0 x19 + 0 25.4 + * 0 0 + 0 -843 + + + 0 -1405 + 0 x22 + * 0 0 + -18139.580353999998 0 + + + + * +".split(), save = save, tolatex = True, to_pdf = True, filename = "Example.pdf", include_expression_in_title = False)
 #                               0.148475282221305*x1 - 1.00001327588926*sin(x0)*sin(x1) - 0.0922858190550785
 if __name__ == "__main__":
     test_visualize()
 
 
 #.35 * sin(x1) * sech( (x0 - 5.0)/3.0 ) * sin(1.00*x0)
+
+
 
 
