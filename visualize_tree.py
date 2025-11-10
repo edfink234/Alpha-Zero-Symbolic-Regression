@@ -4,6 +4,7 @@ import pydot
 from collections import deque
 from numpy.random import choice
 from time import time
+from copy import deepcopy
 from matplotlib.animation import FuncAnimation
 import os
 import dot2tex
@@ -138,21 +139,31 @@ def getRPNdepth(expression):
 #TODO: Fix!
 def complete_tree(expression, notation):
     if notation == "prefix":
-        expr_depth = getPNdepth(expression)
-        temp_expr = []
-        for token_idx in range(len(expression)):
-            if is_operand(expression[token_idx]):
-                count = 0
-                temp_depth = expr_depth
-                temp_node = expression[token_idx]
-                while temp_depth == expr_depth:
-                    prev_count = count
-                    count = (1 if count==0 else count+2)
-                    temp_node = expression[token_idx]
-                    expression[token_idx:token_idx+count] = ['+', '0', *expression[token_idx:prev_count]]
-                    temp_depth = getPNdepth(expression)
-            else:
-                temp_expr.append(expression[token_idx])
+        expr_depth = getPNdepth(expression) #get depth of tree that we want to keep the same at all times!!
+        extended = True
+        while extended:
+            extended = False
+            for token_idx in range(len(expression)):
+                if is_operand(expression[token_idx]):
+                    temp_expression = deepcopy(expression) #copy the whole expression
+                    temp_expression[token_idx:token_idx+1] = ["+", "0", expression[token_idx]] #replace `node` with `["+", "0", node]`
+                    if getPNdepth(temp_expression) == expr_depth:
+                        expression = deepcopy(temp_expression) #copy the test-substitution-expression into the one we're completing
+                        extended = True
+                        break
+    else: #postfix
+        expr_depth = getRPNdepth(expression) #get depth of tree that we want to keep the same at all times!!
+        extended = True
+        while extended:
+            extended = False
+            for token_idx in range(len(expression)):
+                if is_operand(expression[token_idx]):
+                    temp_expression = deepcopy(expression) #copy the whole expression
+                    temp_expression[token_idx:token_idx+1] = ["0", expression[token_idx], "+"] #replace `node` with `["0", node, "+"]`
+                    if getRPNdepth(temp_expression) == expr_depth:
+                        expression = deepcopy(temp_expression) #copy the test-substitution-expression into the one we're completing
+                        extended = True
+                        break
     return expression
     
 called = False
@@ -338,15 +349,21 @@ def test_visualize():
     else:
 #        plot_rpn_expression_tree("μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -".split(), save = save, title = r"Swift-Hohenberg 2D Polar Coordinates", tolatex = True, to_pdf = True, filename = "SwiftHohenberg2DPolarCoordinates.pdf")
 #        plot_rpn_expression_tree("9736 x22 - x7 x20 / - 0 -2.0200128e+07 + x5 x15 ^ / + 0.006210 x20 + x18 -88.959518 ^ + 0.002105 x20 ^ x6 -17053.440354 + + * +".split(), save = save, title = "", tolatex = True, to_pdf = True, filename = "Example.pdf")
+#        test_expr = "+ + - - 9736 x22 / x7 x20 / -100.051731 ^ x5 x15 * + x20 * 1075.000000 x5 -17064.107062"
+#        print(f"test_expr = {test_expr}")
+#        test_expr = ' '.join(complete_tree(test_expr.split(), 'prefix'))
+#        print(f"Completed test_expr = {test_expr}")
 #        plot_pn_expression_tree("+ + - - 9736 x22 / x7 x20 / + 0 -100.051731 ^ x5 x15 * + + 0 x20 * 1075.000000 x5 + + 0 0 + 0 -17064.107062".split(), save = save)
 #        print(complete_tree("".split(), "prefix"))
-#        plot_pn_expression_tree(complete_tree("9736 x22 - x7 x20 / - -2.0200128e+07 x5 x15 ^ / + x20 x18 -100.000000 ^ + x21 x20 ^ x16 -17063.107062 + + * +".split(), "prefix"), save = save)
+        complete_rpn_expr = complete_tree("9736 1.000000 x13 / + x22 x22 * x6 cos ^ - 8.851731000000001 x6 / 4.372938 x7 + 279.200012 - ^ - -3.225653 1075 x10 ^ - x5 x18 2 - ^ / + x24 58.000000 * x0 x2 - ^ 20200101.000000 x15 ^ x20 + + x22 x18 + sqrt 64 x23 - ^ + x19 0.006210 + 25.4 * -820.627062 + x23 -330 + x22 * x21 acos -18327.436844999997 + + + * +".split(), "postfix")
+        print(f"complete_rpn_expr = \n{' '.join(complete_rpn_expr)}")
+        plot_rpn_expression_tree(complete_rpn_expr, save = save)
 
 #    do
 #        operand -> operand 0 + -> depth:getDepth(expr)
 #    while depth == original_depth
-    
-        plot_rpn_expression_tree("0 8.711937268208748 + x20 9740 + + 0 x22 + x1 x20 * ^ - 0 8.851731000000001 + 0 x6 + / 4.372938 x7 + 0 279.200012 + - ^ - 0 0 + 0 -3.225653 + + 0 1075 + 0 x10 + ^ - 0 0 + 0 x5 + + 0 x18 + 0 2 + - ^ / + 0 x6 + x0 x2 - ^ 20200101.000000 x15 ^ 0 x20 + + + 0 x18 + sqrt 0 63 + 0 x23 + - ^ + x19 0.006210 + 0 25.4 + * 0 0 + 0 -837.627062 + + + 0 -1405 + 0 x22 + * 0 0 + 0 -18327.436844999997 + + + + * +".split(), save = save, tolatex = True, to_pdf = True, filename = "Example.pdf", include_expression_in_title = False)
+#        print(c)
+#        plot_rpn_expression_tree(complete_tree("9736 1.000000 x13 / + x22 x22 * x6 cos ^ - 8.851731000000001 x6 / 4.372938 x7 + 279.200012 - ^ - -3.225653 1075 x10 ^ - x5 x18 2 - ^ / + x24 58.000000 * x0 x2 - ^ 20200101.000000 x15 ^ x20 + + x22 x18 + sqrt 64 x23 - ^ + x19 0.006210 + 25.4 * -820.627062 + x23 -330 + x22 * x21 acos -18327.436844999997 + + + * +".split(), "postfix"), save = save, tolatex = True, to_pdf = True, filename = "Example.pdf", include_expression_in_title = False)
 #                               0.148475282221305*x1 - 1.00001327588926*sin(x0)*sin(x1) - 0.0922858190550785
 if __name__ == "__main__":
     test_visualize()

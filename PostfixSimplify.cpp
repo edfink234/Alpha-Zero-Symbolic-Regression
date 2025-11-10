@@ -474,7 +474,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             new_expression[first_arg_idx_low] = "1";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
-        //TODO: Add cos(inf) -> nan
+        //TODO: Add cos(inf) -> nan and cos(-inf) -> nan
         else
         {
             new_expression.push_back(expression[up]);
@@ -497,7 +497,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
             new_expression[first_arg_idx_low] = "0";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
-        //TODO: Add sin(inf) -> nan
+        //TODO: Add sin(inf) -> nan, and sin(-inf) -> nan
         else
         {
             new_expression.push_back(expression[up]);
@@ -2193,7 +2193,6 @@ int main()
     printf("after: ");print_container(test_expr);
     puts("");
     
-    //TODO: Add 2 test-cases
     test_expr = {"x", "x", "+", "0.00", "+"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
@@ -2614,7 +2613,13 @@ int main()
     printf("after: ");print_container(test_expr);
     puts("");
     
-    //TODO: 0.7911530997475994 x0 x0 cos - sech sqrt 1.048576e+06 0 x0 10.000000 - ^ tanh 1.0001 / arccos log ~ 4 / cos cos ^ * ^, aka (0.7911530997475994 ^ (sqrt(sech((x0 - cos(x0)))) * (1.048576e+06 ^ cos(cos((~(log(arccos((tanh((0 ^ (x0 - 10.000000))) / 1.0001)))) / 4))))))
+//TODO: 0.7911530997475994 x0 x0 cos - sech sqrt 1.048576e+06 0 x0 10.000000 - ^ tanh 1.0001 / arccos log ~ 4 / cos cos ^ * ^, aka (0.7911530997475994 ^ (sqrt(sech((x0 - cos(x0)))) * (1.048576e+06 ^ cos(cos((~(log(arccos((tanh((0 ^ (x0 - 10.000000))) / 1.0001)))) / 4))))))
+//    test_expr = {"0.7911530997475994", "x0", "x0", "cos", "-", "sech", "sqrt", "1.048576e+06", "0", "x0", "10.000000", "-", "^", "tanh", "1.0001", "/", "arccos", "log", "~", "4", "/", "cos", "cos", "^", "*", "^"};
+//    printf("before: ");print_container(test_expr);
+//    simplifyRPN(test_expr);
+//    printf("after: ");print_container(test_expr);
+//    puts("");
+    
 }
 
 //g++ -std=c++20 -o PostfixSimplify PostfixSimplify.cpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include
