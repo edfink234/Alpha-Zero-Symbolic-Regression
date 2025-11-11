@@ -551,13 +551,13 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         }
         else if (new_expression[first_arg_idx_low] == "inf" || new_expression[first_arg_idx_low] == "-inf") // cos +/- inf -> nan
         {
-            puts("hi 554");
+//            puts("hi 554");
             new_expression[op_idx] = "nan"; //change 'cos' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
         else if ((new_expression[first_arg_idx_low] == "~") && ((first_arg_idx_low+1) < (new_expression.size()))  && (new_expression[first_arg_idx_low+1] == "inf")) // cos ~ inf -> nan
         {
-            puts("hi 560");
+//            puts("hi 560");
             new_expression[op_idx] = "nan"; //change 'cos' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
@@ -583,13 +583,13 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         }
         else if (new_expression[first_arg_idx_low] == "inf" || new_expression[first_arg_idx_low] == "-inf") // sin +/- inf -> nan
         {
-            puts("hi 586");
+//            puts("hi 586");
             new_expression[op_idx] = "nan"; //change 'sin' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
         else if ((new_expression[first_arg_idx_low] == "~") && ((first_arg_idx_low+1) < (new_expression.size()))  && (new_expression[first_arg_idx_low+1] == "inf")) // sin ~ inf -> nan
         {
-            puts("hi 592");
+//            puts("hi 592");
             new_expression[op_idx] = "nan"; //change 'sin' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
@@ -693,13 +693,13 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         }
         else if (checkEqual(new_expression[first_arg_idx_low], "1")) // ~ 1 -> -1
         {
-            puts("hi 696");
+            //puts("hi 696");
             new_expression[op_idx] = "-1"; //change '~' to '-1'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
         else if (checkEqual(new_expression[first_arg_idx_low], "-1")) // ~ -1 -> 1
         {
-            puts("hi 702");
+            //puts("hi 702");
             new_expression[op_idx] = "1"; //change '~' to '1'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
@@ -711,13 +711,13 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         }
         else if (new_expression[first_arg_idx_low] == "-inf") // ~ -inf -> inf
         {
-            puts("hi 702");
+            //puts("hi 702");
             new_expression[op_idx] = "inf"; //change '~' to 'inf'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
         else if ((new_expression[first_arg_idx_low] == "~") && ((first_arg_idx_low+1) < (new_expression.size()))  && (new_expression[first_arg_idx_low+1] == "inf")) // ~ ~ inf -> inf
         {
-            puts("hi 708");
+            //puts("hi 708");
             new_expression[op_idx] = "inf"; //change '~' to 'inf'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
@@ -750,13 +750,13 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         }
         else if (new_expression[first_arg_idx_low] == "-inf") // exp -inf -> 0
         {
-            puts("hi 741");
+            //puts("hi 741");
             new_expression[op_idx] = "0"; //change 'exp' to '0'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
         else if ((new_expression[first_arg_idx_low] == "~") && ((first_arg_idx_low+1) < (new_expression.size()))  && (new_expression[first_arg_idx_low+1] == "inf")) // exp ~ inf -> 0
         {
-            puts("hi 747");
+            //puts("hi 747");
             new_expression[op_idx] = "0"; //change 'exp' to '0'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
@@ -771,31 +771,31 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         
         if (new_expression[first_arg_idx_low] == "nan") // ln nan -> nan
         {
-            puts("hi 726");
+            //puts("hi 726");
             new_expression[op_idx] = "nan"; //change 'ln' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
         else if (checkEqual(new_expression[first_arg_idx_low], "0")) // ln 0 -> -inf
         {
-            puts("hi 732");
+            //puts("hi 732");
             new_expression[op_idx] = "-inf"; //change 'ln' to '-inf'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
         else if (new_expression[first_arg_idx_low] == "inf") // ln inf -> inf
         {
-            puts("hi 738");
+            //puts("hi 738");
             new_expression[op_idx] = "inf"; //change 'ln' to 'inf'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
         else if (new_expression[first_arg_idx_low] == "-inf") // ln -inf -> nan
         {
-            puts("hi 780");
+            //puts("hi 780");
             new_expression[op_idx] = "nan"; //change 'ln' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
         else if ((new_expression[first_arg_idx_low] == "~") && ((first_arg_idx_low+1) < (new_expression.size()))  && (new_expression[first_arg_idx_low+1] == "inf")) // ln ~ inf -> nan
         {
-            puts("hi 786");
+            //puts("hi 786");
             new_expression[op_idx] = "nan"; //change 'ln' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
@@ -810,31 +810,31 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         
         if (new_expression[first_arg_idx_low] == "nan") // asin nan -> nan
         {
-            puts("hi 753");
+            //puts("hi 753");
             new_expression[op_idx] = "nan"; //change 'asin' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
         else if (checkEqual(new_expression[first_arg_idx_low], "0")) // asin 0 -> 0
         {
-            puts("hi 759");
+            //puts("hi 759");
             new_expression[op_idx] = "0"; //change 'asin' to '0'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
         else if (new_expression[first_arg_idx_low] == "inf") // asin inf -> nan
         {
-            puts("hi 765");
+            //puts("hi 765");
             new_expression[op_idx] = "nan"; //change 'asin' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
         else if (new_expression[first_arg_idx_low] == "-inf") // asin -inf -> nan
         {
-            puts("hi 819");
+            //puts("hi 819");
             new_expression[op_idx] = "nan"; //change 'asin' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
         else if ((new_expression[first_arg_idx_low] == "~") && ((first_arg_idx_low+1) < (new_expression.size()))  && (new_expression[first_arg_idx_low+1] == "inf")) // asin ~ inf -> nan
         {
-            puts("hi 825");
+            //puts("hi 825");
             new_expression[op_idx] = "nan"; //change 'asin' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
@@ -849,31 +849,31 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         
         if (new_expression[first_arg_idx_low] == "nan") // acos nan -> nan
         {
-            puts("hi 781");
+            //puts("hi 781");
             new_expression[op_idx] = "nan"; //change 'acos' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
         else if (checkEqual(new_expression[first_arg_idx_low], "1")) // acos 1 -> 0
         {
-            puts("hi 787");
+            //puts("hi 787");
             new_expression[op_idx] = "0"; //change 'acos' to '0'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
         else if (new_expression[first_arg_idx_low] == "inf") // arccos inf -> nan
         {
-            puts("hi 793");
+            //puts("hi 793");
             new_expression[op_idx] = "nan"; //change 'acos' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
         else if (new_expression[first_arg_idx_low] == "-inf") // acos -inf -> nan
         {
-            puts("hi 858");
+            //puts("hi 858");
             new_expression[op_idx] = "nan"; //change 'acos' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
         else if ((new_expression[first_arg_idx_low] == "~") && ((first_arg_idx_low+1) < (new_expression.size()))  && (new_expression[first_arg_idx_low+1] == "inf")) // acos ~ inf -> nan
         {
-            puts("hi 864");
+            //puts("hi 864");
             new_expression[op_idx] = "nan"; //change 'acos' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
@@ -888,49 +888,49 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         
         if (new_expression[first_arg_idx_low] == "nan") // sqrt nan -> nan
         {
-            puts("hi 808");
+//            puts("hi 808");
             new_expression[op_idx] = "nan"; //change 'sqrt' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
         else if (checkEqual(new_expression[first_arg_idx_low], "0")) // sqrt 0 -> 0
         {
-            puts("hi 814");
+//            puts("hi 814");
             new_expression[op_idx] = "0"; //change 'sqrt' to '0'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
         else if (checkEqual(new_expression[first_arg_idx_low], "1")) // sqrt 1 -> 1
         {
-            puts("hi 820");
+//            puts("hi 820");
             new_expression[op_idx] = "1"; //change 'sqrt' to '1'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
         else if (new_expression[first_arg_idx_low] == "inf") // sqrt inf -> inf
         {
-            puts("hi 826");
+//            puts("hi 826");
             new_expression[op_idx] = "inf"; //change 'sqrt' to 'inf'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
         else if (new_expression[first_arg_idx_low] == "-inf") // sqrt -inf -> nan
         {
-            puts("hi 903");
+//            puts("hi 903");
             new_expression[op_idx] = "nan"; //change 'sqrt' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
         else if ((new_expression[first_arg_idx_low] == "~") && ((first_arg_idx_low+1) < (new_expression.size()))  && (new_expression[first_arg_idx_low+1] == "inf")) // sqrt ~ inf -> nan
         {
-            puts("hi 909");
+//            puts("hi 909");
             new_expression[op_idx] = "nan"; //change 'sqrt' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
         else if (checkEqual(new_expression[first_arg_idx_low], "-1")) // sqrt -1 -> nan
         {
-            puts("hi 915");
+//            puts("hi 915");
             new_expression[op_idx] = "nan"; //change 'sqrt' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
         else if ((new_expression[first_arg_idx_low] == "~") && ((first_arg_idx_low+1) < (new_expression.size()))  && (new_expression[first_arg_idx_low+1] == "1")) // sqrt ~ 1 -> nan
         {
-            puts("hi 921");
+//            puts("hi 921");
             new_expression[op_idx] = "nan"; //change 'sqrt' to 'nan'
             new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
         }
@@ -1123,6 +1123,14 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                             simplified = true;
                             break;
                         }
+                        else if (checkEqual(expression[i+2], "0") && isConst1) // / x 0 -> nan
+                        {
+                            //puts("hi 195");
+                            expression[i] = "nan";
+                            expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                            simplified = true;
+                            break;
+                        }
                         else if (checkEqual(expression[i+2], "1") && isConst1) // / x 1 -> x
                         {
                             //puts("hi 195");
@@ -1188,8 +1196,21 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                     }
                     else if (expression[i] == "~")
                     {
-                        expression[i] = simplifyString(to_string_general(-(Stod(expression[i+1]))));
-                        expression.erase(expression.begin() + i + 1);
+                        if (expression[i+1] == "inf") //~ inf -> -inf
+                        {
+                            expression[i] = "-inf"; //change '~' to '-inf'
+                            expression.erase(expression.begin() + i + 1); // Remove the 'inf'
+                        }
+                        else if (checkEqual(expression[i+1], "0"))
+                        {
+                            expression[i] = "0"; //change '~' to '0'
+                            expression.erase(expression.begin() + i + 1); // Remove the '0'
+                        }
+                        else
+                        {
+                            expression[i] = simplifyString(to_string_general(-(Stod(expression[i+1]))));
+                            expression.erase(expression.begin() + i + 1);
+                        }
                         simplified = true;
                         break;
                     }
@@ -1263,21 +1284,6 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                     if (expression[i] == "~" && expression[i+1] == "~")
                     {
                         expression.erase(expression.begin() + i, expression.begin() + i + 2); // Remove elements at i and i + 1
-                        simplified = true;
-                        break;
-                    }
-                    else if ((expression[i] == "~") && (checkEqual(expression[i+1], "0"))) //- 0 = 0
-                    {
-                        //puts("hi 708");
-                        expression.erase(expression.begin() + i + 1); // Remove the '~'
-                        simplified = true;
-                        break;
-                    }
-                    else if ((expression[i] == "~") && (expression[i+1] == "inf")) //- inf = -inf
-                    {
-                        //puts("hi 708");
-                        expression[i+1] = "-inf";
-                        expression.erase(expression.begin() + i + 1); // Remove the '~'
                         simplified = true;
                         break;
                     }
@@ -3016,14 +3022,14 @@ int main()
     printf("after: ");print_container(test_expr);
     puts("");
     
-    //TODO: Number of test-cases to add = 66:
+    //TODO: Number of test-cases to add = 68:
     //2 for 'ln 0 -> -inf', 2 for 'ln nan -> nan', 2 for 'ln inf -> inf',
     //2 for 'asin 0 -> 0', 2 for 'asin nan -> nan', 2 for 'asin inf -> nan',
     //2 for 'acos 1 -> 0', 2 for 'acos nan -> nan', 2 for 'acos inf -> nan',
     //2 for 'sqrt 0 -> 0', 2 for 'sqrt nan -> nan', 2 for 'sqrt inf -> inf', 2 for 'sqrt 1 -> 1'
     //4 for 'cos -inf -> nan', 4 for 'sin -inf -> nan', 4 for '~ -inf -> inf', 4 for 'exp -inf -> 0'
     //4 for 'ln -inf -> nan', 4 for 'asin -inf -> nan', 4 for 'acos -inf -> nan', 4 for 'sqrt -inf -> nan',
-    //4 for 'sqrt -1 -> nan', 2 for '~ 1 -> -1', 2 for '~ -1 -> 1'
+    //4 for 'sqrt -1 -> nan', 2 for '~ 1 -> -1', 2 for '~ -1 -> 1', 2 for '/ x 0 -> nan'
     
 }
 //TODO: Number of non-production tested simplifications added: 10, ['^ 0 x -> nan', '~ 0 -> 0', '~ inf -> -inf', 'sech ~ x -> sech x', 'cos inf -> nan', 'cos ~ inf -> nan', 'sin inf -> nan', 'sin ~ inf -> nan', '* x -1 -> ~ x', '* -1 x -> ~ x', '/ x -1 -> ~ x']
