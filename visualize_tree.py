@@ -355,7 +355,7 @@ def test_visualize():
 #        print(f"Completed test_expr = {test_expr}")
 #        plot_pn_expression_tree("+ + - - 9736 x22 / x7 x20 / + 0 -100.051731 ^ x5 x15 * + + 0 x20 * 1075.000000 x5 + + 0 0 + 0 -17064.107062".split(), save = save)
 #        print(complete_tree("".split(), "prefix"))
-        complete_rpn_expr = complete_tree("9736 1.000000 x13 / + x22 x22 * x6 cos ^ - 8.851731000000001 x6 / 4.372938 x7 + 279.200012 - ^ - -3.225653 1075 x10 ^ - x5 x18 2 - ^ / + x24 x0 x2 - ^ 20200101.000000 x15 ^ x20 + + x22 x18 + sqrt 65 x23 - ^ + x19 0.006210 + 25.4 * -820.627062 + x23 -330 + x22 * x21 acos -18327.436844999997 + + + * +".split(), "postfix")
+        complete_rpn_expr = complete_tree("0 9740 + 1.000000 x13 / + x22 x22 * x6 cos ^ - 0 8.851731000000001 + 0 x6 + / 4.372938 x7 + 0 279.200012 + - ^ - 0 0 + 0 -3.225653 + + 0 1075 + 0 x10 + ^ - 0 0 + 0 x5 + + 0 x18 + 0 2 + - ^ / + 0 x24 + x0 x2 - ^ 20200101.000000 x15 ^ 0 x20 + + + 0 x17 + 292.600006 x11 * / 0 91.4 + 0 x23 + - ^ + x19 0.006210 + 0 25.4 + * 0 0 + 0 -820.627062 + + + x23 -330 + 0 x22 + * x21 acos 0 -18327.436844999997 + + + + * +".split(), "postfix")
         print(f"complete_rpn_expr = \n{' '.join(complete_rpn_expr)}")
         plot_rpn_expression_tree(complete_rpn_expr, save = save)
 
