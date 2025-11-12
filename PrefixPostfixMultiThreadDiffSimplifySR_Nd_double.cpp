@@ -5958,10 +5958,10 @@ std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
     thread_local const std::string w0 = to_string_general(-Board::data.num_rows / (2.0 * num_zeroes));
     
     /*
-     Best score = 2.43723e-07, SNE = 4.10302e+06
-     Squared-norm error for each equation: 4.10302e+06
-     Best expression = (((((9740 + (1.000000 / x13)) - ((x22 * x22) ^ cos(x6))) - ((8.851731000000001 / x6) ^ ((4.372938 + x7) - 279.200012))) + ((-3.225653 - (1075 ^ x10)) / (x5 ^ (x18 - 2)))) + ((((x24 ^ (x0 - x2)) + ((20200101.000000 ^ x15) + x20)) + ((x17 / (292.600006 * x11)) ^ (91.4 - x23))) * ((((x19 + 0.006210) * 25.4) + -820.627062) + (((x23 + -330) * x22) + (acos(x21) + -18327.436844999997)))))
-     Best expression (original format) = 9740 1.000000 x13 / + x22 x22 * x6 cos ^ - 8.851731000000001 x6 / 4.372938 x7 + 279.200012 - ^ - -3.225653 1075 x10 ^ - x5 x18 2 - ^ / + x24 x0 x2 - ^ 20200101.000000 x15 ^ x20 + + x17 292.600006 x11 * / 91.4 x23 - ^ + x19 0.006210 + 25.4 * -820.627062 + x23 -330 + x22 * x21 acos -18327.436844999997 + + + * +
+     Best score = 3.49115e-07, SNE = 2.86438e+06
+     Squared-norm error for each equation: 2.86438e+06
+     Best expression = (((((9741 + (1 / x13)) - ((x22 * x22) ^ cos(x6))) - ((8.851731000000001 / (0.00621 + x6)) ^ ((4.372938 + x7) - (x20 + 279.200012)))) + ((-3.225653 - (1075 ^ x10)) / (x5 ^ (x18 - ((0.006210 / x20) + 2))))) + ((((x24 ^ ((x8 + x0) - x2)) + ((2.0200101e+07 ^ x15) + x20)) + ((x17 / (292.600006 * x11)) ^ (91.45173100000001 - x23))) * ((((x19 + 0.00621) * 25.4) + -818.627062) + (((x23 + -330) * x22) + (acos(x21) + -18327.436844999997)))))
+     Best expression (original format) = 9741 1 x13 / + x22 x22 * x6 cos ^ - 8.851731000000001 0.00621 x6 + / 4.372938 x7 + x20 279.200012 + - ^ - -3.225653 1075 x10 ^ - x5 x18 0.006210 x20 / 2 + - ^ / + x24 x8 x0 + x2 - ^ 2.0200101e+07 x15 ^ x20 + + x17 292.600006 x11 * / 91.45173100000001 x23 - ^ + x19 0.00621 + 25.4 * -818.627062 + x23 -330 + x22 * x21 acos -18327.436844999997 + + + * +
      ```
         from sympy import symbols, cos, sin, tanh, sech, sympify, latex, multiline_latex
         import re
@@ -9171,7 +9171,7 @@ namespace ExampleProblems
             SimulatedAnnealing(WildfireSpreadTS /*differential equation to solve*/,
                 1 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{6} /*fixed depths of generated solution*/,
+                std::vector<int>{7} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -9182,11 +9182,11 @@ namespace ExampleProblems
                 0 /*num threads*/,
                 true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
-                true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the ORIGINAL expression on every iteration (perturbation) of the seed expression vector; if false a copy is maintained so that simplification on this->pieces can still happen*/
                 1 /*number of data columns that constitute labels and not independent variables/features*/,
                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
-                {split("0 9740 + 1.000000 x13 / + x22 x22 * x6 cos ^ - 0 8.851731000000001 + 0 x6 + / 4.372938 x7 + 0 279.200012 + - ^ - 0 0 + 0 -3.225653 + + 0 1075 + 0 x10 + ^ - 0 0 + 0 x5 + + 0 x18 + 0 2 + - ^ / + 0 x24 + x0 x2 - ^ 20200101.000000 x15 ^ 0 x20 + + + 0 x17 + 292.600006 x11 * / 0 91.4 + 0 x23 + - ^ + x19 0.006210 + 0 25.4 + * 0 0 + 0 -820.627062 + + + x23 -330 + 0 x22 + * x21 acos 0 -18327.436844999997 + + + + * +")} /*seed expressions*/,
+                {split("0 0 + 0 9741 + + 0 1 + 0 x13 + / + 0 x22 + 0 x22 + * 0 x6 + cos ^ - 0 0 + 0 8.851731000000001 + + 0 0.00621 + 0 x6 + + / 0 4.372938 + 0 x7 + + 0 x20 + 0 279.200012 + + - ^ - 0 0 + 0 0 + + 0 0 + 0 -3.225653 + + + 0 0 + 0 1075 + + 0 0 + 0 x10 + + ^ - 0 0 + 0 0 + + 0 0 + 0 x5 + + + 0 0 + 0 x18 + + 0.006210 x20 / 0 2 + + - ^ / + 0 0 + 0 x24 + + x8 x0 + 0 x2 + - ^ 0 2.0200101e+07 + 0 x15 + ^ 0 0 + 0 x20 + + + + 0 0 + 0 x17 + + 0 292.600006 + 0 x11 + * / 0 0 + 0 91.45173100000001 + + 0 0 + 0 x23 + + - ^ + 0 x19 + 0 0.00621 + + 0 0 + 0 25.4 + + * 0 0 + 0 0 + + 0 0 + 0 -818.627062 + + + + 0 x23 + 0 -330 + + 0 0 + 0 x22 + + * 0 x21 + acos 0 0 + 0 -18327.436844999997 + + + + + * +")} /*seed expressions*/,
 //                {split("+ + - - 9736 x22 / x7 x20 / + 0 -100.051731 ^ x5 x15 * + + 0 x20 * 1075.000000 x5 + + 0 0 + 0 -17064.107062")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,

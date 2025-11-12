@@ -3022,8 +3022,7 @@ int main()
     printf("after: ");print_container(test_expr);
     puts("");
     
-    //TODO: Number of test-cases to add = 46:
-    //2 for 'sqrt inf -> inf', 2 for 'sqrt 1 -> 1'
+    //TODO: Number of test-cases to add = 42:
     //4 for 'cos -inf -> nan', 4 for 'sin -inf -> nan', 4 for '~ -inf -> inf', 4 for 'exp -inf -> 0'
     //4 for 'ln -inf -> nan', 4 for 'asin -inf -> nan', 4 for 'acos -inf -> nan', 4 for 'sqrt -inf -> nan',
     //4 for 'sqrt -1 -> nan', 2 for '~ 1 -> -1', 2 for '~ -1 -> 1', 2 for '/ x 0 -> nan'
@@ -3160,8 +3159,32 @@ int main()
     printf("after: ");print_container(test_expr);
     puts("");
     
+    test_expr = {"sqrt", "+", "inf", "*", "1.0000", "arccos", "+", "1.0000", "tanh", "-", "cos", "+", "x", "y", "cos", "+", "x", "y"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"sqrt", "+", "exp", "inf", "*", "1.09214234", "acos", "+", "sin", "sin", "-", "sin", "sin", "+", "x", "y", "sin", "sin", "+", "x", "y", "exp", "0.00000e0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"sqrt", "+", "*", "1.0000", "arccos", "+", "1.0000", "tanh", "-", "cos", "+", "x", "y", "cos", "+", "x", "y", "1.0000e0"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"sqrt", "-", "*", "1.09214234", "acos", "+", "sin", "sin", "-", "sin", "sin", "+", "x", "y", "sin", "sin", "+", "x", "y", "exp", "0.00000e0", "-1.000"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
 }
-//TODO: Number of non-production tested simplifications added: 10, ['^ 0 x -> nan', '~ 0 -> 0', '~ inf -> -inf', 'sech ~ x -> sech x', 'cos inf -> nan', 'cos ~ inf -> nan', 'sin inf -> nan', 'sin ~ inf -> nan', '* x -1 -> ~ x', '* -1 x -> ~ x', '/ x -1 -> ~ x', 'ln 0 -> -inf', 'ln nan -> nan', 'ln inf -> inf', 'asin 0 -> 0', 'asin nan -> nan', 'asin inf -> nan', 'acos 1 -> 0', 'acos nan -> nan', 'acos inf -> nan', 'sqrt 0 -> 0', 'sqrt nan -> nan']
+//TODO: Number of non-production tested simplifications added: 10, ['^ 0 x -> nan', '~ 0 -> 0', '~ inf -> -inf', 'sech ~ x -> sech x', 'cos inf -> nan', 'cos ~ inf -> nan', 'sin inf -> nan', 'sin ~ inf -> nan', '* x -1 -> ~ x', '* -1 x -> ~ x', '/ x -1 -> ~ x', 'ln 0 -> -inf', 'ln nan -> nan', 'ln inf -> inf', 'asin 0 -> 0', 'asin nan -> nan', 'asin inf -> nan', 'acos 1 -> 0', 'acos nan -> nan', 'acos inf -> nan', 'sqrt 0 -> 0', 'sqrt nan -> nan', 'sqrt inf -> inf', 'sqrt 1 -> 1']
 //g++ -std=c++20 -o PrefixSimplify PrefixSimplify.cpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include
 //https://stackoverflow.com/questions/20153412/simplification-algorithm-for-reverse-polish-notation
 //https://dl.acm.org/
