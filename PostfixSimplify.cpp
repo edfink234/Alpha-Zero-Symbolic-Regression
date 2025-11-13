@@ -152,7 +152,7 @@ bool checkEqual(const std::string &str1, const std::string &str2)
         return false;
     }
     double val1; parse_double_spirit(str1, val1);
-    double val2;
+    double val2 = 0.0;
     if (str2 == "0")
     {
         val2 = 0.0;
@@ -365,13 +365,13 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         }
         else if (checkEqual(new_expression.back(), "-1")) // x -1 * -> x ~ (because, since postfix operators come at the end, if the end of the second argument of '*' is -1, then the whole second argument MUST be -1, therefore the expression reduces to x -1 *, which is x ~)
         {
-            puts("hi 368");
+//            puts("hi 368");
             new_expression.back() = "~"; //change the '-1' to a "~"
             
         }
         else if (checkEqual(new_expression[first_arg_idx_high - 1], "-1")) //-1 x * -> x ~ (because, since postfix operators come at the end, if the end of the first argument of '*' is -1, then the whole first argument MUST be -1, therefore the expression reduces to -1 x *, which is x ~)
         {
-            puts("hi 374");
+//            puts("hi 374");
             new_expression.erase(new_expression.begin() + first_arg_idx_high - 1); //erase the '-1'
             new_expression.push_back("~"); //add a "~" at the end
         }
@@ -422,7 +422,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         }
         else if (checkEqual(new_expression.back(), "-1")) // x -1 / -> x ~ (because, since postfix operators come at the end, if the end of the second argument of '/' is -1, then the whole second argument MUST be -1, therefore the expression reduces to x -1 /, which is x ~)
         {
-            puts("hi 425");
+//            puts("hi 425");
             new_expression.back() = "~"; //change the '-1' to a "~"
         }
         else if ((expression[up] == "/") && ((step = (first_arg_idx_high - first_arg_idx_low)) == (second_arg_idx_high - first_arg_idx_high)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) // / x x -> 1
@@ -512,13 +512,13 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         }
         else if ((new_expression.back() == "inf") || (new_expression.back() == "-inf")) // +/- inf cos -> nan (because, since postfix operators come at the end, if the end of the argument of 'cos' is +/- inf, then the whole argument MUST be +/- inf, therefore the expression reduces to +/- inf cos, which is nan)
         {
-            puts("hi 499");
+//            puts("hi 499");
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if ((new_expression.back() == "~") && (new_expression.size() >= 2) && ((*(new_expression.end() - 2)) == "inf")) // inf ~ cos -> nan (because, since postfix operators come at the end, if the end of the argument of 'cos' is inf ~, then the whole argument MUST be inf ~, therefore the expression reduces to inf ~ cos, which is nan)
         {
-            puts("hi 505");
+//            puts("hi 505");
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
@@ -546,13 +546,13 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         }
         else if ((new_expression.back() == "inf") || (new_expression.back() == "-inf")) // +/- inf sin -> nan (because, since postfix operators come at the end, if the end of the argument of 'sin' is +/- inf, then the whole argument MUST be +/- inf, therefore the expression reduces to +/- inf sin, which is nan)
         {
-            puts("hi 533");
+//            puts("hi 533");
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if ((new_expression.back() == "~") && (new_expression.size() >= 2) && ((*(new_expression.end() - 2)) == "inf")) // inf ~ sin -> nan (because, since postfix operators come at the end, if the end of the argument of 'sin' is inf ~, then the whole argument MUST be inf ~, therefore the expression reduces to inf ~ sin, which is nan)
         {
-            puts("hi 539");
+//            puts("hi 539");
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
@@ -660,13 +660,13 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         }
         else if (checkEqual(new_expression.back(), "1")) // 1 ~ -> -1 (because, since postfix operators come at the end, if the end of the argument of '~' is 1, then the whole argument MUST be 1, therefore the expression reduces to 1 ~, which is -1)
         {
-            puts("hi 663");
+//            puts("hi 663");
             new_expression[first_arg_idx_low] = "-1";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if (checkEqual(new_expression.back(), "-1")) // -1 ~ -> 1 (because, since postfix operators come at the end, if the end of the argument of '~' is -1, then the whole argument MUST be -1, therefore the expression reduces to -1 ~, which is 1)
         {
-            puts("hi 669");
+//            puts("hi 669");
             new_expression[first_arg_idx_low] = "1";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
@@ -678,13 +678,13 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         }
         else if (new_expression.back() == "-inf") // -inf ~ -> inf (because, since postfix operators come at the end, if the end of the argument of '~' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf ~, which is inf)
         {
-            puts("hi 669");
+//            puts("hi 669");
             new_expression[first_arg_idx_low] = "inf";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if ((new_expression.back() == "~") && (new_expression.size() >= 2) && ((*(new_expression.end() - 2)) == "inf")) // inf ~ ~ -> 0 (because, since postfix operators come at the end, if the end of the argument of '~' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf ~, which is inf)
         {
-            puts("hi 675");
+//            puts("hi 675");
             new_expression[first_arg_idx_low] = "inf";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
@@ -719,13 +719,13 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         }
         else if (new_expression.back() == "-inf") // -inf exp -> 0 (because, since postfix operators come at the end, if the end of the argument of 'exp' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf exp, which is 0)
         {
-            puts("hi 697");
+//            puts("hi 697");
             new_expression[first_arg_idx_low] = "0";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if ((new_expression.back() == "~") && (new_expression.size() >= 2) && ((*(new_expression.end() - 2)) == "inf")) // inf ~ exp -> 0 (because, since postfix operators come at the end, if the end of the argument of 'exp' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf exp, which is 0)
         {
-            puts("hi 703");
+//            puts("hi 703");
             new_expression[first_arg_idx_low] = "0";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
@@ -741,31 +741,31 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         
         if (new_expression.back() == "nan") // nan ln -> nan (because, since postfix operators come at the end, if the end of the argument of 'ln' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan ln, which is nan)
         {
-            puts("hi 707");
+//            puts("hi 707");
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if (checkEqual(new_expression.back(), "0")) // 0 ln -> -inf (because, since postfix operators come at the end, if the end of the argument of 'ln' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 ln, which is -inf)
         {
-            puts("hi 713");
+//            puts("hi 713");
             new_expression[first_arg_idx_low] = "-inf";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if (new_expression.back() == "inf") // inf ln -> inf (because, since postfix operators come at the end, if the end of the argument of 'ln' is inf, then the whole argument MUST be inf, therefore the expression reduces to inf ln, which is inf)
         {
-            puts("hi 719");
+//            puts("hi 719");
             new_expression[first_arg_idx_low] = "inf";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if (new_expression.back() == "-inf") // -inf ln -> nan (because, since postfix operators come at the end, if the end of the argument of 'ln' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf ln, which is nan)
         {
-            puts("hi 750");
+//            puts("hi 750");
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if ((new_expression.back() == "~") && (new_expression.size() >= 2) && ((*(new_expression.end() - 2)) == "inf")) // inf ~ ln -> nan (because, since postfix operators come at the end, if the end of the argument of 'ln' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf ln, which is nan)
         {
-            puts("hi 756");
+//            puts("hi 756");
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
@@ -781,31 +781,31 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         
         if (new_expression.back() == "nan") // nan asin -> nan (because, since postfix operators come at the end, if the end of the argument of 'asin' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan asin, which is nan)
         {
-            puts("hi 735");
+//            puts("hi 735");
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if (checkEqual(new_expression.back(), "0")) // 0 asin -> 0 (because, since postfix operators come at the end, if the end of the argument of 'asin' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 asin, which is 0)
         {
-            puts("hi 741");
+//            puts("hi 741");
             new_expression[first_arg_idx_low] = "0";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if (new_expression.back() == "inf") // inf asin -> nan (because, since postfix operators come at the end, if the end of the argument of 'asin' is inf, then the whole argument MUST be inf, therefore the expression reduces to inf asin, which is nan)
         {
-            puts("hi 747");
+//            puts("hi 747");
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if (new_expression.back() == "-inf") // -inf asin -> nan (because, since postfix operators come at the end, if the end of the argument of 'asin' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf asin, which is nan)
         {
-            puts("hi 790");
+//            puts("hi 790");
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if ((new_expression.back() == "~") && (new_expression.size() >= 2) && ((*(new_expression.end() - 2)) == "inf")) // inf ~ asin -> nan (because, since postfix operators come at the end, if the end of the argument of 'asin' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf asin, which is nan)
         {
-            puts("hi 796");
+//            puts("hi 796");
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
@@ -821,31 +821,31 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         
         if (new_expression.back() == "nan") // nan acos -> nan (because, since postfix operators come at the end, if the end of the argument of 'acos' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan acos, which is nan)
         {
-            puts("hi 763");
+//            puts("hi 763");
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if (checkEqual(new_expression.back(), "1")) // 1 acos -> 0 (because, since postfix operators come at the end, if the end of the argument of 'acos' is 1, then the whole argument MUST be 1, therefore the expression reduces to 1 acos, which is 0)
         {
-            puts("hi 769");
+//            puts("hi 769");
             new_expression[first_arg_idx_low] = "0";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if (new_expression.back() == "inf") // inf acos -> nan (because, since postfix operators come at the end, if the end of the argument of 'acos' is inf, then the whole argument MUST be inf, therefore the expression reduces to inf acos, which is nan)
         {
-            puts("hi 775");
+//            puts("hi 775");
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if (new_expression.back() == "-inf") // -inf acos -> nan (because, since postfix operators come at the end, if the end of the argument of 'acos' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf acos, which is nan)
         {
-            puts("hi 830");
+//            puts("hi 830");
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if ((new_expression.back() == "~") && (new_expression.size() >= 2) && ((*(new_expression.end() - 2)) == "inf")) // inf ~ acos -> nan (because, since postfix operators come at the end, if the end of the argument of 'acos' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf acos, which is nan)
         {
-            puts("hi 836");
+//            puts("hi 836");
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
@@ -861,43 +861,43 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
         
         if (new_expression.back() == "nan") // nan sqrt -> nan (because, since postfix operators come at the end, if the end of the argument of 'sqrt' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan sqrt, which is nan)
         {
-            puts("hi 791");
+//            puts("hi 791");
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if (checkEqual(new_expression.back(), "0")) // 0 sqrt -> 0 (because, since postfix operators come at the end, if the end of the argument of 'sqrt' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 sqrt, which is 0)
         {
-            puts("hi 797");
+//            puts("hi 797");
             new_expression[first_arg_idx_low] = "0";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if (checkEqual(new_expression.back(), "1")) // 1 sqrt -> 1 (because, since postfix operators come at the end, if the end of the argument of 'sqrt' is 1, then the whole argument MUST be 1, therefore the expression reduces to 1 sqrt, which is 1)
         {
-            puts("hi 803");
+//            puts("hi 803");
             new_expression[first_arg_idx_low] = "1";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if (checkEqual(new_expression.back(), "-1")) // -1 sqrt -> nan (because, since postfix operators come at the end, if the end of the argument of 'sqrt' is -1, then the whole argument MUST be -1, therefore the expression reduces to -1 sqrt, which is nan)
         {
-            puts("hi 870");
+//            puts("hi 870");
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if (new_expression.back() == "inf") // inf sqrt -> inf (because, since postfix operators come at the end, if the end of the argument of 'sqrt' is inf, then the whole argument MUST be inf, therefore the expression reduces to inf sqrt, which is inf)
         {
-            puts("hi 809");
+//            puts("hi 809");
             new_expression[first_arg_idx_low] = "inf";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if (new_expression.back() == "-inf") // -inf sqrt -> nan (because, since postfix operators come at the end, if the end of the argument of 'sqrt' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf sqrt, which is nan)
         {
-            puts("hi 876");
+//            puts("hi 876");
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
         else if ((new_expression.back() == "~") && (new_expression.size() >= 2) && ((*(new_expression.end() - 2)) == "inf")) // inf ~ sqrt -> nan (because, since postfix operators come at the end, if the end of the argument of 'sqrt' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf sqrt, which is nan)
         {
-            puts("hi 882");
+//            puts("hi 882");
             new_expression[first_arg_idx_low] = "nan";
             new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
         }
@@ -1104,7 +1104,7 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
                         }
                         else if (checkEqual(expression[i-1], "0") && isConst2) // "x 0 /" -> "nan"
                         {
-                            puts("hi 859");
+                            //puts("hi 859");
                             expression[i] = "nan";
                             expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                             simplified = true;
@@ -1132,7 +1132,7 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
                         }
                         else if (checkEqual(expression[i-2], "0") && isConst1) // "0 x ^" -> "nan"
                         {
-                            puts("hi 880");
+                            //puts("hi 880");
                             expression[i] = "nan";
                             expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                             simplified = true;
@@ -1170,12 +1170,12 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
                     {
                         if (checkEqual(expression[i-1], "0")) //0 ~ -> 0
                         {
-                            puts("hi 917");
+                            //puts("hi 917");
                             expression.erase(expression.begin() + i); // Remove the '~'
                         }
                         else if (expression[i-1] == "inf") //inf ~ -> -inf
                         {
-                            puts("hi 924");
+                            //puts("hi 924");
                             expression[i-1] = "-inf"; // change 'inf' to '-inf'
                             expression.erase(expression.begin() + i); // Remove the '~'
                         }
@@ -2913,28 +2913,507 @@ int main()
     printf("after: ");print_container(test_expr);
     puts("");
     
-    //TODO: Number of test-cases to add = 82
-    //2 for '0 x ^ -> nan', 2 for '0 ~ -> 0', 2 for 'inf ~ -> -inf', 2 for '~ sech -> sech', 2 for 'x 0 / -> nan',
-    //2 for 'inf cos -> nan', 2 for '-inf cos -> nan', 2 for 'inf sin -> nan', 2 for '-inf sin -> nan',
-    //2 for 'x -1 * -> x ~', 2 for '-1 x * -> x ~', 2 for 'x -1 / -> x ~'
-    //2 for '0 ln -> -inf', 2 for 'nan ln -> nan', 2 for 'inf ln -> inf',
-    //2 for '0 asin -> 0', 2 for 'nan asin -> nan', 2 for 'inf asin -> nan',
-    //2 for '1 acos -> 0', 2 for 'nan acos -> nan', 2 for 'inf acos -> nan',
-    //2 for '1 sqrt -> 1', 2 for 'nan sqrt -> nan', 2 for 'inf sqrt -> nan', 2 for '0 sqrt -> 0'
-    //4 for '-inf cos -> nan', 4 for '-inf sin -> nan',
-    //4 for '-inf ~ -> inf', 4 for '-inf ln -> nan',
-    //4 for '-inf asin -> nan', 4 for '-inf acos -> nan',
-    //4 for '-inf sqrt -> nan', 2 for '1 ~ -> -1', 2 for '-1 ~ -> 1'
-    //1 for the one right below:
-        //TODO: 0.7911530997475994 x0 x0 cos - sech sqrt 1.048576e+06 0 x0 10.000000 - ^ tanh 1.0001 / arccos log ~ 4 / cos cos ^ * ^, aka (0.7911530997475994 ^ (sqrt(sech((x0 - cos(x0)))) * (1.048576e+06 ^ cos(cos((~(log(arccos((tanh((0 ^ (x0 - 10.000000))) / 1.0001)))) / 4)))))) below
-//    test_expr = {"0.7911530997475994", "x0", "x0", "cos", "-", "sech", "sqrt", "1.048576e+06", "0", "x0", "10.000000", "-", "^", "tanh", "1.0001", "/", "arccos", "log", "~", "4", "/", "cos", "cos", "^", "*", "^"};
-//    printf("before: ");print_container(test_expr);
-//    simplifyRPN(test_expr);
-//    printf("after: ");print_container(test_expr);
-//    puts("");
+    test_expr = {"0.000", "0.000000e0", "0.010000", "x1", "+", "sin", "100000e-005", "x0", "sin", "*", "*", "-", "x1", "-10", "/", "0.02", "*", "0.010000", "6.283190", "x0", "+", "^", "0.0000", "+", "+", "-", "^"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
     
+    test_expr = {"sin", "tanh", "0.000000e0", "0.000000e0", "0.010000", "x1", "+", "sin", "100000e-005", "x0", "sin", "*", "*", "-", "x1", "-10", "/", "0.02", "*", "0.010000", "6.283190", "x0", "+", "^", "0.0000", "+", "+", "-", "^"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"0.000", "0.000000e0", "0.010000", "x1", "+", "sin", "100000e-005", "x0", "sin", "*", "*", "-", "x1", "-10", "/", "0.02", "*", "0.010000", "6.283190", "x0", "+", "^", "0.0000", "+", "+", "-", "*", "sin", "~"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"sin", "tanh", "0.000000e0", "0.000000e0", "0.010000", "x1", "+", "sin", "100000e-005", "x0", "sin", "*", "*", "-", "x1", "-10", "/", "0.02", "*", "0.010000", "6.283190", "x0", "+", "^", "0.0000", "+", "+", "-", "*", "~"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"inf", "0.000", "0.000000e0", "0.010000", "x1", "+", "sin", "100000e-005", "x0", "sin", "*", "*", "-", "x1", "-10", "/", "0.02", "*", "0.010000", "6.283190", "x0", "+", "^", "0.0000", "+", "+", "-", "*", "sin", "~", "+", "~"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"sin", "tanh", "0.000000e0", "0.000000e0", "0.010000", "x1", "+", "sin", "100000e-005", "x0", "sin", "*", "*", "-", "x1", "-10", "/", "0.02", "*", "0.010000", "6.283190", "x0", "+", "^", "0.0000", "+", "+", "-", "*", "~", "inf", "exp", "+", "~"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "y", "+", "cos", "sin", "~", "sech"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"z", "apple", "sech", "+", "tanh", "~", "sech"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "y", "+", "cos", "sin", "~", "sech", "0.000", "sin", "/"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"z", "apple", "sech", "+", "tanh", "~", "sech", "0", "0.00e0", "+", "tanh", "sin", "sin", "/"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"inf", "0.000", "0.000000e0", "0.010000", "x1", "+", "sin", "100000e-005", "x0", "sin", "*", "*", "-", "x1", "-10", "/", "0.02", "*", "0.010000", "6.283190", "x0", "+", "^", "0.0000", "+", "+", "-", "*", "sin", "~", "+", "cos"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"sin", "tanh", "0.000000e0", "0.000000e0", "0.010000", "x1", "+", "sin", "100000e-005", "x0", "sin", "*", "*", "-", "x1", "-10", "/", "0.02", "*", "0.010000", "6.283190", "x0", "+", "^", "0.0000", "+", "+", "-", "*", "~", "inf", "exp", "+", "exp", "ln", "log", "cos"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"inf", "0.000", "0.000000e0", "0.010000", "x1", "+", "sin", "100000e-005", "x0", "sin", "*", "*", "-", "x1", "-10", "/", "0.02", "*", "0.010000", "6.283190", "x0", "+", "^", "0.0000", "+", "+", "-", "*", "sin", "~", "+", "exp", "~", "cos"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"sin", "tanh", "0.000000e0", "0.000000e0", "0.010000", "x1", "+", "sin", "100000e-005", "x0", "sin", "*", "*", "-", "x1", "-10", "/", "0.02", "*", "0.010000", "6.283190", "x0", "+", "^", "0.0000", "+", "+", "-", "*", "~", "inf", "exp", "+", "exp", "ln", "log", "~", "~", "~", "cos"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"inf", "0.000", "0.000000e0", "0.010000", "x1", "+", "sin", "100000e-005", "x0", "sin", "*", "*", "-", "x1", "-10", "/", "0.02", "*", "0.010000", "6.283190", "x0", "+", "^", "0.0000", "+", "+", "-", "*", "sin", "~", "+", "exp", "~", "~", "sin"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"sin", "tanh", "0.000000e0", "0.000000e0", "0.010000", "x1", "+", "sin", "100000e-005", "x0", "sin", "*", "*", "-", "x1", "-10", "/", "0.02", "*", "0.010000", "6.283190", "x0", "+", "^", "0.0000", "+", "+", "-", "*", "~", "inf", "exp", "+", "exp", "ln", "log", "~", "~", "sin"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"inf", "0.000", "0.000000e0", "0.010000", "x1", "+", "sin", "100000e-005", "x0", "sin", "*", "*", "-", "x1", "-10", "/", "0.02", "*", "0.010000", "6.283190", "x0", "+", "^", "0.0000", "+", "+", "-", "*", "sin", "~", "+", "exp", "~", "~", "~", "sin"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"sin", "tanh", "0.000000e0", "0.000000e0", "0.010000", "x1", "+", "sin", "100000e-005", "x0", "sin", "*", "*", "-", "x1", "-10", "/", "0.02", "*", "0.010000", "6.283190", "x0", "+", "^", "0.0000", "+", "+", "-", "*", "~", "inf", "exp", "+", "exp", "ln", "log", "~", "sin"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "y", "+", "cos", "sin", "~", "sech", "0", "1", "-", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "y", "+", "cos", "cos", "sech", "sin", "~", "sech", "0", "1.0000e0", "-", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"-1.000e0", "x", "y", "+", "cos", "x", "y", "+", "sech", "+", "tanh", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"-1000.0e-3", "x", "x", "x", "+", "+", "sech", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "y", "+", "cos", "sin", "~", "sech", "00.000e0", "1", "-", "/"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"x", "y", "+", "cos", "cos", "sech", "sin", "~", "sech", "0000", "1.0000e0", "-", "/"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"0.000", "sin" "x", "y", "+", "cos", "sin", "~", "sech", "00.000e0", "1", "-", "/", "*", "log"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"0.000e0", "x", "y", "+", "cos", "cos", "sech", "sin", "~", "sech", "0000", "1.0000e0", "-", "/", "/", "ln"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"0.000e0", "x", "y", "+", "cos", "sin", "~", "sech", "00.000e0", "1", "-", "*", "^", "log"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"nan", "0.000e0", "x", "y", "+", "cos", "cos", "sech", "sin", "~", "sech", "0000", "1.0000e0", "-", "/", "/", "^", "ln"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"inf", "exp", "x", "y", "+", "cos", "sin", "~", "sech", "00.000e0", "1", "-", "*", "+", "log"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"inf", "0.000e0", "x", "y", "+", "cos", "cos", "sech", "sin", "~", "sech", "0000", "1.0000e0", "-", "/", "/", "+", "ln"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    
+    test_expr = {"0.000", "exp", "0", "*", "x", "y", "+", "cos", "sin", "~", "sech", "00.000e0", "1", "-", "*", "*", "tanh", "asin"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"100e-2", "0.000e0", "x", "y", "+", "cos", "cos", "sech", "sin", "~", "sech", "0000", "1.0000e0", "-", "/", "/", "+", "ln", "arcsin"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"nan", "0.000", "exp", "0", "*", "x", "y", "+", "cos", "sin", "~", "sech", "00.000e0", "1", "-", "*", "*", "tanh", "+", "asin"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"0.000e0", "100e-2", "0.000e0", "x", "y", "+", "cos", "cos", "sech", "sin", "~", "sech", "0000", "1.0000e0", "-", "/", "/", "+", "ln", "^", "arcsin"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"inf", "0.000", "exp", "0", "*", "x", "y", "+", "cos", "sin", "~", "sech", "00.000e0", "1", "-", "*", "*", "tanh", "asin", "+", "asin"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"100e-2", "0.000e0", "x", "y", "+", "cos", "cos", "sech", "sin", "~", "sech", "0000", "1.0000e0", "-", "/", "/", "+", "ln", "arcsin", "1.00", "inf", "ln", "log", "*", "+", "arcsin"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1.000e0", "0.000", "exp", "0", "*", "x", "y", "+", "cos", "sin", "~", "sech", "00.000e0", "1", "-", "*", "*", "tanh", "asin", "+", "arccos"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"100e-2", "0.000e0", "x", "y", "+", "cos", "cos", "sech", "sin", "~", "sech", "0000", "1.0000e0", "-", "/", "/", "+", "ln", "arcsin", "1.00", "1", "*", "+", "arccos"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"nan", "1.000e0", "0.000", "exp", "0", "*", "x", "y", "+", "cos", "sin", "~", "sech", "00.000e0", "1", "-", "*", "*", "tanh", "asin", "+", "arccos", "*", "acos"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"100e-2", "0.000e0", "x", "y", "+", "cos", "cos", "sech", "sin", "~", "sech", "0000", "1.0000e0", "-", "/", "/", "+", "ln", "arcsin", "1.00", "nan", "*", "+", "arccos"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"inf", "1.000e0", "0.000", "exp", "0", "*", "x", "y", "+", "cos", "sin", "~", "sech", "00.000e0", "1", "-", "*", "*", "tanh", "asin", "+", "arccos", "+", "acos"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"100e-2", "0.000e0", "x", "y", "+", "cos", "cos", "sech", "sin", "~", "sech", "0000", "1.0000e0", "-", "/", "/", "+", "ln", "arcsin", "1.00", "inf", "ln", "*", "+", "arccos"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"100e-2", "1.000e0", "0.000", "exp", "0", "*", "x", "y", "+", "cos", "sin", "~", "sech", "00.000e0", "1", "-", "*", "*", "tanh", "asin", "+", "arccos", "+", "sqrt"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"100e-2", "0.000e0", "x", "y", "+", "cos", "cos", "sech", "sin", "~", "sech", "0000", "1.0000e0", "-", "/", "/", "+", "ln", "arcsin", "1.00", "0.0000e0", "exp", "*", "+", "sqrt"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"100e-2", "1.000e0", "0.000", "x", "^", "x", "y", "+", "cos", "sin", "~", "sech", "00.000e0", "1", "-", "*", "*", "tanh", "asin", "+", "arccos", "+", "sqrt"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"100e-2", "0.000e0", "x", "y", "+", "cos", "cos", "sech", "sin", "~", "sech", "0.00e0", "*", "0000", "1.0000e0", "-", "/", "/", "+", "ln", "arcsin", "1.00", "0.0000e0", "exp", "*", "+", "sqrt"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"inf", "100e-2", "1.000e0", "0.000", "exp", "0", "*", "x", "y", "+", "cos", "sin", "~", "sech", "00.000e0", "1", "-", "*", "*", "tanh", "asin", "+", "arccos", "+", "sqrt", "*", "sqrt"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"0", "ln", "~", "100e-2", "0.000e0", "x", "y", "+", "cos", "cos", "sech", "sin", "~", "sech", "0000", "1.0000e0", "-", "/", "/", "+", "ln", "arcsin", "1.00", "0.0000e0", "exp", "*", "+", "sqrt", "*", "sqrt"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "100e-2", "1.000e0", "0.000", "exp", "0", "*", "x", "y", "+", "cos", "sin", "~", "sech", "00.000e0", "1", "-", "*", "*", "tanh", "asin", "+", "arccos", "+", "sqrt", "-", "sqrt"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"100e-2", "0.000e0", "x", "y", "+", "cos", "cos", "sech", "sin", "~", "sech", "0000", "1.0000e0", "-", "/", "/", "+", "ln", "arcsin", "1.00", "0.0000e0", "exp", "*", "+", "sqrt", "0.000", "exp", "-", "sqrt"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "100e-2", "1.000e0", "0.000", "exp", "0", "*", "x", "y", "+", "cos", "sin", "~", "sech", "00.000e0", "1", "-", "*", "*", "tanh", "asin", "+", "arccos", "+", "sqrt", "-", "sqrt", "ln", "cos"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"100e-2", "0.000e0", "x", "y", "+", "cos", "cos", "sech", "sin", "~", "sech", "0000", "1.0000e0", "-", "/", "/", "+", "ln", "arcsin", "1.00", "0.0000e0", "exp", "*", "+", "sqrt", "0.000", "exp", "-", "sqrt", "0", "+", "log", "cos"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "100e-2", "1.000e0", "0.000", "exp", "0", "*", "x", "y", "+", "cos", "sin", "~", "sech", "00.000e0", "1", "-", "*", "*", "tanh", "asin", "+", "arccos", "+", "sqrt", "-", "sqrt", "ln", "1000.0e-4", "*", "cos"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"100e-2", "0.000e0", "x", "y", "+", "cos", "cos", "sech", "sin", "~", "sech", "0000", "1.0000e0", "-", "/", "/", "+", "ln", "arcsin", "1.00", "0.0000e0", "exp", "*", "+", "sqrt", "0.000", "exp", "-", "sqrt", "inf", "-", "cos"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "1000e-3", "1.000e0", "0.000", "exp", "0", "*", "x", "y", "+", "cos", "sin", "~", "sech", "00.000e0", "1", "-", "*", "*", "tanh", "asin", "+", "arccos", "+", "sqrt", "-", "sqrt", "ln", "sin"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"100e-2", "0.000e0", "x", "y", "+", "cos", "cos", "sech", "sin", "~", "sech", "0000", "1.0000e0", "-", "/", "/", "+", "ln", "arcsin", "1.00", "0.0000e0", "exp", "*", "+", "sqrt", "0.000", "exp", "-", "sqrt", "0.00000e0", "+", "log", "sin"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "100e-2", "1.000e0", "0.000", "exp", "0", "*", "x", "y", "+", "cos", "sech", "sin", "~", "~", "sech", "00.000e0", "1", "-", "*", "*", "tanh", "asin", "+", "arccos", "+", "sqrt", "-", "sqrt", "ln", "1000.0e-4", "*", "sin"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"100e-2", "0.000e0", "x", "y", "+", "cos", "cos", "sech", "sin", "~", "sech", "0000", "10000e-4", "-", "/", "/", "+", "ln", "arcsin", "1.00", "0.0000e0", "exp", "*", "+", "sqrt", "0.000", "exp", "-", "sqrt", "inf", "-", "sin"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "1000e-3", "1.000e0", "0.000e0", "exp", "0", "*", "x", "y", "+", "cos", "sin", "~", "sech", "00.000e0", "1", "-", "*", "*", "tanh", "asin", "+", "arccos", "+", "sqrt", "-", "sqrt", "ln", "~"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"100e-2", "0.000e0", "x", "y", "+", "cos", "cos", "sech", "sin", "~", "sech", "0000", "1.0000e0", "-", "/", "/", "+", "ln", "arcsin", "1.00", "0.0000e0", "exp", "*", "+", "sqrt", "0.000", "exp", "-", "sqrt", "0.000000000e0", "+", "log", "~"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "100e-2", "1.000e0", "0.000", "exp", "0", "*", "x", "y", "+", "cos", "sech", "sin", "~", "~", "~", "sech", "00.000e0", "1", "-", "*", "*", "tanh", "asin", "+", "arccos", "+", "sqrt", "-", "sqrt", "ln", "1000.0e-4", "*", "~"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"100e-2", "0.000e0", "x", "y", "+", "cos", "cos", "tanh", "sin", "~", "sech", "0000", "10000e-4", "-", "/", "/", "+", "ln", "arcsin", "1.00", "0.0000e0", "exp", "*", "+", "sqrt", "0.000", "exp", "-", "sqrt", "inf", "-", "~"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "1000e-3", "1.000e0", "0.000e0", "exp", "0", "*", "x", "y", "+", "cos", "sin", "~", "sech", "00.000e0", "1", "-", "*", "*", "tanh", "asin", "+", "arccos", "+", "sqrt", "-", "sqrt", "ln", "~", "~", "ln"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"100e-2", "0.000e0", "x", "y", "+", "cos", "cos", "sech", "sin", "~", "sech", "0000", "1.0000e0", "-", "/", "/", "+", "ln", "arcsin", "100e-2", "0.0000e0", "exp", "*", "+", "sqrt", "0.000", "exp", "-", "sqrt", "0.000000000e0", "+", "log", "~", "~", "~", "~", "log"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "100e-2", "1.000e0", "0.000", "exp", "0", "*", "x", "y", "+", "cos", "sech", "sin", "~", "~", "~", "sech", "00.000e0", "1", "-", "*", "*", "tanh", "asin", "+", "arccos", "+", "sqrt", "-", "sqrt", "ln", "1000.0e-4", "*", "~", "~", "log"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"100e-2", "0.000e0", "x", "y", "+", "1", "*", "cos", "cos", "tanh", "sin", "~", "sech", "0000", "100000.e-4", "-", "/", "/", "+", "ln", "arcsin", "1.00", "0.0000e0", "exp", "*", "+", "sqrt", "0.000", "exp", "-", "sqrt", "inf", "-", "~", "~", "ln"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "1000e-3", "1.000e0", "0.000e0", "exp", "ln", "exp", "0", "*", "x", "y", "+", "cos", "sin", "~", "sech", "00.000e0", "1", "-", "*", "*", "tanh", "asin", "+", "arccos", "+", "sqrt", "-", "sqrt", "ln", "~", "~", "asin"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1000e-3", "0", "+", "0.000e0", "x", "y", "+", "cos", "cos", "sech", "sin", "~", "sech", "0000", "1.0000e0", "-", "/", "/", "+", "ln", "arcsin", "100e-2", "0.0000e0", "exp", "*", "+", "sqrt", "0.000", "exp", "-", "sqrt", "0.000000000e0", "+", "log", "~", "~", "~", "~", "arcsin"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "0.000e0", "+", "100e-2", "1.000e0", "0.000", "exp", "0", "*", "x", "y", "+", "cos", "sech", "sin", "~", "~", "~", "sech", "00.000e0", "1", "-", "*", "*", "tanh", "asin", "+", "arccos", "+", "sqrt", "-", "sqrt", "ln", "1000.0e-4", "*", "~", "~", "asin"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"100000.e-5", "0.", "+", "0.000e0", "x", "y", "+", "1", "*", "cos", "cos", "tanh", "sin", "~", "sech", "0000", "100000.e-4", "-", "/", "/", "+", "ln", "arcsin", "1.00", "0.0000e0", "exp", "*", "+", "sqrt", "0.000", "exp", "-", "sqrt", "inf", "-", "~", "~", "arcsin"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "1000e-3", "1.000e0", "0.000e0", "exp", "ln", "exp", "0", "*", "x", "y", "+", "cos", "ln", "exp", "sin", "~", "sech", "00.000e0", "1", "-", "*", "*", "tanh", "asin", "+", "arccos", "+", "sqrt", "-", "sqrt", "ln", "~", "~", "acos"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1000e-3", "0", "+", "0.000e0", "x", "y", "+", "cos", "cos", "sech", "sin", "~", "~", "~", "sech", "0000", "1.0000e0", "-", "/", "/", "+", "ln", "arcsin", "100e-2", "0.0000e0", "exp", "*", "+", "sqrt", "0.000", "exp", "-", "sqrt", "0.000000000e0", "+", "log", "~", "~", "~", "~", "arccos"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "0.000e0", "asin", "+", "100e-2", "1.000e0", "0.000", "exp", "0", "*", "x", "y", "+", "cos", "sech", "sin", "~", "~", "~", "sech", "00.000e0", "1", "-", "*", "*", "tanh", "asin", "+", "arccos", "+", "sqrt", "-", "sqrt", "ln", "1000.0e-4", "*", "~", "~", "~", "~", "acos"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1000000.e-6", "0.", "+", "0.000e0", "x", "1.000e0", "*", "y", "+", "1", "*", "cos", "cos", "tanh", "sin", "~", "sech", "0000", "100000.e-4", "-", "/", "/", "+", "ln", "arcsin", "1.00", "0.0000e0", "exp", "*", "+", "sqrt", "0.000", "exp", "-", "sqrt", "inf", "-", "~", "~", "arccos"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1.000000", "1000e-3", "1.000e0", "0", "+", "0.000e0", "exp", "ln", "exp", "0", "*", "x", "y", "+", "cos", "ln", "exp", "sin", "~", "sech", "00.000e0", "1000e-3", "-", "*", "*", "tanh", "asin", "+", "arccos", "+", "sqrt", "-", "sqrt", "ln", "~", "~", "sqrt"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1000e-3", "0", "+", "0.000e0", "x", "yessss", "1", "*", "+", "cos", "cos", "sech", "sin", "~", "~", "~", "sech", "0000", "1.0000e0", "-", "/", "/", "+", "ln", "arcsin", "100e-2", "0.0000e0", "exp", "*", "+", "sqrt", "0.000", "exp", "-", "sqrt", "0.000000000e0", "+", "log", "~", "~", "~", "~", "sqrt"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1", "0.000e0", "~", "~", "asin", "+", "100e-2", "1.000e0", "0.000", "exp", "0", "*", "x", "y", "+", "cos", "sech", "sin", "~", "~", "~", "sech", "00.000e0", "1", "-", "*", "*", "tanh", "asin", "+", "arccos", "+", "sqrt", "-", "sqrt", "ln", "1000.0e-4", "*", "~", "~", "~", "~", "sqrt"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1000000.e-6", "0.", "+", "0.000e0", "x", "ln", "1.000e0", "*", "y", "+", "1", "*", "cos", "cos", "tanh", "sin", "~", "sech", "0000", "100000.e-4", "-", "/", "/", "+", "ln", "arcsin", "1.00", "0.0000e0", "exp", "*", "+", "sqrt", "0.000", "exp", "-", "sqrt", "inf", "-", "~", "~", "sqrt"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1000000.e-6", "0.", "+", "0.000e0", "x", "ln", "1.000e0", "*", "y", "+", "1", "*", "cos", "cos", "tanh", "sin", "~", "sech", "0000", "100000.e-4", "-", "/", "/", "+", "ln", "arcsin", "1.00", "0.0000e0", "exp", "*", "+", "sqrt", "0.000", "exp", "-", "sqrt", "-1", "-", "~"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1000000.e-6", "0.", "+", "0.000e0", "x", "ln", "1.000e0", "*", "y", "+", "1", "*", "cos", "cos", "tanh", "sin", "~", "sech", "0000", "100000.e-4", "-", "/", "/", "+", "ln", "arcsin", "1.00", "0.0000e0", "exp", "*", "+", "sqrt", "0.000", "exp", "-", "sqrt", "-100e-2", "-", "~", "~", "~"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1000000.e-6", "0.", "+", "0.0000000e0", "xasdfasdf", "ln", "1.000e0", "*", "y", "+", "1", "*", "cos", "cos", "tanh", "sin", "~", "sech", "0000", "100000.e-4", "-", "/", "/", "+", "ln", "arcsin", "1.00", "0.0000e0", "exp", "*", "+", "sqrt", "0.000", "exp", "-", "sqrt", "-1", "-", "~", "~"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"1000000.e-6", "0.", "+", "0.000e0", "x", "x", "+", "xxx", "+", "ln", "1.000e0", "*", "y", "+", "1", "*", "cos", "cos", "tanh", "sin", "~", "sech", "0000", "100000.e-4", "-", "/", "/", "+", "ln", "arcsin", "1.00", "0.0000e0", "exp", "*", "+", "sqrt", "0.000", "exp", "-", "sqrt", "-100e-2", "-", "~", "~", "~", "~"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"0.7911530997475994", "x0", "x0", "cos", "-", "sech", "sqrt", "1.048576e+06", "0", "x0", "10.000000", "-", "^", "tanh", "1.0001", "/", "arccos", "log", "~", "4", "/", "cos", "cos", "^", "*", "^"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
 }
 
+//TODO: Number of non-production tested simplifications added: 34, ['0 x ^ -> nan', '0 ~ -> 0', 'inf ~ -> -inf', '~ sech -> sech', 'x 0 / -> nan', 'inf cos -> nan', '-inf cos -> nan', 'inf sin -> nan', '-inf sin -> nan', 'x -1 * -> x ~', '-1 x * -> x ~', 'x -1 / -> x ~', '0 ln -> -inf', 'nan ln -> nan', 'inf ln -> inf', '0 asin -> 0', 'nan asin -> nan', 'inf asin -> nan', '1 acos -> 0', 'nan acos -> nan', 'inf acos -> nan', '1 sqrt -> 1', 'nan sqrt -> nan', 'inf sqrt -> inf', '0 sqrt -> 0', '-inf cos -> nan', '-inf sin -> nan', '-inf ~ -> inf', '-inf ln -> nan', '-inf asin -> nan', '-inf acos -> nan', '-inf sqrt -> nan', '1 ~ -> -1', '-1 ~ -> 1']
 //g++ -std=c++20 -o PostfixSimplify PostfixSimplify.cpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include
 //https://stackoverflow.com/questions/20153412/simplification-algorithm-for-reverse-polish-notation
 //https://dl.acm.org/

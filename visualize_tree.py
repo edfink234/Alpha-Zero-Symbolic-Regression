@@ -348,14 +348,15 @@ def test_visualize():
             os.system(f"open -a Safari {file_name}.pdf")
     else:
 #        plot_rpn_expression_tree("μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -".split(), save = save, title = r"Swift-Hohenberg 2D Polar Coordinates", tolatex = True, to_pdf = True, filename = "SwiftHohenberg2DPolarCoordinates.pdf")
-#        plot_rpn_expression_tree("9736 x22 - x7 x20 / - 0 -2.0200128e+07 + x5 x15 ^ / + 0.006210 x20 + x18 -88.959518 ^ + 0.002105 x20 ^ x6 -17053.440354 + + * +".split(), save = save, title = "", tolatex = True, to_pdf = True, filename = "Example.pdf")
+#        plot_rpn_expression_tree("0.7911530997475994 x0 x0 cos - sech sqrt 1.048576e+06 0 x0 10.000000 - ^ tanh 1.0001 / arccos log ~ 4 / cos cos ^ * ^".split(), save = save, title = "", tolatex = True, to_pdf = True, filename = "Example.pdf")
 #        test_expr = "+ + - - 9736 x22 / x7 x20 / -100.051731 ^ x5 x15 * + x20 * 1075.000000 x5 -17064.107062"
 #        print(f"test_expr = {test_expr}")
 #        test_expr = ' '.join(complete_tree(test_expr.split(), 'prefix'))
 #        print(f"Completed test_expr = {test_expr}")
 #        plot_pn_expression_tree("+ + - - 9736 x22 / x7 x20 / + 0 -100.051731 ^ x5 x15 * + + 0 x20 * 1075.000000 x5 + + 0 0 + 0 -17064.107062".split(), save = save)
 #        print(complete_tree("".split(), "prefix"))
-        complete_rpn_expr = complete_tree("9741 1 x13 / + x22 x22 * x6 cos ^ - 8.851731000000001 0.00621 x6 + / 4.372938 x7 + x20 279.200012 + - ^ - -3.225653 1075 x10 ^ - x5 x18 0.006210 x20 / 2 + - ^ / + x24 x8 x0 + x2 - ^ 2.0200101e+07 x15 ^ x20 + + x17 292.600006 x11 * / 91.45173100000001 x23 - ^ + x19 0.00621 + 25.4 * -818.627062 + x23 -330 + x22 * x21 acos -18327.436844999997 + + + * +".split(), "postfix")
+
+        complete_rpn_expr = complete_tree("x6 0.006210 - 9741 + 1 x13 / + 77888 x22 * 20200101.000000 x6 + cos ^ - 8.851731000000001 0.00621 x6 + / 4.372938 x7 + x20 279.200012 + - ^ - x25 3.4288275429960554e+302 - x15 x1 + -100 ^ x5 + 0.051731 x18 + 0.006210 x20 / 2 + - ^ / + x22 8.800000 * 267.200012 x20 ^ + x8 x0 + -2.640000 x2 + - ^ 2.0200101e+07 x15 ^ x20 + + x17 38.000000 x8 + x11 * / 92.45173100000001 x23 - ^ + x19 0.00621 + 25.4 * -818.627062 + -54 x22 * x21 acos -18327.436844999997 + + + * +".split(), "postfix")
         print(f"complete_rpn_expr = \n{' '.join(complete_rpn_expr)}")
         plot_rpn_expression_tree(complete_rpn_expr, save = save)
 

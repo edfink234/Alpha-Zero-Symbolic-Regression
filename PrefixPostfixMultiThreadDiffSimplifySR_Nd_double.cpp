@@ -316,7 +316,19 @@ bool checkEqual(const std::string &str1, const std::string &str2)
         return false;
     }
     double val1; parse_double_spirit(str1, val1);
-    double val2 = (str2 == "0") ? 0.0 : 1.0; //or "1"
+    double val2 = 0.0;
+    if (str2 == "0")
+    {
+        val2 = 0.0;
+    }
+    else if (str2 == "1")
+    {
+        val2 = 1.0;
+    }
+    else if (str2 == "-1")
+    {
+        val2 = -1.0;
+    }
     return (val1 == val2);
 }
 
@@ -1351,7 +1363,7 @@ struct Board
                 new_expression[op_idx] = "0"; //change '*' to '0'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
-            else if (new_expression[first_arg_idx_high] == "1") //* x 1 -> x (because, since prefix operators come at the beginning, if the beginning of the second argument of '*' is 1, then the whole second argument MUST be 1, therefore the expression reduces to * x 1, which is 1)
+            else if (checkEqual(new_expression[first_arg_idx_high], "1")) //* x 1 -> x (because, since prefix operators come at the beginning, if the beginning of the second argument of '*' is 1, then the whole second argument MUST be 1, therefore the expression reduces to * x 1, which is x)
             {
                 //puts("hi 251");
                 //erase the '1' at the end
@@ -1365,10 +1377,30 @@ struct Board
                 }
                 new_expression.erase(new_expression.begin() + op_idx); //erase the '*'
             }
-            else if (new_expression[first_arg_idx_low] == "1") //* 1 x -> x
+            else if (checkEqual(new_expression[first_arg_idx_low], "1")) //* 1 x -> x
             {
                 //puts("hi 265");
                 new_expression.erase(new_expression.begin() + op_idx, new_expression.begin() + op_idx + 2); //erase the '*' and the '1'
+            }
+            else if (checkEqual(new_expression[first_arg_idx_high], "-1")) //* x -1 -> ~ x (because, since prefix operators come at the beginning, if the beginning of the second argument of '*' is -1, then the whole second argument MUST be -1, therefore the expression reduces to * x -1, which is ~ x)
+            {
+    //            puts("hi 382");
+                //erase the '-1' at the end
+                if (first_arg_idx_high == static_cast<int>(new_expression.size()) - 1)
+                {
+                    new_expression.pop_back();
+                }
+                else
+                {
+                    new_expression.erase(new_expression.begin() + first_arg_idx_high, new_expression.end());
+                }
+                new_expression[op_idx] = "~"; //change the '*' to a '~'
+            }
+            else if (checkEqual(new_expression[first_arg_idx_low], "-1")) //* -1 x -> ~ x
+            {
+    //            puts("hi 396");
+                new_expression[op_idx] = "~"; //change the '*' to a '~'
+                new_expression.erase(new_expression.begin() + op_idx + 1); //erase the '-1'
             }
         }
         else if (expression[low] == "/") // / x y
@@ -1409,7 +1441,7 @@ struct Board
                 new_expression[op_idx] = "0"; //change '/' to '0'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
-            else if (new_expression[first_arg_idx_high] == "1") // / x 1 -> x (because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 1, then the whole second argument MUST be 1, therefore the expression reduces to / x 1, which is 1)
+            else if (checkEqual(new_expression[first_arg_idx_high], "1")) // / x 1 -> x (because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is 1, then the whole second argument MUST be 1, therefore the expression reduces to / x 1, which is x)
             {
                 //puts("hi 301");
                 //erase the '1' at the end
@@ -1422,6 +1454,20 @@ struct Board
                     new_expression.erase(new_expression.begin() + first_arg_idx_high, new_expression.end());
                 }
                 new_expression.erase(new_expression.begin() + op_idx); //erase the '/'
+            }
+            else if (checkEqual(new_expression[first_arg_idx_high], "-1")) // / x -1 -> ~ x (because, since prefix operators come at the beginning, if the beginning of the second argument of '/' is -1, then the whole second argument MUST be -1, therefore the expression reduces to / x -1, which is -x)
+            {
+                //puts("hi 454");
+                //erase the '-1' at the end
+                if (first_arg_idx_high == static_cast<int>(new_expression.size()) - 1)
+                {
+                    new_expression.pop_back();
+                }
+                else
+                {
+                    new_expression.erase(new_expression.begin() + first_arg_idx_high, new_expression.end());
+                }
+                new_expression[op_idx] = "~"; //change the '/' to a '~'
             }
             else if ((expression[low] == "/") && ((step = (second_arg_idx_high - first_arg_idx_high)) == (first_arg_idx_high - first_arg_idx_low)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) // / x x
             {
@@ -1483,7 +1529,7 @@ struct Board
                 }
                 new_expression.erase(new_expression.begin() + op_idx); //erase the '^'
             }
-            else if (new_expression[first_arg_idx_low] == "1") // ^ 1 x -> 1
+            else if (checkEqual(new_expression[first_arg_idx_low], "1")) // ^ 1 x -> 1
             {
                 //puts("hi 360");
                 new_expression[op_idx] = "1"; //change '^' to '1'
@@ -1509,6 +1555,18 @@ struct Board
                 new_expression[op_idx] = "1"; //change 'cos' to '1'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
+            else if (new_expression[first_arg_idx_low] == "inf" || new_expression[first_arg_idx_low] == "-inf") // cos +/- inf -> nan
+            {
+    //            puts("hi 554");
+                new_expression[op_idx] = "nan"; //change 'cos' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if ((new_expression[first_arg_idx_low] == "~") && ((first_arg_idx_low+1) < (new_expression.size()))  && (new_expression[first_arg_idx_low+1] == "inf")) // cos ~ inf -> nan
+            {
+    //            puts("hi 560");
+                new_expression[op_idx] = "nan"; //change 'cos' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
         }
         else if (expression[low] == "sin") // sin x
         {
@@ -1527,6 +1585,18 @@ struct Board
             {
                 //puts("hi 388");
                 new_expression[op_idx] = "0"; //change 'sin' to '0'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression[first_arg_idx_low] == "inf" || new_expression[first_arg_idx_low] == "-inf") // sin +/- inf -> nan
+            {
+    //            puts("hi 586");
+                new_expression[op_idx] = "nan"; //change 'sin' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if ((new_expression[first_arg_idx_low] == "~") && ((first_arg_idx_low+1) < (new_expression.size()))  && (new_expression[first_arg_idx_low+1] == "inf")) // sin ~ inf -> nan
+            {
+    //            puts("hi 592");
+                new_expression[op_idx] = "nan"; //change 'sin' to 'nan'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
         }
@@ -1627,10 +1697,34 @@ struct Board
                 new_expression[op_idx] = "0"; //change '~' to '0'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
+            else if (checkEqual(new_expression[first_arg_idx_low], "1")) // ~ 1 -> -1
+            {
+                //puts("hi 696");
+                new_expression[op_idx] = "-1"; //change '~' to '-1'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (checkEqual(new_expression[first_arg_idx_low], "-1")) // ~ -1 -> 1
+            {
+                //puts("hi 702");
+                new_expression[op_idx] = "1"; //change '~' to '1'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
             else if (new_expression[first_arg_idx_low] == "inf") // ~ inf -> -inf
             {
                 //puts("hi 507");
                 new_expression[op_idx] = "-inf"; //change '~' to '-inf'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression[first_arg_idx_low] == "-inf") // ~ -inf -> inf
+            {
+                //puts("hi 702");
+                new_expression[op_idx] = "inf"; //change '~' to 'inf'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if ((new_expression[first_arg_idx_low] == "~") && ((first_arg_idx_low+1) < (new_expression.size()))  && (new_expression[first_arg_idx_low+1] == "inf")) // ~ ~ inf -> inf
+            {
+                //puts("hi 708");
+                new_expression[op_idx] = "inf"; //change '~' to 'inf'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
         }
@@ -1641,6 +1735,7 @@ struct Board
             int temp = low+1+grasp[low+1];
             int first_arg_idx_low = new_expression.size();
             graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // exp x
+            
             if (new_expression[first_arg_idx_low] == "nan") // exp nan -> nan
             {
                 //puts("hi 618");
@@ -1659,7 +1754,194 @@ struct Board
                 new_expression[op_idx] = "inf"; //change 'exp' to 'inf'
                 new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
             }
+            else if (new_expression[first_arg_idx_low] == "-inf") // exp -inf -> 0
+            {
+                //puts("hi 741");
+                new_expression[op_idx] = "0"; //change 'exp' to '0'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if ((new_expression[first_arg_idx_low] == "~") && ((first_arg_idx_low+1) < (new_expression.size()))  && (new_expression[first_arg_idx_low+1] == "inf")) // exp ~ inf -> 0
+            {
+                //puts("hi 747");
+                new_expression[op_idx] = "0"; //change 'exp' to '0'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
         }
+        else if ((expression[low] == "log") || (expression[low] == "ln")) // ln x
+        {
+            int op_idx = new_expression.size();
+            new_expression.push_back(expression[low]); // ln
+            int temp = low+1+grasp[low+1];
+            int first_arg_idx_low = new_expression.size();
+            graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // ln x
+            
+            if (new_expression[first_arg_idx_low] == "nan") // ln nan -> nan
+            {
+                //puts("hi 726");
+                new_expression[op_idx] = "nan"; //change 'ln' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (checkEqual(new_expression[first_arg_idx_low], "0")) // ln 0 -> -inf
+            {
+                //puts("hi 732");
+                new_expression[op_idx] = "-inf"; //change 'ln' to '-inf'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression[first_arg_idx_low] == "inf") // ln inf -> inf
+            {
+                //puts("hi 738");
+                new_expression[op_idx] = "inf"; //change 'ln' to 'inf'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression[first_arg_idx_low] == "-inf") // ln -inf -> nan
+            {
+                //puts("hi 780");
+                new_expression[op_idx] = "nan"; //change 'ln' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if ((new_expression[first_arg_idx_low] == "~") && ((first_arg_idx_low+1) < (new_expression.size()))  && (new_expression[first_arg_idx_low+1] == "inf")) // ln ~ inf -> nan
+            {
+                //puts("hi 786");
+                new_expression[op_idx] = "nan"; //change 'ln' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+        }
+        else if ((expression[low] == "asin") || (expression[low] == "arcsin")) // asin x
+        {
+            int op_idx = new_expression.size();
+            new_expression.push_back(expression[low]); // asin
+            int temp = low+1+grasp[low+1];
+            int first_arg_idx_low = new_expression.size();
+            graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // asin x
+            
+            if (new_expression[first_arg_idx_low] == "nan") // asin nan -> nan
+            {
+                //puts("hi 753");
+                new_expression[op_idx] = "nan"; //change 'asin' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (checkEqual(new_expression[first_arg_idx_low], "0")) // asin 0 -> 0
+            {
+                //puts("hi 759");
+                new_expression[op_idx] = "0"; //change 'asin' to '0'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression[first_arg_idx_low] == "inf") // asin inf -> nan
+            {
+                //puts("hi 765");
+                new_expression[op_idx] = "nan"; //change 'asin' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression[first_arg_idx_low] == "-inf") // asin -inf -> nan
+            {
+                //puts("hi 819");
+                new_expression[op_idx] = "nan"; //change 'asin' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if ((new_expression[first_arg_idx_low] == "~") && ((first_arg_idx_low+1) < (new_expression.size()))  && (new_expression[first_arg_idx_low+1] == "inf")) // asin ~ inf -> nan
+            {
+                //puts("hi 825");
+                new_expression[op_idx] = "nan"; //change 'asin' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+        }
+        else if ((expression[low] == "acos") || (expression[low] == "arccos")) // acos x
+        {
+            int op_idx = new_expression.size();
+            new_expression.push_back(expression[low]); // acos
+            int temp = low+1+grasp[low+1];
+            int first_arg_idx_low = new_expression.size();
+            graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // acos x
+            
+            if (new_expression[first_arg_idx_low] == "nan") // acos nan -> nan
+            {
+                //puts("hi 781");
+                new_expression[op_idx] = "nan"; //change 'acos' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (checkEqual(new_expression[first_arg_idx_low], "1")) // acos 1 -> 0
+            {
+                //puts("hi 787");
+                new_expression[op_idx] = "0"; //change 'acos' to '0'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression[first_arg_idx_low] == "inf") // arccos inf -> nan
+            {
+                //puts("hi 793");
+                new_expression[op_idx] = "nan"; //change 'acos' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression[first_arg_idx_low] == "-inf") // acos -inf -> nan
+            {
+                //puts("hi 858");
+                new_expression[op_idx] = "nan"; //change 'acos' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if ((new_expression[first_arg_idx_low] == "~") && ((first_arg_idx_low+1) < (new_expression.size()))  && (new_expression[first_arg_idx_low+1] == "inf")) // acos ~ inf -> nan
+            {
+                //puts("hi 864");
+                new_expression[op_idx] = "nan"; //change 'acos' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+        }
+        else if (expression[low] == "sqrt") // sqrt x
+        {
+            int op_idx = new_expression.size();
+            new_expression.push_back(expression[low]); // sqrt
+            int temp = low+1+grasp[low+1];
+            int first_arg_idx_low = new_expression.size();
+            graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // sqrt x
+            
+            if (new_expression[first_arg_idx_low] == "nan") // sqrt nan -> nan
+            {
+    //            puts("hi 808");
+                new_expression[op_idx] = "nan"; //change 'sqrt' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (checkEqual(new_expression[first_arg_idx_low], "0")) // sqrt 0 -> 0
+            {
+    //            puts("hi 814");
+                new_expression[op_idx] = "0"; //change 'sqrt' to '0'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (checkEqual(new_expression[first_arg_idx_low], "1")) // sqrt 1 -> 1
+            {
+    //            puts("hi 820");
+                new_expression[op_idx] = "1"; //change 'sqrt' to '1'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression[first_arg_idx_low] == "inf") // sqrt inf -> inf
+            {
+    //            puts("hi 826");
+                new_expression[op_idx] = "inf"; //change 'sqrt' to 'inf'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression[first_arg_idx_low] == "-inf") // sqrt -inf -> nan
+            {
+    //            puts("hi 903");
+                new_expression[op_idx] = "nan"; //change 'sqrt' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if ((new_expression[first_arg_idx_low] == "~") && ((first_arg_idx_low+1) < (new_expression.size()))  && (new_expression[first_arg_idx_low+1] == "inf")) // sqrt ~ inf -> nan
+            {
+    //            puts("hi 909");
+                new_expression[op_idx] = "nan"; //change 'sqrt' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if (checkEqual(new_expression[first_arg_idx_low], "-1")) // sqrt -1 -> nan
+            {
+    //            puts("hi 915");
+                new_expression[op_idx] = "nan"; //change 'sqrt' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+            else if ((new_expression[first_arg_idx_low] == "~") && ((first_arg_idx_low+1) < (new_expression.size()))  && (new_expression[first_arg_idx_low+1] == "1")) // sqrt ~ 1 -> nan
+            {
+    //            puts("hi 921");
+                new_expression[op_idx] = "nan"; //change 'sqrt' to 'nan'
+                new_expression.erase(new_expression.begin() + op_idx + 1, new_expression.end()); //erase the rest
+            }
+        }
+        
         else if (expression[low] == "abs") // abs x
         {
             new_expression.push_back(expression[low]); // abs
@@ -1847,6 +2129,14 @@ struct Board
                                 simplified = true;
                                 break;
                             }
+                            else if (checkEqual(expression[i+2], "0") && isConst1) // / x 0 -> nan
+                            {
+                                //puts("hi 195");
+                                expression[i] = "nan";
+                                expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
+                                simplified = true;
+                                break;
+                            }
                             else if (checkEqual(expression[i+2], "1") && isConst1) // / x 1 -> x
                             {
                                 //puts("hi 195");
@@ -1874,11 +2164,10 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (checkEqual(expression[i+1], "0") && isConst2) // ^ 0 x -> 0 (x > 0)
+                            else if (checkEqual(expression[i+1], "0") && isConst2) // ^ 0 x -> nan
                             {
-                                //TODO: Should change this to nan to be consistent with above!
                                 //puts("hi 215");
-                                expression[i] = "0";
+                                expression[i] = "nan";
                                 expression.erase(expression.begin() + i + 1, expression.begin() + i + 3); // Remove elements at i + 1 and i + 2
                                 simplified = true;
                                 break;
@@ -1913,8 +2202,21 @@ struct Board
                         }
                         else if (expression[i] == "~")
                         {
-                            expression[i] = simplifyString(to_string_general(-(Stod(expression[i+1]))));
-                            expression.erase(expression.begin() + i + 1);
+                            if (expression[i+1] == "inf") //~ inf -> -inf
+                            {
+                                expression[i] = "-inf"; //change '~' to '-inf'
+                                expression.erase(expression.begin() + i + 1); // Remove the 'inf'
+                            }
+                            else if (checkEqual(expression[i+1], "0"))
+                            {
+                                expression[i] = "0"; //change '~' to '0'
+                                expression.erase(expression.begin() + i + 1); // Remove the '0'
+                            }
+                            else
+                            {
+                                expression[i] = simplifyString(to_string_general(-(Stod(expression[i+1]))));
+                                expression.erase(expression.begin() + i + 1);
+                            }
                             simplified = true;
                             break;
                         }
@@ -1991,8 +2293,6 @@ struct Board
                             simplified = true;
                             break;
                         }
-                        //TODO: Add 0 ~ -> 0
-                        //TODO: Add inf ~ -> -inf
                         else if (expression[i] == "exp" && (expression[i+1] == "ln" || expression[i+1] == "log"))
                         {
                             //puts("hi 361");
@@ -2042,14 +2342,13 @@ struct Board
                             simplified = true;
                             break;
                         }
-                        //TODO: uncomment the below!
-    //                    else if ((expression[i] == "sech") && (expression[i+1] == "~")) //sech(-x) = sech(x)
-    //                    {
-    //                        //puts("hi 708");
-    //                        expression.erase(expression.begin() + i + 1); // Remove the '~'
-    //                        simplified = true;
-    //                        break;
-    //                    }
+                        else if ((expression[i] == "sech") && (expression[i+1] == "~")) //sech(-x) = sech(x)
+                        {
+                            //puts("hi 708");
+                            expression.erase(expression.begin() + i + 1); // Remove the '~'
+                            simplified = true;
+                            break;
+                        }
                     }
                 }
             }
@@ -2163,6 +2462,18 @@ struct Board
                 //puts("hi 252");
                 new_expression.erase(new_expression.begin() + first_arg_idx_high - 1); //erase the '1'
             }
+            else if (checkEqual(new_expression.back(), "-1")) // x -1 * -> x ~ (because, since postfix operators come at the end, if the end of the second argument of '*' is -1, then the whole second argument MUST be -1, therefore the expression reduces to x -1 *, which is x ~)
+            {
+    //            puts("hi 368");
+                new_expression.back() = "~"; //change the '-1' to a "~"
+                
+            }
+            else if (checkEqual(new_expression[first_arg_idx_high - 1], "-1")) //-1 x * -> x ~ (because, since postfix operators come at the end, if the end of the first argument of '*' is -1, then the whole first argument MUST be -1, therefore the expression reduces to -1 x *, which is x ~)
+            {
+    //            puts("hi 374");
+                new_expression.erase(new_expression.begin() + first_arg_idx_high - 1); //erase the '-1'
+                new_expression.push_back("~"); //add a "~" at the end
+            }
             else
             {
                 new_expression.push_back(expression[up]);
@@ -2207,6 +2518,11 @@ struct Board
             {
                 //puts("hi 292");
                 new_expression.pop_back(); //erase the '1'
+            }
+            else if (checkEqual(new_expression.back(), "-1")) // x -1 / -> x ~ (because, since postfix operators come at the end, if the end of the second argument of '/' is -1, then the whole second argument MUST be -1, therefore the expression reduces to x -1 /, which is x ~)
+            {
+    //            puts("hi 425");
+                new_expression.back() = "~"; //change the '-1' to a "~"
             }
             else if ((expression[up] == "/") && ((step = (first_arg_idx_high - first_arg_idx_low)) == (second_arg_idx_high - first_arg_idx_high)) && (areExpressionRangesEqual(first_arg_idx_low, first_arg_idx_high, step, new_expression))) // / x x -> 1
             {
@@ -2293,7 +2609,18 @@ struct Board
                 new_expression[first_arg_idx_low] = "1";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
             }
-            //TODO: Add cos(inf) -> nan
+            else if ((new_expression.back() == "inf") || (new_expression.back() == "-inf")) // +/- inf cos -> nan (because, since postfix operators come at the end, if the end of the argument of 'cos' is +/- inf, then the whole argument MUST be +/- inf, therefore the expression reduces to +/- inf cos, which is nan)
+            {
+    //            puts("hi 499");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if ((new_expression.back() == "~") && (new_expression.size() >= 2) && ((*(new_expression.end() - 2)) == "inf")) // inf ~ cos -> nan (because, since postfix operators come at the end, if the end of the argument of 'cos' is inf ~, then the whole argument MUST be inf ~, therefore the expression reduces to inf ~ cos, which is nan)
+            {
+    //            puts("hi 505");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
             else
             {
                 new_expression.push_back(expression[up]);
@@ -2316,7 +2643,18 @@ struct Board
                 new_expression[first_arg_idx_low] = "0";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
             }
-            //TODO: Add sin(inf) -> nan
+            else if ((new_expression.back() == "inf") || (new_expression.back() == "-inf")) // +/- inf sin -> nan (because, since postfix operators come at the end, if the end of the argument of 'sin' is +/- inf, then the whole argument MUST be +/- inf, therefore the expression reduces to +/- inf sin, which is nan)
+            {
+    //            puts("hi 533");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if ((new_expression.back() == "~") && (new_expression.size() >= 2) && ((*(new_expression.end() - 2)) == "inf")) // inf ~ sin -> nan (because, since postfix operators come at the end, if the end of the argument of 'sin' is inf ~, then the whole argument MUST be inf ~, therefore the expression reduces to inf ~ sin, which is nan)
+            {
+    //            puts("hi 539");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
             else
             {
                 new_expression.push_back(expression[up]);
@@ -2419,12 +2757,37 @@ struct Board
                 new_expression[first_arg_idx_low] = "0";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
             }
-            if (new_expression.back() == "inf") // inf ~ -> -inf (because, since postfix operators come at the end, if the end of the argument of '~' is inf, then the whole argument MUST be inf, therefore the expression reduces to inf ~, which is -inf)
+            else if (checkEqual(new_expression.back(), "1")) // 1 ~ -> -1 (because, since postfix operators come at the end, if the end of the argument of '~' is 1, then the whole argument MUST be 1, therefore the expression reduces to 1 ~, which is -1)
+            {
+    //            puts("hi 663");
+                new_expression[first_arg_idx_low] = "-1";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if (checkEqual(new_expression.back(), "-1")) // -1 ~ -> 1 (because, since postfix operators come at the end, if the end of the argument of '~' is -1, then the whole argument MUST be -1, therefore the expression reduces to -1 ~, which is 1)
+            {
+    //            puts("hi 669");
+                new_expression[first_arg_idx_low] = "1";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression.back() == "inf") // inf ~ -> -inf (because, since postfix operators come at the end, if the end of the argument of '~' is inf, then the whole argument MUST be inf, therefore the expression reduces to inf ~, which is -inf)
             {
                 //puts("hi 507");
                 new_expression[first_arg_idx_low] = "-inf";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
             }
+            else if (new_expression.back() == "-inf") // -inf ~ -> inf (because, since postfix operators come at the end, if the end of the argument of '~' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf ~, which is inf)
+            {
+    //            puts("hi 669");
+                new_expression[first_arg_idx_low] = "inf";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if ((new_expression.back() == "~") && (new_expression.size() >= 2) && ((*(new_expression.end() - 2)) == "inf")) // inf ~ ~ -> 0 (because, since postfix operators come at the end, if the end of the argument of '~' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf ~, which is inf)
+            {
+    //            puts("hi 675");
+                new_expression[first_arg_idx_low] = "inf";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            
             else
             {
                 new_expression.push_back(expression[up]);
@@ -2447,10 +2810,194 @@ struct Board
                 new_expression[first_arg_idx_low] = "1";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
             }
-            if (new_expression.back() == "inf") // inf exp -> inf (because, since postfix operators come at the end, if the end of the argument of '~' is inf, then the whole argument MUST be inf, therefore the expression reduces to inf ~, which is -inf)
+            else if (new_expression.back() == "inf") // inf exp -> inf (because, since postfix operators come at the end, if the end of the argument of 'exp' is inf, then the whole argument MUST be inf, therefore the expression reduces to inf exp, which is inf)
             {
                 //puts("hi 530");
                 new_expression[first_arg_idx_low] = "inf";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression.back() == "-inf") // -inf exp -> 0 (because, since postfix operators come at the end, if the end of the argument of 'exp' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf exp, which is 0)
+            {
+    //            puts("hi 697");
+                new_expression[first_arg_idx_low] = "0";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if ((new_expression.back() == "~") && (new_expression.size() >= 2) && ((*(new_expression.end() - 2)) == "inf")) // inf ~ exp -> 0 (because, since postfix operators come at the end, if the end of the argument of 'exp' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf exp, which is 0)
+            {
+    //            puts("hi 703");
+                new_expression[first_arg_idx_low] = "0";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else
+            {
+                new_expression.push_back(expression[up]);
+            }
+        }
+        else if ((expression[up] == "ln") || (expression[up] == "log")) //x ln
+        {
+            int first_arg_idx_low = new_expression.size();
+            graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
+            
+            if (new_expression.back() == "nan") // nan ln -> nan (because, since postfix operators come at the end, if the end of the argument of 'ln' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan ln, which is nan)
+            {
+    //            puts("hi 707");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if (checkEqual(new_expression.back(), "0")) // 0 ln -> -inf (because, since postfix operators come at the end, if the end of the argument of 'ln' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 ln, which is -inf)
+            {
+    //            puts("hi 713");
+                new_expression[first_arg_idx_low] = "-inf";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression.back() == "inf") // inf ln -> inf (because, since postfix operators come at the end, if the end of the argument of 'ln' is inf, then the whole argument MUST be inf, therefore the expression reduces to inf ln, which is inf)
+            {
+    //            puts("hi 719");
+                new_expression[first_arg_idx_low] = "inf";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression.back() == "-inf") // -inf ln -> nan (because, since postfix operators come at the end, if the end of the argument of 'ln' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf ln, which is nan)
+            {
+    //            puts("hi 750");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if ((new_expression.back() == "~") && (new_expression.size() >= 2) && ((*(new_expression.end() - 2)) == "inf")) // inf ~ ln -> nan (because, since postfix operators come at the end, if the end of the argument of 'ln' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf ln, which is nan)
+            {
+    //            puts("hi 756");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else
+            {
+                new_expression.push_back(expression[up]);
+            }
+        }
+        else if ((expression[up] == "asin") || (expression[up] == "arcsin")) //x asin
+        {
+            int first_arg_idx_low = new_expression.size();
+            graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
+            
+            if (new_expression.back() == "nan") // nan asin -> nan (because, since postfix operators come at the end, if the end of the argument of 'asin' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan asin, which is nan)
+            {
+    //            puts("hi 735");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if (checkEqual(new_expression.back(), "0")) // 0 asin -> 0 (because, since postfix operators come at the end, if the end of the argument of 'asin' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 asin, which is 0)
+            {
+    //            puts("hi 741");
+                new_expression[first_arg_idx_low] = "0";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression.back() == "inf") // inf asin -> nan (because, since postfix operators come at the end, if the end of the argument of 'asin' is inf, then the whole argument MUST be inf, therefore the expression reduces to inf asin, which is nan)
+            {
+    //            puts("hi 747");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression.back() == "-inf") // -inf asin -> nan (because, since postfix operators come at the end, if the end of the argument of 'asin' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf asin, which is nan)
+            {
+    //            puts("hi 790");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if ((new_expression.back() == "~") && (new_expression.size() >= 2) && ((*(new_expression.end() - 2)) == "inf")) // inf ~ asin -> nan (because, since postfix operators come at the end, if the end of the argument of 'asin' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf asin, which is nan)
+            {
+    //            puts("hi 796");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else
+            {
+                new_expression.push_back(expression[up]);
+            }
+        }
+        else if ((expression[up] == "acos") || (expression[up] == "arccos")) //x acos
+        {
+            int first_arg_idx_low = new_expression.size();
+            graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
+            
+            if (new_expression.back() == "nan") // nan acos -> nan (because, since postfix operators come at the end, if the end of the argument of 'acos' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan acos, which is nan)
+            {
+    //            puts("hi 763");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if (checkEqual(new_expression.back(), "1")) // 1 acos -> 0 (because, since postfix operators come at the end, if the end of the argument of 'acos' is 1, then the whole argument MUST be 1, therefore the expression reduces to 1 acos, which is 0)
+            {
+    //            puts("hi 769");
+                new_expression[first_arg_idx_low] = "0";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression.back() == "inf") // inf acos -> nan (because, since postfix operators come at the end, if the end of the argument of 'acos' is inf, then the whole argument MUST be inf, therefore the expression reduces to inf acos, which is nan)
+            {
+    //            puts("hi 775");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression.back() == "-inf") // -inf acos -> nan (because, since postfix operators come at the end, if the end of the argument of 'acos' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf acos, which is nan)
+            {
+    //            puts("hi 830");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if ((new_expression.back() == "~") && (new_expression.size() >= 2) && ((*(new_expression.end() - 2)) == "inf")) // inf ~ acos -> nan (because, since postfix operators come at the end, if the end of the argument of 'acos' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf acos, which is nan)
+            {
+    //            puts("hi 836");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else
+            {
+                new_expression.push_back(expression[up]);
+            }
+        }
+        else if (expression[up] == "sqrt") //x sqrt
+        {
+            int first_arg_idx_low = new_expression.size();
+            graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
+            
+            if (new_expression.back() == "nan") // nan sqrt -> nan (because, since postfix operators come at the end, if the end of the argument of 'sqrt' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan sqrt, which is nan)
+            {
+    //            puts("hi 791");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if (checkEqual(new_expression.back(), "0")) // 0 sqrt -> 0 (because, since postfix operators come at the end, if the end of the argument of 'sqrt' is 0, then the whole argument MUST be 0, therefore the expression reduces to 0 sqrt, which is 0)
+            {
+    //            puts("hi 797");
+                new_expression[first_arg_idx_low] = "0";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if (checkEqual(new_expression.back(), "1")) // 1 sqrt -> 1 (because, since postfix operators come at the end, if the end of the argument of 'sqrt' is 1, then the whole argument MUST be 1, therefore the expression reduces to 1 sqrt, which is 1)
+            {
+    //            puts("hi 803");
+                new_expression[first_arg_idx_low] = "1";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if (checkEqual(new_expression.back(), "-1")) // -1 sqrt -> nan (because, since postfix operators come at the end, if the end of the argument of 'sqrt' is -1, then the whole argument MUST be -1, therefore the expression reduces to -1 sqrt, which is nan)
+            {
+    //            puts("hi 870");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression.back() == "inf") // inf sqrt -> inf (because, since postfix operators come at the end, if the end of the argument of 'sqrt' is inf, then the whole argument MUST be inf, therefore the expression reduces to inf sqrt, which is inf)
+            {
+    //            puts("hi 809");
+                new_expression[first_arg_idx_low] = "inf";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if (new_expression.back() == "-inf") // -inf sqrt -> nan (because, since postfix operators come at the end, if the end of the argument of 'sqrt' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf sqrt, which is nan)
+            {
+    //            puts("hi 876");
+                new_expression[first_arg_idx_low] = "nan";
+                new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
+            }
+            else if ((new_expression.back() == "~") && (new_expression.size() >= 2) && ((*(new_expression.end() - 2)) == "inf")) // inf ~ sqrt -> nan (because, since postfix operators come at the end, if the end of the argument of 'sqrt' is -inf, then the whole argument MUST be -inf, therefore the expression reduces to -inf sqrt, which is nan)
+            {
+    //            puts("hi 882");
+                new_expression[first_arg_idx_low] = "nan";
                 new_expression.erase(new_expression.begin() + first_arg_idx_low + 1, new_expression.end()); //erase the rest
             }
             else
@@ -2654,6 +3201,14 @@ struct Board
                                 simplified = true;
                                 break;
                             }
+                            else if (checkEqual(expression[i-1], "0") && isConst2) // "x 0 /" -> "nan"
+                            {
+                                //puts("hi 859");
+                                expression[i] = "nan";
+                                expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                                simplified = true;
+                                break;
+                            }
                             else if (isConst1 && isConst2 && (expression[i-1] == expression[i-2])) // "x x /" -> "1"
                             {
                                 //puts("hi 203");
@@ -2674,11 +3229,10 @@ struct Board
                                 simplified = true;
                                 break;
                             }
-                            else if (checkEqual(expression[i-2], "0") && isConst1) // "0 x ^" -> "0" (x > 0)
+                            else if (checkEqual(expression[i-2], "0") && isConst1) // "0 x ^" -> "nan"
                             {
-                                //TODO: Should change this to nan to be consistent with above!
-    //                            puts("hi 215");
-                                expression[i] = "0";
+                                //puts("hi 880");
+                                expression[i] = "nan";
                                 expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
                                 simplified = true;
                                 break;
@@ -2713,8 +3267,22 @@ struct Board
                         }
                         else if (expression[i] == "~")
                         {
-                            expression[i] = simplifyString(to_string_general(-(Stod(expression[i-1]))));
-                            expression.erase(expression.begin() + i - 1);
+                            if (checkEqual(expression[i-1], "0")) //0 ~ -> 0
+                            {
+                                //puts("hi 917");
+                                expression.erase(expression.begin() + i); // Remove the '~'
+                            }
+                            else if (expression[i-1] == "inf") //inf ~ -> -inf
+                            {
+                                //puts("hi 924");
+                                expression[i-1] = "-inf"; // change 'inf' to '-inf'
+                                expression.erase(expression.begin() + i); // Remove the '~'
+                            }
+                            else
+                            {
+                                expression[i] = simplifyString(to_string_general(-(Stod(expression[i-1]))));
+                                expression.erase(expression.begin() + i - 1);
+                            }
                             simplified = true;
                             break;
                         }
@@ -2791,7 +3359,6 @@ struct Board
                             simplified = true;
                             break;
                         }
-                        //TODO: Add 0 ~ -> 0
                         else if (expression[i] == "exp" && (expression[i-1] == "ln" || expression[i-1] == "log"))
                         {
                             //puts("hi 360");
@@ -2841,11 +3408,18 @@ struct Board
                             simplified = true;
                             break;
                         }
+                        else if (expression[i] == "sech" && expression[i-1] == "~") //'x ~ sech' -> 'x sech'
+                        {
+                            expression.erase(expression.begin() + i - 1); // Remove the '~'
+                            simplified = true;
+                            break;
+                        }
                     }
                 }
             }
         }
     }
+
     
     void simplifyRPN(std::vector<std::string>& expression)
     {
@@ -5958,10 +6532,10 @@ std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
     thread_local const std::string w0 = to_string_general(-Board::data.num_rows / (2.0 * num_zeroes));
     
     /*
-     Best score = 3.49115e-07, SNE = 2.86438e+06
-     Squared-norm error for each equation: 2.86438e+06
-     Best expression = (((((9741 + (1 / x13)) - ((x22 * x22) ^ cos(x6))) - ((8.851731000000001 / (0.00621 + x6)) ^ ((4.372938 + x7) - (x20 + 279.200012)))) + ((-3.225653 - (1075 ^ x10)) / (x5 ^ (x18 - ((0.006210 / x20) + 2))))) + ((((x24 ^ ((x8 + x0) - x2)) + ((2.0200101e+07 ^ x15) + x20)) + ((x17 / (292.600006 * x11)) ^ (91.45173100000001 - x23))) * ((((x19 + 0.00621) * 25.4) + -818.627062) + (((x23 + -330) * x22) + (acos(x21) + -18327.436844999997)))))
-     Best expression (original format) = 9741 1 x13 / + x22 x22 * x6 cos ^ - 8.851731000000001 0.00621 x6 + / 4.372938 x7 + x20 279.200012 + - ^ - -3.225653 1075 x10 ^ - x5 x18 0.006210 x20 / 2 + - ^ / + x24 x8 x0 + x2 - ^ 2.0200101e+07 x15 ^ x20 + + x17 292.600006 x11 * / 91.45173100000001 x23 - ^ + x19 0.00621 + 25.4 * -818.627062 + x23 -330 + x22 * x21 acos -18327.436844999997 + + + * +
+     Best score = 4.40867e-07, SNE = 2.26826e+06
+     Squared-norm error for each equation: 2.26826e+06
+     Best expression = (((((((x6 - 0.006210) + 9741) + (1 / x13)) - ((15893 * x22) ^ cos((20200101.000000 + x6)))) - ((8.851731000000001 / (0.00621 + x6)) ^ ((4.372938 + x7) - (x20 + 279.200012)))) + ((x25 - 3.4288275429960554e+302) / ((((x15 + x1) ^ -100) + x5) ^ ((0.051731 + x18) - ((0.006210 / x20) + 2))))) + ((((((x22 * 8.800000) + (267.200012 ^ x20)) ^ ((x8 + x0) - (-2.640000 + x2))) + ((2.0200101e+07 ^ x15) + x20)) + ((x17 / ((38.000000 + x8) * x11)) ^ (92.45173100000001 - x23))) * ((((x19 + 0.00621) * 25.4) + -818.627062) + ((-54 * x22) + (acos(x21) + -18327.436844999997)))))
+     Best expression (original format) = x6 0.006210 - 9741 + 1 x13 / + 15893 x22 * 20200101.000000 x6 + cos ^ - 8.851731000000001 0.00621 x6 + / 4.372938 x7 + x20 279.200012 + - ^ - x25 3.4288275429960554e+302 - x15 x1 + -100 ^ x5 + 0.051731 x18 + 0.006210 x20 / 2 + - ^ / + x22 8.800000 * 267.200012 x20 ^ + x8 x0 + -2.640000 x2 + - ^ 2.0200101e+07 x15 ^ x20 + + x17 38.000000 x8 + x11 * / 92.45173100000001 x23 - ^ + x19 0.00621 + 25.4 * -818.627062 + -54 x22 * x21 acos -18327.436844999997 + + + * +
      ```
         from sympy import symbols, cos, sin, tanh, sech, sympify, latex, multiline_latex
         import re
@@ -9186,7 +9760,7 @@ namespace ExampleProblems
                 false, /*Whether to simplify the ORIGINAL expression on every iteration (perturbation) of the seed expression vector; if false a copy is maintained so that simplification on this->pieces can still happen*/
                 1 /*number of data columns that constitute labels and not independent variables/features*/,
                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
-                {split("0 0 + 0 9741 + + 0 1 + 0 x13 + / + 0 x22 + 0 x22 + * 0 x6 + cos ^ - 0 0 + 0 8.851731000000001 + + 0 0.00621 + 0 x6 + + / 0 4.372938 + 0 x7 + + 0 x20 + 0 279.200012 + + - ^ - 0 0 + 0 0 + + 0 0 + 0 -3.225653 + + + 0 0 + 0 1075 + + 0 0 + 0 x10 + + ^ - 0 0 + 0 0 + + 0 0 + 0 x5 + + + 0 0 + 0 x18 + + 0.006210 x20 / 0 2 + + - ^ / + 0 0 + 0 x24 + + x8 x0 + 0 x2 + - ^ 0 2.0200101e+07 + 0 x15 + ^ 0 0 + 0 x20 + + + + 0 0 + 0 x17 + + 0 292.600006 + 0 x11 + * / 0 0 + 0 91.45173100000001 + + 0 0 + 0 x23 + + - ^ + 0 x19 + 0 0.00621 + + 0 0 + 0 25.4 + + * 0 0 + 0 0 + + 0 0 + 0 -818.627062 + + + + 0 x23 + 0 -330 + + 0 0 + 0 x22 + + * 0 x21 + acos 0 0 + 0 -18327.436844999997 + + + + + * +")} /*seed expressions*/,
+                {split("x6 0.006210 - 0 9741 + + 0 1 + 0 x13 + / + 0 77888 + 0 x22 + * 20200101.000000 x6 + cos ^ - 0 0 + 0 8.851731000000001 + + 0 0.00621 + 0 x6 + + / 0 4.372938 + 0 x7 + + 0 x20 + 0 279.200012 + + - ^ - 0 0 + 0 0 + + 0 0 + 0 x25 + + + 0 0 + 0 0 + + 0 0 + 0 3.4288275429960554e+302 + + + - x15 x1 + 0 -100 + ^ 0 0 + 0 x5 + + + 0 0.051731 + 0 x18 + + 0.006210 x20 / 0 2 + + - ^ / + x22 8.800000 * 267.200012 x20 ^ + x8 x0 + -2.640000 x2 + - ^ 0 2.0200101e+07 + 0 x15 + ^ 0 0 + 0 x20 + + + + 0 0 + 0 x17 + + 38.000000 x8 + 0 x11 + * / 0 0 + 0 92.45173100000001 + + 0 0 + 0 x23 + + - ^ + 0 x19 + 0 0.00621 + + 0 0 + 0 25.4 + + * 0 0 + 0 0 + + 0 0 + 0 -818.627062 + + + + 0 0 + 0 -54 + + 0 0 + 0 x22 + + * 0 x21 + acos 0 0 + 0 -18327.436844999997 + + + + + * +")} /*seed expressions*/,
 //                {split("+ + - - 9736 x22 / x7 x20 / + 0 -100.051731 ^ x5 x15 * + + 0 x20 * 1075.000000 x5 + + 0 0 + 0 -17064.107062")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -9229,7 +9803,7 @@ int main(int argc, char *argv[])
     constexpr double time = 6000000.;//450.0;
     printf("Random seed set to %d%s", random_seed, std::string(10, '\n').c_str());
     ProblemOption choice = ProblemOption::WildfireSpreadTS;
-    
+    //TODO: Test 0/16, ProblemOption::SwiftHohenberg+RandomSearch
     switch (choice)
     {
         case ProblemOption::SwiftHohenberg:
