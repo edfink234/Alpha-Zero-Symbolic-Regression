@@ -3413,7 +3413,6 @@ int main()
     puts("");
 }
 
-//TODO: Number of non-production tested simplifications added: 34, ['0 x ^ -> nan', '0 ~ -> 0', 'inf ~ -> -inf', '~ sech -> sech', 'x 0 / -> nan', 'inf cos -> nan', '-inf cos -> nan', 'inf sin -> nan', '-inf sin -> nan', 'x -1 * -> x ~', '-1 x * -> x ~', 'x -1 / -> x ~', '0 ln -> -inf', 'nan ln -> nan', 'inf ln -> inf', '0 asin -> 0', 'nan asin -> nan', 'inf asin -> nan', '1 acos -> 0', 'nan acos -> nan', 'inf acos -> nan', '1 sqrt -> 1', 'nan sqrt -> nan', 'inf sqrt -> inf', '0 sqrt -> 0', '-inf cos -> nan', '-inf sin -> nan', '-inf ~ -> inf', '-inf ln -> nan', '-inf asin -> nan', '-inf acos -> nan', '-inf sqrt -> nan', '1 ~ -> -1', '-1 ~ -> 1']
 //g++ -std=c++20 -o PostfixSimplify PostfixSimplify.cpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include
 //https://stackoverflow.com/questions/20153412/simplification-algorithm-for-reverse-polish-notation
 //https://dl.acm.org/

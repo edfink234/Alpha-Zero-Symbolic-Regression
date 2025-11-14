@@ -6787,10 +6787,10 @@ std::vector<std::vector<std::string>> SolitonWaveFengEq14and15Laser(Board& x, bo
             - Equation 9 SNE: 0.0178037
      
      Change of convention, current best right now
-         Best score = 0.943529, SNE = 0.0598506
-         Squared-norm error for each equation: 0.0210991 2.51704e-10 1.42123e-08 1.05092e-08 1.42123e-08 1.05092e-08 0 0.0209487 0.0178028
-         Best expression = (tanh(tanh(sech(x0))) / (-6.4342880000000005 - (tanh(x0) / 2.61657))), sech((-3.2171440000000002 * (sech(x0) ^ 0.9640275800758169)))
-         Best expression (original format) = x0 sech tanh tanh -6.4342880000000005 x0 tanh 2.61657 / - /, -3.2171440000000002 x0 sech 0.9640275800758169 ^ * sech
+         Best score = 0.943537, SNE = 0.0598418
+         Squared-norm error for each equation: 0.0210858 2.52051e-10 1.42123e-08 1.05092e-08 1.42123e-08 1.05092e-08 0 0.0209531 0.0178028
+         Best expression = (tanh(tanh(sech(x0))) / (-6.4342880000000005 - (tanh(x0) / 2.61657))), sech((3.218281828459045 * (sech(x0) ^ 0.9640275800758169)))
+         Best expression (original format) = x0 sech tanh tanh -6.4342880000000005 x0 tanh 2.61657 / - /, 3.218281828459045 x0 sech 0.9640275800758169 ^ * sech
     */
     constexpr const char* rho = "0.000544662309"; // 1/1836, Figs 10-11 caption, https://www.bing.com/search?q=9.1e-31%2F%201.67e-27%20&qs=n&form=QBRE&sp=-1&ghc=1&lq=0&pq=9.1e-31%2F%201.67e-27%20&sc=0-18&sk=&cvid=09FAD78B6CC6414E98D1BED802D49D1C
     constexpr const char* omega_squared_factor_for_omega_0_point_8_omega_pe = "0.64"; //0.8^2 ω_{pe} = 0.64 ω_{pe}, Figs 10-11 caption "ω = 0.8*ω_{pe}", ω_{pe} = (4*pi*(n_e=n)*(q_e^2))/(m_e), see "III. PROPAGATION MODES"
@@ -9713,11 +9713,11 @@ namespace ExampleProblems
                 0 /*num threads*/,
                 true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
-                true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the ORIGINAL expression on every iteration (perturbation) of the seed expression vector; if false a copy is maintained so that simplification on this->pieces can still happen*/
                 2 /*number of data columns that constitute labels and not independent variables/features*/,
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
-                {split("x0 sech tanh tanh 0 0 + 0 -6.466281 + + x0 tanh 0 2.616570 + / - /"), split("0 0 + 0 -3.2171440000000002 + + x0 sech 0 0.9640275800758169 + ^ * sech")} /*seed expressions*/,
+                {split("x0 sech tanh tanh 0 0 + 0 -6.4342880000000005 + + x0 tanh 0 2.61657 + / - /"), split("0 0 + 0 -3.2171440000000002 + + x0 sech 0 0.9640275800758169 + ^ * sech")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 "");// "SNE_vals.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
@@ -9809,10 +9809,9 @@ int main(int argc, char *argv[])
 {
     int random_seed = get_random_seed(argc, argv);
     constexpr const char* algorithm = "SimulatedAnnealing";
-    constexpr double time = 450.0; //6000000.;
+    constexpr double time = 6000000.;
     printf("Random seed set to %d%s", random_seed, std::string(10, '\n').c_str());
-    ProblemOption choice = ProblemOption::SolitonWaveFengEq14and15Laser;
-    //TODO: Test 15/16, ProblemOption::SolitonWaveFengEq14and15Laser+SimulatedAnnealing
+    ProblemOption choice = ProblemOption::WildfireSpreadTS;
     switch (choice)
     {
         case ProblemOption::SwiftHohenberg:
