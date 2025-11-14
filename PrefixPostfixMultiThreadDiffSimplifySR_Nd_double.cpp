@@ -6787,10 +6787,10 @@ std::vector<std::vector<std::string>> SolitonWaveFengEq14and15Laser(Board& x, bo
             - Equation 9 SNE: 0.0178037
      
      Change of convention, current best right now
-         - Best score = 0.943093, SNE = 0.060341
-         - Squared-norm error for each equation: 0.0208904 2.53769e-10 1.40632e-08 1.04112e-08 1.40632e-08 1.04112e-08 0 0.0209487 0.0185019
-         - Best expression = (tanh(tanh(sech(x0))) / (-6.466281 - (tanh(x0) / 2.616570))), sech((-3.2171440000000002 * (sech(x0) ^ 0.9640275800758169)))
-         - Best expression (original format) = x0 sech tanh tanh -6.466281 x0 tanh 2.616570 / - /, -3.2171440000000002 x0 sech 0.9640275800758169 ^ * sech
+         Best score = 0.943529, SNE = 0.0598506
+         Squared-norm error for each equation: 0.0210991 2.51704e-10 1.42123e-08 1.05092e-08 1.42123e-08 1.05092e-08 0 0.0209487 0.0178028
+         Best expression = (tanh(tanh(sech(x0))) / (-6.4342880000000005 - (tanh(x0) / 2.61657))), sech((-3.2171440000000002 * (sech(x0) ^ 0.9640275800758169)))
+         Best expression (original format) = x0 sech tanh tanh -6.4342880000000005 x0 tanh 2.61657 / - /, -3.2171440000000002 x0 sech 0.9640275800758169 ^ * sech
     */
     constexpr const char* rho = "0.000544662309"; // 1/1836, Figs 10-11 caption, https://www.bing.com/search?q=9.1e-31%2F%201.67e-27%20&qs=n&form=QBRE&sp=-1&ghc=1&lq=0&pq=9.1e-31%2F%201.67e-27%20&sc=0-18&sk=&cvid=09FAD78B6CC6414E98D1BED802D49D1C
     constexpr const char* omega_squared_factor_for_omega_0_point_8_omega_pe = "0.64"; //0.8^2 ω_{pe} = 0.64 ω_{pe}, Figs 10-11 caption "ω = 0.8*ω_{pe}", ω_{pe} = (4*pi*(n_e=n)*(q_e^2))/(m_e), see "III. PROPAGATION MODES"
@@ -7354,6 +7354,13 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 */
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
+    /*
+     Best score = 6.19926e-05, SNE = 16130
+     Squared-norm error for each equation: 16121 8.94822 0
+     Best expression = ((0.693868926928361 - (sin((0.010000 + x1)) * (1.0000132758892615 * sin(x0)))) - ((((2 + x1) / -10) * 0.014426950408889635) + ((0.02 ^ (6.283190 + x0)) + 0.0922858190550785)))
+     Best expression (original format) = 0.693868926928361 0.010000 x1 + sin 1.0000132758892615 x0 sin * * - 2 x1 + -10 / 0.014426950408889635 * 0.02 6.283190 x0 + ^ 0.0922858190550785 + + -
+     */
+    
     std::vector<std::vector<std::string>> results;
     results.reserve(3);
     assert((x.num_diff_eqns == 3) && "SwiftHohenberg is a system of 3 equations!");
@@ -8511,6 +8518,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
             assert(all_checks(x.pieces));
             Perturbation(rand_depths, i);
         }
+        puts("Done with symbolic regression");
     };
     //Starting the threads each with a separate version of `func`
     for (unsigned int i = 0; i < num_threads; i++)
@@ -9536,6 +9544,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
                 x.pieces[jdx].clear();
             }
         }
+        puts("Done with symbolic regression");
     };
 
     for (unsigned int i = 0; i < num_threads; i++)
@@ -9569,7 +9578,7 @@ namespace ExampleProblems
             RandomSearch(SwiftHohenberg /*differential equation to solve*/,
                          3 /*number of equations in differential equation system*/,
                          data1 /*data used to solve differential equation*/,
-                         std::vector<int>{4} /*fixed depths of generated solution*/,
+                         std::vector<int>{5} /*fixed depths of generated solution*/,
                          "postfix" /*expression representation*/,
                          0 /*num_consts_diff: number of constants in differential equation*/,
                          "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -9600,11 +9609,11 @@ namespace ExampleProblems
                 0 /*num threads*/,
                 true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
-                true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
                 0 /*number of data columns that constitute labels and not independent variables/features*/,
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
-                {split("0 0 + 0 0 + + 0 0 + 0 0.693868926928361 + + + 0.010000 x1 + sin 0 1.0000132758892615 + x0 sin * * - 0 x1 + -10 0 + / 0 0 + 0 0.02 + + * 0 0.020000 + 6.283190 x0 + ^ 0 0 + 0 0.0922858190550785 + + + + -")} /*seed expressions*/,
+                {split("0 0 + 0 0 + + 0 0 + 0 0.693868926928361 + + + 0.010000 x1 + sin 0 1.0000132758892615 + x0 sin * * - 2 x1 + 0 -10 + / 0 0 + 0 0.014426950408889635 + + * 0 0.02 + 6.283190 x0 + ^ 0 0 + 0 0.0922858190550785 + + + + -")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
@@ -9620,8 +9629,8 @@ namespace ExampleProblems
             RandomSearch(VortexRadialProfile /*differential equation to solve*/,
                          3 /*number of equations in differential equation system*/,
                          data /*data used to solve differential equation*/,
-                         std::vector<int>{4} /*fixed depths of generated solution*/,
-                         "postfix" /*expression representation*/,
+                         std::vector<int>{24} /*fixed depths of generated solution*/,
+                         "prefix" /*expression representation*/,
                          0 /*num_consts_diff: number of constants in differential equation*/,
                          "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
                          5 /*number of fit iterations*/,
@@ -9631,7 +9640,7 @@ namespace ExampleProblems
                          0 /*num threads*/,
                          true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
                          threshold /*threshold for which solutions cannot be constant*/,
-                         true /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                         false /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                          0 /*number of data columns that constitute labels and not independent variables/features*/,
                          true /*whether or not to include ALL of the features in all of the generated expressions*/);
         }
@@ -9640,8 +9649,8 @@ namespace ExampleProblems
             SimulatedAnnealing(VortexRadialProfile /*differential equation to solve*/,
                 3 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{14} /*fixed depths of generated solution*/,
-                "postfix" /*expression representation*/,
+                std::vector<int>{20} /*fixed depths of generated solution*/,
+                "prefix" /*expression representation*/,
                 0/*2*/ /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
                 5 /*number of fit iterations*/,
@@ -9651,7 +9660,7 @@ namespace ExampleProblems
                 0 /*num threads*/,
                 true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
-                false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
                 0 /*number of data columns that constitute labels and not independent variables/features*/,
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
@@ -9673,7 +9682,7 @@ namespace ExampleProblems
             RandomSearch(SolitonWaveFengEq14and15Laser /*differential equation to solve*/,
                 9 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{3, 5} /*fixed depths of generated solution*/,
+                std::vector<int>{3, 3} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -9684,7 +9693,7 @@ namespace ExampleProblems
                 0 /*num threads*/,
                 true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
-                false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                  2 /*number of data columns that constitute labels and not independent variables/features*/,
                  true /*whether or not to include ALL of the features in all of the generated expressions*/);
         }
@@ -9708,7 +9717,7 @@ namespace ExampleProblems
                 false, /*Whether to simplify the ORIGINAL expression on every iteration (perturbation) of the seed expression vector; if false a copy is maintained so that simplification on this->pieces can still happen*/
                 2 /*number of data columns that constitute labels and not independent variables/features*/,
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
-                {split("x0 sech tanh tanh -6.466281 x0 tanh 2.616570 / - /"), split("-3.2171440000000002 x0 sech 0.9640275800758169 ^ * sech")} /*seed expressions*/,
+                {split("x0 sech tanh tanh 0 0 + 0 -6.466281 + + x0 tanh 0 2.616570 + / - /"), split("0 0 + 0 -3.2171440000000002 + + x0 sech 0 0.9640275800758169 + ^ * sech")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 "");// "SNE_vals.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
@@ -9725,8 +9734,8 @@ namespace ExampleProblems
             RandomSearch(WildfireSpreadTS /*differential equation to solve*/,
                 1 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{4} /*fixed depths of generated solution*/,
-                "postfix" /*expression representation*/,
+                std::vector<int>{6} /*fixed depths of generated solution*/,
+                "prefix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
                 5 /*number of fit iterations*/,
@@ -9736,7 +9745,7 @@ namespace ExampleProblems
                 0 /*num threads*/,
                 true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
-                true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                  1 /*number of data columns that constitute labels and not independent variables/features*/,
                  false /*whether or not to include ALL of the features in all of the generated expressions*/);
         }
@@ -9756,11 +9765,11 @@ namespace ExampleProblems
                 0 /*num threads*/,
                 true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
-                false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the ORIGINAL expression on every iteration (perturbation) of the seed expression vector; if false a copy is maintained so that simplification on this->pieces can still happen*/
                 1 /*number of data columns that constitute labels and not independent variables/features*/,
                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
-                {split("xx6 0.006210 - x17 9741 + + 0 1 + 0 x13 + / + 0 77888 + 0 x22 + * 20200101.000000 x6 + cos ^ - 0 0 + 0 8.851731000000001 + + 0 0.00621 + 0 x6 + + / 0 4.372938 + 0 x7 + + 0 x20 + 0 279.200012 + + - ^ - 0 0 + 0 0 + + 0 0 + 0 x25 + + + 0 0 + 0 0 + + 0 0 + 0 3.4288275429960554e+302 + + + - -100.000000 x1 + 0 -100 + ^ 0 0 + 0 x5 + + + 0 0.051731 + 0 x18 + + 0.006210 x20 / 0 2 + + - ^ / + x22 8.800000 * 38.000000 x20 ^ + x8 x0 + -2.640000 x2 + - ^ 0 405.7971014492754 + 0 x15 + ^ 0 0 + 0 x20 + + + + 0 0 + 0 x17 + + 38.000000 x8 + 0 x11 + * / 0 0 + 0 92.45173100000001 + + 0 0 + 0 x23 + + - ^ + 0 x19 + 0 0.00621 + + 0 39.3125 + 0 x21 + - * 0 0 + 0 0 + + 0 0 + 0 -818.627062 + + + + 0 0 + 0 -54 + + 0 0 + 0 x22 + + * 0 x21 + acos 0 0 + 0 -18327.436844999997 + + + + + * +")} /*seed expressions*/,
+                {split("x6 0.006210 - x17 9741 + + 0 1 + 0 x13 + / + 0 77888 + 0 x22 + * 20200101.000000 x6 + cos ^ - 0 0 + 0 8.851731000000001 + + 0 0.00621 + 0 x6 + + / 0 4.372938 + 0 x7 + + 0 x20 + 0 279.200012 + + - ^ - 0 0 + 0 0 + + 0 0 + 0 x25 + + + 0 0 + 0 0 + + 0 0 + 0 3.4288275429960554e+302 + + + - -100.000000 x1 + 0 -100 + ^ 0 0 + 0 x5 + + + 0 0.051731 + 0 x18 + + 0.006210 x20 / 0 2 + + - ^ / + x22 8.800000 * 38.000000 x20 ^ + x8 x0 + -2.640000 x2 + - ^ 0 405.7971014492754 + 0 x15 + ^ 0 0 + 0 x20 + + + + 0 0 + 0 x17 + + 38.000000 x8 + 0 x11 + * / 0 0 + 0 92.45173100000001 + + 0 0 + 0 x23 + + - ^ + 0 x19 + 0 0.00621 + + 0 39.3125 + 0 x21 + - * 0 0 + 0 0 + + 0 0 + 0 -818.627062 + + + + 0 0 + 0 -54 + + 0 0 + 0 x22 + + * 0 x21 + acos 0 0 + 0 -18327.436844999997 + + + + + * +")} /*seed expressions*/,
 //                {split("+ + - - 9736 x22 / x7 x20 / + 0 -100.051731 ^ x5 x15 * + + 0 x20 * 1075.000000 x5 + + 0 0 + 0 -17064.107062")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -9800,10 +9809,10 @@ int main(int argc, char *argv[])
 {
     int random_seed = get_random_seed(argc, argv);
     constexpr const char* algorithm = "SimulatedAnnealing";
-    constexpr double time = 6000000.;//450.0;
+    constexpr double time = 450.0; //6000000.;
     printf("Random seed set to %d%s", random_seed, std::string(10, '\n').c_str());
-    ProblemOption choice = ProblemOption::WildfireSpreadTS;
-    //TODO: Test 0/16, ProblemOption::SwiftHohenberg+RandomSearch
+    ProblemOption choice = ProblemOption::SolitonWaveFengEq14and15Laser;
+    //TODO: Test 15/16, ProblemOption::SolitonWaveFengEq14and15Laser+SimulatedAnnealing
     switch (choice)
     {
         case ProblemOption::SwiftHohenberg:
