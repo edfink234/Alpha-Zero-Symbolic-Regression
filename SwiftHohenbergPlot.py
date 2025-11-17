@@ -6,7 +6,7 @@ from mpl_toolkits.mplot3d import Axes3D
 show = False
 sech = lambda x: 1.0/np.cosh(x)
 
-PERIODIC_IN_THETA = False
+PERIODIC_IN_THETA = True
 PrintFormula = False
 # Define the polar coordinates
 SH, r, theta, mu, nu = symbols('\\text{SwiftHohenberg} r theta \\mu \\nu')
@@ -36,7 +36,8 @@ theta_centers = 0.5 * (theta_edges[:-1] + theta_edges[1:])
 R, Theta = np.meshgrid(r_centers, theta_centers)
 
 # Evaluate function on cell centers
-Z = sin(R)*sin(Theta) if PERIODIC_IN_THETA else (((0.148475282221305 * Theta) - (np.sin(Theta) * (1.0000132758892615 * np.sin(R)))) - 0.0922858190550785)
+Z = sin(R)*sin(Theta) + 0.604 \
+    if PERIODIC_IN_THETA else (((0.148475282221305 * Theta) - (np.sin(Theta) * (1.0000132758892615 * np.sin(R)))) - 0.0922858190550785)
 
 # Convert to Cartesian
 X = R * np.cos(Theta)
@@ -51,7 +52,12 @@ ax.set_xlabel("x")
 ax.set_ylabel("y")
 ax.set_zlabel(r"$f(r,\theta)$")
 ax.set_title("Swift-Hohenberg 2D Pattern")
-fig.colorbar(surf, shrink=0.5, aspect=10, label=r"$f(r,\theta) = \sin(r)\sin(\theta)$" if PERIODIC_IN_THETA else r"$f(r,\theta) = 0.148\cdot\theta - \sin\theta\,\sin r - 0.092$")
+formula_label = None
+if PERIODIC_IN_THETA:
+    formula_label = r"$f(r,\theta) = \sin(r)\sin(\theta) + 0.604$"
+else:
+    formula_label = r"$f(r,\theta) = 0.148\cdot\theta - \sin\theta\,\sin r - 0.092$"
+fig.colorbar(surf, shrink=0.5, aspect=10, label=formula_label)
 
 # Improve viewing angle
 ax.view_init(elev=35, azim=235)
