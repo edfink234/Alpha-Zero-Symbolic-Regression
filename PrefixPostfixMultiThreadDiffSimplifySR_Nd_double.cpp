@@ -923,6 +923,7 @@ struct Board
     double isConstTol;
     bool simplify_original;
     bool mustHaveAllFeatures;
+    std::vector<std::vector<std::string>> customFeatures;
 
     Board(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
           size_t num_diff_eqns,
@@ -941,8 +942,9 @@ struct Board
           bool use_const_pieces = false,
           bool simplifyOriginal = true,
           int numDataCols = 0,
-          bool must_have_all_features = true) :
-        gen{rd()}, vel_dist{-1.0, 1.0}, pos_dist{0.0, 1.0}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, n{depth}, is_primary{primary}, simplify_original{simplifyOriginal}, mustHaveAllFeatures{must_have_all_features}
+          bool must_have_all_features = true,
+          const std::vector<std::vector<std::string>>& custom_features = {}) :
+            gen{rd()}, vel_dist{-1.0, 1.0}, pos_dist{0.0, 1.0}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, n{depth}, is_primary{primary}, simplify_original{simplifyOriginal}, mustHaveAllFeatures{must_have_all_features}, customFeatures{custom_features}
     {
         assert(n.size());
         this->num_objectives = n.size();
@@ -4484,7 +4486,7 @@ struct Board
         if (this->fit_method == "LBFGS" || this->fit_method == "LBFGSB")
         {
             assert(grad.size() == x.size());
-            double grad_piece_prefactor = this->isConstTol/(Board::data.numRows()*this->num_objectives);
+            double grad_piece_prefactor = (this->isConstTol) ? (this->isConstTol/(Board::data.numRows()*this->num_objectives)) : 0.0;
             double sne = SNE(expression_evaluator(x, this->diffeq_result));
             if (this->fit_grad_method == "naive_numerical")
             {
@@ -4749,9 +4751,9 @@ struct Board
             //If all of the features must be non-trivially in each expression in the vector of expressions `pieces`
             if (this->mustHaveAllFeatures)
             {
-                Eigen::VectorXd expression_eval = expression_evaluator(this->params, this->pieces[jdx]);
                 std::vector<int> grasp;
                 //MARK: Might want to add `passesConstantThreshold` here in the future...
+                //Eigen::VectorXd expression_eval = expression_evaluator(this->params, this->pieces[jdx]);
                 for (const std::string& i: Board::__input_vars)
                 {
                     //If the independent variable `i` is NOT present in the expression `this->pieces[jdx]`...
@@ -4762,18 +4764,54 @@ struct Board
                         return score;
                     }
                     //If the variable `i` is found, we then test the derivative wrt, `i` to check if it's 0 within `this->isConstTol` tolerance.
-                    if (this->expression_type == "prefix")
+                    if (this->isConstTol > 0)
                     {
-                        this->derivePrefix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
+                        if (this->expression_type == "prefix")
+                        {
+                            this->derivePrefix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
+                        }
+                        else //postfix
+                        {
+                            this->derivePostfix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
+                        }
+                        if (isZero(expression_evaluator(this->params, this->derivat), this->isConstTol)) //Ignore the trivial solution (N-d functions)!
+                        {
+                            this->SNE_curr = DBL_MAX;
+                            return score;
+                        }
                     }
-                    else //postfix
+                }
+            }
+            else if ((this->customFeatures.size() > jdx) && (this->customFeatures[jdx].size()))
+            {
+                std::vector<int> grasp;
+                //MARK: Might want to add `passesConstantThreshold` here in the future...
+                //Eigen::VectorXd expression_eval = expression_evaluator(this->params, this->pieces[jdx]);
+                for (const std::string& i: this->customFeatures[jdx])
+                {
+                    //If the independent variable `i` is NOT present in the expression `this->pieces[jdx]`...
+                    if (std::find(this->pieces[jdx].begin(), this->pieces[jdx].end(), i) == this->pieces[jdx].end())
                     {
-                        this->derivePostfix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
-                    }
-                    if (isZero(expression_evaluator(this->params, this->derivat), this->isConstTol)) //Ignore the trivial solution (N-d functions)!
-                    {
+                        //then `this->pieces[jdx]` does not depend on `i`, so this is a trivial expression -> get out of dodge!
                         this->SNE_curr = DBL_MAX;
                         return score;
+                    }
+                    //If the variable `i` is found, we then test the derivative wrt, `i` to check if it's 0 within `this->isConstTol` tolerance.
+                    if (this->isConstTol > 0)
+                    {
+                        if (this->expression_type == "prefix")
+                        {
+                            this->derivePrefix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
+                        }
+                        else //postfix
+                        {
+                            this->derivePostfix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
+                        }
+                        if (isZero(expression_evaluator(this->params, this->derivat), this->isConstTol)) //Ignore the trivial solution (N-d functions)!
+                        {
+                            this->SNE_curr = DBL_MAX;
+                            return score;
+                        }
                     }
                 }
             }
@@ -6532,17 +6570,17 @@ std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
     thread_local const std::string w0 = to_string_general(-Board::data.num_rows / (2.0 * num_zeroes));
     
     /*
-     Best score = 7.51517e-07, SNE = 1.33064e+06
-     Squared-norm error for each equation: 1.33064e+06 
-     Best expression = (((((((x6 - 0.006210) + (x17 + 9741)) + (1 / x13)) - (((6075.000000 * x23) * x22) ^ cos((20200101.000000 + x6)))) - ((8.851731000000001 / (-0.00621 + x6)) ^ ((4.372938 + x7) - 279.200012))) + ((x25 - 3.4288275429960554e+302) / ((((x1 - 335.000000) ^ -100) + (0.00621 ^ (x18 ^ 25.400000))) ^ (((x22 / 9736.000000) + x18) - ((0.006210 / x20) + 2))))) + (((((x6 / 2.0124199999999997) ^ ((x8 + x0) - (-2.640000 + x2))) + ((4.724366706875754 ^ (36.293228 - x10)) + ((x5 * 6075.000000) + x20))) + ((x17 / ((38.000000 + x8) * x11)) ^ (((x12 / 256.500000) + 92.45173100000001) - x23))) * ((((x19 + 0.00621) * 26.90232091662481) + -806.4403540000001) + ((-53.92119644678062 * x22) + (acos(x21) + -18327.436844999997)))))
-     Best expression (original format) = x6 0.006210 - x17 9741 + + 1 x13 / + 6075.000000 x23 * x22 * 20200101.000000 x6 + cos ^ - 8.851731000000001 -0.00621 x6 + / 4.372938 x7 + 279.200012 - ^ - x25 3.4288275429960554e+302 - x1 335.000000 - -100 ^ 0.00621 x18 25.400000 ^ ^ + x22 9736.000000 / x18 + 0.006210 x20 / 2 + - ^ / + x6 2.0124199999999997 / x8 x0 + -2.640000 x2 + - ^ 4.724366706875754 36.293228 x10 - ^ x5 6075.000000 * x20 + + + x17 38.000000 x8 + x11 * / x12 256.500000 / 92.45173100000001 + x23 - ^ + x19 0.00621 + 26.90232091662481 * -806.4403540000001 + -53.92119644678062 x22 * x21 acos -18327.436844999997 + + + * +
+     Best score = 1.24143e-06, SNE = 805524
+     Squared-norm error for each equation: 805524
+     Best expression = (((((((x6 - 0.00621) + (x17 + 9741)) + (1 / x13)) - (((232 / (15666.000000 ^ x6)) * x18) ^ cos((2.0200101e+07 + x6)))) - ((tanh(x21) * (x0 - 4)) ^ ((59 + (1 + x7)) - (x11 ^ x15)))) + ((x25 - 3.4288275429960554e+302) / ((((x1 - 336) ^ -100) + (0.00621 ^ (x18 ^ 25.4))) ^ ((((x13 + x22) / 9736) + x18) - ((0.00621 / x20) + 2))))) + (((((x6 / 2.176586002694007) ^ ((x8 + x0) - (-2.64 + x2))) + ((4.724366706875754 ^ (36.293228 - x10)) + ((x5 * 6075) + x20))) + ((x17 / ((38 + x8) * x11)) ^ ((((x24 + x12) / 256.5) + 92.45173100000001) - x23))) * ((((x19 + 0.00621) * 26.90232091662481) + -806.4403540000001) + ((-53.92119644678062 * x22) + (acos(x21) + ((x24 - x18) + -18327.436844999997))))))
+     Best expression (original format) = x6 0.00621 - x17 9741 + + 1 x13 / + 232 15666.000000 x6 ^ / x18 * 2.0200101e+07 x6 + cos ^ - x21 tanh x0 4 - * 59 1 x7 + + x11 x15 ^ - ^ - x25 3.4288275429960554e+302 - x1 336 - -100 ^ 0.00621 x18 25.4 ^ ^ + x13 x22 + 9736 / x18 + 0.00621 x20 / 2 + - ^ / + x6 2.176586002694007 / x8 x0 + -2.64 x2 + - ^ 4.724366706875754 36.293228 x10 - ^ x5 6075 * x20 + + + x17 38 x8 + x11 * / x24 x12 + 256.5 / 92.45173100000001 + x23 - ^ + x19 0.00621 + 26.90232091662481 * -806.4403540000001 + -53.92119644678062 x22 * x21 acos x24 x18 - -18327.436844999997 + + + + * +
      ```
         from sympy import symbols, cos, sin, tanh, sech, sympify, latex, multiline_latex
         import re
         replace_vars = lambda x: re.sub(r'\bx(\d+)\b', r'df["x\1"]', x)
         align_rep = lambda x: x.replace('align*','align').replace(r'\\',r'\nonumber \\').replace(r"\end{align}", r"\label{eq:best_sr_eq_1}""\n"r"\end{align}")
         f, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17, x18, x19, x20, x21, x22, x23, x24, x25 = symbols('f x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25')
-        func = '(((((((x6 - 0.006210) + (x17 + 9741)) + (1 / x13)) - ((77888 * x22) ^ cos((20200101.000000 + x6)))) - ((8.851731000000001 / (0.00621 + x6)) ^ ((4.372938 + x7) - (x20 + 279.200012)))) + ((x25 - 3.4288275429960554e+302) / ((((-100.000000 + x1) ^ -100) + x5) ^ ((0.051731 + x18) - ((0.006210 / x20) + 2))))) + ((((((x22 * 8.800000) + (38.000000 ^ x20)) ^ ((x8 + x0) - (-2.640000 + x2))) + ((405.7971014492754 ^ x15) + x20)) + ((x17 / ((38.000000 + x8) * x11)) ^ (92.45173100000001 - x23))) * ((((x19 + 0.00621) * (39.3125 - x21)) + -818.627062) + ((-54 * x22) + (acos(x21) + -18327.436844999997)))))'
+        func = '(((((((x6 - 0.00621) + (x17 + 9741)) + (1 / x13)) - (((256.5 / (15666.000000 ^ x6)) * x18) ^ cos((2.0200101e+07 + x6)))) - ((tanh(x21) * (x0 - 4)) ^ ((59 + (1 + x7)) - (x11 ^ x15)))) + ((x25 - 3.4288275429960554e+302) / ((((x1 - 336) ^ -100) + (0.00621 ^ (x18 ^ 25.4))) ^ (((x22 / 9736) + x18) - ((0.00621 / x20) + 2))))) + (((((x6 / 2.176586002694007) ^ ((x8 + x0) - (-2.64 + x2))) + ((4.724366706875754 ^ (36.293228 - x10)) + ((x5 * 6075) + x20))) + ((x17 / ((38 + x8) * x11)) ^ ((((x24 + x12) / 256.5) + 92.45173100000001) - x23))) * ((((x19 + 0.00621) * 26.90232091662481) + -806.4403540000001) + ((-53.92119644678062 * x22) + (acos(x21) + ((x24 - x18) + -18327.436844999997))))))'
         func = func.replace("^","**")
         func_sym = sympify(func)
 
@@ -8167,6 +8205,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                         bool simplifyOriginal = false,
                         int numDataCols = 0,
                         bool mustHaveAllFeatures = true,
+                        const std::vector<std::vector<std::string>>& custom_features = {},
                         const std::vector<std::vector<std::string>>& seed_expressions = {},
                         bool exit_early = false,
                         int custom_rand_seed = -1,
@@ -8218,7 +8257,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
     /*
      Inside of thread:
      */
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &seed_expressions, &exit_early, &custom_rand_seed, &best_SNE, &best_sne_vec]()
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &custom_features, &seed_expressions, &exit_early, &custom_rand_seed, &best_SNE, &best_sne_vec]()
     {
         std::random_device rand_dev;
         #if RANDOM_SEED < 0
@@ -8231,9 +8270,9 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
         {
             generator.seed(custom_rand_seed);
         }
-        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols, mustHaveAllFeatures);
+        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols, mustHaveAllFeatures, custom_features);
         sync_point.arrive_and_wait();
-        Board secondary(diffeq, num_diff_eqns, false, std::vector<int>(depth.size(), 0), expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols, mustHaveAllFeatures); //For perturbations
+        Board secondary(diffeq, num_diff_eqns, false, std::vector<int>(depth.size(), 0), expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols, mustHaveAllFeatures, custom_features); //For perturbations
         assert(secondary.pieces.size() == secondary.n.size());
         assert(secondary.pieces.size() == x.pieces.size());
         assert(secondary.pieces.size() == x.n.size());
@@ -9440,7 +9479,8 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
                   double isConstTol = 1e-1,
                   bool use_const_pieces = false,
                   int numDataCols = 0,
-                  bool mustHaveAllFeatures = true)
+                  bool mustHaveAllFeatures = true,
+                  const std::vector<std::vector<std::string>>& custom_features = {})
 {
     if (num_threads == 0)
     {
@@ -9466,12 +9506,12 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
      Inside of thread:
      */
 
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &use_const_pieces, &numDataCols, &mustHaveAllFeatures, &isConstTol, &best_SNE, &best_sne_vec]()
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &use_const_pieces, &numDataCols, &mustHaveAllFeatures, &custom_features, &isConstTol, &best_SNE, &best_sne_vec]()
     {
         std::random_device rand_dev;
         std::mt19937 thread_local generator(rand_dev()); // Mersenne Twister random number generator
 
-        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, true, numDataCols, mustHaveAllFeatures);
+        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, true, numDataCols, mustHaveAllFeatures, custom_features);
 
         sync_point.arrive_and_wait();
         double score = 0.0;
@@ -9591,7 +9631,8 @@ namespace ExampleProblems
                          threshold /*threshold for which solutions cannot be constant*/,
                          false /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                          0 /*number of data columns that constitute labels and not independent variables/features*/,
-                         true /*whether or not to include ALL of the features in all of the generated expressions*/);
+                         true /*whether or not to include ALL of the features in all of the generated expressions*/,
+                         {} /*custom features that the SR-found equations are required to contain*/);
         }
         else
         {
@@ -9613,6 +9654,7 @@ namespace ExampleProblems
                 false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
                 0 /*number of data columns that constitute labels and not independent variables/features*/,
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
+                {} /*custom features that the SR-found equations are required to contain*/,
                 {split("0 0 + 0 0 + + 0 0 + 0 0.693868926928361 + + + 0.010000 x1 + sin 0 1.0000132758892615 + x0 sin * * - 2 x1 + 0 -10 + / 0 0 + 0 0.014426950408889635 + + * 0 0.02 + 6.283190 x0 + ^ 0 0 + 0 0.0922858190550785 + + + + -")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -9642,7 +9684,8 @@ namespace ExampleProblems
                          threshold /*threshold for which solutions cannot be constant*/,
                          false /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                          0 /*number of data columns that constitute labels and not independent variables/features*/,
-                         true /*whether or not to include ALL of the features in all of the generated expressions*/);
+                         true /*whether or not to include ALL of the features in all of the generated expressions*/,
+                         {} /*custom features that the SR-found equations are required to contain*/);
         }
         else
         {
@@ -9664,6 +9707,7 @@ namespace ExampleProblems
                 false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
                 0 /*number of data columns that constitute labels and not independent variables/features*/,
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
+                {} /*custom features that the SR-found equations are required to contain*/,
                 {} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -9695,7 +9739,8 @@ namespace ExampleProblems
                 threshold /*threshold for which solutions cannot be constant*/,
                 true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                  2 /*number of data columns that constitute labels and not independent variables/features*/,
-                 true /*whether or not to include ALL of the features in all of the generated expressions*/);
+                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
+                 {} /*custom features that the SR-found equations are required to contain*/);
         }
         else
         {
@@ -9717,6 +9762,7 @@ namespace ExampleProblems
                 false, /*Whether to simplify the ORIGINAL expression on every iteration (perturbation) of the seed expression vector; if false a copy is maintained so that simplification on this->pieces can still happen*/
                 2 /*number of data columns that constitute labels and not independent variables/features*/,
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
+                {} /*custom features that the SR-found equations are required to contain*/,
                 {split("x0 sech tanh tanh 0 0 + 0 -6.4342880000000005 + + x0 tanh 0 2.61657 + / - /"), split("0 0 + 0 -3.2171440000000002 + + x0 sech 0 0.9640275800758169 + ^ * sech")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -9747,7 +9793,8 @@ namespace ExampleProblems
                 threshold /*threshold for which solutions cannot be constant*/,
                 false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                  1 /*number of data columns that constitute labels and not independent variables/features*/,
-                 false /*whether or not to include ALL of the features in all of the generated expressions*/);
+                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
+                 {} /*custom features that the SR-found equations are required to contain*/);
         }
         else
         {
@@ -9769,7 +9816,8 @@ namespace ExampleProblems
                 false, /*Whether to simplify the ORIGINAL expression on every iteration (perturbation) of the seed expression vector; if false a copy is maintained so that simplification on this->pieces can still happen*/
                 1 /*number of data columns that constitute labels and not independent variables/features*/,
                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
-                {split("x6 0 + 0 0.006210 + - 0 x17 + 0 9741 + + + 0 0 + 0 1 + + 0 0 + 0 x13 + + / + 0 6075.000000 + 0 x23 + * 0 0 + 0 x22 + + * 0 20200101.000000 + 0 x6 + + cos ^ - 0 0 + 0 0 + + 0 0 + 0 8.851731000000001 + + + 0 0 + 0 -0.00621 + + 0 0 + 0 x6 + + + / 0 0 + 0 4.372938 + + 0 0 + 0 x7 + + + 0 0 + 0 0 + + 0 0 + 0 279.200012 + + + - ^ - 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x25 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 3.4288275429960554e+302 + + + + - 0 x1 + 0 335.000000 + - 0 0 + 0 -100 + + ^ 0 0 + 0 0.00621 + + 0 x18 + 0 25.400000 + ^ ^ + 0 x22 + 0 9736.000000 + / 0 0 + 0 x18 + + + 0 0.006210 + 0 x20 + / 0 0 + 0 2 + + + - ^ / + 0 0 + 0 x6 + + 0 0 + 0 2.0124199999999997 + + / 0 x8 + 0 x0 + + 0 -2.640000 + 0 x2 + + - ^ 0 0 + 0 4.724366706875754 + + 0 36.293228 + 0 x10 + - ^ 0 x5 + 0 6075.000000 + * 0 0 + 0 x20 + + + + + 0 0 + 0 0 + + 0 0 + 0 x17 + + + 0 38.000000 + 0 x8 + + 0 0 + 0 x11 + + * / 0 x12 + 0 256.500000 + / 0 0 + 0 92.45173100000001 + + + 0 0 + 0 0 + + 0 0 + 0 x23 + + + - ^ + 0 0 + 0 x19 + + 0 0 + 0 0.00621 + + + 0 0 + 0 0 + + 0 0 + 0 26.90232091662481 + + + * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -806.4403540000001 + + + + + 0 0 + 0 0 + + 0 0 + 0 -53.92119644678062 + + + 0 0 + 0 0 + + 0 0 + 0 x22 + + + * 0 0 + 0 x21 + + acos 0 0 + 0 0 + + 0 0 + 0 -18327.436844999997 + + + + + + * +")} /*seed expressions*/,
+                {} /*custom features that the SR-found equations are required to contain*/,
+                {split("0 x6 + 0 0.00621 + - 0 x17 + 0 9741 + + + 0 0 + 0 1 + + 0 0 + 0 x13 + + / + 0 232 + 15666.000000 x6 ^ / 0 0 + 0 x18 + + * 0 2.0200101e+07 + 0 x6 + + cos ^ - 0 0 + 0 x21 + + tanh 0 0 + 0 x0 + + 0 0 + 0 4 + + - * 0 0 + 0 59 + + 0 1 + 0 x7 + + + 0 0 + 0 x11 + + 0 0 + 0 x15 + + ^ - ^ - 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x25 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 3.4288275429960554e+302 + + + + - 0 x1 + 0 336 + - 0 0 + 0 -100 + + ^ 0 0 + 0 0.00621 + + 0 x18 + 0 25.4 + ^ ^ + x13 x22 + 0 9736 + / 0 0 + 0 x18 + + + 0 0.00621 + 0 x20 + / 0 0 + 0 2 + + + - ^ / + 0 0 + 0 x6 + + 0 0 + 0 2.176586002694007 + + / 0 x8 + 0 x0 + + 0 -2.64 + 0 x2 + + - ^ 0 0 + 0 4.724366706875754 + + 0 36.293228 + 0 x10 + - ^ 0 x5 + 0 6075 + * 0 0 + 0 x20 + + + + + 0 0 + 0 0 + + 0 0 + 0 x17 + + + 0 38 + 0 x8 + + 0 0 + 0 x11 + + * / x24 x12 + 0 256.5 + / 0 0 + 0 92.45173100000001 + + + 0 0 + 0 0 + + 0 0 + 0 x23 + + + - ^ + 0 0 + 0 x19 + + 0 0 + 0 0.00621 + + + 0 0 + 0 0 + + 0 0 + 0 26.90232091662481 + + + * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -806.4403540000001 + + + + + 0 0 + 0 0 + + 0 0 + 0 -53.92119644678062 + + + 0 0 + 0 0 + + 0 0 + 0 x22 + + + * 0 0 + 0 x21 + + acos 0 x24 + 0 x18 + - 0 0 + 0 -18327.436844999997 + + + + + + * +")} /*seed expressions*/,
 //                {split("+ + - - 9736 x22 / x7 x20 / + 0 -100.051731 ^ x5 x15 * + + 0 x20 * 1075.000000 x5 + + 0 0 + 0 -17064.107062")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
