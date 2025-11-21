@@ -6550,9 +6550,47 @@ struct Board
 };
 
 /*
- Infix: ((1/(1-exp(~f))) - x26)**2
- Prefix: ^ - / 1 - 1 exp ~ f x26 2
- Postfix: 1 1 f ~ exp - / x26 - 2 ^
+ Infix: abs(f - x102)
+ Postfix: f x102 - abs
+ Prefix: abs - f x102
+ */
+std::vector<std::vector<std::string>> InPaintWildfireSpreadTS(Board& x, bool fit)
+{
+    std::vector<std::vector<std::string>> results(1);
+    thread_local std::vector<std::string> result;
+    result.clear();
+    result.reserve(100);
+    
+    if (x.expression_type == "prefix")
+    {
+        //abs - f x102
+        result.push_back("abs");
+        result.push_back("-");
+        for (const std::string& i: x.pieces[0])
+        {
+            result.push_back(i);
+        }
+        result.push_back("x102");
+    }
+    else if (x.expression_type == "postfix")
+    {
+        //f x102 - abs
+        for (const std::string& i: x.pieces[0])
+        {
+            result.push_back(i);
+        }
+        result.push_back("x102");
+        result.push_back("-");
+        result.push_back("abs");
+    }
+    results[0] = result;
+    return results;
+}
+
+/*
+ Infix: w1*x26*log(eps + 1/(1-exp(-f))) + w0*(1-x26)*log(eps+1-1/(1-exp(-f)))
+ Prefix: + * * w1 x26 log + / 1 - 1 exp ~ f eps * * w0 - 1 x26 log + - 1 / 1 - 1 exp ~ f eps
+ Postfix: w1 x26 * 1 1 f ~ exp - / eps + log * w0 1 x26 - * 1 1 1 f ~ exp - / - eps + log * +
  
  // {x0: VIIRS_band_M11, x1: VIIRS_band_I2, x2: VIIRS_band_I1, x3: NDVI, x4: EVI2, x5: total_precipitation, x6: wind_speed, x7: wind_direction, x8: min_temperature, x9: max_temperature, x10: energy_release_component, x11: specific_humidity, x12: slope, x13: aspect, x14: elevation, x15: palmer_drought_severity_index, x16: landcover_class, x17: forecast_total_precipitation, x18: forecast_wind_speed, x19: forecast_wind_direction, x20: forecast_temperature, x21: forecast_specific_humidity, x22: active_fire, x23: row, x24: col, x25: date, x26: next_day_active_fire_bin}
  // Want to predict x26 given {x0, x1, ..., x25}
@@ -6570,10 +6608,10 @@ std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
     thread_local const std::string w0 = to_string_general(-Board::data.num_rows / (2.0 * num_zeroes));
     
     /*
-     Best score = 1.55732e-06, SNE = 642129
-     Squared-norm error for each equation: 642129 
-     Best expression = (((((((x6 - 0.00621) + (x17 + 9741)) + (1 / x13)) - (((5.999974344937284 / (15666.000000 ^ x6)) * x18) ^ cos((-0.6400000000000001 + x6)))) - ((tanh(x21) * (x0 - (x18 + (8.800000 + x10)))) ^ ((59 + (log(x8) + x7)) - (x11 ^ ((2 / x4) + x15))))) + ((x25 - 3.4288275429960554e+302) / (((((-3.225653 + x1) - 336) ^ -100) + (0.00621 ^ (x18 ^ 25.4))) ^ ((((x13 + x22) / 9736) + x18) - ((0.00621 / x20) + 2))))) + (((((((0.004735 / x20) + x6) / 2.176586002694007) ^ ((x8 + x0) - (-9.20266940927563 + x2))) + ((4.724366706875754 ^ (36.293228 - x10)) + ((x5 * 6075) + x20))) + ((x17 / ((88.856491 + (x22 + x22)) * x11)) ^ (((x21 / x7) + 93.4525010000761) - ((4 - (2118.000000 * x11)) + x23)))) * ((((x19 + 0.00621) * 26.90232091662481) + -806.4403540000001) + ((x6 * x22) + (acos(x21) + ((x24 - x18) + -18327.436844999997))))))
-     Best expression (original format) = x6 0.00621 - x17 9741 + + 1 x13 / + 5.999974344937284 15666.000000 x6 ^ / x18 * -0.6400000000000001 x6 + cos ^ - x21 tanh x0 x18 8.800000 x10 + + - * 59 x8 log x7 + + x11 2 x4 / x15 + ^ - ^ - x25 3.4288275429960554e+302 - -3.225653 x1 + 336 - -100 ^ 0.00621 x18 25.4 ^ ^ + x13 x22 + 9736 / x18 + 0.00621 x20 / 2 + - ^ / + 0.004735 x20 / x6 + 2.176586002694007 / x8 x0 + -9.20266940927563 x2 + - ^ 4.724366706875754 36.293228 x10 - ^ x5 6075 * x20 + + + x17 88.856491 x22 x22 + + x11 * / x21 x7 / 93.4525010000761 + 4 2118.000000 x11 * - x23 + - ^ + x19 0.00621 + 26.90232091662481 * -806.4403540000001 + x6 x22 * x21 acos x24 x18 - -18327.436844999997 + + + + * +
+     Best score = 1.88041e-06, SNE = 531799
+     Squared-norm error for each equation: 531799
+     Best expression = (((((((x6 - -0.00621) + (x17 + 9741)) + ((x0 ^ 0.051731) / x13)) - ((((x0 / 267.200012) / (15666.000000 ^ x6)) * x18) ^ cos((-0.6400000000000001 + x6)))) - ((tanh(x21) * ((x6 + x0) - (6.980075940561763 + (8.800000 + x10)))) ^ ((59 + (log(x8) + x7)) - (x11 ^ ((x11 + x5) + x15))))) + ((x25 - 3.4288275429960554e+302) / (((((-3.225653 + x1) - 336) ^ -100) + (0.00621 ^ (x18 ^ (x24 + 2.520000)))) ^ ((((x13 + x22) / 9736) + x18) - ((0.00621 / x20) + 2))))) + (((((((0.004735 / x20) + x6) / 2.176586002694007) ^ (((38.000000 + x8) + x0) - ((x22 * x24) + x2))) + ((4.724366706875754 ^ (36.293228 - x10)) + ((x5 * 6075) + x20))) + ((x17 / ((125.149719 + (x22 + x22)) * x11)) ^ (((x19 / -28.04) + 93.9525010000761) - ((4 - (2118.000000 * x11)) + x23)))) * ((((x19 + 0.00621) * 26.90232091662481) + ((58.000000 * (x22 / -100.000000)) + -788.4465640000001)) + ((8 + (0.5367255338147858 ^ (x20 + (x16 * 39.312500)))) + (acos(x21) + ((2 + (x23 / 292.600006)) + -18327.436844999997))))))
+     Best expression (original format) = x6 -0.00621 - x17 9741 + + x0 0.051731 ^ x13 / + x0 267.200012 / 15666.000000 x6 ^ / x18 * -0.6400000000000001 x6 + cos ^ - x21 tanh x6 x0 + 6.980075940561763 8.800000 x10 + + - * 59 x8 log x7 + + x11 x11 x5 + x15 + ^ - ^ - x25 3.4288275429960554e+302 - -3.225653 x1 + 336 - -100 ^ 0.00621 x18 x24 2.520000 + ^ ^ + x13 x22 + 9736 / x18 + 0.00621 x20 / 2 + - ^ / + 0.004735 x20 / x6 + 2.176586002694007 / 38.000000 x8 + x0 + x22 x24 * x2 + - ^ 4.724366706875754 36.293228 x10 - ^ x5 6075 * x20 + + + x17 125.149719 x22 x22 + + x11 * / x19 -28.04 / 93.9525010000761 + 4 2118.000000 x11 * - x23 + - ^ + x19 0.00621 + 26.90232091662481 * 58.000000 x22 -100.000000 / * -788.4465640000001 + + 8 0.5367255338147858 x20 x16 39.312500 * + ^ + x21 acos 2 x23 292.600006 / + -18327.436844999997 + + + + * +
      Best differential equation parameters = {}
      Best expression parameters = {}
      Total system result = (term1 + term2)
@@ -9821,7 +9859,62 @@ namespace ExampleProblems
                 1 /*number of data columns that constitute labels and not independent variables/features*/,
                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
-                {split("0 x6 + 0 0.00621 + - 0 x17 + 0 9741 + + + 0 0 + 0 1 + + 0 0 + 0 x13 + + / + 0 5.999974344937284 + 15666.000000 x6 ^ / 0 0 + 0 x18 + + * 0 -0.6400000000000001 + 0 x6 + + cos ^ - 0 0 + 0 x21 + + tanh 0 0 + 0 x0 + + 0 x18 + 8.800000 x10 + + - * 0 0 + 0 59 + + x8 log 0 x7 + + + 0 0 + 0 x11 + + 2 x4 / 0 x15 + + ^ - ^ - 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x25 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 3.4288275429960554e+302 + + + + - -3.225653 x1 + 0 336 + - 0 0 + 0 -100 + + ^ 0 0 + 0 0.00621 + + 0 x18 + 0 25.4 + ^ ^ + x13 x22 + 0 9736 + / 0 0 + 0 x18 + + + 0 0.00621 + 0 x20 + / 0 0 + 0 2 + + + - ^ / + 0.004735 x20 / 0 x6 + + 0 0 + 0 2.176586002694007 + + / 0 x8 + 0 x0 + + 0 -9.20266940927563 + 0 x2 + + - ^ 0 0 + 0 4.724366706875754 + + 0 36.293228 + 0 x10 + - ^ 0 x5 + 0 6075 + * 0 0 + 0 x20 + + + + + 0 0 + 0 0 + + 0 0 + 0 x17 + + + 0 88.856491 + x22 x22 + + 0 0 + 0 x11 + + * / 0 x21 + 0 x7 + / 0 0 + 0 93.4525010000761 + + + 0 4 + 2118.000000 x11 * - 0 0 + 0 x23 + + + - ^ + 0 0 + 0 x19 + + 0 0 + 0 0.00621 + + + 0 0 + 0 0 + + 0 0 + 0 26.90232091662481 + + + * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -806.4403540000001 + + + + + 0 0 + 0 0 + + 0 0 + 0 x6 + + + 0 0 + 0 0 + + 0 0 + 0 x22 + + + * 0 0 + 0 x21 + + acos 0 x24 + 0 x18 + - 0 0 + 0 -18327.436844999997 + + + + + + * +")} /*seed expressions*/,
+                {split("0 x6 + 0 -0.00621 + - 0 x17 + 0 9741 + + + 0 x0 + 0 0.051731 + ^ 0 0 + 0 x13 + + / + x0 267.200012 / 15666.000000 x6 ^ / 0 0 + 0 x18 + + * 0 -0.6400000000000001 + 0 x6 + + cos ^ - 0 0 + 0 x21 + + tanh 0 x6 + 0 x0 + + 0 6.980075940561763 + 8.800000 x10 + + - * 0 0 + 0 59 + + x8 log 0 x7 + + + 0 0 + 0 x11 + + x11 x5 + 0 x15 + + ^ - ^ - 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x25 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 3.4288275429960554e+302 + + + + - -3.225653 x1 + 0 336 + - 0 0 + 0 -100 + + ^ 0 0 + 0 0.00621 + + 0 x18 + x24 2.520000 + ^ ^ + x13 x22 + 0 9736 + / 0 0 + 0 x18 + + + 0 0.00621 + 0 x20 + / 0 0 + 0 2 + + + - ^ / + 0.004735 x20 / 0 x6 + + 0 0 + 0 2.176586002694007 + + / 38.000000 x8 + 0 x0 + + x22 x24 * 0 x2 + + - ^ 0 0 + 0 4.724366706875754 + + 0 36.293228 + 0 x10 + - ^ 0 x5 + 0 6075 + * 0 0 + 0 x20 + + + + + 0 0 + 0 0 + + 0 0 + 0 x17 + + + 0 125.149719 + x22 x22 + + 0 0 + 0 x11 + + * / 0 x19 + 0 -28.04 + / 0 0 + 0 93.9525010000761 + + + 0 4 + 2118.000000 x11 * - 0 0 + 0 x23 + + + - ^ + 0 0 + 0 x19 + + 0 0 + 0 0.00621 + + + 0 0 + 0 0 + + 0 0 + 0 26.90232091662481 + + + * 0 0 + 0 58.000000 + + 0 x22 + 0 -100.000000 + / * 0 0 + 0 0 + + 0 0 + 0 -788.4465640000001 + + + + + 0 0 + 0 0 + + 0 0 + 0 8 + + + 0 0 + 0 0.5367255338147858 + + 0 x20 + x16 39.312500 * + ^ + 0 0 + 0 x21 + + acos 0 2 + x23 292.600006 / + 0 0 + 0 -18327.436844999997 + + + + + + * +")} /*seed expressions*/,
+//                {split("+ + - - 9736 x22 / x7 x20 / + 0 -100.051731 ^ x5 x15 * + + 0 x20 * 1075.000000 x5 + + 0 0 + 0 -17064.107062")} /*seed expressions*/,
+                false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
+                random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
+                "");// "SNE_vals.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
+        }
+    }
+    void InPaintWildfireSpreadTSTest(int random_seed, const char* algorithm, double time)
+    {
+        double threshold = 0.0;
+        Eigen::MatrixXd data = load_csv("/Users/edwardfinkelstein/SDSU_UCI/UCIFall2025/CS274E/Deep-Gen-Project/data/fire_23654679/fire_23654679_inpainting_dataset.csv", 2834850, 103);
+        std::cout << "Data loaded!\nFirst 10 rows\n=============\n";
+        std::cout << data.topRows(10) << '\n';
+        if (strcmp(algorithm, "RandomSearch") == 0)
+        {
+            RandomSearch(InPaintWildfireSpreadTS /*differential equation to solve*/,
+                1 /*number of equations in differential equation system*/,
+                data /*data used to solve differential equation*/,
+                std::vector<int>{3} /*fixed depths of generated solution*/,
+                "prefix" /*expression representation*/,
+                0 /*num_consts_diff: number of constants in differential equation*/,
+                "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
+                5 /*number of fit iterations*/,
+                "naive_numerical" /*method for computing the gradient*/,
+                true /*cache*/,
+                time /*time to run the algorithm in seconds*/,
+                0 /*num threads*/,
+                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                threshold /*threshold for which solutions cannot be constant*/,
+                false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                 1 /*number of data columns that constitute labels and not independent variables/features*/,
+                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
+                 {{"x100", "x101"}} /*custom features that the SR-found equations are required to contain*/);
+        }
+        else
+        {
+            SimulatedAnnealing(InPaintWildfireSpreadTS /*differential equation to solve*/,
+                1 /*number of equations in differential equation system*/,
+                data /*data used to solve differential equation*/,
+                std::vector<int>{3} /*fixed depths of generated solution*/,
+                "postfix" /*expression representation*/,
+                0 /*num_consts_diff: number of constants in differential equation*/,
+                "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
+                5 /*number of fit iterations*/,
+                "naive_numerical" /*method for computing the gradient*/,
+                true /*cache*/,
+                time /*time to run the algorithm in seconds*/,
+                0 /*num threads*/,
+                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                threshold /*threshold for which solutions cannot be constant*/,
+                false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                false, /*Whether to simplify the ORIGINAL expression on every iteration (perturbation) of the seed expression vector; if false a copy is maintained so that simplification on this->pieces can still happen*/
+                1 /*number of data columns that constitute labels and not independent variables/features*/,
+                false /*whether or not to include ALL of the features in all of the generated expressions*/,
+                {{"x100", "x101"}} /*custom features that the SR-found equations are required to contain*/,
+                {} /*seed expressions*/,
 //                {split("+ + - - 9736 x22 / x7 x20 / + 0 -100.051731 ^ x5 x15 * + + 0 x20 * 1075.000000 x5 + + 0 0 + 0 -17064.107062")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -9854,16 +9947,17 @@ enum class ProblemOption
     SwiftHohenberg,
     VortexRadialProfile,
     SolitonWaveFengEq14and15Laser,
-    WildfireSpreadTS
+    WildfireSpreadTS,
+    InPaintWildfireSpreadTS
 };
 
 int main(int argc, char *argv[])
 {
     int random_seed = get_random_seed(argc, argv);
-    constexpr const char* algorithm = "SimulatedAnnealing";
+    constexpr const char* algorithm = "RandomSearch";
     constexpr double time = 6000000.;
     printf("Random seed set to %d%s", random_seed, std::string(10, '\n').c_str());
-    ProblemOption choice = ProblemOption::WildfireSpreadTS;
+    ProblemOption choice = ProblemOption::InPaintWildfireSpreadTS;
     switch (choice)
     {
         case ProblemOption::SwiftHohenberg:
@@ -9871,6 +9965,9 @@ int main(int argc, char *argv[])
             break;
         case ProblemOption::WildfireSpreadTS:
             ExampleProblems::WildfireSpreadTSTest(random_seed, algorithm, time);
+            break;
+        case ProblemOption::InPaintWildfireSpreadTS:
+            ExampleProblems::InPaintWildfireSpreadTSTest(random_seed, algorithm, time);
             break;
         case ProblemOption::VortexRadialProfile:
             ExampleProblems::VortexRadialProfileTest(random_seed, algorithm, time);
