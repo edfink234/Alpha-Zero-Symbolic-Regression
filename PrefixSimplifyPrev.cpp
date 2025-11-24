@@ -7,7 +7,9 @@
 #include <cmath>
 #include <cassert>
 #include <boost/spirit/include/qi.hpp> //For fast string-to-double conversion!
+#include <chrono>
 
+using clk = std::chrono::high_resolution_clock;
 const std::unordered_set<std::string> unary_operators = {"cos", "~", "sin", "log", "ln", "asin", "arcsin", "acos", "arccos", "exp", "sech", "tanh", "sqrt"};
 const std::unordered_set<std::string> binary_operators = {"+", "-", "*", "/", "^"};
 const std::string expression_type = "prefix";
@@ -58,12 +60,17 @@ void print_container(const std::vector<std::string>& c)
     std::cout << '\n';
 }
 
+double StodTime = 0.0;
+
 //MARK: Might be able to replace this with `parse_double_spirit`
 double Stod(const std::string& param)
 {
+    auto t0 = clk::now();
     try
     {
         double val = std::stod(param);
+        auto t1 = clk::now();
+        StodTime += std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
         return val;
     }
     catch (const std::out_of_range&)
@@ -71,10 +78,14 @@ double Stod(const std::string& param)
         //Return +/- infinity depending on the sign
         if (!param.empty() && param[0] == '-')
         {
+            auto t1 = clk::now();
+            StodTime += std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
             return -std::numeric_limits<double>::infinity();
         }
         else
         {
+            auto t1 = clk::now();
+            StodTime += std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
             return std::numeric_limits<double>::infinity();
         }
     }
@@ -1365,6 +1376,8 @@ void simplifyPN(std::vector<std::string>& expression)
 
 int main()
 {
+    auto t0 = clk::now();
+    
     std::vector<std::string> test_expr = {"-", "-", "-", "x1", "x1", "0", "+", "x1", "x1"};
     printf("before: ");print_container(test_expr);
     simplifyPN(test_expr);
@@ -3430,6 +3443,11 @@ int main()
     printf("after: ");print_container(test_expr);
     puts("");
     
+    auto t1 = clk::now();
+    
+    std::cout << "Time taken = " << std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count() / 1e9 << " s\n";
+    std::cout << "Stod time taken = " << StodTime / 1e9 << " s\n";
+
 }
 //g++ -std=c++20 -o PrefixSimplifyPrev PrefixSimplifyPrev.cpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include
 //https://stackoverflow.com/questions/20153412/simplification-algorithm-for-reverse-polish-notation

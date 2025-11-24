@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
     // Small corpus of “typical” numeric strings, plus some failures
     std::vector<std::string> samples = {
         "0", "1", "-1", "3.1415926535", "-2.718281828",
-        "6.02214076e23", "1e-308", "1.7976931348623157e308",
+        "6.02214076e23", "1e-308", "1.7976931348623157e508",
         "0.0", "-0.0", "+42.0", "  123.456", "7.5e+09",
         "nan", "inf", "-inf",
         "bad", "123abc", "", "  ", "--1"

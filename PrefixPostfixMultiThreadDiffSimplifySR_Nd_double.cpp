@@ -6556,6 +6556,47 @@ struct Board
  */
 std::vector<std::vector<std::string>> InPaintWildfireSpreadTS(Board& x, bool fit)
 {
+    /*
+     Depth = 3:
+        Training:
+             Best score = 2.28121e-09, SNE = 4.38364e+08
+             Squared-norm error for each equation: 4.38364e+08
+             Best expression = sech(((x3 + x101) - (x100 / 2.993659)))
+             Best expression (original format) = x3 x101 + x100 2.993659 / - sech
+        Validation:
+             Best score = 6.74587e-11, SNE = 1.48239e+10
+             Squared-norm error for each equation: 1.48239e+10
+             Best expression = sech(((x3 + x101) - (x100 / 2.993659)))
+             Best expression (original format) = x3 x101 + x100 2.993659 / - sech
+             Best diff result = abs((sech(((x3 + x101) - (x100 / 2.993659))) - x102))
+             Best expression (original format) = x3 x101 + x100 2.993659 / - sech x102 - abs
+     
+     Depth = 4:
+        Training:
+            Best score = 2.28159e-09, SNE = 4.38291e+08
+            Squared-norm error for each equation: 4.38291e+08
+            Best expression = sech((((0.398685 / x61) + (x47 + x101)) - ((x86 + x100) / (x94 - x23))))
+            Best expression (original format) = 0.398685 x61 / x47 x101 + + x86 x100 + x94 x23 - / - sech
+            Best diff result = abs((sech((((0.398685 / x61) + (x47 + x101)) - ((x86 + x100) / (x94 - x23)))) - x102))
+            Best expression (original format) = 0.398685 x61 / x47 x101 + + x86 x100 + x94 x23 - / - sech x102 - abs
+        Validation:
+            Best score = 6.74587e-11, SNE = 1.48239e+10
+            Squared-norm error for each equation: 1.48239e+10
+            Best expression = sech((((0.398685 / x61) + (x47 + x101)) - ((x86 + x100) / (x94 - x23))))
+            Best expression (original format) = 0.398685 x61 / x47 x101 + + x86 x100 + x94 x23 - / - sech
+            Best diff result = abs((sech((((0.398685 / x61) + (x47 + x101)) - ((x86 + x100) / (x94 - x23)))) - x102))
+            Best expression (original format) = 0.398685 x61 / x47 x101 + + x86 x100 + x94 x23 - / - sech x102 - abs
+    
+     Depth = 5:
+        Training:
+            Best score = 2.2817e-09, SNE = 4.3827e+08
+            Squared-norm error for each equation: 4.3827e+08
+            Best expression = sech(((((x20 + 0.394189) / (0.001972 + x61)) + ((x84 ^ x70) + (x31 + x101))) - ((cos(x101) + (x76 + x100)) / ((x84 * x87) - (x21 + x23)))))
+            Best expression (original format) = x20 0.394189 + 0.001972 x61 + / x84 x70 ^ x31 x101 + + + x101 cos x76 x100 + + x84 x87 * x21 x23 + - / - sech
+            Best diff result = abs((sech(((((x20 + 0.394189) / (0.001972 + x61)) + ((x84 ^ x70) + (x31 + x101))) - ((cos(x101) + (x76 + x100)) / ((x84 * x87) - (x21 + x23))))) - x102))
+            Best expression (original format) = x20 0.394189 + 0.001972 x61 + / x84 x70 ^ x31 x101 + + + x101 cos x76 x100 + + x84 x87 * x21 x23 + - / - sech x102 - abs
+     */
+    
     std::vector<std::vector<std::string>> results(1);
     thread_local std::vector<std::string> result;
     result.clear();
@@ -6608,14 +6649,12 @@ std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
     thread_local const std::string w0 = to_string_general(-Board::data.num_rows / (2.0 * num_zeroes));
     
     /*
-     Best score = 1.88041e-06, SNE = 531799
-     Squared-norm error for each equation: 531799
-     Best expression = (((((((x6 - -0.00621) + (x17 + 9741)) + ((x0 ^ 0.051731) / x13)) - ((((x0 / 267.200012) / (15666.000000 ^ x6)) * x18) ^ cos((-0.6400000000000001 + x6)))) - ((tanh(x21) * ((x6 + x0) - (6.980075940561763 + (8.800000 + x10)))) ^ ((59 + (log(x8) + x7)) - (x11 ^ ((x11 + x5) + x15))))) + ((x25 - 3.4288275429960554e+302) / (((((-3.225653 + x1) - 336) ^ -100) + (0.00621 ^ (x18 ^ (x24 + 2.520000)))) ^ ((((x13 + x22) / 9736) + x18) - ((0.00621 / x20) + 2))))) + (((((((0.004735 / x20) + x6) / 2.176586002694007) ^ (((38.000000 + x8) + x0) - ((x22 * x24) + x2))) + ((4.724366706875754 ^ (36.293228 - x10)) + ((x5 * 6075) + x20))) + ((x17 / ((125.149719 + (x22 + x22)) * x11)) ^ (((x19 / -28.04) + 93.9525010000761) - ((4 - (2118.000000 * x11)) + x23)))) * ((((x19 + 0.00621) * 26.90232091662481) + ((58.000000 * (x22 / -100.000000)) + -788.4465640000001)) + ((8 + (0.5367255338147858 ^ (x20 + (x16 * 39.312500)))) + (acos(x21) + ((2 + (x23 / 292.600006)) + -18327.436844999997))))))
-     Best expression (original format) = x6 -0.00621 - x17 9741 + + x0 0.051731 ^ x13 / + x0 267.200012 / 15666.000000 x6 ^ / x18 * -0.6400000000000001 x6 + cos ^ - x21 tanh x6 x0 + 6.980075940561763 8.800000 x10 + + - * 59 x8 log x7 + + x11 x11 x5 + x15 + ^ - ^ - x25 3.4288275429960554e+302 - -3.225653 x1 + 336 - -100 ^ 0.00621 x18 x24 2.520000 + ^ ^ + x13 x22 + 9736 / x18 + 0.00621 x20 / 2 + - ^ / + 0.004735 x20 / x6 + 2.176586002694007 / 38.000000 x8 + x0 + x22 x24 * x2 + - ^ 4.724366706875754 36.293228 x10 - ^ x5 6075 * x20 + + + x17 125.149719 x22 x22 + + x11 * / x19 -28.04 / 93.9525010000761 + 4 2118.000000 x11 * - x23 + - ^ + x19 0.00621 + 26.90232091662481 * 58.000000 x22 -100.000000 / * -788.4465640000001 + + 8 0.5367255338147858 x20 x16 39.312500 * + ^ + x21 acos 2 x23 292.600006 / + -18327.436844999997 + + + + * +
-     Best differential equation parameters = {}
-     Best expression parameters = {}
-     Total system result = (term1 + term2)
-     Total system result (original format) = term1 term2 +
+     Best score = 3.20809e-06, SNE = 311711
+     Squared-norm error for each equation: 311711
+     Best expression = (((((((log(x24) / 292.600006) + 9742.570796326794) + (57.723478758647246 / x13)) - ((((x9 ^ x20) / (15666.000000 ^ x6)) * x18) ^ cos((-0.6400000000000001 + x6)))) - ((0.002104996890902969 * ((-3.138506348471897 + x0) - (6.980075940561763 + (8.800000 + x10)))) ^ ((59 + (log(x8) + x7)) - (x11 ^ ((x11 + x5) + x15))))) + ((x25 - 3.4288275429960554e+302) / (((((-3.225653 + x1) - 336) ^ -100) + (0.8667079999999991 ^ (x18 ^ (292.000000 - x8)))) ^ ((((x13 + x22) / 9736) + x18) - ((0.00621 / x20) + 2))))) + (((((((0.004735 / x20) + x6) / 2.176586002694007) ^ ((397.704071 + (38.000000 + x0)) - ((x22 * x24) + x2))) + ((4.724366706875754 ^ (36.293228 - x10)) + ((x5 * 6075) + x20))) + ((x17 / ((125.149719 + (x22 + x22)) * x11)) ^ (((x19 / -12.04) + ((x22 / 292.000000) + 93.9525010000761)) - (((x7 - 38.000000) / (x19 + 8.000000)) + (-1.2400589896061356 + x23))))) * ((((x19 + 0.00621) * 27.90232091662481) + ((((x14 + x8) + 9.183585634667363) * (x22 / -100)) + ((log(x7) + 19.330768784674568) + -772.4465640000001))) + (2.268687817171292 + (acos(x21) + (3 + ((x18 * 4.372938) + -18327.436844999997)))))))
+     Best expression (original format) = x24 log 292.600006 / 9742.570796326794 + 57.723478758647246 x13 / + x9 x20 ^ 15666.000000 x6 ^ / x18 * -0.6400000000000001 x6 + cos ^ - 0.002104996890902969 -3.138506348471897 x0 + 6.980075940561763 8.800000 x10 + + - * 59 x8 log x7 + + x11 x11 x5 + x15 + ^ - ^ - x25 3.4288275429960554e+302 - -3.225653 x1 + 336 - -100 ^ 0.8667079999999991 x18 292.000000 x8 - ^ ^ + x13 x22 + 9736 / x18 + 0.00621 x20 / 2 + - ^ / + 0.004735 x20 / x6 + 2.176586002694007 / 397.704071 38.000000 x0 + + x22 x24 * x2 + - ^ 4.724366706875754 36.293228 x10 - ^ x5 6075 * x20 + + + x17 125.149719 x22 x22 + + x11 * / x19 -12.04 / x22 292.000000 / 93.9525010000761 + + x7 38.000000 - x19 8.000000 + / -1.2400589896061356 x23 + + - ^ + x19 0.00621 + 27.90232091662481 * x14 x8 + 9.183585634667363 + x22 -100 / * x7 log 19.330768784674568 + -772.4465640000001 + + + 2.268687817171292 x21 acos 3 x18 4.372938 * -18327.436844999997 + + + + + * +
+     Best diff result = (term1 + term2)
+     Best expression (original format) = term1 term2 +
      ```
         from sympy import symbols, cos, sin, tanh, sech, sympify, latex, multiline_latex
         import re
@@ -8248,6 +8287,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                         int numDataCols = 0,
                         bool mustHaveAllFeatures = true,
                         const std::vector<std::vector<std::string>>& custom_features = {},
+                        const std::string& bestExpressionFileName = "",
                         const std::vector<std::vector<std::string>>& seed_expressions = {},
                         bool exit_early = false,
                         int custom_rand_seed = -1,
@@ -8293,13 +8333,15 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
     std::atomic<double> best_SNE{DBL_MAX};
     std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
     std::vector<double> best_sne_vec;
+    std::ostream* out = &std::cout;
+    std::ofstream outFile;
 
     auto start_time = Clock::now();
 
     /*
      Inside of thread:
      */
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &custom_features, &seed_expressions, &exit_early, &custom_rand_seed, &best_SNE, &best_sne_vec]()
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &custom_features, &seed_expressions, &exit_early, &custom_rand_seed, &best_SNE, &best_sne_vec, &bestExpressionFileName, &outFile, &out]()
     {
         std::random_device rand_dev;
         #if RANDOM_SEED < 0
@@ -8354,6 +8396,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
             if (update_current)
             {
                 current = x.pieces; //update current expression
+                //TODO: complete tree of current (or x.pieces?) if complete_tree option set to true.
                 if ((score > max_score) || exit_early)
                 {
                     max_score = score;
@@ -8364,16 +8407,34 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                     orig_expression = x.expression();
                     best_expr_result = x._to_infix(x.diffeq_result);
                     orig_expr_result = x.expression(x.diffeq_result);
-                    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
-                    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-                    std::cout << "Best score = " << score << ", SNE = " << best_SNE << '\n';
-                    std::cout << "Squared-norm error for each equation: " << best_sne_vec << '\n';
-                    std::cout << "Best expression = " << best_expression << '\n';
-                    std::cout << "Best expression (original format) = " << orig_expression << '\n';
-                    std::cout << "Best differential equation parameters = " << x.print_diff_params() << '\n';
-                    std::cout << "Best expression parameters = " << x.print_expression_params() << '\n';
-                    std::cout << "Total system result = " << best_expr_result << '\n';
-                    std::cout << "Total system result (original format) = " << orig_expr_result << '\n';
+                    if (bestExpressionFileName.size())
+                    {
+                        outFile.open(bestExpressionFileName, std::ios::app);
+                        if (outFile.is_open())
+                        {
+                            out = &outFile;
+                        }
+                        else
+                        {
+                            out = &std::cout;
+                        }
+                    }
+                    (*out) << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+                    (*out) << "Time spent fitting = " << Board::fit_time << " seconds\n";
+                    (*out) << "Best score = " << score << ", SNE = " << best_SNE << '\n';
+                    (*out) << "Squared-norm error for each equation: " << best_sne_vec << '\n';
+                    (*out) << "Best expression = " << best_expression << '\n';
+                    (*out) << "Best expression (original format) = " << orig_expression << '\n';
+                    (*out) << "Best diff result = " << best_expr_result << '\n';
+                    (*out) << "Best expression (original format) = " << orig_expr_result << '\n';
+                    (*out) << "Best differential equation parameters = " << x.print_diff_params() << '\n';
+                    (*out) << "Best expression parameters = " << x.print_expression_params() << '\n';
+                    (*out) << "Total system result = " << best_expr_result << '\n';
+                    (*out) << "Total system result (original format) = " << orig_expr_result << '\n';
+                    if (outFile.is_open())
+                    {
+                        outFile.close();
+                    }
                 }
             }
             else
@@ -9522,7 +9583,8 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
                   bool use_const_pieces = false,
                   int numDataCols = 0,
                   bool mustHaveAllFeatures = true,
-                  const std::vector<std::vector<std::string>>& custom_features = {})
+                  const std::vector<std::vector<std::string>>& custom_features = {},
+                  const std::string& bestExpressionFileName = "")
 {
     if (num_threads == 0)
     {
@@ -9541,6 +9603,8 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
     std::atomic<double> best_SNE{DBL_MAX};
     std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
     std::vector<double> best_sne_vec;
+    std::ostream* out = &std::cout;
+    std::ofstream outFile;
 
     auto start_time = Clock::now();
 
@@ -9548,7 +9612,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
      Inside of thread:
      */
 
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &use_const_pieces, &numDataCols, &mustHaveAllFeatures, &custom_features, &isConstTol, &best_SNE, &best_sne_vec]()
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &use_const_pieces, &numDataCols, &mustHaveAllFeatures, &custom_features, &isConstTol, &best_SNE, &best_sne_vec, &bestExpressionFileName, &outFile, &out]()
     {
         std::random_device rand_dev;
         std::mt19937 thread_local generator(rand_dev()); // Mersenne Twister random number generator
@@ -9602,18 +9666,34 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
                 orig_expression = x.expression();
                 best_expr_result = x._to_infix(x.diffeq_result);
                 orig_expr_result = x.expression(x.diffeq_result);
-                std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
-                std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-                std::cout << "Best score = " << score << ", SNE = " << best_SNE << '\n';
-                std::cout << "Squared-norm error for each equation: " << best_sne_vec << '\n';
-                std::cout << "Best expression = " << best_expression << '\n';
-                std::cout << "Best expression (original format) = " << orig_expression << '\n';
-                std::cout << "Best diff result = " << best_expr_result << '\n';
-                std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
-                std::cout << "Best differential equation parameters = " << x.print_diff_params() << '\n';
-                std::cout << "Best expression parameters = " << x.print_expression_params() << '\n';
-                std::cout << "Total system result = " << best_expr_result << '\n';
-                std::cout << "Total system result (original format) = " << orig_expr_result << '\n';
+                if (bestExpressionFileName.size())
+                {
+                    outFile.open(bestExpressionFileName, std::ios::app);
+                    if (outFile.is_open())
+                    {
+                        out = &outFile;
+                    }
+                    else
+                    {
+                        out = &std::cout;
+                    }
+                }
+                (*out) << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+                (*out) << "Time spent fitting = " << Board::fit_time << " seconds\n";
+                (*out) << "Best score = " << score << ", SNE = " << best_SNE << '\n';
+                (*out) << "Squared-norm error for each equation: " << best_sne_vec << '\n';
+                (*out) << "Best expression = " << best_expression << '\n';
+                (*out) << "Best expression (original format) = " << orig_expression << '\n';
+                (*out) << "Best diff result = " << best_expr_result << '\n';
+                (*out) << "Best expression (original format) = " << orig_expr_result << '\n';
+                (*out) << "Best differential equation parameters = " << x.print_diff_params() << '\n';
+                (*out) << "Best expression parameters = " << x.print_expression_params() << '\n';
+                (*out) << "Total system result = " << best_expr_result << '\n';
+                (*out) << "Total system result (original format) = " << orig_expr_result << '\n';
+                if (outFile.is_open())
+                {
+                    outFile.close();
+                }
             }
 //            else
 //            {
@@ -9674,7 +9754,8 @@ namespace ExampleProblems
                          false /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                          0 /*number of data columns that constitute labels and not independent variables/features*/,
                          true /*whether or not to include ALL of the features in all of the generated expressions*/,
-                         {} /*custom features that the SR-found equations are required to contain*/);
+                         {} /*custom features that the SR-found equations are required to contain*/,
+                         "" /*filename to save current best expression found (instead of outputting them to standard out*/);
         }
         else
         {
@@ -9697,6 +9778,7 @@ namespace ExampleProblems
                 0 /*number of data columns that constitute labels and not independent variables/features*/,
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
+                "" /*filename to save current best expression found (instead of outputting them to standard out*/,
                 {split("0 0 + 0 0 + + 0 0 + 0 0.693868926928361 + + + 0.010000 x1 + sin 0 1.0000132758892615 + x0 sin * * - 2 x1 + 0 -10 + / 0 0 + 0 0.014426950408889635 + + * 0 0.02 + 6.283190 x0 + ^ 0 0 + 0 0.0922858190550785 + + + + -")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -9727,7 +9809,8 @@ namespace ExampleProblems
                          false /*whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                          0 /*number of data columns that constitute labels and not independent variables/features*/,
                          true /*whether or not to include ALL of the features in all of the generated expressions*/,
-                         {} /*custom features that the SR-found equations are required to contain*/);
+                         {} /*custom features that the SR-found equations are required to contain*/,
+                         ""); // "vortexTest.txt" /*filename to save current best expression found (instead of outputting them to standard out*/
         }
         else
         {
@@ -9750,6 +9833,7 @@ namespace ExampleProblems
                 0 /*number of data columns that constitute labels and not independent variables/features*/,
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
+                "" /*filename to save current best expression found (instead of outputting them to standard out)*/,
                 {} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -9782,7 +9866,8 @@ namespace ExampleProblems
                 true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                  2 /*number of data columns that constitute labels and not independent variables/features*/,
                  true /*whether or not to include ALL of the features in all of the generated expressions*/,
-                 {} /*custom features that the SR-found equations are required to contain*/);
+                 {} /*custom features that the SR-found equations are required to contain*/,
+                 "" /*filename to save current best expression found (instead of outputting them to standard out)*/);
         }
         else
         {
@@ -9805,6 +9890,7 @@ namespace ExampleProblems
                 2 /*number of data columns that constitute labels and not independent variables/features*/,
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
+                "" /*filename to save current best expression found (instead of outputting them to standard out)*/,
                 {split("x0 sech tanh tanh 0 0 + 0 -6.4342880000000005 + + x0 tanh 0 2.61657 + / - /"), split("0 0 + 0 -3.2171440000000002 + + x0 sech 0 0.9640275800758169 + ^ * sech")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -9836,7 +9922,8 @@ namespace ExampleProblems
                 false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                  1 /*number of data columns that constitute labels and not independent variables/features*/,
                  false /*whether or not to include ALL of the features in all of the generated expressions*/,
-                 {} /*custom features that the SR-found equations are required to contain*/);
+                 {} /*custom features that the SR-found equations are required to contain*/,
+                 "" /*filename to save current best expression found (instead of outputting them to standard out)*/);
         }
         else
         {
@@ -9859,8 +9946,8 @@ namespace ExampleProblems
                 1 /*number of data columns that constitute labels and not independent variables/features*/,
                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
-                {split("0 x6 + 0 -0.00621 + - 0 x17 + 0 9741 + + + 0 x0 + 0 0.051731 + ^ 0 0 + 0 x13 + + / + x0 267.200012 / 15666.000000 x6 ^ / 0 0 + 0 x18 + + * 0 -0.6400000000000001 + 0 x6 + + cos ^ - 0 0 + 0 x21 + + tanh 0 x6 + 0 x0 + + 0 6.980075940561763 + 8.800000 x10 + + - * 0 0 + 0 59 + + x8 log 0 x7 + + + 0 0 + 0 x11 + + x11 x5 + 0 x15 + + ^ - ^ - 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x25 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 3.4288275429960554e+302 + + + + - -3.225653 x1 + 0 336 + - 0 0 + 0 -100 + + ^ 0 0 + 0 0.00621 + + 0 x18 + x24 2.520000 + ^ ^ + x13 x22 + 0 9736 + / 0 0 + 0 x18 + + + 0 0.00621 + 0 x20 + / 0 0 + 0 2 + + + - ^ / + 0.004735 x20 / 0 x6 + + 0 0 + 0 2.176586002694007 + + / 38.000000 x8 + 0 x0 + + x22 x24 * 0 x2 + + - ^ 0 0 + 0 4.724366706875754 + + 0 36.293228 + 0 x10 + - ^ 0 x5 + 0 6075 + * 0 0 + 0 x20 + + + + + 0 0 + 0 0 + + 0 0 + 0 x17 + + + 0 125.149719 + x22 x22 + + 0 0 + 0 x11 + + * / 0 x19 + 0 -28.04 + / 0 0 + 0 93.9525010000761 + + + 0 4 + 2118.000000 x11 * - 0 0 + 0 x23 + + + - ^ + 0 0 + 0 x19 + + 0 0 + 0 0.00621 + + + 0 0 + 0 0 + + 0 0 + 0 26.90232091662481 + + + * 0 0 + 0 58.000000 + + 0 x22 + 0 -100.000000 + / * 0 0 + 0 0 + + 0 0 + 0 -788.4465640000001 + + + + + 0 0 + 0 0 + + 0 0 + 0 8 + + + 0 0 + 0 0.5367255338147858 + + 0 x20 + x16 39.312500 * + ^ + 0 0 + 0 x21 + + acos 0 2 + x23 292.600006 / + 0 0 + 0 -18327.436844999997 + + + + + + * +")} /*seed expressions*/,
-//                {split("+ + - - 9736 x22 / x7 x20 / + 0 -100.051731 ^ x5 x15 * + + 0 x20 * 1075.000000 x5 + + 0 0 + 0 -17064.107062")} /*seed expressions*/,
+                "BestNextDayFire.txt" /*filename to save current best expression found (instead of outputting them to standard out)*/,
+                {split("x24 log 0 292.600006 + / 0 0 + 0 9742.570796326794 + + + 0 0 + 0 57.723478758647246 + + 0 0 + 0 x13 + + / + x9 x20 ^ 15666.000000 x6 ^ / 0 0 + 0 x18 + + * 0 -0.6400000000000001 + 0 x6 + + cos ^ - 0 0 + 0 0 + + 0 0 + 0 0.002104996890902969 + + + 0 -3.138506348471897 + 0 x0 + + 0 6.980075940561763 + 8.800000 x10 + + - * 0 0 + 0 59 + + x8 log 0 x7 + + + 0 0 + 0 x11 + + x11 x5 + 0 x15 + + ^ - ^ - 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x25 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 3.4288275429960554e+302 + + + + - -3.225653 x1 + 0 336 + - 0 0 + 0 -100 + + ^ 0 0 + 0 0.8667079999999991 + + 0 x18 + 292.000000 x8 - ^ ^ + x13 x22 + 0 9736 + / 0 0 + 0 x18 + + + 0 0.00621 + 0 x20 + / 0 0 + 0 2 + + + - ^ / + 0.004735 x20 / 0 x6 + + 0 0 + 0 2.176586002694007 + + / 0 397.704071 + 38.000000 x0 + + x22 x24 * 0 x2 + + - ^ 0 0 + 0 4.724366706875754 + + 0 36.293228 + 0 x10 + - ^ 0 x5 + 0 6075 + * 0 0 + 0 x20 + + + + + 0 0 + 0 0 + + 0 0 + 0 x17 + + + 0 125.149719 + x22 x22 + + 0 0 + 0 x11 + + * / 0 x19 + 0 -12.04 + / x22 292.000000 / 0 93.9525010000761 + + + x7 38.000000 - x19 8.000000 + / 0 -1.2400589896061356 + 0 x23 + + + - ^ + 0 0 + 0 x19 + + 0 0 + 0 0.00621 + + + 0 0 + 0 0 + + 0 0 + 0 27.90232091662481 + + + * x14 x8 + 0 9.183585634667363 + + 0 x22 + 0 -100 + / * x7 log 0 19.330768784674568 + + 0 0 + 0 -772.4465640000001 + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 2.268687817171292 + + + + 0 0 + 0 x21 + + acos 0 0 + 0 3 + + x18 4.372938 * 0 -18327.436844999997 + + + + + + * +")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 "");// "SNE_vals.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
@@ -9869,7 +9956,16 @@ namespace ExampleProblems
     void InPaintWildfireSpreadTSTest(int random_seed, const char* algorithm, double time)
     {
         double threshold = 0.0;
-        Eigen::MatrixXd data = load_csv("/Users/edwardfinkelstein/SDSU_UCI/UCIFall2025/CS274E/Deep-Gen-Project/data/fire_23654679/fire_23654679_inpainting_dataset.csv", 2834850, 103);
+        bool validation = false;
+        Eigen::MatrixXd data;
+        if (validation)
+        {
+            data = load_csv("/Users/edwardfinkelstein/SDSU_UCI/UCIFall2025/CS274E/8006177/WildfireSpreadTS/2020/fire_24332933/fire_24332933_inpainting_dataset.csv", 1882110, 103);
+        }
+        else
+        {
+            data = load_csv("/Users/edwardfinkelstein/SDSU_UCI/UCIFall2025/CS274E/Deep-Gen-Project/data/fire_23654679/fire_23654679_inpainting_dataset.csv", 2834850, 103);
+        }
         std::cout << "Data loaded!\nFirst 10 rows\n=============\n";
         std::cout << data.topRows(10) << '\n';
         if (strcmp(algorithm, "RandomSearch") == 0)
@@ -9891,14 +9987,15 @@ namespace ExampleProblems
                 false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                  1 /*number of data columns that constitute labels and not independent variables/features*/,
                  false /*whether or not to include ALL of the features in all of the generated expressions*/,
-                 {{"x100", "x101"}} /*custom features that the SR-found equations are required to contain*/);
+                 {{"x100", "x101"}} /*custom features that the SR-found equations are required to contain*/,
+                 "" /*filename to save current best expression found (instead of outputting them to standard out)*/);
         }
         else
         {
             SimulatedAnnealing(InPaintWildfireSpreadTS /*differential equation to solve*/,
                 1 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{3} /*fixed depths of generated solution*/,
+                std::vector<int>{5} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -9906,7 +10003,7 @@ namespace ExampleProblems
                 "naive_numerical" /*method for computing the gradient*/,
                 true /*cache*/,
                 time /*time to run the algorithm in seconds*/,
-                0 /*num threads*/,
+                ((validation) ? 1 : 0) /*num threads*/,
                 true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
                 false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
@@ -9914,9 +10011,9 @@ namespace ExampleProblems
                 1 /*number of data columns that constitute labels and not independent variables/features*/,
                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {{"x100", "x101"}} /*custom features that the SR-found equations are required to contain*/,
-                {} /*seed expressions*/,
-//                {split("+ + - - 9736 x22 / x7 x20 / + 0 -100.051731 ^ x5 x15 * + + 0 x20 * 1075.000000 x5 + + 0 0 + 0 -17064.107062")} /*seed expressions*/,
-                false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
+                "",//"BestInpaint.txt" /*filename to save current best expression found (instead of outputting them to standard out)*/,
+                {split("x20 0.394189 + 0.001972 x61 + / x84 x70 ^ x31 x101 + + + x101 cos x76 x100 + + x84 x87 * x21 x23 + - / - sech")} /*seed expressions*/,
+                validation /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 "");// "SNE_vals.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
         }
@@ -9954,7 +10051,7 @@ enum class ProblemOption
 int main(int argc, char *argv[])
 {
     int random_seed = get_random_seed(argc, argv);
-    constexpr const char* algorithm = "RandomSearch";
+    constexpr const char* algorithm = "SimulatedAnnealing";
     constexpr double time = 6000000.;
     printf("Random seed set to %d%s", random_seed, std::string(10, '\n').c_str());
     ProblemOption choice = ProblemOption::InPaintWildfireSpreadTS;
@@ -9983,32 +10080,41 @@ int main(int argc, char *argv[])
 }
 
 //git push --set-upstream origin PrefixPostfixSymbolicDifferentiator
-
-//g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd_double PrefixPostfixMultiThreadDiffSimplifySR_Nd_double.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
-//g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd_double PrefixPostfixMultiThreadDiffSimplifySR_Nd_double.cpp -g -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
-
 /*
-Compile: Make sure you did $env:Path += ";C:\msys64\ucrt64\bin\" by inspecting $env:Path, then do the two lines below
-g++.exe -O2 -std=c++1z -IC:\Users\finkelsteine\test_codes\LBFGSpp\include -IC:\Users\finkelsteine\test_codes\boost_1_88_0 -IC:\Users\finkelsteine\test_codes\eigen\unsupported -IC:\Users\finkelsteine\test_codes\eigen\ -c C:\Users\finkelsteine\test_codes\hello_with_numbers_double.cpp -o C:\Users\finkelsteine\test_codes\hello_with_numbers_double.o -Wall
-g++.exe  -o C:\Users\finkelsteine\test_codes\hello_with_numbers_double.exe C:\Users\finkelsteine\test_codes\hello_with_numbers_double.o  -O2
+
+Case 1:
+    g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd_double PrefixPostfixMultiThreadDiffSimplifySR_Nd_double.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
+    g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd_double PrefixPostfixMultiThreadDiffSimplifySR_Nd_double.cpp -g -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
+
+Case 2:
+    Compile: Make sure you did $env:Path += ";C:\msys64\ucrt64\bin\" by inspecting $env:Path, then do the two lines below
+    g++.exe -O2 -std=c++1z -IC:\Users\finkelsteine\test_codes\LBFGSpp\include -IC:\Users\finkelsteine\test_codes\boost_1_88_0 -IC:\Users\finkelsteine\test_codes\eigen\unsupported -IC:\Users\finkelsteine\test_codes\eigen\ -c C:\Users\finkelsteine\test_codes\hello_with_numbers_double.cpp -o C:\Users\finkelsteine\test_codes\hello_with_numbers_double.o -Wall
+    g++.exe  -o C:\Users\finkelsteine\test_codes\hello_with_numbers_double.exe C:\Users\finkelsteine\test_codes\hello_with_numbers_double.o  -O2
+
+
+    To run this file in Windows PowerShell, MAKE SURE ";C:\msys64\ucrt64\bin\" is in $env:Path
+    (by doing $env:Path, and, if it's not there, do $env:Path += ";C:\msys64\ucrt64\bin\"),
+    then do:
+    & 'C:\Program Files (x86)\CodeBlocks\cb_console_runner.exe' .\hello_with_numbers_double.exe
+    or
+    .\hello_with_numbers_double.exe
+
+    To unzip file: Expand-Archive -Path "C:\Users\finkelsteine\test_codes\boost_1_88_0.zip" -DestinationPath "C:\Users\finkelsteine\test_codes"
+    To count how many instances of a string (in this case "stof" occur in a file (in this case `hello.cpp`):
+     - (Get-Content -Path "C:\Users\finkelsteine\test_codes\hello.cpp" | Select-String -Pattern "stof").Count
+    To launch Python: C:\Users\finkelsteine\AppData\Local\Programs\Python\Launcher\py.exe
+    To get the diff between two files: Compare-Object (Get-Content -Path "C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp") (Get-Content -Path "C:\Users\finkelsteine\test_codes\hello_with_numbers.txt")
+    To change the path variable, do $env:Path="newpath"
+    To install with pip: C:\Users\finkelsteine\AppData\Local\Programs\Python\Launcher\py.exe -m pip install plotdigitizer
+
+Case 3:
+    g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd_double PrefixPostfixMultiThreadDiffSimplifySR_Nd_double.cpp -O2 -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
+    g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd_double PrefixPostfixMultiThreadDiffSimplifySR_Nd_double.cpp -g -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/eigen/include/eigen3 -I/Users/edwardfinkelstein/LBFGSpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -march=native
+
+ 
+g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd_double PrefixPostfixMultiThreadDiffSimplifySR_Nd_double.cpp -O2 -I/usr/include/eigen3 -I./LBFGSpp/include -I./boost/1.84.0/include -march=native
+ 
 */
-
-//To run this file in Windows PowerShell, MAKE SURE ";C:\msys64\ucrt64\bin\" is in $env:Path
-//(by doing $env:Path, and, if it's not there, do $env:Path += ";C:\msys64\ucrt64\bin\"),
-//then do:
-//& 'C:\Program Files (x86)\CodeBlocks\cb_console_runner.exe' .\hello_with_numbers_double.exe
-//or
-//.\hello_with_numbers_double.exe
-
-//To unzip file: Expand-Archive -Path "C:\Users\finkelsteine\test_codes\boost_1_88_0.zip" -DestinationPath "C:\Users\finkelsteine\test_codes"
-//To count how many instances of a string (in this case "stof" occur in a file (in this case `hello.cpp`):
-// - (Get-Content -Path "C:\Users\finkelsteine\test_codes\hello.cpp" | Select-String -Pattern "stof").Count
-//To launch Python: C:\Users\finkelsteine\AppData\Local\Programs\Python\Launcher\py.exe
-//To get the diff between two files: Compare-Object (Get-Content -Path "C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp") (Get-Content -Path "C:\Users\finkelsteine\test_codes\hello_with_numbers.txt")
-//To change the path variable, do $env:Path="newpath"
-//To install with pip: C:\Users\finkelsteine\AppData\Local\Programs\Python\Launcher\py.exe -m pip install plotdigitizer
-
-
 
 
 //a half built garden

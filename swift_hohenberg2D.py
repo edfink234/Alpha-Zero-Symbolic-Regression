@@ -16,12 +16,12 @@ mu, nu = 1, 1
 # Define the function f as a function of r and theta
 GENERIC = False
 PERIODIC_IN_THETA = True
-COMPUTE_NUMERIC = True
+COMPUTE_NUMERIC = False
 f = None
 if GENERIC:
     f = Function('f')(r, theta)
 else:
-    f =  sin(r)*sin(theta) + 0 \
+    f =  sin(r)*sin(theta) + 0.604 \
         if PERIODIC_IN_THETA else \
         (((0.148475282221305 * theta) - (sin(theta) * (1.0000132758892615 * sin(r)))) - 0.0922858190550785)
 

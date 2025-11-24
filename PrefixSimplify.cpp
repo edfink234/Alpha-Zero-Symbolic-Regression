@@ -7,7 +7,9 @@
 #include <cmath>
 #include <cassert>
 #include <boost/spirit/include/qi.hpp> //For fast string-to-double conversion!
+#include <chrono>
 
+using clk = std::chrono::high_resolution_clock;
 const std::unordered_set<std::string> unary_operators = {"cos", "~", "sin", "log", "ln", "asin", "arcsin", "acos", "arccos", "exp", "sech", "tanh", "sqrt"};
 const std::unordered_set<std::string> binary_operators = {"+", "-", "*", "/", "^"};
 const std::string expression_type = "prefix";
@@ -59,26 +61,27 @@ void print_container(const std::vector<std::string>& c)
 }
 
 //MARK: Might be able to replace this with `parse_double_spirit`
-double Stod(const std::string& param)
-{
-    try
-    {
-        double val = std::stod(param);
-        return val;
-    }
-    catch (const std::out_of_range&)
-    {
-        //Return +/- infinity depending on the sign
-        if (!param.empty() && param[0] == '-')
-        {
-            return -std::numeric_limits<double>::infinity();
-        }
-        else
-        {
-            return std::numeric_limits<double>::infinity();
-        }
-    }
-}
+//double Stod(const std::string& param)
+//{
+//    try
+//    {
+//        double val = std::stod(param);
+//        return val;
+//    }
+//    catch (const std::out_of_range&)
+//    {
+//        //Return +/- infinity depending on the sign
+//        if (!param.empty() && param[0] == '-')
+//        {
+//            return -std::numeric_limits<double>::infinity();
+//        }
+//        else
+//        {
+//            return std::numeric_limits<double>::infinity();
+//        }
+//    }
+//}
+
 //stod is locale-dependent
 //Example: In the USA, 1.23 = 1 + 23/100
 //but in e.g. Europe `1.23` is written as `1,23`
@@ -142,6 +145,18 @@ bool parse_double_spirit(const std::string& s, double& out)
     // qi::double_ already yields ±inf/NaN where appropriate.
     bool ok = qi::phrase_parse(f, l, qi::double_ >> qi::eoi, ascii::space, out);
     return ok; // f==l guaranteed by eoi
+}
+
+double StodTime = 0.0;
+
+double Stod(const std::string& param)
+{
+    auto t0 = clk::now();
+    double val;
+    parse_double_spirit(param, val);
+    auto t1 = clk::now();
+    StodTime += std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
+    return val;
 }
 
 bool checkEqual(const std::string &str1, const std::string &str2)
@@ -1365,6 +1380,8 @@ void simplifyPN(std::vector<std::string>& expression)
 
 int main()
 {
+    auto t0 = clk::now();
+    
     std::vector<std::string> test_expr = {"-", "-", "-", "x1", "x1", "0", "+", "x1", "x1"};
     printf("before: ");print_container(test_expr);
     simplifyPN(test_expr);
@@ -3429,7 +3446,25 @@ int main()
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
+//    
+//    test_expr = {"*", "1e500", "+", "3.444", "cos", "1.22"};
+//    printf("before: ");print_container(test_expr);
+//    simplifyPN(test_expr);
+//    printf("after: ");print_container(test_expr);
+//    puts("");
+//    
+//    test_expr = {"*", "-2e390", "+", "+", "3.444", "cos", "1.22", "+", "3.444", "sin", "1.22"};
+//    printf("before: ");print_container(test_expr);
+//    simplifyPN(test_expr);
+//    printf("after: ");print_container(test_expr);
+//    puts("");
     
+    
+    auto t1 = clk::now();
+    
+    std::cout << "Time taken = " << std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count() / 1e9 << " s\n";
+    std::cout << "Stod time taken = " << StodTime / 1e9 << " s\n";
+
 }
 //g++ -std=c++20 -o PrefixSimplify PrefixSimplify.cpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include
 //https://stackoverflow.com/questions/20153412/simplification-algorithm-for-reverse-polish-notation

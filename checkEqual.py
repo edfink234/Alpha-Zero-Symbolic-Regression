@@ -263,24 +263,18 @@ before: cos sqrt - x x
 after: 1 
 
 before: sin tanh sqrt - * x x * x x 
-hi 814
 after: 0 
 
 before: sqrt sqrt - * x cos x * x cos x 
-hi 814
-hi 814
 after: 0 
 
 before: cos arcsin - x x 
 after: 1 
 
 before: sin tanh asin - ^ x x ^ x x 
-hi 759
 after: 0 
 
 before: asin arcsin - * x sin x * x sin x 
-hi 759
-hi 759
 after: 0 
 
 before: exp acos - tanh x tanh x 
@@ -299,7 +293,6 @@ before: asin sech - * x exp x * x exp x
 after: 1.5707963267948966 
 
 before: acos sech - - x sech x - x sech x 
-hi 787
 after: 0 
 
 before: + ~ * 0 tanh tanh x x 
@@ -423,7 +416,6 @@ before: cos ~ ^ 0 * tanh cos x 1
 after: nan 
 
 before: sin cos ~ arcsin ^ 0 * y y 
-hi 753
 after: nan 
 
 before: sin sin arcsin ^ 0 * y y 
@@ -787,12 +779,9 @@ before: tanh + - ^ + y x 0.000 1.00000 ~ inf
 after: -1 
 
 before: sech ~ sin tanh sqrt - * x x * x x 
-hi 814
 after: 1 
 
 before: sech ~ sqrt sqrt - * x cos x * x cos x 
-hi 814
-hi 814
 after: 1 
 
 before: cos + - ^ x 0.000 1.00000 ~ inf 
@@ -836,6 +825,210 @@ after: sech x
 
 before: sech / x + tanh + - ^ + y x 0.000 1.00000 ~ inf - 1 1 
 after: sech x 
+
+before: ln ~ - cos + x y cos + x y 
+after: -inf 
+
+before: ln sin - sin sin + x y sin sin + x y 
+after: -inf 
+
+before: ln ^ ~ - cos + x y cos + x y banana 
+after: nan 
+
+before: ln / + x water sin - sin sin + x y sin sin + x y 
+after: nan 
+
+before: ln + inf ~ - cos + x y cos + x y 
+after: inf 
+
+before: ln + sin - sin sin + x y sin sin + x y exp inf 
+after: inf 
+
+before: asin tanh - cos + x y cos + x y 
+after: 0 
+
+before: asin sin sin - sin sin + x y sin sin + x y 
+after: 0 
+
+before: asin + nan tanh - cos + x y cos + x y 
+after: nan 
+
+before: asin / sin sin - sin sin + x y sin sin + x y sin nan 
+after: nan 
+
+before: asin exp + inf tanh - cos + x y cos + x y 
+after: nan 
+
+before: asin + sin sin - sin sin + x y sin sin + x y exp exp exp inf 
+after: nan 
+
+before: arccos + 1.0000 tanh - cos + x y cos + x y 
+after: 0 
+
+before: acos + sin sin - sin sin + x y sin sin + x y exp 0.00000e0 
+after: 0 
+
+before: arccos / + 1.0000 tanh - cos + x y cos + x y cos nan 
+after: nan 
+
+before: acos * + sin sin - sin sin + x y sin sin + x y exp 0.00000e0 sin sech / x .000 
+after: nan 
+
+before: arccos * exp inf + 1.0000 tanh - cos + x y cos + x y 
+after: nan 
+
+before: acos * + sin sin - sin sin + x y sin sin + x y exp 0.00000e0 ln exp ln inf 
+after: nan 
+
+before: sqrt * 1.0000 arccos + 1.0000 tanh - cos + x y cos + x y 
+after: 0 
+
+before: sqrt * 1.09214234 acos + sin sin - sin sin + x y sin sin + x y exp 0.00000e0 
+after: 0 
+
+before: sqrt * nan arccos + 1.0000 tanh - cos + x y cos + x y 
+after: nan 
+
+before: sqrt * + nan sech 1.09214234 acos + sin sin - sin sin + x y sin sin + x y exp 0.00000e0 
+after: nan 
+
+before: sqrt + inf * 1.0000 arccos + 1.0000 tanh - cos + x y cos + x y 
+after: inf 
+
+before: sqrt + exp inf * 1.09214234 acos + sin sin - sin sin + x y sin sin + x y exp 0.00000e0 
+after: inf 
+
+before: sqrt + * 1.0000 arccos + 1.0000 tanh - cos + x y cos + x y 1.0000e0 
+after: 1 
+
+before: sqrt - * 1.09214234 acos + sin sin - sin sin + x y sin sin + x y exp 0.00000e0 -1.000 
+after: 1 
+
+before: cos ~ + inf * 1.0000 arccos + 1.0000 tanh - cos + x y cos + x y 
+after: nan 
+
+before: cos ~ + exp inf * 1.09214234 acos + sin sin - sin sin + x y sin sin + x y exp 0.00000e0 
+after: nan 
+
+before: cos ~ exp + inf tanh - cos + x y cos + x y 
+after: nan 
+
+before: cos ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 
+after: nan 
+
+before: sin * 1.000 ~ + inf * 1.0000 arccos + 1.0000 tanh - cos + x y cos + x y 
+after: nan 
+
+before: sin / ~ + exp inf * 1.09214234 acos + sin sin - sin sin + x y sin sin + x y exp 0.00000e0 1.0000e0 
+after: nan 
+
+before: sin * ~ exp + inf tanh - cos + x y cos + x y 1 
+after: nan 
+
+before: sin + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 
+after: nan 
+
+before: ~ * sqrt 1.000 * 1.000 ~ + inf * 1.0000 arccos + 1.0000 tanh - cos + x y cos + x y 
+after: inf 
+
+before: ~ * / ~ + exp inf * 1.09214234 acos + sin sin - sin sin + x y sin sin + x y exp 0.00000e0 1.0000e0 1.000e0 
+after: inf 
+
+before: ~ * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 
+after: inf 
+
+before: ~ / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 
+after: inf 
+
+before: exp ~ ~ * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 
+after: 0 
+
+before: exp ~ ~ ~ ~ / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 
+after: 0 
+
+before: exp * 1.00e0 * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 
+after: 0 
+
+before: exp * / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 100.0e-2 
+after: 0 
+
+before: ln + sin 0.000 ~ ~ * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 
+after: nan 
+
+before: log ~ ~ ~ ~ ~ ~ / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 
+after: nan 
+
+before: ln + * 1.00e0 * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 0.00e0 
+after: nan 
+
+before: ln + * / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 100.0e-2 sin 0.0000 
+after: nan 
+
+before: asin + sin 0.0000 + sin 0.000 ~ ~ * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 
+after: nan 
+
+before: arcsin * 1.0000 ~ ~ ~ ~ ~ ~ / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 
+after: nan 
+
+before: arcsin * + * 1.00e0 * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 0.00e0 exp 0.000000 
+after: nan 
+
+before: asin / + * / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 100.0e-2 sin 0.0000 exp sin 0.000e0 
+after: nan 
+
+before: arccos + 0 + sin 0.0000 + sin 0.000 ~ ~ * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 
+after: nan 
+
+before: acos * 1.000 ~ ~ ~ ~ ~ ~ / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 
+after: nan 
+
+before: acos * + * 1.00e0 * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 0.00e0 exp 0.00000000e0 
+after: nan 
+
+before: arccos * 1 / + * / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 100.0e-2 sin 0.0000 exp sin 0.000e0 
+after: nan 
+
+before: sqrt + 0 + sin 0.0000 + sin 0.000 ~ ~ * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00e0 
+after: nan 
+
+before: sqrt * 1000.e-3 ~ ~ ~ ~ ~ ~ / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 
+after: nan 
+
+before: sqrt * + * 1.00e0 * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 0.00e0 exp sin 0.00000000e0 
+after: nan 
+
+before: sqrt * 1.000e0 / + * / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 100.0e-2 sin 0.0000 exp sin 0.000e0 
+after: nan 
+
+before: sqrt - exp ~ ~ * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 1.00000 
+after: nan 
+
+before: sqrt + -1.000 exp ~ ~ ~ ~ / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 
+after: nan 
+
+before: sqrt + * -1 1.000e0 exp * 1.00e0 * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 
+after: nan 
+
+before: sqrt + exp * / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 100.0e-2 -100e-2 
+after: nan 
+
+before: ~ * -1.000e0 + * -1 1.000e0 exp * 1.00e0 * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 
+after: -1.000e0 
+
+before: ~ * + exp * / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 100.0e-2 -100e-2 -100e-2 
+after: -100e-2 
+
+before: ~ + sin 0.000e0 - exp ~ ~ * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 1.00000 
+after: 1.00000 
+
+before: ~ + -1.000 exp ~ ~ ~ ~ / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 
+after: 1 
+
+before: / * sin cos + x y ~ + sin 0.000e0 - exp ~ ~ * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 1.00000 0.000e0 
+after: nan 
+
+before: / * ~ + -1.000 exp ~ ~ ~ ~ / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 tanh tanh x sin 0.00000 
+after: nan 
 '''
 after='''before: - - - x1 x1 0 + x1 x1 
 after: ~ + x1 x1 
@@ -1102,24 +1295,18 @@ before: cos sqrt - x x
 after: 1 
 
 before: sin tanh sqrt - * x x * x x 
-hi 814
 after: 0 
 
 before: sqrt sqrt - * x cos x * x cos x 
-hi 814
-hi 814
 after: 0 
 
 before: cos arcsin - x x 
 after: 1 
 
 before: sin tanh asin - ^ x x ^ x x 
-hi 759
 after: 0 
 
 before: asin arcsin - * x sin x * x sin x 
-hi 759
-hi 759
 after: 0 
 
 before: exp acos - tanh x tanh x 
@@ -1138,7 +1325,6 @@ before: asin sech - * x exp x * x exp x
 after: 1.5707963267948966 
 
 before: acos sech - - x sech x - x sech x 
-hi 787
 after: 0 
 
 before: + ~ * 0 tanh tanh x x 
@@ -1262,7 +1448,6 @@ before: cos ~ ^ 0 * tanh cos x 1
 after: nan 
 
 before: sin cos ~ arcsin ^ 0 * y y 
-hi 753
 after: nan 
 
 before: sin sin arcsin ^ 0 * y y 
@@ -1626,12 +1811,9 @@ before: tanh + - ^ + y x 0.000 1.00000 ~ inf
 after: -1 
 
 before: sech ~ sin tanh sqrt - * x x * x x 
-hi 814
 after: 1 
 
 before: sech ~ sqrt sqrt - * x cos x * x cos x 
-hi 814
-hi 814
 after: 1 
 
 before: cos + - ^ x 0.000 1.00000 ~ inf 
@@ -1675,5 +1857,209 @@ after: sech x
 
 before: sech / x + tanh + - ^ + y x 0.000 1.00000 ~ inf - 1 1 
 after: sech x 
+
+before: ln ~ - cos + x y cos + x y 
+after: -inf 
+
+before: ln sin - sin sin + x y sin sin + x y 
+after: -inf 
+
+before: ln ^ ~ - cos + x y cos + x y banana 
+after: nan 
+
+before: ln / + x water sin - sin sin + x y sin sin + x y 
+after: nan 
+
+before: ln + inf ~ - cos + x y cos + x y 
+after: inf 
+
+before: ln + sin - sin sin + x y sin sin + x y exp inf 
+after: inf 
+
+before: asin tanh - cos + x y cos + x y 
+after: 0 
+
+before: asin sin sin - sin sin + x y sin sin + x y 
+after: 0 
+
+before: asin + nan tanh - cos + x y cos + x y 
+after: nan 
+
+before: asin / sin sin - sin sin + x y sin sin + x y sin nan 
+after: nan 
+
+before: asin exp + inf tanh - cos + x y cos + x y 
+after: nan 
+
+before: asin + sin sin - sin sin + x y sin sin + x y exp exp exp inf 
+after: nan 
+
+before: arccos + 1.0000 tanh - cos + x y cos + x y 
+after: 0 
+
+before: acos + sin sin - sin sin + x y sin sin + x y exp 0.00000e0 
+after: 0 
+
+before: arccos / + 1.0000 tanh - cos + x y cos + x y cos nan 
+after: nan 
+
+before: acos * + sin sin - sin sin + x y sin sin + x y exp 0.00000e0 sin sech / x .000 
+after: nan 
+
+before: arccos * exp inf + 1.0000 tanh - cos + x y cos + x y 
+after: nan 
+
+before: acos * + sin sin - sin sin + x y sin sin + x y exp 0.00000e0 ln exp ln inf 
+after: nan 
+
+before: sqrt * 1.0000 arccos + 1.0000 tanh - cos + x y cos + x y 
+after: 0 
+
+before: sqrt * 1.09214234 acos + sin sin - sin sin + x y sin sin + x y exp 0.00000e0 
+after: 0 
+
+before: sqrt * nan arccos + 1.0000 tanh - cos + x y cos + x y 
+after: nan 
+
+before: sqrt * + nan sech 1.09214234 acos + sin sin - sin sin + x y sin sin + x y exp 0.00000e0 
+after: nan 
+
+before: sqrt + inf * 1.0000 arccos + 1.0000 tanh - cos + x y cos + x y 
+after: inf 
+
+before: sqrt + exp inf * 1.09214234 acos + sin sin - sin sin + x y sin sin + x y exp 0.00000e0 
+after: inf 
+
+before: sqrt + * 1.0000 arccos + 1.0000 tanh - cos + x y cos + x y 1.0000e0 
+after: 1 
+
+before: sqrt - * 1.09214234 acos + sin sin - sin sin + x y sin sin + x y exp 0.00000e0 -1.000 
+after: 1 
+
+before: cos ~ + inf * 1.0000 arccos + 1.0000 tanh - cos + x y cos + x y 
+after: nan 
+
+before: cos ~ + exp inf * 1.09214234 acos + sin sin - sin sin + x y sin sin + x y exp 0.00000e0 
+after: nan 
+
+before: cos ~ exp + inf tanh - cos + x y cos + x y 
+after: nan 
+
+before: cos ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 
+after: nan 
+
+before: sin * 1.000 ~ + inf * 1.0000 arccos + 1.0000 tanh - cos + x y cos + x y 
+after: nan 
+
+before: sin / ~ + exp inf * 1.09214234 acos + sin sin - sin sin + x y sin sin + x y exp 0.00000e0 1.0000e0 
+after: nan 
+
+before: sin * ~ exp + inf tanh - cos + x y cos + x y 1 
+after: nan 
+
+before: sin + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 
+after: nan 
+
+before: ~ * sqrt 1.000 * 1.000 ~ + inf * 1.0000 arccos + 1.0000 tanh - cos + x y cos + x y 
+after: inf 
+
+before: ~ * / ~ + exp inf * 1.09214234 acos + sin sin - sin sin + x y sin sin + x y exp 0.00000e0 1.0000e0 1.000e0 
+after: inf 
+
+before: ~ * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 
+after: inf 
+
+before: ~ / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 
+after: inf 
+
+before: exp ~ ~ * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 
+after: 0 
+
+before: exp ~ ~ ~ ~ / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 
+after: 0 
+
+before: exp * 1.00e0 * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 
+after: 0 
+
+before: exp * / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 100.0e-2 
+after: 0 
+
+before: ln + sin 0.000 ~ ~ * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 
+after: nan 
+
+before: log ~ ~ ~ ~ ~ ~ / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 
+after: nan 
+
+before: ln + * 1.00e0 * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 0.00e0 
+after: nan 
+
+before: ln + * / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 100.0e-2 sin 0.0000 
+after: nan 
+
+before: asin + sin 0.0000 + sin 0.000 ~ ~ * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 
+after: nan 
+
+before: arcsin * 1.0000 ~ ~ ~ ~ ~ ~ / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 
+after: nan 
+
+before: arcsin * + * 1.00e0 * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 0.00e0 exp 0.000000 
+after: nan 
+
+before: asin / + * / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 100.0e-2 sin 0.0000 exp sin 0.000e0 
+after: nan 
+
+before: arccos + 0 + sin 0.0000 + sin 0.000 ~ ~ * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 
+after: nan 
+
+before: acos * 1.000 ~ ~ ~ ~ ~ ~ / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 
+after: nan 
+
+before: acos * + * 1.00e0 * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 0.00e0 exp 0.00000000e0 
+after: nan 
+
+before: arccos * 1 / + * / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 100.0e-2 sin 0.0000 exp sin 0.000e0 
+after: nan 
+
+before: sqrt + 0 + sin 0.0000 + sin 0.000 ~ ~ * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00e0 
+after: nan 
+
+before: sqrt * 1000.e-3 ~ ~ ~ ~ ~ ~ / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 
+after: nan 
+
+before: sqrt * + * 1.00e0 * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 0.00e0 exp sin 0.00000000e0 
+after: nan 
+
+before: sqrt * 1.000e0 / + * / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 100.0e-2 sin 0.0000 exp sin 0.000e0 
+after: nan 
+
+before: sqrt - exp ~ ~ * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 1.00000 
+after: nan 
+
+before: sqrt + -1.000 exp ~ ~ ~ ~ / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 
+after: nan 
+
+before: sqrt + * -1 1.000e0 exp * 1.00e0 * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 
+after: nan 
+
+before: sqrt + exp * / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 100.0e-2 -100e-2 
+after: nan 
+
+before: ~ * -1.000e0 + * -1 1.000e0 exp * 1.00e0 * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 
+after: -1.000e0 
+
+before: ~ * + exp * / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 100.0e-2 -100e-2 -100e-2 
+after: -100e-2 
+
+before: ~ + sin 0.000e0 - exp ~ ~ * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 1.00000 
+after: 1.00000 
+
+before: ~ + -1.000 exp ~ ~ ~ ~ / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 
+after: 1 
+
+before: / * sin cos + x y ~ + sin 0.000e0 - exp ~ ~ * * ~ exp + inf tanh - cos + x y cos + x y 1 + 1.000 0.00 1.00000 0.000e0 
+after: nan 
+
+before: / * ~ + -1.000 exp ~ ~ ~ ~ / + ~ + sin sin - sin sin + x y sin sin + x y exp exp exp inf 0.0000e0 1.0000 tanh tanh x sin 0.00000 
+after: nan 
 '''
 print(before==after)

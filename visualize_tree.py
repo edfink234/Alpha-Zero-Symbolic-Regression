@@ -136,7 +136,34 @@ def getRPNdepth(expression):
         complete = False #If the stack length is greater than 1 then expression is an INCOMPLETE RPN expression
     return stack.pop()-1, complete
 
-#TODO: Fix!
+'''
+std::vector<std::string> complete_tree(const std::vector<std::string>& expression, const std::string& notation)
+{
+    int expr_depth;
+    bool extended = true;
+    if (notation == "prefix")
+    {
+        expr_depth  = this->getPNdepth(expression).first;
+        while (extended)
+        {
+            extended = false;
+            
+        }
+    }
+    else //postfix
+    {
+        expr_depth  = this->getRPNdepth(expression).first;
+        while (extended)
+        {
+            extended = false;
+            
+        }
+    }
+    return expression;
+}
+
+'''
+
 def complete_tree(expression, notation):
     if notation == "prefix":
         expr_depth = getPNdepth(expression) #get depth of tree that we want to keep the same at all times!!
@@ -356,7 +383,7 @@ def test_visualize():
 #        plot_pn_expression_tree("+ + - - 9736 x22 / x7 x20 / + 0 -100.051731 ^ x5 x15 * + + 0 x20 * 1075.000000 x5 + + 0 0 + 0 -17064.107062".split(), save = save)
 #        print(complete_tree("".split(), "prefix"))
 
-        complete_rpn_expr = complete_tree("x6 -0.00621 - x17 9741 + + x0 0.051731 ^ x13 / + x0 267.200012 / 15666.000000 x6 ^ / x18 * -0.6400000000000001 x6 + cos ^ - x21 tanh x6 x0 + 6.980075940561763 8.800000 x10 + + - * 59 x8 log x7 + + x11 x11 x5 + x15 + ^ - ^ - x25 3.4288275429960554e+302 - -3.225653 x1 + 336 - -100 ^ 0.00621 x18 x24 2.520000 + ^ ^ + x13 x22 + 9736 / x18 + 0.00621 x20 / 2 + - ^ / + 0.004735 x20 / x6 + 2.176586002694007 / 38.000000 x8 + x0 + x22 x24 * x2 + - ^ 4.724366706875754 36.293228 x10 - ^ x5 6075 * x20 + + + x17 125.149719 x22 x22 + + x11 * / x19 -28.04 / 93.9525010000761 + 4 2118.000000 x11 * - x23 + - ^ + x19 0.00621 + 26.90232091662481 * 58.000000 x22 -100.000000 / * -788.4465640000001 + + 8 0.5367255338147858 x20 x16 39.312500 * + ^ + x21 acos 2 x23 292.600006 / + -18327.436844999997 + + + + * +".split(), "postfix")
+        complete_rpn_expr = complete_tree("x24 log 292.600006 / 9742.570796326794 + 57.723478758647246 x13 / + x9 x20 ^ 15666.000000 x6 ^ / x18 * -0.6400000000000001 x6 + cos ^ - 0.002104996890902969 -3.138506348471897 x0 + 6.980075940561763 8.800000 x10 + + - * 59 x8 log x7 + + x11 x11 x5 + x15 + ^ - ^ - x25 3.4288275429960554e+302 - -3.225653 x1 + 336 - -100 ^ 0.8667079999999991 x18 292.000000 x8 - ^ ^ + x13 x22 + 9736 / x18 + 0.00621 x20 / 2 + - ^ / + 0.004735 x20 / x6 + 2.176586002694007 / 397.704071 38.000000 x0 + + x22 x24 * x2 + - ^ 4.724366706875754 36.293228 x10 - ^ x5 6075 * x20 + + + x17 125.149719 x22 x22 + + x11 * / x19 -12.04 / x22 292.000000 / 93.9525010000761 + + x7 38.000000 - x19 8.000000 + / -1.2400589896061356 x23 + + - ^ + x19 0.00621 + 27.90232091662481 * x14 x8 + 9.183585634667363 + x22 -100 / * x7 log 19.330768784674568 + -772.4465640000001 + + + 2.268687817171292 x21 acos 3 x18 4.372938 * -18327.436844999997 + + + + + * +".split(), "postfix")
         print(f"complete_rpn_expr = \n{' '.join(complete_rpn_expr)}")
         plot_rpn_expression_tree(complete_rpn_expr, save = save)
 
