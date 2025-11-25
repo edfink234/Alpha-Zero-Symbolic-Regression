@@ -6589,14 +6589,19 @@ std::vector<std::vector<std::string>> InPaintWildfireSpreadTS(Board& x, bool fit
     
      Depth = 5:
         Training:
-            Best score = 2.28171e-09, SNE = 4.38269e+08
-            Squared-norm error for each equation: 4.38269e+08
-            Best expression = sech(((((x21 + 0.394189) / (0.001595 + x61)) + ((x84 ^ x70) + (x73 + x101))) - ((cos(x101) + (x55 + x100)) / ((x39 ^ x92) - (x21 + x23)))))
-            Best expression (original format) = x21 0.394189 + 0.001595 x61 + / x84 x70 ^ x73 x101 + + + x101 cos x55 x100 + + x39 x92 ^ x21 x23 + - / - sech
-            Best diff result = abs((sech(((((x21 + 0.394189) / (0.001595 + x61)) + ((x84 ^ x70) + (x73 + x101))) - ((cos(x101) + (x55 + x100)) / ((x39 ^ x92) - (x21 + x23))))) - x102))
-            Best expression (original format) = x21 0.394189 + 0.001595 x61 + / x84 x70 ^ x73 x101 + + + x101 cos x55 x100 + + x39 x92 ^ x21 x23 + - / - sech x102 - abs
+            Best score = 2.28171e-09, SNE = 4.38268e+08
+            Squared-norm error for each equation: 4.38268e+08
+            Best expression = sech(((((x21 + 0.394189) / (0.001595 + x61)) + ((x84 ^ x70) + (x73 + x101))) - ((cos(x101) + (x55 + x100)) / ((x21 ^ x58) - (x21 + x23)))))
+            Best expression (original format) = x21 0.394189 + 0.001595 x61 + / x84 x70 ^ x73 x101 + + + x101 cos x55 x100 + + x21 x58 ^ x21 x23 + - / - sech
+            Best diff result = abs((sech(((((x21 + 0.394189) / (0.001595 + x61)) + ((x84 ^ x70) + (x73 + x101))) - ((cos(x101) + (x55 + x100)) / ((x21 ^ x58) - (x21 + x23))))) - x102))
+            Best expression (original format) = x21 0.394189 + 0.001595 x61 + / x84 x70 ^ x73 x101 + + + x101 cos x55 x100 + + x21 x58 ^ x21 x23 + - / - sech x102 - abs
         Validation:
-            
+            Best score = 6.74587e-11, SNE = 1.48239e+10
+            Squared-norm error for each equation: 1.48239e+10
+            Best expression = sech(((((x21 + 0.394189) / (0.001595 + x61)) + ((x84 ^ x70) + (x73 + x101))) - ((cos(x101) + (x55 + x100)) / ((x21 ^ x58) - (x21 + x23)))))
+            Best expression (original format) = x21 0.394189 + 0.001595 x61 + / x84 x70 ^ x73 x101 + + + x101 cos x55 x100 + + x21 x58 ^ x21 x23 + - / - sech
+            Best diff result = abs((sech(((((x21 + 0.394189) / (0.001595 + x61)) + ((x84 ^ x70) + (x73 + x101))) - ((cos(x101) + (x55 + x100)) / ((x21 ^ x58) - (x21 + x23))))) - x102))
+            Best expression (original format) = x21 0.394189 + 0.001595 x61 + / x84 x70 ^ x73 x101 + + + x101 cos x55 x100 + + x21 x58 ^ x21 x23 + - / - sech x102 - abs
      */
     
     std::vector<std::vector<std::string>> results(1);
@@ -9997,7 +10002,7 @@ namespace ExampleProblems
             SimulatedAnnealing(InPaintWildfireSpreadTS /*differential equation to solve*/,
                 1 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{5} /*fixed depths of generated solution*/,
+                std::vector<int>{6} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -10014,7 +10019,7 @@ namespace ExampleProblems
                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {{"x100", "x101"}} /*custom features that the SR-found equations are required to contain*/,
                 "",//"BestInpaint.txt" /*filename to save current best expression found (instead of outputting them to standard out)*/,
-                {split("x21 0.394189 + 0.001595 x61 + / x84 x70 ^ x73 x101 + + + x101 cos x55 x100 + + x39 x92 ^ x21 x23 + - / - sech")} /*seed expressions*/,
+                {split("x21 0 + 0 0.394189 + + 0 0.001595 + 0 x61 + + / 0 x84 + 0 x70 + ^ 0 x73 + 0 x101 + + + + 0 x101 + cos 0 x55 + 0 x100 + + + 0 x21 + 0 x58 + ^ 0 x21 + 0 x23 + + - / - sech")} /*seed expressions*/,
                 validation /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 "");// "SNE_vals.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
