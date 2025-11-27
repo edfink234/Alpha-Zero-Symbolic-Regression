@@ -6602,6 +6602,23 @@ std::vector<std::vector<std::string>> InPaintWildfireSpreadTS(Board& x, bool fit
             Best expression (original format) = x21 0.394189 + 0.001595 x61 + / x84 x70 ^ x73 x101 + + + x101 cos x55 x100 + + x21 x58 ^ x21 x23 + - / - sech
             Best diff result = abs((sech(((((x21 + 0.394189) / (0.001595 + x61)) + ((x84 ^ x70) + (x73 + x101))) - ((cos(x101) + (x55 + x100)) / ((x21 ^ x58) - (x21 + x23))))) - x102))
             Best expression (original format) = x21 0.394189 + 0.001595 x61 + / x84 x70 ^ x73 x101 + + + x101 cos x55 x100 + + x21 x58 ^ x21 x23 + - / - sech x102 - abs
+     
+     Depth = 6:
+        Training:
+            Best score = 2.28184e-09, SNE = 4.38243e+08
+            Squared-norm error for each equation: 4.38243e+08
+            Best expression = sech((((((x20 + x71) * (x20 + -0.29813)) / ((x81 ^ 1414.708600) + x61)) + (((x89 + 0.001691) ^ x70) + ((x55 / x68) + (x21 + x101)))) - ((((x73 + x29) - (x89 + x71)) + ((x39 ^ x93) + (x53 + x100))) / (((x85 ^ x33) ^ (x3 + x87)) - ((x88 - x20) + (0.004457 + x23))))))
+            Best expression (original format) = x20 x71 + x20 -0.29813 + * x81 1414.708600 ^ x61 + / x89 0.001691 + x70 ^ x55 x68 / x21 x101 + + + + x73 x29 + x89 x71 + - x39 x93 ^ x53 x100 + + + x85 x33 ^ x3 x87 + ^ x88 x20 - 0.004457 x23 + + - / - sech
+            Best diff result = abs((sech((((((x20 + x71) * (x20 + -0.29813)) / ((x81 ^ 1414.708600) + x61)) + (((x89 + 0.001691) ^ x70) + ((x55 / x68) + (x21 + x101)))) - ((((x73 + x29) - (x89 + x71)) + ((x39 ^ x93) + (x53 + x100))) / (((x85 ^ x33) ^ (x3 + x87)) - ((x88 - x20) + (0.004457 + x23)))))) - x102))
+            Best expression (original format) = x20 x71 + x20 -0.29813 + * x81 1414.708600 ^ x61 + / x89 0.001691 + x70 ^ x55 x68 / x21 x101 + + + + x73 x29 + x89 x71 + - x39 x93 ^ x53 x100 + + + x85 x33 ^ x3 x87 + ^ x88 x20 - 0.004457 x23 + + - / - sech x102 - abs
+        Validation:
+            Best score = 0, SNE = 1.79769e+308
+            Squared-norm error for each equation: nan
+            Best expression = sech((((((x20 + x71) * (x20 + -0.29813)) / ((x81 ^ 1414.708600) + x61)) + (((x89 + 0.001691) ^ x70) + ((x55 / x68) + (x21 + x101)))) - ((((x73 + x29) - (x89 + x71)) + ((x39 ^ x93) + (x53 + x100))) / (((x85 ^ x33) ^ (x3 + x87)) - ((x88 - x20) + (0.004457 + x23))))))
+            Best expression (original format) = x20 x71 + x20 -0.29813 + * x81 1414.708600 ^ x61 + / x89 0.001691 + x70 ^ x55 x68 / x21 x101 + + + + x73 x29 + x89 x71 + - x39 x93 ^ x53 x100 + + + x85 x33 ^ x3 x87 + ^ x88 x20 - 0.004457 x23 + + - / - sech
+            Best diff result = abs((sech((((((x20 + x71) * (x20 + -0.29813)) / ((x81 ^ 1414.708600) + x61)) + (((x89 + 0.001691) ^ x70) + ((x55 / x68) + (x21 + x101)))) - ((((x73 + x29) - (x89 + x71)) + ((x39 ^ x93) + (x53 + x100))) / (((x85 ^ x33) ^ (x3 + x87)) - ((x88 - x20) + (0.004457 + x23)))))) - x102))
+            Best expression (original format) = x20 x71 + x20 -0.29813 + * x81 1414.708600 ^ x61 + / x89 0.001691 + x70 ^ x55 x68 / x21 x101 + + + + x73 x29 + x89 x71 + - x39 x93 ^ x53 x100 + + + x85 x33 ^ x3 x87 + ^ x88 x20 - 0.004457 x23 + + - / - sech x102 - abs
+
      */
     
     std::vector<std::vector<std::string>> results(1);
@@ -6646,8 +6663,10 @@ std::vector<std::vector<std::string>> InPaintWildfireSpreadTS(Board& x, bool fit
  */
 std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
 {
-    std::vector<std::vector<std::string>> results(x.num_objectives); //For now, simply comparing 𝛔(f(\vec{x})) with x
-    thread_local std::vector<std::string> p_expr;
+    std::vector<std::vector<std::string>> results(x.num_diff_eqns); //For now, simply comparing 𝛔(f(\vec{x})) with x
+    assert(x.num_diff_eqns == 2);
+    thread_local std::vector<std::string> p_expr, temp;
+    thread_local std::vector<int> grasp;
     thread_local bool prefactors_computed = false;
     constexpr const char* eps = "1e-12";
     const thread_local double num_ones = x["x26"].sum(); //since x26 (i.e. `next_day_active_fire_bin`) is just a vector of 0's and 1's
@@ -6656,30 +6675,59 @@ std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
     thread_local const std::string w0 = to_string_general(-Board::data.num_rows / (2.0 * num_zeroes));
     
     /*
-     Best score = 3.61796e-06, SNE = 276398
-     Squared-norm error for each equation: 276398
-     Best expression = (((((9744.788019575928 + (((-2.640000 / x13) * 783) / x13)) - ((((x9 ^ x20) / (15666.000000 ^ x6)) * x18) ^ cos((-0.6400000000000001 + x6)))) - ((0.002104996890902969 * ((-3.138506348471897 + x0) - (6.980075940561763 + (8.800000 + x10)))) ^ ((59 + (log(x8) + x7)) - (x11 ^ ((x11 + x5) + x15))))) + ((x25 - 3.4288275429960554e+302) / (((((-3.225653 + x1) - 336) ^ -100) + (0.9184389999999991 ^ (x18 ^ (292.000000 - x8)))) ^ ((((x13 + x22) / 9736) + x18) - ((0.00621 / x20) + 2))))) + (((((((0.004735 / x20) + x6) / 2.176586002694007) ^ ((402.077009 + (38.000000 + x0)) - ((x22 * x24) + x2))) + ((364.72436670687574 ^ (36.293228 - x10)) + ((x5 * 6075) + x20))) + ((((9736.000000 / exp(x23)) + x17) / ((127.669719 + (x22 + x22)) * x11)) ^ (((x19 / -12.04) + ((x22 / 292.000000) + 93.9525010000761)) - (((x7 - 38.000000) / (x19 + 9.666708)) + (-1.2400589896061356 + x23))))) * ((((x19 + (x20 + 0.00621)) * 27.90232091662481) + ((((x14 + x8) + 9.183585634667363) * (x22 / -100)) + ((log(x7) + 0.051731) + -768.0736260000001))) + ((x8 / (x11 + (38.000000 - (x23 + -88.959518)))) + -18327.436844999997))))
-     Best expression (original format) = 9744.788019575928 -2.640000 x13 / 783 * x13 / + x9 x20 ^ 15666.000000 x6 ^ / x18 * -0.6400000000000001 x6 + cos ^ - 0.002104996890902969 -3.138506348471897 x0 + 6.980075940561763 8.800000 x10 + + - * 59 x8 log x7 + + x11 x11 x5 + x15 + ^ - ^ - x25 3.4288275429960554e+302 - -3.225653 x1 + 336 - -100 ^ 0.9184389999999991 x18 292.000000 x8 - ^ ^ + x13 x22 + 9736 / x18 + 0.00621 x20 / 2 + - ^ / + 0.004735 x20 / x6 + 2.176586002694007 / 402.077009 38.000000 x0 + + x22 x24 * x2 + - ^ 364.72436670687574 36.293228 x10 - ^ x5 6075 * x20 + + + 9736.000000 x23 exp / x17 + 127.669719 x22 x22 + + x11 * / x19 -12.04 / x22 292.000000 / 93.9525010000761 + + x7 38.000000 - x19 9.666708 + / -1.2400589896061356 x23 + + - ^ + x19 x20 0.00621 + + 27.90232091662481 * x14 x8 + 9.183585634667363 + x22 -100 / * x7 log 0.051731 + -768.0736260000001 + + + x8 x11 38.000000 x23 -88.959518 + - + / -18327.436844999997 + + * +
-     Best diff result = (term1 + term2)
-     Best expression (original format) = term1 term2 +
-     ```
-        from sympy import symbols, cos, sin, tanh, sech, sympify, latex, multiline_latex
+     Without Laplacian Smoothing:
+         Best score = 4.16439e-06, SNE = 240130
+         Squared-norm error for each equation: 240130
+         Best expression = (((((9744.788019575928 + (((-2.640000 / x13) ^ 783) / x13)) - ((((x9 ^ x20) / (15666.000000 ^ x6)) * x18) ^ cos((-0.6400000000000001 + x6)))) - ((0.002104996890902969 * ((~(x17) + x0) - (9.666708 + (8.800000 + x10)))) ^ ((59 + (log(x8) + x7)) - (x11 ^ ((x11 + x5) + x15))))) + ((x25 - 3.4288275429960554e+302) / (((((-3.225653 + x1) - 336) ^ -100) + (0.9184389999999991 ^ (x18 ^ (292.000000 - x8)))) ^ ((((x13 + x22) / 9736) + x18) - ((0.00621 / x20) + 2))))) + (((((((0.004735 / x20) + x6) / 2.176586002694007) ^ ((402.077009 + (38.000000 + x0)) - ((x22 * x24) + x2))) + ((364.72436670687574 ^ ((x17 + 36.293228) - x10)) + ((x5 * 6075) + x20))) + ((((9736 / exp(x23)) + x17) / ((127.669719 + (x22 + x22)) * x11)) ^ (((x19 / -12.04) + ((x22 / 292.000000) + 93.9525010000761)) - (((x7 - 38.000000) / (x19 + 9.666708)) + (-1.2400589896061356 + x23))))) * ((((x19 + (x20 + 0.00621)) * 28.90232091662481) + ((((x14 + x8) + 9.183585634667363) * (x22 / -100)) + ((log(x7) + 2.868271954674221) + -768.0736260000001))) + (((435 + x8) / (((x21 - x19) + x11) + (38 - (x23 + -88.959518)))) + ((x6 + acos(sin(x13))) + -18290.143616999998)))))
+         Best expression (original format) = 9744.788019575928 -2.640000 x13 / 783 ^ x13 / + x9 x20 ^ 15666.000000 x6 ^ / x18 * -0.6400000000000001 x6 + cos ^ - 0.002104996890902969 x17 ~ x0 + 9.666708 8.800000 x10 + + - * 59 x8 log x7 + + x11 x11 x5 + x15 + ^ - ^ - x25 3.4288275429960554e+302 - -3.225653 x1 + 336 - -100 ^ 0.9184389999999991 x18 292.000000 x8 - ^ ^ + x13 x22 + 9736 / x18 + 0.00621 x20 / 2 + - ^ / + 0.004735 x20 / x6 + 2.176586002694007 / 402.077009 38.000000 x0 + + x22 x24 * x2 + - ^ 364.72436670687574 x17 36.293228 + x10 - ^ x5 6075 * x20 + + + 9736 x23 exp / x17 + 127.669719 x22 x22 + + x11 * / x19 -12.04 / x22 292.000000 / 93.9525010000761 + + x7 38.000000 - x19 9.666708 + / -1.2400589896061356 x23 + + - ^ + x19 x20 0.00621 + + 28.90232091662481 * x14 x8 + 9.183585634667363 + x22 -100 / * x7 log 2.868271954674221 + -768.0736260000001 + + + 435 x8 + x21 x19 - x11 + 38 x23 -88.959518 + - + / x6 x13 sin acos + -18290.143616999998 + + + * +
+         Best diff result = (term1 + term2)
+         Best expression (original format) = term1 term2 +
+         ```
+            from sympy import symbols, cos, sin, tanh, sech, acos, log, sympify, latex, multiline_latex, Float
+            import re
+            replace_vars = lambda x: re.sub(r'\bx(\d+)\b', r'df["x\1"]', x)
+            align_rep = lambda x: x.replace('align*','align').replace(r'\\',r'\nonumber \\').replace(r"\end{align}", r"\label{eq:best_sr_eq_1}""\n"r"\end{align}")
+            round_floats = lambda expr, ndigits: expr.xreplace({f: Float(round(float(f), ndigits)) for f in expr.atoms(Float)})
+            f, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17, x18, x19, x20, x21, x22, x23, x24, x25 = symbols('f x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25')
+            func = '(((((9744.788019575928 + (((-2.640000 / x13) ^ 783) / x13)) - ((((x9 ^ x20) / (15666.000000 ^ x6)) * x18) ^ cos((-0.6400000000000001 + x6)))) - ((0.002104996890902969 * ((~(x17) + x0) - (9.666708 + (8.800000 + x10)))) ^ ((59 + (log(x8) + x7)) - (x11 ^ ((x11 + x5) + x15))))) + ((x25 - 3.4288275429960554e+302) / (((((-3.225653 + x1) - 336) ^ -100) + (0.9184389999999991 ^ (x18 ^ (292.000000 - x8)))) ^ ((((x13 + x22) / 9736) + x18) - ((0.00621 / x20) + 2))))) + (((((((0.004735 / x20) + x6) / 2.176586002694007) ^ ((402.077009 + (38.000000 + x0)) - ((x22 * x24) + x2))) + ((364.72436670687574 ^ ((x17 + 36.293228) - x10)) + ((x5 * 6075) + x20))) + ((((9736 / exp(x23)) + x17) / ((127.669719 + (x22 + x22)) * x11)) ^ (((x19 / -12.04) + ((x22 / 292.000000) + 93.9525010000761)) - (((x7 - 38.000000) / (x19 + 9.666708)) + (-1.2400589896061356 + x23))))) * ((((x19 + (x20 + 0.00621)) * 28.90232091662481) + ((((x14 + x8) + 9.183585634667363) * (x22 / -100)) + ((log(x7) + 2.868271954674221) + -768.0736260000001))) + (((435 + x8) / (((x21 - x19) + x11) + (38 - (x23 + -88.959518)))) + ((x6 + acos(sin(x13))) + -18290.143616999998)))))'
+            func = func.replace("^","**").replace("~","-")
+            func_sym = sympify(func)
+            func_sym_r = round_floats(func_sym, 3)
+            print(f"func_sym = {align_rep(multiline_latex(f, func_sym_r, 1))}")
+            f_res = replace_vars(func)
+            print(f"f = {f_res}")
+         ```
+     With Laplacian Smoothing:
+        Training:
+            Best score = 2.44715e-08, SNE = 4.08639e+07
+            Squared-norm error for each equation: 4.08639e+07 0
+            Best expression = (((~(x7) - (292.600006 - (x20 + (x7 * (x15 + (360.000000 * x5)))))) + ((5470.0596345781605 + (3303.5714033364225 ^ (2 - (ln(x17) * (x21 - -843.000000))))) + (((-100 / exp(x20)) + ((16 / (x4 / x14)) + 10000)) + (x17 * (2.0200101e+07 / (3316 ^ ln(x18))))))) * ((11891.379148 * (-0.9994732316373803 * (x11 * (x16 + (39.3125 ^ x20))))) - (((((-0.7568024953079283 + (x15 - 0.004735)) + -0.4327131112072696) + (-0.31194026074020714 + x23)) - (((x5 * (x0 + x22)) + 1.0517079302302543) + ((1 + (x17 - 1.000000)) + (4.00621 + x24)))) * (((-15854.959518 + (-30.856491000000005 + (-1405.000000 / x8))) / -782.0930331488324) + (1.6594978116110355 + (36.305548 + (x18 + -73.07483798748629)))))))
+            Best expression (original format) = x7 ~ 292.600006 x20 x7 x15 360.000000 x5 * + * + - - 5470.0596345781605 3303.5714033364225 2 x17 ln x21 -843.000000 - * - ^ + -100 x20 exp / 16 x4 x14 / / 10000 + + x17 2.0200101e+07 3316 x18 ln ^ / * + + + 11891.379148 -0.9994732316373803 x11 x16 39.3125 x20 ^ + * * * -0.7568024953079283 x15 0.004735 - + -0.4327131112072696 + -0.31194026074020714 x23 + + x5 x0 x22 + * 1.0517079302302543 + 1 x17 1.000000 - + 4.00621 x24 + + + - -15854.959518 -30.856491000000005 -1405.000000 x8 / + + -782.0930331488324 / 1.6594978116110355 36.305548 x18 -73.07483798748629 + + + + * - *
+            Best diff result = (term1 + term2), 0
+            Best expression (original format) = term1 term2 +, 0
+        ```
+        from sympy import symbols, cos, sin, tanh, sech, acos, log, sympify, latex, multiline_latex, Float
         import re
         replace_vars = lambda x: re.sub(r'\bx(\d+)\b', r'df["x\1"]', x)
         align_rep = lambda x: x.replace('align*','align').replace(r'\\',r'\nonumber \\').replace(r"\end{align}", r"\label{eq:best_sr_eq_1}""\n"r"\end{align}")
+        round_floats = lambda expr, ndigits: expr.xreplace({f: Float(round(float(f), ndigits)) for f in expr.atoms(Float)})
         f, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17, x18, x19, x20, x21, x22, x23, x24, x25 = symbols('f x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25')
-        func = '(((((((x6 - 0.00621) + (x17 + 9741)) + (1 / x13)) - (((256.5 / (15666.000000 ^ x6)) * x18) ^ cos((2.0200101e+07 + x6)))) - ((tanh(x21) * (x0 - 4)) ^ ((59 + (1 + x7)) - (x11 ^ x15)))) + ((x25 - 3.4288275429960554e+302) / ((((x1 - 336) ^ -100) + (0.00621 ^ (x18 ^ 25.4))) ^ (((x22 / 9736) + x18) - ((0.00621 / x20) + 2))))) + (((((x6 / 2.176586002694007) ^ ((x8 + x0) - (-2.64 + x2))) + ((4.724366706875754 ^ (36.293228 - x10)) + ((x5 * 6075) + x20))) + ((x17 / ((38 + x8) * x11)) ^ ((((x24 + x12) / 256.5) + 92.45173100000001) - x23))) * ((((x19 + 0.00621) * 26.90232091662481) + -806.4403540000001) + ((-53.92119644678062 * x22) + (acos(x21) + ((x24 - x18) + -18327.436844999997))))))'
-        func = func.replace("^","**")
+        func = '(((~(x7) - (292.600006 - (x20 + (x7 * (x15 + (360.000000 * x5)))))) + ((5470.0596345781605 + (3303.5714033364225 ^ (2 - (ln(x17) * (x21 - -843.000000))))) + (((-100 / exp(x20)) + ((16 / (x4 / x14)) + 10000)) + (x17 * (2.0200101e+07 / (3316 ^ ln(x18))))))) * ((11891.379148 * (-0.9994732316373803 * (x11 * (x16 + (39.3125 ^ x20))))) - (((((-0.7568024953079283 + (x15 - 0.004735)) + -0.4327131112072696) + (-0.31194026074020714 + x23)) - (((x5 * (x0 + x22)) + 1.0517079302302543) + ((1 + (x17 - 1.000000)) + (4.00621 + x24)))) * (((-15854.959518 + (-30.856491000000005 + (-1405.000000 / x8))) / -782.0930331488324) + (1.6594978116110355 + (36.305548 + (x18 + -73.07483798748629)))))))'
+        func = func.replace("^","**").replace("~","-")
         func_sym = sympify(func)
-
-        print(f"func_sym = {align_rep(multiline_latex(f, func_sym, 1))}")
+        func_sym_r = round_floats(func_sym, 3)
+        print(f"func_sym = {align_rep(multiline_latex(f, func_sym_r, 1))}")
         f_res = replace_vars(func)
         print(f"f = {f_res}")
-     ```
+        ```
      */
     
     p_expr.clear();
     p_expr.reserve(100);
+    temp.clear();
+    temp.reserve(100);
+    grasp.clear();
+    grasp.reserve(100);
     for (decltype(results.size()) i = 0; i < results.size(); i++)
     {
         results[i].reserve(100);
@@ -6736,6 +6784,22 @@ std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
             //term2 = * prefac_term_2 log + - 1 p eps
             x.subs_dict["term2"] = x.expression_evaluator(x.params, {"*", "prefac_term_2", "log", "+", "-", "1", "p", eps});
             results[0] = {"+", "term1", "term2"};
+        }
+        //+ ∂^2f/∂(x23)^2 ∂^2f/∂(x24)^2
+        results[1] = {"+"};
+        x.derivePrefix(0, x.pieces[0].size()-1, "x23", x.pieces[0], grasp);
+        temp = x.derivat;
+        x.derivePrefix(0, temp.size()-1, "x23", temp, grasp);
+        for (const std::string& i: x.derivat) //∂^2f/∂(x23)^2
+        {
+            results[1].push_back(i);
+        }
+        x.derivePrefix(0, x.pieces[0].size()-1, "x24", x.pieces[0], grasp);
+        temp = x.derivat;
+        x.derivePrefix(0, temp.size()-1, "x24", temp, grasp);
+        for (const std::string& i: x.derivat) //∂^2f/∂(x24)^2
+        {
+            results[1].push_back(i);
         }
     }
     else if (x.expression_type == "postfix")
@@ -6802,6 +6866,22 @@ std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
             x.subs_dict["term2"] = x.expression_evaluator(x.params, {"prefac_term_2", "1", "p", "-", eps, "+", "log", "*"});
             results[0] = {"term1", "term2", "+"};
         }
+        //∂^2f/∂(x23)^2 ∂^2f/∂(x24)^2 +
+        x.derivePostfix(0, x.pieces[0].size()-1, "x23", x.pieces[0], grasp);
+        temp = x.derivat;
+        x.derivePostfix(0, temp.size()-1, "x23", temp, grasp);
+        for (const std::string& i: x.derivat) // ∂^2f/∂(x23)^2
+        {
+            results[1].push_back(i);
+        }
+        x.derivePostfix(0, x.pieces[0].size()-1, "x24", x.pieces[0], grasp);
+        temp = x.derivat;
+        x.derivePostfix(0, temp.size()-1, "x24", temp, grasp);
+        for (const std::string& i: x.derivat) // ∂^2f/∂(x24)^2
+        {
+            results[1].push_back(i);
+        }
+        results[1].push_back("+"); // +
     }
     prefactors_computed = true;
     return results;
@@ -9907,13 +9987,23 @@ namespace ExampleProblems
     void WildfireSpreadTSTest(int random_seed, const char* algorithm, double time)
     {
         double threshold = 0.0;
-        Eigen::MatrixXd data = load_csv("/Users/edwardfinkelstein/SDSU_UCI/UCIFall2025/CS274E/8006177/WildfireSpreadTS/2020/fire_23654679/fire_23654679_with_target_bin.csv", 2756544, 27);
+        bool validation = false;
+        Eigen::MatrixXd data;
+        if (validation)
+        {
+            data = load_csv("/Users/edwardfinkelstein/SDSU_UCI/UCIFall2025/CS274E/8006177/WildfireSpreadTS/2020/fire_24332933/fire_24332933_with_target_bin.csv", 1632925, 27);
+        }
+        else
+        {
+            data = load_csv("/Users/edwardfinkelstein/SDSU_UCI/UCIFall2025/CS274E/8006177/WildfireSpreadTS/2020/fire_23654679/fire_23654679_with_target_bin.csv", 2756544, 27);
+        }
+            
         std::cout << "Data loaded!\nFirst 10 rows\n=============\n";
         std::cout << data.topRows(10) << '\n';
         if (strcmp(algorithm, "RandomSearch") == 0)
         {
             RandomSearch(WildfireSpreadTS /*differential equation to solve*/,
-                1 /*number of equations in differential equation system*/,
+                2 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
                 std::vector<int>{6} /*fixed depths of generated solution*/,
                 "prefix" /*expression representation*/,
@@ -9935,7 +10025,7 @@ namespace ExampleProblems
         else
         {
             SimulatedAnnealing(WildfireSpreadTS /*differential equation to solve*/,
-                1 /*number of equations in differential equation system*/,
+                2 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
                 std::vector<int>{8} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
@@ -9945,17 +10035,17 @@ namespace ExampleProblems
                 "naive_numerical" /*method for computing the gradient*/,
                 true /*cache*/,
                 time /*time to run the algorithm in seconds*/,
-                0 /*num threads*/,
+                ((validation) ? 1 : 0) /*num threads*/,
                 true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
                 false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the ORIGINAL expression on every iteration (perturbation) of the seed expression vector; if false a copy is maintained so that simplification on this->pieces can still happen*/
                 1 /*number of data columns that constitute labels and not independent variables/features*/,
                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
-                {} /*custom features that the SR-found equations are required to contain*/,
-                "BestNextDayFire.txt" /*filename to save current best expression found (instead of outputting them to standard out)*/,
-                {split("0 0 + 0 0 + + 0 0 + 0 9744.788019575928 + + + -2.640000 x13 / 0 783 + * 0 0 + 0 x13 + + / + x9 x20 ^ 15666.000000 x6 ^ / 0 0 + 0 x18 + + * 0 -0.6400000000000001 + 0 x6 + + cos ^ - 0 0 + 0 0 + + 0 0 + 0 0.002104996890902969 + + + 0 -3.138506348471897 + 0 x0 + + 0 6.980075940561763 + 8.800000 x10 + + - * 0 0 + 0 59 + + x8 log 0 x7 + + + 0 0 + 0 x11 + + x11 x5 + 0 x15 + + ^ - ^ - 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x25 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 3.4288275429960554e+302 + + + + - -3.225653 x1 + 0 336 + - 0 0 + 0 -100 + + ^ 0 0 + 0 0.9184389999999991 + + 0 x18 + 292.000000 x8 - ^ ^ + x13 x22 + 0 9736 + / 0 0 + 0 x18 + + + 0 0.00621 + 0 x20 + / 0 0 + 0 2 + + + - ^ / + 0.004735 x20 / 0 x6 + + 0 0 + 0 2.176586002694007 + + / 0 402.077009 + 38.000000 x0 + + x22 x24 * 0 x2 + + - ^ 0 0 + 0 364.72436670687574 + + 0 36.293228 + 0 x10 + - ^ 0 x5 + 0 6075 + * 0 0 + 0 x20 + + + + + 0 9736.000000 + x23 exp / 0 0 + 0 x17 + + + 0 127.669719 + x22 x22 + + 0 0 + 0 x11 + + * / 0 x19 + 0 -12.04 + / x22 292.000000 / 0 93.9525010000761 + + + x7 38.000000 - x19 9.666708 + / 0 -1.2400589896061356 + 0 x23 + + + - ^ + 0 0 + 0 x19 + + 0 x20 + 0 0.00621 + + + 0 0 + 0 0 + + 0 0 + 0 27.90232091662481 + + + * x14 x8 + 0 9.183585634667363 + + 0 x22 + 0 -100 + / * x7 log 0 0.051731 + + 0 0 + 0 -768.0736260000001 + + + + + 0 0 + 0 0 + + 0 0 + 0 x8 + + + 0 0 + 0 x11 + + 0 38.000000 + x23 -88.959518 + - + / 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -18327.436844999997 + + + + + + * +")} /*seed expressions*/,
-                false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
+                {{"x23", "x24"}} /*custom features that the SR-found equations are required to contain*/,
+                "",// "BestNextDayFire.txt" /*filename to save current best expression found (instead of outputting them to standard out)*/,
+                {split("0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x7 + + + + ~ 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 292.600006 + + + + 0 0 + 0 0 + + 0 0 + 0 x20 + + + 0 0 + 0 x7 + + 0 x15 + 360.000000 x5 * + * + - - 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 5470.0596345781605 + + + + 0 0 + 0 0 + + 0 0 + 0 3303.5714033364225 + + + 0 0 + 0 2 + + x17 ln x21 -843.000000 - * - ^ + 0 0 + 0 -100 + + 0 x20 + exp / 0 16 + x4 x14 / / 0 0 + 0 10000 + + + + 0 0 + 0 0 + + 0 0 + 0 x17 + + + 0 0 + 0 2.0200101e+07 + + 0 3316 + x18 ln ^ / * + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 11891.379148 + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -0.9994732316373803 + + + + 0 0 + 0 0 + + 0 0 + 0 x11 + + + 0 0 + 0 x16 + + 0 39.3125 + 0 x20 + ^ + * * * 0 -0.7568024953079283 + x15 0.004735 - + 0 0 + 0 -0.4327131112072696 + + + 0 0 + 0 -0.31194026074020714 + + 0 0 + 0 x23 + + + + 0 x5 + x0 x22 + * 0 0 + 0 1.0517079302302543 + + + 0 1 + x17 1.000000 - + 0 4.00621 + 0 x24 + + + + - 0 0 + 0 -15854.959518 + + 0 -30.856491000000005 + -1405.000000 x8 / + + 0 0 + 0 0 + + 0 0 + 0 -782.0930331488324 + + + / 0 0 + 0 0 + + 0 0 + 0 1.6594978116110355 + + + 0 0 + 0 36.305548 + + 0 x18 + 0 -73.07483798748629 + + + + + * - *")} /*seed expressions*/,
+                validation /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 "");// "SNE_vals.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
         }
@@ -10019,7 +10109,7 @@ namespace ExampleProblems
                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {{"x100", "x101"}} /*custom features that the SR-found equations are required to contain*/,
                 "",//"BestInpaint.txt" /*filename to save current best expression found (instead of outputting them to standard out)*/,
-                {split("x21 0 + 0 0.394189 + + 0 0.001595 + 0 x61 + + / 0 x84 + 0 x70 + ^ 0 x73 + 0 x101 + + + + 0 x101 + cos 0 x55 + 0 x100 + + + 0 x21 + 0 x58 + ^ 0 x21 + 0 x23 + + - / - sech")} /*seed expressions*/,
+                {split("x20 0 + 0 x71 + + 0 x20 + 0 -0.29813 + + * 0 x81 + 0 1414.708600 + ^ 0 0 + 0 x61 + + + / 0 x89 + 0 0.001691 + + 0 0 + 0 x70 + + ^ 0 x55 + 0 x68 + / 0 x21 + 0 x101 + + + + + 0 x73 + 0 x29 + + 0 x89 + 0 x71 + + - 0 x39 + 0 x93 + ^ 0 x53 + 0 x100 + + + + 0 x85 + 0 x33 + ^ 0 x3 + 0 x87 + + ^ 0 x88 + 0 x20 + - 0 0.004457 + 0 x23 + + + - / - sech")} /*seed expressions*/,
                 validation /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 "");// "SNE_vals.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);

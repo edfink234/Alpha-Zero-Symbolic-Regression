@@ -383,7 +383,7 @@ def test_visualize():
 #        plot_pn_expression_tree("+ + - - 9736 x22 / x7 x20 / + 0 -100.051731 ^ x5 x15 * + + 0 x20 * 1075.000000 x5 + + 0 0 + 0 -17064.107062".split(), save = save)
 #        print(complete_tree("".split(), "prefix"))
 
-        complete_rpn_expr = complete_tree("x21 0 + 0.394189 + 0.001595 x61 + / x84 x70 ^ x73 x101 + + + x101 cos x55 x100 + + x21 x58 ^ x21 x23 + - / - sech".split(), "postfix")
+        complete_rpn_expr = complete_tree("x20 0 + x71 + x20 -0.29813 + * x81 1414.708600 ^ 0 x61 + + / x89 0.001691 + 0 x70 + ^ x55 x68 / x21 x101 + + + + x73 x29 + x89 x71 + - x39 x93 ^ x53 x100 + + + x85 x33 ^ x3 x87 + ^ x88 x20 - 0.004457 x23 + + - / - sech".split(), "postfix")
         print(f"complete_rpn_expr = \n{' '.join(complete_rpn_expr)}")
         plot_rpn_expression_tree(complete_rpn_expr, save = save, include_expression_in_title = False)
 
