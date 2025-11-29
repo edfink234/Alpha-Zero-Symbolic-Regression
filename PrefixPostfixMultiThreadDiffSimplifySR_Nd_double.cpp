@@ -6557,98 +6557,173 @@ struct Board
 std::vector<std::vector<std::string>> InPaintWildfireSpreadTS(Board& x, bool fit)
 {
     /*
-     Depth = 3:
+     ```
+        from sympy import symbols, cos, sin, tanh, sech, acos, log, sympify, latex, multiline_latex, Float
+        import re
+        replace_vars = lambda x: re.sub(r'\bx(\d+)\b', r'df["x\1"]', x)
+        align_rep = lambda x: x.replace('align*','align').replace(r'\\',r'\nonumber \\').replace(r"\end{align}", r"\label{eq:best_sr_eq_inpaint_no_lap_fixed_depth_3}""\n"r"\end{align}")
+        round_floats = lambda expr, ndigits: expr.xreplace({f: Float(round(float(f), ndigits)) for f in expr.atoms(Float)})
+        f, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17, x18, x19, x20, x21, x22, x23, x24, x25, x26, x27, x28, x29, x30, x31, x32, x33, x34, x35, x36, x37, x38, x39, x40, x41, x42, x43, x44, x45, x46, x47, x48, x49, x50, x51, x52, x53, x54, x55, x56, x57, x58, x59, x60, x61, x62, x63, x64, x65, x66, x67, x68, x69, x70, x71, x72, x73, x74, x75, x76, x77, x78, x79, x80, x81, x82, x83, x84, x85, x86, x87, x88, x89, x90, x91, x92, x93, x94, x95, x96, x97, x98, x99, x100, x101 = symbols('f x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31 x32 x33 x34 x35 x36 x37 x38 x39 x40 x41 x42 x43 x44 x45 x46 x47 x48 x49 x50 x51 x52 x53 x54 x55 x56 x57 x58 x59 x60 x61 x62 x63 x64 x65 x66 x67 x68 x69 x70 x71 x72 x73 x74 x75 x76 x77 x78 x79 x80 x81 x82 x83 x84 x85 x86 x87 x88 x89 x90 x91 x92 x93 x94 x95 x96 x97 x98 x99 x100 x101')
+        func = 'sech(((((((x20 / x85) + (0.000062 + x71)) * ((x90 * 6.296075) + -0.29813)) / ((0.35284360433905765 / (154956.920000 - x40)) + x61)) + ((((0.601569 ^ x100) + 0.001691) ^ (-0.00016173816055613588 + x70)) + ((x55 / (0.288605 + x68)) + ((x9 ^ x29) + x101)))) - (((((0.001972 + x73) + (0.004457 + x29)) - ((x39 * 0.000062) + x71)) + ((x39 ^ x93) + ((0.011783 + x53) + (x88 + x100)))) / (((x79 ^ (x11 / 0.310902)) ^ ((x68 / 6.296075) + x87)) - ((0.004496 ^ (x66 * x101)) + (0.004023 + x23))))))'
+        func = func.replace("^","**").replace("~","-")
+        func_sym = sympify(func)
+        func_sym_r = round_floats(func_sym, 3)
+        print(f"func_sym = {align_rep(multiline_latex(f, func_sym_r, 1))}")
+        f_res = replace_vars(func)
+        print(f"f = {f_res}")
+     ```
+     Without Laplacian Smoothing:
+         Depth = 3:
+            Training:
+                 Best score = 2.28121e-09, SNE = 4.38364e+08
+                 Squared-norm error for each equation: 4.38364e+08
+                 Best expression = sech(((x3 + x101) - (x100 / 2.993659)))
+                 Best expression (original format) = x3 x101 + x100 2.993659 / - sech
+            Validation:
+                 Best score = 6.74587e-11, SNE = 1.48239e+10
+                 Squared-norm error for each equation: 1.48239e+10
+                 Best expression = sech(((x3 + x101) - (x100 / 2.993659)))
+                 Best expression (original format) = x3 x101 + x100 2.993659 / - sech
+                 Best diff result = abs((sech(((x3 + x101) - (x100 / 2.993659))) - x102))
+                 Best expression (original format) = x3 x101 + x100 2.993659 / - sech x102 - abs
+         
+         Depth = 4:
+            Training:
+                Best score = 2.28159e-09, SNE = 4.38291e+08
+                Squared-norm error for each equation: 4.38291e+08
+                Best expression = sech((((0.398685 / x61) + (x47 + x101)) - ((x86 + x100) / (x94 - x23))))
+                Best expression (original format) = 0.398685 x61 / x47 x101 + + x86 x100 + x94 x23 - / - sech
+                Best diff result = abs((sech((((0.398685 / x61) + (x47 + x101)) - ((x86 + x100) / (x94 - x23)))) - x102))
+                Best expression (original format) = 0.398685 x61 / x47 x101 + + x86 x100 + x94 x23 - / - sech x102 - abs
+            Validation:
+                Best score = 6.74587e-11, SNE = 1.48239e+10
+                Squared-norm error for each equation: 1.48239e+10
+                Best expression = sech((((0.398685 / x61) + (x47 + x101)) - ((x86 + x100) / (x94 - x23))))
+                Best expression (original format) = 0.398685 x61 / x47 x101 + + x86 x100 + x94 x23 - / - sech
+                Best diff result = abs((sech((((0.398685 / x61) + (x47 + x101)) - ((x86 + x100) / (x94 - x23)))) - x102))
+                Best expression (original format) = 0.398685 x61 / x47 x101 + + x86 x100 + x94 x23 - / - sech x102 - abs
+        
+         Depth = 5:
+            Training:
+                Best score = 2.28171e-09, SNE = 4.38268e+08
+                Squared-norm error for each equation: 4.38268e+08
+                Best expression = sech(((((x21 + 0.394189) / (0.001595 + x61)) + ((x84 ^ x70) + (x73 + x101))) - ((cos(x101) + (x55 + x100)) / ((x21 ^ x58) - (x21 + x23)))))
+                Best expression (original format) = x21 0.394189 + 0.001595 x61 + / x84 x70 ^ x73 x101 + + + x101 cos x55 x100 + + x21 x58 ^ x21 x23 + - / - sech
+                Best diff result = abs((sech(((((x21 + 0.394189) / (0.001595 + x61)) + ((x84 ^ x70) + (x73 + x101))) - ((cos(x101) + (x55 + x100)) / ((x21 ^ x58) - (x21 + x23))))) - x102))
+                Best expression (original format) = x21 0.394189 + 0.001595 x61 + / x84 x70 ^ x73 x101 + + + x101 cos x55 x100 + + x21 x58 ^ x21 x23 + - / - sech x102 - abs
+            Validation:
+                Best score = 6.74587e-11, SNE = 1.48239e+10
+                Squared-norm error for each equation: 1.48239e+10
+                Best expression = sech(((((x21 + 0.394189) / (0.001595 + x61)) + ((x84 ^ x70) + (x73 + x101))) - ((cos(x101) + (x55 + x100)) / ((x21 ^ x58) - (x21 + x23)))))
+                Best expression (original format) = x21 0.394189 + 0.001595 x61 + / x84 x70 ^ x73 x101 + + + x101 cos x55 x100 + + x21 x58 ^ x21 x23 + - / - sech
+                Best diff result = abs((sech(((((x21 + 0.394189) / (0.001595 + x61)) + ((x84 ^ x70) + (x73 + x101))) - ((cos(x101) + (x55 + x100)) / ((x21 ^ x58) - (x21 + x23))))) - x102))
+                Best expression (original format) = x21 0.394189 + 0.001595 x61 + / x84 x70 ^ x73 x101 + + + x101 cos x55 x100 + + x21 x58 ^ x21 x23 + - / - sech x102 - abs
+         
+         Depth = 6:
+            Training:
+                Best score = 2.28184e-09, SNE = 4.38243e+08
+                Squared-norm error for each equation: 4.38243e+08
+                Best expression = sech((((((x20 + x71) * (x20 + -0.29813)) / ((x81 ^ 1414.708600) + x61)) + (((x89 + 0.001691) ^ x70) + ((x55 / x68) + (x21 + x101)))) - ((((x73 + x29) - (x89 + x71)) + ((x39 ^ x93) + (x53 + x100))) / (((x85 ^ x33) ^ (x3 + x87)) - ((x88 - x20) + (0.004457 + x23))))))
+                Best expression (original format) = x20 x71 + x20 -0.29813 + * x81 1414.708600 ^ x61 + / x89 0.001691 + x70 ^ x55 x68 / x21 x101 + + + + x73 x29 + x89 x71 + - x39 x93 ^ x53 x100 + + + x85 x33 ^ x3 x87 + ^ x88 x20 - 0.004457 x23 + + - / - sech
+                Best diff result = abs((sech((((((x20 + x71) * (x20 + -0.29813)) / ((x81 ^ 1414.708600) + x61)) + (((x89 + 0.001691) ^ x70) + ((x55 / x68) + (x21 + x101)))) - ((((x73 + x29) - (x89 + x71)) + ((x39 ^ x93) + (x53 + x100))) / (((x85 ^ x33) ^ (x3 + x87)) - ((x88 - x20) + (0.004457 + x23)))))) - x102))
+                Best expression (original format) = x20 x71 + x20 -0.29813 + * x81 1414.708600 ^ x61 + / x89 0.001691 + x70 ^ x55 x68 / x21 x101 + + + + x73 x29 + x89 x71 + - x39 x93 ^ x53 x100 + + + x85 x33 ^ x3 x87 + ^ x88 x20 - 0.004457 x23 + + - / - sech x102 - abs
+            Validation:
+                Best score = 0, SNE = 1.79769e+308
+                Squared-norm error for each equation: nan
+                Best expression = sech((((((x20 + x71) * (x20 + -0.29813)) / ((x81 ^ 1414.708600) + x61)) + (((x89 + 0.001691) ^ x70) + ((x55 / x68) + (x21 + x101)))) - ((((x73 + x29) - (x89 + x71)) + ((x39 ^ x93) + (x53 + x100))) / (((x85 ^ x33) ^ (x3 + x87)) - ((x88 - x20) + (0.004457 + x23))))))
+                Best expression (original format) = x20 x71 + x20 -0.29813 + * x81 1414.708600 ^ x61 + / x89 0.001691 + x70 ^ x55 x68 / x21 x101 + + + + x73 x29 + x89 x71 + - x39 x93 ^ x53 x100 + + + x85 x33 ^ x3 x87 + ^ x88 x20 - 0.004457 x23 + + - / - sech
+                Best diff result = abs((sech((((((x20 + x71) * (x20 + -0.29813)) / ((x81 ^ 1414.708600) + x61)) + (((x89 + 0.001691) ^ x70) + ((x55 / x68) + (x21 + x101)))) - ((((x73 + x29) - (x89 + x71)) + ((x39 ^ x93) + (x53 + x100))) / (((x85 ^ x33) ^ (x3 + x87)) - ((x88 - x20) + (0.004457 + x23)))))) - x102))
+                Best expression (original format) = x20 x71 + x20 -0.29813 + * x81 1414.708600 ^ x61 + / x89 0.001691 + x70 ^ x55 x68 / x21 x101 + + + + x73 x29 + x89 x71 + - x39 x93 ^ x53 x100 + + + x85 x33 ^ x3 x87 + ^ x88 x20 - 0.004457 x23 + + - / - sech x102 - abs
+         
+         Depth = 7:
+            Training:
+                Best score = 2.28184e-09, SNE = 4.38242e+08
+                Squared-norm error for each equation: 4.38242e+08
+                Best expression = sech(((((((x20 / x85) + (0.000062 + x71)) * ((x90 * 6.296075) + -0.29813)) / ((0.35284360433905765 / (154956.920000 - x40)) + x61)) + ((((0.601569 ^ x100) + 0.001691) ^ (-0.00016173816055613588 + x70)) + ((x55 / (0.288605 + x68)) + ((x9 ^ x29) + x101)))) - (((((0.001972 + x73) + (0.004457 + x29)) - ((x39 * 0.000062) + x71)) + ((x39 ^ x93) + ((0.011783 + x53) + (x88 + x100)))) / (((x79 ^ (x11 / 0.310902)) ^ ((x68 / 6.296075) + x87)) - ((0.004496 ^ (x66 * x101)) + (0.004023 + x23))))))
+                Best expression (original format) = x20 x85 / 0.000062 x71 + + x90 6.296075 * -0.29813 + * 0.35284360433905765 154956.920000 x40 - / x61 + / 0.601569 x100 ^ 0.001691 + -0.00016173816055613588 x70 + ^ x55 0.288605 x68 + / x9 x29 ^ x101 + + + + 0.001972 x73 + 0.004457 x29 + + x39 0.000062 * x71 + - x39 x93 ^ 0.011783 x53 + x88 x100 + + + + x79 x11 0.310902 / ^ x68 6.296075 / x87 + ^ 0.004496 x66 x101 * ^ 0.004023 x23 + + - / - sech
+                Best diff result = abs((sech(((((((x20 / x85) + (0.000062 + x71)) * ((x90 * 6.296075) + -0.29813)) / ((0.35284360433905765 / (154956.920000 - x40)) + x61)) + ((((0.601569 ^ x100) + 0.001691) ^ (-0.00016173816055613588 + x70)) + ((x55 / (0.288605 + x68)) + ((x9 ^ x29) + x101)))) - (((((0.001972 + x73) + (0.004457 + x29)) - ((x39 * 0.000062) + x71)) + ((x39 ^ x93) + ((0.011783 + x53) + (x88 + x100)))) / (((x79 ^ (x11 / 0.310902)) ^ ((x68 / 6.296075) + x87)) - ((0.004496 ^ (x66 * x101)) + (0.004023 + x23)))))) - x102))
+                Best expression (original format) = x20 x85 / 0.000062 x71 + + x90 6.296075 * -0.29813 + * 0.35284360433905765 154956.920000 x40 - / x61 + / 0.601569 x100 ^ 0.001691 + -0.00016173816055613588 x70 + ^ x55 0.288605 x68 + / x9 x29 ^ x101 + + + + 0.001972 x73 + 0.004457 x29 + + x39 0.000062 * x71 + - x39 x93 ^ 0.011783 x53 + x88 x100 + + + + x79 x11 0.310902 / ^ x68 6.296075 / x87 + ^ 0.004496 x66 x101 * ^ 0.004023 x23 + + - / - sech x102 - abs
+            Validation:
+                Best score = 0, SNE = 1.79769e+308
+                Squared-norm error for each equation: nan
+                Best expression = sech((((((x20 + x71) * (x20 + -0.29813)) / ((x81 ^ 1414.7086) + x61)) + (((x89 + 0.001691) ^ x70) + ((x55 / x68) + (x21 + x101)))) - ((((x73 + x29) - (x89 + x71)) + ((x39 ^ x93) + (x53 + x100))) / (((x85 ^ x33) ^ (x3 + x87)) - ((x88 - x20) + (0.004457 + x23))))))
+                Best expression (original format) = x20 x71 + x20 -0.29813 + * x81 1414.7086 ^ x61 + / x89 0.001691 + x70 ^ x55 x68 / x21 x101 + + + + x73 x29 + x89 x71 + - x39 x93 ^ x53 x100 + + + x85 x33 ^ x3 x87 + ^ x88 x20 - 0.004457 x23 + + - / - sech
+                Best diff result = abs((sech((((((x20 + x71) * (x20 + -0.29813)) / ((x81 ^ 1414.7086) + x61)) + (((x89 + 0.001691) ^ x70) + ((x55 / x68) + (x21 + x101)))) - ((((x73 + x29) - (x89 + x71)) + ((x39 ^ x93) + (x53 + x100))) / (((x85 ^ x33) ^ (x3 + x87)) - ((x88 - x20) + (0.004457 + x23)))))) - x102))
+                Best expression (original format) = x20 x71 + x20 -0.29813 + * x81 1414.7086 ^ x61 + / x89 0.001691 + x70 ^ x55 x68 / x21 x101 + + + + x73 x29 + x89 x71 + - x39 x93 ^ x53 x100 + + + x85 x33 ^ x3 x87 + ^ x88 x20 - 0.004457 x23 + + - / - sech x102 - abs
+     With Laplacian Smoothing:
         Training:
-             Best score = 2.28121e-09, SNE = 4.38364e+08
-             Squared-norm error for each equation: 4.38364e+08
-             Best expression = sech(((x3 + x101) - (x100 / 2.993659)))
-             Best expression (original format) = x3 x101 + x100 2.993659 / - sech
-        Validation:
-             Best score = 6.74587e-11, SNE = 1.48239e+10
-             Squared-norm error for each equation: 1.48239e+10
-             Best expression = sech(((x3 + x101) - (x100 / 2.993659)))
-             Best expression (original format) = x3 x101 + x100 2.993659 / - sech
-             Best diff result = abs((sech(((x3 + x101) - (x100 / 2.993659))) - x102))
-             Best expression (original format) = x3 x101 + x100 2.993659 / - sech x102 - abs
-     
-     Depth = 4:
-        Training:
-            Best score = 2.28159e-09, SNE = 4.38291e+08
-            Squared-norm error for each equation: 4.38291e+08
-            Best expression = sech((((0.398685 / x61) + (x47 + x101)) - ((x86 + x100) / (x94 - x23))))
-            Best expression (original format) = 0.398685 x61 / x47 x101 + + x86 x100 + x94 x23 - / - sech
-            Best diff result = abs((sech((((0.398685 / x61) + (x47 + x101)) - ((x86 + x100) / (x94 - x23)))) - x102))
-            Best expression (original format) = 0.398685 x61 / x47 x101 + + x86 x100 + x94 x23 - / - sech x102 - abs
-        Validation:
-            Best score = 6.74587e-11, SNE = 1.48239e+10
-            Squared-norm error for each equation: 1.48239e+10
-            Best expression = sech((((0.398685 / x61) + (x47 + x101)) - ((x86 + x100) / (x94 - x23))))
-            Best expression (original format) = 0.398685 x61 / x47 x101 + + x86 x100 + x94 x23 - / - sech
-            Best diff result = abs((sech((((0.398685 / x61) + (x47 + x101)) - ((x86 + x100) / (x94 - x23)))) - x102))
-            Best expression (original format) = 0.398685 x61 / x47 x101 + + x86 x100 + x94 x23 - / - sech x102 - abs
-    
-     Depth = 5:
-        Training:
-            Best score = 2.28171e-09, SNE = 4.38268e+08
-            Squared-norm error for each equation: 4.38268e+08
-            Best expression = sech(((((x21 + 0.394189) / (0.001595 + x61)) + ((x84 ^ x70) + (x73 + x101))) - ((cos(x101) + (x55 + x100)) / ((x21 ^ x58) - (x21 + x23)))))
-            Best expression (original format) = x21 0.394189 + 0.001595 x61 + / x84 x70 ^ x73 x101 + + + x101 cos x55 x100 + + x21 x58 ^ x21 x23 + - / - sech
-            Best diff result = abs((sech(((((x21 + 0.394189) / (0.001595 + x61)) + ((x84 ^ x70) + (x73 + x101))) - ((cos(x101) + (x55 + x100)) / ((x21 ^ x58) - (x21 + x23))))) - x102))
-            Best expression (original format) = x21 0.394189 + 0.001595 x61 + / x84 x70 ^ x73 x101 + + + x101 cos x55 x100 + + x21 x58 ^ x21 x23 + - / - sech x102 - abs
-        Validation:
-            Best score = 6.74587e-11, SNE = 1.48239e+10
-            Squared-norm error for each equation: 1.48239e+10
-            Best expression = sech(((((x21 + 0.394189) / (0.001595 + x61)) + ((x84 ^ x70) + (x73 + x101))) - ((cos(x101) + (x55 + x100)) / ((x21 ^ x58) - (x21 + x23)))))
-            Best expression (original format) = x21 0.394189 + 0.001595 x61 + / x84 x70 ^ x73 x101 + + + x101 cos x55 x100 + + x21 x58 ^ x21 x23 + - / - sech
-            Best diff result = abs((sech(((((x21 + 0.394189) / (0.001595 + x61)) + ((x84 ^ x70) + (x73 + x101))) - ((cos(x101) + (x55 + x100)) / ((x21 ^ x58) - (x21 + x23))))) - x102))
-            Best expression (original format) = x21 0.394189 + 0.001595 x61 + / x84 x70 ^ x73 x101 + + + x101 cos x55 x100 + + x21 x58 ^ x21 x23 + - / - sech x102 - abs
-     
-     Depth = 6:
-        Training:
-            Best score = 2.28184e-09, SNE = 4.38243e+08
-            Squared-norm error for each equation: 4.38243e+08
-            Best expression = sech((((((x20 + x71) * (x20 + -0.29813)) / ((x81 ^ 1414.708600) + x61)) + (((x89 + 0.001691) ^ x70) + ((x55 / x68) + (x21 + x101)))) - ((((x73 + x29) - (x89 + x71)) + ((x39 ^ x93) + (x53 + x100))) / (((x85 ^ x33) ^ (x3 + x87)) - ((x88 - x20) + (0.004457 + x23))))))
-            Best expression (original format) = x20 x71 + x20 -0.29813 + * x81 1414.708600 ^ x61 + / x89 0.001691 + x70 ^ x55 x68 / x21 x101 + + + + x73 x29 + x89 x71 + - x39 x93 ^ x53 x100 + + + x85 x33 ^ x3 x87 + ^ x88 x20 - 0.004457 x23 + + - / - sech
-            Best diff result = abs((sech((((((x20 + x71) * (x20 + -0.29813)) / ((x81 ^ 1414.708600) + x61)) + (((x89 + 0.001691) ^ x70) + ((x55 / x68) + (x21 + x101)))) - ((((x73 + x29) - (x89 + x71)) + ((x39 ^ x93) + (x53 + x100))) / (((x85 ^ x33) ^ (x3 + x87)) - ((x88 - x20) + (0.004457 + x23)))))) - x102))
-            Best expression (original format) = x20 x71 + x20 -0.29813 + * x81 1414.708600 ^ x61 + / x89 0.001691 + x70 ^ x55 x68 / x21 x101 + + + + x73 x29 + x89 x71 + - x39 x93 ^ x53 x100 + + + x85 x33 ^ x3 x87 + ^ x88 x20 - 0.004457 x23 + + - / - sech x102 - abs
-        Validation:
-            Best score = 0, SNE = 1.79769e+308
-            Squared-norm error for each equation: nan
-            Best expression = sech((((((x20 + x71) * (x20 + -0.29813)) / ((x81 ^ 1414.708600) + x61)) + (((x89 + 0.001691) ^ x70) + ((x55 / x68) + (x21 + x101)))) - ((((x73 + x29) - (x89 + x71)) + ((x39 ^ x93) + (x53 + x100))) / (((x85 ^ x33) ^ (x3 + x87)) - ((x88 - x20) + (0.004457 + x23))))))
-            Best expression (original format) = x20 x71 + x20 -0.29813 + * x81 1414.708600 ^ x61 + / x89 0.001691 + x70 ^ x55 x68 / x21 x101 + + + + x73 x29 + x89 x71 + - x39 x93 ^ x53 x100 + + + x85 x33 ^ x3 x87 + ^ x88 x20 - 0.004457 x23 + + - / - sech
-            Best diff result = abs((sech((((((x20 + x71) * (x20 + -0.29813)) / ((x81 ^ 1414.708600) + x61)) + (((x89 + 0.001691) ^ x70) + ((x55 / x68) + (x21 + x101)))) - ((((x73 + x29) - (x89 + x71)) + ((x39 ^ x93) + (x53 + x100))) / (((x85 ^ x33) ^ (x3 + x87)) - ((x88 - x20) + (0.004457 + x23)))))) - x102))
-            Best expression (original format) = x20 x71 + x20 -0.29813 + * x81 1414.708600 ^ x61 + / x89 0.001691 + x70 ^ x55 x68 / x21 x101 + + + + x73 x29 + x89 x71 + - x39 x93 ^ x53 x100 + + + x85 x33 ^ x3 x87 + ^ x88 x20 - 0.004457 x23 + + - / - sech x102 - abs
+            Best score = 2.28138e-09, SNE = 4.38332e+08
+            Squared-norm error for each equation: 4.38332e+08 5.88882e-21
+            Best expression = ((((((-4.186665 / (0.418842 * x35)) + (x28 / (0.999938 / x41))) + ((x87 + 5.948352) + (4.300312 / (x28 * 0.310902)))) * (6.730804900000001e-05 / ((x20 + x91) - (5.886818 * (x61 - x70))))) + ((((-0.426245593761 - (-1.279780 * x74)) + (x72 - (x41 - x65))) * (32.149631233913546 / ((9.976585 + x9) / (x2 * -1.257003)))) + 0.0031050203787341656)) * ((((((x6 - 1.011502) - x61) + ((0.002144 + x78) ^ (x37 / x43))) + ((-0.3528050641376832 + x86) * ((x2 + 4) ^ (x67 + -0.995703)))) + (((-0.48838806142551866 + x75) / (x61 - (-0.837968 / x78))) + (((0.001595 + x70) + (x79 - 0.261111)) + ((-0.152212 + x47) + 3.910026)))) * (((-1.358924 + (46.127500 ^ (x83 / 611384.300000))) + ((2.5738023662116807 + (x48 ^ x77)) + (3.991361 + (x75 / 4.300312)))) - ((((-1.885127 / x42) - ~(x101)) + ((x41 + x40) + 345.896492)) * ((0.310902 - (x47 / 1.011502)) / (72.902766 - (x100 / 46616.285000)))))))
+            Best expression (original format) = -4.186665 0.418842 x35 * / x28 0.999938 x41 / / + x87 5.948352 + 4.300312 x28 0.310902 * / + + 6.730804900000001e-05 x20 x91 + 5.886818 x61 x70 - * - / * -0.426245593761 -1.279780 x74 * - x72 x41 x65 - - + 32.149631233913546 9.976585 x9 + x2 -1.257003 * / / * 0.0031050203787341656 + + x6 1.011502 - x61 - 0.002144 x78 + x37 x43 / ^ + -0.3528050641376832 x86 + x2 4 + x67 -0.995703 + ^ * + -0.48838806142551866 x75 + x61 -0.837968 x78 / - / 0.001595 x70 + x79 0.261111 - + -0.152212 x47 + 3.910026 + + + + -1.358924 46.127500 x83 611384.300000 / ^ + 2.5738023662116807 x48 x77 ^ + 3.991361 x75 4.300312 / + + + -1.885127 x42 / x101 ~ - x41 x40 + 345.896492 + + 0.310902 x47 1.011502 / - 72.902766 x100 46616.285000 / - / * - * *
 
+     
      */
     
-    std::vector<std::vector<std::string>> results(1);
-    thread_local std::vector<std::string> result;
-    result.clear();
-    result.reserve(100);
+    std::vector<std::vector<std::string>> results(2);
+    thread_local std::vector<std::string> temp;
+    thread_local std::vector<int> grasp;
+    grasp.clear();
+    grasp.reserve(100);
+    temp.clear();
+    temp.reserve(100);
     
     if (x.expression_type == "prefix")
     {
         //abs - f x102
-        result.push_back("abs");
-        result.push_back("-");
+        results[0].push_back("abs");
+        results[0].push_back("-");
         for (const std::string& i: x.pieces[0])
         {
-            result.push_back(i);
+            results[0].push_back(i);
         }
-        result.push_back("x102");
+        results[0].push_back("x102");
+        
+        //∂^2f/∂(x100)^2 ∂^2f/∂(x101)^2 +
+        x.derivePostfix(0, x.pieces[0].size()-1, "x100", x.pieces[0], grasp);
+        temp = x.derivat;
+        x.derivePostfix(0, temp.size()-1, "x100", temp, grasp);
+        for (const std::string& i: x.derivat) // ∂^2f/∂(x100)^2
+        {
+            results[1].push_back(i);
+        }
+        x.derivePostfix(0, x.pieces[0].size()-1, "x101", x.pieces[0], grasp);
+        temp = x.derivat;
+        x.derivePostfix(0, temp.size()-1, "x101", temp, grasp);
+        for (const std::string& i: x.derivat) // ∂^2f/∂(x101)^2
+        {
+            results[1].push_back(i);
+        }
+        results[1].push_back("+"); // +
     }
     else if (x.expression_type == "postfix")
     {
         //f x102 - abs
         for (const std::string& i: x.pieces[0])
         {
-            result.push_back(i);
+            results[0].push_back(i);
         }
-        result.push_back("x102");
-        result.push_back("-");
-        result.push_back("abs");
+        results[0].push_back("x102");
+        results[0].push_back("-");
+        results[0].push_back("abs");
+        
+        //∂^2f/∂(x100)^2 ∂^2f/∂(x101)^2 +
+        x.derivePostfix(0, x.pieces[0].size()-1, "x100", x.pieces[0], grasp);
+        temp = x.derivat;
+        x.derivePostfix(0, temp.size()-1, "x100", temp, grasp);
+        for (const std::string& i: x.derivat) // ∂^2f/∂(x100)^2
+        {
+            results[1].push_back(i);
+        }
+        x.derivePostfix(0, x.pieces[0].size()-1, "x101", x.pieces[0], grasp);
+        temp = x.derivat;
+        x.derivePostfix(0, temp.size()-1, "x101", temp, grasp);
+        for (const std::string& i: x.derivat) // ∂^2f/∂(x101)^2
+        {
+            results[1].push_back(i);
+        }
+        results[1].push_back("+"); // +
     }
-    results[0] = result;
     return results;
 }
 
@@ -6699,10 +6774,17 @@ std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
          ```
      With Laplacian Smoothing:
         Training:
-            Best score = 2.44715e-08, SNE = 4.08639e+07
-            Squared-norm error for each equation: 4.08639e+07 0
-            Best expression = (((~(x7) - (292.600006 - (x20 + (x7 * (x15 + (360.000000 * x5)))))) + ((5470.0596345781605 + (3303.5714033364225 ^ (2 - (ln(x17) * (x21 - -843.000000))))) + (((-100 / exp(x20)) + ((16 / (x4 / x14)) + 10000)) + (x17 * (2.0200101e+07 / (3316 ^ ln(x18))))))) * ((11891.379148 * (-0.9994732316373803 * (x11 * (x16 + (39.3125 ^ x20))))) - (((((-0.7568024953079283 + (x15 - 0.004735)) + -0.4327131112072696) + (-0.31194026074020714 + x23)) - (((x5 * (x0 + x22)) + 1.0517079302302543) + ((1 + (x17 - 1.000000)) + (4.00621 + x24)))) * (((-15854.959518 + (-30.856491000000005 + (-1405.000000 / x8))) / -782.0930331488324) + (1.6594978116110355 + (36.305548 + (x18 + -73.07483798748629)))))))
-            Best expression (original format) = x7 ~ 292.600006 x20 x7 x15 360.000000 x5 * + * + - - 5470.0596345781605 3303.5714033364225 2 x17 ln x21 -843.000000 - * - ^ + -100 x20 exp / 16 x4 x14 / / 10000 + + x17 2.0200101e+07 3316 x18 ln ^ / * + + + 11891.379148 -0.9994732316373803 x11 x16 39.3125 x20 ^ + * * * -0.7568024953079283 x15 0.004735 - + -0.4327131112072696 + -0.31194026074020714 x23 + + x5 x0 x22 + * 1.0517079302302543 + 1 x17 1.000000 - + 4.00621 x24 + + + - -15854.959518 -30.856491000000005 -1405.000000 x8 / + + -782.0930331488324 / 1.6594978116110355 36.305548 x18 -73.07483798748629 + + + + * - *
+            Best score = 7.25378e-08, SNE = 1.37859e+07
+            Squared-norm error for each equation: 1.37859e+07 0
+            Best expression = ((58 + ((((2.520000 * x2) + 5470.0596345781605) + (3303.5714033364225 ^ (1.320645006282e+07 - (ln(x17) * (x21 - -843.000000))))) + (x8 / (x17 * 0.0007869063691834137)))) * (((((x18 ^ (20200128.000000 - (x7 ^ x7))) + ((x24 + (x15 ^ 16.000000)) + (58.000000 - (x18 / x13)))) + ((0.002105 ^ (-459.704071 - (359.704071 - x2))) + (58.000000 * (x7 + (0.006210 + x12))))) * ((((~(x22) + -88.959518) / (88.856491 * (x19 ^ 2))) + ((x3 / -2.0200127e+07) + -1)) * (((x22 / 1.277745e+07) + (sech(x19) + x11)) * ((0.12004407415282907 + (0.006210 + x16)) + ((x22 + 39.3125) ^ (0.000770 + x20)))))) - ((((-2.225653 + (x20 / (2 / x6))) + ((0.051731 / (x20 / x6)) + (x20 + x23))) - (((x5 * (x0 + x22)) + ((0.002105 / x11) + 1.5707963267948966)) + (((9736.000000 ^ x15) + x17) + (4.00621 + x24)))) * (((((x20 * 360.000000) + -15858.185171) + -126.45600900000001) / ((1.566061309101424 + (267.200012 ^ x11)) + ((8.000000 - x18) + -781.0930331488324))) + (((x10 * (x16 / x14)) + 1.9087338116110355) + (36.321228 + ((0.000770 + x18) + -73.0701029874863)))))))
+            Best expression (original format) = 58 2.520000 x2 * 5470.0596345781605 + 3303.5714033364225 1.320645006282e+07 x17 ln x21 -843.000000 - * - ^ + x8 x17 0.0007869063691834137 * / + + x18 20200128.000000 x7 x7 ^ - ^ x24 x15 16.000000 ^ + 58.000000 x18 x13 / - + + 0.002105 -459.704071 359.704071 x2 - - ^ 58.000000 x7 0.006210 x12 + + * + + x22 ~ -88.959518 + 88.856491 x19 2 ^ * / x3 -2.0200127e+07 / -1 + + x22 1.277745e+07 / x19 sech x11 + + 0.12004407415282907 0.006210 x16 + + x22 39.3125 + 0.000770 x20 + ^ + * * * -2.225653 x20 2 x6 / / + 0.051731 x20 x6 / / x20 x23 + + + x5 x0 x22 + * 0.002105 x11 / 1.5707963267948966 + + 9736.000000 x15 ^ x17 + 4.00621 x24 + + + - x20 360.000000 * -15858.185171 + -126.45600900000001 + 1.566061309101424 267.200012 x11 ^ + 8.000000 x18 - -781.0930331488324 + + / x10 x16 x14 / * 1.9087338116110355 + 36.321228 0.000770 x18 + -73.0701029874863 + + + + * - *
+            Best diff result = (term1 + term2), 0
+            Best expression (original format) = term1 term2 +, 0
+        Validation:
+            Best score = 7.8752e-12, SNE = 1.26981e+11
+            Squared-norm error for each equation: 1.26981e+11 0
+            Best expression = ((58 + ((((2.520000 * x2) + 5470.0596345781605) + (3303.5714033364225 ^ (1.320645006282e+07 - (ln(x17) * (x21 - -843.000000))))) + (x8 / (x17 * 0.0007869063691834137)))) * (((((x18 ^ (20200128.000000 - (9.666708 ^ x7))) + ((x24 + (x15 ^ 16.000000)) + (58.000000 - (x18 / x13)))) + ((0.002105 ^ (-362.929724 - (359.704071 - x2))) + (58.000000 * (x7 + (0.006210 + x12))))) * ((((~(x22) + -88.959518) / (88.856491 * (x19 ^ 2))) + ((x3 / -2.0200127e+07) + -1)) * (((x22 / 1.277745e+07) + (sech(x19) + x11)) * ((0.12004407415282907 + (0.006210 + x16)) + ((x22 + 39.3125) ^ (0.000770 + x20)))))) - ((((-2.225653 + (x20 / (2 / x6))) + ((0.051731 / (x20 / x6)) + (x20 + x23))) - (((x5 * (x0 + x22)) + ((0.002105 / x11) + 1.5707963267948966)) + (((9736.000000 ^ x15) + x17) + (4.00621 + x24)))) * (((((x20 * 360.000000) + -15858.185171) + -126.45600900000001) / ((1.566061309101424 + (267.200012 ^ x11)) + ((8.000000 - x18) + -781.0930331488324))) + (((x10 * (x16 / x14)) + 1.9087338116110355) + (36.321228 + ((0.000770 + x18) + -73.0701029874863)))))))
+            Best expression (original format) = 58 2.520000 x2 * 5470.0596345781605 + 3303.5714033364225 1.320645006282e+07 x17 ln x21 -843.000000 - * - ^ + x8 x17 0.0007869063691834137 * / + + x18 20200128.000000 9.666708 x7 ^ - ^ x24 x15 16.000000 ^ + 58.000000 x18 x13 / - + + 0.002105 -362.929724 359.704071 x2 - - ^ 58.000000 x7 0.006210 x12 + + * + + x22 ~ -88.959518 + 88.856491 x19 2 ^ * / x3 -2.0200127e+07 / -1 + + x22 1.277745e+07 / x19 sech x11 + + 0.12004407415282907 0.006210 x16 + + x22 39.3125 + 0.000770 x20 + ^ + * * * -2.225653 x20 2 x6 / / + 0.051731 x20 x6 / / x20 x23 + + + x5 x0 x22 + * 0.002105 x11 / 1.5707963267948966 + + 9736.000000 x15 ^ x17 + 4.00621 x24 + + + - x20 360.000000 * -15858.185171 + -126.45600900000001 + 1.566061309101424 267.200012 x11 ^ + 8.000000 x18 - -781.0930331488324 + + / x10 x16 x14 / * 1.9087338116110355 + 36.321228 0.000770 x18 + -73.0701029874863 + + + + * - *
             Best diff result = (term1 + term2), 0
             Best expression (original format) = term1 term2 +, 0
         ```
@@ -9987,7 +10069,7 @@ namespace ExampleProblems
     void WildfireSpreadTSTest(int random_seed, const char* algorithm, double time)
     {
         double threshold = 0.0;
-        bool validation = false;
+        bool validation = true;
         Eigen::MatrixXd data;
         if (validation)
         {
@@ -10044,7 +10126,7 @@ namespace ExampleProblems
                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {{"x23", "x24"}} /*custom features that the SR-found equations are required to contain*/,
                 "",// "BestNextDayFire.txt" /*filename to save current best expression found (instead of outputting them to standard out)*/,
-                {split("0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x7 + + + + ~ 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 292.600006 + + + + 0 0 + 0 0 + + 0 0 + 0 x20 + + + 0 0 + 0 x7 + + 0 x15 + 360.000000 x5 * + * + - - 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 5470.0596345781605 + + + + 0 0 + 0 0 + + 0 0 + 0 3303.5714033364225 + + + 0 0 + 0 2 + + x17 ln x21 -843.000000 - * - ^ + 0 0 + 0 -100 + + 0 x20 + exp / 0 16 + x4 x14 / / 0 0 + 0 10000 + + + + 0 0 + 0 0 + + 0 0 + 0 x17 + + + 0 0 + 0 2.0200101e+07 + + 0 3316 + x18 ln ^ / * + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 11891.379148 + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -0.9994732316373803 + + + + 0 0 + 0 0 + + 0 0 + 0 x11 + + + 0 0 + 0 x16 + + 0 39.3125 + 0 x20 + ^ + * * * 0 -0.7568024953079283 + x15 0.004735 - + 0 0 + 0 -0.4327131112072696 + + + 0 0 + 0 -0.31194026074020714 + + 0 0 + 0 x23 + + + + 0 x5 + x0 x22 + * 0 0 + 0 1.0517079302302543 + + + 0 1 + x17 1.000000 - + 0 4.00621 + 0 x24 + + + + - 0 0 + 0 -15854.959518 + + 0 -30.856491000000005 + -1405.000000 x8 / + + 0 0 + 0 0 + + 0 0 + 0 -782.0930331488324 + + + / 0 0 + 0 0 + + 0 0 + 0 1.6594978116110355 + + + 0 0 + 0 36.305548 + + 0 x18 + 0 -73.07483798748629 + + + + + * - *")} /*seed expressions*/,
+                {split("58 2.520000 x2 * 5470.0596345781605 + 3303.5714033364225 1.320645006282e+07 x17 ln x21 -843.000000 - * - ^ + x8 x17 0.0007869063691834137 * / + + x18 20200128.000000 9.666708 x7 ^ - ^ x24 x15 16.000000 ^ + 58.000000 x18 x13 / - + + 0.002105 -362.929724 359.704071 x2 - - ^ 58.000000 x7 0.006210 x12 + + * + + x22 ~ -88.959518 + 88.856491 x19 2 ^ * / x3 -2.0200127e+07 / -1 + + x22 1.277745e+07 / x19 sech x11 + + 0.12004407415282907 0.006210 x16 + + x22 39.3125 + 0.000770 x20 + ^ + * * * -2.225653 x20 2 x6 / / + 0.051731 x20 x6 / / x20 x23 + + + x5 x0 x22 + * 0.002105 x11 / 1.5707963267948966 + + 9736.000000 x15 ^ x17 + 4.00621 x24 + + + - x20 360.000000 * -15858.185171 + -126.45600900000001 + 1.566061309101424 267.200012 x11 ^ + 8.000000 x18 - -781.0930331488324 + + / x10 x16 x14 / * 1.9087338116110355 + 36.321228 0.000770 x18 + -73.0701029874863 + + + + * - *")} /*seed expressions*/,
                 validation /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 "");// "SNE_vals.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
@@ -10068,7 +10150,7 @@ namespace ExampleProblems
         if (strcmp(algorithm, "RandomSearch") == 0)
         {
             RandomSearch(InPaintWildfireSpreadTS /*differential equation to solve*/,
-                1 /*number of equations in differential equation system*/,
+                2 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
                 std::vector<int>{3} /*fixed depths of generated solution*/,
                 "prefix" /*expression representation*/,
@@ -10090,9 +10172,9 @@ namespace ExampleProblems
         else
         {
             SimulatedAnnealing(InPaintWildfireSpreadTS /*differential equation to solve*/,
-                1 /*number of equations in differential equation system*/,
+                2 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{6} /*fixed depths of generated solution*/,
+                std::vector<int>{7} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -10109,7 +10191,7 @@ namespace ExampleProblems
                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {{"x100", "x101"}} /*custom features that the SR-found equations are required to contain*/,
                 "",//"BestInpaint.txt" /*filename to save current best expression found (instead of outputting them to standard out)*/,
-                {split("x20 0 + 0 x71 + + 0 x20 + 0 -0.29813 + + * 0 x81 + 0 1414.708600 + ^ 0 0 + 0 x61 + + + / 0 x89 + 0 0.001691 + + 0 0 + 0 x70 + + ^ 0 x55 + 0 x68 + / 0 x21 + 0 x101 + + + + + 0 x73 + 0 x29 + + 0 x89 + 0 x71 + + - 0 x39 + 0 x93 + ^ 0 x53 + 0 x100 + + + + 0 x85 + 0 x33 + ^ 0 x3 + 0 x87 + + ^ 0 x88 + 0 x20 + - 0 0.004457 + 0 x23 + + + - / - sech")} /*seed expressions*/,
+                {split("-4.186665 0.418842 x35 * / x28 0.999938 x41 / / + x87 5.948352 + 4.300312 x28 0.310902 * / + + 6.730804900000001e-05 x20 x91 + 5.886818 x61 x70 - * - / * -0.426245593761 -1.279780 x74 * - x72 x41 x65 - - + 32.149631233913546 9.976585 x9 + x2 -1.257003 * / / * 0.0031050203787341656 + + x6 1.011502 - x61 - 0.002144 x78 + x37 x43 / ^ + -0.3528050641376832 x86 + x2 4 + x67 -0.995703 + ^ * + -0.48838806142551866 x75 + x61 -0.837968 x78 / - / 0.001595 x70 + x79 0.261111 - + -0.152212 x47 + 3.910026 + + + + -1.358924 46.127500 x83 611384.300000 / ^ + 2.5738023662116807 x48 x77 ^ + 3.991361 x75 4.300312 / + + + -1.885127 x42 / x101 ~ - x41 x40 + 345.896492 + + 0.310902 x47 1.011502 / - 72.902766 x100 46616.285000 / - / * - * *")} /*seed expressions*/,
                 validation /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 "");// "SNE_vals.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
