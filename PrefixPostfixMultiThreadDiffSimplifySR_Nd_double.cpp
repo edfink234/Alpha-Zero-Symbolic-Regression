@@ -537,6 +537,18 @@ double VarianceSum(const std::vector<Eigen::VectorXd>& vec)
     return temp;
 }
 
+Eigen::MatrixXd deg2rad(const Eigen::VectorXd& vec)
+{
+    // Define the conversion factor from degrees to radians
+    // Conversion: radians = degrees * (M_PI / 180.0)
+    const double deg_to_rad = M_PI / 180.0;
+    
+    // Perform element-wise multiplication on the vector
+    // The result is an Eigen::VectorXd (which is also a type of Eigen::MatrixXd
+    // where the number of columns is 1).
+    return vec * deg_to_rad;
+}
+
 /*
 ||=== Build file: "no target" in "no project" (compiler: unknown) ===|
 C:\Users\finkelsteine\test_codes\hello_with_numbers.cpp||In function 'bool isZero(const Eigen::VectorXd&, double)':|
@@ -6656,17 +6668,33 @@ std::vector<std::vector<std::string>> InPaintWildfireSpreadTS(Board& x, bool fit
             Squared-norm error for each equation: 4.38332e+08 5.88882e-21
             Best expression = ((((((-4.186665 / (0.418842 * x35)) + (x28 / (0.999938 / x41))) + ((x87 + 5.948352) + (4.300312 / (x28 * 0.310902)))) * (6.730804900000001e-05 / ((x20 + x91) - (5.886818 * (x61 - x70))))) + ((((-0.426245593761 - (-1.279780 * x74)) + (x72 - (x41 - x65))) * (32.149631233913546 / ((9.976585 + x9) / (x2 * -1.257003)))) + 0.0031050203787341656)) * ((((((x6 - 1.011502) - x61) + ((0.002144 + x78) ^ (x37 / x43))) + ((-0.3528050641376832 + x86) * ((x2 + 4) ^ (x67 + -0.995703)))) + (((-0.48838806142551866 + x75) / (x61 - (-0.837968 / x78))) + (((0.001595 + x70) + (x79 - 0.261111)) + ((-0.152212 + x47) + 3.910026)))) * (((-1.358924 + (46.127500 ^ (x83 / 611384.300000))) + ((2.5738023662116807 + (x48 ^ x77)) + (3.991361 + (x75 / 4.300312)))) - ((((-1.885127 / x42) - ~(x101)) + ((x41 + x40) + 345.896492)) * ((0.310902 - (x47 / 1.011502)) / (72.902766 - (x100 / 46616.285000)))))))
             Best expression (original format) = -4.186665 0.418842 x35 * / x28 0.999938 x41 / / + x87 5.948352 + 4.300312 x28 0.310902 * / + + 6.730804900000001e-05 x20 x91 + 5.886818 x61 x70 - * - / * -0.426245593761 -1.279780 x74 * - x72 x41 x65 - - + 32.149631233913546 9.976585 x9 + x2 -1.257003 * / / * 0.0031050203787341656 + + x6 1.011502 - x61 - 0.002144 x78 + x37 x43 / ^ + -0.3528050641376832 x86 + x2 4 + x67 -0.995703 + ^ * + -0.48838806142551866 x75 + x61 -0.837968 x78 / - / 0.001595 x70 + x79 0.261111 - + -0.152212 x47 + 3.910026 + + + + -1.358924 46.127500 x83 611384.300000 / ^ + 2.5738023662116807 x48 x77 ^ + 3.991361 x75 4.300312 / + + + -1.885127 x42 / x101 ~ - x41 x40 + 345.896492 + + 0.310902 x47 1.011502 / - 72.902766 x100 46616.285000 / - / * - * *
-
+        Validation:
+            Best score = 6.74627e-11, SNE = 1.4823e+10
+            Squared-norm error for each equation: 1.4823e+10 1.97415e-19
+            Best expression = ((((((-4.186665 / (0.418842 * x35)) + (x28 / (0.999938 / x41))) + ((x87 + 5.948352) + (4.300312 / (x28 * 0.310902)))) * (6.730804900000001e-05 / ((x20 + x91) - (5.886818 * (x61 - x70))))) + ((((-0.426245593761 - (-1.279780 * x74)) + (x72 - (x41 - x65))) * (32.149631233913546 / ((9.976585 + x9) / (x2 * -1.257003)))) + 0.0031050203787341656)) * ((((((x6 - 1.011502) - x61) + ((0.002144 + x78) ^ (x37 / x43))) + ((-0.3528050641376832 + x86) * ((x2 + 4) ^ (x67 + -0.995703)))) + (((-0.48838806142551866 + x75) / (x61 - (-0.837968 / x78))) + (((0.001595 + x70) + (x79 - 0.261111)) + ((-0.152212 + x47) + 3.910026)))) * (((-1.358924 + (46.127500 ^ (x83 / 611384.300000))) + ((2.5738023662116807 + (x48 ^ x77)) + (3.991361 + (x75 / 4.300312)))) - ((((-1.885127 / x42) - ~(x101)) + ((x41 + x40) + 345.896492)) * ((0.310902 - (x47 / 1.011502)) / (72.902766 - (x100 / 46616.285000)))))))
+            Best expression (original format) = -4.186665 0.418842 x35 * / x28 0.999938 x41 / / + x87 5.948352 + 4.300312 x28 0.310902 * / + + 6.730804900000001e-05 x20 x91 + 5.886818 x61 x70 - * - / * -0.426245593761 -1.279780 x74 * - x72 x41 x65 - - + 32.149631233913546 9.976585 x9 + x2 -1.257003 * / / * 0.0031050203787341656 + + x6 1.011502 - x61 - 0.002144 x78 + x37 x43 / ^ + -0.3528050641376832 x86 + x2 4 + x67 -0.995703 + ^ * + -0.48838806142551866 x75 + x61 -0.837968 x78 / - / 0.001595 x70 + x79 0.261111 - + -0.152212 x47 + 3.910026 + + + + -1.358924 46.127500 x83 611384.300000 / ^ + 2.5738023662116807 x48 x77 ^ + 3.991361 x75 4.300312 / + + + -1.885127 x42 / x101 ~ - x41 x40 + 345.896492 + + 0.310902 x47 1.011502 / - 72.902766 x100 46616.285000 / - / * - * *
      
      */
+    std::vector<std::vector<std::string>> results(x.num_diff_eqns);
+    assert(x.num_diff_eqns == 3);
+    for (std::vector<std::string>& res: results)
+    {
+        res.reserve(100);
+    }
+    constexpr const char* s = "1";
+    constexpr const char* tau = "0.1";
     
-    std::vector<std::vector<std::string>> results(2);
-    thread_local std::vector<std::string> temp;
+    thread_local bool prefactors_computed = false;
+    thread_local std::vector<std::string> dfdx100, dfdx101, temp;
     thread_local std::vector<int> grasp;
     grasp.clear();
     grasp.reserve(100);
     temp.clear();
     temp.reserve(100);
+    dfdx100.clear();
+    dfdx100.reserve(100);
+    dfdx101.clear();
+    dfdx101.reserve(100);
     
     if (x.expression_type == "prefix")
     {
@@ -6681,20 +6709,86 @@ std::vector<std::vector<std::string>> InPaintWildfireSpreadTS(Board& x, bool fit
         
         //∂^2f/∂(x100)^2 ∂^2f/∂(x101)^2 +
         x.derivePostfix(0, x.pieces[0].size()-1, "x100", x.pieces[0], grasp);
-        temp = x.derivat;
-        x.derivePostfix(0, temp.size()-1, "x100", temp, grasp);
+        dfdx100 = x.derivat;
+        x.derivePostfix(0, dfdx100.size()-1, "x100", dfdx100, grasp);
         for (const std::string& i: x.derivat) // ∂^2f/∂(x100)^2
         {
             results[1].push_back(i);
         }
         x.derivePostfix(0, x.pieces[0].size()-1, "x101", x.pieces[0], grasp);
-        temp = x.derivat;
-        x.derivePostfix(0, temp.size()-1, "x101", temp, grasp);
+        dfdx101 = x.derivat;
+        x.derivePostfix(0, dfdx101.size()-1, "x101", dfdx101, grasp);
         for (const std::string& i: x.derivat) // ∂^2f/∂(x101)^2
         {
             results[1].push_back(i);
         }
         results[1].push_back("+"); // +
+        // / * x30 * x24 s + x30 tau
+        if (!prefactors_computed)
+        {
+            x.subs_dict["prefac"] = x.expression_evaluator(x.params, std::vector<std::string>{"/", "*", "x30", "*", "x24", s, "+", "x30", tau});
+        }
+        // * * prefac * p - 1 p + * x28 ∂f/∂(x100) * x29 ∂f/∂(x101)
+        results[2].push_back("*"); // *
+        results[2].push_back("*"); // *
+        results[2].push_back("prefac"); // prefac
+        if (fit)
+        {
+            // * / 1 - 1 exp ~ f - 1 / 1 - 1 exp ~ f
+            results[2].push_back("*"); // *
+            results[2].push_back("/"); // /
+            results[2].push_back("1"); // 1
+            results[2].push_back("-"); // -
+            results[2].push_back("1"); // 1
+            results[2].push_back("exp"); // exp
+            results[2].push_back("~"); // ~
+            for (const std::string& i: x.pieces[0]) // f
+            {
+                results[2].push_back(i);
+            }
+            results[2].push_back("-"); // -
+            results[2].push_back("1"); // 1
+            results[2].push_back("/"); // /
+            results[2].push_back("1"); // 1
+            results[2].push_back("-"); // -
+            results[2].push_back("1"); // 1
+            results[2].push_back("exp"); // exp
+            results[2].push_back("~"); // ~
+            for (const std::string& i: x.pieces[0]) // f
+            {
+                results[2].push_back(i);
+            }
+        }
+        else
+        {
+            //* p - 1 p
+            // / 1 - 1 exp ~ f
+            temp = {"/", "1", "-", "1", "exp", "~"}; // / 1 - 1 exp ~
+            for (const std::string& i: x.pieces[0]) //f
+            {
+                temp.push_back(i);
+            }
+            x.subs_dict["p"] = x.expression_evaluator(x.params, temp);
+            results[2].push_back("*"); // *
+            results[2].push_back("p"); // p
+            results[2].push_back("-"); // -
+            results[2].push_back("1"); // 1
+            results[2].push_back("p"); // p
+        }
+        // + * x28 ∂f/∂(x100) * x29 ∂f/∂(x101)
+        results[2].push_back("+"); // +
+        results[2].push_back("*"); // *
+        results[2].push_back("x28"); // x28
+        for (const std::string& i: dfdx100) //∂f/∂(x100)
+        {
+            results[2].push_back(i);
+        }
+        results[2].push_back("*"); // *
+        results[2].push_back("x29"); // x29
+        for (const std::string& i: dfdx101) //∂f/∂(x101)
+        {
+            results[2].push_back(i);
+        }
     }
     else if (x.expression_type == "postfix")
     {
@@ -6709,28 +6803,101 @@ std::vector<std::vector<std::string>> InPaintWildfireSpreadTS(Board& x, bool fit
         
         //∂^2f/∂(x100)^2 ∂^2f/∂(x101)^2 +
         x.derivePostfix(0, x.pieces[0].size()-1, "x100", x.pieces[0], grasp);
-        temp = x.derivat;
-        x.derivePostfix(0, temp.size()-1, "x100", temp, grasp);
+        dfdx100 = x.derivat;
+        x.derivePostfix(0, dfdx100.size()-1, "x100", dfdx100, grasp);
         for (const std::string& i: x.derivat) // ∂^2f/∂(x100)^2
         {
             results[1].push_back(i);
         }
         x.derivePostfix(0, x.pieces[0].size()-1, "x101", x.pieces[0], grasp);
-        temp = x.derivat;
-        x.derivePostfix(0, temp.size()-1, "x101", temp, grasp);
+        dfdx101 = x.derivat;
+        x.derivePostfix(0, dfdx101.size()-1, "x101", dfdx101, grasp);
         for (const std::string& i: x.derivat) // ∂^2f/∂(x101)^2
         {
             results[1].push_back(i);
         }
         results[1].push_back("+"); // +
+        // x30 x24 s * * x30 tau + /
+        if (!prefactors_computed)
+        {
+            x.subs_dict["prefac"] = x.expression_evaluator(x.params, std::vector<std::string>{"x30", "x24", s, "*", "*", "x30", tau, "+", "/"});
+        }
+        // prefac p 1 p - * * x28 ∂f/∂(x100) * x29 ∂f/∂(x101) * + *
+        results[2].push_back("prefac"); // prefac
+        if (fit)
+        {
+            // 1 1 f ~ exp - / 1 1 1 f ~ exp - / - *
+            results[2].push_back("1"); // 1
+            results[2].push_back("1"); // 1
+            for (const std::string& i: x.pieces[0]) // f
+            {
+                results[2].push_back(i);
+            }
+            results[2].push_back("~"); // ~
+            results[2].push_back("exp"); // exp
+            results[2].push_back("-"); // -
+            results[2].push_back("/"); // /
+            results[2].push_back("1"); // 1
+            results[2].push_back("1"); // 1
+            results[2].push_back("1"); // 1
+            for (const std::string& i: x.pieces[0]) // f
+            {
+                results[2].push_back(i);
+            }
+            results[2].push_back("~"); // ~
+            results[2].push_back("exp"); // exp
+            results[2].push_back("-"); // -
+            results[2].push_back("/"); // /
+            results[2].push_back("-"); // -
+            results[2].push_back("*"); // *
+        }
+        else
+        {
+            // p 1 p - *
+            
+            // 1 1 f ~ exp - /
+            temp = {"1", "1"}; // 1 1
+            for (const std::string& i: x.pieces[0]) // f
+            {
+                temp.push_back(i);
+            }
+            temp.push_back("~"); // ~
+            temp.push_back("exp"); // exp
+            temp.push_back("-"); // -
+            temp.push_back("/"); // /
+            
+            x.subs_dict["p"] = x.expression_evaluator(x.params, temp);
+            results[2].push_back("p"); // p
+            results[2].push_back("1"); // 1
+            results[2].push_back("p"); // p
+            results[2].push_back("-"); // -
+            results[2].push_back("*"); // *
+        }
+        // * x28 ∂f/∂(x100) * x29 ∂f/∂(x101) * + *
+        results[2].push_back("*"); // *
+        results[2].push_back("x28"); // x28
+        for (const std::string& i: dfdx100) // ∂f/∂(x100)
+        {
+            results[2].push_back(i);
+        }
+        results[2].push_back("*"); // *
+        results[2].push_back("x29"); // x29
+        for (const std::string& i: dfdx101) // ∂f/∂(x101)
+        {
+            results[2].push_back(i);
+        }
+        results[2].push_back("*"); // *
+        results[2].push_back("+"); // +
+        results[2].push_back("*"); // *
     }
+    prefactors_computed = true;
     return results;
 }
 
 /*
- Infix: w1*x26*log(eps + 1/(1-exp(-f))) + w0*(1-x26)*log(eps+1-1/(1-exp(-f)))
- Prefix: + * * w1 x26 log + / 1 - 1 exp ~ f eps * * w0 - 1 x26 log + - 1 / 1 - 1 exp ~ f eps
- Postfix: w1 x26 * 1 1 f ~ exp - / eps + log * w0 1 x26 - * 1 1 1 f ~ exp - / - eps + log * +
+ Infix: w1*x26*log(eps + 1/(1-exp(-f))) + w0*(1-x26)*log(eps+1-1/(1-exp(-f))), ∂^2f/∂(x23)^2 + ∂^2f/∂(x24)^2, p*(1-p)*(∂f/∂(x25) + u_x*∂f/∂(x23) + u_y*∂f/∂(x24))
+ Prefix: + * * w1 x26 log + / 1 - 1 exp ~ f eps * * w0 - 1 x26 log + - 1 / 1 - 1 exp ~ f eps, + ∂^2f/∂(x23)^2 ∂^2f/∂(x24)^2, * * p - 1 p + ∂f/∂(x25) + * u_x ∂f/∂(x23) * u_y ∂f/∂(x24)
+ Postfix: w1 x26 * 1 1 f ~ exp - / eps + log * w0 1 x26 - * 1 1 1 f ~ exp - / - eps + log * +, ∂^2f/∂(x23)^2 ∂^2f/∂(x24)^2 +, p 1 p - * ∂f/∂(x25) u_x ∂f/∂(x23) * u_y ∂f/∂(x24) * + + *
  
  // {x0: VIIRS_band_M11, x1: VIIRS_band_I2, x2: VIIRS_band_I1, x3: NDVI, x4: EVI2, x5: total_precipitation, x6: wind_speed, x7: wind_direction, x8: min_temperature, x9: max_temperature, x10: energy_release_component, x11: specific_humidity, x12: slope, x13: aspect, x14: elevation, x15: palmer_drought_severity_index, x16: landcover_class, x17: forecast_total_precipitation, x18: forecast_wind_speed, x19: forecast_wind_direction, x20: forecast_temperature, x21: forecast_specific_humidity, x22: active_fire, x23: row, x24: col, x25: date, x26: next_day_active_fire_bin}
  // Want to predict x26 given {x0, x1, ..., x25}
@@ -6739,8 +6906,12 @@ std::vector<std::vector<std::string>> InPaintWildfireSpreadTS(Board& x, bool fit
 std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
 {
     std::vector<std::vector<std::string>> results(x.num_diff_eqns); //For now, simply comparing 𝛔(f(\vec{x})) with x
-    assert(x.num_diff_eqns == 2);
-    thread_local std::vector<std::string> p_expr, temp;
+    assert(x.num_diff_eqns == 3);
+    for (std::vector<std::string>& res: results)
+    {
+        res.reserve(100);
+    }
+    thread_local std::vector<std::string> p_expr, dfdx23, dfdx24;
     thread_local std::vector<int> grasp;
     thread_local bool prefactors_computed = false;
     constexpr const char* eps = "1e-12";
@@ -6774,19 +6945,28 @@ std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
          ```
      With Laplacian Smoothing:
         Training:
-            Best score = 7.25378e-08, SNE = 1.37859e+07
-            Squared-norm error for each equation: 1.37859e+07 0
-            Best expression = ((58 + ((((2.520000 * x2) + 5470.0596345781605) + (3303.5714033364225 ^ (1.320645006282e+07 - (ln(x17) * (x21 - -843.000000))))) + (x8 / (x17 * 0.0007869063691834137)))) * (((((x18 ^ (20200128.000000 - (x7 ^ x7))) + ((x24 + (x15 ^ 16.000000)) + (58.000000 - (x18 / x13)))) + ((0.002105 ^ (-459.704071 - (359.704071 - x2))) + (58.000000 * (x7 + (0.006210 + x12))))) * ((((~(x22) + -88.959518) / (88.856491 * (x19 ^ 2))) + ((x3 / -2.0200127e+07) + -1)) * (((x22 / 1.277745e+07) + (sech(x19) + x11)) * ((0.12004407415282907 + (0.006210 + x16)) + ((x22 + 39.3125) ^ (0.000770 + x20)))))) - ((((-2.225653 + (x20 / (2 / x6))) + ((0.051731 / (x20 / x6)) + (x20 + x23))) - (((x5 * (x0 + x22)) + ((0.002105 / x11) + 1.5707963267948966)) + (((9736.000000 ^ x15) + x17) + (4.00621 + x24)))) * (((((x20 * 360.000000) + -15858.185171) + -126.45600900000001) / ((1.566061309101424 + (267.200012 ^ x11)) + ((8.000000 - x18) + -781.0930331488324))) + (((x10 * (x16 / x14)) + 1.9087338116110355) + (36.321228 + ((0.000770 + x18) + -73.0701029874863)))))))
-            Best expression (original format) = 58 2.520000 x2 * 5470.0596345781605 + 3303.5714033364225 1.320645006282e+07 x17 ln x21 -843.000000 - * - ^ + x8 x17 0.0007869063691834137 * / + + x18 20200128.000000 x7 x7 ^ - ^ x24 x15 16.000000 ^ + 58.000000 x18 x13 / - + + 0.002105 -459.704071 359.704071 x2 - - ^ 58.000000 x7 0.006210 x12 + + * + + x22 ~ -88.959518 + 88.856491 x19 2 ^ * / x3 -2.0200127e+07 / -1 + + x22 1.277745e+07 / x19 sech x11 + + 0.12004407415282907 0.006210 x16 + + x22 39.3125 + 0.000770 x20 + ^ + * * * -2.225653 x20 2 x6 / / + 0.051731 x20 x6 / / x20 x23 + + + x5 x0 x22 + * 0.002105 x11 / 1.5707963267948966 + + 9736.000000 x15 ^ x17 + 4.00621 x24 + + + - x20 360.000000 * -15858.185171 + -126.45600900000001 + 1.566061309101424 267.200012 x11 ^ + 8.000000 x18 - -781.0930331488324 + + / x10 x16 x14 / * 1.9087338116110355 + 36.321228 0.000770 x18 + -73.0701029874863 + + + + * - *
+            Best score = 8.21789e-08, SNE = 1.21686e+07
+            Squared-norm error for each equation: 1.21686e+07 0
+            Best expression = ((58 + ((((2.520000 * x2) + 5470.0596345781605) + (3303.5714033364225 ^ (1.320645006282e+07 - (ln(x17) * (x21 - -843.000000))))) + (x8 / (x17 * 0.0007869063691834137)))) * (((((x18 ^ (20200128.000000 - (x7 ^ x7))) + ((x24 + (x15 ^ 16.000000)) + (x16 + (15893.000000 ^ x20)))) + ((0.002105 ^ (-459.704071 - (359.704071 - x2))) + (58.000000 * (x7 + (0.006210 + x12))))) * ((((~(x22) + -88.959518) / (88.856491 * (x8 - 8.000000))) + ((x3 / -2.0200127e+07) + -1)) * (((x22 / (3316.000000 ^ x19)) + (sech(x19) + x11)) * ((0.12004407415282907 + (x14 / x8)) + ((x22 + 39.3125) ^ (0.000770 + x20)))))) - ((((-2.225653 + (x20 / 0.2068956670668029)) + ((0.051731 / (x20 / x6)) + (x20 + x23))) - (((x5 * (x0 + x22)) + ((0.002105 / x11) + 1.5707963267948966)) + (((256.500000 ^ x15) + x17) + (4.00621 + x24)))) * (((((x20 * 360.000000) + -15858.185171) + (360.000000 + (-2.640000 * x7))) / ((8.051731 + ln(x6)) + ((8.000000 - x18) + -781.0930331488324))) + (((x10 * (x16 / x14)) + ((x20 / x15) + 1.7112288116110355)) + (((58.000000 / x1) + 36.310283) + ((0.000770 + x18) + -73.0701029874863)))))))
+            Best expression (original format) = 58 2.520000 x2 * 5470.0596345781605 + 3303.5714033364225 1.320645006282e+07 x17 ln x21 -843.000000 - * - ^ + x8 x17 0.0007869063691834137 * / + + x18 20200128.000000 x7 x7 ^ - ^ x24 x15 16.000000 ^ + x16 15893.000000 x20 ^ + + + 0.002105 -459.704071 359.704071 x2 - - ^ 58.000000 x7 0.006210 x12 + + * + + x22 ~ -88.959518 + 88.856491 x8 8.000000 - * / x3 -2.0200127e+07 / -1 + + x22 3316.000000 x19 ^ / x19 sech x11 + + 0.12004407415282907 x14 x8 / + x22 39.3125 + 0.000770 x20 + ^ + * * * -2.225653 x20 0.2068956670668029 / + 0.051731 x20 x6 / / x20 x23 + + + x5 x0 x22 + * 0.002105 x11 / 1.5707963267948966 + + 256.500000 x15 ^ x17 + 4.00621 x24 + + + - x20 360.000000 * -15858.185171 + 360.000000 -2.640000 x7 * + + 8.051731 x6 ln + 8.000000 x18 - -781.0930331488324 + + / x10 x16 x14 / * x20 x15 / 1.7112288116110355 + + 58.000000 x1 / 36.310283 + 0.000770 x18 + -73.0701029874863 + + + + * - *
             Best diff result = (term1 + term2), 0
             Best expression (original format) = term1 term2 +, 0
         Validation:
             Best score = 7.8752e-12, SNE = 1.26981e+11
             Squared-norm error for each equation: 1.26981e+11 0
-            Best expression = ((58 + ((((2.520000 * x2) + 5470.0596345781605) + (3303.5714033364225 ^ (1.320645006282e+07 - (ln(x17) * (x21 - -843.000000))))) + (x8 / (x17 * 0.0007869063691834137)))) * (((((x18 ^ (20200128.000000 - (9.666708 ^ x7))) + ((x24 + (x15 ^ 16.000000)) + (58.000000 - (x18 / x13)))) + ((0.002105 ^ (-362.929724 - (359.704071 - x2))) + (58.000000 * (x7 + (0.006210 + x12))))) * ((((~(x22) + -88.959518) / (88.856491 * (x19 ^ 2))) + ((x3 / -2.0200127e+07) + -1)) * (((x22 / 1.277745e+07) + (sech(x19) + x11)) * ((0.12004407415282907 + (0.006210 + x16)) + ((x22 + 39.3125) ^ (0.000770 + x20)))))) - ((((-2.225653 + (x20 / (2 / x6))) + ((0.051731 / (x20 / x6)) + (x20 + x23))) - (((x5 * (x0 + x22)) + ((0.002105 / x11) + 1.5707963267948966)) + (((9736.000000 ^ x15) + x17) + (4.00621 + x24)))) * (((((x20 * 360.000000) + -15858.185171) + -126.45600900000001) / ((1.566061309101424 + (267.200012 ^ x11)) + ((8.000000 - x18) + -781.0930331488324))) + (((x10 * (x16 / x14)) + 1.9087338116110355) + (36.321228 + ((0.000770 + x18) + -73.0701029874863)))))))
-            Best expression (original format) = 58 2.520000 x2 * 5470.0596345781605 + 3303.5714033364225 1.320645006282e+07 x17 ln x21 -843.000000 - * - ^ + x8 x17 0.0007869063691834137 * / + + x18 20200128.000000 9.666708 x7 ^ - ^ x24 x15 16.000000 ^ + 58.000000 x18 x13 / - + + 0.002105 -362.929724 359.704071 x2 - - ^ 58.000000 x7 0.006210 x12 + + * + + x22 ~ -88.959518 + 88.856491 x19 2 ^ * / x3 -2.0200127e+07 / -1 + + x22 1.277745e+07 / x19 sech x11 + + 0.12004407415282907 0.006210 x16 + + x22 39.3125 + 0.000770 x20 + ^ + * * * -2.225653 x20 2 x6 / / + 0.051731 x20 x6 / / x20 x23 + + + x5 x0 x22 + * 0.002105 x11 / 1.5707963267948966 + + 9736.000000 x15 ^ x17 + 4.00621 x24 + + + - x20 360.000000 * -15858.185171 + -126.45600900000001 + 1.566061309101424 267.200012 x11 ^ + 8.000000 x18 - -781.0930331488324 + + / x10 x16 x14 / * 1.9087338116110355 + 36.321228 0.000770 x18 + -73.0701029874863 + + + + * - *
+            Best expression = ((58 + ((((2.520000 * x2) + 5470.0596345781605) + (3303.5714033364225 ^ (1.320645006282e+07 - (ln(x17) * (x21 - -843.000000))))) + (x8 / (x17 * 0.0007869063691834137)))) * (((((x18 ^ (20200128.000000 - (x7 ^ x7))) + ((x24 + (x15 ^ 16.000000)) + (x16 + (15893.000000 ^ x20)))) + ((0.002105 ^ (-459.704071 - (359.704071 - x2))) + (58.000000 * (x7 + (0.006210 + x12))))) * ((((~(x22) + -88.959518) / (88.856491 * (x8 - 8.000000))) + ((x3 / -2.0200127e+07) + -1)) * (((x22 / (3316.000000 ^ x19)) + (sech(x19) + x11)) * ((0.12004407415282907 + (x14 / x8)) + ((x22 + 39.3125) ^ (0.000770 + x20)))))) - ((((-2.225653 + (x20 / 0.2068956670668029)) + ((0.051731 / (x20 / x6)) + (x20 + x23))) - (((x5 * (x0 + x22)) + ((0.002105 / x11) + 1.5707963267948966)) + (((256.500000 ^ x15) + x17) + (4.00621 + x24)))) * (((((x20 * 360.000000) + -15858.185171) + (360.000000 + (-2.640000 * x7))) / ((8.051731 + ln(x6)) + ((8.000000 - x18) + -781.0930331488324))) + (((x10 * (x16 / x14)) + ((x20 / x15) + 1.7112288116110355)) + (((58.000000 / x1) + 36.310283) + ((0.000770 + x18) + -73.0701029874863)))))))
+            Best expression (original format) = 58 2.520000 x2 * 5470.0596345781605 + 3303.5714033364225 1.320645006282e+07 x17 ln x21 -843.000000 - * - ^ + x8 x17 0.0007869063691834137 * / + + x18 20200128.000000 x7 x7 ^ - ^ x24 x15 16.000000 ^ + x16 15893.000000 x20 ^ + + + 0.002105 -459.704071 359.704071 x2 - - ^ 58.000000 x7 0.006210 x12 + + * + + x22 ~ -88.959518 + 88.856491 x8 8.000000 - * / x3 -2.0200127e+07 / -1 + + x22 3316.000000 x19 ^ / x19 sech x11 + + 0.12004407415282907 x14 x8 / + x22 39.3125 + 0.000770 x20 + ^ + * * * -2.225653 x20 0.2068956670668029 / + 0.051731 x20 x6 / / x20 x23 + + + x5 x0 x22 + * 0.002105 x11 / 1.5707963267948966 + + 256.500000 x15 ^ x17 + 4.00621 x24 + + + - x20 360.000000 * -15858.185171 + 360.000000 -2.640000 x7 * + + 8.051731 x6 ln + 8.000000 x18 - -781.0930331488324 + + / x10 x16 x14 / * x20 x15 / 1.7112288116110355 + + 58.000000 x1 / 36.310283 + 0.000770 x18 + -73.0701029874863 + + + + * - *
             Best diff result = (term1 + term2), 0
             Best expression (original format) = term1 term2 +, 0
+     With Laplacian Smoothing and Wind-Alignment:
+        Training:
+            Best score = 4.88925e-09, SNE = 2.04531e+08
+            Squared-norm error for each equation: 2.04531e+08 7.59543e-28 2.98519e-314
+            Best expression = (((((~(x9) - 8.293634358890241) + 9.383116515926606) - (15893 / x15)) + (x21 ^ (tanh(x16) + (tanh(x17) ^ (x21 ^ (-1405.000000 - (x6 * 20200101.000000))))))) * ((((279.200012 / (x13 + (58.000000 * x2))) + (-0.9081765689798138 * (25.400000 * (x8 / 2118.000000)))) + (((x1 - x0) + ((x0 ^ x15) + -279.200012)) + (x16 / -88.959518))) + ((((-88.959518 * (1.000000 / (88.856491 / x2))) + ((x8 - 2118.000000) + x19)) * x5) - (((x17 ^ (x20 / exp(x13))) + (279.200012 + x24)) / ~((x25 / (x23 - 9736)))))))
+            Best expression (original format) = x9 ~ 8.293634358890241 - 9.383116515926606 + 15893 x15 / - x21 x16 tanh x17 tanh x21 -1405.000000 x6 20200101.000000 * - ^ ^ + ^ + 279.200012 x13 58.000000 x2 * + / -0.9081765689798138 25.400000 x8 2118.000000 / * * + x1 x0 - x0 x15 ^ -279.200012 + + x16 -88.959518 / + + -88.959518 1.000000 88.856491 x2 / / * x8 2118.000000 - x19 + + x5 * x17 x20 x13 exp / ^ 279.200012 x24 + + x25 x23 9736 - / ~ / - + *
+            Best diff result = (term1 + term2), (((((~(x9) - 8.293634358890241) + 9.383116515926606) - (15893 / x15)) + (x21 ^ (tanh(x16) + (tanh(x17) ^ (x21 ^ (-1405.000000 - (x6 * 20200101.000000))))))) * ~((((~((((x17 ^ (x20 / exp(x13))) + (279.200012 + x24)) * ~((~((~(x25) * ((x23 - 9736) + (x23 - 9736)))) / (((x23 - 9736) * (x23 - 9736)) * ((x23 - 9736) * (x23 - 9736))))))) * (~((x25 / (x23 - 9736))) * ~((x25 / (x23 - 9736))))) - (~((((x17 ^ (x20 / exp(x13))) + (279.200012 + x24)) * ~((~(x25) / ((x23 - 9736) * (x23 - 9736)))))) * ((~((x25 / (x23 - 9736))) * ~((~(x25) / ((x23 - 9736) * (x23 - 9736))))) + (~((~(x25) / ((x23 - 9736) * (x23 - 9736)))) * ~((x25 / (x23 - 9736))))))) / ((~((x25 / (x23 - 9736))) * ~((x25 / (x23 - 9736)))) * (~((x25 / (x23 - 9736))) * ~((x25 / (x23 - 9736)))))))), ((p * (1 - p)) * ((((((~(x9) - 8.293634358890241) + 9.383116515926606) - (15893 / x15)) + (x21 ^ (tanh(x16) + (tanh(x17) ^ (x21 ^ (-1405.000000 - (x6 * 20200101.000000))))))) * ~((~((((x17 ^ (x20 / exp(x13))) + (279.200012 + x24)) * ~(((x23 - 9736) / ((x23 - 9736) * (x23 - 9736)))))) / (~((x25 / (x23 - 9736))) * ~((x25 / (x23 - 9736))))))) + ((u_x * (((((~(x9) - 8.293634358890241) + 9.383116515926606) - (15893 / x15)) + (x21 ^ (tanh(x16) + (tanh(x17) ^ (x21 ^ (-1405.000000 - (x6 * 20200101.000000))))))) * ~((~((((x17 ^ (x20 / exp(x13))) + (279.200012 + x24)) * ~((~(x25) / ((x23 - 9736) * (x23 - 9736)))))) / (~((x25 / (x23 - 9736))) * ~((x25 / (x23 - 9736)))))))) + (u_y * (((((~(x9) - 8.293634358890241) + 9.383116515926606) - (15893 / x15)) + (x21 ^ (tanh(x16) + (tanh(x17) ^ (x21 ^ (-1405.000000 - (x6 * 20200101.000000))))))) * ~((~((x25 / (x23 - 9736))) / (~((x25 / (x23 - 9736))) * ~((x25 / (x23 - 9736)))))))))))
+            Best expression (original format) = term1 term2 +, x9 ~ 8.293634358890241 - 9.383116515926606 + 15893 x15 / - x21 x16 tanh x17 tanh x21 -1405.000000 x6 20200101.000000 * - ^ ^ + ^ + x17 x20 x13 exp / ^ 279.200012 x24 + + x25 ~ x23 9736 - x23 9736 - + * ~ x23 9736 - x23 9736 - * x23 9736 - x23 9736 - * * / ~ * ~ x25 x23 9736 - / ~ x25 x23 9736 - / ~ * * x17 x20 x13 exp / ^ 279.200012 x24 + + x25 ~ x23 9736 - x23 9736 - * / ~ * ~ x25 x23 9736 - / ~ x25 ~ x23 9736 - x23 9736 - * / ~ * x25 ~ x23 9736 - x23 9736 - * / ~ x25 x23 9736 - / ~ * + * - x25 x23 9736 - / ~ x25 x23 9736 - / ~ * x25 x23 9736 - / ~ x25 x23 9736 - / ~ * * / ~ *, p 1 p - * x9 ~ 8.293634358890241 - 9.383116515926606 + 15893 x15 / - x21 x16 tanh x17 tanh x21 -1405.000000 x6 20200101.000000 * - ^ ^ + ^ + x17 x20 x13 exp / ^ 279.200012 x24 + + x23 9736 - x23 9736 - x23 9736 - * / ~ * ~ x25 x23 9736 - / ~ x25 x23 9736 - / ~ * / ~ * u_x x9 ~ 8.293634358890241 - 9.383116515926606 + 15893 x15 / - x21 x16 tanh x17 tanh x21 -1405.000000 x6 20200101.000000 * - ^ ^ + ^ + x17 x20 x13 exp / ^ 279.200012 x24 + + x25 ~ x23 9736 - x23 9736 - * / ~ * ~ x25 x23 9736 - / ~ x25 x23 9736 - / ~ * / ~ * * u_y x9 ~ 8.293634358890241 - 9.383116515926606 + 15893 x15 / - x21 x16 tanh x17 tanh x21 -1405.000000 x6 20200101.000000 * - ^ ^ + ^ + x25 x23 9736 - / ~ x25 x23 9736 - / ~ x25 x23 9736 - / ~ * / ~ * * + + *
+        Validation
         ```
         from sympy import symbols, cos, sin, tanh, sech, acos, log, sympify, latex, multiline_latex, Float
         import re
@@ -6794,7 +6974,7 @@ std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
         align_rep = lambda x: x.replace('align*','align').replace(r'\\',r'\nonumber \\').replace(r"\end{align}", r"\label{eq:best_sr_eq_1}""\n"r"\end{align}")
         round_floats = lambda expr, ndigits: expr.xreplace({f: Float(round(float(f), ndigits)) for f in expr.atoms(Float)})
         f, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17, x18, x19, x20, x21, x22, x23, x24, x25 = symbols('f x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25')
-        func = '(((~(x7) - (292.600006 - (x20 + (x7 * (x15 + (360.000000 * x5)))))) + ((5470.0596345781605 + (3303.5714033364225 ^ (2 - (ln(x17) * (x21 - -843.000000))))) + (((-100 / exp(x20)) + ((16 / (x4 / x14)) + 10000)) + (x17 * (2.0200101e+07 / (3316 ^ ln(x18))))))) * ((11891.379148 * (-0.9994732316373803 * (x11 * (x16 + (39.3125 ^ x20))))) - (((((-0.7568024953079283 + (x15 - 0.004735)) + -0.4327131112072696) + (-0.31194026074020714 + x23)) - (((x5 * (x0 + x22)) + 1.0517079302302543) + ((1 + (x17 - 1.000000)) + (4.00621 + x24)))) * (((-15854.959518 + (-30.856491000000005 + (-1405.000000 / x8))) / -782.0930331488324) + (1.6594978116110355 + (36.305548 + (x18 + -73.07483798748629)))))))'
+        func = '((58 + ((((2.520000 * x2) + 5470.0596345781605) + (3303.5714033364225 ^ (1.320645006282e+07 - (ln(x17) * (x21 - -843.000000))))) + (x8 / (x17 * 0.0007869063691834137)))) * (((((x18 ^ (20200128.000000 - (x7 ^ x7))) + ((x24 + (x15 ^ 16.000000)) + (x16 + (15893.000000 ^ x20)))) + ((0.002105 ^ (-459.704071 - (359.704071 - x2))) + (58.000000 * (x7 + (0.006210 + x12))))) * ((((~(x22) + -88.959518) / (88.856491 * (x8 - 8.000000))) + ((x3 / -2.0200127e+07) + -1)) * (((x22 / (3316.000000 ^ x19)) + (sech(x19) + x11)) * ((0.12004407415282907 + (x14 / x8)) + ((x22 + 39.3125) ^ (0.000770 + x20)))))) - ((((-2.225653 + (x20 / 0.2068956670668029)) + ((0.051731 / (x20 / x6)) + (x20 + x23))) - (((x5 * (x0 + x22)) + ((0.002105 / x11) + 1.5707963267948966)) + (((256.500000 ^ x15) + x17) + (4.00621 + x24)))) * (((((x20 * 360.000000) + -15858.185171) + (360.000000 + (-2.640000 * x7))) / ((8.051731 + ln(x6)) + ((8.000000 - x18) + -781.0930331488324))) + (((x10 * (x16 / x14)) + ((x20 / x15) + 1.7112288116110355)) + (((58.000000 / x1) + 36.310283) + ((0.000770 + x18) + -73.0701029874863)))))))'
         func = func.replace("^","**").replace("~","-")
         func_sym = sympify(func)
         func_sym_r = round_floats(func_sym, 3)
@@ -6806,8 +6986,10 @@ std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
     
     p_expr.clear();
     p_expr.reserve(100);
-    temp.clear();
-    temp.reserve(100);
+    dfdx23.clear();
+    dfdx23.reserve(100);
+    dfdx24.clear();
+    dfdx24.reserve(100);
     grasp.clear();
     grasp.reserve(100);
     for (decltype(results.size()) i = 0; i < results.size(); i++)
@@ -6824,6 +7006,9 @@ std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
             //prefac_term2 = w0 * (1.0 - x26)
             x.subs_dict["prefac_term_1"] = x.expression_evaluator(x.params, std::vector<std::string>{"*", w1, "x26"}); //* w1 x26
             x.subs_dict["prefac_term_2"] = x.expression_evaluator(x.params, std::vector<std::string>{"*", w0, "-", "1", "x26"}); //* w0 - 1 x26
+            x.subs_dict["theta"] = deg2rad(Board::data["x7"]);
+            x.subs_dict["u_x"] = x.expression_evaluator(x.params, std::vector<std::string>{"*", "x6", "cos", "theta"});
+            x.subs_dict["u_y"] = x.expression_evaluator(x.params, std::vector<std::string>{"*", "x6", "sin", "theta"});
         }
         if (fit)
         {
@@ -6870,18 +7055,76 @@ std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
         //+ ∂^2f/∂(x23)^2 ∂^2f/∂(x24)^2
         results[1] = {"+"};
         x.derivePrefix(0, x.pieces[0].size()-1, "x23", x.pieces[0], grasp);
-        temp = x.derivat;
-        x.derivePrefix(0, temp.size()-1, "x23", temp, grasp);
+        dfdx23 = x.derivat;
+        x.derivePrefix(0, dfdx23.size()-1, "x23", dfdx23, grasp);
         for (const std::string& i: x.derivat) //∂^2f/∂(x23)^2
         {
             results[1].push_back(i);
         }
         x.derivePrefix(0, x.pieces[0].size()-1, "x24", x.pieces[0], grasp);
-        temp = x.derivat;
-        x.derivePrefix(0, temp.size()-1, "x24", temp, grasp);
+        dfdx24 = x.derivat;
+        x.derivePrefix(0, dfdx24.size()-1, "x24", dfdx24, grasp);
         for (const std::string& i: x.derivat) //∂^2f/∂(x24)^2
         {
             results[1].push_back(i);
+        }
+        //* * p - 1 p + ∂f/∂(x25) + * u_x ∂f/∂(x23) * u_y ∂f/∂(x24)
+        results[2].push_back("*"); // *
+        if (fit)
+        {
+            //* / 1 - 1 exp ~ f - 1 / 1 - 1 exp ~ f
+            results[2].push_back("*"); // *
+            results[2].push_back("/"); // /
+            results[2].push_back("1"); // 1
+            results[2].push_back("-"); // -
+            results[2].push_back("1"); // 1
+            results[2].push_back("exp"); // exp
+            results[2].push_back("~"); // ~
+            for (const std::string& i: x.pieces[0]) // f
+            {
+                results[2].push_back(i);
+            }
+            results[2].push_back("-"); // -
+            results[2].push_back("1"); // 1
+            results[2].push_back("/"); // /
+            results[2].push_back("1"); // 1
+            results[2].push_back("-"); // -
+            results[2].push_back("1"); // 1
+            results[2].push_back("exp"); // exp
+            results[2].push_back("~"); // ~
+            for (const std::string& i: x.pieces[0]) // f
+            {
+                results[2].push_back(i);
+            }
+        }
+        else
+        {
+            //* p - 1 p
+            results[2].push_back("*"); // *
+            results[2].push_back("p"); // p
+            results[2].push_back("-"); // -
+            results[2].push_back("1"); // 1
+            results[2].push_back("p"); // p
+        }
+        //+ ∂f/∂(x25) + * u_x ∂f/∂(x23) * u_y ∂f/∂(x24)
+        results[2].push_back("+"); // +
+        x.derivePrefix(0, x.pieces[0].size()-1, "x25", x.pieces[0], grasp);
+        for (const std::string& i: x.derivat) //∂^2f/∂(x25)
+        {
+            results[2].push_back(i);
+        }
+        results[2].push_back("+"); // +
+        results[2].push_back("*"); // *
+        results[2].push_back("u_x"); // u_x
+        for (const std::string& i: dfdx23) //∂^2f/∂(x23)
+        {
+            results[2].push_back(i);
+        }
+        results[2].push_back("*"); // *
+        results[2].push_back("u_y"); // u_y
+        for (const std::string& i: dfdx24) //∂^2f/∂(x24)
+        {
+            results[2].push_back(i);
         }
     }
     else if (x.expression_type == "postfix")
@@ -6893,6 +7136,9 @@ std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
             //prefac_term2 = w0 * (1.0 - x26)
             x.subs_dict["prefac_term_1"] = x.expression_evaluator(x.params, std::vector<std::string>{w1, "x26", "*"}); //w1 x26 *
             x.subs_dict["prefac_term_2"] = x.expression_evaluator(x.params, std::vector<std::string>{w0, "1", "x26", "-", "*"}); //w0 1 x26 - *
+            x.subs_dict["theta"] = deg2rad(Board::data["x7"]);
+            x.subs_dict["u_x"] = x.expression_evaluator(x.params, std::vector<std::string>{"x6", "theta", "cos", "*"});
+            x.subs_dict["u_y"] = x.expression_evaluator(x.params, std::vector<std::string>{"x6", "theta", "sin", "*"});
         }
         if (fit)
         {
@@ -6950,20 +7196,78 @@ std::vector<std::vector<std::string>> WildfireSpreadTS(Board& x, bool fit)
         }
         //∂^2f/∂(x23)^2 ∂^2f/∂(x24)^2 +
         x.derivePostfix(0, x.pieces[0].size()-1, "x23", x.pieces[0], grasp);
-        temp = x.derivat;
-        x.derivePostfix(0, temp.size()-1, "x23", temp, grasp);
+        dfdx23 = x.derivat;
+        x.derivePostfix(0, dfdx23.size()-1, "x23", dfdx23, grasp);
         for (const std::string& i: x.derivat) // ∂^2f/∂(x23)^2
         {
             results[1].push_back(i);
         }
         x.derivePostfix(0, x.pieces[0].size()-1, "x24", x.pieces[0], grasp);
-        temp = x.derivat;
-        x.derivePostfix(0, temp.size()-1, "x24", temp, grasp);
+        dfdx24 = x.derivat;
+        x.derivePostfix(0, dfdx24.size()-1, "x24", dfdx24, grasp);
         for (const std::string& i: x.derivat) // ∂^2f/∂(x24)^2
         {
             results[1].push_back(i);
         }
         results[1].push_back("+"); // +
+        //p 1 p - * ∂f/∂(x25) u_x ∂f/∂(x23) * u_y ∂f/∂(x24) * + + *
+        if (fit)
+        {
+            //1 1 f ~ exp - / 1 1 1 f ~ exp - / - *
+            results[2].push_back("1"); // 1
+            results[2].push_back("1"); // 1
+            for (const std::string& i: x.pieces[0]) // f
+            {
+                results[2].push_back(i);
+            }
+            results[2].push_back("~"); // ~
+            results[2].push_back("exp"); // exp
+            results[2].push_back("-"); // -
+            results[2].push_back("/"); // /
+            results[2].push_back("1"); // 1
+            results[2].push_back("1"); // 1
+            results[2].push_back("1"); // 1
+            for (const std::string& i: x.pieces[0]) // f
+            {
+                results[2].push_back(i);
+            }
+            results[2].push_back("~"); // ~
+            results[2].push_back("exp"); // exp
+            results[2].push_back("-"); // -
+            results[2].push_back("/"); // /
+            results[2].push_back("-"); // -
+            results[2].push_back("*"); // *
+        }
+        else
+        {
+            //p 1 p - *
+            results[2].push_back("p");
+            results[2].push_back("1");
+            results[2].push_back("p");
+            results[2].push_back("-");
+            results[2].push_back("*");
+        }
+        //∂f/∂(x25) u_x ∂f/∂(x23) * u_y ∂f/∂(x24) * + + *
+        x.derivePostfix(0, x.pieces[0].size()-1, "x25", x.pieces[0], grasp);
+        for (const std::string& i: x.derivat) // ∂f/∂(x25)
+        {
+            results[2].push_back(i);
+        }
+        results[2].push_back("u_x");
+        for (const std::string& i: dfdx23) // ∂f/∂(x23)
+        {
+            results[2].push_back(i);
+        }
+        results[2].push_back("*"); // *
+        results[2].push_back("u_y"); // u_y
+        for (const std::string& i: dfdx24) // ∂f/∂(x24)
+        {
+            results[2].push_back(i);
+        }
+        results[2].push_back("*"); // *
+        results[2].push_back("+"); // +
+        results[2].push_back("+"); // +
+        results[2].push_back("*"); // *
     }
     prefactors_computed = true;
     return results;
@@ -10069,7 +10373,7 @@ namespace ExampleProblems
     void WildfireSpreadTSTest(int random_seed, const char* algorithm, double time)
     {
         double threshold = 0.0;
-        bool validation = true;
+        bool validation = false;
         Eigen::MatrixXd data;
         if (validation)
         {
@@ -10085,7 +10389,7 @@ namespace ExampleProblems
         if (strcmp(algorithm, "RandomSearch") == 0)
         {
             RandomSearch(WildfireSpreadTS /*differential equation to solve*/,
-                2 /*number of equations in differential equation system*/,
+                3 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
                 std::vector<int>{6} /*fixed depths of generated solution*/,
                 "prefix" /*expression representation*/,
@@ -10107,7 +10411,7 @@ namespace ExampleProblems
         else
         {
             SimulatedAnnealing(WildfireSpreadTS /*differential equation to solve*/,
-                2 /*number of equations in differential equation system*/,
+                3 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
                 std::vector<int>{8} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
@@ -10124,9 +10428,9 @@ namespace ExampleProblems
                 false, /*Whether to simplify the ORIGINAL expression on every iteration (perturbation) of the seed expression vector; if false a copy is maintained so that simplification on this->pieces can still happen*/
                 1 /*number of data columns that constitute labels and not independent variables/features*/,
                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
-                {{"x23", "x24"}} /*custom features that the SR-found equations are required to contain*/,
+                {{"x23", "x24", "x25"}} /*custom features that the SR-found equations are required to contain*/,
                 "",// "BestNextDayFire.txt" /*filename to save current best expression found (instead of outputting them to standard out)*/,
-                {split("58 2.520000 x2 * 5470.0596345781605 + 3303.5714033364225 1.320645006282e+07 x17 ln x21 -843.000000 - * - ^ + x8 x17 0.0007869063691834137 * / + + x18 20200128.000000 9.666708 x7 ^ - ^ x24 x15 16.000000 ^ + 58.000000 x18 x13 / - + + 0.002105 -362.929724 359.704071 x2 - - ^ 58.000000 x7 0.006210 x12 + + * + + x22 ~ -88.959518 + 88.856491 x19 2 ^ * / x3 -2.0200127e+07 / -1 + + x22 1.277745e+07 / x19 sech x11 + + 0.12004407415282907 0.006210 x16 + + x22 39.3125 + 0.000770 x20 + ^ + * * * -2.225653 x20 2 x6 / / + 0.051731 x20 x6 / / x20 x23 + + + x5 x0 x22 + * 0.002105 x11 / 1.5707963267948966 + + 9736.000000 x15 ^ x17 + 4.00621 x24 + + + - x20 360.000000 * -15858.185171 + -126.45600900000001 + 1.566061309101424 267.200012 x11 ^ + 8.000000 x18 - -781.0930331488324 + + / x10 x16 x14 / * 1.9087338116110355 + 36.321228 0.000770 x18 + -73.0701029874863 + + + + * - *")} /*seed expressions*/,
+                {split("0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 9.383116515926606 + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 15893.000000 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x15 + + + + / - 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 3316 + + + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 1 + + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x19 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x5 + + + + * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x24 + + + + 0 0 + 0 x25 + + 0 x23 + 0 9736 + - / ~ / - + *")} /*seed expressions*/,
                 validation /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 "");// "SNE_vals.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);
@@ -10135,7 +10439,7 @@ namespace ExampleProblems
     void InPaintWildfireSpreadTSTest(int random_seed, const char* algorithm, double time)
     {
         double threshold = 0.0;
-        bool validation = false;
+        bool validation = true;
         Eigen::MatrixXd data;
         if (validation)
         {
@@ -10150,7 +10454,7 @@ namespace ExampleProblems
         if (strcmp(algorithm, "RandomSearch") == 0)
         {
             RandomSearch(InPaintWildfireSpreadTS /*differential equation to solve*/,
-                2 /*number of equations in differential equation system*/,
+                3 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
                 std::vector<int>{3} /*fixed depths of generated solution*/,
                 "prefix" /*expression representation*/,
@@ -10172,7 +10476,7 @@ namespace ExampleProblems
         else
         {
             SimulatedAnnealing(InPaintWildfireSpreadTS /*differential equation to solve*/,
-                2 /*number of equations in differential equation system*/,
+                3 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
                 std::vector<int>{7} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
@@ -10191,7 +10495,7 @@ namespace ExampleProblems
                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {{"x100", "x101"}} /*custom features that the SR-found equations are required to contain*/,
                 "",//"BestInpaint.txt" /*filename to save current best expression found (instead of outputting them to standard out)*/,
-                {split("-4.186665 0.418842 x35 * / x28 0.999938 x41 / / + x87 5.948352 + 4.300312 x28 0.310902 * / + + 6.730804900000001e-05 x20 x91 + 5.886818 x61 x70 - * - / * -0.426245593761 -1.279780 x74 * - x72 x41 x65 - - + 32.149631233913546 9.976585 x9 + x2 -1.257003 * / / * 0.0031050203787341656 + + x6 1.011502 - x61 - 0.002144 x78 + x37 x43 / ^ + -0.3528050641376832 x86 + x2 4 + x67 -0.995703 + ^ * + -0.48838806142551866 x75 + x61 -0.837968 x78 / - / 0.001595 x70 + x79 0.261111 - + -0.152212 x47 + 3.910026 + + + + -1.358924 46.127500 x83 611384.300000 / ^ + 2.5738023662116807 x48 x77 ^ + 3.991361 x75 4.300312 / + + + -1.885127 x42 / x101 ~ - x41 x40 + 345.896492 + + 0.310902 x47 1.011502 / - 72.902766 x100 46616.285000 / - / * - * *")} /*seed expressions*/,
+                {split("0 -4.186665 + 0.418842 x35 * / 0 x28 + 0.999938 x41 / / + 0 x87 + 0 5.948352 + + 0 4.300312 + x28 0.310902 * / + + 0 0 + 0 0 + + 0 0 + 0 6.730804900000001e-05 + + + 0 x20 + 0 x91 + + 0 5.886818 + x61 x70 - * - / * 0 -0.426245593761 + -1.279780 x74 * - 0 x72 + x41 x65 - - + 0 0 + 0 32.149631233913546 + + 9.976585 x9 + x2 -1.257003 * / / * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.0031050203787341656 + + + + + + x6 1.011502 - 0 x61 + - 0.002144 x78 + x37 x43 / ^ + 0 -0.3528050641376832 + 0 x86 + + x2 4 + x67 -0.995703 + ^ * + 0 -0.48838806142551866 + 0 x75 + + 0 x61 + -0.837968 x78 / - / 0.001595 x70 + x79 0.261111 - + -0.152212 x47 + 0 3.910026 + + + + + 0 0 + 0 -1.358924 + + 0 46.127500 + x83 611384.300000 / ^ + 0 2.5738023662116807 + x48 x77 ^ + 0 3.991361 + x75 4.300312 / + + + -1.885127 x42 / x101 ~ - x41 x40 + 0 345.896492 + + + 0 0.310902 + x47 1.011502 / - 0 72.902766 + x100 46616.285000 / - / * - * *")} /*seed expressions*/,
                 validation /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 "");// "SNE_vals.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/);

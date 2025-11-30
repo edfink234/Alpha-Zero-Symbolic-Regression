@@ -375,17 +375,17 @@ def test_visualize():
             os.system(f"open -a Safari {file_name}.pdf")
     else:
 #        plot_rpn_expression_tree("μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -".split(), save = save, title = r"Swift-Hohenberg 2D Polar Coordinates", tolatex = True, to_pdf = True, filename = "SwiftHohenberg2DPolarCoordinates.pdf")
-#        plot_rpn_expression_tree("w1 x26 * 1 1 f ~ exp - / eps + log * w0 1 x26 - * 1 1 1 f ~ exp - / - eps + log * +".split(), save = save, title = "", tolatex = True, to_pdf = True, filename = "Example.pdf")
+        plot_rpn_expression_tree("x30 x24 s * * x30 tau + / 1 1 f ~ exp - / 1 1 1 f ~ exp - / - * * x28 ∂f/∂(x100) * x29 ∂f/∂(x101) * + *".split(), save = save, title = "", tolatex = True, to_pdf = True, filename = "Example.pdf")
 #        test_expr = "+ + - - 9736 x22 / x7 x20 / -100.051731 ^ x5 x15 * + x20 * 1075.000000 x5 -17064.107062"
 #        print(f"test_expr = {test_expr}")
 #        test_expr = ' '.join(complete_tree(test_expr.split(), 'prefix'))
 #        print(f"Completed test_expr = {test_expr}")
-#        plot_pn_expression_tree("+ + - - 9736 x22 / x7 x20 / + 0 -100.051731 ^ x5 x15 * + + 0 x20 * 1075.000000 x5 + + 0 0 + 0 -17064.107062".split(), save = save)
+#        plot_pn_expression_tree("* * / * x30 * x24 s + x30 tau * / 1 - 1 exp ~ f - 1 / 1 - 1 exp ~ f + * x28 ∂f/∂(x100) * x29 ∂f/∂(x101)".split(), save = save)
 #        print(complete_tree("".split(), "prefix"))
 
-        complete_rpn_expr = complete_tree("-3 -0.286767 x67 / / x66 0.926132 + 3.937317 + + 0.8393700701230088 4.300312 x28 0.310902 - / + + x44 0.000684 * 6.2e-05 + x20 x91 + 5.886818 x61 x70 - * - / * 0.005589458620689655 -1.279780 x74 * - x22 x23 + + x24 0.310902 ^ 6.296075 ^ x9 x2 -1.257003 * / / * 0.0031006209506531453 + + x58 x50 / x61 - 0.002144 x78 + x37 x43 / ^ + x86 x2 2.316374 + x67 -0.995703 + ^ * + 0.231217 x75 + x61 -0.837968 x78 / - / x70 x25 0.261111 * + 0.011783 x47 + 3.910026 + + + + x73 1.617589 x86 x80 * * / 2.5738023662116807 x48 x77 ^ + 3.991361 x75 4.300312 / + + + x73 x62 / x101 ~ - 319.599938 + 0.310902 x47 1.011502 / - 72.902766 x100 x40 / + / * - * *".split(), "postfix")
-        print(f"complete_rpn_expr = \n{' '.join(complete_rpn_expr)}")
-        plot_rpn_expression_tree(complete_rpn_expr, save = save, include_expression_in_title = False)
+#        complete_rpn_expr = complete_tree("0 -4.186665 + 0.418842 x35 * / 0 x28 + 0.999938 x41 / / + 0 x87 + 0 5.948352 + + 0 4.300312 + x28 0.310902 * / + + 0 0 + 0 0 + + 0 0 + 0 6.730804900000001e-05 + + + 0 x20 + 0 x91 + + 0 5.886818 + x61 x70 - * - / * 0 -0.426245593761 + -1.279780 x74 * - 0 x72 + x41 x65 - - + 0 0 + 0 32.149631233913546 + + 9.976585 x9 + x2 -1.257003 * / / * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.0031050203787341656 + + + + + + x6 1.011502 - 0 x61 + - 0.002144 x78 + x37 x43 / ^ + 0 -0.3528050641376832 + 0 x86 + + x2 4 + x67 -0.995703 + ^ * + 0 -0.48838806142551866 + 0 x75 + + 0 x61 + -0.837968 x78 / - / 0.001595 x70 + x79 0.261111 - + -0.152212 x47 + 0 3.910026 + + + + + 0 0 + 0 -1.358924 + + 0 46.127500 + x83 611384.300000 / ^ + 0 2.5738023662116807 + x48 x77 ^ + 0 3.991361 + x75 4.300312 / + + + -1.885127 x42 / x101 ~ - x41 x40 + 0 345.896492 + + + 0 0.310902 + x47 1.011502 / - 0 72.902766 + x100 46616.285000 / - / * - * *".split(), "postfix")
+#        print(f"complete_rpn_expr = \n{' '.join(complete_rpn_expr)}")
+#        plot_rpn_expression_tree(complete_rpn_expr, save = save, include_expression_in_title = False)
 
 #    do
 #        operand -> operand 0 + -> depth:getDepth(expr)
