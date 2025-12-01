@@ -136,6 +136,18 @@ def getRPNdepth(expression):
         complete = False #If the stack length is greater than 1 then expression is an INCOMPLETE RPN expression
     return stack.pop()-1, complete
 
+#https://www.geeksforgeeks.org/dsa/prefix-postfix-conversion/
+def prefix_to_postfix(prefix_expr):
+    for token_idx in range(len(prefix_expr)-1, -1, -1):
+        pass
+
+#https://www.geeksforgeeks.org/dsa/postfix-prefix-conversion/
+def postfix_to_prefix(postfix_expr):
+    for token_idx in range(len(postfix_expr)):
+        pass
+
+#TODO: Get questions about paper that we might want to explore further
+
 '''
 std::vector<std::string> complete_tree(const std::vector<std::string>& expression, const std::string& notation)
 {
@@ -144,10 +156,25 @@ std::vector<std::string> complete_tree(const std::vector<std::string>& expressio
     if (notation == "prefix")
     {
         expr_depth  = this->getPNdepth(expression).first;
+        std::vector<std::string> expr_to_insert = {"+", "0"};
+        std::vector<std::string> temp_expression;
         while (extended)
         {
             extended = false;
-            
+            for (size_t i = 0; i < expression.size(); i++)
+            {
+                if (is_const(expression[i]))
+                {
+                    temp_expression = expression;
+                    temp_expression.insert(temp_expression.begin() + i, expr_to_insert.begin(), expr_to_insert.end());
+                    if (this->getPNdepth(temp_expression) == expr_depth)
+                    {
+                        expression = temp_expression;
+                        extended = true;
+                        break;
+                    }
+                }
+            }
         }
     }
     else //postfix
@@ -156,7 +183,22 @@ std::vector<std::string> complete_tree(const std::vector<std::string>& expressio
         while (extended)
         {
             extended = false;
-            
+            std::vector<std::string> temp_expression;
+            for (size_t i = 0; i < expression.size(); i++)
+            {
+                if (is_const(expression[i]))
+                {
+                    temp_expression = expression;
+                    temp_expression.insert(temp_expression.begin() + i, "0");
+                    temp_expression.insert(temp_expression.begin() + i + 2, "+");
+                    if (this->getRPNdepth(temp_expression) == expr_depth)
+                    {
+                        expression = temp_expression;
+                        extended = true;
+                        break;
+                    }
+                }
+            }
         }
     }
     return expression;
@@ -375,17 +417,18 @@ def test_visualize():
             os.system(f"open -a Safari {file_name}.pdf")
     else:
 #        plot_rpn_expression_tree("μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -".split(), save = save, title = r"Swift-Hohenberg 2D Polar Coordinates", tolatex = True, to_pdf = True, filename = "SwiftHohenberg2DPolarCoordinates.pdf")
-        plot_rpn_expression_tree("x30 x24 s * * x30 tau + / 1 1 f ~ exp - / 1 1 1 f ~ exp - / - * * x28 ∂f/∂(x100) * x29 ∂f/∂(x101) * + *".split(), save = save, title = "", tolatex = True, to_pdf = True, filename = "Example.pdf")
+#        plot_rpn_expression_tree("x30 x24 s * * x30 tau + / 1 1 f ~ exp - / 1 1 1 f ~ exp - / - * * x28 ∂f/∂(x100) * x29 ∂f/∂(x101) * + *".split(), save = save, title = "", tolatex = True, to_pdf = True, filename = "Example.pdf")
+#        plot_rpn_expression_tree("0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x30 + + + + 0 0 + 0 0 + + 0 0 + 0 x24 + + + 0 0 + 0 0 + + 0 0 + 0 s + + + * * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x30 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 tau + + + + + / 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 1 + + + + 0 0 + 0 0 + + 0 0 + 0 1 + + + 0 f + ~ exp - / 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 1 + + + + 0 0 + 0 0 + + 0 0 + 0 1 + + + 0 0 + 0 1 + + f ~ exp - / - * * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x28 + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 ∂f/∂(x100) + + + + + * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x29 + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 ∂f/∂(x101) + + + + + * + *".split(), save = save, title = "", tolatex = True, to_pdf = True, filename = "Example.pdf", include_expression_in_title = False)
 #        test_expr = "+ + - - 9736 x22 / x7 x20 / -100.051731 ^ x5 x15 * + x20 * 1075.000000 x5 -17064.107062"
 #        print(f"test_expr = {test_expr}")
 #        test_expr = ' '.join(complete_tree(test_expr.split(), 'prefix'))
 #        print(f"Completed test_expr = {test_expr}")
-#        plot_pn_expression_tree("* * / * x30 * x24 s + x30 tau * / 1 - 1 exp ~ f - 1 / 1 - 1 exp ~ f + * x28 ∂f/∂(x100) * x29 ∂f/∂(x101)".split(), save = save)
+#        plot_pn_expression_tree("* * / * + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x30 * + + + 0 0 + 0 0 + + 0 0 + 0 x24 + + + 0 0 + 0 0 + + 0 0 + 0 s + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x30 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 tau * / + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 1 - + + + 0 0 + 0 0 + + 0 0 + 0 1 exp ~ + 0 f - + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 1 / + + + 0 0 + 0 0 + + 0 0 + 0 1 - + + 0 0 + 0 1 exp ~ f + * + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x28 + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 ∂f/∂(x100) * + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x29 + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 ∂f/∂(x101)".split(), save = save, include_expression_in_title = False)
 #        print(complete_tree("".split(), "prefix"))
 
-#        complete_rpn_expr = complete_tree("0 -4.186665 + 0.418842 x35 * / 0 x28 + 0.999938 x41 / / + 0 x87 + 0 5.948352 + + 0 4.300312 + x28 0.310902 * / + + 0 0 + 0 0 + + 0 0 + 0 6.730804900000001e-05 + + + 0 x20 + 0 x91 + + 0 5.886818 + x61 x70 - * - / * 0 -0.426245593761 + -1.279780 x74 * - 0 x72 + x41 x65 - - + 0 0 + 0 32.149631233913546 + + 9.976585 x9 + x2 -1.257003 * / / * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.0031050203787341656 + + + + + + x6 1.011502 - 0 x61 + - 0.002144 x78 + x37 x43 / ^ + 0 -0.3528050641376832 + 0 x86 + + x2 4 + x67 -0.995703 + ^ * + 0 -0.48838806142551866 + 0 x75 + + 0 x61 + -0.837968 x78 / - / 0.001595 x70 + x79 0.261111 - + -0.152212 x47 + 0 3.910026 + + + + + 0 0 + 0 -1.358924 + + 0 46.127500 + x83 611384.300000 / ^ + 0 2.5738023662116807 + x48 x77 ^ + 0 3.991361 + x75 4.300312 / + + + -1.885127 x42 / x101 ~ - x41 x40 + 0 345.896492 + + + 0 0.310902 + x47 1.011502 / - 0 72.902766 + x100 46616.285000 / - / * - * *".split(), "postfix")
-#        print(f"complete_rpn_expr = \n{' '.join(complete_rpn_expr)}")
-#        plot_rpn_expression_tree(complete_rpn_expr, save = save, include_expression_in_title = False)
+        complete_rpn_expr = complete_tree("0 0 0 + + 0 x71 + + 0 0 + 0 x69 + + * 0 0 + 0 0.823570 + + 0 335.000000 + 0.018720 x31 + / ^ + 0 0.496312 + x67 -0.6901253057600001 * + 0 0 + 0 6.2216003257007526e-24 + + + 0 -1.278025 + 0 x14 + / 0 0 + 0 -2431.4844 + + + + + 0 0 + 0 2838.0127038380915 + + 0 -0.286767 + 0 x76 + + - 0 0 + 0 0 + + 0 0 + 0 144.49968 + + + + 0 0 + 0 x18 + + 0 0 + 0 2.063746 + + + 0 0 + 0 x100 + + 12187.586 x28 ^ x101 -14640.288932156 + + - * - /".split(), "postfix")
+        print(f"complete_rpn_expr = \n{' '.join(complete_rpn_expr)}")
+        plot_rpn_expression_tree(complete_rpn_expr, save = save, include_expression_in_title = False)
 
 #    do
 #        operand -> operand 0 + -> depth:getDepth(expr)
