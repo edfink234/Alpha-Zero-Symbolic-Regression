@@ -135,27 +135,46 @@ bool isdouble(const std::string& s)
     return has_digits && (state == INT || state == FRAC || state == EXP_NUM);
 }
 
-bool parse_double_spirit(const std::string& s, double& out)
+void parse_double_spirit(const std::string& s, double& out)
 {
     namespace qi   = boost::spirit::qi;
     namespace ascii= boost::spirit::ascii;
+//    qi::real_parser<double, clamp_real_policies<double>> clamped_double;
 
     auto f = s.begin(), l = s.end();
     // Skip leading/trailing ASCII whitespace; require full consumption (eoi).
     // qi::double_ already yields ±inf/NaN where appropriate.
-    bool ok = qi::phrase_parse(f, l, qi::double_ >> qi::eoi, ascii::space, out);
-    return ok; // f==l guaranteed by eoi
+    bool ok = qi::phrase_parse(f, l, qi::double_ >> qi::eoi, ascii::space, out); // f==l guaranteed by eoi
+    if (!ok) //assume overflow!
+    {
+        if (!s.empty() && s[0] == '-')
+        {
+            out = -std::numeric_limits<double>::infinity();
+        }
+        else
+        {
+            out = std::numeric_limits<double>::infinity();
+        }
+    }
 }
 
-double StodTime = 0.0;
+#define TIME_STUFF
+
+#ifdef TIME_STUFF
+    double StodTime = 0.0;
+#endif // TIME_STUFF
 
 double Stod(const std::string& param)
 {
-    auto t0 = clk::now();
+    #ifdef TIME_STUFF
+        auto t0 = clk::now();
+    #endif // TIME_STUFF
     double val;
     parse_double_spirit(param, val);
-    auto t1 = clk::now();
-    StodTime += std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
+    #ifdef TIME_STUFF
+        auto t1 = clk::now();
+        StodTime += std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
+    #endif // TIME_STUFF
     return val;
 }
 
@@ -988,6 +1007,9 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
 {
     bool simplified = true;
     bool isdouble1, isdouble2, isConst1, isConst2;
+    thread_local std::vector<std::string> temp;
+    temp.reserve(expression.size());
+    temp.clear();
     while (simplified)
     {
         simplified = false;
@@ -1380,8 +1402,9 @@ void simplifyPN(std::vector<std::string>& expression)
 
 int main()
 {
-    auto t0 = clk::now();
-    
+    #ifdef TIME_STUFF
+        auto t0 = clk::now();
+    #endif
     std::vector<std::string> test_expr = {"-", "-", "-", "x1", "x1", "0", "+", "x1", "x1"};
     printf("before: ");print_container(test_expr);
     simplifyPN(test_expr);
@@ -3447,23 +3470,23 @@ int main()
     printf("after: ");print_container(test_expr);
     puts("");
 //    
-//    test_expr = {"*", "1e500", "+", "3.444", "cos", "1.22"};
-//    printf("before: ");print_container(test_expr);
-//    simplifyPN(test_expr);
-//    printf("after: ");print_container(test_expr);
-//    puts("");
-//    
-//    test_expr = {"*", "-2e390", "+", "+", "3.444", "cos", "1.22", "+", "3.444", "sin", "1.22"};
-//    printf("before: ");print_container(test_expr);
-//    simplifyPN(test_expr);
-//    printf("after: ");print_container(test_expr);
-//    puts("");
+    test_expr = {"*", "1e500", "+", "3.444", "cos", "1.22"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
     
+    test_expr = {"*", "-2e390", "+", "+", "3.444", "cos", "1.22", "+", "3.444", "sin", "1.22"};
+    printf("before: ");print_container(test_expr);
+    simplifyPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
     
-    auto t1 = clk::now();
-    
-    std::cout << "Time taken = " << std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count() / 1e9 << " s\n";
-    std::cout << "Stod time taken = " << StodTime / 1e9 << " s\n";
+    #ifdef TIME_STUFF
+        auto t1 = clk::now();
+        std::cout << "Time taken = " << std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count() / 1e9 << " s\n";
+        std::cout << "Stod time taken = " << StodTime / 1e9 << " s\n";
+    #endif // TIME_STUFF
 
 }
 //g++ -std=c++20 -o PrefixSimplify PrefixSimplify.cpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include

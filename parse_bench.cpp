@@ -13,7 +13,7 @@ static bool parse_double_spirit(const std::string& s, double& out) {
     auto f = s.begin(), l = s.end();
     // Skip leading/trailing ASCII whitespace; require full consumption (eoi).
     // qi::double_ already yields ±inf/NaN where appropriate.
-    bool ok = qi::phrase_parse(f, l, qi::double_ >> qi::eoi, ascii::space, out);
+    bool ok = qi::phrase_parse(f, l, qi::double_[([&](double v){out = ((v >  DBL_MAX) ? std::numeric_limits<double>::infinity() : ((v < -DBL_MAX) ? -std::numeric_limits<double>::infinity() : v));})] >> qi::eoi, ascii::space, out);
     return ok; // f==l guaranteed by eoi
 }
 

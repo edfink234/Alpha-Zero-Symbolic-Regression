@@ -8,7 +8,9 @@
 #include <charconv>
 #include <cassert>
 #include <boost/spirit/include/qi.hpp> //For fast string-to-double conversion!
+#include <chrono>
 
+using clk = std::chrono::high_resolution_clock;
 const std::unordered_set<std::string> unary_operators = {"cos", "~", "sin", "log", "ln", "asin", "arcsin", "acos", "arccos", "exp", "sech", "tanh", "sqrt"};
 const std::unordered_set<std::string> binary_operators = {"+", "-", "*", "/", "^"};
 const std::string expression_type = "postfix";
@@ -59,27 +61,6 @@ void print_container(const std::vector<std::string>& c)
     std::cout << '\n';
 }
 
-//MARK: Might be able to replace this with `parse_double_spirit`
-double Stod(const std::string& param)
-{
-    try
-    {
-        double val = std::stod(param);
-        return val;
-    }
-    catch (const std::out_of_range&)
-    {
-        //Return +/- infinity depending on the sign
-        if (!param.empty() && param[0] == '-')
-        {
-            return -std::numeric_limits<double>::infinity();
-        }
-        else
-        {
-            return std::numeric_limits<double>::infinity();
-        }
-    }
-}
 //stod is locale-dependent
 //Example: In the USA, 1.23 = 1 + 23/100
 //but in e.g. Europe `1.23` is written as `1,23`
@@ -133,16 +114,47 @@ bool isdouble(const std::string& s)
     return has_digits && (state == INT || state == FRAC || state == EXP_NUM);
 }
 
-bool parse_double_spirit(const std::string& s, double& out)
+void parse_double_spirit(const std::string& s, double& out)
 {
     namespace qi   = boost::spirit::qi;
     namespace ascii= boost::spirit::ascii;
+//    qi::real_parser<double, clamp_real_policies<double>> clamped_double;
 
     auto f = s.begin(), l = s.end();
     // Skip leading/trailing ASCII whitespace; require full consumption (eoi).
     // qi::double_ already yields ±inf/NaN where appropriate.
-    bool ok = qi::phrase_parse(f, l, qi::double_ >> qi::eoi, ascii::space, out);
-    return ok; // f==l guaranteed by eoi
+    bool ok = qi::phrase_parse(f, l, qi::double_ >> qi::eoi, ascii::space, out); // f==l guaranteed by eoi
+    if (!ok) //assume overflow!
+    {
+        if (!s.empty() && s[0] == '-')
+        {
+            out = -std::numeric_limits<double>::infinity();
+        }
+        else
+        {
+            out = std::numeric_limits<double>::infinity();
+        }
+    }
+}
+
+#define TIME_STUFF
+
+#ifdef TIME_STUFF
+    double StodTime = 0.0;
+#endif // TIME_STUFF
+
+double Stod(const std::string& param)
+{
+    #ifdef TIME_STUFF
+        auto t0 = clk::now();
+    #endif // TIME_STUFF
+    double val;
+    parse_double_spirit(param, val);
+    #ifdef TIME_STUFF
+        auto t1 = clk::now();
+        StodTime += std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
+    #endif // TIME_STUFF
+    return val;
 }
 
 bool checkEqual(const std::string &str1, const std::string &str2)
@@ -167,7 +179,6 @@ bool checkEqual(const std::string &str1, const std::string &str2)
     }
     return (val1 == val2);
 }
-
 
 /*
  Converts:
@@ -1337,6 +1348,9 @@ void simplifyRPN(std::vector<std::string>& expression)
 
 int main()
 {
+    #ifdef TIME_STUFF
+        auto t0 = clk::now();
+    #endif
     std::vector<std::string> test_expr = {"x1", "x1", "-", "0", "-", "x1", "x1", "+", "-"};
     printf("before: ");print_container(test_expr);
     simplifyRPN(test_expr);
@@ -3411,6 +3425,24 @@ int main()
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
+    
+    test_expr = {"1e500", "3.444", "1.22", "cos", "+", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    test_expr = {"-2e390", "3.444", "1.22", "cos", "+", "3.444", "1.22", "sin", "+", "+", "*"};
+    printf("before: ");print_container(test_expr);
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);
+    puts("");
+    
+    #ifdef TIME_STUFF
+        auto t1 = clk::now();
+        std::cout << "Time taken = " << std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count() / 1e9 << " s\n";
+        std::cout << "Stod time taken = " << StodTime / 1e9 << " s\n";
+    #endif // TIME_STUFF
 }
 
 //g++ -std=c++20 -o PostfixSimplify PostfixSimplify.cpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include
