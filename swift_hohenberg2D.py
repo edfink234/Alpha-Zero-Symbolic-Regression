@@ -1,3 +1,19 @@
+'''
+    Questions for Priya:
+        1. Say that we have an approximate solution f to a PDE such that when we plug f(x) into 
+           the PDE (i.e. symbolically differentiate) and evaluate the resulting expression PDE(f(x))
+           on a collocation grid of x-points, we get a resulting vector L whose norm is some small number ε. 
+           The question we have is that, if instead of evaluating the derivatives symbolically, we evaluate them 
+           numerically, is the numerical-differentiation faulty by definition if, after proceeding with the same process 
+           as above, we get a resulting norm(L_{numerical}) that differs substantially from ε?
+        2. Why is it that a numerical solver starting with a smaller starting numerically-computed MSE can take longer to converge than a guess that has a larger starting numerically-computed MSE?
+        3. Does there usually/~always exist a sufficiently accurate numerical scheme that gets the close enough to the symbolically computed MSE 
+            3 a. If not, then how can we modify the SR search to penalize solutions that would be difficult to use numerically?
+        4. Does it make more sense to go the direction of reducing the error of the SR f or to explore the numerics side? 
+        5. If we do numerical continuation in (mu, nu), does it make more sense to do it from a phenmonelogical perspective (to gain e.g. insight into the "functional forms" of the solutions in the SR) or just in the numerics
+        
+        https://iopscience.iop.org/article/10.1088/1361-6544/acc508/pdf 
+'''
 from sympy import *
 import sympy as sp
 import numpy as np
@@ -21,7 +37,7 @@ f = None
 if GENERIC:
     f = Function('f')(r, theta)
 else:
-    f =  (((((10.000000 ** r) * 2.714063472005533e-13) + 0.6931471805599453) - (sin((0.010000 + theta)) * (0.999329299739067 * sin(r)))) - ((((2 + theta) / -9.97) * 0.014976768195976646) + ((0.1 ** (r + 10.000000)) + 0.09258581905507851))) \
+    f =  [(((((10.000000 ** r) * 2.714063472005533e-13) + 0.6931471805599453) - (sin((0.010000 + theta)) * (0.999329299739067 * sin(r)))) - ((((2 + theta) / -9.97) * 0.014976768195976646) + ((0.1 ** (r + 10.000000)) + 0.09258581905507851))), sin(r)*sin(theta)+0.604, sin(r)*sin(theta)][2] \
         if PERIODIC_IN_THETA else \
         (((0.148475282221305 * theta) - (sin(theta) * (1.0000132758892615 * sin(r)))) - 0.0922858190550785)
 

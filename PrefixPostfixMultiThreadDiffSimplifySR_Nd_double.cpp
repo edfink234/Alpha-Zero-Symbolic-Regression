@@ -61,25 +61,25 @@ double timeElapsedSince(T start_time)
 {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start_time).count()/1e9;
 }
-double Stod(const std::string& param)
-{
-    try
-    {
-        double val = std::stod(param);
-        return val;
-    }
-    catch (const std::out_of_range&)
-    {
-        if (!param.empty() && param[0] == '-')
-        {
-            return -std::numeric_limits<double>::infinity();
-        }
-        else
-        {
-            return std::numeric_limits<double>::infinity();
-        }
-    }
-}
+//double Stod(const std::string& param)
+//{
+//    try
+//    {
+//        double val = std::stod(param);
+//        return val;
+//    }
+//    catch (const std::out_of_range&)
+//    {
+//        if (!param.empty() && param[0] == '-')
+//        {
+//            return -std::numeric_limits<double>::infinity();
+//        }
+//        else
+//        {
+//            return std::numeric_limits<double>::infinity();
+//        }
+//    }
+//}
 
 //Checks if vector `x` has size > 0 and all elements in `x` have size > 0
 template <typename T>
@@ -307,6 +307,13 @@ bool parse_double_spirit(const std::string& s, double& out)
     // qi::double_ already yields ±inf/NaN where appropriate.
     bool ok = qi::phrase_parse(f, l, qi::double_ >> qi::eoi, ascii::space, out);
     return ok; // f==l guaranteed by eoi
+}
+
+double Stod(const std::string& param)
+{
+    double val;
+    parse_double_spirit(param, val);
+    return val;
 }
 
 bool checkEqual(const std::string &str1, const std::string &str2)
@@ -6713,10 +6720,10 @@ std::vector<std::vector<std::string>> InPaintWildfireSpreadTS(Board& x, bool fit
             Best expression (original format) = -4.186665 0.418842 x35 * / x77 x62 * 0.980140 x41 / / + 292.000000 x25 ^ 18.875944 x3 - + 5.876488 x28 0.289593 * / + + 6.730804900000001e-05 -0.010155448521933261 x91 + x22 5.886818 + x61 x70 - * - / * 3.2810369607244607 -1.279780 x74 * - -0.368644 x83 0.823570 * - + x94 x3 - 35.21565023391354 + 1.620943 x9 + x2 -1.257003 + / / * 0.0031050203787341656 + + x6 1.486383 - x61 - 0.002144 x78 + x82 4 - ^ + x54 x37 / x86 + x2 4 + x67 -0.995703 + ^ * + x73 x85 + 0.398685 x75 + + x84 x61 + -0.837968 x78 / - / 0.001595 x70 + 1.620244 x12 / + -0.152212 x47 + 3.910026 + + + + 0.000684 x21 + x81 -1.358924 + + -1.186665 -1.358924 x78 / - + 2.5738023662116807 6.912820 x77 ^ + x79 3.991361 + x75 4.300312 / + + + 1.5687453253569374 x101 ~ - 354.49598 + 0.974754 x65 * x47 1.011502 / - x43 72.902766 + x100 45.000000 / - / * - * *
      With Laplacian Smoothing and Wind-Alignment:
         Training:
-            Best score = 2.28107e-09, SNE = 4.38391e+08
-            Squared-norm error for each equation: 4.3839e+08 8.29731e-10 804.186
-            Best expression = (((x71 + 2) + ((x97 - (x57 ^ (-1.211623 * x46))) + -2395.18428)) / (((((-1.257003 * (28.187147 * x7)) + 2838.0147548380914) - (1.575531 - (508.284100 * (x69 / x15)))) + (x36 / 0.17093199999999997)) - ((((x63 / -1.386089) + x18) + 2.063746) * (((154956.920000 / (x93 / -1.878656)) + x100) - ((12187.586 ^ x28) + (x101 + -14640.288932156))))))
-            Best expression (original format) = x71 2 + x97 x57 -1.211623 x46 * ^ - -2395.18428 + + -1.257003 28.187147 x7 * * 2838.0147548380914 + 1.575531 508.284100 x69 x15 / * - - x36 0.17093199999999997 / + x63 -1.386089 / x18 + 2.063746 + 154956.920000 x93 -1.878656 / / x100 + 12187.586 x28 ^ x101 -14640.288932156 + + - * - /
+            Best score = 2.28135e-09, SNE = 4.38337e+08
+            Squared-norm error for each equation: 4.38337e+08 1.02597e-08 97.0304
+            Best expression = ((((((x63 - 0.085773) + -7.841081) / (((x50 + -1.880128) + 4.494317) / (0.922675164678351 - (x26 + x32)))) - ((4.300312 ^ (-3 * (0.018720 + x29))) * (((0.289593 + x98) + x86) * ((x42 + 33.000000) * (4 * x79))))) + ((((x61 - (-1.200690 * x54)) - (508.2841 * (x77 / 1.617589))) - ((11909.178469999999 + (x33 + 112131.51600106056)) ^ (-1.211623 * x46))) + (((x33 - (4.494317 / x15)) + (x48 + 312.933985239896)) + (((x54 * x96) * (x74 * x91)) + ((x70 + x42) + -2389.8116090000003))))) / ((((((x3 + x36) + 682.9644726562319) + ((374.000000 - x100) + 2839.0074018380915)) - (~((x0 - x38)) - (515.19692 * (x69 / x15)))) + ((((12.962205 + x10) + (0.001691 * x9)) + 296.543251) / (0.01628697435008046 + (x18 / (x71 - 0.418842))))) - ((((x63 / -1.3843979999999998) + x18) + (((x31 + x59) * (x3 + 1.011502)) + 2.063746)) * (-2344.328764684932 - ((12192.447208 ^ x28) + ((2.316374 - x101) + (x50 + -14639.792620156)))))))
+            Best expression (original format) = x63 0.085773 - -7.841081 + x50 -1.880128 + 4.494317 + 0.922675164678351 x26 x32 + - / / 4.300312 -3 0.018720 x29 + * ^ 0.289593 x98 + x86 + x42 33.000000 + 4 x79 * * * * - x61 -1.200690 x54 * - 508.2841 x77 1.617589 / * - 11909.178469999999 x33 112131.51600106056 + + -1.211623 x46 * ^ - x33 4.494317 x15 / - x48 312.933985239896 + + x54 x96 * x74 x91 * * x70 x42 + -2389.8116090000003 + + + + + x3 x36 + 682.9644726562319 + 374.000000 x100 - 2839.0074018380915 + + x0 x38 - ~ 515.19692 x69 x15 / * - - 12.962205 x10 + 0.001691 x9 * + 296.543251 + 0.01628697435008046 x18 x71 0.418842 - / + / + x63 -1.3843979999999998 / x18 + x31 x59 + x3 1.011502 + * 2.063746 + + -2344.328764684932 12192.447208 x28 ^ 2.316374 x101 - x50 -14639.792620156 + + + - * - /
         Validation:
             Best score = 6.74666e-11, SNE = 1.48221e+10
             Squared-norm error for each equation: 1.48221e+10 6.38901e-08 22.6177
@@ -6755,22 +6762,23 @@ std::vector<std::vector<std::string>> InPaintWildfireSpreadTS(Board& x, bool fit
         }
         results[0].push_back("x102");
         
-        //∂^2f/∂(x100)^2 ∂^2f/∂(x101)^2 +
-        x.derivePostfix(0, x.pieces[0].size()-1, "x100", x.pieces[0], grasp);
+        //+ ∂^2f/∂(x100)^2 ∂^2f/∂(x101)^2
+        results[1].push_back("+"); // +
+        x.derivePrefix(0, x.pieces[0].size()-1, "x100", x.pieces[0], grasp);
         dfdx100 = x.derivat;
-        x.derivePostfix(0, dfdx100.size()-1, "x100", dfdx100, grasp);
+        x.derivePrefix(0, dfdx100.size()-1, "x100", dfdx100, grasp);
         for (const std::string& i: x.derivat) // ∂^2f/∂(x100)^2
         {
             results[1].push_back(i);
         }
-        x.derivePostfix(0, x.pieces[0].size()-1, "x101", x.pieces[0], grasp);
+        x.derivePrefix(0, x.pieces[0].size()-1, "x101", x.pieces[0], grasp);
         dfdx101 = x.derivat;
-        x.derivePostfix(0, dfdx101.size()-1, "x101", dfdx101, grasp);
+        x.derivePrefix(0, dfdx101.size()-1, "x101", dfdx101, grasp);
         for (const std::string& i: x.derivat) // ∂^2f/∂(x101)^2
         {
             results[1].push_back(i);
         }
-        results[1].push_back("+"); // +
+        
         // / * x30 * x24 s + x30 tau
         if (!prefactors_computed)
         {
@@ -6810,7 +6818,7 @@ std::vector<std::vector<std::string>> InPaintWildfireSpreadTS(Board& x, bool fit
         else
         {
             //* p - 1 p
-            // / 1 - 1 exp ~ f
+            //p = (/ 1 - 1 exp ~ f)
             temp = {"/", "1", "-", "1", "exp", "~"}; // / 1 - 1 exp ~
             for (const std::string& i: x.pieces[0]) //f
             {
@@ -6824,6 +6832,10 @@ std::vector<std::vector<std::string>> InPaintWildfireSpreadTS(Board& x, bool fit
             results[2].push_back("p"); // p
         }
         // + * x28 ∂f/∂(x100) * x29 ∂f/∂(x101)
+        results[2].push_back("*"); // *
+        results[2].push_back("1000000"); // 1000000
+        
+        
         results[2].push_back("+"); // +
         results[2].push_back("*"); // *
         results[2].push_back("x28"); // x28
@@ -10536,7 +10548,7 @@ namespace ExampleProblems
                 3 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
                 std::vector<int>{7} /*fixed depths of generated solution*/,
-                "postfix" /*expression representation*/,
+                "prefix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
                 5 /*number of fit iterations*/,
@@ -10552,7 +10564,7 @@ namespace ExampleProblems
                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {{"x100", "x101"}} /*custom features that the SR-found equations are required to contain*/,
                 "",//"BestInpaint.txt" /*filename to save current best expression found (instead of outputting them to standard out)*/,
-                {split("0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x71 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 2 + + + + + 0 0 + 0 0 + + 0 0 + 0 x97 + + + 0 0 + 0 x57 + + 0 -1.211623 + 0 x46 + * ^ - 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -2395.18428 + + + + + + 0 -1.257003 + 28.187147 x7 * * 0 0 + 0 2838.0147548380914 + + + 0 0 + 0 1.575531 + + 0 508.284100 + x69 x15 / * - - 0 0 + 0 0 + + 0 0 + 0 x36 + + + 0 0 + 0 0 + + 0 0 + 0 0.17093199999999997 + + + / + 0 x63 + 0 -1.386089 + / 0 0 + 0 x18 + + + 0 0 + 0 0 + + 0 0 + 0 2.063746 + + + + 0 154956.920000 + x93 -1.878656 / / 0 0 + 0 x100 + + + 0 12187.586 + 0 x28 + ^ 0 x101 + 0 -14640.288932156 + + + - * - /")} /*seed expressions*/,
+                {split("/ + - / + - + 0 x63 + 0 0.085773 + + 0 0 + 0 -7.841081 / + + x50 -1.880128 + 0 4.494317 - + 0 0.922675164678351 + x26 x32 * ^ + + 0 0 + 0 4.300312 * + 0 -3 + 0.018720 x29 * + + 0.289593 x98 + 0 x86 * + x42 33.000000 * 4 x79 + - - - + 0 x61 * -1.200690 x54 * + 0 508.2841 / x77 1.617589 ^ + + 0 11909.178469999999 + x33 112131.51600106056 * + 0 -1.211623 + 0 x46 + + - + 0 x33 / 4.494317 x15 + + 0 x48 + 0 312.933985239896 + * * x54 x96 * x74 x91 + + x70 x42 + 0 -2389.8116090000003 - + - + + + x3 x36 + 0 682.9644726562319 + - 374.000000 x100 + 0 2839.0074018380915 - ~ - x0 x38 * + 0 515.19692 / x69 x15 / + + + 12.962205 x10 * 0.001691 x9 + + 0 0 + 0 296.543251 + + + 0 0 + 0 0.01628697435008046 / + 0 x18 - x71 0.418842 * + + / + 0 x63 + 0 -1.3843979999999998 + + 0 0 + 0 x18 + * + x31 x59 + x3 1.011502 + + 0 0 + 0 2.063746 - + + + 0 0 + 0 0 + + 0 0 + 0 -2344.328764684932 + ^ + 0 12192.447208 + 0 x28 + - 2.316374 x101 + x50 -14639.792620156")} /*seed expressions*/,
                 validation /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
