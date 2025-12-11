@@ -452,18 +452,21 @@ def test_visualize():
 #        plot_pn_expression_tree("* * / * + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x30 * + + + 0 0 + 0 0 + + 0 0 + 0 x24 + + + 0 0 + 0 0 + + 0 0 + 0 s + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x30 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 tau * / + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 1 - + + + 0 0 + 0 0 + + 0 0 + 0 1 exp ~ + 0 f - + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 1 / + + + 0 0 + 0 0 + + 0 0 + 0 1 - + + 0 0 + 0 1 exp ~ f + * + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x28 + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 ∂f/∂(x100) * + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x29 + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 ∂f/∂(x101)".split(), save = save, include_expression_in_title = False)
 #        print(complete_tree("".split(), "prefix"))
 
-        complete_rpn_expr = complete_tree("x63 0.085773 - -7.841081 + x50 -1.880128 + 4.494317 + 0.922675164678351 x26 x32 + - / / 4.300312 -3 0.018720 x29 + * ^ 0.289593 x98 + x86 + x42 33.000000 + 4 x79 * * * * - x61 -1.200690 x54 * - 508.2841 x77 1.617589 / * - 11909.178469999999 x33 112131.51600106056 + + -1.211623 x46 * ^ - x33 4.494317 x15 / - x48 312.933985239896 + + x54 x96 * x74 x91 * * x70 x42 + -2389.8116090000003 + + + + + x3 x36 + 682.9644726562319 + 374.000000 x100 - 2839.0074018380915 + + x0 x38 - ~ 515.19692 x69 x15 / * - - 12.962205 x10 + 0.001691 x9 * + 296.543251 + 0.01628697435008046 x18 x71 0.418842 - / + / + x63 -1.3843979999999998 / x18 + x31 x59 + x3 1.011502 + * 2.063746 + + -2344.328764684932 12192.447208 x28 ^ 2.316374 x101 - x50 -14639.792620156 + + + - * - /".split(), "postfix") #returns a list
+        complete_rpn_expr = complete_tree("10.01 0.010000 x0 + ^ 2.714063472005533e-13 * 0.7047172460634555 + 0.999329299739067 0.010000 x1 + sin * 0.9989466681769271 x0 sin * * - 6 1 x1 + + -10.839071529076453 / 0.020122271709039314 * x0 x0 2 + / x0 0.010000 + 6.29319 + ^ 0.09268112623466472 + + -".split(), "postfix") #returns a list
 #        complete_pn_expr = complete_tree("".split(), "prefix") #returns a list
-        complete_pn_expr = postfix_to_prefix(complete_rpn_expr)
-        print(f"complete_pn_expr = \n{complete_pn_expr}")
+#        complete_pn_expr = postfix_to_prefix(complete_rpn_expr)
+#        complete_pn_expr = complete_tree("/ + * / + - 1.575531 / 1962.535300 x24 * 16.262361452138492 ~ x0 / -0.654108 - * 0.980140 x23 293.186665 ~ + 51.651745 - x30 cos x93 3.625766546978713e+07 - + / - sech - x64 374.000000 - - 7169.463400 x100 * x17 11181230.000000 50.3631331705848 + ~ x75 -11.700919528340552 - sqrt ^ 3.554312 + x71 ~ x87 ^ 0.9917769232006058 * ~ - x51 x82 * - x10 x101 -0.04344899097047564".split(), "prefix")
+#        print(f"complete_pn_expr = \n{complete_pn_expr}")
+#        print(f"complete_pn_expr = \n{' '.join(complete_pn_expr)}")
 
-        assert(prefix_to_postfix(complete_pn_expr) == ' '.join(complete_rpn_expr))
+
+#        assert(prefix_to_postfix(complete_pn_expr) == ' '.join(complete_rpn_expr))
         
         print(f"complete_rpn_expr = \n{' '.join(complete_rpn_expr)}")
 
-        plot_pn_expression_tree(complete_pn_expr.split(), save = save, include_expression_in_title = False)
+#        plot_pn_expression_tree(complete_pn_expr, save = save, include_expression_in_title = False)
 
-#        plot_rpn_expression_tree(complete_rpn_expr, save = save, include_expression_in_title = False, title='')
+        plot_rpn_expression_tree(complete_rpn_expr, save = save, include_expression_in_title = False, title='')
 #        complete_pn_expr = complete_tree(test_expr.split(), "prefix") #returns a list
 #        print(f"complete_pn_expr = \n{' '.join(complete_pn_expr)}")
 ##        plot_pn_expression_tree(complete_pn_expr, save = save, include_expression_in_title = False)

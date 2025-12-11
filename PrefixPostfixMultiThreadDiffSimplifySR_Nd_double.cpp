@@ -6720,10 +6720,15 @@ std::vector<std::vector<std::string>> InPaintWildfireSpreadTS(Board& x, bool fit
             Best expression (original format) = -4.186665 0.418842 x35 * / x77 x62 * 0.980140 x41 / / + 292.000000 x25 ^ 18.875944 x3 - + 5.876488 x28 0.289593 * / + + 6.730804900000001e-05 -0.010155448521933261 x91 + x22 5.886818 + x61 x70 - * - / * 3.2810369607244607 -1.279780 x74 * - -0.368644 x83 0.823570 * - + x94 x3 - 35.21565023391354 + 1.620943 x9 + x2 -1.257003 + / / * 0.0031050203787341656 + + x6 1.486383 - x61 - 0.002144 x78 + x82 4 - ^ + x54 x37 / x86 + x2 4 + x67 -0.995703 + ^ * + x73 x85 + 0.398685 x75 + + x84 x61 + -0.837968 x78 / - / 0.001595 x70 + 1.620244 x12 / + -0.152212 x47 + 3.910026 + + + + 0.000684 x21 + x81 -1.358924 + + -1.186665 -1.358924 x78 / - + 2.5738023662116807 6.912820 x77 ^ + x79 3.991361 + x75 4.300312 / + + + 1.5687453253569374 x101 ~ - 354.49598 + 0.974754 x65 * x47 1.011502 / - x43 72.902766 + x100 45.000000 / - / * - * *
      With Laplacian Smoothing and Wind-Alignment:
         Training:
-            Best score = 2.28135e-09, SNE = 4.38337e+08
-            Squared-norm error for each equation: 4.38337e+08 1.02597e-08 97.0304
-            Best expression = ((((((x63 - 0.085773) + -7.841081) / (((x50 + -1.880128) + 4.494317) / (0.922675164678351 - (x26 + x32)))) - ((4.300312 ^ (-3 * (0.018720 + x29))) * (((0.289593 + x98) + x86) * ((x42 + 33.000000) * (4 * x79))))) + ((((x61 - (-1.200690 * x54)) - (508.2841 * (x77 / 1.617589))) - ((11909.178469999999 + (x33 + 112131.51600106056)) ^ (-1.211623 * x46))) + (((x33 - (4.494317 / x15)) + (x48 + 312.933985239896)) + (((x54 * x96) * (x74 * x91)) + ((x70 + x42) + -2389.8116090000003))))) / ((((((x3 + x36) + 682.9644726562319) + ((374.000000 - x100) + 2839.0074018380915)) - (~((x0 - x38)) - (515.19692 * (x69 / x15)))) + ((((12.962205 + x10) + (0.001691 * x9)) + 296.543251) / (0.01628697435008046 + (x18 / (x71 - 0.418842))))) - ((((x63 / -1.3843979999999998) + x18) + (((x31 + x59) * (x3 + 1.011502)) + 2.063746)) * (-2344.328764684932 - ((12192.447208 ^ x28) + ((2.316374 - x101) + (x50 + -14639.792620156)))))))
-            Best expression (original format) = x63 0.085773 - -7.841081 + x50 -1.880128 + 4.494317 + 0.922675164678351 x26 x32 + - / / 4.300312 -3 0.018720 x29 + * ^ 0.289593 x98 + x86 + x42 33.000000 + 4 x79 * * * * - x61 -1.200690 x54 * - 508.2841 x77 1.617589 / * - 11909.178469999999 x33 112131.51600106056 + + -1.211623 x46 * ^ - x33 4.494317 x15 / - x48 312.933985239896 + + x54 x96 * x74 x91 * * x70 x42 + -2389.8116090000003 + + + + + x3 x36 + 682.9644726562319 + 374.000000 x100 - 2839.0074018380915 + + x0 x38 - ~ 515.19692 x69 x15 / * - - 12.962205 x10 + 0.001691 x9 * + 296.543251 + 0.01628697435008046 x18 x71 0.418842 - / + / + x63 -1.3843979999999998 / x18 + x31 x59 + x3 1.011502 + * 2.063746 + + -2344.328764684932 12192.447208 x28 ^ 2.316374 x101 - x50 -14639.792620156 + + + - * - /
+            Best score = 2.28088e-09, SNE = 4.38428e+08
+            Squared-norm error for each equation: 4.38428e+08 2.04899e-28 0.68969
+            Best expression = (((((ln(cos(x46)) + -3.4799761065034414) + ((x95 * 1.620943) + (x95 + ~(x48)))) * ~(((cos(x41) + 52.64009483497598) ^ (2.7907071011403315 - cos(x93))))) + ((((3.1585732538600397 * (x12 ^ x54)) + (cos(x21) + (0.365382 + x13))) ^ (~(x20) + 1.5729403267948965)) + (x3 * sqrt(x48)))) / ((((0.9867622178470573 - ((7169.463400 - x100) - (x17 * 11181230.000000))) / (acos(tanh(x23)) + 57.67636600070402)) + sin((-2.884980 + x50))) - (sqrt(((x17 ^ x59) ^ (x71 + ~(x87)))) - (0.9910929232006058 ^ (-4.0405169999999995 * ((x61 - x101) * -0.04344899097047564))))))
+            Best expression (original format) = / + * + + ln cos x46 -3.4799761065034414 + * x95 1.620943 + x95 ~ x48 ~ ^ + cos x41 52.64009483497598 - 2.7907071011403315 cos x93 + ^ + * 3.1585732538600397 ^ x12 x54 + cos x21 + 0.365382 x13 + ~ x20 1.5729403267948965 * x3 sqrt x48 - + / - 0.9867622178470573 - - 7169.463400 x100 * x17 11181230.000000 + acos tanh x23 57.67636600070402 sin + -2.884980 x50 - sqrt ^ ^ x17 x59 + x71 ~ x87 ^ 0.9910929232006058 * -4.0405169999999995 * - x61 x101 -0.04344899097047564
+            With wind-alignment factor from 1 -> 1e6:
+                Best score = 2.28088e-09, SNE = 4.38428e+08
+                Squared-norm error for each equation: 4.38428e+08 2.04899e-28 0.68969
+                Best expression = (((((ln(cos(x46)) + -3.4799761065034414) + ((x95 * 1.620943) + (x95 + ~(x48)))) * ~(((cos(x41) + 52.64009483497598) ^ (2.7907071011403315 - cos(x93))))) + ((((3.1585732538600397 * (x12 ^ x54)) + (cos(x21) + (0.365382 + x13))) ^ (~(x20) + 1.5729403267948965)) + (x3 * sqrt(x48)))) / ((((0.9867622178470573 - ((7169.463400 - x100) - (x17 * 11181230.000000))) / (acos(tanh(x23)) + 57.67636600070402)) + sin((-2.884980 + x50))) - (sqrt(((x17 ^ x59) ^ (x71 + ~(x87)))) - (0.9910929232006058 ^ (-4.0405169999999995 * ((x61 - x101) * -0.04344899097047564))))))
+                Best expression (original format) = / + * + + ln cos x46 -3.4799761065034414 + * x95 1.620943 + x95 ~ x48 ~ ^ + cos x41 52.64009483497598 - 2.7907071011403315 cos x93 + ^ + * 3.1585732538600397 ^ x12 x54 + cos x21 + 0.365382 x13 + ~ x20 1.5729403267948965 * x3 sqrt x48 - + / - 0.9867622178470573 - - 7169.463400 x100 * x17 11181230.000000 + acos tanh x23 57.67636600070402 sin + -2.884980 x50 - sqrt ^ ^ x17 x59 + x71 ~ x87 ^ 0.9910929232006058 * -4.0405169999999995 * - x61 x101 -0.04344899097047564
         Validation:
             Best score = 6.74666e-11, SNE = 1.48221e+10
             Squared-norm error for each equation: 1.48221e+10 6.38901e-08 22.6177
@@ -8015,10 +8020,10 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
     /*
-     Best score = 6.2338e-05, SNE = 16040.6
-     Squared-norm error for each equation: 16030.7 9.89666 0
-     Best expression = (((((10.000000 ^ x0) * 2.714063472005533e-13) + 0.6937170793892884) - ((0.999329299739067 * sin(x1)) * (0.999329299739067 * sin(x0)))) - ((((2 + x1) / -10) * 0.015172270875728243) + ((0.1 ^ (x0 + 10.000000)) + 0.09268581905507851)))
-     Best expression (original format) = 10.000000 x0 ^ 2.714063472005533e-13 * 0.6937170793892884 + 0.999329299739067 x1 sin * 0.999329299739067 x0 sin * * - 2 x1 + -10 / 0.015172270875728243 * 0.1 x0 10.000000 + ^ 0.09268581905507851 + + -
+     Best score = 6.27042e-05, SNE = 15946.9
+     Squared-norm error for each equation: 15932.1 14.8169 0
+     Best expression = (((((10.01 ^ (0.010000 + x0)) * 2.714063472005533e-13) + 0.7047172460634555) - ((0.999329299739067 * sin((0.010000 + x1))) * (0.9989466681769271 * sin(x0)))) - ((((6 + (1 + x1)) / -10.839071529076453) * 0.020122271709039314) + (((x0 / (x0 + 2)) ^ ((x0 + 0.010000) + 6.29319)) + 0.09268112623466472)))
+     Best expression (original format) = 10.01 0.010000 x0 + ^ 2.714063472005533e-13 * 0.7047172460634555 + 0.999329299739067 0.010000 x1 + sin * 0.9989466681769271 x0 sin * * - 6 1 x1 + + -10.839071529076453 / 0.020122271709039314 * x0 x0 2 + / x0 0.010000 + 6.29319 + ^ 0.09268112623466472 + + -
      */
     
     std::vector<std::vector<std::string>> results;
@@ -10292,7 +10297,7 @@ namespace ExampleProblems
             SimulatedAnnealing(SwiftHohenberg /*differential equation to solve*/,
                 3 /*number of equations in differential equation system*/,
                 data1 /*data used to solve differential equation*/,
-                std::vector<int>{5} /*fixed depths of generated solution*/,
+                std::vector<int>{6} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0/*2*/ /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -10309,7 +10314,7 @@ namespace ExampleProblems
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "" /*filename to save current best expression found (instead of outputting them to standard out*/,
-                {split("10.000000 x0 ^ 0 2.714063472005533e-13 + * 0 0 + 0 0.6937170793892884 + + + 0 0.999329299739067 + x1 sin * 0 0.999329299739067 + x0 sin * * - 2 x1 + 0 -10 + / 0 0 + 0 0.015172270875728243 + + * 0 0.1 + x0 10.000000 + ^ 0 0 + 0 0.09268581905507851 + + + + -")} /*seed expressions*/,
+                {split("0 10.01 + 0.010000 x0 + ^ 0 0 + 0 2.714063472005533e-13 + + * 0 0 + 0 0 + + 0 0 + 0 0.7047172460634555 + + + + 0 0 + 0 0.999329299739067 + + 0.010000 x1 + sin * 0 0 + 0 0.9989466681769271 + + 0 x0 + sin * * - 0 6 + 1 x1 + + 0 0 + 0 -10.839071529076453 + + / 0 0 + 0 0 + + 0 0 + 0 0.020122271709039314 + + + * 0 x0 + x0 2 + / x0 0.010000 + 0 6.29319 + + ^ 0 0 + 0 0 + + 0 0 + 0 0.09268112623466472 + + + + + -")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
@@ -10508,7 +10513,7 @@ namespace ExampleProblems
     void InPaintWildfireSpreadTSTest(int random_seed, const char* algorithm, double time)
     {
         double threshold = 0.0;
-        bool validation = false;
+        bool validation = true;
         Eigen::MatrixXd data;
         if (validation)
         {
@@ -10564,7 +10569,7 @@ namespace ExampleProblems
                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {{"x100", "x101"}} /*custom features that the SR-found equations are required to contain*/,
                 "",//"BestInpaint.txt" /*filename to save current best expression found (instead of outputting them to standard out)*/,
-                {split("/ + - / + - + 0 x63 + 0 0.085773 + + 0 0 + 0 -7.841081 / + + x50 -1.880128 + 0 4.494317 - + 0 0.922675164678351 + x26 x32 * ^ + + 0 0 + 0 4.300312 * + 0 -3 + 0.018720 x29 * + + 0.289593 x98 + 0 x86 * + x42 33.000000 * 4 x79 + - - - + 0 x61 * -1.200690 x54 * + 0 508.2841 / x77 1.617589 ^ + + 0 11909.178469999999 + x33 112131.51600106056 * + 0 -1.211623 + 0 x46 + + - + 0 x33 / 4.494317 x15 + + 0 x48 + 0 312.933985239896 + * * x54 x96 * x74 x91 + + x70 x42 + 0 -2389.8116090000003 - + - + + + x3 x36 + 0 682.9644726562319 + - 374.000000 x100 + 0 2839.0074018380915 - ~ - x0 x38 * + 0 515.19692 / x69 x15 / + + + 12.962205 x10 * 0.001691 x9 + + 0 0 + 0 296.543251 + + + 0 0 + 0 0.01628697435008046 / + 0 x18 - x71 0.418842 * + + / + 0 x63 + 0 -1.3843979999999998 + + 0 0 + 0 x18 + * + x31 x59 + x3 1.011502 + + 0 0 + 0 2.063746 - + + + 0 0 + 0 0 + + 0 0 + 0 -2344.328764684932 + ^ + 0 12192.447208 + 0 x28 + - 2.316374 x101 + x50 -14639.792620156")} /*seed expressions*/,
+                {split("/ + * + + ln cos x46 + + 0 0 + 0 -3.4799761065034414 + * + 0 x95 + 0 1.620943 + + 0 x95 ~ x48 ~ ^ + cos x41 + 0 52.64009483497598 - + 0 2.7907071011403315 cos x93 + ^ + * + 0 3.1585732538600397 ^ x12 x54 + cos x21 + 0.365382 x13 + ~ + 0 x20 + + 0 0 + 0 1.5729403267948965 * + + + 0 0 + 0 0 + + 0 0 + 0 x3 sqrt + + 0 0 + 0 x48 - + / - + + 0 0 + 0 0.9867622178470573 - - 7169.463400 x100 * x17 11181230.000000 + acos tanh x23 + + 0 0 + 0 57.67636600070402 sin + + + 0 0 + 0 -2.884980 + + 0 0 + 0 x50 - sqrt ^ ^ + 0 x17 + 0 x59 + + 0 x71 ~ x87 ^ + + + 0 0 + 0 0 + + 0 0 + 0 0.9910929232006058 * + + 0 0 + 0 -4.0405169999999995 * - x61 x101 + 0 -0.04344899097047564")} /*seed expressions*/,
                 validation /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
@@ -10626,7 +10631,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
     
-    ProblemOption choice = ProblemOption::InPaintWildfireSpreadTS;
+    ProblemOption choice = ProblemOption::SwiftHohenberg;
     switch (choice)
     {
         case ProblemOption::SwiftHohenberg:
