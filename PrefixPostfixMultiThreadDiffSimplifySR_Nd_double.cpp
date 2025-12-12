@@ -8020,10 +8020,10 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
     /*
-     Best score = 6.27042e-05, SNE = 15946.9
-     Squared-norm error for each equation: 15932.1 14.8169 0
-     Best expression = (((((10.01 ^ (0.010000 + x0)) * 2.714063472005533e-13) + 0.7047172460634555) - ((0.999329299739067 * sin((0.010000 + x1))) * (0.9989466681769271 * sin(x0)))) - ((((6 + (1 + x1)) / -10.839071529076453) * 0.020122271709039314) + (((x0 / (x0 + 2)) ^ ((x0 + 0.010000) + 6.29319)) + 0.09268112623466472)))
-     Best expression (original format) = 10.01 0.010000 x0 + ^ 2.714063472005533e-13 * 0.7047172460634555 + 0.999329299739067 0.010000 x1 + sin * 0.9989466681769271 x0 sin * * - 6 1 x1 + + -10.839071529076453 / 0.020122271709039314 * x0 x0 2 + / x0 0.010000 + 6.29319 + ^ 0.09268112623466472 + + -
+     Best score = 6.27261e-05, SNE = 15941.3
+     Squared-norm error for each equation: 15927.2 14.0894 0
+     Best expression = (((((10.28319 ^ (0.010000 + x0)) * 2.714063472005533e-13) + ((4.692820413780688e-06 * ~(x1)) + 0.7049172460634555)) - ((0.999329299739067 * sin((0.010000 + x1))) * (0.9989466681769272 * sin(x0)))) - ((((6.29319 + (1 + x1)) / -10.859071529076452) * 0.019709200140662183) + (((x0 / (x0 + 2)) ^ ((x0 + 0.010000) + 6.31319)) + 0.09367415161541374)))
+     Best expression (original format) = 10.28319 0.010000 x0 + ^ 2.714063472005533e-13 * 4.692820413780688e-06 x1 ~ * 0.7049172460634555 + + 0.999329299739067 0.010000 x1 + sin * 0.9989466681769272 x0 sin * * - 6.29319 1 x1 + + -10.859071529076452 / 0.019709200140662183 * x0 x0 2 + / x0 0.010000 + 6.31319 + ^ 0.09367415161541374 + + -
      */
     
     std::vector<std::vector<std::string>> results;
@@ -10314,7 +10314,7 @@ namespace ExampleProblems
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "" /*filename to save current best expression found (instead of outputting them to standard out*/,
-                {split("0 10.01 + 0.010000 x0 + ^ 0 0 + 0 2.714063472005533e-13 + + * 0 0 + 0 0 + + 0 0 + 0 0.7047172460634555 + + + + 0 0 + 0 0.999329299739067 + + 0.010000 x1 + sin * 0 0 + 0 0.9989466681769271 + + 0 x0 + sin * * - 0 6 + 1 x1 + + 0 0 + 0 -10.839071529076453 + + / 0 0 + 0 0 + + 0 0 + 0 0.020122271709039314 + + + * 0 x0 + x0 2 + / x0 0.010000 + 0 6.29319 + + ^ 0 0 + 0 0 + + 0 0 + 0 0.09268112623466472 + + + + + -")} /*seed expressions*/,
+                {split("0 10.283190000000001 + 0.010000 x0 + ^ 0 0 + 0 2.714063472005533e-13 + + * 0 0 + 0 0 + + 0 0 + 0 0.7048172460634555 + + + + 0 0 + 0 0.999329299739067 + + 0.010000 x1 + sin * 0 0 + 0 0.9989466681769272 + + 0 x0 + sin * * - 0 6.28319 + 1 x1 + + 0 0 + 0 -10.849071529076452 + + / 0 0 + 0 0 + + 0 0 + 0 0.0198 + + + * 0 x0 + x0 2 + / x0 0.010000 + 0 6.30319 + + ^ 0 0 + 0 0 + + 0 0 + 0 0.09367415161541374 + + + + + -")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
