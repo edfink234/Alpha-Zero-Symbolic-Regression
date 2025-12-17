@@ -6,11 +6,19 @@
            The question we have is that, if instead of evaluating the derivatives symbolically, we evaluate them 
            numerically, is the numerical-differentiation faulty by definition if, after proceeding with the same process 
            as above, we get a resulting norm(L_{numerical}) that differs substantially from ε?
+           -> Yes, the symbolic residual is the right one
         2. Why is it that a numerical solver starting with a smaller starting numerically-computed MSE can take longer to converge than a guess that has a larger starting numerically-computed MSE?
+            -> Might be in a different basin of attraction
+            -> A lot of newton/quasi-newton solvers compute/approximate a Jacobian, which may be ill-conditioned depending on the initial seed. For quasi-newton especially, the Jacobian approximate could be poor if the true-Jacobian is ill-conditioned
         3. Does there usually/~always exist a sufficiently accurate numerical scheme that gets the close enough to the symbolically computed MSE 
             3 a. If not, then how can we modify the SR search to penalize solutions that would be difficult to use numerically?
+                -> Add a term to the loss that penalizes the condition-number of the Jacobian 
         4. Does it make more sense to go the direction of reducing the error of the SR f or to explore the numerics side? 
+            -> We definitely want to reduce the SR error as much as possible given that the SR-solution MSE is ~ mesh-independent
+                -> Right now the numerics is nice but not central if we can get the SR loss down sufficiently in a mesh-independent manner
+            -> Makes sense to see if we can use our solution for the mu=1, nu=1 case as an initial seed for a general function solution f(r, theta; mu, nu) 
         5. If we do numerical continuation in (mu, nu), does it make more sense to do it from a phenmonelogical perspective (to gain e.g. insight into the "functional forms" of the solutions in the SR) or just in the numerics
+            -> Makes sense to see if we can use our solution for the mu=1, nu=1 case as an initial seed for a general function solution f(r, theta; mu, nu) 
         
         https://iopscience.iop.org/article/10.1088/1361-6544/acc508/pdf 
 '''
@@ -37,7 +45,7 @@ f = None
 if GENERIC:
     f = Function('f')(r, theta)
 else:
-    f =  [(((((10.28319 ** (0.010000 + r)) * 2.714063472005533e-13) + ((4.692820413780688e-06 * -(theta)) + 0.7049172460634555)) - ((0.999329299739067 * sin((0.010000 + theta))) * (0.9989466681769272 * sin(r)))) - ((((6.28319 + (1 + theta)) / -10.869071529076452) * 0.019709200140662183) + (((r / (r + 2)) ** ((r + 0.010000) + 6.333189999999999)) + 0.09367884443582758))), sin(r)*sin(theta)+0.604, sin(r)*sin(theta)][0] \
+    f =  [((((((0.010000 + 10.28319) ** (0.010000 + r)) * ((0 + 0) + (0 + 2.714063472005533e-13))) + (((0 + 4.692820413780688e-06) * (0.000000 - theta)) + ((0.010000 / 6.283190) + (0 + 0.7049172460634555)))) - ((((0 + 0) + (0 + 0.999329299739067)) * sin((0.010000 + theta))) * (((0 + 0) + (0 + 0.9989466681769272)) * sin((0 + r))))) - (((((6.283190 - 0.010000) + (1 + theta)) / (-(0.010000) + (0 + -10.85907152907618))) * (ln(cos(0.010000)) + ((0 + 0) + (0 + 0.019659199307306502)))) + ((((0 + r) / (r + 2)) ** ((r + 0.010000) + (0 + 6.333189999999999))) + (((0 + 0.010000) ** (10.000000 / r)) + (sech(10.000000) + (0 + 0.09367884443582758)))))), sin(r)*sin(theta)+0.604, sin(r)*sin(theta)][0] \
         if PERIODIC_IN_THETA else \
         (((0.148475282221305 * theta) - (sin(theta) * (1.0000132758892615 * sin(r)))) - 0.0922858190550785)
 

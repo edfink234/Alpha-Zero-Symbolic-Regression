@@ -6860,7 +6860,6 @@ std::vector<std::vector<std::string>> InPaintWildfireSpreadTS(Board& x, bool fit
         results[2].push_back("*"); // *
         results[2].push_back("1000000"); // 1000000
         
-        
         results[2].push_back("+"); // +
         results[2].push_back("*"); // *
         results[2].push_back("x28"); // x28
@@ -8034,20 +8033,19 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
  Infix: ∂f/∂θ(r, θ=2*π) - ∂f/∂θ(r, θ = 0)
  Postfix: ∂f/∂θ(r, θ=2*π) ∂f/∂θ(r, θ = 0) -
 
-{x0: r, x1: θ}
+{x0: r, x1: θ, x2: μ, x3: ν}
 {x.pieces[0]: f}
 */
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
     /*
-     Best score = 6.27271e-05, SNE = 15941.1
-     Squared-norm error for each equation: 15927.1 14.0178 0
-     Best expression = (((((10.28319 ^ (0.010000 + x0)) * 2.714063472005533e-13) + ((4.692820413780688e-06 * ~(x1)) + 0.7049172460634555)) - ((0.999329299739067 * sin((0.010000 + x1))) * (0.9989466681769272 * sin(x0)))) - ((((6.28319 + (1 + x1)) / -10.85907152907618) * 0.019659199307306502) + (((x0 / (x0 + 2)) ^ ((x0 + 0.010000) + 6.333189999999999)) + 0.09367884443582758)))
-     Best expression (original format) = 10.28319 0.010000 x0 + ^ 2.714063472005533e-13 * 4.692820413780688e-06 x1 ~ * 0.7049172460634555 + + 0.999329299739067 0.010000 x1 + sin * 0.9989466681769272 x0 sin * * - 6.28319 1 x1 + + -10.85907152907618 / 0.019659199307306502 * x0 x0 2 + / x0 0.010000 + 6.333189999999999 + ^ 0.09367884443582758 + + -
-     
+     Best score = 6.27315e-05, SNE = 15940
+     Squared-norm error for each equation: 15926.1 13.8627 0
+     Best expression = ((((((0.010000 + 10.28319) ^ (0.010000 + x0)) * ((0 + 0) + (0 + 2.714063472005533e-13))) + (((0 + 4.692820413780688e-06) * (0.000000 - x1)) + ((0.010000 / 6.283190) + (0 + 0.7049172460634555)))) - ((((0 + 0) + (0 + 0.999329299739067)) * sin((0.010000 + x1))) * (((0 + 0) + (0 + 0.9989466681769272)) * sin((0 + x0))))) - (((((6.283190 - 0.010000) + (1 + x1)) / (~(0.010000) + (0 + -10.85907152907618))) * (~(sech(10.000000)) + ((0 + 0) + (0 + 0.019659199307306502)))) + ((((0 + x0) / (x0 + 2)) ^ ((x0 + 0.010000) + (0 + 6.333189999999999))) + (((0 + 0.010000) ^ (10.000000 / x0)) + (sech(10.000000) + (0 + 0.09367884443582758))))))
+     Best expression (original format) = 0.010000 10.28319 + 0.010000 x0 + ^ 0 0 + 0 2.714063472005533e-13 + + * 0 4.692820413780688e-06 + 0.000000 x1 - * 0.010000 6.283190 / 0 0.7049172460634555 + + + + 0 0 + 0 0.999329299739067 + + 0.010000 x1 + sin * 0 0 + 0 0.9989466681769272 + + 0 x0 + sin * * - 6.283190 0.010000 - 1 x1 + + 0.010000 ~ 0 -10.85907152907618 + + / 10.000000 sech ~ 0 0 + 0 0.019659199307306502 + + + * 0 x0 + x0 2 + / x0 0.010000 + 0 6.333189999999999 + + ^ 0 0.010000 + 10.000000 x0 / ^ 10.000000 sech 0 0.09367884443582758 + + + + + -
      ```
-     x = "(((((10.28319 ^ (0.010000 + x0)) * 2.714063472005533e-13) + ((4.692820413780688e-06 * ~(x1)) + 0.7049172460634555)) - ((0.999329299739067 * sin((0.010000 + x1))) * (0.9989466681769272 * sin(x0)))) - ((((6.28319 + (1 + x1)) / -10.85907152907618) * 0.019659199307306502) + (((x0 / (x0 + 2)) ^ ((x0 + 0.010000) + 6.333189999999999)) + 0.09367884443582758)))"
-     print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-"))
+x = "((((((0.010000 + 10.28319) ^ (0.010000 + x0)) * ((0 + 0) + (0 + 2.714063472005533e-13))) + (((0 + 4.692820413780688e-06) * (0.000000 - x1)) + ((0.010000 / 6.283190) + (0 + 0.7049172460634555)))) - ((((0 + 0) + (0 + 0.999329299739067)) * sin((0.010000 + x1))) * (((0 + 0) + (0 + 0.9989466681769272)) * sin((0 + x0))))) - (((((6.283190 - 0.010000) + (1 + x1)) / (~(0.010000) + (0 + -10.85907152907618))) * (ln(cos(0.010000)) + ((0 + 0) + (0 + 0.019659199307306502)))) + ((((0 + x0) / (x0 + 2)) ^ ((x0 + 0.010000) + (0 + 6.333189999999999))) + (((0 + 0.010000) ^ (10.000000 / x0)) + (sech(10.000000) + (0 + 0.09367884443582758))))))"
+print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-"))
      */
     
     std::vector<std::vector<std::string>> results;
@@ -8066,12 +8064,14 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
     if (!prefactors_computed)
     {
         prefac_temp.reserve(20);
+        assert(((Board::__num_features == 2) || (Board::__num_features == 4)) && "SwiftHohenberg must have either 2 features (r, theta) or 4 features (r, theta, mu, nu)");
     }
     grasp.clear();
     grasp.reserve(500);
 
-    std::string mu = "1"; //"const0"; //
-    std::string nu = "1"; //"const1"; //
+    std::string mu = ((Board::__num_features == 2) ? "1" : "x2");
+    std::string nu = ((Board::__num_features == 2) ? "1" : "x3");
+
     std::string infty = std::to_string(DBL_MAX);
 
     if (x.expression_type == "prefix")
@@ -8865,7 +8865,8 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                         const double T_max = 0.0,
                         double (*temp_func)(const double, const double) = [](double ratio, double t) -> double {return pow(ratio, t/(t+1.0));},
                         const char* SNE_file_name = "",
-                        bool completeTree = false)
+                        bool completeTree = false,
+                        bool pert_sub_array = false)
 {
     assert(simplifyOriginal == false);
     if (num_threads == 0)
@@ -8915,7 +8916,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
     /*
      Inside of thread:
      */
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &custom_features, &seed_expressions, &exit_early, &custom_rand_seed, &T_min, &T_max, &temp_func, &completeTree, &best_SNE, &best_sne_vec, &bestExpressionFileName, &outFile, &out]()
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &custom_features, &seed_expressions, &exit_early, &custom_rand_seed, &T_min, &T_max, &temp_func, &completeTree, &pert_sub_array, &best_SNE, &best_sne_vec, &bestExpressionFileName, &outFile, &out]()
     {
         std::random_device rand_dev;
         #if RANDOM_SEED < 0
@@ -8941,8 +8942,9 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
         std::vector<std::pair<int, int>> sub_exprs;
         std::vector<std::string> temp_legal_moves;
         size_t piece_to_perturb_idx; //Used in the case of a depth-0 perturbation
+        size_t starting_sub_array_idx; //Used in case pert_sub_array is true
         std::string piece_to_perturb; piece_to_perturb.reserve(10); //Used in the case of a depth-0 perturbation
-        std::string piece_to_replace_with; piece_to_replace_with.reserve(10); //Used in the case of a depth-0 perturbation
+        std::string piece_to_replace_with; piece_to_replace_with.reserve(10); //Used in the case of a depth-0 perturbation or when pert_sub_array is true
         std::vector<std::uniform_int_distribution<int>> rand_depth_dists(depth.size());
         std::vector<int> rand_depths(depth.size());
 
@@ -8973,8 +8975,6 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                     x.pieces = x.complete_tree(x.pieces);
                 }
                 current = x.pieces; //update current expression
-
-                //TODO: complete tree of current (or x.pieces?) if complete_tree option set to true.
                 if ((score > max_score) || exit_early)
                 {
                     max_score = score;
@@ -9064,9 +9064,39 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                 //Pre-validation: clears and sanity check
                 secondary.pieces[jdx].clear();
                 sub_exprs.clear();
-                assert(secondary.n[jdx] <= x.n[jdx]);
+                assert((secondary.n[jdx] <= x.n[jdx]) || pert_sub_array);
+                if (pert_sub_array)
+                {
+                    /*
+                     random starting index of the `n[jdx]` sized sub-array,
+                     can be from 0 to pieces[jdx].size() - n[jdx].
+                     Example: if n[jdx] = 1, then can start anywhere from 0 to pieces[jdx].size() - 1.
+                     Example: if n[jdx] = pieces[jdx].size(), then can only start at 0 (to (pieces[jdx].size() - pieces[jdx].size()) = 0)
+                    */
+//                    n[jdx] = 1;
+                    std::uniform_int_distribution<int> distribution(0, x.pieces[jdx].size() - n[jdx]);
+                    starting_sub_array_idx = distribution(generator);
+                    for (size_t ps_idx = starting_sub_array_idx; ps_idx < (starting_sub_array_idx + n[jdx]); ps_idx++)
+                    {
+                        piece_to_perturb = x.pieces[jdx][ps_idx];
+                        if (x.is_unary(piece_to_perturb))
+                        {
+                            piece_to_replace_with = Board::__unary_operators[Board::unary_dist(generator)];
+                        }
+                        else if (x.is_binary(piece_to_perturb))
+                        {
+                            piece_to_replace_with = Board::__binary_operators[Board::binary_dist(generator)];
+                        }
+                        else
+                        {
+                            piece_to_replace_with = Board::una_bin_leaf_legal_moves_dict[false][false][true][Board::leaf_dist(generator)];
+                        }
+                        assert(piece_to_replace_with.size());
+                        std::swap(x.pieces[jdx][ps_idx], piece_to_replace_with);
+                    }
+                }
                 //Step 1a: check for the special case of a depth-0 (i.e. 1 operand) perturbation
-                if (n[jdx] == 0)
+                else if (n[jdx] == 0)
                 {
                     temp_sz = x.pieces[jdx].size();
                     std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
@@ -9167,7 +9197,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                 assert(depth_and_completion.first == x.n[jdx]);
                 assert(depth_and_completion.second);
                 //x.n[jdx] = depth_and_completion.first;
-                rand_depth_dists[jdx] = std::uniform_int_distribution<int>(0, x.n[jdx]);
+                rand_depth_dists[jdx] = std::uniform_int_distribution<int>((pert_sub_array ? 1 : 0), ((pert_sub_array) ? x.pieces[jdx].size() : x.n[jdx]));
                 rand_depths[jdx] = rand_depth_dists[jdx](generator);
             }
         }
@@ -9183,7 +9213,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                 assert((depth_and_completion.first <= x.n[jdx]) && ("Seed expression depth of x.pieces[" + std::to_string(jdx) + "] = " + std::to_string(depth_and_completion.first)).c_str());
                 assert(depth_and_completion.second);
                 //x.n[jdx] = depth_and_completion.first;
-                rand_depth_dists[jdx] = std::uniform_int_distribution<int>(0, x.n[jdx]);
+                rand_depth_dists[jdx] = std::uniform_int_distribution<int>((pert_sub_array ? 1 : 0), ((pert_sub_array) ? x.pieces[jdx].size() : x.n[jdx]));
                 assert(x.pieces[jdx].size());
             }
             assert(all_checks(x.pieces));
@@ -9202,6 +9232,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
         {
             if ((T > 0.0) && i && (static_cast<int>(i)%50000 == 0))
             {
+//                std::cout << "i = " << i << '\n';
 //                std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
                 if (check_point_score == max_score)
                 {
@@ -9220,6 +9251,12 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
             }
             for (int jdx = 0; jdx < x.num_objectives; jdx++)
             {
+                /*
+                 If pert_sub_array is true, then `rand_depth_dists[jdx](generator)` returns
+                 a random-integer from [1, x.pieces[jdx].size()] (the size of the sub-array to mutate).
+                 Else, `rand_depth_dists[jdx](generator)` returns
+                 a random-integer from [0, x.n[jdx]] (the depth of sub-tree to swap).
+                 */
                 rand_depths[jdx] = rand_depth_dists[jdx](generator);
             }
             assert(all_checks(x.pieces));
@@ -10299,7 +10336,11 @@ namespace ExampleProblems
     void SwiftHohenbergTest(int random_seed, const char* algorithm, double time)
     {
         double threshold = 1.0;
-        auto data1 = createMeshgridVectors(330, 2, {0.01, 0.0}, {10.0, 6.28319});
+        bool mu_equals_nu_1_only = true;
+        auto data1 = ((mu_equals_nu_1_only) ?
+                     createMeshgridVectors(330, 2, {0.01, 0.0}, {10.0, 6.28319}) :
+                     createMeshgridVectors(10, 4, {0.01, 0.0, 0.01, 0.01}, {10.0, 6.28319, 10, 10}));
+        
         if (strcmp(algorithm, "RandomSearch") == 0)
         {
             RandomSearch(SwiftHohenberg /*differential equation to solve*/,
@@ -10344,14 +10385,15 @@ namespace ExampleProblems
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "" /*filename to save current best expression found (instead of outputting them to standard out*/,
-                {split("0 10.28319 + 0.010000 x0 + ^ 0 0 + 0 2.714063472005533e-13 + + * 0 4.692820413780688e-06 + x1 ~ * 0 0 + 0 0.7049172460634555 + + + + 0 0 + 0 0.999329299739067 + + 0.010000 x1 + sin * 0 0 + 0 0.9989466681769272 + + 0 x0 + sin * * - 0 6.28319 + 1 x1 + + 0 0 + 0 -10.85907152907618 + + / 0 0 + 0 0 + + 0 0 + 0 0.019659199307306502 + + + * 0 x0 + x0 2 + / x0 0.010000 + 0 6.333189999999999 + + ^ 0 0 + 0 0 + + 0 0 + 0 0.09367884443582758 + + + + + -")} /*seed expressions*/,
+                {split("0.010000 10.28319 + 0.010000 x0 + ^ 0 0 + 0 2.714063472005533e-13 + + * 0 4.692820413780688e-06 + 0.000000 x1 - * 0.010000 6.283190 / 0 0.7049172460634555 + + + + 0 0 + 0 0.999329299739067 + + 0.010000 x1 + sin * 0 0 + 0 0.9989466681769272 + + 0 x0 + sin * * - 6.283190 0.010000 - 1 x1 + + 0.010000 ~ 0 -10.85907152907618 + + / 10.000000 sech ~ 0 0 + 0 0.019659199307306502 + + + * 0 x0 + x0 2 + / x0 0.010000 + 0 6.333189999999999 + + ^ 0 0.010000 + 10.000000 x0 / ^ 10.000000 sech 0 0.09367884443582758 + + + + + -")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
                 0.0 /*T_max*/,
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
-                true /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/);
+                true /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
+                true /*whether to perturb sub-arrays (true) of the current expression-vector or sub-trees (false)*/);
         }
     }
     
@@ -10410,7 +10452,8 @@ namespace ExampleProblems
                 0.0 /*T_max*/,
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
-                false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/);
+                false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
+                false /*whether to perturb sub-arrays (true) of the current expression-vector or sub-trees (false)*/);
         }
     }
 
@@ -10471,7 +10514,8 @@ namespace ExampleProblems
                 0.0 /*T_max*/,
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
-                false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/);
+                false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
+                false /*whether to perturb sub-arrays (true) of the current expression-vector or sub-trees (false)*/);
         }
     }
     void WildfireSpreadTSTest(int random_seed, const char* algorithm, double time)
@@ -10541,7 +10585,8 @@ namespace ExampleProblems
                 0.0 /*T_max*/,
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
-                false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/);
+                false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
+                false /*whether to perturb sub-arrays (true) of the current expression-vector or sub-trees (false)*/);
         }
     }
     void InPaintWildfireSpreadTSTest(int random_seed, const char* algorithm, double time)
@@ -10610,7 +10655,8 @@ namespace ExampleProblems
                 0.0 /*T_max*/,
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
-                false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/);
+                false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
+                false /*whether to perturb sub-arrays (true) of the current expression-vector or sub-trees (false)*/);
         }
     }
 };
