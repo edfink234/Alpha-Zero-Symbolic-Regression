@@ -164,13 +164,16 @@ std::vector<std::string> split(const std::string& str)
     return vec;
 }
 
-Eigen::MatrixXd load_csv(const std::string& path, int rows, int cols)
+Eigen::MatrixXd load_csv(const std::string& path, int rows, int cols, bool header = true)
 {
     std::ifstream file(path);
     Eigen::MatrixXd data(rows, cols);
     std::string line;
     int i = 0;
-    std::getline(file, line); //header row
+    if (header)
+    {
+        std::getline(file, line); //header row
+    }
     while (std::getline(file, line) && (i < rows))
     {
         std::stringstream ss(line);
@@ -3887,10 +3890,10 @@ struct Board
         std::stack<std::string> stack;
         bool is_prefix = (expression_type == "prefix");
         std::string result, token;
-        int sz = static_cast<int>((this->simplify_original || this->complete_Tree) ? this->pieces[idx].size() : this->temp_pieces[idx].size());
+        int sz = static_cast<int>((this->simplify_original) ? this->pieces[idx].size() : this->temp_pieces[idx].size());
         for (int i = (is_prefix ? (sz - 1) : 0); (is_prefix ? (i >= 0) : (i < sz)); (is_prefix ? (i--) : (i++)))
         {
-            token = ((this->simplify_original || this->complete_Tree) ? this->pieces[idx][i] : this->temp_pieces[idx][i]);
+            token = ((this->simplify_original) ? this->pieces[idx][i] : this->temp_pieces[idx][i]);
 //            puts(("\ntoken = "+token+"\n").c_str());
             if (is_const(token)) // leaf
             {
@@ -3942,7 +3945,7 @@ struct Board
     std::string _to_infix(bool show_consts = true)
     {
         std::string temp;
-        int sz = static_cast<int>((this->simplify_original || this->complete_Tree) ? (this->pieces.size() - 1) : (this->temp_pieces.size() - 1));
+        int sz = static_cast<int>((this->simplify_original) ? (this->pieces.size() - 1) : (this->temp_pieces.size() - 1));
         for (int jdx = 0; jdx < sz; jdx++)
         {
             temp += _to_infix(jdx, show_consts) + ", ";
@@ -3955,11 +3958,11 @@ struct Board
     std::string expression(int idx, bool show_consts = true)
     {
         std::string temp, token;
-        temp.reserve(2*((this->simplify_original || this->complete_Tree) ? this->pieces[idx].size() : this->temp_pieces[idx].size()));
-        size_t sz = ((this->simplify_original || this->complete_Tree) ? this->pieces[idx].size() : this->temp_pieces[idx].size()) - 1;
+        temp.reserve(2*((this->simplify_original) ? this->pieces[idx].size() : this->temp_pieces[idx].size()));
+        size_t sz = ((this->simplify_original) ? this->pieces[idx].size() : this->temp_pieces[idx].size()) - 1;
         for (size_t i = 0; i <= sz; i++)
         {
-            token = ((this->simplify_original || this->complete_Tree) ? this->pieces[idx][i] : this->temp_pieces[idx][i]);
+            token = ((this->simplify_original) ? this->pieces[idx][i] : this->temp_pieces[idx][i]);
 
             if ((token.compare(0, 5, "const") == 0) && show_consts)
             {
@@ -4005,7 +4008,7 @@ struct Board
     std::string expression(bool show_consts = true)
     {
         std::string temp;
-        int sz = static_cast<int>((this->simplify_original || this->complete_Tree) ? (this->pieces.size() - 1) : (this->temp_pieces.size() - 1));
+        int sz = static_cast<int>((this->simplify_original) ? (this->pieces.size() - 1) : (this->temp_pieces.size() - 1));
         for (int jdx = 0; jdx < sz; jdx++)
         {
             temp += expression(jdx, show_consts) + ", ";
@@ -4257,14 +4260,14 @@ struct Board
                 if (token.compare(0, 5, "const") == 0)
                 {
                     int temp_idx = std::stoi(token.substr(5));
-                    assert(temp_idx < params.size());
-//                    if (temp_idx >= params.size())
-//                    {
-//                        throw std::runtime_error("\ntemp_idx = "+std::to_string(temp_idx)
-//                                                 +"\nparams.size() = "+std::to_string(params.size())
-//                                                 +"\nnum_consts = "+std::to_string(this->__num_consts())
-//                                                 +"\nBoard::expression_dict.size() = "+std::to_string(Board::expression_dict.size()));
-//                    }
+//                    assert(temp_idx < params.size());
+                    if (temp_idx >= params.size())
+                    {
+                        throw std::runtime_error("\ntemp_idx = "+std::to_string(temp_idx)
+                                                 +"\nparams.size() = "+std::to_string(params.size())
+                                                 +"\nnum_consts = "+std::to_string(this->__num_consts())
+                                                 +"\nBoard::expression_dict.size() = "+std::to_string(Board::expression_dict.size()));
+                    }
                     stack.push(Eigen::VectorXd::Ones(Board::data.numRows())*params(temp_idx));
                 }
                 else if (token == "0")
@@ -6645,6 +6648,46 @@ struct Board
 };
 
 /*
+ Infix: abs(f - x1)
+ Postfix: f x1 - abs
+ Prefix: abs - f x1
+ */
+
+std::vector<std::vector<std::string>> WierdTrackFitter(Board& x, bool fit)
+{
+    thread_local std::vector<std::vector<std::string>> results(x.num_diff_eqns);
+    assert(x.num_diff_eqns == 1);
+    for (std::vector<std::string>& res: results)
+    {
+        res.clear();
+        res.reserve(100);
+    }
+    if (x.expression_type == "prefix")
+    {
+        //abs - f x1
+        results[0].push_back("abs"); // abs
+        results[0].push_back("-"); // -
+        for (const std::string& i: x.pieces[0]) // f
+        {
+            results[0].push_back(i);
+        }
+        results[0].push_back("x1"); // x1
+    }
+    else if (x.expression_type == "postfix")
+    {
+        //f x1 - abs
+        for (const std::string& i: x.pieces[0]) // f
+        {
+            results[0].push_back(i);
+        }
+        results[0].push_back("x1"); // x1
+        results[0].push_back("-"); // -
+        results[0].push_back("abs"); // abs
+    }
+    return results;
+}
+
+/*
  Infix: abs(f - x102)
  Postfix: f x102 - abs
  Prefix: abs - f x102
@@ -8972,7 +9015,18 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
             {
                 if (completeTree) //update current expression
                 {
-                    x.pieces = x.complete_tree(x.pieces);
+//                    std::cout << "x.pieces before complete_tree = " << x.pieces << '\n';
+//                    std::cout << "x.temp_pieces before complete_tree = " << x.temp_pieces << '\n';
+                    if (use_const_pieces)
+                    {
+                        x.temp_pieces = x.complete_tree(x.temp_pieces);
+                    }
+                    else
+                    {
+                        x.pieces = x.complete_tree(x.pieces);
+                    }
+//                    std::cout << "x.temp_pieces before complete_tree = " << x.temp_pieces << '\n';
+//                    std::cout << "x.pieces after complete_tree = " << x.pieces << '\n';
                 }
                 current = x.pieces; //update current expression
                 if ((score > max_score) || exit_early)
@@ -9073,7 +9127,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                      Example: if n[jdx] = 1, then can start anywhere from 0 to pieces[jdx].size() - 1.
                      Example: if n[jdx] = pieces[jdx].size(), then can only start at 0 (to (pieces[jdx].size() - pieces[jdx].size()) = 0)
                     */
-//                    n[jdx] = 3;
+//                    n[jdx] = 3; //must also comment out `const` in `const std::vector<int>& n` above for this hack..
                     std::uniform_int_distribution<int> distribution(0, x.pieces[jdx].size() - n[jdx]);
                     starting_sub_array_idx = distribution(generator);
                     for (size_t ps_idx = starting_sub_array_idx; ps_idx < (starting_sub_array_idx + n[jdx]); ps_idx++)
@@ -9247,7 +9301,16 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
             else if (i && (static_cast<int>(i)%1000000 == 0))
             {
                 std::scoped_lock progress_lock(Board::thread_locker);
-                std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+                
+                if (use_const_pieces)
+                {
+                    std::cout << "Iteration " << i << '\n';
+                    std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+                }
+                else
+                {
+                    std::cout << "Iteration " << i << '\n';
+                }
             }
             for (int jdx = 0; jdx < x.num_objectives; jdx++)
             {
@@ -10659,6 +10722,68 @@ namespace ExampleProblems
                 false /*whether to perturb sub-arrays (true) of the current expression-vector or sub-trees (false)*/);
         }
     }
+    void WierdTrackFitterTest(int random_seed, const char* algorithm, double time)
+    {
+        double threshold = 0.0;
+        constexpr const char* file_path = "/Users/edwardfinkelstein/SDSU_UCI/WhitesonResearch/TrackProject/stubborn_track_csvs/event100000003-hits_Z.csv";
+        Eigen::MatrixXd data = load_csv(file_path, 61, 2, false /*no header in this file*/);
+        std::cout << "data = " << data << '\n';
+//        exit(1);
+        if (strcmp(algorithm, "RandomSearch") == 0)
+        {
+            RandomSearch(WierdTrackFitter /*differential equation to solve*/,
+                1 /*number of equations in differential equation system*/,
+                data /*data used to solve differential equation*/,
+                std::vector<int>{4} /*fixed depths of generated solution*/,
+                "prefix" /*expression representation*/,
+                0 /*num_consts_diff: number of constants in differential equation*/,
+                "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
+                5 /*number of fit iterations*/,
+                "naive_numerical" /*method for computing the gradient*/,
+                true /*cache*/,
+                time /*time to run the algorithm in seconds*/,
+                0 /*num threads*/,
+                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                threshold /*threshold for which solutions cannot be constant*/,
+                false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                 1 /*number of data columns that constitute labels and not independent variables/features*/,
+                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
+                 {} /*custom features that the SR-found equations are required to contain*/,
+                 "" /*filename to save current best expression found (instead of outputting them to standard out)*/);
+        }
+        else
+        {
+            SimulatedAnnealing(WierdTrackFitter /*differential equation to solve*/,
+                1 /*number of equations in differential equation system*/,
+                data /*data used to solve differential equation*/,
+                std::vector<int>{4} /*fixed depths of generated solution*/,
+                "prefix" /*expression representation*/,
+                0 /*num_consts_diff: number of constants in differential equation*/,
+                "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
+                5 /*number of fit iterations*/,
+                "naive_numerical" /*method for computing the gradient*/,
+                true /*cache*/,
+                time /*time to run the algorithm in seconds*/,
+                1 /*num threads*/,
+                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                threshold /*threshold for which solutions cannot be constant*/,
+                true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                false, /*Whether to simplify the ORIGINAL expression on every iteration (perturbation) of the seed expression vector; if false a copy is maintained so that simplification on this->pieces can still happen*/
+                1 /*number of data columns that constitute labels and not independent variables/features*/,
+                true /*whether or not to include ALL of the features in all of the generated expressions*/,
+                {} /*custom features that the SR-found equations are required to contain*/,
+                "",// "WierdTrackSR.txt" /*filename to save current best expression found (instead of outputting them to standard out)*/,
+                {split("* - ^ acos x0 exp 2.342506 + + 0 13.002907 ^ x0 24.300306 ^ ^ ^ x0 0.980359 ^ x0 -0.707586 cos ^ 8.509601 x0")} /*seed expressions*/,
+                false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
+                random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
+                0.0 /*T_min*/,
+                0.0 /*T_max*/,
+                [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
+                "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
+                true /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
+                true /*whether to perturb sub-arrays (true) of the current expression-vector or sub-trees (false)*/);
+        }
+    }
 };
 
 int get_random_seed(int argc, char *argv[])
@@ -10686,7 +10811,8 @@ enum class ProblemOption
     VortexRadialProfile,
     SolitonWaveFengEq14and15Laser,
     WildfireSpreadTS,
-    InPaintWildfireSpreadTS
+    InPaintWildfireSpreadTS,
+    WierdTrackFitter
 };
 
 
@@ -10734,7 +10860,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
     
-    ProblemOption choice = ProblemOption::SwiftHohenberg;
+    ProblemOption choice = ProblemOption::WierdTrackFitter;
     switch (choice)
     {
         case ProblemOption::SwiftHohenberg:
@@ -10751,6 +10877,9 @@ int main(int argc, char *argv[])
             break;
         case ProblemOption::SolitonWaveFengEq14and15Laser:
             ExampleProblems::SolitonWaveFengEq14and15LaserTest(random_seed, algorithm, time);
+            break;
+        case ProblemOption::WierdTrackFitter:
+            ExampleProblems::WierdTrackFitterTest(random_seed, algorithm, time);
             break;
         default:
             break;

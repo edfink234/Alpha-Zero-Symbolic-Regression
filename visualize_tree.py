@@ -28,7 +28,7 @@ class UnaryNode(Node):
 def is_operator(token):
     return is_binary_operator(token) or is_unary_operator(token)
 def is_binary_operator(token):
-    return token in {'+', '-', '*', '/', '^', 'MYCDOT'}
+    return token in {'+', '-', '*', '/', '^', 'MYCDOT', 'MYPOW'}
 def is_unary_operator(token):
     return token in {"cos", "exp", "sqrt", "sin", "asin", "arcsin", "log", "tanh", "acos", "arccos", "~", "ln", "MYBRACKETSQRT", "tan", "MYCOS", "MYSIN", "MYTAN", "sech"}
 def is_operand(token):
@@ -379,7 +379,7 @@ def plot_rpn_expression_tree(expression: list[str], save = False, filename = "",
         print(f"Image file saved as {filename}")
         if tolatex:
             # Export to tex
-            replace_dict = {"MYTAU": r"\tau", "MYTHETA": r"\theta", "MYETA": r"\eta", "MYCDOT": r"\cdot", "MYNESTEROV": r"\text{Nesterov}", "MYSIGMA": r"\sigma", "MYEPSILON": r"\epsilon", "MYFRAC": r"\frac", "MYBRACKETSQRT": r"\sqrt{}", "MYSQRT": r"\sqrt", "MYHSPACE": r"\hspace", "MYGAMMA": r"\gamma", "MYLEFT": r"\left", "MYRIGHT": r"\right", "MYTEXTA": r"\text{A}", "MYTEXTDADELTA": r"\text{dadelta}", "MYDELTA": r"\Delta ", "MYMUADAM": r"\widehat{\mu}_{j,m,t=\tau}", "MYNUADAM": r"\widehat{\nu}_{j,m,t=\tau}", "MYSIN": r"\sin", "MYCOS": r"\cos", "MYTAN": r"\tan", "MYLAMBDA": r"\lambda"}
+            replace_dict = {"MYTAU": r"\tau", "MYTHETA": r"\theta", "MYETA": r"\eta", "MYCDOT": r"\cdot", "MYNESTEROV": r"\text{Nesterov}", "MYSIGMA": r"\sigma", "MYEPSILON": r"\epsilon", "MYFRAC": r"\frac", "MYBRACKETSQRT": r"\sqrt{}", "MYSQRT": r"\sqrt", "MYHSPACE": r"\hspace", "MYGAMMA": r"\gamma", "MYLEFT": r"\left", "MYRIGHT": r"\right", "MYTEXTA": r"\text{A}", "MYTEXTDADELTA": r"\text{dadelta}", "MYDELTA": r"\Delta ", "MYMUADAM": r"\widehat{\mu}_{j,m,t=\tau}", "MYNUADAM": r"\widehat{\nu}_{j,m,t=\tau}", "MYSIN": r"\sin", "MYCOS": r"\cos", "MYTAN": r"\tan", "MYLAMBDA": r"\lambda", "MYPOW": r"\wedge", "X02": r"x_0^2"}
             texcode = dot2tex.dot2tex(graph.to_string(),format='tikz',texmode='math',crop=True)
             for replacement in replace_dict:
                 texcode = texcode.replace(replacement, replace_dict[replacement])
@@ -402,10 +402,9 @@ def plot_rpn_expression_tree(expression: list[str], save = False, filename = "",
 def test_visualize():
     save = False
     if save:
-#        print(pn_to_infix(" - - + / ^ x 3 5 / ^ y 3 2 y x".split()))
-#        print(rpn_to_infix("y y x * * cos y +"))
         file_names = ("GradientDescent", "HeavyBall", "Nesterov", "AdaGrad", "RMSProp", "AdaDelta", "Adam", "AdamW",\
-         #"nasty_edward_equation"\
+         "nasty_edward_equation",\
+         "eq:example_pysr_equation"\
          )
         expressions = (r"w_{j,m,t=MYTAU-1} MYETA g_{j,m,t=MYTAU} MYCDOT +", \
                        r"w_{j,m,t=MYTAU-1} MYTHETA v_{j,m,t=MYTAU-1} MYCDOT MYETA g_{j,m,t=MYTAU} MYCDOT + +", \
@@ -415,8 +414,8 @@ def test_visualize():
                        r"w_{j,m,t=MYTAU-1} MYDELTAw^{MYTEXTAMYHSPACE{-.018cm}MYTEXTDADELTA}_{j,m,t=MYTAU} -", \
                        r"w_{j,m,t=MYTAU-1} MYETA MYMUADAM MYCDOT MYNUADAM MYEPSILON + MYBRACKETSQRT / +", \
                        r"w_{j,m,t=MYTAU-1} MYETA  MYLAMBDA w_{j,m,t=MYTAU-1} MYCDOT MYMUADAM MYNUADAM MYBRACKETSQRT MYEPSILON + /  + MYCDOT +",\
-                       #r"x 3 x MYCOS x MYSIN MYSIN - MYCDOT + MYTAN MYCOS MYSIN", \
-
+                       r"x 3 x MYCOS x MYSIN MYSIN - MYCDOT + MYTAN MYCOS MYSIN", \
+                       r"2 x_3 MYCOS * x_0 2 MYPOW + 2 -"
                        )
         titles = (r"w_{j,m,t=MYTAU} = w_{j,m,t=MYTAU-1} + MYETA MYCDOT g_{j,m,t=MYTAU}", \
                   r"w_{j,m,t=MYTAU} = w_{j,m,t=MYTAU-1} + MYTHETA MYCDOT v_{j,m,t=MYTAU-1} + MYETA MYCDOT g_{j,m,t=MYTAU}", \
@@ -426,61 +425,43 @@ def test_visualize():
                   r"w_{j,m,t=MYTAU} = w_{j,m,t=MYTAU-1} - MYDELTAw^{MYTEXTAMYHSPACE{-.018cm}MYTEXTDADELTA}_{j,m,t=MYTAU}", \
                   r"w_{j,m,t=MYTAU} = w_{j,m,t=MYTAU-1} + MYFRAC{MYETA MYCDOT MYMUADAM}{MYSQRT{MYNUADAM} + MYEPSILON}", \
                   r"w_{j,m,t=MYTAU} = w_{j,m,t=MYTAU-1} + MYETA MYCDOT MYLEFT(MYLAMBDA MYCDOT w_{j,m,t=MYTAU-1} + MYFRAC{MYMUADAM}{MYSQRT{MYNUADAM} + MYEPSILON}MYRIGHT)",\
-                  #r"f(x) = MYSIN(MYCOS(MYTAN(x+3 MYCDOT (MYCOS(x) - MYSIN(MYSIN(x)))))",
+                  r"f(x) = MYSIN(MYCOS(MYTAN(x+3 MYCDOT (MYCOS(x) - MYSIN(MYSIN(x)))))",\
+                  r"2 MYCDOT MYCOS(x_3) + X02 - 2"
                   )
                   
-                  
-                  
-        for file_name, expression, title in zip(file_names, expressions, titles):
-#        for file_name, expression, title in [list(zip(file_names, expressions, titles))[-1]]:
+        for file_name, expression, title in list(zip(file_names, expressions, titles))[-1:]:
             plot_rpn_expression_tree(expression = expression, save = True, filename = f"{file_name}.svg", title = title, tolatex=True, to_pdf=True)
             os.system(f"open -a Xcode {file_name}.tex")
             os.system(f"open -a Safari {file_name}.pdf")
     else:
-#        plot_rpn_expression_tree("μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -".split(), save = save, title = r"Swift-Hohenberg 2D Polar Coordinates", tolatex = True, to_pdf = True, filename = "SwiftHohenberg2DPolarCoordinates.pdf")
-#        plot_rpn_expression_tree("x30 x24 s * * x30 tau + / 1 1 f ~ exp - / 1 1 1 f ~ exp - / - * * x28 ∂f/∂(x100) * x29 ∂f/∂(x101) * + *".split(), save = save, title = "", tolatex = True, to_pdf = True, filename = "Example.pdf")
-#        plot_rpn_expression_tree("0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x30 + + + + 0 0 + 0 0 + + 0 0 + 0 x24 + + + 0 0 + 0 0 + + 0 0 + 0 s + + + * * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x30 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 tau + + + + + / 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 1 + + + + 0 0 + 0 0 + + 0 0 + 0 1 + + + 0 f + ~ exp - / 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 1 + + + + 0 0 + 0 0 + + 0 0 + 0 1 + + + 0 0 + 0 1 + + f ~ exp - / - * * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x28 + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 ∂f/∂(x100) + + + + + * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x29 + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 ∂f/∂(x101) + + + + + * + *".split(), save = save, title = "", tolatex = True, to_pdf = True, filename = "Example.pdf", include_expression_in_title = False)
-        test_expr = "+ + - - 9736 x22 / x7 x20 / -100.051731 ^ x5 x15 * + x20 * 1075.000000 x5 -17064.107062"
-#        plot_pn_expression_tree(test_expr.split(), save = save, include_expression_in_title = False)
-#        test_post_expr = prefix_to_postfix(test_expr)
-#        print(test_post_expr)
-#        plot_rpn_expression_tree(test_post_expr, save = save, include_expression_in_title = False)
-#        print(test_expr == postfix_to_prefix(test_post_expr),sep='\n')
-#        print(f"test_expr = {test_expr}")
-#        test_expr = ' '.join(complete_tree(test_expr.split(), 'prefix'))
-#        print(f"Completed test_expr = {test_expr}")
-#        plot_pn_expression_tree("* * / * + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x30 * + + + 0 0 + 0 0 + + 0 0 + 0 x24 + + + 0 0 + 0 0 + + 0 0 + 0 s + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x30 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 tau * / + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 1 - + + + 0 0 + 0 0 + + 0 0 + 0 1 exp ~ + 0 f - + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 1 / + + + 0 0 + 0 0 + + 0 0 + 0 1 - + + 0 0 + 0 1 exp ~ f + * + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x28 + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 ∂f/∂(x100) * + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x29 + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 ∂f/∂(x101)".split(), save = save, include_expression_in_title = False)
-#        print(complete_tree("".split(), "prefix"))
+        pn_to_rpn = False
+        rpn_to_pn = False
+        if pn_to_rpn:
+            pass
+        elif rpn_to_pn:
+            postfix_expr = "x0 acos 2.342506 exp ^ 0 13.002907 + x0 24.300306 ^ + - x0 0.980359 ^ x0 -0.707586 ^ ^ 8.509601 x0 ^ cos ^ *"
+            print(postfix_to_prefix(postfix_expr))
+        else:
+            expression_type_to_plot = ["prefix", "postfix"][1]
+            completeTree = [True, False][0]
+            if expression_type_to_plot == "prefix":
+                complete_pn_expr = "* - ^ acos x0 exp 2.342506 + + 0 13.002907 ^ x0 24.300306 ^ ^ ^ x0 0.980359 ^ x0 -0.707586 cos ^ 8.509601 x0"
+                if completeTree:
+                    complete_pn_expr = complete_tree(complete_pn_expr.split(), "prefix") #returns a list
+                else:
+                    complete_pn_expr = complete_pn_expr.split()
+                print(f"complete_pn_expr = \n{' '.join(complete_pn_expr)}")
+                plot_pn_expression_tree(complete_pn_expr, save = save, include_expression_in_title = False)
 
-        complete_rpn_expr = complete_tree("-15.251 x0 tanh 9.222 x0 * sin ^ *".split(), "postfix") #returns a list
-#        complete_pn_expr = complete_tree("".split(), "prefix") #returns a list
-#        complete_pn_expr = postfix_to_prefix(complete_rpn_expr)
-#        complete_pn_expr = complete_tree("/ + * / + - 1.575531 / 1962.535300 x24 * 16.262361452138492 ~ x0 / -0.654108 - * 0.980140 x23 293.186665 ~ + 51.651745 - x30 cos x93 3.625766546978713e+07 - + / - sech - x64 374.000000 - - 7169.463400 x100 * x17 11181230.000000 50.3631331705848 + ~ x75 -11.700919528340552 - sqrt ^ 3.554312 + x71 ~ x87 ^ 0.9917769232006058 * ~ - x51 x82 * - x10 x101 -0.04344899097047564".split(), "prefix")
-#        print(f"complete_pn_expr = \n{complete_pn_expr}")
-#        print(f"complete_pn_expr = \n{' '.join(complete_pn_expr)}")
+            else:
+                complete_rpn_expr = "x0 acos 2.342506 exp ^ 0 13.002907 + x0 24.300306 ^ + - x0 0.980359 ^ x0 -0.707586 ^ ^ 8.509601 x0 ^ cos ^ *"
+                if completeTree:
+                    complete_rpn_expr = complete_tree(complete_rpn_expr.split(), "postfix") #returns a list
+                else:
+                    complete_rpn_expr = complete_rpn_expr.split()
+                print(f"complete_rpn_expr = \n{' '.join(complete_rpn_expr)}")
+                plot_rpn_expression_tree(complete_rpn_expr, save = save, include_expression_in_title = False, title='')
 
-
-#        assert(prefix_to_postfix(complete_pn_expr) == ' '.join(complete_rpn_expr))
-        
-        print(f"complete_rpn_expr = \n{' '.join(complete_rpn_expr)}")
-#        assert(complete_rpn_expr=="0 10.28319 + 0.010000 x0 + ^ 0 0 + 0 2.714063472005533e-13 + + * 0 4.692820413780688e-06 + x1 ~ * 0 0 + 0 0.7049172460634555 + + + + 0 0 + 0 0.999329299739067 + + 0.010000 x1 + sin * 0 0 + 0 0.9989466681769272 + + 0 x0 + sin * * - 0 6.28319 + 1 x1 + + 0 0 + 0 -10.85907152907618 + + / 0 0 + 0 0 + + 0 0 + 0 0.019659199307306502 + + + * 0 x0 + x0 2 + / x0 0.010000 + 0 6.333189999999999 + + ^ 0 0 + 0 0 + + 0 0 + 0 0.09367884443582758 + + + + + -".split())
-
-#        plot_pn_expression_tree(complete_pn_expr, save = save, include_expression_in_title = False)
-
-        plot_rpn_expression_tree(complete_rpn_expr, save = save, include_expression_in_title = False, title='')
-#        complete_pn_expr = complete_tree(test_expr.split(), "prefix") #returns a list
-#        print(f"complete_pn_expr = \n{' '.join(complete_pn_expr)}")
-##        plot_pn_expression_tree(complete_pn_expr, save = save, include_expression_in_title = False)
-#        complete_rpn_expr = prefix_to_postfix(complete_pn_expr) #returns a string
-#        assert(postfix_to_prefix(prefix_to_postfix(postfix_to_prefix(complete_rpn_expr))) == ' '.join(complete_pn_expr))
-##        plot_rpn_expression_tree(complete_rpn_expr, save = save, include_expression_in_title = False)
-#        complete_pn_expr = postfix_to_prefix(complete_rpn_expr) #returns a string
-#        plot_pn_expression_tree(complete_pn_expr.split(), save = save, include_expression_in_title = False)
-        
-        
-
-
-        
 if __name__ == "__main__":
     test_visualize()
 
