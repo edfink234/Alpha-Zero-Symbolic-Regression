@@ -1213,7 +1213,7 @@ struct Board
         }
         return count;
     }
-
+    
     int __num_consts() const
     {
         int count = 0;
@@ -4969,6 +4969,24 @@ struct Board
             {
                 temp_vec.setOnes(this->params.size());
             }
+            auto expected = this->__num_consts();
+            if (temp_vec.size() != expected)
+            {
+                #ifndef NDEBUG
+                    std::cerr
+                        << "[SR DEBUG] Param size mismatch — "
+                        << "expected " << expected
+                        << ", got " << temp_vec.size()
+                        << " | expr: " << this->expression_string
+                        << '\n';
+                #endif // !NDEBUG
+                temp_vec.setOnes(expected);
+                if (this->params.size() != expected)
+                {
+                    this->params.setOnes(expected);
+                    Board::expression_dict.insert_or_assign(this->expression_string, this->params);
+                }
+            }
             std::vector<Eigen::VectorXd> expression_eval = expression_evaluator(temp_vec, this->diffeq_result);
 
             score = 0.0;
@@ -6655,6 +6673,20 @@ struct Board
 
 std::vector<std::vector<std::string>> WierdTrackFitter(Board& x, bool fit)
 {
+    /*
+     '''
+     sech = lambda x: 1/np.cosh(x); x='(((acos(x0) ^ exp(2.343202)) - ((1.002655 * 13.002907) + (x0 ^ 34.353987))) * (((x0 ^ 0.975130) ^ (x0 ^ -0.710822)) ^ cos((8.509601 ^ x0))))'.replace("acos", "np.arccos").replace("cos", "np.cos").replace("^","**").replace("~", "-").replace("sin","np.sin").replace("sqrt","np.sqrt").replace("np.arcnp.cos", "np.arccos").replace("exp", "np.exp"); print(x); import sympy as sp; y = x.replace("np","sp").replace("arccos","acos"); print(y); x0 = sp.symbols("x0"); eval(y)
+     
+     '''
+     
+     track_idx = 0:
+         Best score = 0.00401684, SNE = 247.952
+         Squared-norm error for each equation: 247.952
+         Best expression = (((acos(x0) ^ (-0.000000 + 10.413954)) - ((17.040983 - 4) + (x0 ^ 34.821611))) * (((x0 ^ 0.974893) ^ (x0 ^ -0.710467)) ^ cos((8.516359 ^ x0))))
+         Best expression (original format) = * - ^ acos x0 + -0.000000 10.413954 + - 17.040983 4 ^ x0 34.821611 ^ ^ ^ x0 0.974893 ^ x0 -0.710467 cos ^ 8.516359 x0
+     
+     
+     */
     thread_local std::vector<std::vector<std::string>> results(x.num_diff_eqns);
     assert(x.num_diff_eqns == 1);
     for (std::vector<std::string>& res: results)
@@ -10725,10 +10757,11 @@ namespace ExampleProblems
     void WierdTrackFitterTest(int random_seed, const char* algorithm, double time)
     {
         double threshold = 0.0;
-        constexpr const char* file_path = "/Users/edwardfinkelstein/SDSU_UCI/WhitesonResearch/TrackProject/stubborn_track_csvs/event100000003-hits_Z.csv";
-        Eigen::MatrixXd data = load_csv(file_path, 61, 2, false /*no header in this file*/);
+        int track_idx = 0;
+        constexpr const char* file_path[] = {"/Users/edwardfinkelstein/SDSU_UCI/WhitesonResearch/TrackProject/stubborn_track_csvs/event100000003-hits_Z.csv"};
+        constexpr const char* seed_exprs[] = {"x0 acos -0.000000 10.413954 + ^ 17.040983 4 - x0 34.821611 ^ + - x0 0.974893 ^ x0 -0.710467 ^ ^ 8.516359 x0 ^ cos ^ *"};
+        Eigen::MatrixXd data = load_csv(file_path[track_idx], 61, 2, false /*no header in these `file_path` files*/);
         std::cout << "data = " << data << '\n';
-//        exit(1);
         if (strcmp(algorithm, "RandomSearch") == 0)
         {
             RandomSearch(WierdTrackFitter /*differential equation to solve*/,
@@ -10757,14 +10790,14 @@ namespace ExampleProblems
                 1 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
                 std::vector<int>{4} /*fixed depths of generated solution*/,
-                "prefix" /*expression representation*/,
+                "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
                 5 /*number of fit iterations*/,
                 "naive_numerical" /*method for computing the gradient*/,
                 true /*cache*/,
                 time /*time to run the algorithm in seconds*/,
-                1 /*num threads*/,
+                0 /*num threads*/,
                 true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
                 true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
@@ -10773,7 +10806,7 @@ namespace ExampleProblems
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "",// "WierdTrackSR.txt" /*filename to save current best expression found (instead of outputting them to standard out)*/,
-                {split("* - ^ acos x0 exp 2.342506 + + 0 13.002907 ^ x0 24.300306 ^ ^ ^ x0 0.980359 ^ x0 -0.707586 cos ^ 8.509601 x0")} /*seed expressions*/,
+                {split(seed_exprs[track_idx])} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
@@ -10781,7 +10814,7 @@ namespace ExampleProblems
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 true /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                true /*whether to perturb sub-arrays (true) of the current expression-vector or sub-trees (false)*/);
+                false /*whether to perturb sub-arrays (true) of the current expression-vector or sub-trees (false)*/);
         }
     }
 };
