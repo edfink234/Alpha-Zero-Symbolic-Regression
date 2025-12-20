@@ -6675,17 +6675,15 @@ std::vector<std::vector<std::string>> WierdTrackFitter(Board& x, bool fit)
 {
     /*
      '''
-     sech = lambda x: 1/np.cosh(x); x='(((acos(x0) ^ exp(2.343202)) - ((1.002655 * 13.002907) + (x0 ^ 34.353987))) * (((x0 ^ 0.975130) ^ (x0 ^ -0.710822)) ^ cos((8.509601 ^ x0))))'.replace("acos", "np.arccos").replace("cos", "np.cos").replace("^","**").replace("~", "-").replace("sin","np.sin").replace("sqrt","np.sqrt").replace("np.arcnp.cos", "np.arccos").replace("exp", "np.exp"); print(x); import sympy as sp; y = x.replace("np","sp").replace("arccos","acos"); print(y); x0 = sp.symbols("x0"); eval(y)
+     sech = lambda x: 1/np.cosh(x); x='((((0 + 4407.539789) ^ (0.593020 - x0)) - ((17.040983 + -3.915339) + (x0 ^ 34.821611))) * (((x0 ^ 1.013157) ^ (x0 ^ -0.714667)) ^ cos((8.427644 ^ x0))))'.replace("acos", "np.arccos").replace("cos", "np.cos").replace("^","**").replace("~", "-").replace("sin","np.sin").replace("sqrt","np.sqrt").replace("np.arcnp.cos", "np.arccos").replace("exp", "np.exp"); print(x); import sympy as sp; y = x.replace("np","sp").replace("arccos","acos"); print(y); x0 = sp.symbols("x0"); eval(y)
      
      '''
      
      track_idx = 0:
-         Best score = 0.00401684, SNE = 247.952
-         Squared-norm error for each equation: 247.952
-         Best expression = (((acos(x0) ^ (-0.000000 + 10.413954)) - ((17.040983 - 4) + (x0 ^ 34.821611))) * (((x0 ^ 0.974893) ^ (x0 ^ -0.710467)) ^ cos((8.516359 ^ x0))))
-         Best expression (original format) = * - ^ acos x0 + -0.000000 10.413954 + - 17.040983 4 ^ x0 34.821611 ^ ^ ^ x0 0.974893 ^ x0 -0.710467 cos ^ 8.516359 x0
-     
-     
+         Best score = 0.0041175, SNE = 241.866
+         Squared-norm error for each equation: 241.866
+         Best expression = ((((0.224268 + x0) ^ (x0 - 4.000897)) - ((0 + 14.365132) ^ (x0 ^ 0.049543))) * (((x0 / 1.041536) ^ (x0 ^ -0.760233)) ^ cos((8.422525 ^ x0))))
+         Best expression (original format) = 0.224268 x0 + x0 4.000897 - ^ 0 14.365132 + x0 0.049543 ^ ^ - x0 1.041536 / x0 -0.760233 ^ ^ 8.422525 x0 ^ cos ^ *
      */
     thread_local std::vector<std::vector<std::string>> results(x.num_diff_eqns);
     assert(x.num_diff_eqns == 1);
@@ -9316,21 +9314,22 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
         }
         for (double i = 0; (timeElapsedSince(start_time) < time); i++)
         {
-            if ((T > 0.0) && i && (static_cast<int>(i)%50000 == 0))
-            {
-//                std::cout << "i = " << i << '\n';
-//                std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
-                if (check_point_score == max_score)
-                {
-                    T = std::min(T*10.0, T_max);
-                }
-                else
-                {
-                    T = std::max(T/10.0, T_min);
-                }
-                check_point_score = max_score;
-            }
-            else if (i && (static_cast<int>(i)%1000000 == 0))
+            
+//            if ((T > 0.0) && i && (static_cast<int>(i)%50000 == 0))
+//            {
+////                std::cout << "i = " << i << '\n';
+////                std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+//                if (check_point_score == max_score)
+//                {
+//                    T = std::min(T*10.0, T_max);
+//                }
+//                else
+//                {
+//                    T = std::max(T/10.0, T_min);
+//                }
+//                check_point_score = max_score;
+//            }
+            /*else*/ if (i && (static_cast<int>(i)%1000000 == 0))
             {
                 std::scoped_lock progress_lock(Board::thread_locker);
                 
@@ -10759,7 +10758,7 @@ namespace ExampleProblems
         double threshold = 0.0;
         int track_idx = 0;
         constexpr const char* file_path[] = {"/Users/edwardfinkelstein/SDSU_UCI/WhitesonResearch/TrackProject/stubborn_track_csvs/event100000003-hits_Z.csv"};
-        constexpr const char* seed_exprs[] = {"x0 acos -0.000000 10.413954 + ^ 17.040983 4 - x0 34.821611 ^ + - x0 0.974893 ^ x0 -0.710467 ^ ^ 8.516359 x0 ^ cos ^ *"};
+        constexpr const char* seed_exprs[] = {"0.224268 x0 + x0 4.000897 - ^ 0 14.365132 + x0 0.049543 ^ ^ - x0 1.041536 / x0 -0.760233 ^ ^ 8.422525 x0 ^ cos ^ *"};
         Eigen::MatrixXd data = load_csv(file_path[track_idx], 61, 2, false /*no header in these `file_path` files*/);
         std::cout << "data = " << data << '\n';
         if (strcmp(algorithm, "RandomSearch") == 0)
@@ -10811,10 +10810,10 @@ namespace ExampleProblems
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
                 0.0 /*T_max*/,
-                [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
+                [](double ratio, double t_val) -> double {return 0.9999;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 true /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                false /*whether to perturb sub-arrays (true) of the current expression-vector or sub-trees (false)*/);
+                true /*whether to perturb sub-arrays (true) of the current expression-vector or sub-trees (false)*/);
         }
     }
 };
