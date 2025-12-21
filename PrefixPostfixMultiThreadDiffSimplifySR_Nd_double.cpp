@@ -6697,15 +6697,16 @@ std::vector<std::vector<std::string>> WierdTrackFitter(Board& x, bool fit)
 {
     /*
      '''
-     sech = lambda x: 1/np.cosh(x); x='((((0 + 4407.539789) ^ (0.593020 - x0)) - ((17.040983 + -3.915339) + (x0 ^ 34.821611))) * (((x0 ^ 1.013157) ^ (x0 ^ -0.714667)) ^ cos((8.427644 ^ x0))))'.replace("acos", "np.arccos").replace("cos", "np.cos").replace("^","**").replace("~", "-").replace("sin","np.sin").replace("sqrt","np.sqrt").replace("np.arcnp.cos", "np.arccos").replace("exp", "np.exp"); print(x); import sympy as sp; y = x.replace("np","sp").replace("arccos","acos"); print(y); x0 = sp.symbols("x0"); eval(y)
+     sech = lambda x: 1/np.cosh(x); x='(((12.785252 / (x0 + -0.061502)) * ((0.985492 - x0) - (x0 ^ 0.285370))) * (((x0 * 0.962481) ^ (x0 ^ -0.798924)) ^ cos((8.423473 ^ x0))))'.replace("acos", "np.arccos").replace("cos", "np.cos").replace("^","**").replace("~", "-").replace("sin","np.sin").replace("sqrt","np.sqrt").replace("np.arcnp.cos", "np.arccos").replace("exp", "np.exp"); print(x); import sympy as sp; y = x.replace("np","sp").replace("arccos","acos"); print(y); x0 = sp.symbols("x0"); print(str(eval(y)).replace('cos','sp.cos').replace("x0","s"))
      
      '''
      
      track_idx = 0:
-         Best score = 0.00451435, SNE = 220.516
-         Squared-norm error for each equation: 220.516
-         Best expression = ((((4 * 2.978957) / (x0 + -0.061502)) * ((0.911641 - x0) - (x0 ^ 0.374637))) * (((x0 / 1.038973) ^ (x0 ^ -0.798234)) ^ cos((8.429351 ^ x0))))
-         Best expression (original format) = 4 2.978957 * x0 -0.061502 + / 0.911641 x0 - x0 0.374637 ^ - * x0 1.038973 / x0 -0.798234 ^ ^ 8.429351 x0 ^ cos ^ *
+         Best score = 0.00451617, SNE = 220.427
+         Squared-norm error for each equation: 220.427
+         Best expression = (((12.785252 / (x0 + -0.061502)) * ((0.985492 - x0) - (x0 ^ 0.285370))) * (((x0 * 0.962481) ^ (x0 ^ -0.798924)) ^ cos((8.423473 ^ x0))))
+         Best expression (original format) = * * / 12.785252 + x0 -0.061502 - - 0.985492 x0 ^ x0 0.285370 ^ ^ * x0 0.962481 ^ x0 -0.798924 cos ^ 8.423473 x0
+
      */
     thread_local std::vector<std::vector<std::string>> results(x.num_diff_eqns);
     assert(x.num_diff_eqns == 1);
@@ -10494,7 +10495,7 @@ namespace ExampleProblems
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 true /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                true /*whether to perturb sub-arrays (true) of the current expression-vector or sub-trees (false)*/);
+                false /*whether to perturb sub-arrays (true) of the current expression-vector or sub-trees (false)*/);
         }
     }
     
@@ -10765,7 +10766,7 @@ namespace ExampleProblems
         double threshold = 0.0;
         int track_idx = 0;
         constexpr const char* file_path[] = {"/Users/edwardfinkelstein/SDSU_UCI/WhitesonResearch/TrackProject/stubborn_track_csvs/event100000003-hits_Z.csv"};
-        constexpr const char* seed_exprs[] = {"4 2.978957 * x0 -0.061502 + / 0.911641 x0 - x0 0.374637 ^ - * x0 1.038973 / x0 -0.798234 ^ ^ 8.429351 x0 ^ cos ^ *"};
+        constexpr const char* seed_exprs[] = {"* * / * 2 6.392626 + x0 -0.061502 - - 0.985492 x0 ^ x0 0.285370 ^ ^ * x0 0.962481 ^ x0 -0.798924 cos ^ 8.423473 x0"};
         Eigen::MatrixXd data = load_csv(file_path[track_idx], 61, 2, false /*no header in these `file_path` files*/);
         std::cout << "data = " << data << '\n';
         if (strcmp(algorithm, "RandomSearch") == 0)
@@ -10784,7 +10785,7 @@ namespace ExampleProblems
                 0 /*num threads*/,
                 true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
-                false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                  1 /*number of data columns that constitute labels and not independent variables/features*/,
                  false /*whether or not to include ALL of the features in all of the generated expressions*/,
                  {} /*custom features that the SR-found equations are required to contain*/,
@@ -10796,7 +10797,7 @@ namespace ExampleProblems
                 1 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
                 std::vector<int>{4} /*fixed depths of generated solution*/,
-                "postfix" /*expression representation*/,
+                "prefix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
                 5 /*number of fit iterations*/,
@@ -10806,7 +10807,7 @@ namespace ExampleProblems
                 0 /*num threads*/,
                 true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
-                true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the ORIGINAL expression on every iteration (perturbation) of the seed expression vector; if false a copy is maintained so that simplification on this->pieces can still happen*/
                 1 /*number of data columns that constitute labels and not independent variables/features*/,
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
@@ -10899,7 +10900,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
     
-    ProblemOption choice = ProblemOption::WierdTrackFitter;
+    ProblemOption choice = ProblemOption::SwiftHohenberg;
     switch (choice)
     {
         case ProblemOption::SwiftHohenberg:

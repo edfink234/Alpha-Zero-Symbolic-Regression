@@ -434,19 +434,19 @@ def test_visualize():
             os.system(f"open -a Xcode {file_name}.tex")
             os.system(f"open -a Safari {file_name}.pdf")
     else:
-        pn_to_rpn = True
+        pn_to_rpn = False
         rpn_to_pn = False
         if pn_to_rpn:
             prefix_expr = "* + / - 5.328961 x0 + x0 -0.061502 / - -65.349129 4 + 2.808768 x0 ^ ^ / x0 1.029451 ^ x0 -0.795056 cos ^ 8.466708 x0"
             print(prefix_to_postfix(prefix_expr))
         elif rpn_to_pn:
-            postfix_expr = "5.328239 x0 - x0 -0.061502 + / 4.112629 73.514834 - 2.811605 x0 + / + x0 1.029451 / x0 -0.795056 ^ ^ 8.467580 x0 ^ cos ^ *"
+            postfix_expr = "4 8.785262 + x0 -0.061502 + / 0.985492 x0 - x0 0.285370 ^ - * x0 0.962481 * x0 -0.798924 ^ ^ 8.423532 x0 ^ cos ^ *"
             print(postfix_to_prefix(postfix_expr))
         else:
-            expression_type_to_plot = ["prefix", "postfix"][1]
-            completeTree = [True, False][0]
+            expression_type_to_plot = ["prefix", "postfix"][0]
+            completeTree = [True, False][1]
             if expression_type_to_plot == "prefix":
-                complete_pn_expr = "* - ^ acos x0 exp 2.342506 + + 0 13.002907 ^ x0 24.300306 ^ ^ ^ x0 0.980359 ^ x0 -0.707586 cos ^ 8.509601 x0"
+                complete_pn_expr = "* * / 12.785252 + s -0.061502 - - 0.985492 s ^ s 0.285370 ^ ^ * s 0.962481 ^ s -0.798924 cos ^ 8.423473 s"
                 if completeTree:
                     complete_pn_expr = complete_tree(complete_pn_expr.split(), "prefix") #returns a list
                 else:
@@ -455,7 +455,7 @@ def test_visualize():
                 plot_pn_expression_tree(complete_pn_expr, save = save, include_expression_in_title = False)
 
             else:
-                complete_rpn_expr = "x0 acos 2.342506 exp ^ 0 13.002907 + x0 24.300306 ^ + - x0 0.980359 ^ x0 -0.707586 ^ ^ 8.509601 x0 ^ cos ^ *"
+                complete_rpn_expr = "-12.795 s 0.285 ^ * 12.795 s * - 12.261 + 0.964 s * s -0.805 ^ ^ 8.417 s ^ cos ^ * s 0.061 - /"
                 if completeTree:
                     complete_rpn_expr = complete_tree(complete_rpn_expr.split(), "postfix") #returns a list
                 else:
@@ -465,10 +465,5 @@ def test_visualize():
 
 if __name__ == "__main__":
     test_visualize()
-
-
-#.35 * sin(x1) * sech( (x0 - 5.0)/3.0 ) * sin(1.00*x0)
-
-
 
 
