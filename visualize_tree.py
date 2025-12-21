@@ -437,10 +437,10 @@ def test_visualize():
         pn_to_rpn = True
         rpn_to_pn = False
         if pn_to_rpn:
-            prefix_expr = "* - ^ acos x0 + -0.000000 10.413954 + - 17.040983 4 ^ x0 34.821611 ^ ^ ^ x0 0.974893 ^ x0 -0.710467 cos ^ 8.516359 x0"
+            prefix_expr = "* + / - 5.328961 x0 + x0 -0.061502 / - -65.349129 4 + 2.808768 x0 ^ ^ / x0 1.029451 ^ x0 -0.795056 cos ^ 8.466708 x0"
             print(prefix_to_postfix(prefix_expr))
         elif rpn_to_pn:
-            postfix_expr = "x0 acos 0 10.414329 + ^ 0 13.041638 + x0 34.821611 ^ + - x0 0.974583 ^ x0 -0.710822 ^ ^ 8.516359 x0 ^ cos ^ *"
+            postfix_expr = "5.328239 x0 - x0 -0.061502 + / 4.112629 73.514834 - 2.811605 x0 + / + x0 1.029451 / x0 -0.795056 ^ ^ 8.467580 x0 ^ cos ^ *"
             print(postfix_to_prefix(postfix_expr))
         else:
             expression_type_to_plot = ["prefix", "postfix"][1]

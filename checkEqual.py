@@ -1,4 +1,4 @@
-before='''before: - - - x1 x1 0 + x1 x1 
+after='''before: - - - x1 x1 0 + x1 x1 
 after: ~ + x1 x1 
 
 before: - - - 2.33 1.222 0 x1 
@@ -1036,7 +1036,7 @@ after: inf
 before: * -2e390 + + 3.444 cos 1.22 + 3.444 sin 1.22 
 after: -inf 
 '''
-after='''before: - - - x1 x1 0 + x1 x1 
+before='''before: - - - x1 x1 0 + x1 x1 
 after: ~ + x1 x1 
 
 before: - - - 2.33 1.222 0 x1 

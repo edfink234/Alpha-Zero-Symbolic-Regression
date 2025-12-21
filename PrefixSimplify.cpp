@@ -3892,7 +3892,7 @@ int main()
     #endif // TIME_STUFF
 
 }
-//g++ -std=c++20 -o PrefixSimplify PrefixSimplify.cpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include
+//g++ -std=c++20 -o PrefixSimplify PrefixSimplify.cpp -L/opt/homebrew/Cellar/boost/1.84.0 -I/opt/homebrew/Cellar/boost/1.84.0/include -O2 -march=native
 //https://stackoverflow.com/questions/20153412/simplification-algorithm-for-reverse-polish-notation
 //https://dl.acm.org/
 //simplification of polish notation expressions articles

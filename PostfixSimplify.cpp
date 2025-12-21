@@ -947,388 +947,775 @@ void graspSimplifyPostfix(std::vector<std::string>& expression, int low, int up,
 // 0 sech 1 /
 // 1 1 /
 // 1
+//void simplifyRPN_Helper(std::vector<std::string>& expression)
+//{
+//    bool simplified = true;
+//    bool isdouble1, isdouble2, isConst1, isConst2;
+//    while (simplified)
+//    {
+//        simplified = false;
+//        if (expression.size() > 1)
+//        {
+//            for (size_t i = 1; i < expression.size(); i++)
+//            {
+//                if (is_binary(expression[i]))
+//                {
+//                    isdouble1 = isdouble(expression[i-1]);
+//                    isdouble2 = isdouble(expression[i-2]);
+//                    
+//                    if (isdouble1 && isdouble2)
+//                    {
+//                        if (expression[i] == "+")
+//                        {
+//                            expression[i] = simplifyString(to_string_general(Stod(expression[i-2]) + Stod(expression[i-1])));
+//                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+//                            simplified = true;
+//                            break;
+//                        }
+//                        else if (expression[i] == "-")
+//                        {
+//                            expression[i] = simplifyString(to_string_general(Stod(expression[i-2]) - Stod(expression[i-1])));
+//                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+//                            simplified = true;
+//                            break;
+//                        }
+//                        else if (expression[i] == "*")
+//                        {
+//                            expression[i] = simplifyString(to_string_general(Stod(expression[i-2]) * Stod(expression[i-1])));
+//                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+//                            simplified = true;
+//                            break;
+//                        }
+//                        else if (expression[i] == "/")
+//                        {
+//                            expression[i] = simplifyString(to_string_general(Stod(expression[i-2]) / Stod(expression[i-1])));
+//                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+//                            simplified = true;
+//                            break;
+//                        }
+//                        else if (expression[i] == "^")
+//                        {
+//                            expression[i] = simplifyString(to_string_general(std::pow(Stod(expression[i-2]), Stod(expression[i-1]))));
+////                            printf("hi 566, res = %s\n", expression[i].c_str());
+//                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+//                            simplified = true;
+//                            break;
+//                        }
+//                    }
+//                    
+//                    isConst1 = is_const(expression[i-1]);
+//                    isConst2 = is_const(expression[i-2]);
+//                    
+//                    if ((isConst1 && isConst2) && ((expression[i-1].find("nan") != std::string::npos) || (expression[i-2].find("nan") != std::string::npos))) //x nan binary_op = nan x binary_op = nan
+//                    {
+////                        puts("hi 549");
+//                        expression[i] = "nan";
+//                        expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+//                        simplified = true;
+//                        break;
+//                    }
+//                    else if (expression[i] == "-")
+//                    {
+//                        if ((isConst1 && isConst2) && (expression[i-1] == expression[i-2])) //x x - => 0
+//                        {
+//                            expression[i] = "0";
+//                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+//                            simplified = true;
+//                            break;
+//                        }
+//                        else if (checkEqual(expression[i-2], "0") && isConst1) //"0 x -" -> "x ~"
+//                        {
+//                            expression[i] = "~";
+//                            expression.erase(expression.begin() + i - 2);
+//                            simplified = true;
+//                            break;
+//                        }
+//                        else if (checkEqual(expression[i-1], "0")) //"x 0 -" -> "x"
+//                        {
+//                            expression[i] = expression[i-2];
+//                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+//                            simplified = true;
+//                            break;
+//                        }
+//                    }
+//
+//                    else if (expression[i] == "*")
+//                    {
+//                        if (checkEqual(expression[i-2], "0") && isConst1) //"0 x *" -> "0"
+//                        {
+//                            //puts("hi 131");
+//                            expression[i] = "0";
+//                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+//                            simplified = true;
+//                            break;
+//                        }
+//                        else if (checkEqual(expression[i-1], "0") && isConst2) //"x 0 *" -> "0"
+//                        {
+//                            //puts("hi 139");
+//                            expression[i] = "0";
+//                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+//                            simplified = true;
+//                            break;
+//                        }
+//                        else if (checkEqual(expression[i-2], "1") && isConst1) //"1 x *" -> "x"
+//                        {
+//                            //puts("hi 147");
+//                            expression[i] = expression[i-1];
+//                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+//                            simplified = true;
+//                            break;
+//                        }
+//                        else if (checkEqual(expression[i-1], "1") && isConst2) //"x 1 *" -> "x"
+//                        {
+//                            //puts("hi 155");
+//                            expression[i] = expression[i-2];
+//                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+//                            simplified = true;
+//                            break;
+//                        }
+//                    }
+//
+//                    else if (expression[i] == "+")
+//                    {
+//                        if (checkEqual(expression[i-2], "0") && isConst1) //"0 x +" -> "x"
+//                        {
+//                            //puts("hi 167");
+//                            expression[i] = expression[i-1];
+//                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+//                            simplified = true;
+//                            break;
+//                        }
+//                        else if (checkEqual(expression[i-1], "0") && isConst2) //"x 0 +" -> "x"
+//                        {
+//                            //puts("hi 175");
+//                            expression[i] = expression[i-2];
+//                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+//                            simplified = true;
+//                            break;
+//                        }
+//                    }
+//
+//                    else if (expression[i] == "/")
+//                    {
+//                        if (checkEqual(expression[i-2], "0") && isConst1) // "0 x /" -> "0"
+//                        {
+//                            //puts("hi 187");
+//                            expression[i] = "0";
+//                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+//                            simplified = true;
+//                            break;
+//                        }
+//                        else if (checkEqual(expression[i-1], "1") && isConst2) // "x 1 /" -> "x"
+//                        {
+//                            //puts("hi 195");
+//                            expression[i] = expression[i-2];
+//                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+//                            simplified = true;
+//                            break;
+//                        }
+//                        else if (checkEqual(expression[i-1], "0") && isConst2) // "x 0 /" -> "nan"
+//                        {
+//                            //puts("hi 859");
+//                            expression[i] = "nan";
+//                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+//                            simplified = true;
+//                            break;
+//                        }
+//                        else if (isConst1 && isConst2 && (expression[i-1] == expression[i-2])) // "x x /" -> "1"
+//                        {
+//                            //puts("hi 203");
+//                            expression[i] = "1";
+//                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+//                            simplified = true;
+//                            break;
+//                        }
+//                    }
+//
+//                    else if (expression[i] == "^")
+//                    {
+//                        if (checkEqual(expression[i-1], "0") && isConst2) // "x 0 ^" -> "1"
+//                        {
+//                            //puts("hi 223");
+//                            expression[i] = "1";
+//                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+//                            simplified = true;
+//                            break;
+//                        }
+//                        else if (checkEqual(expression[i-2], "0") && isConst1) // "0 x ^" -> "nan"
+//                        {
+//                            //puts("hi 880");
+//                            expression[i] = "nan";
+//                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+//                            simplified = true;
+//                            break;
+//                        }
+//                        else if (checkEqual(expression[i-2], "1") && isConst1) // "1 x ^" -> "1"
+//                        {
+//                            //puts("hi 231");
+//                            expression[i] = "1";
+//                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+//                            simplified = true;
+//                            break;
+//                        }
+//                        else if (checkEqual(expression[i-1], "1") && isConst2) // "x 1 ^" -> "x"
+//                        {
+//                            //puts("hi 239");
+//                            expression[i] = expression[i-2];
+//                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+//                            simplified = true;
+//                            break;
+//                        }
+//                    }
+//                }
+//                
+//                else if (is_unary(expression[i]) && isdouble(expression[i-1]))
+//                {
+//                    if (expression[i] == "cos")
+//                    {
+//                        expression[i] = simplifyString(to_string_general(cos(Stod(expression[i-1]))));
+//                        expression.erase(expression.begin() + i - 1);
+//                        simplified = true;
+//                        break;
+//                    }
+//                    else if (expression[i] == "~")
+//                    {
+//                        if (checkEqual(expression[i-1], "0")) //0 ~ -> 0
+//                        {
+//                            //puts("hi 917");
+//                            expression.erase(expression.begin() + i); // Remove the '~'
+//                        }
+//                        else if (expression[i-1] == "inf") //inf ~ -> -inf
+//                        {
+//                            //puts("hi 924");
+//                            expression[i-1] = "-inf"; // change 'inf' to '-inf'
+//                            expression.erase(expression.begin() + i); // Remove the '~'
+//                        }
+//                        else
+//                        {
+//                            expression[i] = simplifyString(to_string_general(-(Stod(expression[i-1]))));
+//                            expression.erase(expression.begin() + i - 1);
+//                        }
+//                        simplified = true;
+//                        break;
+//                    }
+//                    else if (expression[i] == "sin")
+//                    {
+//                        expression[i] = simplifyString(to_string_general(sin(Stod(expression[i-1]))));
+//                        expression.erase(expression.begin() + i - 1);
+//                        simplified = true;
+//                        break;
+//                    }
+//                    else if ((expression[i] == "ln") || (expression[i] == "log"))
+//                    {
+//                        expression[i] = simplifyString(to_string_general(log(Stod(expression[i-1])))); // Natural log (ln)
+//                        expression.erase(expression.begin() + i - 1);
+//                        simplified = true;
+//                        break;
+//                    }
+//                    else if (expression[i] == "asin" || expression[i] == "arcsin")
+//                    {
+//                        expression[i] = simplifyString(to_string_general(asin(Stod(expression[i-1]))));
+//                        expression.erase(expression.begin() + i - 1);
+//                        simplified = true;
+//                        break;
+//                    }
+//                    else if (expression[i] == "acos" || expression[i] == "arccos")
+//                    {
+//                        expression[i] = simplifyString(to_string_general(acos(Stod(expression[i-1]))));
+//                        expression.erase(expression.begin() + i - 1);
+//                        simplified = true;
+//                        break;
+//                    }
+//                    else if (expression[i] == "exp")
+//                    {
+//                        expression[i] = simplifyString(to_string_general(exp(Stod(expression[i-1]))));
+//                        expression.erase(expression.begin() + i - 1);
+//                        simplified = true;
+//                        break;
+//                    }
+//                    else if (expression[i] == "sech")
+//                    {
+//                        expression[i] = simplifyString(to_string_general(1 / cosh(Stod(expression[i-1])))); // sech(x) = 1 / cosh(x)
+//                        expression.erase(expression.begin() + i - 1);
+//                        simplified = true;
+//                        break;
+//                    }
+//                    else if (expression[i] == "tanh")
+//                    {
+//                        expression[i] = simplifyString(to_string_general(tanh(Stod(expression[i-1]))));
+//                        expression.erase(expression.begin() + i - 1);
+//                        simplified = true;
+//                        break;
+//                    }
+//                    else if (expression[i] == "sqrt")
+//                    {
+//                        expression[i] = simplifyString(to_string_general(sqrt(Stod(expression[i-1]))));
+//                        expression.erase(expression.begin() + i - 1);
+//                        simplified = true;
+//                        break;
+//                    }
+//                    else if (expression[i] == "abs")
+//                    {
+//                        expression[i] = simplifyString(to_string_general(abs(Stod(expression[i-1]))));
+//                        expression.erase(expression.begin() + i - 1);
+//                        simplified = true;
+//                        break;
+//                    }
+//                }
+//                
+//                else if (is_unary(expression[i]))
+//                {
+//                    if (expression[i] == "~" && expression[i-1] == "~")
+//                    {
+//                        expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
+//                        simplified = true;
+//                        break;
+//                    }
+//                    else if (expression[i] == "exp" && (expression[i-1] == "ln" || expression[i-1] == "log"))
+//                    {
+//                        //puts("hi 360");
+//                        expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
+//                        simplified = true;
+//                        break;
+//                    }
+//                    else if (expression[i-1] == "exp" && (expression[i] == "ln" || expression[i] == "log"))
+//                    {
+//                        //puts("hi 368");
+//                        expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
+//                        simplified = true;
+//                        break;
+//                    }
+//                    else if (expression[i] == "cos" && (expression[i-1] == "acos" || expression[i-1] == "arccos"))
+//                    {
+//                        //puts("hi 408");
+//                        expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
+//                        simplified = true;
+//                        break;
+//                    }
+//                    else if (expression[i] == "cos" && expression[i-1] == "~") //cos(-x) -> cos(x)
+//                    {
+//                        //puts("hi 688");
+//                        expression.erase(expression.begin() + i - 1); // Remove the '~'
+//                        simplified = true;
+//                        break;
+//                    }
+//                    else if (expression[i-1] == "cos" && (expression[i] == "acos" || expression[i] == "arccos"))
+//                    {
+//                        //puts("hi 416");
+//                        expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
+//                        simplified = true;
+//                        break;
+//                    }
+//                    else if (expression[i] == "sin" && (expression[i-1] == "asin" || expression[i-1] == "arcsin"))
+//                    {
+//                        //puts("hi 424");
+//                        expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
+//                        simplified = true;
+//                        break;
+//                    }
+//                    else if (expression[i-1] == "sin" && (expression[i] == "asin" || expression[i] == "arcsin"))
+//                    {
+//                        //puts("hi 432");
+//                        expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
+//                        simplified = true;
+//                        break;
+//                    }
+//                    else if (expression[i] == "sech" && expression[i-1] == "~") //'x ~ sech' -> 'x sech'
+//                    {
+//                        expression.erase(expression.begin() + i - 1); // Remove the '~'
+//                        simplified = true;
+//                        break;
+//                    }
+//                }
+//            }
+//        }
+//    }
+//}
+
 void simplifyRPN_Helper(std::vector<std::string>& expression)
 {
-    bool simplified = true;
+    if (expression.size() < 2) return; //just an operand
+    
     bool isdouble1, isdouble2, isConst1, isConst2;
-    while (simplified)
+    thread_local std::vector<std::string> temp;
+    temp.clear();
+    temp.reserve(expression.size());
+
+    for (size_t i = 1; i < expression.size(); i++)
     {
-        simplified = false;
-        if (expression.size() > 1)
+        if (is_binary(expression[i]))
         {
-            for (size_t i = 1; i < expression.size(); i++)
+            isdouble1 = isdouble(expression[i-1]);
+            isdouble2 = isdouble(expression[i-2]);
+            
+            if (isdouble1 && isdouble2)
             {
-                if (is_binary(expression[i]))
+                if (expression[i] == "+")
                 {
-                    isdouble1 = isdouble(expression[i-1]);
-                    isdouble2 = isdouble(expression[i-2]);
-                    
-                    if (isdouble1 && isdouble2)
-                    {
-                        if (expression[i] == "+")
-                        {
-                            expression[i] = simplifyString(to_string_general(Stod(expression[i-2]) + Stod(expression[i-1])));
-                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
-                            simplified = true;
-                            break;
-                        }
-                        else if (expression[i] == "-")
-                        {
-                            expression[i] = simplifyString(to_string_general(Stod(expression[i-2]) - Stod(expression[i-1])));
-                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
-                            simplified = true;
-                            break;
-                        }
-                        else if (expression[i] == "*")
-                        {
-                            expression[i] = simplifyString(to_string_general(Stod(expression[i-2]) * Stod(expression[i-1])));
-                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
-                            simplified = true;
-                            break;
-                        }
-                        else if (expression[i] == "/")
-                        {
-                            expression[i] = simplifyString(to_string_general(Stod(expression[i-2]) / Stod(expression[i-1])));
-                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
-                            simplified = true;
-                            break;
-                        }
-                        else if (expression[i] == "^")
-                        {
-                            expression[i] = simplifyString(to_string_general(std::pow(Stod(expression[i-2]), Stod(expression[i-1]))));
+                    temp.push_back(simplifyString(to_string_general(Stod(expression[i-2]) + Stod(expression[i-1]))));
+                    continue;
+                }
+                //TODO: Continue in this fashion
+                else if (expression[i] == "-")
+                {
+                    expression[i] = simplifyString(to_string_general(Stod(expression[i-2]) - Stod(expression[i-1])));
+                    expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                    simplified = true;
+                    break;
+                }
+                else if (expression[i] == "*")
+                {
+                    expression[i] = simplifyString(to_string_general(Stod(expression[i-2]) * Stod(expression[i-1])));
+                    expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                    simplified = true;
+                    break;
+                }
+                else if (expression[i] == "/")
+                {
+                    expression[i] = simplifyString(to_string_general(Stod(expression[i-2]) / Stod(expression[i-1])));
+                    expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                    simplified = true;
+                    break;
+                }
+                else if (expression[i] == "^")
+                {
+                    expression[i] = simplifyString(to_string_general(std::pow(Stod(expression[i-2]), Stod(expression[i-1]))));
 //                            printf("hi 566, res = %s\n", expression[i].c_str());
-                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
-                            simplified = true;
-                            break;
-                        }
-                    }
-                    
-                    isConst1 = is_const(expression[i-1]);
-                    isConst2 = is_const(expression[i-2]);
-                    
-                    if ((isConst1 && isConst2) && ((expression[i-1].find("nan") != std::string::npos) || (expression[i-2].find("nan") != std::string::npos))) //x nan binary_op = nan x binary_op = nan
-                    {
+                    expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                    simplified = true;
+                    break;
+                }
+            }
+            
+            isConst1 = is_const(expression[i-1]);
+            isConst2 = is_const(expression[i-2]);
+            
+            if ((isConst1 && isConst2) && ((expression[i-1].find("nan") != std::string::npos) || (expression[i-2].find("nan") != std::string::npos))) //x nan binary_op = nan x binary_op = nan
+            {
 //                        puts("hi 549");
-                        expression[i] = "nan";
-                        expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
-                        simplified = true;
-                        break;
-                    }
-                    else if (expression[i] == "-")
-                    {
-                        if ((isConst1 && isConst2) && (expression[i-1] == expression[i-2])) //x x - => 0
-                        {
-                            expression[i] = "0";
-                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
-                            simplified = true;
-                            break;
-                        }
-                        else if (checkEqual(expression[i-2], "0") && isConst1) //"0 x -" -> "x ~"
-                        {
-                            expression[i] = "~";
-                            expression.erase(expression.begin() + i - 2);
-                            simplified = true;
-                            break;
-                        }
-                        else if (checkEqual(expression[i-1], "0")) //"x 0 -" -> "x"
-                        {
-                            expression[i] = expression[i-2];
-                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
-                            simplified = true;
-                            break;
-                        }
-                    }
-
-                    else if (expression[i] == "*")
-                    {
-                        if (checkEqual(expression[i-2], "0") && isConst1) //"0 x *" -> "0"
-                        {
-                            //puts("hi 131");
-                            expression[i] = "0";
-                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
-                            simplified = true;
-                            break;
-                        }
-                        else if (checkEqual(expression[i-1], "0") && isConst2) //"x 0 *" -> "0"
-                        {
-                            //puts("hi 139");
-                            expression[i] = "0";
-                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
-                            simplified = true;
-                            break;
-                        }
-                        else if (checkEqual(expression[i-2], "1") && isConst1) //"1 x *" -> "x"
-                        {
-                            //puts("hi 147");
-                            expression[i] = expression[i-1];
-                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
-                            simplified = true;
-                            break;
-                        }
-                        else if (checkEqual(expression[i-1], "1") && isConst2) //"x 1 *" -> "x"
-                        {
-                            //puts("hi 155");
-                            expression[i] = expression[i-2];
-                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
-                            simplified = true;
-                            break;
-                        }
-                    }
-
-                    else if (expression[i] == "+")
-                    {
-                        if (checkEqual(expression[i-2], "0") && isConst1) //"0 x +" -> "x"
-                        {
-                            //puts("hi 167");
-                            expression[i] = expression[i-1];
-                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
-                            simplified = true;
-                            break;
-                        }
-                        else if (checkEqual(expression[i-1], "0") && isConst2) //"x 0 +" -> "x"
-                        {
-                            //puts("hi 175");
-                            expression[i] = expression[i-2];
-                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
-                            simplified = true;
-                            break;
-                        }
-                    }
-
-                    else if (expression[i] == "/")
-                    {
-                        if (checkEqual(expression[i-2], "0") && isConst1) // "0 x /" -> "0"
-                        {
-                            //puts("hi 187");
-                            expression[i] = "0";
-                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
-                            simplified = true;
-                            break;
-                        }
-                        else if (checkEqual(expression[i-1], "1") && isConst2) // "x 1 /" -> "x"
-                        {
-                            //puts("hi 195");
-                            expression[i] = expression[i-2];
-                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
-                            simplified = true;
-                            break;
-                        }
-                        else if (checkEqual(expression[i-1], "0") && isConst2) // "x 0 /" -> "nan"
-                        {
-                            //puts("hi 859");
-                            expression[i] = "nan";
-                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
-                            simplified = true;
-                            break;
-                        }
-                        else if (isConst1 && isConst2 && (expression[i-1] == expression[i-2])) // "x x /" -> "1"
-                        {
-                            //puts("hi 203");
-                            expression[i] = "1";
-                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
-                            simplified = true;
-                            break;
-                        }
-                    }
-
-                    else if (expression[i] == "^")
-                    {
-                        if (checkEqual(expression[i-1], "0") && isConst2) // "x 0 ^" -> "1"
-                        {
-                            //puts("hi 223");
-                            expression[i] = "1";
-                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
-                            simplified = true;
-                            break;
-                        }
-                        else if (checkEqual(expression[i-2], "0") && isConst1) // "0 x ^" -> "nan"
-                        {
-                            //puts("hi 880");
-                            expression[i] = "nan";
-                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
-                            simplified = true;
-                            break;
-                        }
-                        else if (checkEqual(expression[i-2], "1") && isConst1) // "1 x ^" -> "1"
-                        {
-                            //puts("hi 231");
-                            expression[i] = "1";
-                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
-                            simplified = true;
-                            break;
-                        }
-                        else if (checkEqual(expression[i-1], "1") && isConst2) // "x 1 ^" -> "x"
-                        {
-                            //puts("hi 239");
-                            expression[i] = expression[i-2];
-                            expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
-                            simplified = true;
-                            break;
-                        }
-                    }
-                }
-                
-                else if (is_unary(expression[i]) && isdouble(expression[i-1]))
+                expression[i] = "nan";
+                expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                simplified = true;
+                break;
+            }
+            else if (expression[i] == "-")
+            {
+                if ((isConst1 && isConst2) && (expression[i-1] == expression[i-2])) //x x - => 0
                 {
-                    if (expression[i] == "cos")
-                    {
-                        expression[i] = simplifyString(to_string_general(cos(Stod(expression[i-1]))));
-                        expression.erase(expression.begin() + i - 1);
-                        simplified = true;
-                        break;
-                    }
-                    else if (expression[i] == "~")
-                    {
-                        if (checkEqual(expression[i-1], "0")) //0 ~ -> 0
-                        {
-                            //puts("hi 917");
-                            expression.erase(expression.begin() + i); // Remove the '~'
-                        }
-                        else if (expression[i-1] == "inf") //inf ~ -> -inf
-                        {
-                            //puts("hi 924");
-                            expression[i-1] = "-inf"; // change 'inf' to '-inf'
-                            expression.erase(expression.begin() + i); // Remove the '~'
-                        }
-                        else
-                        {
-                            expression[i] = simplifyString(to_string_general(-(Stod(expression[i-1]))));
-                            expression.erase(expression.begin() + i - 1);
-                        }
-                        simplified = true;
-                        break;
-                    }
-                    else if (expression[i] == "sin")
-                    {
-                        expression[i] = simplifyString(to_string_general(sin(Stod(expression[i-1]))));
-                        expression.erase(expression.begin() + i - 1);
-                        simplified = true;
-                        break;
-                    }
-                    else if ((expression[i] == "ln") || (expression[i] == "log"))
-                    {
-                        expression[i] = simplifyString(to_string_general(log(Stod(expression[i-1])))); // Natural log (ln)
-                        expression.erase(expression.begin() + i - 1);
-                        simplified = true;
-                        break;
-                    }
-                    else if (expression[i] == "asin" || expression[i] == "arcsin")
-                    {
-                        expression[i] = simplifyString(to_string_general(asin(Stod(expression[i-1]))));
-                        expression.erase(expression.begin() + i - 1);
-                        simplified = true;
-                        break;
-                    }
-                    else if (expression[i] == "acos" || expression[i] == "arccos")
-                    {
-                        expression[i] = simplifyString(to_string_general(acos(Stod(expression[i-1]))));
-                        expression.erase(expression.begin() + i - 1);
-                        simplified = true;
-                        break;
-                    }
-                    else if (expression[i] == "exp")
-                    {
-                        expression[i] = simplifyString(to_string_general(exp(Stod(expression[i-1]))));
-                        expression.erase(expression.begin() + i - 1);
-                        simplified = true;
-                        break;
-                    }
-                    else if (expression[i] == "sech")
-                    {
-                        expression[i] = simplifyString(to_string_general(1 / cosh(Stod(expression[i-1])))); // sech(x) = 1 / cosh(x)
-                        expression.erase(expression.begin() + i - 1);
-                        simplified = true;
-                        break;
-                    }
-                    else if (expression[i] == "tanh")
-                    {
-                        expression[i] = simplifyString(to_string_general(tanh(Stod(expression[i-1]))));
-                        expression.erase(expression.begin() + i - 1);
-                        simplified = true;
-                        break;
-                    }
-                    else if (expression[i] == "sqrt")
-                    {
-                        expression[i] = simplifyString(to_string_general(sqrt(Stod(expression[i-1]))));
-                        expression.erase(expression.begin() + i - 1);
-                        simplified = true;
-                        break;
-                    }
-                    else if (expression[i] == "abs")
-                    {
-                        expression[i] = simplifyString(to_string_general(abs(Stod(expression[i-1]))));
-                        expression.erase(expression.begin() + i - 1);
-                        simplified = true;
-                        break;
-                    }
+                    expression[i] = "0";
+                    expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                    simplified = true;
+                    break;
                 }
-                
-                else if (is_unary(expression[i]))
+                else if (checkEqual(expression[i-2], "0") && isConst1) //"0 x -" -> "x ~"
                 {
-                    if (expression[i] == "~" && expression[i-1] == "~")
-                    {
-                        expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
-                        simplified = true;
-                        break;
-                    }
-                    else if (expression[i] == "exp" && (expression[i-1] == "ln" || expression[i-1] == "log"))
-                    {
-                        //puts("hi 360");
-                        expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
-                        simplified = true;
-                        break;
-                    }
-                    else if (expression[i-1] == "exp" && (expression[i] == "ln" || expression[i] == "log"))
-                    {
-                        //puts("hi 368");
-                        expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
-                        simplified = true;
-                        break;
-                    }
-                    else if (expression[i] == "cos" && (expression[i-1] == "acos" || expression[i-1] == "arccos"))
-                    {
-                        //puts("hi 408");
-                        expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
-                        simplified = true;
-                        break;
-                    }
-                    else if (expression[i] == "cos" && expression[i-1] == "~") //cos(-x) -> cos(x)
-                    {
-                        //puts("hi 688");
-                        expression.erase(expression.begin() + i - 1); // Remove the '~'
-                        simplified = true;
-                        break;
-                    }
-                    else if (expression[i-1] == "cos" && (expression[i] == "acos" || expression[i] == "arccos"))
-                    {
-                        //puts("hi 416");
-                        expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
-                        simplified = true;
-                        break;
-                    }
-                    else if (expression[i] == "sin" && (expression[i-1] == "asin" || expression[i-1] == "arcsin"))
-                    {
-                        //puts("hi 424");
-                        expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
-                        simplified = true;
-                        break;
-                    }
-                    else if (expression[i-1] == "sin" && (expression[i] == "asin" || expression[i] == "arcsin"))
-                    {
-                        //puts("hi 432");
-                        expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
-                        simplified = true;
-                        break;
-                    }
-                    else if (expression[i] == "sech" && expression[i-1] == "~") //'x ~ sech' -> 'x sech'
-                    {
-                        expression.erase(expression.begin() + i - 1); // Remove the '~'
-                        simplified = true;
-                        break;
-                    }
+                    expression[i] = "~";
+                    expression.erase(expression.begin() + i - 2);
+                    simplified = true;
+                    break;
+                }
+                else if (checkEqual(expression[i-1], "0")) //"x 0 -" -> "x"
+                {
+                    expression[i] = expression[i-2];
+                    expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                    simplified = true;
+                    break;
+                }
+            }
+
+            else if (expression[i] == "*")
+            {
+                if (checkEqual(expression[i-2], "0") && isConst1) //"0 x *" -> "0"
+                {
+                    //puts("hi 131");
+                    expression[i] = "0";
+                    expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                    simplified = true;
+                    break;
+                }
+                else if (checkEqual(expression[i-1], "0") && isConst2) //"x 0 *" -> "0"
+                {
+                    //puts("hi 139");
+                    expression[i] = "0";
+                    expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                    simplified = true;
+                    break;
+                }
+                else if (checkEqual(expression[i-2], "1") && isConst1) //"1 x *" -> "x"
+                {
+                    //puts("hi 147");
+                    expression[i] = expression[i-1];
+                    expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                    simplified = true;
+                    break;
+                }
+                else if (checkEqual(expression[i-1], "1") && isConst2) //"x 1 *" -> "x"
+                {
+                    //puts("hi 155");
+                    expression[i] = expression[i-2];
+                    expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                    simplified = true;
+                    break;
+                }
+            }
+
+            else if (expression[i] == "+")
+            {
+                if (checkEqual(expression[i-2], "0") && isConst1) //"0 x +" -> "x"
+                {
+                    //puts("hi 167");
+                    expression[i] = expression[i-1];
+                    expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                    simplified = true;
+                    break;
+                }
+                else if (checkEqual(expression[i-1], "0") && isConst2) //"x 0 +" -> "x"
+                {
+                    //puts("hi 175");
+                    expression[i] = expression[i-2];
+                    expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                    simplified = true;
+                    break;
+                }
+            }
+
+            else if (expression[i] == "/")
+            {
+                if (checkEqual(expression[i-2], "0") && isConst1) // "0 x /" -> "0"
+                {
+                    //puts("hi 187");
+                    expression[i] = "0";
+                    expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                    simplified = true;
+                    break;
+                }
+                else if (checkEqual(expression[i-1], "1") && isConst2) // "x 1 /" -> "x"
+                {
+                    //puts("hi 195");
+                    expression[i] = expression[i-2];
+                    expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                    simplified = true;
+                    break;
+                }
+                else if (checkEqual(expression[i-1], "0") && isConst2) // "x 0 /" -> "nan"
+                {
+                    //puts("hi 859");
+                    expression[i] = "nan";
+                    expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                    simplified = true;
+                    break;
+                }
+                else if (isConst1 && isConst2 && (expression[i-1] == expression[i-2])) // "x x /" -> "1"
+                {
+                    //puts("hi 203");
+                    expression[i] = "1";
+                    expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                    simplified = true;
+                    break;
+                }
+            }
+
+            else if (expression[i] == "^")
+            {
+                if (checkEqual(expression[i-1], "0") && isConst2) // "x 0 ^" -> "1"
+                {
+                    //puts("hi 223");
+                    expression[i] = "1";
+                    expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                    simplified = true;
+                    break;
+                }
+                else if (checkEqual(expression[i-2], "0") && isConst1) // "0 x ^" -> "nan"
+                {
+                    //puts("hi 880");
+                    expression[i] = "nan";
+                    expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                    simplified = true;
+                    break;
+                }
+                else if (checkEqual(expression[i-2], "1") && isConst1) // "1 x ^" -> "1"
+                {
+                    //puts("hi 231");
+                    expression[i] = "1";
+                    expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                    simplified = true;
+                    break;
+                }
+                else if (checkEqual(expression[i-1], "1") && isConst2) // "x 1 ^" -> "x"
+                {
+                    //puts("hi 239");
+                    expression[i] = expression[i-2];
+                    expression.erase(expression.begin() + i - 2, expression.begin() + i); // Remove elements at i - 1 and i - 2
+                    simplified = true;
+                    break;
                 }
             }
         }
+        
+        else if (is_unary(expression[i]) && isdouble(expression[i-1]))
+        {
+            if (expression[i] == "cos")
+            {
+                expression[i] = simplifyString(to_string_general(cos(Stod(expression[i-1]))));
+                expression.erase(expression.begin() + i - 1);
+                simplified = true;
+                break;
+            }
+            else if (expression[i] == "~")
+            {
+                if (checkEqual(expression[i-1], "0")) //0 ~ -> 0
+                {
+                    //puts("hi 917");
+                    expression.erase(expression.begin() + i); // Remove the '~'
+                }
+                else if (expression[i-1] == "inf") //inf ~ -> -inf
+                {
+                    //puts("hi 924");
+                    expression[i-1] = "-inf"; // change 'inf' to '-inf'
+                    expression.erase(expression.begin() + i); // Remove the '~'
+                }
+                else
+                {
+                    expression[i] = simplifyString(to_string_general(-(Stod(expression[i-1]))));
+                    expression.erase(expression.begin() + i - 1);
+                }
+                simplified = true;
+                break;
+            }
+            else if (expression[i] == "sin")
+            {
+                expression[i] = simplifyString(to_string_general(sin(Stod(expression[i-1]))));
+                expression.erase(expression.begin() + i - 1);
+                simplified = true;
+                break;
+            }
+            else if ((expression[i] == "ln") || (expression[i] == "log"))
+            {
+                expression[i] = simplifyString(to_string_general(log(Stod(expression[i-1])))); // Natural log (ln)
+                expression.erase(expression.begin() + i - 1);
+                simplified = true;
+                break;
+            }
+            else if (expression[i] == "asin" || expression[i] == "arcsin")
+            {
+                expression[i] = simplifyString(to_string_general(asin(Stod(expression[i-1]))));
+                expression.erase(expression.begin() + i - 1);
+                simplified = true;
+                break;
+            }
+            else if (expression[i] == "acos" || expression[i] == "arccos")
+            {
+                expression[i] = simplifyString(to_string_general(acos(Stod(expression[i-1]))));
+                expression.erase(expression.begin() + i - 1);
+                simplified = true;
+                break;
+            }
+            else if (expression[i] == "exp")
+            {
+                expression[i] = simplifyString(to_string_general(exp(Stod(expression[i-1]))));
+                expression.erase(expression.begin() + i - 1);
+                simplified = true;
+                break;
+            }
+            else if (expression[i] == "sech")
+            {
+                expression[i] = simplifyString(to_string_general(1 / cosh(Stod(expression[i-1])))); // sech(x) = 1 / cosh(x)
+                expression.erase(expression.begin() + i - 1);
+                simplified = true;
+                break;
+            }
+            else if (expression[i] == "tanh")
+            {
+                expression[i] = simplifyString(to_string_general(tanh(Stod(expression[i-1]))));
+                expression.erase(expression.begin() + i - 1);
+                simplified = true;
+                break;
+            }
+            else if (expression[i] == "sqrt")
+            {
+                expression[i] = simplifyString(to_string_general(sqrt(Stod(expression[i-1]))));
+                expression.erase(expression.begin() + i - 1);
+                simplified = true;
+                break;
+            }
+            else if (expression[i] == "abs")
+            {
+                expression[i] = simplifyString(to_string_general(abs(Stod(expression[i-1]))));
+                expression.erase(expression.begin() + i - 1);
+                simplified = true;
+                break;
+            }
+        }
+        
+        else if (is_unary(expression[i]))
+        {
+            if (expression[i] == "~" && expression[i-1] == "~")
+            {
+                expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
+                simplified = true;
+                break;
+            }
+            else if (expression[i] == "exp" && (expression[i-1] == "ln" || expression[i-1] == "log"))
+            {
+                //puts("hi 360");
+                expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
+                simplified = true;
+                break;
+            }
+            else if (expression[i-1] == "exp" && (expression[i] == "ln" || expression[i] == "log"))
+            {
+                //puts("hi 368");
+                expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
+                simplified = true;
+                break;
+            }
+            else if (expression[i] == "cos" && (expression[i-1] == "acos" || expression[i-1] == "arccos"))
+            {
+                //puts("hi 408");
+                expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
+                simplified = true;
+                break;
+            }
+            else if (expression[i] == "cos" && expression[i-1] == "~") //cos(-x) -> cos(x)
+            {
+                //puts("hi 688");
+                expression.erase(expression.begin() + i - 1); // Remove the '~'
+                simplified = true;
+                break;
+            }
+            else if (expression[i-1] == "cos" && (expression[i] == "acos" || expression[i] == "arccos"))
+            {
+                //puts("hi 416");
+                expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
+                simplified = true;
+                break;
+            }
+            else if (expression[i] == "sin" && (expression[i-1] == "asin" || expression[i-1] == "arcsin"))
+            {
+                //puts("hi 424");
+                expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
+                simplified = true;
+                break;
+            }
+            else if (expression[i-1] == "sin" && (expression[i] == "asin" || expression[i] == "arcsin"))
+            {
+                //puts("hi 432");
+                expression.erase(expression.begin() + i - 1, expression.begin() + i + 1); // Remove elements at i - 1 and i
+                simplified = true;
+                break;
+            }
+            else if (expression[i] == "sech" && expression[i-1] == "~") //'x ~ sech' -> 'x sech'
+            {
+                expression.erase(expression.begin() + i - 1); // Remove the '~'
+                simplified = true;
+                break;
+            }
+        }
+    }
+    
+    if (expression.size() != temp.size()) //if expression was simplified, assign it to original expression vector
+    {
+        expression = temp;
     }
 }
 
