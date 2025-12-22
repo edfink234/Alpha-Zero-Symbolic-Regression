@@ -1611,7 +1611,7 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
                 {
                     temp.push_back("-inf");
                 }
-                else if (checkEqual(expression[i+1], "0"))
+                else if (checkEqual(expression[i+1], "0")) //~ 0 -> 0
                 {
                     temp.push_back("0");
                 }
