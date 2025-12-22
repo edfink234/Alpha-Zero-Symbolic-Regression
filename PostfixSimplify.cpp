@@ -1340,7 +1340,7 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
     thread_local std::vector<std::string> temp;
     temp.clear();
     temp.reserve(expression.size());
-    printf("expression before = ");for (const auto& i: expression){std::cout << i << ' ';}puts("");
+//    printf("expression before = ");for (const auto& i: expression){std::cout << i << ' ';}puts("");
     for (int i = static_cast<int>(expression.size()) - 1; i >= 0; i--)
     {
 //        std::cout << "i = " << i << '\n';// << expression[i] << '\n';
@@ -1696,7 +1696,7 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
             expression[i] = temp[expression.size() - i - 1];
         }
     }
-    printf("expression after = ");for (const auto& i: expression){std::cout << i << ' ';}puts("");
+//    printf("expression after = ");for (const auto& i: expression){std::cout << i << ' ';}puts("");
 
 }
 

@@ -443,7 +443,7 @@ def test_visualize():
             postfix_expr = "4 8.785262 + x0 -0.061502 + / 0.985492 x0 - x0 0.285370 ^ - * x0 0.962481 * x0 -0.798924 ^ ^ 8.423532 x0 ^ cos ^ *"
             print(postfix_to_prefix(postfix_expr))
         else:
-            expression_type_to_plot = ["prefix", "postfix"][0]
+            expression_type_to_plot = ["prefix", "postfix"][1]
             completeTree = [True, False][1]
             if expression_type_to_plot == "prefix":
                 complete_pn_expr = "* * / 12.785252 + s -0.061502 - - 0.985492 s ^ s 0.285370 ^ ^ * s 0.962481 ^ s -0.798924 cos ^ 8.423473 s"
@@ -455,7 +455,7 @@ def test_visualize():
                 plot_pn_expression_tree(complete_pn_expr, save = save, include_expression_in_title = False)
 
             else:
-                complete_rpn_expr = "-12.795 s 0.285 ^ * 12.795 s * - 12.261 + 0.964 s * s -0.805 ^ ^ 8.417 s ^ cos ^ * s 0.061 - /"
+                complete_rpn_expr = "x0 x1 ^ 6.283190 cos 0.000000 0.000100 6.283190 ^ ^ - ^"
                 if completeTree:
                     complete_rpn_expr = complete_tree(complete_rpn_expr.split(), "postfix") #returns a list
                 else:
