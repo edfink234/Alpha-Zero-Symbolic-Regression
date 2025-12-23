@@ -933,6 +933,7 @@ struct Board
     std::vector<int> simplify_grasp;
 
     std::vector<int> n; //depth of RPN/PN trees
+    std::vector<int> maxSize; //max size (number of tokens) for each expression
     std::string expression_type, expression_string;
     size_t num_consts_diff;
     static std::mutex inline thread_locker; //static because it needs to protect static members
@@ -943,7 +944,6 @@ struct Board
     size_t num_diff_eqns; //number of equations in the system `diffeq`
     std::vector<std::vector<std::string>> diffeq_result;
     double isConstTol;
-    int maxSize;
     bool simplify_original;
     bool mustHaveAllFeatures;
     std::vector<std::vector<std::string>> customFeatures;
@@ -969,7 +969,7 @@ struct Board
           bool must_have_all_features = true,
           const std::vector<std::vector<std::string>>& custom_features = {},
           bool completeTree = false,
-          int max_size = 0) :
+          std::vector<int> max_size = {}) :
           gen{rd()}, vel_dist{-1.0, 1.0}, pos_dist{0.0, 1.0}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, n{depth}, is_primary{primary}, simplify_original{simplifyOriginal}, mustHaveAllFeatures{must_have_all_features}, customFeatures{custom_features}, complete_Tree{completeTree}, maxSize{max_size}
     {
         assert(n.size());
