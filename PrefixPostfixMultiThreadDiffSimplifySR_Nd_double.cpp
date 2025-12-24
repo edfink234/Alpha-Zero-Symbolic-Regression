@@ -933,7 +933,6 @@ struct Board
     std::vector<int> simplify_grasp;
 
     std::vector<int> n; //depth of RPN/PN trees
-    std::vector<int> maxSize; //max size (number of tokens) for each expression
     std::string expression_type, expression_string;
     size_t num_consts_diff;
     static std::mutex inline thread_locker; //static because it needs to protect static members
@@ -948,6 +947,7 @@ struct Board
     bool mustHaveAllFeatures;
     std::vector<std::vector<std::string>> customFeatures;
     bool complete_Tree;
+    std::vector<int> maxSize; //max size (number of tokens) for each expression
 
     Board(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
           size_t num_diff_eqns,
@@ -8120,12 +8120,12 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
     /*
-     Best score = 6.27318e-05, SNE = 15939.9
-     Squared-norm error for each equation: 15926.1 13.791 0
-     Best expression = (((((10.31319 ^ (0.010000 + x0)) * 2.717825964282383e-13) + ((4.692820413780688e-06 * ~(x1)) + 0.70650879430567)) - (((~(x1) + (x1 + 0.999329299739067)) * sin((0.010000 + x1))) * (0.9989466681769272 * (sin(x0) * 0.9999999958776927)))) - ((((6.28319 + (1 + x1)) / -10.86907152907618) * 0.019517900287111912) + (((x0 / (x0 + 2)) ^ ((x0 + 0.010000) + 6.333189999999999)) + ((0.00999966667999946 ^ (10.000000 / x0)) + 0.09386044415450322))))
-     Best expression (original format) = 10.31319 0.010000 x0 + ^ 2.717825964282383e-13 * 4.692820413780688e-06 x1 ~ * 0.70650879430567 + + x1 ~ x1 0.999329299739067 + + 0.010000 x1 + sin * 0.9989466681769272 x0 sin 0.9999999958776927 * * * - 6.28319 1 x1 + + -10.86907152907618 / 0.019517900287111912 * x0 x0 2 + / x0 0.010000 + 6.333189999999999 + ^ 0.00999966667999946 10.000000 x0 / ^ 0.09386044415450322 + + + -
+     Best score = 7.86087e-05, SNE = 12720.2
+     Squared-norm error for each equation: 12701.3 18.9081 0
+     Best expression = (((((10.33319 ^ (0.010000 + x0)) * 2.717825964282383e-13) + 0.7066026507139457) - (((0.9999500020832486 ^ (x0 ^ 4)) * (sin(x1) * 0.9999500004166652)) * (0.9989466681769272 * (sin(x0) * 0.9999999958776928)))) - ((((6.28319 + (2 + x1)) / -9.306852819440055) * 0.019517900287111912) + (((x0 / (x0 + 2)) ^ ((x0 + 0.010000) + 6.333189999999999)) + 0.08386044415450322)))
+     Best expression (original format) = 10.33319 0.010000 x0 + ^ 2.717825964282383e-13 * 0.7066026507139457 + 0.9999500020832486 x0 4 ^ ^ x1 sin 0.9999500004166652 * * 0.9989466681769272 x0 sin 0.9999999958776928 * * * - 6.28319 2 x1 + + -9.306852819440055 / 0.019517900287111912 * x0 x0 2 + / x0 0.010000 + 6.333189999999999 + ^ 0.08386044415450322 + + -
      ```
-x = "((((((0.010000 + 10.28319) ^ (0.010000 + x0)) * ((0 + 0) + (0 + 2.714063472005533e-13))) + (((0 + 4.692820413780688e-06) * (0.000000 - x1)) + ((0.010000 / 6.283190) + (0 + 0.7049172460634555)))) - ((((0 + 0) + (0 + 0.999329299739067)) * sin((0.010000 + x1))) * (((0 + 0) + (0 + 0.9989466681769272)) * sin((0 + x0))))) - (((((6.283190 - 0.010000) + (1 + x1)) / (~(0.010000) + (0 + -10.85907152907618))) * (ln(cos(0.010000)) + ((0 + 0) + (0 + 0.019659199307306502)))) + ((((0 + x0) / (x0 + 2)) ^ ((x0 + 0.010000) + (0 + 6.333189999999999))) + (((0 + 0.010000) ^ (10.000000 / x0)) + (sech(10.000000) + (0 + 0.09367884443582758))))))"
+x = "(((((10.33319 ^ (0.010000 + x0)) * 2.717825964282383e-13) + 0.7066026507139457) - (((0.9999500020832486 ^ (x0 ^ 4)) * (sin(x1) * 0.9999500004166652)) * (0.9989466681769272 * (sin(x0) * 0.9999999958776928)))) - ((((6.28319 + (2 + x1)) / -9.306852819440055) * 0.019517900287111912) + (((x0 / (x0 + 2)) ^ ((x0 + 0.010000) + 6.333189999999999)) + 0.08386044415450322)))"
 print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-"))
      */
     
@@ -10472,7 +10472,7 @@ namespace ExampleProblems
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "SwiftHohenbergBest.txt", //"" /*filename to save current best expression found (instead of outputting them to standard out*/,
-                {split("10.31319 0.010000 x0 + ^ 2.717825964282383e-13 * 4.692820413780688e-06 x1 ~ * 0.70650879430567 + + x1 ~ x1 0.999329299739067 + + 0.010000 x1 + sin * 0.9989466681769272 x0 sin 0.9999999958776927 * * * - 6.28319 1 x1 + + -10.86907152907618 / 0.019517900287111912 * x0 x0 2 + / x0 0.010000 + 6.333189999999999 + ^ 0.00999966667999946 10.000000 x0 / ^ 0.09386044415450322 + + + -")} /*seed expressions*/,
+                {split("10.33319 0.010000 x0 + ^ 2.717825964282383e-13 * 0.7066026507139457 + 0.9999500020832486 x0 4 ^ ^ x1 sin 0.9999500004166652 * * 0.9989466681769272 x0 sin 0.9999999958776928 * * * - 6.28319 2 x1 + + -9.306852819440055 / 0.019517900287111912 * x0 x0 2 + / x0 0.010000 + 6.333189999999999 + ^ 0.08386044415450322 + + -")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
