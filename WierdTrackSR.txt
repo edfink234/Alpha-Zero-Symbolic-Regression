@@ -1,0 +1,26 @@
+
+Unique expressions = 20
+Time spent fitting = 0 seconds
+Best score = 0.00087656, SNE = 1139.82
+Squared-norm error for each equation: 1139.82 
+Best expression = (-15.251 * (tanh(x0) ^ sin((9.222 * x0))))
+Best expression (original format) = -15.251 x0 tanh 9.222 x0 * sin ^ *
+Best diff result = abs(((-15.251 * (tanh(x0) ^ sin((9.222 * x0)))) - x1))
+Best expression (original format) = -15.251 x0 tanh 9.222 x0 * sin ^ * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs(((-15.251 * (tanh(x0) ^ sin((9.222 * x0)))) - x1))
+Total system result (original format) = -15.251 x0 tanh 9.222 x0 * sin ^ * x1 - abs
+
+Unique expressions = 79
+Time spent fitting = 0.00110879 seconds
+Best score = 0.00087656, SNE = 1139.82
+Squared-norm error for each equation: 1139.82 
+Best expression = (-15.250806 * (tanh(x0) ^ sin((9.222 * x0))))
+Best expression (original format) = -15.250806 x0 tanh 9.222 x0 * sin ^ *
+Best diff result = abs(((-15.250806 * (tanh(x0) ^ sin((9.222 * x0)))) - x1))
+Best expression (original format) = -15.250806 x0 tanh 9.222 x0 * sin ^ * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -15.2508)}
+Total system result = abs(((-15.250806 * (tanh(x0) ^ sin((9.222 * x0)))) - x1))
+Total system result (original format) = -15.250806 x0 tanh 9.222 x0 * sin ^ * x1 - abs

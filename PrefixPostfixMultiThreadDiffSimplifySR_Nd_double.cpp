@@ -10771,11 +10771,12 @@ namespace ExampleProblems
         }
     }
     void WierdTrackFitterTest(int random_seed, const char* algorithm, double time)
-    {
+{
         double threshold = 0.0;
         int track_idx = 0;
         constexpr const char* file_path[] = {"/Users/edwardfinkelstein/SDSU_UCI/WhitesonResearch/TrackProject/stubborn_track_csvs/event100000003-hits_Z.csv"};
-        constexpr const char* seed_exprs[] = {std::vector<std::string>{"* * / * 2 6.392626 + x0 -0.061502 - - 0.985492 x0 ^ x0 0.285370 ^ ^ * x0 0.962481 ^ x0 -0.798924 cos ^ 8.423473 x0", "-15.251 s tanh 9.222 s * sin ^ *"}[0].c_str()};
+        const std::vector<std::string> seed_exprs = {std::vector<std::string>{"* * / * 2 6.392626 + x0 -0.061502 - - 0.985492 x0 ^ x0 0.285370 ^ ^ * x0 0.962481 ^ x0 -0.798924 cos ^ 8.423473 x0", "-15.251 x0 tanh 9.222 x0 * sin ^ *"}[1]};
+        std::cout << "seed_exprs[" << track_idx << "] = {" << seed_exprs[track_idx] << "}\n";
         Eigen::MatrixXd data = load_csv(file_path[track_idx], 61, 2, false /*no header in these `file_path` files*/);
         std::cout << "data = " << data << '\n';
         if (strcmp(algorithm, "RandomSearch") == 0)
@@ -10798,7 +10799,7 @@ namespace ExampleProblems
                  1 /*number of data columns that constitute labels and not independent variables/features*/,
                  false /*whether or not to include ALL of the features in all of the generated expressions*/,
                  {} /*custom features that the SR-found equations are required to contain*/,
-                 "" /*filename to save current best expression found (instead of outputting them to standard out)*/,
+                 "WierdTrackSR.txt", // "" /*filename to save current best expression found (instead of outputting them to standard out)*/,
                  std::vector<int>{9} /*optional max-sizes of each of the expressions in the generated solution*/);
         }
         else
@@ -10807,7 +10808,7 @@ namespace ExampleProblems
                 1 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
                 std::vector<int>{4} /*fixed depths of generated solution*/,
-                "prefix" /*expression representation*/,
+                "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
                 5 /*number of fit iterations*/,
@@ -10817,12 +10818,12 @@ namespace ExampleProblems
                 0 /*num threads*/,
                 true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
-                false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the ORIGINAL expression on every iteration (perturbation) of the seed expression vector; if false a copy is maintained so that simplification on this->pieces can still happen*/
                 1 /*number of data columns that constitute labels and not independent variables/features*/,
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
-                "", // "WierdTrackSR.txt" /*filename to save current best expression found (instead of outputting them to standard out)*/
+                "WierdTrackSR.txt", // "" /*filename to save current best expression found (instead of outputting them to standard out)*/
                 std::vector<int>{9} /*optional max-sizes of each of the expressions in the generated solution*/,
                 {split(seed_exprs[track_idx])} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
@@ -10831,7 +10832,7 @@ namespace ExampleProblems
                 0.0 /*T_max*/,
                 [](double ratio, double t_val) -> double {return 0.9999;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
-                true /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
+                false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
                 true /*whether to perturb sub-arrays (true) of the current expression-vector or sub-trees (false)*/);
         }
     }
