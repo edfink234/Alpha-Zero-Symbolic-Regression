@@ -968,11 +968,12 @@ struct Board
           int numDataCols = 0,
           bool must_have_all_features = true,
           const std::vector<std::vector<std::string>>& custom_features = {},
-          bool completeTree = false,
-          std::vector<int> max_size = {}) :
+          std::vector<int> max_size = {},
+          bool completeTree = false) :
           gen{rd()}, vel_dist{-1.0, 1.0}, pos_dist{0.0, 1.0}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, n{depth}, is_primary{primary}, simplify_original{simplifyOriginal}, mustHaveAllFeatures{must_have_all_features}, customFeatures{custom_features}, complete_Tree{completeTree}, maxSize{max_size}
     {
         assert(n.size());
+        assert(((!maxSize.size()) || (maxSize.size() && maxSize.size() == n.size())) && "if maxSize is not empty it much be equal in size to the depth-vector `n`");
         this->num_objectives = n.size();
         int max_n = n[0];
         int counter = 0;
@@ -4836,8 +4837,16 @@ struct Board
     double fitFunctionToData()
     {
         double score = 0.0;
+        bool checkMaxSize = (this->maxSize.size() == this->pieces.size());
         for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++) //loop over each generated symbolic expression
         {
+            //This block checks if the max-size constraint is violated by any of the `this->n.size()` expressions
+            if (checkMaxSize && this->pieces[jdx].size() > this->maxSize[jdx])
+            {
+                this->SNE_curr = DBL_MAX;
+                return score;
+            }
+            
             //This block below checks if `this->pieces[jdx]` has nans or infs.
             for (const auto& piece: this->pieces[jdx])
             {
@@ -8939,6 +8948,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                         bool mustHaveAllFeatures = true,
                         const std::vector<std::vector<std::string>>& custom_features = {},
                         const std::string& bestExpressionFileName = "",
+                        const std::vector<int>& maxSize = {},
                         const std::vector<std::vector<std::string>>& seed_expressions = {},
                         bool exit_early = false,
                         int custom_rand_seed = -1,
@@ -8997,7 +9007,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
     /*
      Inside of thread:
      */
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &custom_features, &seed_expressions, &exit_early, &custom_rand_seed, &T_min, &T_max, &temp_func, &completeTree, &pert_sub_array, &best_SNE, &best_sne_vec, &bestExpressionFileName, &outFile, &out]()
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &custom_features, &seed_expressions, &exit_early, &custom_rand_seed, &T_min, &T_max, &temp_func, &completeTree, &pert_sub_array, &best_SNE, &best_sne_vec, &bestExpressionFileName, &maxSize, &outFile, &out]()
     {
         std::random_device rand_dev;
         #if RANDOM_SEED < 0
@@ -9010,9 +9020,9 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
         {
             generator.seed(custom_rand_seed);
         }
-        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols, mustHaveAllFeatures, custom_features, completeTree);
+        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols, mustHaveAllFeatures, custom_features, maxSize, completeTree);
         sync_point.arrive_and_wait();
-        Board secondary(diffeq, num_diff_eqns, false, std::vector<int>(depth.size(), 0), expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols, mustHaveAllFeatures, custom_features, completeTree); //For perturbations
+        Board secondary(diffeq, num_diff_eqns, false, std::vector<int>(depth.size(), 0), expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols, mustHaveAllFeatures, custom_features, maxSize, completeTree); //For perturbations
         assert(secondary.pieces.size() == secondary.n.size());
         assert(secondary.pieces.size() == x.pieces.size());
         assert(secondary.pieces.size() == x.n.size());
@@ -10273,7 +10283,8 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
                   int numDataCols = 0,
                   bool mustHaveAllFeatures = true,
                   const std::vector<std::vector<std::string>>& custom_features = {},
-                  const std::string& bestExpressionFileName = "")
+                  const std::string& bestExpressionFileName = "",
+                  const std::vector<int>& maxSize = {})
 {
     if (num_threads == 0)
     {
@@ -10301,12 +10312,12 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
      Inside of thread:
      */
 
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &use_const_pieces, &numDataCols, &mustHaveAllFeatures, &custom_features, &isConstTol, &best_SNE, &best_sne_vec, &bestExpressionFileName, &outFile, &out]()
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &use_const_pieces, &numDataCols, &mustHaveAllFeatures, &custom_features, &isConstTol, &best_SNE, &best_sne_vec, &bestExpressionFileName, &maxSize, &outFile, &out]()
     {
         std::random_device rand_dev;
         std::mt19937 thread_local generator(rand_dev()); // Mersenne Twister random number generator
 
-        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, true, numDataCols, mustHaveAllFeatures, custom_features);
+        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, true, numDataCols, mustHaveAllFeatures, custom_features, maxSize);
 
         sync_point.arrive_and_wait();
         double score = 0.0;
@@ -10448,7 +10459,8 @@ namespace ExampleProblems
                          0 /*number of data columns that constitute labels and not independent variables/features*/,
                          true /*whether or not to include ALL of the features in all of the generated expressions*/,
                          {} /*custom features that the SR-found equations are required to contain*/,
-                         "" /*filename to save current best expression found (instead of outputting them to standard out*/);
+                         "" /*filename to save current best expression found (instead of outputting them to standard out*/,
+                         {} /*optional max-sizes of each of the expressions in the generated solution*/);
         }
         else
         {
@@ -10471,8 +10483,9 @@ namespace ExampleProblems
                 0 /*number of data columns that constitute labels and not independent variables/features*/,
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
-                "SwiftHohenbergBest.txt", //"" /*filename to save current best expression found (instead of outputting them to standard out*/,
-                {split("10.33319 0.010000 x0 + ^ 2.717825964282383e-13 * 0.7066026507139457 + 0.9999500020832486 x0 4 ^ ^ x1 sin 0.9999500004166652 * * 0.9989466681769272 x0 sin 0.9999999958776928 * * * - 6.28319 2 x1 + + -9.306852819440055 / 0.019517900287111912 * x0 x0 2 + / x0 0.010000 + 6.333189999999999 + ^ 0.08386044415450322 + + -")} /*seed expressions*/,
+                "SwiftHohenbergBest.txt", //"" /*filename to save current best expression found (instead of outputting them to standard out*/
+                {}, /*optional max-sizes of each of the expressions in the generated solution*/
+                {split("10.34319 0.010000 x0 + ^ 2.717825964282383e-13 * 0.7081941989561602 + 0.9999500020832486 x0 4 ^ ^ x1 sin 0.9999500004166652 * * 0.9989466681769272 x0 sin 0.9999999958776928 * * * - 6.28319 4 x1 + + -10.28319 / 0.019517900287111974 * x0 x0 2 + / x0 0.010000 + 6.343189999999999 + ^ 0.08395124401384103 + + -")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
@@ -10508,7 +10521,8 @@ namespace ExampleProblems
                          0 /*number of data columns that constitute labels and not independent variables/features*/,
                          true /*whether or not to include ALL of the features in all of the generated expressions*/,
                          {} /*custom features that the SR-found equations are required to contain*/,
-                         ""); // "vortexTest.txt" /*filename to save current best expression found (instead of outputting them to standard out*/
+                         "", // "vortexTest.txt" /*filename to save current best expression found (instead of outputting them to standard out*/
+                         {} /*optional max-sizes of each of the expressions in the generated solution*/);
         }
         else
         {
@@ -10532,6 +10546,7 @@ namespace ExampleProblems
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "" /*filename to save current best expression found (instead of outputting them to standard out)*/,
+                {} /*optional max-sizes of each of the expressions in the generated solution*/,
                 {} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -10570,7 +10585,8 @@ namespace ExampleProblems
                  2 /*number of data columns that constitute labels and not independent variables/features*/,
                  true /*whether or not to include ALL of the features in all of the generated expressions*/,
                  {} /*custom features that the SR-found equations are required to contain*/,
-                 "" /*filename to save current best expression found (instead of outputting them to standard out)*/);
+                 "" /*filename to save current best expression found (instead of outputting them to standard out)*/,
+                 {} /*optional max-sizes of each of the expressions in the generated solution*/);
         }
         else
         {
@@ -10594,6 +10610,7 @@ namespace ExampleProblems
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "" /*filename to save current best expression found (instead of outputting them to standard out)*/,
+                {} /*optional max-sizes of each of the expressions in the generated solution*/,
                 {split("x0 sech tanh tanh 0 0 + 0 -6.4342880000000005 + + x0 tanh 0 2.61657 + / - /"), split("0 0 + 0 -3.2171440000000002 + + x0 sech 0 0.9640275800758169 + ^ * sech")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -10641,7 +10658,8 @@ namespace ExampleProblems
                  1 /*number of data columns that constitute labels and not independent variables/features*/,
                  false /*whether or not to include ALL of the features in all of the generated expressions*/,
                  {} /*custom features that the SR-found equations are required to contain*/,
-                 "" /*filename to save current best expression found (instead of outputting them to standard out)*/);
+                 "" /*filename to save current best expression found (instead of outputting them to standard out)*/,
+                 {} /*optional max-sizes of each of the expressions in the generated solution*/);
         }
         else
         {
@@ -10665,6 +10683,7 @@ namespace ExampleProblems
                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {{"x23", "x24", "x25"}} /*custom features that the SR-found equations are required to contain*/,
                 "",// "BestNextDayFire.txt" /*filename to save current best expression found (instead of outputting them to standard out)*/,
+                {} /*optional max-sizes of each of the expressions in the generated solution*/,
                 {split("-2.640000 0.051731 x7 sqrt x15 8.000000 - - / / -1803.016571 x21 36.293228 x0 * * x17 -843.000000 + x15 15893.000000 + + + + x6 x19 -100.000000 x8 + - / x14 -211800 / x15 + + / - x18 x24 - x2 x7 x0 1684.200012 - - + - + -7.446376466569234 -3.225653 x6 8.800000 - + -508 + -0.9081765689798138 38.000000 x16 sin / * + + x1 x0 - 0.0007699998478223693 + -16.82119949898502 + x0 x15 ^ -100 + -279.200012 -2.640000 x16 / + + + -28.995355508740936 + + -88.959518 1.000000 88.856491 x1 / / * -2118 x8 2118.000000 - x22 ~ + + + 0.00077 x5 + * 25.400000 x20 1.0021072170678698 / ^ 15893.000000 x22 x8 + + x1 -1405.000000 - 15666.000000 x24 + + + + x0 x25 + 16.000000 x23 + 9736 - / ~ / - + *")} /*seed expressions*/,
                 validation /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -10711,7 +10730,8 @@ namespace ExampleProblems
                  1 /*number of data columns that constitute labels and not independent variables/features*/,
                  false /*whether or not to include ALL of the features in all of the generated expressions*/,
                  {{"x100", "x101"}} /*custom features that the SR-found equations are required to contain*/,
-                 "" /*filename to save current best expression found (instead of outputting them to standard out)*/);
+                 "" /*filename to save current best expression found (instead of outputting them to standard out)*/,
+                 {} /*optional max-sizes of each of the expressions in the generated solution*/);
         }
         else
         {
@@ -10734,7 +10754,8 @@ namespace ExampleProblems
                 1 /*number of data columns that constitute labels and not independent variables/features*/,
                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {{"x100", "x101"}} /*custom features that the SR-found equations are required to contain*/,
-                "",//"BestInpaint.txt" /*filename to save current best expression found (instead of outputting them to standard out)*/,
+                "", //"BestInpaint.txt" /*filename to save current best expression found (instead of outputting them to standard out)*/
+                {} /*optional max-sizes of each of the expressions in the generated solution*/,
                 {split("/ + * + + ln cos x46 + + 0 0 + 0 -3.4799761065034414 + * + 0 x95 + 0 1.620943 + + 0 x95 ~ x48 ~ ^ + cos x41 + 0 52.64009483497598 - + 0 2.7907071011403315 cos x93 + ^ + * + 0 3.1585732538600397 ^ x12 x54 + cos x21 + 0.365382 x13 + ~ + 0 x20 + + 0 0 + 0 1.5729403267948965 * + + + 0 0 + 0 0 + + 0 0 + 0 x3 sqrt + + 0 0 + 0 x48 - + / - + + 0 0 + 0 0.9867622178470573 - - 7169.463400 x100 * x17 11181230.000000 + acos tanh x23 + + 0 0 + 0 57.67636600070402 sin + + + 0 0 + 0 -2.884980 + + 0 0 + 0 x50 - sqrt ^ ^ + 0 x17 + 0 x59 + + 0 x71 ~ x87 ^ + + + 0 0 + 0 0 + + 0 0 + 0 0.9910929232006058 * + + 0 0 + 0 -4.0405169999999995 * - x61 x101 + 0 -0.04344899097047564")} /*seed expressions*/,
                 validation /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -10774,7 +10795,8 @@ namespace ExampleProblems
                  1 /*number of data columns that constitute labels and not independent variables/features*/,
                  false /*whether or not to include ALL of the features in all of the generated expressions*/,
                  {} /*custom features that the SR-found equations are required to contain*/,
-                 "" /*filename to save current best expression found (instead of outputting them to standard out)*/);
+                 "" /*filename to save current best expression found (instead of outputting them to standard out)*/,
+                 {} /*optional max-sizes of each of the expressions in the generated solution*/);
         }
         else
         {
@@ -10797,7 +10819,8 @@ namespace ExampleProblems
                 1 /*number of data columns that constitute labels and not independent variables/features*/,
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
-                "",// "WierdTrackSR.txt" /*filename to save current best expression found (instead of outputting them to standard out)*/,
+                "", // "WierdTrackSR.txt" /*filename to save current best expression found (instead of outputting them to standard out)*/
+                {} /*optional max-sizes of each of the expressions in the generated solution*/,
                 {split(seed_exprs[track_idx])} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
