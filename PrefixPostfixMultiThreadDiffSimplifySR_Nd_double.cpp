@@ -6702,7 +6702,10 @@ std::vector<std::vector<std::string>> WierdTrackFitter(Board& x, bool fit)
             Best expression = (((12.785252 / (x0 + -0.061502)) * ((0.985492 - x0) - (x0 ^ 0.285370))) * (((x0 * 0.962481) ^ (x0 ^ -0.798924)) ^ cos((8.423473 ^ x0))))
             Best expression (original format) = * * / 12.785252 + x0 -0.061502 - - 0.985492 x0 ^ x0 0.285370 ^ ^ * x0 0.962481 ^ x0 -0.798924 cos ^ 8.423473 x0
         depth = 4, maxsize = 9:
-            
+            Best score = 0.00100003, SNE = 998.968
+            Squared-norm error for each equation: 998.968
+            Best expression = (-33.520416 * sech(((-1.850956 / x0) - -3.912802)))
+            Best expression (original format) = * -33.520416 sech - / -1.850956 x0 -3.912802
 
      */
     thread_local std::vector<std::vector<std::string>> results(x.num_diff_eqns);
@@ -10327,10 +10330,23 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
         std::vector<std::string> temp_legal_moves;
         size_t temp_sz;
 
-        int n_count = 0;
-//
-        while ((timeElapsedSince(start_time) < time))
+        for (double i = 0; (timeElapsedSince(start_time) < time); i++)
         {
+            if (i && (static_cast<int>(i)%1000000 == 0))
+            {
+                std::scoped_lock progress_lock(Board::thread_locker);
+                
+                if (use_const_pieces)
+                {
+                    std::cout << "Iteration " << i << '\n';
+                    std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
+                }
+                else
+                {
+                    std::cout << "Iteration " << i << '\n';
+                }
+            }
+            
             for (int jdx = 0; jdx < x.num_objectives; jdx++)
             {
 //                x.pieces[jdx] = {"x0", "tanh"};
@@ -10353,12 +10369,6 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
             }
 //            printf("score = %f\n", score);
 
-            if (Board::expression_dict.size() > static_cast<decltype(Board::expression_dict.size())>(n_count))
-            {
-                std::scoped_lock str_lock(Board::thread_locker);
-                std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
-                n_count += 1000000;
-            }
             if (score > max_score)
             {
                 max_score = score;
@@ -10775,7 +10785,14 @@ namespace ExampleProblems
         double threshold = 0.0;
         int track_idx = 0;
         constexpr const char* file_path[] = {"/Users/edwardfinkelstein/SDSU_UCI/WhitesonResearch/TrackProject/stubborn_track_csvs/event100000003-hits_Z.csv"};
-        const std::vector<std::string> seed_exprs = {std::vector<std::string>{"* * / * 2 6.392626 + x0 -0.061502 - - 0.985492 x0 ^ x0 0.285370 ^ ^ * x0 0.962481 ^ x0 -0.798924 cos ^ 8.423473 x0", "-15.251 x0 tanh 9.222 x0 * sin ^ *"}[1]};
+        const std::vector<std::string> seed_exprs =
+        {
+            std::vector<std::string>
+            {
+                "* * / * 2 6.392626 + x0 -0.061502 - - 0.985492 x0 ^ x0 0.285370 ^ ^ * x0 0.962481 ^ x0 -0.798924 cos ^ 8.423473 x0",
+                "-15.251 x0 tanh 9.222 x0 * sin ^ *"
+            }[1]
+        };
         std::cout << "seed_exprs[" << track_idx << "] = {" << seed_exprs[track_idx] << "}\n";
         Eigen::MatrixXd data = load_csv(file_path[track_idx], 61, 2, false /*no header in these `file_path` files*/);
         std::cout << "data = " << data << '\n';
@@ -10833,7 +10850,7 @@ namespace ExampleProblems
                 [](double ratio, double t_val) -> double {return 0.9999;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                true /*whether to perturb sub-arrays (true) of the current expression-vector or sub-trees (false)*/);
+                false /*whether to perturb sub-arrays (true) of the current expression-vector or sub-trees (false)*/);
         }
     }
 };
@@ -10871,7 +10888,7 @@ enum class ProblemOption
 int main(int argc, char *argv[])
 {
     int random_seed = get_random_seed(argc, argv);
-    constexpr const char* algorithm = "SimulatedAnnealing";
+    constexpr const char* algorithm = "RandomSearch";
     constexpr double time = 6000000.;
     constexpr bool test_complete = false;
     printf("Random seed set to %d%s", random_seed, std::string(2, '\n').c_str());
