@@ -10790,8 +10790,9 @@ namespace ExampleProblems
             std::vector<std::string>
             {
                 "* * / * 2 6.392626 + x0 -0.061502 - - 0.985492 x0 ^ x0 0.285370 ^ ^ * x0 0.962481 ^ x0 -0.798924 cos ^ 8.423473 x0",
-                "-15.251 x0 tanh 9.222 x0 * sin ^ *"
-            }[1]
+                "-15.251 x0 tanh 9.222 x0 * sin ^ *",
+                "-33.592482 sech - / -1.847774 x0 -3.913332"
+            }[2]
         };
         std::cout << "seed_exprs[" << track_idx << "] = {" << seed_exprs[track_idx] << "}\n";
         Eigen::MatrixXd data = load_csv(file_path[track_idx], 61, 2, false /*no header in these `file_path` files*/);
@@ -10888,7 +10889,7 @@ enum class ProblemOption
 int main(int argc, char *argv[])
 {
     int random_seed = get_random_seed(argc, argv);
-    constexpr const char* algorithm = "RandomSearch";
+    constexpr const char* algorithm = "SimulatedAnnealing";
     constexpr double time = 6000000.;
     constexpr bool test_complete = false;
     printf("Random seed set to %d%s", random_seed, std::string(2, '\n').c_str());
