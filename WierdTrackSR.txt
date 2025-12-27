@@ -349,3 +349,1719 @@ Best differential equation parameters = {}
 Best expression parameters = {(const0, -33.5925), (const1, -1.84777), (const2, -3.91333)}
 Total system result = abs(((-33.592482 * sech(((-1.847774 / x0) - -3.913332))) - x1))
 Total system result (original format) = abs - * -33.592482 sech - / -1.847774 x0 -3.913332 x1
+
+Unique expressions = 31
+Time spent fitting = 0 seconds
+Best score = 0.00100019, SNE = 998.811
+Squared-norm error for each equation: 998.811 
+Best expression = (-33.592482 * sech(((-1.847774 / x0) - -3.913332)))
+Best expression (original format) = * -33.592482 sech - / -1.847774 x0 -3.913332
+Best diff result = abs(((-33.592482 * sech(((-1.847774 / x0) - -3.913332))) - x1))
+Best expression (original format) = abs - * -33.592482 sech - / -1.847774 x0 -3.913332 x1
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs(((-33.592482 * sech(((-1.847774 / x0) - -3.913332))) - x1))
+Total system result (original format) = abs - * -33.592482 sech - / -1.847774 x0 -3.913332 x1
+
+Unique expressions = 180
+Time spent fitting = 0.00140767 seconds
+Best score = 0.00100019, SNE = 998.811
+Squared-norm error for each equation: 998.811 
+Best expression = (-33.592482 * sech(((-1.847775 / x0) - -3.913332)))
+Best expression (original format) = * -33.592482 sech - / -1.847775 x0 -3.913332
+Best diff result = abs(((-33.592482 * sech(((-1.847775 / x0) - -3.913332))) - x1))
+Best expression (original format) = abs - * -33.592482 sech - / -1.847775 x0 -3.913332 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.84778)}
+Total system result = abs(((-33.592482 * sech(((-1.847775 / x0) - -3.913332))) - x1))
+Total system result (original format) = abs - * -33.592482 sech - / -1.847775 x0 -3.913332 x1
+
+Unique expressions = 392
+Time spent fitting = 0.00251458 seconds
+Best score = 0.00100019, SNE = 998.811
+Squared-norm error for each equation: 998.811 
+Best expression = (-33.592482 * sech(((-1.847775 / x0) - -3.913332)))
+Best expression (original format) = * -33.592482 sech - / -1.847775 x0 -3.913332
+Best diff result = abs(((-33.592482 * sech(((-1.847775 / x0) - -3.913332))) - x1))
+Best expression (original format) = abs - * -33.592482 sech - / -1.847775 x0 -3.913332 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.84777)}
+Total system result = abs(((-33.592482 * sech(((-1.847775 / x0) - -3.913332))) - x1))
+Total system result (original format) = abs - * -33.592482 sech - / -1.847775 x0 -3.913332 x1
+
+Unique expressions = 420
+Time spent fitting = 0.00262358 seconds
+Best score = 0.00100019, SNE = 998.811
+Squared-norm error for each equation: 998.811 
+Best expression = (-33.592482 * sech(((-1.847775 / x0) - -3.913332)))
+Best expression (original format) = * -33.592482 sech - / -1.847775 x0 -3.913332
+Best diff result = abs(((-33.592482 * sech(((-1.847775 / x0) - -3.913332))) - x1))
+Best expression (original format) = abs - * -33.592482 sech - / -1.847775 x0 -3.913332 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.84777)}
+Total system result = abs(((-33.592482 * sech(((-1.847775 / x0) - -3.913332))) - x1))
+Total system result (original format) = abs - * -33.592482 sech - / -1.847775 x0 -3.913332 x1
+
+Unique expressions = 623
+Time spent fitting = 0.00483092 seconds
+Best score = 0.00100019, SNE = 998.811
+Squared-norm error for each equation: 998.811 
+Best expression = (-33.592482 * sech(((-1.847775 / x0) - -3.913332)))
+Best expression (original format) = * -33.592482 sech - / -1.847775 x0 -3.913332
+Best diff result = abs(((-33.592482 * sech(((-1.847775 / x0) - -3.913332))) - x1))
+Best expression (original format) = abs - * -33.592482 sech - / -1.847775 x0 -3.913332 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.84777)}
+Total system result = abs(((-33.592482 * sech(((-1.847775 / x0) - -3.913332))) - x1))
+Total system result (original format) = abs - * -33.592482 sech - / -1.847775 x0 -3.913332 x1
+
+Unique expressions = 855
+Time spent fitting = 0.0102017 seconds
+Best score = 0.00100019, SNE = 998.811
+Squared-norm error for each equation: 998.811 
+Best expression = (-33.592482 * sech(((-1.847779 / x0) - -3.913339)))
+Best expression (original format) = * -33.592482 sech - / -1.847779 x0 -3.913339
+Best diff result = abs(((-33.592482 * sech(((-1.847779 / x0) - -3.913339))) - x1))
+Best expression (original format) = abs - * -33.592482 sech - / -1.847779 x0 -3.913339 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.84778), (const1, -3.91334)}
+Total system result = abs(((-33.592482 * sech(((-1.847779 / x0) - -3.913339))) - x1))
+Total system result (original format) = abs - * -33.592482 sech - / -1.847779 x0 -3.913339 x1
+
+Unique expressions = 877
+Time spent fitting = 0.0105371 seconds
+Best score = 0.00100019, SNE = 998.811
+Squared-norm error for each equation: 998.811 
+Best expression = (-33.592482 * sech(((-1.847778 / x0) - -3.913337)))
+Best expression (original format) = * -33.592482 sech - / -1.847778 x0 -3.913337
+Best diff result = abs(((-33.592482 * sech(((-1.847778 / x0) - -3.913337))) - x1))
+Best expression (original format) = abs - * -33.592482 sech - / -1.847778 x0 -3.913337 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.84778), (const1, -3.91334)}
+Total system result = abs(((-33.592482 * sech(((-1.847778 / x0) - -3.913337))) - x1))
+Total system result (original format) = abs - * -33.592482 sech - / -1.847778 x0 -3.913337 x1
+
+Unique expressions = 966
+Time spent fitting = 0.0125324 seconds
+Best score = 0.00100019, SNE = 998.811
+Squared-norm error for each equation: 998.811 
+Best expression = (-33.592482 * sech(((-1.847778 / x0) - -3.913338)))
+Best expression (original format) = * -33.592482 sech - / -1.847778 x0 -3.913338
+Best diff result = abs(((-33.592482 * sech(((-1.847778 / x0) - -3.913338))) - x1))
+Best expression (original format) = abs - * -33.592482 sech - / -1.847778 x0 -3.913338 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.84778), (const1, -3.91334)}
+Total system result = abs(((-33.592482 * sech(((-1.847778 / x0) - -3.913338))) - x1))
+Total system result (original format) = abs - * -33.592482 sech - / -1.847778 x0 -3.913338 x1
+
+Unique expressions = 1304
+Time spent fitting = 0.0164779 seconds
+Best score = 0.00100019, SNE = 998.811
+Squared-norm error for each equation: 998.811 
+Best expression = (-33.592482 * sech(((-1.847778 / x0) - -3.913337)))
+Best expression (original format) = * -33.592482 sech - / -1.847778 x0 -3.913337
+Best diff result = abs(((-33.592482 * sech(((-1.847778 / x0) - -3.913337))) - x1))
+Best expression (original format) = abs - * -33.592482 sech - / -1.847778 x0 -3.913337 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.84778), (const1, -3.91334)}
+Total system result = abs(((-33.592482 * sech(((-1.847778 / x0) - -3.913337))) - x1))
+Total system result (original format) = abs - * -33.592482 sech - / -1.847778 x0 -3.913337 x1
+
+Unique expressions = 1399
+Time spent fitting = 0.0179253 seconds
+Best score = 0.00100019, SNE = 998.811
+Squared-norm error for each equation: 998.811 
+Best expression = (-33.592482 * sech(((-1.847778 / x0) - -3.913337)))
+Best expression (original format) = * -33.592482 sech - / -1.847778 x0 -3.913337
+Best diff result = abs(((-33.592482 * sech(((-1.847778 / x0) - -3.913337))) - x1))
+Best expression (original format) = abs - * -33.592482 sech - / -1.847778 x0 -3.913337 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.84778), (const1, -3.91334)}
+Total system result = abs(((-33.592482 * sech(((-1.847778 / x0) - -3.913337))) - x1))
+Total system result (original format) = abs - * -33.592482 sech - / -1.847778 x0 -3.913337 x1
+
+Unique expressions = 3875
+Time spent fitting = 0.0455728 seconds
+Best score = 0.00100019, SNE = 998.811
+Squared-norm error for each equation: 998.811 
+Best expression = (-33.592472 * sech(((-1.847777 / x0) - -3.913336)))
+Best expression (original format) = * -33.592472 sech - / -1.847777 x0 -3.913336
+Best diff result = abs(((-33.592472 * sech(((-1.847777 / x0) - -3.913336))) - x1))
+Best expression (original format) = abs - * -33.592472 sech - / -1.847777 x0 -3.913336 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -33.5925), (const1, -1.84778), (const2, -3.91334)}
+Total system result = abs(((-33.592472 * sech(((-1.847777 / x0) - -3.913336))) - x1))
+Total system result (original format) = abs - * -33.592472 sech - / -1.847777 x0 -3.913336 x1
+
+Unique expressions = 3910
+Time spent fitting = 0.0458752 seconds
+Best score = 0.00100019, SNE = 998.811
+Squared-norm error for each equation: 998.811 
+Best expression = (-33.592472 * sech(((-1.847778 / x0) - -3.913337)))
+Best expression (original format) = * -33.592472 sech - / -1.847778 x0 -3.913337
+Best diff result = abs(((-33.592472 * sech(((-1.847778 / x0) - -3.913337))) - x1))
+Best expression (original format) = abs - * -33.592472 sech - / -1.847778 x0 -3.913337 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -33.5925), (const1, -1.84778), (const2, -3.91334)}
+Total system result = abs(((-33.592472 * sech(((-1.847778 / x0) - -3.913337))) - x1))
+Total system result (original format) = abs - * -33.592472 sech - / -1.847778 x0 -3.913337 x1
+
+Unique expressions = 4105
+Time spent fitting = 0.0499827 seconds
+Best score = 0.00100019, SNE = 998.811
+Squared-norm error for each equation: 998.811 
+Best expression = (-33.592472 * sech(((-1.847778 / x0) - -3.913337)))
+Best expression (original format) = * -33.592472 sech - / -1.847778 x0 -3.913337
+Best diff result = abs(((-33.592472 * sech(((-1.847778 / x0) - -3.913337))) - x1))
+Best expression (original format) = abs - * -33.592472 sech - / -1.847778 x0 -3.913337 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -33.5925), (const1, -1.84778), (const2, -3.91334)}
+Total system result = abs(((-33.592472 * sech(((-1.847778 / x0) - -3.913337))) - x1))
+Total system result (original format) = abs - * -33.592472 sech - / -1.847778 x0 -3.913337 x1
+
+Unique expressions = 14577
+Time spent fitting = 0.254097 seconds
+Best score = 0.00110008, SNE = 908.025
+Squared-norm error for each equation: 908.025 
+Best expression = (-33.592482 * sech(((x0 ^ -1.429162) - 2.962164)))
+Best expression (original format) = * -33.592482 sech - ^ x0 -1.429162 2.962164
+Best diff result = abs(((-33.592482 * sech(((x0 ^ -1.429162) - 2.962164))) - x1))
+Best expression (original format) = abs - * -33.592482 sech - ^ x0 -1.429162 2.962164 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.42916), (const1, 2.96216)}
+Total system result = abs(((-33.592482 * sech(((x0 ^ -1.429162) - 2.962164))) - x1))
+Total system result (original format) = abs - * -33.592482 sech - ^ x0 -1.429162 2.962164 x1
+
+Unique expressions = 14628
+Time spent fitting = 0.255142 seconds
+Best score = 0.00110149, SNE = 906.861
+Squared-norm error for each equation: 906.861 
+Best expression = (-33.592482 * sech(((x0 ^ -1.437279) - 2.959833)))
+Best expression (original format) = * -33.592482 sech - ^ x0 -1.437279 2.959833
+Best diff result = abs(((-33.592482 * sech(((x0 ^ -1.437279) - 2.959833))) - x1))
+Best expression (original format) = abs - * -33.592482 sech - ^ x0 -1.437279 2.959833 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.43728), (const1, 2.95983)}
+Total system result = abs(((-33.592482 * sech(((x0 ^ -1.437279) - 2.959833))) - x1))
+Total system result (original format) = abs - * -33.592482 sech - ^ x0 -1.437279 2.959833 x1
+
+Unique expressions = 14661
+Time spent fitting = 0.25559 seconds
+Best score = 0.00110149, SNE = 906.861
+Squared-norm error for each equation: 906.861 
+Best expression = (-33.592482 * sech(((x0 ^ -1.437280) - 2.959833)))
+Best expression (original format) = * -33.592482 sech - ^ x0 -1.437280 2.959833
+Best diff result = abs(((-33.592482 * sech(((x0 ^ -1.437280) - 2.959833))) - x1))
+Best expression (original format) = abs - * -33.592482 sech - ^ x0 -1.437280 2.959833 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.43728), (const1, 2.95983)}
+Total system result = abs(((-33.592482 * sech(((x0 ^ -1.437280) - 2.959833))) - x1))
+Total system result (original format) = abs - * -33.592482 sech - ^ x0 -1.437280 2.959833 x1
+
+Unique expressions = 15254
+Time spent fitting = 0.274505 seconds
+Best score = 0.00110149, SNE = 906.861
+Squared-norm error for each equation: 906.861 
+Best expression = (-33.592482 * sech(((x0 ^ -1.437280) - 2.959833)))
+Best expression (original format) = * -33.592482 sech - ^ x0 -1.437280 2.959833
+Best diff result = abs(((-33.592482 * sech(((x0 ^ -1.437280) - 2.959833))) - x1))
+Best expression (original format) = abs - * -33.592482 sech - ^ x0 -1.437280 2.959833 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.43728), (const1, 2.95983)}
+Total system result = abs(((-33.592482 * sech(((x0 ^ -1.437280) - 2.959833))) - x1))
+Total system result (original format) = abs - * -33.592482 sech - ^ x0 -1.437280 2.959833 x1
+
+Unique expressions = 15299
+Time spent fitting = 0.276446 seconds
+Best score = 0.00110149, SNE = 906.861
+Squared-norm error for each equation: 906.861 
+Best expression = (-33.592482 * sech(((x0 ^ -1.437280) - 2.959833)))
+Best expression (original format) = * -33.592482 sech - ^ x0 -1.437280 2.959833
+Best diff result = abs(((-33.592482 * sech(((x0 ^ -1.437280) - 2.959833))) - x1))
+Best expression (original format) = abs - * -33.592482 sech - ^ x0 -1.437280 2.959833 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.43728), (const1, 2.95983)}
+Total system result = abs(((-33.592482 * sech(((x0 ^ -1.437280) - 2.959833))) - x1))
+Total system result (original format) = abs - * -33.592482 sech - ^ x0 -1.437280 2.959833 x1
+
+Unique expressions = 30
+Time spent fitting = 0 seconds
+Best score = 0.00110149, SNE = 906.861
+Squared-norm error for each equation: 906.861 
+Best expression = (-33.592482 * sech(((x0 ^ -1.437280) - 2.959833)))
+Best expression (original format) = -33.592482 x0 -1.437280 ^ 2.959833 - sech *
+Best diff result = abs(((-33.592482 * sech(((x0 ^ -1.437280) - 2.959833))) - x1))
+Best expression (original format) = -33.592482 x0 -1.437280 ^ 2.959833 - sech * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs(((-33.592482 * sech(((x0 ^ -1.437280) - 2.959833))) - x1))
+Total system result (original format) = -33.592482 x0 -1.437280 ^ 2.959833 - sech * x1 - abs
+
+Unique expressions = 91
+Time spent fitting = 0.00024725 seconds
+Best score = 0.00110475, SNE = 904.181
+Squared-norm error for each equation: 904.181 
+Best expression = (-34.008996 * sech(((x0 ^ -1.437280) - 2.959833)))
+Best expression (original format) = -34.008996 x0 -1.437280 ^ 2.959833 - sech *
+Best diff result = abs(((-34.008996 * sech(((x0 ^ -1.437280) - 2.959833))) - x1))
+Best expression (original format) = -34.008996 x0 -1.437280 ^ 2.959833 - sech * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -34.009)}
+Total system result = abs(((-34.008996 * sech(((x0 ^ -1.437280) - 2.959833))) - x1))
+Total system result (original format) = -34.008996 x0 -1.437280 ^ 2.959833 - sech * x1 - abs
+
+Unique expressions = 7
+Time spent fitting = 0 seconds
+Best score = 0.00110475, SNE = 904.181
+Squared-norm error for each equation: 904.181 
+Best expression = ((((0 + 0) + (0 + 0)) + ((0 + 0) + (0 + -34.008996))) * sech(((x0 ^ -1.437280) - (0 + 2.959833))))
+Best expression (original format) = 0 0 + 0 0 + + 0 0 + 0 -34.008996 + + + x0 -1.437280 ^ 0 2.959833 + - sech *
+Best diff result = abs(((-34.008996 * sech(((x0 ^ -1.437280) - 2.959833))) - x1))
+Best expression (original format) = -34.008996 x0 -1.437280 ^ 2.959833 - sech * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs(((-34.008996 * sech(((x0 ^ -1.437280) - 2.959833))) - x1))
+Total system result (original format) = -34.008996 x0 -1.437280 ^ 2.959833 - sech * x1 - abs
+
+Unique expressions = 101
+Time spent fitting = 0.000855583 seconds
+Best score = 0.00110475, SNE = 904.181
+Squared-norm error for each equation: 904.181 
+Best expression = ((((0 + 0) + (0 + 0)) + ((0 + 0) + (0 + -34.008996))) * sech(((x0 ^ -1.437280) - (0 + 2.959833))))
+Best expression (original format) = 0 0 + 0 0 + + 0 0 + 0 -34.008996 + + + x0 -1.437280 ^ 0 2.959833 + - sech *
+Best diff result = abs(((-34.008996 * sech(((x0 ^ -1.437280) - 2.959833))) - x1))
+Best expression (original format) = -34.008996 x0 -1.437280 ^ 2.959833 - sech * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -34.009)}
+Total system result = abs(((-34.008996 * sech(((x0 ^ -1.437280) - 2.959833))) - x1))
+Total system result (original format) = -34.008996 x0 -1.437280 ^ 2.959833 - sech * x1 - abs
+
+Unique expressions = 198
+Time spent fitting = 0.0027565 seconds
+Best score = 0.00110497, SNE = 903.999
+Squared-norm error for each equation: 903.999 
+Best expression = ((((0 + 0) + (0 + 0)) + ((0 + 0) + (0 + -34.008996))) * sech(((x0 ^ -1.433533) - (0 + 2.959833))))
+Best expression (original format) = 0 0 + 0 0 + + 0 0 + 0 -34.008996 + + + x0 -1.433533 ^ 0 2.959833 + - sech *
+Best diff result = abs(((-34.008996 * sech(((x0 ^ -1.433533) - 2.959833))) - x1))
+Best expression (original format) = -34.008996 x0 -1.433533 ^ 2.959833 - sech * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.43353)}
+Total system result = abs(((-34.008996 * sech(((x0 ^ -1.433533) - 2.959833))) - x1))
+Total system result (original format) = -34.008996 x0 -1.433533 ^ 2.959833 - sech * x1 - abs
+
+Unique expressions = 227
+Time spent fitting = 0.00330408 seconds
+Best score = 0.00110497, SNE = 903.999
+Squared-norm error for each equation: 903.999 
+Best expression = ((((0 + 0) + (0 + 0)) + ((0 + 0) + (0 + -34.008996))) * sech(((x0 ^ -1.433534) - (0 + 2.959833))))
+Best expression (original format) = 0 0 + 0 0 + + 0 0 + 0 -34.008996 + + + x0 -1.433534 ^ 0 2.959833 + - sech *
+Best diff result = abs(((-34.008996 * sech(((x0 ^ -1.433534) - 2.959833))) - x1))
+Best expression (original format) = -34.008996 x0 -1.433534 ^ 2.959833 - sech * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.43353)}
+Total system result = abs(((-34.008996 * sech(((x0 ^ -1.433534) - 2.959833))) - x1))
+Total system result (original format) = -34.008996 x0 -1.433534 ^ 2.959833 - sech * x1 - abs
+
+Unique expressions = 310
+Time spent fitting = 0.00500579 seconds
+Best score = 0.00110497, SNE = 903.999
+Squared-norm error for each equation: 903.999 
+Best expression = ((((0 + 0) + (0 + 0)) + ((0 + 0) + (0 + -34.008996))) * sech(((x0 ^ -1.433534) - (0 + 2.959833))))
+Best expression (original format) = 0 0 + 0 0 + + 0 0 + 0 -34.008996 + + + x0 -1.433534 ^ 0 2.959833 + - sech *
+Best diff result = abs(((-34.008996 * sech(((x0 ^ -1.433534) - 2.959833))) - x1))
+Best expression (original format) = -34.008996 x0 -1.433534 ^ 2.959833 - sech * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.43353)}
+Total system result = abs(((-34.008996 * sech(((x0 ^ -1.433534) - 2.959833))) - x1))
+Total system result (original format) = -34.008996 x0 -1.433534 ^ 2.959833 - sech * x1 - abs
+
+Unique expressions = 347
+Time spent fitting = 0.00567058 seconds
+Best score = 0.00110613, SNE = 903.054
+Squared-norm error for each equation: 903.054 
+Best expression = ((((0 + 0) + (0 + 0)) + ((0 + 0) + (0 + -34.008996))) * sech(((x0 ^ -1.441509) - (0 + 2.984149))))
+Best expression (original format) = 0 0 + 0 0 + + 0 0 + 0 -34.008996 + + + x0 -1.441509 ^ 0 2.984149 + - sech *
+Best diff result = abs(((-34.008996 * sech(((x0 ^ -1.441509) - 2.984149))) - x1))
+Best expression (original format) = -34.008996 x0 -1.441509 ^ 2.984149 - sech * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.44151), (const1, 2.98415)}
+Total system result = abs(((-34.008996 * sech(((x0 ^ -1.441509) - 2.984149))) - x1))
+Total system result (original format) = -34.008996 x0 -1.441509 ^ 2.984149 - sech * x1 - abs
+
+Unique expressions = 387
+Time spent fitting = 0.00671995 seconds
+Best score = 0.00110662, SNE = 902.65
+Squared-norm error for each equation: 902.65 
+Best expression = ((((0 + 0) + (0 + 0)) + ((0 + 0) + (0 + -34.008996))) * sech(((x0 ^ -1.444584) - (0 + 2.980211))))
+Best expression (original format) = 0 0 + 0 0 + + 0 0 + 0 -34.008996 + + + x0 -1.444584 ^ 0 2.980211 + - sech *
+Best diff result = abs(((-34.008996 * sech(((x0 ^ -1.444584) - 2.980211))) - x1))
+Best expression (original format) = -34.008996 x0 -1.444584 ^ 2.980211 - sech * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.44458), (const1, 2.98021)}
+Total system result = abs(((-34.008996 * sech(((x0 ^ -1.444584) - 2.980211))) - x1))
+Total system result (original format) = -34.008996 x0 -1.444584 ^ 2.980211 - sech * x1 - abs
+
+Unique expressions = 704
+Time spent fitting = 0.0102977 seconds
+Best score = 0.00110662, SNE = 902.65
+Squared-norm error for each equation: 902.65 
+Best expression = ((((0 + 0) + (0 + 0)) + ((0 + 0) + (0 + -34.008996))) * sech(((x0 ^ -1.444583) - (0 + 2.980212))))
+Best expression (original format) = 0 0 + 0 0 + + 0 0 + 0 -34.008996 + + + x0 -1.444583 ^ 0 2.980212 + - sech *
+Best diff result = abs(((-34.008996 * sech(((x0 ^ -1.444583) - 2.980212))) - x1))
+Best expression (original format) = -34.008996 x0 -1.444583 ^ 2.980212 - sech * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.44458), (const1, 2.98021)}
+Total system result = abs(((-34.008996 * sech(((x0 ^ -1.444583) - 2.980212))) - x1))
+Total system result (original format) = -34.008996 x0 -1.444583 ^ 2.980212 - sech * x1 - abs
+
+Unique expressions = 857
+Time spent fitting = 0.0118303 seconds
+Best score = 0.00110662, SNE = 902.65
+Squared-norm error for each equation: 902.65 
+Best expression = ((((0 + 0) + (0 + 0)) + ((0 + 0) + (0 + -34.008996))) * sech(((x0 ^ -1.444583) - (0 + 2.980211))))
+Best expression (original format) = 0 0 + 0 0 + + 0 0 + 0 -34.008996 + + + x0 -1.444583 ^ 0 2.980211 + - sech *
+Best diff result = abs(((-34.008996 * sech(((x0 ^ -1.444583) - 2.980211))) - x1))
+Best expression (original format) = -34.008996 x0 -1.444583 ^ 2.980211 - sech * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.44458), (const1, 2.98021)}
+Total system result = abs(((-34.008996 * sech(((x0 ^ -1.444583) - 2.980211))) - x1))
+Total system result (original format) = -34.008996 x0 -1.444583 ^ 2.980211 - sech * x1 - abs
+
+Unique expressions = 1212
+Time spent fitting = 0.0163788 seconds
+Best score = 0.00110662, SNE = 902.65
+Squared-norm error for each equation: 902.65 
+Best expression = ((((0 + 0) + (0 + 0)) + ((0 + 0) + (0 + -34.008996))) * sech(((x0 ^ -1.444583) - (0 + 2.980212))))
+Best expression (original format) = 0 0 + 0 0 + + 0 0 + 0 -34.008996 + + + x0 -1.444583 ^ 0 2.980212 + - sech *
+Best diff result = abs(((-34.008996 * sech(((x0 ^ -1.444583) - 2.980212))) - x1))
+Best expression (original format) = -34.008996 x0 -1.444583 ^ 2.980212 - sech * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.44458), (const1, 2.98021)}
+Total system result = abs(((-34.008996 * sech(((x0 ^ -1.444583) - 2.980212))) - x1))
+Total system result (original format) = -34.008996 x0 -1.444583 ^ 2.980212 - sech * x1 - abs
+
+Unique expressions = 7
+Time spent fitting = 0 seconds
+Best score = 0.00110662, SNE = 902.65
+Squared-norm error for each equation: 902.65 
+Best expression = (-34.008996 * sech(((x0 ^ -1.444583) - 2.980212)))
+Best expression (original format) = -34.008996 x0 -1.444583 ^ 2.980212 - sech *
+Best diff result = abs(((-34.008996 * sech(((x0 ^ -1.444583) - 2.980212))) - x1))
+Best expression (original format) = -34.008996 x0 -1.444583 ^ 2.980212 - sech * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs(((-34.008996 * sech(((x0 ^ -1.444583) - 2.980212))) - x1))
+Total system result (original format) = -34.008996 x0 -1.444583 ^ 2.980212 - sech * x1 - abs
+
+Unique expressions = 70
+Time spent fitting = 0.00149354 seconds
+Best score = 0.00110771, SNE = 901.76
+Squared-norm error for each equation: 901.76 
+Best expression = (-34.250808 * sech(((x0 ^ -1.444583) - 2.980212)))
+Best expression (original format) = -34.250808 x0 -1.444583 ^ 2.980212 - sech *
+Best diff result = abs(((-34.250808 * sech(((x0 ^ -1.444583) - 2.980212))) - x1))
+Best expression (original format) = -34.250808 x0 -1.444583 ^ 2.980212 - sech * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -34.2508)}
+Total system result = abs(((-34.250808 * sech(((x0 ^ -1.444583) - 2.980212))) - x1))
+Total system result (original format) = -34.250808 x0 -1.444583 ^ 2.980212 - sech * x1 - abs
+
+Unique expressions = 10
+Time spent fitting = 0 seconds
+Best score = 0.00110771, SNE = 901.76
+Squared-norm error for each equation: 901.76 
+Best expression = (-34.250808 * sech(((x0 ^ -1.444583) - 2.980212)))
+Best expression (original format) = * -34.250808 sech - ^ x0 -1.444583 2.980212
+Best diff result = abs(((-34.250808 * sech(((x0 ^ -1.444583) - 2.980212))) - x1))
+Best expression (original format) = abs - * -34.250808 sech - ^ x0 -1.444583 2.980212 x1
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs(((-34.250808 * sech(((x0 ^ -1.444583) - 2.980212))) - x1))
+Total system result (original format) = abs - * -34.250808 sech - ^ x0 -1.444583 2.980212 x1
+
+Unique expressions = 87
+Time spent fitting = 0.00115421 seconds
+Best score = 0.0011081, SNE = 901.443
+Squared-norm error for each equation: 901.443 
+Best expression = (-34.250808 * sech(((x0 ^ -1.448393) - 2.996816)))
+Best expression (original format) = * -34.250808 sech - ^ x0 -1.448393 2.996816
+Best diff result = abs(((-34.250808 * sech(((x0 ^ -1.448393) - 2.996816))) - x1))
+Best expression (original format) = abs - * -34.250808 sech - ^ x0 -1.448393 2.996816 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.44839), (const1, 2.99682)}
+Total system result = abs(((-34.250808 * sech(((x0 ^ -1.448393) - 2.996816))) - x1))
+Total system result (original format) = abs - * -34.250808 sech - ^ x0 -1.448393 2.996816 x1
+
+Unique expressions = 252
+Time spent fitting = 0.00285204 seconds
+Best score = 0.00110834, SNE = 901.25
+Squared-norm error for each equation: 901.25 
+Best expression = (-34.250808 * sech(((x0 ^ -1.448780) - 2.991981)))
+Best expression (original format) = * -34.250808 sech - ^ x0 -1.448780 2.991981
+Best diff result = abs(((-34.250808 * sech(((x0 ^ -1.448780) - 2.991981))) - x1))
+Best expression (original format) = abs - * -34.250808 sech - ^ x0 -1.448780 2.991981 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.44878), (const1, 2.99198)}
+Total system result = abs(((-34.250808 * sech(((x0 ^ -1.448780) - 2.991981))) - x1))
+Total system result (original format) = abs - * -34.250808 sech - ^ x0 -1.448780 2.991981 x1
+
+Unique expressions = 435
+Time spent fitting = 0.00505629 seconds
+Best score = 0.00110834, SNE = 901.25
+Squared-norm error for each equation: 901.25 
+Best expression = (-34.250808 * sech(((x0 ^ -1.448780) - 2.991981)))
+Best expression (original format) = * -34.250808 sech - ^ x0 -1.448780 2.991981
+Best diff result = abs(((-34.250808 * sech(((x0 ^ -1.448780) - 2.991981))) - x1))
+Best expression (original format) = abs - * -34.250808 sech - ^ x0 -1.448780 2.991981 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.44878), (const1, 2.99198)}
+Total system result = abs(((-34.250808 * sech(((x0 ^ -1.448780) - 2.991981))) - x1))
+Total system result (original format) = abs - * -34.250808 sech - ^ x0 -1.448780 2.991981 x1
+
+Unique expressions = 696
+Time spent fitting = 0.0115172 seconds
+Best score = 0.00110834, SNE = 901.25
+Squared-norm error for each equation: 901.25 
+Best expression = (-34.250808 * sech(((x0 ^ -1.448780) - 2.991981)))
+Best expression (original format) = * -34.250808 sech - ^ x0 -1.448780 2.991981
+Best diff result = abs(((-34.250808 * sech(((x0 ^ -1.448780) - 2.991981))) - x1))
+Best expression (original format) = abs - * -34.250808 sech - ^ x0 -1.448780 2.991981 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.44878), (const1, 2.99198)}
+Total system result = abs(((-34.250808 * sech(((x0 ^ -1.448780) - 2.991981))) - x1))
+Total system result (original format) = abs - * -34.250808 sech - ^ x0 -1.448780 2.991981 x1
+
+Unique expressions = 6
+Time spent fitting = 0 seconds
+Best score = 0.00110834, SNE = 901.25
+Squared-norm error for each equation: 901.25 
+Best expression = (-34.250808 * sech(((x0 ^ -1.448780) - 2.991981)))
+Best expression (original format) = * -34.250808 sech - ^ x0 -1.448780 2.991981
+Best diff result = abs(((-34.250808 * sech(((x0 ^ -1.448780) - 2.991981))) - x1))
+Best expression (original format) = abs - * -34.250808 sech - ^ x0 -1.448780 2.991981 x1
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs(((-34.250808 * sech(((x0 ^ -1.448780) - 2.991981))) - x1))
+Total system result (original format) = abs - * -34.250808 sech - ^ x0 -1.448780 2.991981 x1
+
+Unique expressions = 68
+Time spent fitting = 0.00054525 seconds
+Best score = 0.0011087, SNE = 900.956
+Squared-norm error for each equation: 900.956 
+Best expression = (-34.390336 * sech(((x0 ^ -1.448780) - 2.991981)))
+Best expression (original format) = * -34.390336 sech - ^ x0 -1.448780 2.991981
+Best diff result = abs(((-34.390336 * sech(((x0 ^ -1.448780) - 2.991981))) - x1))
+Best expression (original format) = abs - * -34.390336 sech - ^ x0 -1.448780 2.991981 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -34.3903)}
+Total system result = abs(((-34.390336 * sech(((x0 ^ -1.448780) - 2.991981))) - x1))
+Total system result (original format) = abs - * -34.390336 sech - ^ x0 -1.448780 2.991981 x1
+
+Unique expressions = 28
+Time spent fitting = 0.000880209 seconds
+Best score = 5.79497e-05, SNE = 17255.3
+Squared-norm error for each equation: 17255.3 
+Best expression = -0.9899924966004454
+Best expression (original format) = -0.9899924966004454
+Best diff result = abs((-0.9899924966004454 - x1))
+Best expression (original format) = -0.9899924966004454 x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs((-0.9899924966004454 - x1))
+Total system result (original format) = -0.9899924966004454 x1 - abs
+
+Unique expressions = 36
+Time spent fitting = 0.00102917 seconds
+Best score = 6.53677e-05, SNE = 15297.1
+Squared-norm error for each equation: 15297.1 
+Best expression = -2.402997961722381
+Best expression (original format) = -2.402997961722381
+Best diff result = abs((-2.402997961722381 - x1))
+Best expression (original format) = -2.402997961722381 x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs((-2.402997961722381 - x1))
+Total system result (original format) = -2.402997961722381 x1 - abs
+
+Unique expressions = 50
+Time spent fitting = 0.00170633 seconds
+Best score = 6.65954e-05, SNE = 15015.1
+Squared-norm error for each equation: 15015.1 
+Best expression = -2.622236501258781
+Best expression (original format) = -2.622236501258781
+Best diff result = abs((-2.622236501258781 - x1))
+Best expression (original format) = -2.622236501258781 x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs((-2.622236501258781 - x1))
+Total system result (original format) = -2.622236501258781 x1 - abs
+
+Unique expressions = 62
+Time spent fitting = 0.00175325 seconds
+Best score = 0.000118583, SNE = 8431.91
+Squared-norm error for each equation: 8431.91 
+Best expression = ((-11.241290 - 1) - cos(x0))
+Best expression (original format) = -11.241290 1 - x0 cos -
+Best diff result = abs((((-11.241290 - 1) - cos(x0)) - x1))
+Best expression (original format) = -11.241290 1 - x0 cos - x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -11.2413)}
+Total system result = abs((((-11.241290 - 1) - cos(x0)) - x1))
+Total system result (original format) = -11.241290 1 - x0 cos - x1 - abs
+
+Unique expressions = 67
+Time spent fitting = 0.00218112 seconds
+Best score = 0.000119402, SNE = 8374.06
+Squared-norm error for each equation: 8374.06 
+Best expression = (-14.158517 + 1.1022579050503927)
+Best expression (original format) = -14.158517 1.1022579050503927 +
+Best diff result = abs(((-14.158517 + 1.1022579050503927) - x1))
+Best expression (original format) = -14.158517 1.1022579050503927 + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -14.1585)}
+Total system result = abs(((-14.158517 + 1.1022579050503927) - x1))
+Total system result (original format) = -14.158517 1.1022579050503927 + x1 - abs
+
+Unique expressions = 79
+Time spent fitting = 0.00231062 seconds
+Best score = 0.000122959, SNE = 8131.81
+Squared-norm error for each equation: 8131.81 
+Best expression = (4 - (1 + (25.861442 * x0)))
+Best expression (original format) = 4 1 25.861442 x0 * + -
+Best diff result = abs(((4 - (1 + (25.861442 * x0))) - x1))
+Best expression (original format) = 4 1 25.861442 x0 * + - x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 25.8614)}
+Total system result = abs(((4 - (1 + (25.861442 * x0))) - x1))
+Total system result (original format) = 4 1 25.861442 x0 * + - x1 - abs
+
+Unique expressions = 92
+Time spent fitting = 0.00257421 seconds
+Best score = 0.000129486, SNE = 7721.84
+Squared-norm error for each equation: 7721.84 
+Best expression = (-18.324334 * arcsin(cos(sech(x0))))
+Best expression (original format) = -18.324334 x0 sech cos arcsin *
+Best diff result = abs(((-18.324334 * arcsin(cos(sech(x0)))) - x1))
+Best expression (original format) = -18.324334 x0 sech cos arcsin * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -18.3243)}
+Total system result = abs(((-18.324334 * arcsin(cos(sech(x0)))) - x1))
+Total system result (original format) = -18.324334 x0 sech cos arcsin * x1 - abs
+
+Unique expressions = 107
+Time spent fitting = 0.00288529 seconds
+Best score = 0.000133262, SNE = 7503.02
+Squared-norm error for each equation: 7503.02 
+Best expression = (x0 * (1.000000 - (sqrt(798.112920) * 0.7615941559557649)))
+Best expression (original format) = x0 1.000000 798.112920 sqrt 0.7615941559557649 * - *
+Best diff result = abs(((x0 * (1.000000 - (sqrt(798.112920) * 0.7615941559557649))) - x1))
+Best expression (original format) = x0 1.000000 798.112920 sqrt 0.7615941559557649 * - * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 798.113)}
+Total system result = abs(((x0 * (1.000000 - (sqrt(798.112920) * 0.7615941559557649))) - x1))
+Total system result (original format) = x0 1.000000 798.112920 sqrt 0.7615941559557649 * - * x1 - abs
+
+Unique expressions = 868
+Time spent fitting = 0.0227643 seconds
+Best score = 0.000133923, SNE = 7465.97
+Squared-norm error for each equation: 7465.97 
+Best expression = (-21.761469 * x0)
+Best expression (original format) = -21.761469 x0 *
+Best diff result = abs(((-21.761469 * x0) - x1))
+Best expression (original format) = -21.761469 x0 * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -21.7615)}
+Total system result = abs(((-21.761469 * x0) - x1))
+Total system result (original format) = -21.761469 x0 * x1 - abs
+
+Unique expressions = 960
+Time spent fitting = 0.0252286 seconds
+Best score = 0.000143799, SNE = 6953.13
+Squared-norm error for each equation: 6953.13 
+Best expression = (sin(x0) * (0.8325546111576977 + (-24.741795 - 1)))
+Best expression (original format) = x0 sin 0.8325546111576977 -24.741795 1 - + *
+Best diff result = abs(((sin(x0) * (0.8325546111576977 + (-24.741795 - 1))) - x1))
+Best expression (original format) = x0 sin 0.8325546111576977 -24.741795 1 - + * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -24.7418)}
+Total system result = abs(((sin(x0) * (0.8325546111576977 + (-24.741795 - 1))) - x1))
+Total system result (original format) = x0 sin 0.8325546111576977 -24.741795 1 - + * x1 - abs
+
+Unique expressions = 4739
+Time spent fitting = 0.0936999 seconds
+Best score = 0.000154851, SNE = 6456.8
+Squared-norm error for each equation: 6456.8 
+Best expression = ((sin(tanh(x0)) * exp(4.646739)) / -3.548417294710545)
+Best expression (original format) = x0 tanh sin 4.646739 exp * -3.548417294710545 /
+Best diff result = abs((((sin(tanh(x0)) * exp(4.646739)) / -3.548417294710545) - x1))
+Best expression (original format) = x0 tanh sin 4.646739 exp * -3.548417294710545 / x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 4.64674)}
+Total system result = abs((((sin(tanh(x0)) * exp(4.646739)) / -3.548417294710545) - x1))
+Total system result (original format) = x0 tanh sin 4.646739 exp * -3.548417294710545 / x1 - abs
+
+Unique expressions = 5591
+Time spent fitting = 0.10948 seconds
+Best score = 0.000159273, SNE = 6277.52
+Squared-norm error for each equation: 6277.52 
+Best expression = (1.000000 - (tanh(sqrt(x0)) * 25.520091))
+Best expression (original format) = 1.000000 x0 sqrt tanh 25.520091 * -
+Best diff result = abs(((1.000000 - (tanh(sqrt(x0)) * 25.520091)) - x1))
+Best expression (original format) = 1.000000 x0 sqrt tanh 25.520091 * - x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 25.5201)}
+Total system result = abs(((1.000000 - (tanh(sqrt(x0)) * 25.520091)) - x1))
+Total system result (original format) = 1.000000 x0 sqrt tanh 25.520091 * - x1 - abs
+
+Unique expressions = 15197
+Time spent fitting = 0.305029 seconds
+Best score = 0.000165046, SNE = 6057.91
+Squared-norm error for each equation: 6057.91 
+Best expression = (ln((cos(x0) + x0)) * -44.725997)
+Best expression (original format) = x0 cos x0 + ln -44.725997 *
+Best diff result = abs(((ln((cos(x0) + x0)) * -44.725997) - x1))
+Best expression (original format) = x0 cos x0 + ln -44.725997 * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -44.726)}
+Total system result = abs(((ln((cos(x0) + x0)) * -44.725997) - x1))
+Total system result (original format) = x0 cos x0 + ln -44.725997 * x1 - abs
+
+Unique expressions = 29914
+Time spent fitting = 0.67196 seconds
+Best score = 0.000180035, SNE = 5553.47
+Squared-norm error for each equation: 5553.47 
+Best expression = (-18.731706 * sech(log(asin(x0))))
+Best expression (original format) = -18.731706 x0 asin log sech *
+Best diff result = abs(((-18.731706 * sech(log(asin(x0)))) - x1))
+Best expression (original format) = -18.731706 x0 asin log sech * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -18.7317)}
+Total system result = abs(((-18.731706 * sech(log(asin(x0)))) - x1))
+Total system result (original format) = -18.731706 x0 asin log sech * x1 - abs
+
+Unique expressions = 90826
+Time spent fitting = 2.33655 seconds
+Best score = 0.000204361, SNE = 4892.3
+Squared-norm error for each equation: 4892.3 
+Best expression = (x0 * (-36.909889 * acos(x0)))
+Best expression (original format) = x0 -36.909889 x0 acos * *
+Best diff result = abs(((x0 * (-36.909889 * acos(x0))) - x1))
+Best expression (original format) = x0 -36.909889 x0 acos * * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -36.9099)}
+Total system result = abs(((x0 * (-36.909889 * acos(x0))) - x1))
+Total system result (original format) = x0 -36.909889 x0 acos * * x1 - abs
+
+Unique expressions = 93994
+Time spent fitting = 2.42844 seconds
+Best score = 0.000204902, SNE = 4879.37
+Squared-norm error for each equation: 4879.37 
+Best expression = (arcsin(cos(x0)) * (-37.810032 * sin(tanh(x0))))
+Best expression (original format) = x0 cos arcsin -37.810032 x0 tanh sin * *
+Best diff result = abs(((arcsin(cos(x0)) * (-37.810032 * sin(tanh(x0)))) - x1))
+Best expression (original format) = x0 cos arcsin -37.810032 x0 tanh sin * * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -37.81)}
+Total system result = abs(((arcsin(cos(x0)) * (-37.810032 * sin(tanh(x0)))) - x1))
+Total system result (original format) = x0 cos arcsin -37.810032 x0 tanh sin * * x1 - abs
+
+Unique expressions = 99268
+Time spent fitting = 2.59599 seconds
+Best score = 0.000207677, SNE = 4814.17
+Squared-norm error for each equation: 4814.17 
+Best expression = (12.461677 / log((arccos(x0) * x0)))
+Best expression (original format) = 12.461677 x0 arccos x0 * log /
+Best diff result = abs(((12.461677 / log((arccos(x0) * x0))) - x1))
+Best expression (original format) = 12.461677 x0 arccos x0 * log / x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 12.4617)}
+Total system result = abs(((12.461677 / log((arccos(x0) * x0))) - x1))
+Total system result (original format) = 12.461677 x0 arccos x0 * log / x1 - abs
+
+Unique expressions = 502511
+Time spent fitting = 16.5325 seconds
+Best score = 0.000218517, SNE = 4575.3
+Squared-norm error for each equation: 4575.3 
+Best expression = (((53.257149 ^ x0) ^ 0.9640275800758169) - (51.704368 * x0))
+Best expression (original format) = 53.257149 x0 ^ 0.9640275800758169 ^ 51.704368 x0 * -
+Best diff result = abs(((((53.257149 ^ x0) ^ 0.9640275800758169) - (51.704368 * x0)) - x1))
+Best expression (original format) = 53.257149 x0 ^ 0.9640275800758169 ^ 51.704368 x0 * - x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 53.2571), (const1, 51.7044)}
+Total system result = abs(((((53.257149 ^ x0) ^ 0.9640275800758169) - (51.704368 * x0)) - x1))
+Total system result (original format) = 53.257149 x0 ^ 0.9640275800758169 ^ 51.704368 x0 * - x1 - abs
+
+Unique expressions = 547494
+Time spent fitting = 18.207 seconds
+Best score = 0.000234535, SNE = 4262.75
+Squared-norm error for each equation: 4262.75 
+Best expression = ~(((x0 * 66.322839) ^ cos(x0)))
+Best expression (original format) = x0 66.322839 * x0 cos ^ ~
+Best diff result = abs((~(((x0 * 66.322839) ^ cos(x0))) - x1))
+Best expression (original format) = x0 66.322839 * x0 cos ^ ~ x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 66.3228)}
+Total system result = abs((~(((x0 * 66.322839) ^ cos(x0))) - x1))
+Total system result (original format) = x0 66.322839 * x0 cos ^ ~ x1 - abs
+
+Unique expressions = 764503
+Time spent fitting = 26.1338 seconds
+Best score = 0.000258789, SNE = 3863.16
+Squared-norm error for each equation: 3863.16 
+Best expression = (-15.746783 / (x0 ^ (1.000000 + ln(x0))))
+Best expression (original format) = -15.746783 x0 1.000000 x0 ln + ^ /
+Best diff result = abs(((-15.746783 / (x0 ^ (1.000000 + ln(x0)))) - x1))
+Best expression (original format) = -15.746783 x0 1.000000 x0 ln + ^ / x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -15.7468)}
+Total system result = abs(((-15.746783 / (x0 ^ (1.000000 + ln(x0)))) - x1))
+Total system result (original format) = -15.746783 x0 1.000000 x0 ln + ^ / x1 - abs
+
+Unique expressions = 1169500
+Time spent fitting = 42.3472 seconds
+Best score = 0.000283053, SNE = 3531.91
+Squared-norm error for each equation: 3531.91 
+Best expression = (1 - (exp(x0) ^ (6.042411 ^ arccos(x0))))
+Best expression (original format) = 1 x0 exp 6.042411 x0 arccos ^ ^ -
+Best diff result = abs(((1 - (exp(x0) ^ (6.042411 ^ arccos(x0)))) - x1))
+Best expression (original format) = 1 x0 exp 6.042411 x0 arccos ^ ^ - x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 6.04241)}
+Total system result = abs(((1 - (exp(x0) ^ (6.042411 ^ arccos(x0)))) - x1))
+Total system result (original format) = 1 x0 exp 6.042411 x0 arccos ^ ^ - x1 - abs
+
+Unique expressions = 1553701
+Time spent fitting = 57.9537 seconds
+Best score = 0.000378799, SNE = 2638.92
+Squared-norm error for each equation: 2638.92 
+Best expression = (acos(sin((x0 * 9.179636))) * (4 - 14.204036))
+Best expression (original format) = x0 9.179636 * sin acos 4 14.204036 - *
+Best diff result = abs(((acos(sin((x0 * 9.179636))) * (4 - 14.204036)) - x1))
+Best expression (original format) = x0 9.179636 * sin acos 4 14.204036 - * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 9.17964), (const1, 14.204)}
+Total system result = abs(((acos(sin((x0 * 9.179636))) * (4 - 14.204036)) - x1))
+Total system result (original format) = x0 9.179636 * sin acos 4 14.204036 - * x1 - abs
+
+Unique expressions = 3389069
+Time spent fitting = 144.3 seconds
+Best score = 0.0004122, SNE = 2425.01
+Squared-norm error for each equation: 2425.01 
+Best expression = (x0 * (-9.643699 - (x0 ^ (x0 * -11.071113))))
+Best expression (original format) = x0 -9.643699 x0 x0 -11.071113 * ^ - *
+Best diff result = abs(((x0 * (-9.643699 - (x0 ^ (x0 * -11.071113)))) - x1))
+Best expression (original format) = x0 -9.643699 x0 x0 -11.071113 * ^ - * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -9.6437), (const1, -11.0711)}
+Total system result = abs(((x0 * (-9.643699 - (x0 ^ (x0 * -11.071113)))) - x1))
+Total system result (original format) = x0 -9.643699 x0 x0 -11.071113 * ^ - * x1 - abs
+
+Unique expressions = 16241631
+Time spent fitting = 899.302 seconds
+Best score = 0.000455392, SNE = 2194.91
+Squared-norm error for each equation: 2194.91 
+Best expression = (-13.101152 * exp(sin((x0 * -9.606191))))
+Best expression (original format) = -13.101152 x0 -9.606191 * sin exp *
+Best diff result = abs(((-13.101152 * exp(sin((x0 * -9.606191)))) - x1))
+Best expression (original format) = -13.101152 x0 -9.606191 * sin exp * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -13.1012), (const1, -9.60619)}
+Total system result = abs(((-13.101152 * exp(sin((x0 * -9.606191)))) - x1))
+Total system result (original format) = -13.101152 x0 -9.606191 * sin exp * x1 - abs
+
+Unique expressions = 13
+Time spent fitting = 0 seconds
+Best score = 4.66721e-05, SNE = 21425.1
+Squared-norm error for each equation: 21425.1 
+Best expression = 1.5707963267948966
+Best expression (original format) = 1.5707963267948966
+Best diff result = abs((1.5707963267948966 - x1))
+Best expression (original format) = 1.5707963267948966 x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs((1.5707963267948966 - x1))
+Total system result (original format) = 1.5707963267948966 x1 - abs
+
+Unique expressions = 19
+Time spent fitting = 0.000548749 seconds
+Best score = 5.32666e-05, SNE = 18772.5
+Squared-norm error for each equation: 18772.5 
+Best expression = 1.1253517471925912e-07
+Best expression (original format) = 1.1253517471925912e-07
+Best diff result = abs((1.1253517471925912e-07 - x1))
+Best expression (original format) = 1.1253517471925912e-07 x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs((1.1253517471925912e-07 - x1))
+Total system result (original format) = 1.1253517471925912e-07 x1 - abs
+
+Unique expressions = 35
+Time spent fitting = 0.000894707 seconds
+Best score = 5.82951e-05, SNE = 17153.1
+Squared-norm error for each equation: 17153.1 
+Best expression = -1.0596601011416096
+Best expression (original format) = -1.0596601011416096
+Best diff result = abs((-1.0596601011416096 - x1))
+Best expression (original format) = -1.0596601011416096 x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs((-1.0596601011416096 - x1))
+Total system result (original format) = -1.0596601011416096 x1 - abs
+
+Unique expressions = 53
+Time spent fitting = 0.0011605 seconds
+Best score = 6.08942e-05, SNE = 16420.9
+Squared-norm error for each equation: 16420.9 
+Best expression = -1.5707963267948966
+Best expression (original format) = -1.5707963267948966
+Best diff result = abs((-1.5707963267948966 - x1))
+Best expression (original format) = -1.5707963267948966 x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs((-1.5707963267948966 - x1))
+Total system result (original format) = -1.5707963267948966 x1 - abs
+
+Unique expressions = 70
+Time spent fitting = 0.00143908 seconds
+Best score = 0.000119402, SNE = 8374.06
+Squared-norm error for each equation: 8374.06 
+Best expression = (0.8657694832396585 * -15.080526)
+Best expression (original format) = 0.8657694832396585 -15.080526 *
+Best diff result = abs(((0.8657694832396585 * -15.080526) - x1))
+Best expression (original format) = 0.8657694832396585 -15.080526 * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -15.0805)}
+Total system result = abs(((0.8657694832396585 * -15.080526) - x1))
+Total system result (original format) = 0.8657694832396585 -15.080526 * x1 - abs
+
+Unique expressions = 90
+Time spent fitting = 0.00219208 seconds
+Best score = 0.000153599, SNE = 6509.47
+Squared-norm error for each equation: 6509.47 
+Best expression = (-19.386194 * (sqrt(x0) - sech(-80.111168)))
+Best expression (original format) = -19.386194 x0 sqrt -80.111168 sech - *
+Best diff result = abs(((-19.386194 * (sqrt(x0) - sech(-80.111168))) - x1))
+Best expression (original format) = -19.386194 x0 sqrt -80.111168 sech - * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -19.3862), (const1, -80.1112)}
+Total system result = abs(((-19.386194 * (sqrt(x0) - sech(-80.111168))) - x1))
+Total system result (original format) = -19.386194 x0 sqrt -80.111168 sech - * x1 - abs
+
+Unique expressions = 6851
+Time spent fitting = 0.156277 seconds
+Best score = 0.000154851, SNE = 6456.8
+Squared-norm error for each equation: 6456.8 
+Best expression = (sin(tanh(x0)) * -29.377540)
+Best expression (original format) = x0 tanh sin -29.377540 *
+Best diff result = abs(((sin(tanh(x0)) * -29.377540) - x1))
+Best expression (original format) = x0 tanh sin -29.377540 * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -29.3775)}
+Total system result = abs(((sin(tanh(x0)) * -29.377540) - x1))
+Total system result (original format) = x0 tanh sin -29.377540 * x1 - abs
+
+Unique expressions = 16765
+Time spent fitting = 0.447444 seconds
+Best score = 0.000157612, SNE = 6343.7
+Squared-norm error for each equation: 6343.7 
+Best expression = (((-19.505469 + 1.000000) - 2) * sqrt(sin(x0)))
+Best expression (original format) = -19.505469 1.000000 + 2 - x0 sin sqrt *
+Best diff result = abs(((((-19.505469 + 1.000000) - 2) * sqrt(sin(x0))) - x1))
+Best expression (original format) = -19.505469 1.000000 + 2 - x0 sin sqrt * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -19.5055)}
+Total system result = abs(((((-19.505469 + 1.000000) - 2) * sqrt(sin(x0))) - x1))
+Total system result (original format) = -19.505469 1.000000 + 2 - x0 sin sqrt * x1 - abs
+
+Unique expressions = 23991
+Time spent fitting = 0.70621 seconds
+Best score = 0.000161735, SNE = 6181.97
+Squared-norm error for each equation: 6181.97 
+Best expression = (-53.947792 * (asin(x0) - (x0 ^ 2)))
+Best expression (original format) = -53.947792 x0 asin x0 2 ^ - *
+Best diff result = abs(((-53.947792 * (asin(x0) - (x0 ^ 2))) - x1))
+Best expression (original format) = -53.947792 x0 asin x0 2 ^ - * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -53.9478)}
+Total system result = abs(((-53.947792 * (asin(x0) - (x0 ^ 2))) - x1))
+Total system result (original format) = -53.947792 x0 asin x0 2 ^ - * x1 - abs
+
+Unique expressions = 38876
+Time spent fitting = 1.35826 seconds
+Best score = 0.000204361, SNE = 4892.3
+Squared-norm error for each equation: 4892.3 
+Best expression = (x0 * (-36.909889 * acos(x0)))
+Best expression (original format) = x0 -36.909889 x0 acos * *
+Best diff result = abs(((x0 * (-36.909889 * acos(x0))) - x1))
+Best expression (original format) = x0 -36.909889 x0 acos * * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -36.9099)}
+Total system result = abs(((x0 * (-36.909889 * acos(x0))) - x1))
+Total system result (original format) = x0 -36.909889 x0 acos * * x1 - abs
+
+Unique expressions = 329109
+Time spent fitting = 18.033 seconds
+Best score = 0.000207546, SNE = 4817.22
+Squared-norm error for each equation: 4817.22 
+Best expression = (tanh(x0) * (arccos(x0) * ~(42.038813)))
+Best expression (original format) = x0 tanh x0 arccos 42.038813 ~ * *
+Best diff result = abs(((tanh(x0) * (arccos(x0) * ~(42.038813))) - x1))
+Best expression (original format) = x0 tanh x0 arccos 42.038813 ~ * * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 42.0388)}
+Total system result = abs(((tanh(x0) * (arccos(x0) * ~(42.038813))) - x1))
+Total system result (original format) = x0 tanh x0 arccos 42.038813 ~ * * x1 - abs
+
+Unique expressions = 427330
+Time spent fitting = 24.9802 seconds
+Best score = 0.000212993, SNE = 4693.98
+Squared-norm error for each equation: 4693.98 
+Best expression = (-47.620353 * (x0 - (x0 ^ 4)))
+Best expression (original format) = -47.620353 x0 x0 4 ^ - *
+Best diff result = abs(((-47.620353 * (x0 - (x0 ^ 4))) - x1))
+Best expression (original format) = -47.620353 x0 x0 4 ^ - * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -47.6204)}
+Total system result = abs(((-47.620353 * (x0 - (x0 ^ 4))) - x1))
+Total system result (original format) = -47.620353 x0 x0 4 ^ - * x1 - abs
+
+Unique expressions = 451290
+Time spent fitting = 26.8032 seconds
+Best score = 0.000219882, SNE = 4546.89
+Squared-norm error for each equation: 4546.89 
+Best expression = (x0 * (-72.114895 - (x0 * -62.928533)))
+Best expression (original format) = x0 -72.114895 x0 -62.928533 * - *
+Best diff result = abs(((x0 * (-72.114895 - (x0 * -62.928533))) - x1))
+Best expression (original format) = x0 -72.114895 x0 -62.928533 * - * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -72.1149), (const1, -62.9285)}
+Total system result = abs(((x0 * (-72.114895 - (x0 * -62.928533))) - x1))
+Total system result (original format) = x0 -72.114895 x0 -62.928533 * - * x1 - abs
+
+Unique expressions = 661451
+Time spent fitting = 44.085 seconds
+Best score = 0.000229094, SNE = 4364.02
+Squared-norm error for each equation: 4364.02 
+Best expression = (2 - (tanh(x0) ^ (x0 * -8.866306)))
+Best expression (original format) = 2 x0 tanh x0 -8.866306 * ^ -
+Best diff result = abs(((2 - (tanh(x0) ^ (x0 * -8.866306))) - x1))
+Best expression (original format) = 2 x0 tanh x0 -8.866306 * ^ - x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -8.86631)}
+Total system result = abs(((2 - (tanh(x0) ^ (x0 * -8.866306))) - x1))
+Total system result (original format) = 2 x0 tanh x0 -8.866306 * ^ - x1 - abs
+
+Unique expressions = 786782
+Time spent fitting = 55.5731 seconds
+Best score = 0.000248747, SNE = 4019.15
+Squared-norm error for each equation: 4019.15 
+Best expression = (6.868050 - ((x0 * 87.619548) ^ sech(x0)))
+Best expression (original format) = 6.868050 x0 87.619548 * x0 sech ^ -
+Best diff result = abs(((6.868050 - ((x0 * 87.619548) ^ sech(x0))) - x1))
+Best expression (original format) = 6.868050 x0 87.619548 * x0 sech ^ - x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 6.86805), (const1, 87.6195)}
+Total system result = abs(((6.868050 - ((x0 * 87.619548) ^ sech(x0))) - x1))
+Total system result (original format) = 6.868050 x0 87.619548 * x0 sech ^ - x1 - abs
+
+Unique expressions = 7
+Time spent fitting = 0 seconds
+Best score = 5.09499e-05, SNE = 19626.1
+Squared-norm error for each equation: 19626.1 
+Best expression = (1.000000 + (1 + ~((arcsin(x0) * 2))))
+Best expression (original format) = 1.000000 1 x0 arcsin 2 * ~ + +
+Best diff result = abs(((1.000000 + (1 + ~((arcsin(x0) * 2)))) - x1))
+Best expression (original format) = 1.000000 1 x0 arcsin 2 * ~ + + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs(((1.000000 + (1 + ~((arcsin(x0) * 2)))) - x1))
+Total system result (original format) = 1.000000 1 x0 arcsin 2 * ~ + + x1 - abs
+
+Unique expressions = 10
+Time spent fitting = 0.000373626 seconds
+Best score = 5.2997e-05, SNE = 18868
+Squared-norm error for each equation: 18868 
+Best expression = sqrt(sech((sqrt(sqrt(350.298165)) + 2)))
+Best expression (original format) = 350.298165 sqrt sqrt 2 + sech sqrt
+Best diff result = abs((sqrt(sech((sqrt(sqrt(350.298165)) + 2))) - x1))
+Best expression (original format) = 350.298165 sqrt sqrt 2 + sech sqrt x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 350.298)}
+Total system result = abs((sqrt(sech((sqrt(sqrt(350.298165)) + 2))) - x1))
+Total system result (original format) = 350.298165 sqrt sqrt 2 + sech sqrt x1 - abs
+
+Unique expressions = 17
+Time spent fitting = 0.000478959 seconds
+Best score = 5.32666e-05, SNE = 18772.5
+Squared-norm error for each equation: 18772.5 
+Best expression = 0
+Best expression (original format) = 0
+Best diff result = abs(~(x1))
+Best expression (original format) = x1 ~ abs
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs(~(x1))
+Total system result (original format) = x1 ~ abs
+
+Unique expressions = 36
+Time spent fitting = 0.00163554 seconds
+Best score = 0.000119402, SNE = 8374.06
+Squared-norm error for each equation: 8374.06 
+Best expression = (-20.445315 + 7.3890560989306495)
+Best expression (original format) = -20.445315 7.3890560989306495 +
+Best diff result = abs(((-20.445315 + 7.3890560989306495) - x1))
+Best expression (original format) = -20.445315 7.3890560989306495 + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -20.4453)}
+Total system result = abs(((-20.445315 + 7.3890560989306495) - x1))
+Total system result (original format) = -20.445315 7.3890560989306495 + x1 - abs
+
+Unique expressions = 125
+Time spent fitting = 0.00416609 seconds
+Best score = 0.000133923, SNE = 7465.97
+Squared-norm error for each equation: 7465.97 
+Best expression = (x0 * (-20.600594 - 1.1608753909688043))
+Best expression (original format) = x0 -20.600594 1.1608753909688043 - *
+Best diff result = abs(((x0 * (-20.600594 - 1.1608753909688043)) - x1))
+Best expression (original format) = x0 -20.600594 1.1608753909688043 - * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -20.6006)}
+Total system result = abs(((x0 * (-20.600594 - 1.1608753909688043)) - x1))
+Total system result (original format) = x0 -20.600594 1.1608753909688043 - * x1 - abs
+
+Unique expressions = 1103
+Time spent fitting = 0.0325424 seconds
+Best score = 0.000140033, SNE = 7140.15
+Squared-norm error for each equation: 7140.15 
+Best expression = (-24.081793 * tanh(asin(x0)))
+Best expression (original format) = -24.081793 x0 asin tanh *
+Best diff result = abs(((-24.081793 * tanh(asin(x0))) - x1))
+Best expression (original format) = -24.081793 x0 asin tanh * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -24.0818)}
+Total system result = abs(((-24.081793 * tanh(asin(x0))) - x1))
+Total system result (original format) = -24.081793 x0 asin tanh * x1 - abs
+
+Unique expressions = 1581
+Time spent fitting = 0.041498 seconds
+Best score = 0.000144182, SNE = 6934.66
+Squared-norm error for each equation: 6934.66 
+Best expression = (-1 - (22.929212 * acos(sech(x0))))
+Best expression (original format) = -1 22.929212 x0 sech acos * -
+Best diff result = abs(((-1 - (22.929212 * acos(sech(x0)))) - x1))
+Best expression (original format) = -1 22.929212 x0 sech acos * - x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 22.9292)}
+Total system result = abs(((-1 - (22.929212 * acos(sech(x0)))) - x1))
+Total system result (original format) = -1 22.929212 x0 sech acos * - x1 - abs
+
+Unique expressions = 3001
+Time spent fitting = 0.072164 seconds
+Best score = 0.000149271, SNE = 6698.22
+Squared-norm error for each equation: 6698.22 
+Best expression = (12.183627 * (tanh(x0) / -0.4495513583329686))
+Best expression (original format) = 12.183627 x0 tanh -0.4495513583329686 / *
+Best diff result = abs(((12.183627 * (tanh(x0) / -0.4495513583329686)) - x1))
+Best expression (original format) = 12.183627 x0 tanh -0.4495513583329686 / * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 12.1836)}
+Total system result = abs(((12.183627 * (tanh(x0) / -0.4495513583329686)) - x1))
+Total system result (original format) = 12.183627 x0 tanh -0.4495513583329686 / * x1 - abs
+
+Unique expressions = 5987
+Time spent fitting = 0.127324 seconds
+Best score = 0.000153599, SNE = 6509.47
+Squared-norm error for each equation: 6509.47 
+Best expression = (-2.188618 * (4 * (sqrt(x0) / 0.4515827052894548)))
+Best expression (original format) = -2.188618 4 x0 sqrt 0.4515827052894548 / * *
+Best diff result = abs(((-2.188618 * (4 * (sqrt(x0) / 0.4515827052894548))) - x1))
+Best expression (original format) = -2.188618 4 x0 sqrt 0.4515827052894548 / * * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -2.18862)}
+Total system result = abs(((-2.188618 * (4 * (sqrt(x0) / 0.4515827052894548))) - x1))
+Total system result (original format) = -2.188618 4 x0 sqrt 0.4515827052894548 / * * x1 - abs
+
+Unique expressions = 9883
+Time spent fitting = 0.229555 seconds
+Best score = 0.000157612, SNE = 6343.7
+Squared-norm error for each equation: 6343.7 
+Best expression = (sqrt(sin(x0)) * -20.505469)
+Best expression (original format) = x0 sin sqrt -20.505469 *
+Best diff result = abs(((sqrt(sin(x0)) * -20.505469) - x1))
+Best expression (original format) = x0 sin sqrt -20.505469 * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -20.5055)}
+Total system result = abs(((sqrt(sin(x0)) * -20.505469) - x1))
+Total system result (original format) = x0 sin sqrt -20.505469 * x1 - abs
+
+Unique expressions = 23087
+Time spent fitting = 0.509717 seconds
+Best score = 0.000174711, SNE = 5722.75
+Squared-norm error for each equation: 5722.75 
+Best expression = (0.7972598180071276 - (19.682734 * sech(log(x0))))
+Best expression (original format) = 0.7972598180071276 19.682734 x0 log sech * -
+Best diff result = abs(((0.7972598180071276 - (19.682734 * sech(log(x0)))) - x1))
+Best expression (original format) = 0.7972598180071276 19.682734 x0 log sech * - x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 19.6827)}
+Total system result = abs(((0.7972598180071276 - (19.682734 * sech(log(x0)))) - x1))
+Total system result (original format) = 0.7972598180071276 19.682734 x0 log sech * - x1 - abs
+
+Unique expressions = 25499
+Time spent fitting = 0.581454 seconds
+Best score = 0.000194282, SNE = 5146.16
+Squared-norm error for each equation: 5146.16 
+Best expression = (arcsin(cos(x0)) * (-32.798163 * arccos(sech(x0))))
+Best expression (original format) = x0 cos arcsin -32.798163 x0 sech arccos * *
+Best diff result = abs(((arcsin(cos(x0)) * (-32.798163 * arccos(sech(x0)))) - x1))
+Best expression (original format) = x0 cos arcsin -32.798163 x0 sech arccos * * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -32.7982)}
+Total system result = abs(((arcsin(cos(x0)) * (-32.798163 * arccos(sech(x0)))) - x1))
+Total system result (original format) = x0 cos arcsin -32.798163 x0 sech arccos * * x1 - abs
+
+Unique expressions = 69928
+Time spent fitting = 1.71691 seconds
+Best score = 0.000224763, SNE = 4448.13
+Squared-norm error for each equation: 4448.13 
+Best expression = (1 + (x0 * (-75.906243 + (x0 * 65.958759))))
+Best expression (original format) = 1 x0 -75.906243 x0 65.958759 * + * +
+Best diff result = abs(((1 + (x0 * (-75.906243 + (x0 * 65.958759)))) - x1))
+Best expression (original format) = 1 x0 -75.906243 x0 65.958759 * + * + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -75.9062), (const1, 65.9588)}
+Total system result = abs(((1 + (x0 * (-75.906243 + (x0 * 65.958759)))) - x1))
+Total system result (original format) = 1 x0 -75.906243 x0 65.958759 * + * + x1 - abs
+
+Unique expressions = 354208
+Time spent fitting = 8.95599 seconds
+Best score = 0.000231952, SNE = 4310.24
+Squared-norm error for each equation: 4310.24 
+Best expression = (2 - (x0 / (81.937327 ^ ~(cos(x0)))))
+Best expression (original format) = 2 x0 81.937327 x0 cos ~ ^ / -
+Best diff result = abs(((2 - (x0 / (81.937327 ^ ~(cos(x0))))) - x1))
+Best expression (original format) = 2 x0 81.937327 x0 cos ~ ^ / - x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 81.9373)}
+Total system result = abs(((2 - (x0 / (81.937327 ^ ~(cos(x0))))) - x1))
+Total system result (original format) = 2 x0 81.937327 x0 cos ~ ^ / - x1 - abs
+
+Unique expressions = 718940
+Time spent fitting = 18.1107 seconds
+Best score = 0.000242715, SNE = 4119.06
+Squared-norm error for each equation: 4119.06 
+Best expression = ~((x0 ^ (-13.302429 * (x0 ^ 1.3862943611198906))))
+Best expression (original format) = x0 -13.302429 x0 1.3862943611198906 ^ * ^ ~
+Best diff result = abs((~((x0 ^ (-13.302429 * (x0 ^ 1.3862943611198906)))) - x1))
+Best expression (original format) = x0 -13.302429 x0 1.3862943611198906 ^ * ^ ~ x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -13.3024)}
+Total system result = abs((~((x0 ^ (-13.302429 * (x0 ^ 1.3862943611198906)))) - x1))
+Total system result (original format) = x0 -13.302429 x0 1.3862943611198906 ^ * ^ ~ x1 - abs
+
+Unique expressions = 791902
+Time spent fitting = 20.0608 seconds
+Best score = 0.000258789, SNE = 3863.16
+Squared-norm error for each equation: 3863.16 
+Best expression = (-15.746783 / (x0 ^ (1.000000 + ln(x0))))
+Best expression (original format) = -15.746783 x0 1.000000 x0 ln + ^ /
+Best diff result = abs(((-15.746783 / (x0 ^ (1.000000 + ln(x0)))) - x1))
+Best expression (original format) = -15.746783 x0 1.000000 x0 ln + ^ / x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -15.7468)}
+Total system result = abs(((-15.746783 / (x0 ^ (1.000000 + ln(x0)))) - x1))
+Total system result (original format) = -15.746783 x0 1.000000 x0 ln + ^ / x1 - abs
+
+Unique expressions = 2955821
+Time spent fitting = 81.218 seconds
+Best score = 0.000263417, SNE = 3795.26
+Squared-norm error for each equation: 3795.26 
+Best expression = ~((587.022264 ^ (tanh(x0) * arccos(x0))))
+Best expression (original format) = 587.022264 x0 tanh x0 arccos * ^ ~
+Best diff result = abs((~((587.022264 ^ (tanh(x0) * arccos(x0)))) - x1))
+Best expression (original format) = 587.022264 x0 tanh x0 arccos * ^ ~ x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 587.022)}
+Total system result = abs((~((587.022264 ^ (tanh(x0) * arccos(x0)))) - x1))
+Total system result (original format) = 587.022264 x0 tanh x0 arccos * ^ ~ x1 - abs
+
+Unique expressions = 4613565
+Time spent fitting = 134.587 seconds
+Best score = 0.000321534, SNE = 3109.1
+Squared-norm error for each equation: 3109.1 
+Best expression = (8.423136 * ln(acos(sin((x0 + 1.046841)))))
+Best expression (original format) = 8.423136 x0 1.046841 + sin acos ln *
+Best diff result = abs(((8.423136 * ln(acos(sin((x0 + 1.046841))))) - x1))
+Best expression (original format) = 8.423136 x0 1.046841 + sin acos ln * x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 8.42314), (const1, 1.04684)}
+Total system result = abs(((8.423136 * ln(acos(sin((x0 + 1.046841))))) - x1))
+Total system result (original format) = 8.423136 x0 1.046841 + sin acos ln * x1 - abs
+
+Unique expressions = 12
+Time spent fitting = 0 seconds
+Best score = 5.42572e-05, SNE = 18429.7
+Squared-norm error for each equation: 18429.7 
+Best expression = -0.21697495133855002
+Best expression (original format) = -0.21697495133855002
+Best diff result = abs((-0.21697495133855002 - x1))
+Best expression (original format) = abs - -0.21697495133855002 x1
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs((-0.21697495133855002 - x1))
+Total system result (original format) = abs - -0.21697495133855002 x1
+
+Unique expressions = 21
+Time spent fitting = 0.000279834 seconds
+Best score = 5.63119e-05, SNE = 17757.2
+Squared-norm error for each equation: 17757.2 
+Best expression = ~(x0)
+Best expression (original format) = ~ x0
+Best diff result = abs((~(x0) - x1))
+Best expression (original format) = abs - ~ x0 x1
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs((~(x0) - x1))
+Total system result (original format) = abs - ~ x0 x1
+
+Unique expressions = 41
+Time spent fitting = 0.000913459 seconds
+Best score = 5.76824e-05, SNE = 17335.3
+Squared-norm error for each equation: 17335.3 
+Best expression = ~(cos((0.184833 ^ x0)))
+Best expression (original format) = ~ cos ^ 0.184833 x0
+Best diff result = abs((~(cos((0.184833 ^ x0))) - x1))
+Best expression (original format) = abs - ~ cos ^ 0.184833 x0 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 0.184833)}
+Total system result = abs((~(cos((0.184833 ^ x0))) - x1))
+Total system result (original format) = abs - ~ cos ^ 0.184833 x0 x1
+
+Unique expressions = 53
+Time spent fitting = 0.00121275 seconds
+Best score = 8.35869e-05, SNE = 11962.6
+Squared-norm error for each equation: 11962.6 
+Best expression = -5.386294361119891
+Best expression (original format) = -5.386294361119891
+Best diff result = abs((-5.386294361119891 - x1))
+Best expression (original format) = abs - -5.386294361119891 x1
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs((-5.386294361119891 - x1))
+Total system result (original format) = abs - -5.386294361119891 x1
+
+Unique expressions = 63
+Time spent fitting = 0.00159979 seconds
+Best score = 0.000119402, SNE = 8374.06
+Squared-norm error for each equation: 8374.06 
+Best expression = -13.056259
+Best expression (original format) = -13.056259
+Best diff result = abs((-13.056259 - x1))
+Best expression (original format) = abs - -13.056259 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -13.0563)}
+Total system result = abs((-13.056259 - x1))
+Total system result (original format) = abs - -13.056259 x1
+
+Unique expressions = 69
+Time spent fitting = 0.00215875 seconds
+Best score = 0.000119402, SNE = 8374.06
+Squared-norm error for each equation: 8374.06 
+Best expression = ~((2 ^ log(40.717974)))
+Best expression (original format) = ~ ^ 2 log 40.717974
+Best diff result = abs((~((2 ^ log(40.717974))) - x1))
+Best expression (original format) = abs - ~ ^ 2 log 40.717974 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 40.718)}
+Total system result = abs((~((2 ^ log(40.717974))) - x1))
+Total system result (original format) = abs - ~ ^ 2 log 40.717974 x1
+
+Unique expressions = 99
+Time spent fitting = 0.00291746 seconds
+Best score = 0.000121928, SNE = 8200.55
+Squared-norm error for each equation: 8200.55 
+Best expression = (cos((x0 + 1.000000)) - 13.088835)
+Best expression (original format) = - cos + x0 1.000000 13.088835
+Best diff result = abs(((cos((x0 + 1.000000)) - 13.088835) - x1))
+Best expression (original format) = abs - - cos + x0 1.000000 13.088835 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 13.0888)}
+Total system result = abs(((cos((x0 + 1.000000)) - 13.088835) - x1))
+Total system result (original format) = abs - - cos + x0 1.000000 13.088835 x1
+
+Unique expressions = 1452
+Time spent fitting = 0.0381329 seconds
+Best score = 0.000122035, SNE = 8193.4
+Squared-norm error for each equation: 8193.4 
+Best expression = ~((x0 - -12.521347))
+Best expression (original format) = ~ - x0 -12.521347
+Best diff result = abs((~((x0 - -12.521347)) - x1))
+Best expression (original format) = abs - ~ - x0 -12.521347 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -12.5213)}
+Total system result = abs((~((x0 - -12.521347)) - x1))
+Total system result (original format) = abs - ~ - x0 -12.521347 x1
+
+Unique expressions = 1477
+Time spent fitting = 0.0385849 seconds
+Best score = 0.000133923, SNE = 7465.97
+Squared-norm error for each equation: 7465.97 
+Best expression = (~(x0) * 21.761469)
+Best expression (original format) = * ~ x0 21.761469
+Best diff result = abs(((~(x0) * 21.761469) - x1))
+Best expression (original format) = abs - * ~ x0 21.761469 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 21.7615)}
+Total system result = abs(((~(x0) * 21.761469) - x1))
+Total system result (original format) = abs - * ~ x0 21.761469 x1
+
+Unique expressions = 2401
+Time spent fitting = 0.0602333 seconds
+Best score = 0.000159761, SNE = 6258.34
+Squared-norm error for each equation: 6258.34 
+Best expression = ~(((30.548612 * x0) * sech(x0)))
+Best expression (original format) = ~ * * 30.548612 x0 sech x0
+Best diff result = abs((~(((30.548612 * x0) * sech(x0))) - x1))
+Best expression (original format) = abs - ~ * * 30.548612 x0 sech x0 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 30.5486)}
+Total system result = abs((~(((30.548612 * x0) * sech(x0))) - x1))
+Total system result (original format) = abs - ~ * * 30.548612 x0 sech x0 x1
+
+Unique expressions = 2427
+Time spent fitting = 0.0605827 seconds
+Best score = 0.000204361, SNE = 4892.3
+Squared-norm error for each equation: 4892.3 
+Best expression = ((acos(x0) * x0) * -36.909889)
+Best expression (original format) = * * acos x0 x0 -36.909889
+Best diff result = abs((((acos(x0) * x0) * -36.909889) - x1))
+Best expression (original format) = abs - * * acos x0 x0 -36.909889 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -36.9099)}
+Total system result = abs((((acos(x0) * x0) * -36.909889) - x1))
+Total system result (original format) = abs - * * acos x0 x0 -36.909889 x1
+
+Unique expressions = 103857
+Time spent fitting = 5.33057 seconds
+Best score = 0.000207546, SNE = 4817.22
+Squared-norm error for each equation: 4817.22 
+Best expression = ((tanh(x0) * acos(x0)) * -42.038813)
+Best expression (original format) = * * tanh x0 acos x0 -42.038813
+Best diff result = abs((((tanh(x0) * acos(x0)) * -42.038813) - x1))
+Best expression (original format) = abs - * * tanh x0 acos x0 -42.038813 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -42.0388)}
+Total system result = abs((((tanh(x0) * acos(x0)) * -42.038813) - x1))
+Total system result (original format) = abs - * * tanh x0 acos x0 -42.038813 x1
+
+Unique expressions = 189036
+Time spent fitting = 11.5416 seconds
+Best score = 0.000234535, SNE = 4262.75
+Squared-norm error for each equation: 4262.75 
+Best expression = ~(((x0 * 66.322839) ^ cos(x0)))
+Best expression (original format) = ~ ^ * x0 66.322839 cos x0
+Best diff result = abs((~(((x0 * 66.322839) ^ cos(x0))) - x1))
+Best expression (original format) = abs - ~ ^ * x0 66.322839 cos x0 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 66.3228)}
+Total system result = abs((~(((x0 * 66.322839) ^ cos(x0))) - x1))
+Total system result (original format) = abs - ~ ^ * x0 66.322839 cos x0 x1
+
+Unique expressions = 203416
+Time spent fitting = 12.7692 seconds
+Best score = 0.000237116, SNE = 4216.35
+Squared-norm error for each equation: 4216.35 
+Best expression = ~((tanh(x0) ^ (-8.258258 * x0)))
+Best expression (original format) = ~ ^ tanh x0 * -8.258258 x0
+Best diff result = abs((~((tanh(x0) ^ (-8.258258 * x0))) - x1))
+Best expression (original format) = abs - ~ ^ tanh x0 * -8.258258 x0 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -8.25826)}
+Total system result = abs((~((tanh(x0) ^ (-8.258258 * x0))) - x1))
+Total system result (original format) = abs - ~ ^ tanh x0 * -8.258258 x0 x1
+
+Unique expressions = 434699
+Time spent fitting = 35.1795 seconds
+Best score = 0.000273591, SNE = 3654.1
+Squared-norm error for each equation: 3654.1 
+Best expression = ~(((2 - x0) ^ (x0 * 16.483938)))
+Best expression (original format) = ~ ^ - 2 x0 * x0 16.483938
+Best diff result = abs((~(((2 - x0) ^ (x0 * 16.483938))) - x1))
+Best expression (original format) = abs - ~ ^ - 2 x0 * x0 16.483938 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 16.4839)}
+Total system result = abs((~(((2 - x0) ^ (x0 * 16.483938))) - x1))
+Total system result (original format) = abs - ~ ^ - 2 x0 * x0 16.483938 x1
+
+Unique expressions = 8
+Time spent fitting = 0 seconds
+Best score = 5.62957e-05, SNE = 17762.3
+Squared-norm error for each equation: 17762.3 
+Best expression = (-0.9860574108788279 * sech(((x0 ^ -1.448780) - 2.991981)))
+Best expression (original format) = * -0.9860574108788279 sech - ^ x0 -1.448780 2.991981
+Best diff result = abs(((-0.9860574108788279 * sech(((x0 ^ -1.448780) - 2.991981))) - x1))
+Best expression (original format) = abs - * -0.9860574108788279 sech - ^ x0 -1.448780 2.991981 x1
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs(((-0.9860574108788279 * sech(((x0 ^ -1.448780) - 2.991981))) - x1))
+Total system result (original format) = abs - * -0.9860574108788279 sech - ^ x0 -1.448780 2.991981 x1
+
+Unique expressions = 32
+Time spent fitting = 0 seconds
+Best score = 5.7016e-05, SNE = 17537.9
+Squared-norm error for each equation: 17537.9 
+Best expression = (-0.9860574108788279 * sech(x0))
+Best expression (original format) = * -0.9860574108788279 sech x0
+Best diff result = abs(((-0.9860574108788279 * sech(x0)) - x1))
+Best expression (original format) = abs - * -0.9860574108788279 sech x0 x1
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs(((-0.9860574108788279 * sech(x0)) - x1))
+Total system result (original format) = abs - * -0.9860574108788279 sech x0 x1
+
+Unique expressions = 60
+Time spent fitting = 0.000184833 seconds
+Best score = 5.92995e-05, SNE = 16862.6
+Squared-norm error for each equation: 16862.6 
+Best expression = (-0.9860574108788279 * arcsin(tanh(exp(x0))))
+Best expression (original format) = * -0.9860574108788279 arcsin tanh exp x0
+Best diff result = abs(((-0.9860574108788279 * arcsin(tanh(exp(x0)))) - x1))
+Best expression (original format) = abs - * -0.9860574108788279 arcsin tanh exp x0 x1
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs(((-0.9860574108788279 * arcsin(tanh(exp(x0)))) - x1))
+Total system result (original format) = abs - * -0.9860574108788279 arcsin tanh exp x0 x1
+
+Unique expressions = 91
+Time spent fitting = 0.000466958 seconds
+Best score = 5.95579e-05, SNE = 16789.4
+Squared-norm error for each equation: 16789.4 
+Best expression = (-0.9860574108788279 * (2 - x0))
+Best expression (original format) = * -0.9860574108788279 - 2 x0
+Best diff result = abs(((-0.9860574108788279 * (2 - x0)) - x1))
+Best expression (original format) = abs - * -0.9860574108788279 - 2 x0 x1
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs(((-0.9860574108788279 * (2 - x0)) - x1))
+Total system result (original format) = abs - * -0.9860574108788279 - 2 x0 x1
+
+Unique expressions = 108
+Time spent fitting = 0.000512375 seconds
+Best score = 6.14112e-05, SNE = 16282.7
+Squared-norm error for each equation: 16282.7 
+Best expression = (-0.9860574108788279 - sech(((x0 ^ -1.448780) - 2.991981)))
+Best expression (original format) = - -0.9860574108788279 sech - ^ x0 -1.448780 2.991981
+Best diff result = abs(((-0.9860574108788279 - sech(((x0 ^ -1.448780) - 2.991981))) - x1))
+Best expression (original format) = abs - - -0.9860574108788279 sech - ^ x0 -1.448780 2.991981 x1
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs(((-0.9860574108788279 - sech(((x0 ^ -1.448780) - 2.991981))) - x1))
+Total system result (original format) = abs - - -0.9860574108788279 sech - ^ x0 -1.448780 2.991981 x1
+
+Unique expressions = 129
+Time spent fitting = 0.000612916 seconds
+Best score = 6.73042e-05, SNE = 14856.9
+Squared-norm error for each equation: 14856.9 
+Best expression = (-4 * sech(((x0 ^ -1.448780) - 2.991981)))
+Best expression (original format) = * -4 sech - ^ x0 -1.448780 2.991981
+Best diff result = abs(((-4 * sech(((x0 ^ -1.448780) - 2.991981))) - x1))
+Best expression (original format) = abs - * -4 sech - ^ x0 -1.448780 2.991981 x1
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs(((-4 * sech(((x0 ^ -1.448780) - 2.991981))) - x1))
+Total system result (original format) = abs - * -4 sech - ^ x0 -1.448780 2.991981 x1
+
+Unique expressions = 158
+Time spent fitting = 0.000702791 seconds
+Best score = 0.000120034, SNE = 8329.95
+Squared-norm error for each equation: 8329.95 
+Best expression = (-0.9860574108788279 * (cos(cos(x0)) - -12.563158))
+Best expression (original format) = * -0.9860574108788279 - cos cos x0 -12.563158
+Best diff result = abs(((-0.9860574108788279 * (cos(cos(x0)) - -12.563158)) - x1))
+Best expression (original format) = abs - * -0.9860574108788279 - cos cos x0 -12.563158 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -12.5632)}
+Total system result = abs(((-0.9860574108788279 * (cos(cos(x0)) - -12.563158)) - x1))
+Total system result (original format) = abs - * -0.9860574108788279 - cos cos x0 -12.563158 x1
+
+Unique expressions = 349
+Time spent fitting = 0.00169192 seconds
+Best score = 0.000128792, SNE = 7763.46
+Squared-norm error for each equation: 7763.46 
+Best expression = (-0.9860574108788279 * (cos(cos(x0)) * 19.849203))
+Best expression (original format) = * -0.9860574108788279 * cos cos x0 19.849203
+Best diff result = abs(((-0.9860574108788279 * (cos(cos(x0)) * 19.849203)) - x1))
+Best expression (original format) = abs - * -0.9860574108788279 * cos cos x0 19.849203 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 19.8492)}
+Total system result = abs(((-0.9860574108788279 * (cos(cos(x0)) * 19.849203)) - x1))
+Total system result (original format) = abs - * -0.9860574108788279 * cos cos x0 19.849203 x1
+
+Unique expressions = 466
+Time spent fitting = 0.00240683 seconds
+Best score = 0.0011087, SNE = 900.956
+Squared-norm error for each equation: 900.956 
+Best expression = (-34.390336 * sech(((x0 ^ -1.448780) - 2.991981)))
+Best expression (original format) = * -34.390336 sech - ^ x0 -1.448780 2.991981
+Best diff result = abs(((-34.390336 * sech(((x0 ^ -1.448780) - 2.991981))) - x1))
+Best expression (original format) = abs - * -34.390336 sech - ^ x0 -1.448780 2.991981 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -34.3903)}
+Total system result = abs(((-34.390336 * sech(((x0 ^ -1.448780) - 2.991981))) - x1))
+Total system result (original format) = abs - * -34.390336 sech - ^ x0 -1.448780 2.991981 x1
+
+Unique expressions = 754
+Time spent fitting = 0.00528487 seconds
+Best score = 0.0011087, SNE = 900.956
+Squared-norm error for each equation: 900.956 
+Best expression = (~(34.390336) * sech(((x0 ^ -1.448780) - 2.991981)))
+Best expression (original format) = * ~ 34.390336 sech - ^ x0 -1.448780 2.991981
+Best diff result = abs(((~(34.390336) * sech(((x0 ^ -1.448780) - 2.991981))) - x1))
+Best expression (original format) = abs - * ~ 34.390336 sech - ^ x0 -1.448780 2.991981 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 34.3903)}
+Total system result = abs(((~(34.390336) * sech(((x0 ^ -1.448780) - 2.991981))) - x1))
+Total system result (original format) = abs - * ~ 34.390336 sech - ^ x0 -1.448780 2.991981 x1
+
+Unique expressions = 12619
+Time spent fitting = 0.225456 seconds
+Best score = 0.00110873, SNE = 900.933
+Squared-norm error for each equation: 900.933 
+Best expression = (~(34.401286) * sech(((x0 ^ -1.447400) - 2.991981)))
+Best expression (original format) = * ~ 34.401286 sech - ^ x0 -1.447400 2.991981
+Best diff result = abs(((~(34.401286) * sech(((x0 ^ -1.447400) - 2.991981))) - x1))
+Best expression (original format) = abs - * ~ 34.401286 sech - ^ x0 -1.447400 2.991981 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 34.4013), (const1, -1.4474)}
+Total system result = abs(((~(34.401286) * sech(((x0 ^ -1.447400) - 2.991981))) - x1))
+Total system result (original format) = abs - * ~ 34.401286 sech - ^ x0 -1.447400 2.991981 x1
+
+Unique expressions = 12687
+Time spent fitting = 0.22736 seconds
+Best score = 0.00110873, SNE = 900.933
+Squared-norm error for each equation: 900.933 
+Best expression = (~(34.401287) * sech(((x0 ^ -1.447400) - 2.991981)))
+Best expression (original format) = * ~ 34.401287 sech - ^ x0 -1.447400 2.991981
+Best diff result = abs(((~(34.401287) * sech(((x0 ^ -1.447400) - 2.991981))) - x1))
+Best expression (original format) = abs - * ~ 34.401287 sech - ^ x0 -1.447400 2.991981 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 34.4013), (const1, -1.4474)}
+Total system result = abs(((~(34.401287) * sech(((x0 ^ -1.447400) - 2.991981))) - x1))
+Total system result (original format) = abs - * ~ 34.401287 sech - ^ x0 -1.447400 2.991981 x1
+
+Unique expressions = 12793
+Time spent fitting = 0.229504 seconds
+Best score = 0.00110873, SNE = 900.933
+Squared-norm error for each equation: 900.933 
+Best expression = (~(34.401287) * sech(((x0 ^ -1.447400) - 2.991981)))
+Best expression (original format) = * ~ 34.401287 sech - ^ x0 -1.447400 2.991981
+Best diff result = abs(((~(34.401287) * sech(((x0 ^ -1.447400) - 2.991981))) - x1))
+Best expression (original format) = abs - * ~ 34.401287 sech - ^ x0 -1.447400 2.991981 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 34.4013), (const1, -1.4474)}
+Total system result = abs(((~(34.401287) * sech(((x0 ^ -1.447400) - 2.991981))) - x1))
+Total system result (original format) = abs - * ~ 34.401287 sech - ^ x0 -1.447400 2.991981 x1
+
+Unique expressions = 43
+Time spent fitting = 0.000726668 seconds
+Best score = 0.00110873, SNE = 900.933
+Squared-norm error for each equation: 900.933 
+Best expression = (-34.401287 * sech(((x0 ^ -1.447400) - 2.991981)))
+Best expression (original format) = * -34.401287 sech - ^ x0 -1.447400 2.991981
+Best diff result = abs(((-34.401287 * sech(((x0 ^ -1.447400) - 2.991981))) - x1))
+Best expression (original format) = abs - * -34.401287 sech - ^ x0 -1.447400 2.991981 x1
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs(((-34.401287 * sech(((x0 ^ -1.447400) - 2.991981))) - x1))
+Total system result (original format) = abs - * -34.401287 sech - ^ x0 -1.447400 2.991981 x1
+
+Unique expressions = 182
+Time spent fitting = 0.00218633 seconds
+Best score = 0.00110873, SNE = 900.933
+Squared-norm error for each equation: 900.933 
+Best expression = (~(34.401290) * sech(((x0 ^ -1.447400) - 2.991981)))
+Best expression (original format) = * ~ 34.401290 sech - ^ x0 -1.447400 2.991981
+Best diff result = abs(((~(34.401290) * sech(((x0 ^ -1.447400) - 2.991981))) - x1))
+Best expression (original format) = abs - * ~ 34.401290 sech - ^ x0 -1.447400 2.991981 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 34.4013)}
+Total system result = abs(((~(34.401290) * sech(((x0 ^ -1.447400) - 2.991981))) - x1))
+Total system result (original format) = abs - * ~ 34.401290 sech - ^ x0 -1.447400 2.991981 x1
+
+Unique expressions = 1342
+Time spent fitting = 0.0127475 seconds
+Best score = 0.00110873, SNE = 900.933
+Squared-norm error for each equation: 900.933 
+Best expression = (-34.401287 * sech(((x0 ^ -1.447400) - 2.991981)))
+Best expression (original format) = * -34.401287 sech - ^ x0 -1.447400 2.991981
+Best diff result = abs(((-34.401287 * sech(((x0 ^ -1.447400) - 2.991981))) - x1))
+Best expression (original format) = abs - * -34.401287 sech - ^ x0 -1.447400 2.991981 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.4474)}
+Total system result = abs(((-34.401287 * sech(((x0 ^ -1.447400) - 2.991981))) - x1))
+Total system result (original format) = abs - * -34.401287 sech - ^ x0 -1.447400 2.991981 x1
+
+Unique expressions = 1424
+Time spent fitting = 0.0139389 seconds
+Best score = 0.00110873, SNE = 900.933
+Squared-norm error for each equation: 900.933 
+Best expression = (-34.401287 * sech(((x0 ^ -1.447400) - 2.991981)))
+Best expression (original format) = * -34.401287 sech - ^ x0 -1.447400 2.991981
+Best diff result = abs(((-34.401287 * sech(((x0 ^ -1.447400) - 2.991981))) - x1))
+Best expression (original format) = abs - * -34.401287 sech - ^ x0 -1.447400 2.991981 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.4474)}
+Total system result = abs(((-34.401287 * sech(((x0 ^ -1.447400) - 2.991981))) - x1))
+Total system result (original format) = abs - * -34.401287 sech - ^ x0 -1.447400 2.991981 x1
+
+Unique expressions = 1842
+Time spent fitting = 0.0211968 seconds
+Best score = 0.00110878, SNE = 900.894
+Squared-norm error for each equation: 900.894 
+Best expression = (-34.401287 * sech(((x0 ^ -1.452565) - 3.004663)))
+Best expression (original format) = * -34.401287 sech - ^ x0 -1.452565 3.004663
+Best diff result = abs(((-34.401287 * sech(((x0 ^ -1.452565) - 3.004663))) - x1))
+Best expression (original format) = abs - * -34.401287 sech - ^ x0 -1.452565 3.004663 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.45256), (const1, 3.00466)}
+Total system result = abs(((-34.401287 * sech(((x0 ^ -1.452565) - 3.004663))) - x1))
+Total system result (original format) = abs - * -34.401287 sech - ^ x0 -1.452565 3.004663 x1
+
+Unique expressions = 2181
+Time spent fitting = 0.0278929 seconds
+Best score = 0.00110894, SNE = 900.762
+Squared-norm error for each equation: 900.762 
+Best expression = (-34.401287 * sech(((x0 ^ -1.451377) - 2.999283)))
+Best expression (original format) = * -34.401287 sech - ^ x0 -1.451377 2.999283
+Best diff result = abs(((-34.401287 * sech(((x0 ^ -1.451377) - 2.999283))) - x1))
+Best expression (original format) = abs - * -34.401287 sech - ^ x0 -1.451377 2.999283 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.45138), (const1, 2.99928)}
+Total system result = abs(((-34.401287 * sech(((x0 ^ -1.451377) - 2.999283))) - x1))
+Total system result (original format) = abs - * -34.401287 sech - ^ x0 -1.451377 2.999283 x1
+
+Unique expressions = 2259
+Time spent fitting = 0.0295311 seconds
+Best score = 0.00110894, SNE = 900.762
+Squared-norm error for each equation: 900.762 
+Best expression = (-34.401287 * sech(((x0 ^ -1.451376) - 2.999282)))
+Best expression (original format) = * -34.401287 sech - ^ x0 -1.451376 2.999282
+Best diff result = abs(((-34.401287 * sech(((x0 ^ -1.451376) - 2.999282))) - x1))
+Best expression (original format) = abs - * -34.401287 sech - ^ x0 -1.451376 2.999282 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.45138), (const1, 2.99928)}
+Total system result = abs(((-34.401287 * sech(((x0 ^ -1.451376) - 2.999282))) - x1))
+Total system result (original format) = abs - * -34.401287 sech - ^ x0 -1.451376 2.999282 x1
+
+Unique expressions = 2483
+Time spent fitting = 0.0343885 seconds
+Best score = 0.00110894, SNE = 900.762
+Squared-norm error for each equation: 900.762 
+Best expression = (-34.401287 * sech(((x0 ^ -1.451376) - 2.999282)))
+Best expression (original format) = * -34.401287 sech - ^ x0 -1.451376 2.999282
+Best diff result = abs(((-34.401287 * sech(((x0 ^ -1.451376) - 2.999282))) - x1))
+Best expression (original format) = abs - * -34.401287 sech - ^ x0 -1.451376 2.999282 x1
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -1.45138), (const1, 2.99928)}
+Total system result = abs(((-34.401287 * sech(((x0 ^ -1.451376) - 2.999282))) - x1))
+Total system result (original format) = abs - * -34.401287 sech - ^ x0 -1.451376 2.999282 x1

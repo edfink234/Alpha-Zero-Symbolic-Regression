@@ -435,18 +435,18 @@ def test_visualize():
             os.system(f"open -a Safari {file_name}.pdf")
     else:
         pn_to_rpn = False
-        rpn_to_pn = False
+        rpn_to_pn = True
         if pn_to_rpn:
-            prefix_expr = "* + / - 5.328961 x0 + x0 -0.061502 / - -65.349129 4 + 2.808768 x0 ^ ^ / x0 1.029451 ^ x0 -0.795056 cos ^ 8.466708 x0"
+            prefix_expr = "* -33.592482 sech - ^ x0 -1.437280 2.959833"
             print(prefix_to_postfix(prefix_expr))
         elif rpn_to_pn:
-            postfix_expr = "4 8.785262 + x0 -0.061502 + / 0.985492 x0 - x0 0.285370 ^ - * x0 0.962481 * x0 -0.798924 ^ ^ 8.423532 x0 ^ cos ^ *"
+            postfix_expr = "-34.250808 x0 -1.444583 ^ 2.980212 - sech *"
             print(postfix_to_prefix(postfix_expr))
         else:
-            expression_type_to_plot = ["prefix", "postfix"][1]
+            expression_type_to_plot = ["prefix", "postfix"][0]
             completeTree = [True, False][1]
             if expression_type_to_plot == "prefix":
-                complete_pn_expr = "* * / 12.785252 + s -0.061502 - - 0.985492 s ^ s 0.285370 ^ ^ * s 0.962481 ^ s -0.798924 cos ^ 8.423473 s"
+                complete_pn_expr = "* -33.592482 sech - / -1.847774 x0 -3.913332"
                 if completeTree:
                     complete_pn_expr = complete_tree(complete_pn_expr.split(), "prefix") #returns a list
                 else:
