@@ -434,13 +434,13 @@ def test_visualize():
             os.system(f"open -a Xcode {file_name}.tex")
             os.system(f"open -a Safari {file_name}.pdf")
     else:
-        pn_to_rpn = False
-        rpn_to_pn = True
+        pn_to_rpn = True
+        rpn_to_pn = False
         if pn_to_rpn:
-            prefix_expr = "* -33.592482 sech - ^ x0 -1.437280 2.959833"
+            prefix_expr = "* -34.476845 sech - ^ x0 -1.451376 2.999282"
             print(prefix_to_postfix(prefix_expr))
         elif rpn_to_pn:
-            postfix_expr = "-34.250808 x0 -1.444583 ^ 2.980212 - sech *"
+            postfix_expr = "4 8.785262 + x0 -0.061502 + / 0.985492 x0 - x0 0.285370 ^ - * x0 0.962481 * x0 -0.798924 ^ ^ 8.423532 x0 ^ cos ^ *"
             print(postfix_to_prefix(postfix_expr))
         else:
             expression_type_to_plot = ["prefix", "postfix"][0]
