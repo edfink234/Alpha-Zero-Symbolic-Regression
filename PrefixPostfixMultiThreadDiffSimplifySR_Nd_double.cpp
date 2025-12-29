@@ -6702,10 +6702,10 @@ std::vector<std::vector<std::string>> WierdTrackFitter(Board& x, bool fit)
             Best expression = (((12.785252 / (x0 + -0.061502)) * ((0.985492 - x0) - (x0 ^ 0.285370))) * (((x0 * 0.962481) ^ (x0 ^ -0.798924)) ^ cos((8.423473 ^ x0))))
             Best expression (original format) = * * / 12.785252 + x0 -0.061502 - - 0.985492 x0 ^ x0 0.285370 ^ ^ * x0 0.962481 ^ x0 -0.798924 cos ^ 8.423473 x0
         depth = 4, maxsize = 9:
-            Best score = 0.00110914, SNE = 900.599
-            Squared-norm error for each equation: 900.599
-            Best expression = (-34.520199 * sech(((x0 ^ -1.452675) - 3.002942)))
-            Best expression (original format) = -34.520199 x0 -1.452675 ^ 3.002942 - sech *
+            Best score = 0.00110916, SNE = 900.583
+            Squared-norm error for each equation: 900.583
+            Best expression = (-34.520199 * sech((sqrt(9.030267) - (x0 ^ -1.453420))))
+            Best expression (original format) = -34.520199 9.030267 sqrt x0 -1.453420 ^ - sech *
 
      */
     thread_local std::vector<std::vector<std::string>> results(x.num_diff_eqns);
@@ -8135,12 +8135,12 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
     /*
-     Best score = 7.86366e-05, SNE = 12715.7
-     Squared-norm error for each equation: 12701.8 13.8723 0
-     Best expression = (((((10.35319 ^ (0.010000 + x0)) * 2.717825964282383e-13) + 0.7081941989561602) - (((0.9999500004166653 ^ (x0 ^ 4)) * (sin(x1) * 0.9999500004166652)) * (0.9989466681769272 * (sin(x0) * 0.9999500004166653)))) - ((((6.28319 + (4 + x1)) / -10.83772233983162) * 0.01946790112042305) + (((x0 / (x0 + 2)) ^ ((x0 + 0.010000) + 6.343189999999999)) + 0.08395124401384103)))
-     Best expression (original format) = 10.35319 0.010000 x0 + ^ 2.717825964282383e-13 * 0.7081941989561602 + 0.9999500004166653 x0 4 ^ ^ x1 sin 0.9999500004166652 * * 0.9989466681769272 x0 sin 0.9999500004166653 * * * - 6.28319 4 x1 + + -10.83772233983162 / 0.01946790112042305 * x0 x0 2 + / x0 0.010000 + 6.343189999999999 + ^ 0.08395124401384103 + + -
+     Best score = 7.86433e-05, SNE = 12714.6
+     Squared-norm error for each equation: 12703.1 11.5679 0
+     Best expression = (((((10.36319 ^ (0.010000 + x0)) * 2.717825964282383e-13) + 0.7081941989561602) - (((0.9999500004166652 ^ (x0 ^ 4)) * (sin(x1) * 0.9999500004166652)) * (0.9989466681769272 * (sin(x0) * 0.9999500004166652)))) - ((((6.28319 + (x1 + 6.283190)) / -11.83772233983162) * 0.0194179015370882) + (((x0 / (x0 + 2)) ^ ((x0 + 0.010000) + 6.343189999999999)) + 0.08395124401384103)))
+     Best expression (original format) = 10.36319 0.010000 x0 + ^ 2.717825964282383e-13 * 0.7081941989561602 + 0.9999500004166652 x0 4 ^ ^ x1 sin 0.9999500004166652 * * 0.9989466681769272 x0 sin 0.9999500004166652 * * * - 6.28319 x1 6.283190 + + -11.83772233983162 / 0.0194179015370882 * x0 x0 2 + / x0 0.010000 + 6.343189999999999 + ^ 0.08395124401384103 + + -
      ```
-x = "(((((10.33319 ^ (0.010000 + x0)) * 2.717825964282383e-13) + 0.7066026507139457) - (((0.9999500020832486 ^ (x0 ^ 4)) * (sin(x1) * 0.9999500004166652)) * (0.9989466681769272 * (sin(x0) * 0.9999999958776928)))) - ((((6.28319 + (2 + x1)) / -9.306852819440055) * 0.019517900287111912) + (((x0 / (x0 + 2)) ^ ((x0 + 0.010000) + 6.333189999999999)) + 0.08386044415450322)))"
+x = "(((((10.36319 ^ (0.010000 + x0)) * 2.717825964282383e-13) + 0.7081941989561602) - (((0.9999500004166652 ^ (x0 ^ 4)) * (sin(x1) * 0.9999500004166652)) * (0.9989466681769272 * (sin(x0) * 0.9999500004166652)))) - ((((6.28319 + (x1 + 6.283190)) / -11.83772233983162) * 0.0194179015370882) + (((x0 / (x0 + 2)) ^ ((x0 + 0.010000) + 6.343189999999999)) + 0.08395124401384103)))"
 print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-"))
      */
     
@@ -10498,7 +10498,7 @@ namespace ExampleProblems
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "SwiftHohenbergBest.txt", //"" /*filename to save current best expression found (instead of outputting them to standard out*/
                 {}, /*optional max-sizes of each of the expressions in the generated solution*/
-                {split("10.35319 0.010000 x0 + ^ 2.717825964282383e-13 * 0.7081941989561602 + 0.9999500004166653 x0 4 ^ ^ x1 sin 0.9999500004166652 * * 0.9989466681769272 x0 sin 0.9999500004166653 * * * - 6.28319 4 x1 + + -10.83772233983162 / 0.01946790112042305 * x0 x0 2 + / x0 0.010000 + 6.343189999999999 + ^ 0.08395124401384103 + + -")} /*seed expressions*/,
+                {split("10.36319 0.010000 x0 + ^ 2.717825964282383e-13 * 0.7081941989561602 + 0.9999500004166652 x0 4 ^ ^ x1 sin 0.9999500004166652 * * 0.9989466681769272 x0 sin 0.9999500004166652 * * * - 6.28319 x1 6.283190 + + -11.83772233983162 / 0.0194179015370882 * x0 x0 2 + / x0 0.010000 + 6.343189999999999 + ^ 0.08395124401384103 + + -")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
@@ -10791,7 +10791,7 @@ namespace ExampleProblems
             {
                 "* * / * 2 6.392626 + x0 -0.061502 - - 0.985492 x0 ^ x0 0.285370 ^ ^ * x0 0.962481 ^ x0 -0.798924 cos ^ 8.423473 x0",
                 "-15.251 x0 tanh 9.222 x0 * sin ^ *",
-                "-34.520199 x0 -1.452675 ^ 3.002942 - sech *"
+                "-34.520199 9.030267 sqrt x0 -1.453420 ^ - sech *"
             }[2]
         };
         std::cout << "seed_exprs[" << track_idx << "] = {" << seed_exprs[track_idx] << "}\n";
@@ -10930,7 +10930,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
     
-    ProblemOption choice = ProblemOption::WierdTrackFitter;
+    ProblemOption choice = ProblemOption::SwiftHohenberg;
     switch (choice)
     {
         case ProblemOption::SwiftHohenberg:

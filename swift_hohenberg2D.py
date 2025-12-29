@@ -45,10 +45,15 @@ f = None
 if GENERIC:
     f = Function('f')(r, theta)
 else:
-    f =  [(((((10.33319 ** (0.010000 + r)) * 2.717825964282383e-13) + 0.7066026507139457) - (((0.9999500020832486 ** (r ** 4)) * (sin(theta) * 0.9999500004166652)) * (0.9989466681769272 * (sin(r) * 0.9999999958776928)))) - ((((6.28319 + (2 + theta)) / -9.306852819440055) * 0.019517900287111912) + (((r / (r + 2)) ** ((r + 0.010000) + 6.333189999999999)) + 0.08386044415450322))), sin(r)*sin(theta)+0.604, sin(r)*sin(theta)][0] \
+    f =  [-0.998846776839887*0.999950000416665**(r**4)*sin(r)*sin(theta) + 2.71782596428238e-13*10.36319**(r + 0.01) + 0.00164034101997398*theta - (r/(r + 2))**(r + 6.35319) + 0.6448561035289, sin(r)*sin(theta)+0.604, sin(r)*sin(theta)][0] \
         if PERIODIC_IN_THETA else \
         (((0.148475282221305 * theta) - (sin(theta) * (1.0000132758892615 * sin(r)))) - 0.0922858190550785)
 
+#-0.998846776839887*0.999950000416665**(r**4)*sin(r)*sin(theta) + 2.71782596428238e-13*10.36319**(r + 0.01) + 0.00164034101997398*theta - (r/(r + 2))**(r + 6.35319) + 0.6448561035289
+#A(r)*f(r,theta) + const + hoc. (higher-order corrections)
+
+
+print(f"f = {f}\n")
 latex_f = sp.latex(f)
 latex_f = latex_f.replace(r"(r", r"(\sqrt{x^2 + y^2}")
 latex_f = latex_f.replace(r"\theta", r"\arctan{\dfrac{y}{x}}")
@@ -62,7 +67,7 @@ double_laplacian_f = diff(laplacian_f, r, 2) + (1/r) * diff(laplacian_f, r) + (1
 
 swift_hohenberg = mu*f + nu*f*f - f*f*f - (f + 2*laplacian_f + double_laplacian_f)
 
-print(f"swift_hohenberg = {str(swift_hohenberg.evalf()).replace('r','r_val').replace('theta', 'theta_val')}")
+print(f"swift_hohenberg = {str(swift_hohenberg.evalf()).replace('r','r_val').replace('theta', 'theta_val')}\n")
 
 # print(*swift_hohenberg.args, sep="\n")
 r_vals, theta_vals = [None]*2
