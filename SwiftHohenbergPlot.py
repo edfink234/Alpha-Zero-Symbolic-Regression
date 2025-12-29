@@ -11,10 +11,10 @@ PlotType = "2D"
 # Create edges instead of centers
 N = 331
 r_edges = np.linspace(0.01, 10, N)
-theta_edges = np.linspace(0, 2*np.pi, N)
+theta_edges = np.linspace(0, 2*np.pi, N, endpoint=False)
 
 round_floats = lambda expr, ndigits: expr.xreplace({f: Float(round(float(f), ndigits)) for f in expr.atoms(Float)})
-f_per_idx = 2
+f_per_idx = 1
 
 r, theta = symbols('r theta')
 f =  [-0.998846776839887*0.999950000416665**(r**4)*sin(r)*sin(theta) + 2.71782596428238e-13*10.36319**(r + 0.01) + 0.00164034101997398*theta - (r/(r + 2))**(r + 6.35319) + 0.6448561035289, sin(r)*sin(theta)+0.604, sin(r)*sin(theta)][f_per_idx] \
@@ -60,13 +60,17 @@ else:
     vmin, vmax = -2.0, 2.0
     levels = np.linspace(vmin, vmax, 100)
 
+    # Close the periodic seam in theta for plotting
+    Xc = np.vstack([X, X[0:1, :]])
+    Yc = np.vstack([Y, Y[0:1, :]])
+    Zc = np.vstack([Z, Z[0:1, :]])
+
     contour = ax.contourf(
-        X, Y, Z,
+        Xc, Yc, Zc,
         cmap="viridis",
-        vmin=vmin,
-        vmax=vmax,
-        levels = levels,
-        extend = "both" # shows out-of-range values correctly
+        vmin=vmin, vmax=vmax,
+        levels=levels,
+        extend="both"
     )
 
     ax.set_xlabel("x")
