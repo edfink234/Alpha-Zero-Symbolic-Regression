@@ -434,7 +434,7 @@ def test_visualize():
             os.system(f"open -a Xcode {file_name}.tex")
             os.system(f"open -a Safari {file_name}.pdf")
     else:
-        pn_to_rpn = True
+        pn_to_rpn = False
         rpn_to_pn = False
         if pn_to_rpn:
             prefix_expr = "* -34.476845 sech - ^ x0 -1.451376 2.999282"
@@ -443,7 +443,7 @@ def test_visualize():
             postfix_expr = "4 8.785262 + x0 -0.061502 + / 0.985492 x0 - x0 0.285370 ^ - * x0 0.962481 * x0 -0.798924 ^ ^ 8.423532 x0 ^ cos ^ *"
             print(postfix_to_prefix(postfix_expr))
         else:
-            expression_type_to_plot = ["prefix", "postfix"][0]
+            expression_type_to_plot = ["prefix", "postfix"][1]
             completeTree = [True, False][1]
             if expression_type_to_plot == "prefix":
                 complete_pn_expr = "* -33.592482 sech - / -1.847774 x0 -3.913332"
@@ -455,7 +455,7 @@ def test_visualize():
                 plot_pn_expression_tree(complete_pn_expr, save = save, include_expression_in_title = False)
 
             else:
-                complete_rpn_expr = "-15.251 s tanh 9.222 s * sin ^ *"
+                complete_rpn_expr = "4 x0 0.077712 / cos ~ *"
                 if completeTree:
                     complete_rpn_expr = complete_tree(complete_rpn_expr.split(), "postfix") #returns a list
                 else:

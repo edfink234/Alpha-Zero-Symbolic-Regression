@@ -763,7 +763,7 @@ public:
     }
 
     const Eigen::VectorXd& operator[] (int i){return rows[i];}
-    const Eigen::VectorXd& operator[] (const std::string& i)
+    Eigen::VectorXd& operator[] (const std::string& i)
     {
         return features[i];
     }
@@ -936,7 +936,7 @@ struct Board
     std::string expression_type, expression_string;
     size_t num_consts_diff;
     static std::mutex inline thread_locker; //static because it needs to protect static members
-    std::vector<std::vector<std::string>> pieces, temp_pieces; // Create the empty expression list and a backup
+    std::vector<std::vector<std::string>> pieces, temp_pieces; // Create the empty expression list and backup
     std::vector<std::string> derivat;// Vector to store the derivative.
     bool visualize_exploration, is_primary;
     std::vector<std::vector<std::string>> (*diffeq)(Board&, bool); //differential equation we want to solve
@@ -948,6 +948,7 @@ struct Board
     std::vector<std::vector<std::string>> customFeatures;
     bool complete_Tree;
     std::vector<int> maxSize; //max size (number of tokens) for each expression
+    std::vector<std::vector<std::string>> additiveCorrections; //Starting-point, s.t candidate-expression += additiveCorrections (user-implemented though)
 
     Board(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
           size_t num_diff_eqns,
@@ -969,11 +970,13 @@ struct Board
           bool must_have_all_features = true,
           const std::vector<std::vector<std::string>>& custom_features = {},
           std::vector<int> max_size = {},
+          const std::vector<std::vector<std::string>>& additive_corrections = {},
           bool completeTree = false) :
-          gen{rd()}, vel_dist{-1.0, 1.0}, pos_dist{0.0, 1.0}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, n{depth}, is_primary{primary}, simplify_original{simplifyOriginal}, mustHaveAllFeatures{must_have_all_features}, customFeatures{custom_features}, complete_Tree{completeTree}, maxSize{max_size}
+          gen{rd()}, vel_dist{-1.0, 1.0}, pos_dist{0.0, 1.0}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, n{depth}, is_primary{primary}, simplify_original{simplifyOriginal}, mustHaveAllFeatures{must_have_all_features}, customFeatures{custom_features}, complete_Tree{completeTree}, maxSize{max_size}, additiveCorrections{additive_corrections}
     {
         assert(n.size());
-        assert(((!maxSize.size()) || (maxSize.size() && maxSize.size() == n.size())) && "if maxSize is not empty it much be equal in size to the depth-vector `n`");
+        assert(((!maxSize.size()) || (maxSize.size() && maxSize.size() == n.size())) && "if `maxSize` is not empty it much be equal in size to the depth-vector `n`");
+        assert(((!additiveCorrections.size()) || (additiveCorrections.size() && additiveCorrections.size() == n.size())) && "if `additiveCorrections` is not empty it much be equal in size to the depth-vector `n`");
         this->num_objectives = n.size();
         int max_n = n[0];
         int counter = 0;
@@ -6708,8 +6711,41 @@ std::vector<std::vector<std::string>> WierdTrackFitter(Board& x, bool fit)
             Best expression (original format) = -34.520199 9.030267 sqrt x0 -1.453420 ^ - sech *
 
      */
+    const thread_local bool add_aditive = x.additiveCorrections.size();
+    static bool added_aditive = false;
     thread_local std::vector<std::vector<std::string>> results(x.num_diff_eqns);
     assert(x.num_diff_eqns == 1);
+    if (add_aditive)
+    {
+        std::scoped_lock str_lock(Board::thread_locker);
+        if (!added_aditive)
+        {
+            if (x.expression_type == "prefix")
+            {
+                //- x1 additiveCorrections
+                results[0].push_back("-"); // -
+                results[0].push_back("x1"); // x1
+                for (const std::string& i: x.additiveCorrections[0]) // additiveCorrections
+                {
+                    results[0].push_back(i);
+                }
+            }
+            else if (x.expression_type == "postfix")
+            {
+                //x1 additiveCorrections -
+                results[0].push_back("x1"); // x1
+                for (const std::string& i: x.additiveCorrections[0]) // additiveCorrections
+                {
+                    results[0].push_back(i);
+                }
+                results[0].push_back("-"); // -
+            }
+            Board::data["x1"] = x.expression_evaluator(x.params, results[0]);
+            added_aditive = true;
+            results[0].clear();
+        }
+    }
+
     for (std::vector<std::string>& res: results)
     {
         res.clear();
@@ -8135,10 +8171,10 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
     /*
-     Best score = 7.86433e-05, SNE = 12714.6
-     Squared-norm error for each equation: 12703.1 11.5679 0
-     Best expression = (((((10.36319 ^ (0.010000 + x0)) * 2.717825964282383e-13) + 0.7081941989561602) - (((0.9999500004166652 ^ (x0 ^ 4)) * (sin(x1) * 0.9999500004166652)) * (0.9989466681769272 * (sin(x0) * 0.9999500004166652)))) - ((((6.28319 + (x1 + 6.283190)) / -11.83772233983162) * 0.0194179015370882) + (((x0 / (x0 + 2)) ^ ((x0 + 0.010000) + 6.343189999999999)) + 0.08395124401384103)))
-     Best expression (original format) = 10.36319 0.010000 x0 + ^ 2.717825964282383e-13 * 0.7081941989561602 + 0.9999500004166652 x0 4 ^ ^ x1 sin 0.9999500004166652 * * 0.9989466681769272 x0 sin 0.9999500004166652 * * * - 6.28319 x1 6.283190 + + -11.83772233983162 / 0.0194179015370882 * x0 x0 2 + / x0 0.010000 + 6.343189999999999 + ^ 0.08395124401384103 + + -
+     Best score = 7.87531e-05, SNE = 12696.9
+     Squared-norm error for each equation: 12685.4 11.5084 0
+     Best expression = ((((((1 + x0) ^ 11) * 2.717825964282383e-13) + 0.7081941989561602) - (((0.9999500004166652 ^ (x0 ^ 4)) * (sin(x1) * 0.9999500004166652)) * (0.9989466681769272 * (sin(x0) * 0.9999500004166652)))) - ((((5 + (x1 + 4)) / -11.83772233983162) * 0.01936790070373252) + (((x0 / (x0 + 2)) ^ ((x0 + 0.010000) + 6.343189999999999)) + 0.08395124401384103)))
+     Best expression (original format) = 1 x0 + 11 ^ 2.717825964282383e-13 * 0.7081941989561602 + 0.9999500004166652 x0 4 ^ ^ x1 sin 0.9999500004166652 * * 0.9989466681769272 x0 sin 0.9999500004166652 * * * - 5 x1 4 + + -11.83772233983162 / 0.01936790070373252 * x0 x0 2 + / x0 0.010000 + 6.343189999999999 + ^ 0.08395124401384103 + + -
      ```
 x = "(((((10.36319 ^ (0.010000 + x0)) * 2.717825964282383e-13) + 0.7081941989561602) - (((0.9999500004166652 ^ (x0 ^ 4)) * (sin(x1) * 0.9999500004166652)) * (0.9989466681769272 * (sin(x0) * 0.9999500004166652)))) - ((((6.28319 + (x1 + 6.283190)) / -11.83772233983162) * 0.0194179015370882) + (((x0 / (x0 + 2)) ^ ((x0 + 0.010000) + 6.343189999999999)) + 0.08395124401384103)))"
 print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-"))
@@ -8955,6 +8991,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                         const std::vector<std::vector<std::string>>& custom_features = {},
                         const std::string& bestExpressionFileName = "",
                         const std::vector<int>& maxSize = {},
+                        const std::vector<std::vector<std::string>>& additive_corrections = {},
                         const std::vector<std::vector<std::string>>& seed_expressions = {},
                         bool exit_early = false,
                         int custom_rand_seed = -1,
@@ -9013,7 +9050,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
     /*
      Inside of thread:
      */
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &custom_features, &seed_expressions, &exit_early, &custom_rand_seed, &T_min, &T_max, &temp_func, &completeTree, &pert_sub_array, &best_SNE, &best_sne_vec, &bestExpressionFileName, &maxSize, &outFile, &out]()
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &custom_features, &seed_expressions, &exit_early, &custom_rand_seed, &T_min, &T_max, &temp_func, &completeTree, &pert_sub_array, &best_SNE, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &outFile, &out]()
     {
         std::random_device rand_dev;
         #if RANDOM_SEED < 0
@@ -9026,9 +9063,9 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
         {
             generator.seed(custom_rand_seed);
         }
-        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols, mustHaveAllFeatures, custom_features, maxSize, completeTree);
+        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols, mustHaveAllFeatures, custom_features, maxSize, additive_corrections, completeTree);
         sync_point.arrive_and_wait();
-        Board secondary(diffeq, num_diff_eqns, false, std::vector<int>(depth.size(), 0), expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols, mustHaveAllFeatures, custom_features, maxSize, completeTree); //For perturbations
+        Board secondary(diffeq, num_diff_eqns, false, std::vector<int>(depth.size(), 0), expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols, mustHaveAllFeatures, custom_features, maxSize, additive_corrections, completeTree); //For perturbations
         assert(secondary.pieces.size() == secondary.n.size());
         assert(secondary.pieces.size() == x.pieces.size());
         assert(secondary.pieces.size() == x.n.size());
@@ -10290,7 +10327,8 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
                   bool mustHaveAllFeatures = true,
                   const std::vector<std::vector<std::string>>& custom_features = {},
                   const std::string& bestExpressionFileName = "",
-                  const std::vector<int>& maxSize = {})
+                  const std::vector<int>& maxSize = {},
+                  const std::vector<std::vector<std::string>>& additive_corrections = {})
 {
     if (num_threads == 0)
     {
@@ -10318,12 +10356,12 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
      Inside of thread:
      */
 
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &use_const_pieces, &numDataCols, &mustHaveAllFeatures, &custom_features, &isConstTol, &best_SNE, &best_sne_vec, &bestExpressionFileName, &maxSize, &outFile, &out]()
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &use_const_pieces, &numDataCols, &mustHaveAllFeatures, &custom_features, &isConstTol, &best_SNE, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &outFile, &out]()
     {
         std::random_device rand_dev;
         std::mt19937 thread_local generator(rand_dev()); // Mersenne Twister random number generator
 
-        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, true, numDataCols, mustHaveAllFeatures, custom_features, maxSize);
+        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, true, numDataCols, mustHaveAllFeatures, custom_features, maxSize, additive_corrections);
 
         sync_point.arrive_and_wait();
         double score = 0.0;
@@ -10473,7 +10511,8 @@ namespace ExampleProblems
                          true /*whether or not to include ALL of the features in all of the generated expressions*/,
                          {} /*custom features that the SR-found equations are required to contain*/,
                          "" /*filename to save current best expression found (instead of outputting them to standard out*/,
-                         {} /*optional max-sizes of each of the expressions in the generated solution*/);
+                         {} /*optional max-sizes of each of the expressions in the generated solution*/,
+                         {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/);
         }
         else
         {
@@ -10497,8 +10536,9 @@ namespace ExampleProblems
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "SwiftHohenbergBest.txt", //"" /*filename to save current best expression found (instead of outputting them to standard out*/
-                {}, /*optional max-sizes of each of the expressions in the generated solution*/
-                {split("10.36319 0.010000 x0 + ^ 2.717825964282383e-13 * 0.7081941989561602 + 0.9999500004166652 x0 4 ^ ^ x1 sin 0.9999500004166652 * * 0.9989466681769272 x0 sin 0.9999500004166652 * * * - 6.28319 x1 6.283190 + + -11.83772233983162 / 0.0194179015370882 * x0 x0 2 + / x0 0.010000 + 6.343189999999999 + ^ 0.08395124401384103 + + -")} /*seed expressions*/,
+                {} /*optional max-sizes of each of the expressions in the generated solution*/,
+                {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
+                {split("1 x0 + 11 ^ 2.717825964282383e-13 * 0.7081941989561602 + 0.9999500004166652 x0 4 ^ ^ x1 sin 0.9999500004166652 * * 0.9989466681769272 x0 sin 0.9999500004166652 * * * - 5 x1 4 + + -11.83772233983162 / 0.01936790070373252 * x0 x0 2 + / x0 0.010000 + 6.343189999999999 + ^ 0.08395124401384103 + + -")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
@@ -10535,7 +10575,8 @@ namespace ExampleProblems
                          true /*whether or not to include ALL of the features in all of the generated expressions*/,
                          {} /*custom features that the SR-found equations are required to contain*/,
                          "", // "vortexTest.txt" /*filename to save current best expression found (instead of outputting them to standard out*/
-                         {} /*optional max-sizes of each of the expressions in the generated solution*/);
+                         {} /*optional max-sizes of each of the expressions in the generated solution*/,
+                         {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/);
         }
         else
         {
@@ -10560,6 +10601,7 @@ namespace ExampleProblems
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "" /*filename to save current best expression found (instead of outputting them to standard out)*/,
                 {} /*optional max-sizes of each of the expressions in the generated solution*/,
+                {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 {} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -10599,7 +10641,8 @@ namespace ExampleProblems
                  true /*whether or not to include ALL of the features in all of the generated expressions*/,
                  {} /*custom features that the SR-found equations are required to contain*/,
                  "" /*filename to save current best expression found (instead of outputting them to standard out)*/,
-                 {} /*optional max-sizes of each of the expressions in the generated solution*/);
+                 {} /*optional max-sizes of each of the expressions in the generated solution*/,
+                 {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/);
         }
         else
         {
@@ -10624,6 +10667,7 @@ namespace ExampleProblems
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "" /*filename to save current best expression found (instead of outputting them to standard out)*/,
                 {} /*optional max-sizes of each of the expressions in the generated solution*/,
+                {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 {split("x0 sech tanh tanh 0 0 + 0 -6.4342880000000005 + + x0 tanh 0 2.61657 + / - /"), split("0 0 + 0 -3.2171440000000002 + + x0 sech 0 0.9640275800758169 + ^ * sech")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -10672,7 +10716,8 @@ namespace ExampleProblems
                  false /*whether or not to include ALL of the features in all of the generated expressions*/,
                  {} /*custom features that the SR-found equations are required to contain*/,
                  "" /*filename to save current best expression found (instead of outputting them to standard out)*/,
-                 {} /*optional max-sizes of each of the expressions in the generated solution*/);
+                 {} /*optional max-sizes of each of the expressions in the generated solution*/,
+                 {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/);
         }
         else
         {
@@ -10697,6 +10742,7 @@ namespace ExampleProblems
                 {{"x23", "x24", "x25"}} /*custom features that the SR-found equations are required to contain*/,
                 "",// "BestNextDayFire.txt" /*filename to save current best expression found (instead of outputting them to standard out)*/,
                 {} /*optional max-sizes of each of the expressions in the generated solution*/,
+                {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 {split("-2.640000 0.051731 x7 sqrt x15 8.000000 - - / / -1803.016571 x21 36.293228 x0 * * x17 -843.000000 + x15 15893.000000 + + + + x6 x19 -100.000000 x8 + - / x14 -211800 / x15 + + / - x18 x24 - x2 x7 x0 1684.200012 - - + - + -7.446376466569234 -3.225653 x6 8.800000 - + -508 + -0.9081765689798138 38.000000 x16 sin / * + + x1 x0 - 0.0007699998478223693 + -16.82119949898502 + x0 x15 ^ -100 + -279.200012 -2.640000 x16 / + + + -28.995355508740936 + + -88.959518 1.000000 88.856491 x1 / / * -2118 x8 2118.000000 - x22 ~ + + + 0.00077 x5 + * 25.400000 x20 1.0021072170678698 / ^ 15893.000000 x22 x8 + + x1 -1405.000000 - 15666.000000 x24 + + + + x0 x25 + 16.000000 x23 + 9736 - / ~ / - + *")} /*seed expressions*/,
                 validation /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -10744,7 +10790,8 @@ namespace ExampleProblems
                  false /*whether or not to include ALL of the features in all of the generated expressions*/,
                  {{"x100", "x101"}} /*custom features that the SR-found equations are required to contain*/,
                  "" /*filename to save current best expression found (instead of outputting them to standard out)*/,
-                 {} /*optional max-sizes of each of the expressions in the generated solution*/);
+                 {} /*optional max-sizes of each of the expressions in the generated solution*/,
+                 {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/);
         }
         else
         {
@@ -10769,6 +10816,7 @@ namespace ExampleProblems
                 {{"x100", "x101"}} /*custom features that the SR-found equations are required to contain*/,
                 "", //"BestInpaint.txt" /*filename to save current best expression found (instead of outputting them to standard out)*/
                 {} /*optional max-sizes of each of the expressions in the generated solution*/,
+                {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 {split("/ + * + + ln cos x46 + + 0 0 + 0 -3.4799761065034414 + * + 0 x95 + 0 1.620943 + + 0 x95 ~ x48 ~ ^ + cos x41 + 0 52.64009483497598 - + 0 2.7907071011403315 cos x93 + ^ + * + 0 3.1585732538600397 ^ x12 x54 + cos x21 + 0.365382 x13 + ~ + 0 x20 + + 0 0 + 0 1.5729403267948965 * + + + 0 0 + 0 0 + + 0 0 + 0 x3 sqrt + + 0 0 + 0 x48 - + / - + + 0 0 + 0 0.9867622178470573 - - 7169.463400 x100 * x17 11181230.000000 + acos tanh x23 + + 0 0 + 0 57.67636600070402 sin + + + 0 0 + 0 -2.884980 + + 0 0 + 0 x50 - sqrt ^ ^ + 0 x17 + 0 x59 + + 0 x71 ~ x87 ^ + + + 0 0 + 0 0 + + 0 0 + 0 0.9910929232006058 * + + 0 0 + 0 -4.0405169999999995 * - x61 x101 + 0 -0.04344899097047564")} /*seed expressions*/,
                 validation /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -10780,8 +10828,9 @@ namespace ExampleProblems
                 false /*whether to perturb sub-arrays (true) of the current expression-vector or sub-trees (false)*/);
         }
     }
+
     void WierdTrackFitterTest(int random_seed, const char* algorithm, double time)
-{
+    {
         double threshold = 0.0;
         int track_idx = 0;
         constexpr const char* file_path[] = {"/Users/edwardfinkelstein/SDSU_UCI/WhitesonResearch/TrackProject/stubborn_track_csvs/event100000003-hits_Z.csv"};
@@ -10791,7 +10840,9 @@ namespace ExampleProblems
             {
                 "* * / * 2 6.392626 + x0 -0.061502 - - 0.985492 x0 ^ x0 0.285370 ^ ^ * x0 0.962481 ^ x0 -0.798924 cos ^ 8.423473 x0",
                 "-15.251 x0 tanh 9.222 x0 * sin ^ *",
-                "-34.520199 9.030267 sqrt x0 -1.453420 ^ - sech *"
+                "-34.520199 9.030267 sqrt x0 -1.453420 ^ - sech *",
+                "-34.520199 9.030267 sqrt x0 -1.453420 ^ - sech * 4 x0 0.077712 / cos ~ * +",
+                "",
             }[2]
         };
         std::cout << "seed_exprs[" << track_idx << "] = {" << seed_exprs[track_idx] << "}\n";
@@ -10803,7 +10854,7 @@ namespace ExampleProblems
                 1 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
                 std::vector<int>{4} /*fixed depths of generated solution*/,
-                "prefix" /*expression representation*/,
+                "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
                 5 /*number of fit iterations*/,
@@ -10818,7 +10869,8 @@ namespace ExampleProblems
                  false /*whether or not to include ALL of the features in all of the generated expressions*/,
                  {} /*custom features that the SR-found equations are required to contain*/,
                  "WierdTrackSR.txt", // "" /*filename to save current best expression found (instead of outputting them to standard out)*/,
-                 std::vector<int>{9} /*optional max-sizes of each of the expressions in the generated solution*/);
+                 std::vector<int>{9} /*optional max-sizes of each of the expressions in the generated solution*/,
+                 {split(seed_exprs[track_idx])} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/);
         }
         else
         {
@@ -10843,7 +10895,8 @@ namespace ExampleProblems
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "WierdTrackSR.txt", // "" /*filename to save current best expression found (instead of outputting them to standard out)*/
                 std::vector<int>{9} /*optional max-sizes of each of the expressions in the generated solution*/,
-                {split(seed_exprs[track_idx])} /*seed expressions*/,
+                {split(seed_exprs[track_idx])} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
+                {split("14.274662 x0 49.192020 * 9.309156 - sech *")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
@@ -10930,7 +10983,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
     
-    ProblemOption choice = ProblemOption::SwiftHohenberg;
+    ProblemOption choice = ProblemOption::WierdTrackFitter;
     switch (choice)
     {
         case ProblemOption::SwiftHohenberg:
