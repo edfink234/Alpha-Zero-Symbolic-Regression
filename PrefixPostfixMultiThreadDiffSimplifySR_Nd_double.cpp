@@ -6709,6 +6709,11 @@ std::vector<std::vector<std::string>> WierdTrackFitter(Board& x, bool fit)
             Squared-norm error for each equation: 900.583
             Best expression = (-34.520199 * sech((sqrt(9.030267) - (x0 ^ -1.453420))))
             Best expression (original format) = -34.520199 9.030267 sqrt x0 -1.453420 ^ - sech *
+        depth = 5, maxsize = 17:
+            Best score = 0.00404544, SNE = 246.192
+            Squared-norm error for each equation: 246.192
+            Best expression = ((-155.360414 + (173.748591 * sin((1.023357 + x0)))) - (53.555905 * sech(((-1.672608 / x0) - -3.543392))))
+            Best expression (original format) = -155.360414 173.748591 1.023357 x0 + sin * + 53.555905 -1.672608 x0 / -3.543392 - sech * -
 
      */
     const thread_local bool add_aditive = x.additiveCorrections.size();
@@ -10842,8 +10847,9 @@ namespace ExampleProblems
                 "-15.251 x0 tanh 9.222 x0 * sin ^ *",
                 "-34.520199 9.030267 sqrt x0 -1.453420 ^ - sech *",
                 "-34.520199 9.030267 sqrt x0 -1.453420 ^ - sech * 4 x0 0.077712 / cos ~ * +",
+                "* -34.520199 sech - sqrt 9.030267 ^ x0 -1.453420"
                 "",
-            }[2]
+            }[4]
         };
         std::cout << "seed_exprs[" << track_idx << "] = {" << seed_exprs[track_idx] << "}\n";
         Eigen::MatrixXd data = load_csv(file_path[track_idx], 61, 2, false /*no header in these `file_path` files*/);
@@ -10877,11 +10883,11 @@ namespace ExampleProblems
             SimulatedAnnealing(WierdTrackFitter /*differential equation to solve*/,
                 1 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{4} /*fixed depths of generated solution*/,
+                std::vector<int>{5} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
-                5 /*number of fit iterations*/,
+                500 /*number of fit iterations*/,
                 "naive_numerical" /*method for computing the gradient*/,
                 true /*cache*/,
                 time /*time to run the algorithm in seconds*/,
@@ -10894,17 +10900,17 @@ namespace ExampleProblems
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "WierdTrackSR.txt", // "" /*filename to save current best expression found (instead of outputting them to standard out)*/
-                std::vector<int>{9} /*optional max-sizes of each of the expressions in the generated solution*/,
-                {split(seed_exprs[track_idx])} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
-                {split("14.274662 x0 49.192020 * 9.309156 - sech *")} /*seed expressions*/,
+                std::vector<int>{17} /*optional max-sizes of each of the expressions in the generated solution*/,
+                {/*split(seed_exprs[track_idx])*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
+                {split("-154.064425 173.731539 10872.045205 x0 - sin * + -53.555905 1.578793 x0 / 3.321122 - sech * +")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
                 0.0 /*T_max*/,
-                [](double ratio, double t_val) -> double {return 0.9999;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
+                [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "WierdTrackSR.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                false /*whether to perturb sub-arrays (true) of the current expression-vector or sub-trees (false)*/);
+                true /*whether to perturb sub-arrays (true) of the current expression-vector or sub-trees (false)*/);
         }
     }
 };

@@ -437,30 +437,32 @@ def test_visualize():
         pn_to_rpn = False
         rpn_to_pn = False
         if pn_to_rpn:
-            prefix_expr = "* -34.476845 sech - ^ x0 -1.451376 2.999282"
+            prefix_expr = "+ + 2.470186 / cos * 12.904707 x0 -0.231952 * -34.520199 sech - / -1.672608 x0 -3.543392"
             print(prefix_to_postfix(prefix_expr))
         elif rpn_to_pn:
-            postfix_expr = "4 8.785262 + x0 -0.061502 + / 0.985492 x0 - x0 0.285370 ^ - * x0 0.962481 * x0 -0.798924 ^ ^ 8.423532 x0 ^ cos ^ *"
+            postfix_expr = "1.063081 12.904707 x0 * cos 0.231952 ~ / +"
             print(postfix_to_prefix(postfix_expr))
         else:
             expression_type_to_plot = ["prefix", "postfix"][1]
             completeTree = [True, False][1]
             if expression_type_to_plot == "prefix":
-                complete_pn_expr = "* -33.592482 sech - / -1.847774 x0 -3.913332"
+                complete_pn_expr = "+ + 2.470186 / cos * 12.904707 x0 -0.231952 * -34.520199 sech - / -1.672608 x0 -3.543392"
                 if completeTree:
                     complete_pn_expr = complete_tree(complete_pn_expr.split(), "prefix") #returns a list
                 else:
                     complete_pn_expr = complete_pn_expr.split()
                 print(f"complete_pn_expr = \n{' '.join(complete_pn_expr)}")
+                print(f"len(complete_pn_expr) = {len(complete_pn_expr)}")
                 plot_pn_expression_tree(complete_pn_expr, save = save, include_expression_in_title = False)
 
             else:
-                complete_rpn_expr = "4 x0 0.077712 / cos ~ *"
+                complete_rpn_expr = "-154.064425 173.731539 10872.045205 x0 - sin * + -53.555905 1.578793 x0 / 3.321122 - sech * +"
                 if completeTree:
                     complete_rpn_expr = complete_tree(complete_rpn_expr.split(), "postfix") #returns a list
                 else:
                     complete_rpn_expr = complete_rpn_expr.split()
                 print(f"complete_rpn_expr = \n{' '.join(complete_rpn_expr)}")
+                print(f"len(complete_rpn_expr) = {len(complete_rpn_expr)}")
                 plot_rpn_expression_tree(complete_rpn_expr, save = save, include_expression_in_title = False, title='')
 
 if __name__ == "__main__":
