@@ -6694,7 +6694,7 @@ std::vector<std::vector<std::string>> WierdTrackFitter(Board& x, bool fit)
 {
     /*
      '''
-     sech = lambda x: 1/np.cosh(x); x='(-34.520199 * sech(((x0 ^ -1.452675) - 3.002942)))'.replace("acos", "np.arccos").replace("cos", "np.cos").replace("^","**").replace("~", "-").replace("sin","np.sin").replace("sqrt","np.sqrt").replace("np.arcnp.cos", "np.arccos").replace("exp", "np.exp"); print(x); import sympy as sp; y = x.replace("np","sp").replace("arccos","acos"); print(y); x0 = sp.symbols("x0"); print(str(eval(y)).replace('cos','sp.cos').replace("x0","s"))
+import numpy as np; np.sech = lambda x: 1/np.cosh(x); x='((32.963733 / (2.007435 ^ cos((-7.438650 * x0)))) * (-0.629287 + sech(((x0 + -0.192839) / -0.089423))))'.replace("acos", "np.arccos").replace("cos", "np.cos").replace("^","**").replace("~", "-").replace("sin","np.sin").replace("sqrt","np.sqrt").replace("np.arcnp.cos", "np.arccos").replace("exp", "np.exp").replace("sech", "np.sech"); print(x); import sympy as sp; y = x.replace("np","sp").replace("arccos","acos"); print(y); x0 = sp.symbols("x0"); print(str(eval(y)).replace('cos','sp.cos').replace("x0","s").replace("sech","sp.sech"))
      
      '''
      
@@ -6710,10 +6710,10 @@ std::vector<std::vector<std::string>> WierdTrackFitter(Board& x, bool fit)
             Best expression = (-34.520199 * sech((sqrt(9.030267) - (x0 ^ -1.453420))))
             Best expression (original format) = -34.520199 9.030267 sqrt x0 -1.453420 ^ - sech *
         depth = 5, maxsize = 17:
-            Best score = 0.00404544, SNE = 246.192
-            Squared-norm error for each equation: 246.192
-            Best expression = ((-155.360414 + (173.748591 * sin((1.023357 + x0)))) - (53.555905 * sech(((-1.672608 / x0) - -3.543392))))
-            Best expression (original format) = -155.360414 173.748591 1.023357 x0 + sin * + 53.555905 -1.672608 x0 / -3.543392 - sech * -
+            Best score = 0.00844909, SNE = 117.356
+            Squared-norm error for each equation: 117.356
+            Best expression = ((32.963733 / (2.007435 ^ cos((-7.438650 * x0)))) * (-0.629287 + sech(((x0 + -0.192839) / -0.089423))))
+            Best expression (original format) = 32.963733 2.007435 -7.438650 x0 * cos ^ / -0.629287 x0 -0.192839 + -0.089423 / sech + *
 
      */
     const thread_local bool add_aditive = x.additiveCorrections.size();
@@ -10902,7 +10902,7 @@ namespace ExampleProblems
                 "WierdTrackSR.txt", // "" /*filename to save current best expression found (instead of outputting them to standard out)*/
                 std::vector<int>{17} /*optional max-sizes of each of the expressions in the generated solution*/,
                 {/*split(seed_exprs[track_idx])*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
-                {split("-154.064425 173.731539 10872.045205 x0 - sin * + -53.555905 1.578793 x0 / 3.321122 - sech * +")} /*seed expressions*/,
+                {split("32.963733 2.007435 -7.438650 x0 * cos ^ / -0.629287 x0 -0.192839 + -0.089423 / sech + *")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
@@ -10910,7 +10910,7 @@ namespace ExampleProblems
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "WierdTrackSR.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                true /*whether to perturb sub-arrays (true) of the current expression-vector or sub-trees (false)*/);
+                false /*whether to perturb sub-arrays (true) of the current expression-vector or sub-trees (false)*/);
         }
     }
 };

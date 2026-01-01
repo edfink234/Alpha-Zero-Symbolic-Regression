@@ -456,7 +456,7 @@ def test_visualize():
                 plot_pn_expression_tree(complete_pn_expr, save = save, include_expression_in_title = False)
 
             else:
-                complete_rpn_expr = "-154.064425 173.731539 10872.045205 x0 - sin * + -53.555905 1.578793 x0 / 3.321122 - sech * +"
+                complete_rpn_expr = "32.963733 2.007435 -7.438650 x0 * cos ^ / -0.629287 x0 -0.192839 + -0.089423 / sech + *"
                 if completeTree:
                     complete_rpn_expr = complete_tree(complete_rpn_expr.split(), "postfix") #returns a list
                 else:
