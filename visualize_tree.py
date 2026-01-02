@@ -435,12 +435,12 @@ def test_visualize():
             os.system(f"open -a Safari {file_name}.pdf")
     else:
         pn_to_rpn = False
-        rpn_to_pn = False
+        rpn_to_pn = True
         if pn_to_rpn:
             prefix_expr = "+ + 2.470186 / cos * 12.904707 x0 -0.231952 * -34.520199 sech - / -1.672608 x0 -3.543392"
             print(prefix_to_postfix(prefix_expr))
         elif rpn_to_pn:
-            postfix_expr = "1.063081 12.904707 x0 * cos 0.231952 ~ / +"
+            postfix_expr = "32.963733 2.007435 -7.438650 x0 * cos ^ / -0.629287 x0 -0.192839 + -0.089423 / sech + *"
             print(postfix_to_prefix(postfix_expr))
         else:
             expression_type_to_plot = ["prefix", "postfix"][1]

@@ -6694,7 +6694,7 @@ std::vector<std::vector<std::string>> WierdTrackFitter(Board& x, bool fit)
 {
     /*
      '''
-import numpy as np; np.sech = lambda x: 1/np.cosh(x); x='((32.963733 / (2.007435 ^ cos((-7.438650 * x0)))) * (-0.629287 + sech(((x0 + -0.192839) / -0.089423))))'.replace("acos", "np.arccos").replace("cos", "np.cos").replace("^","**").replace("~", "-").replace("sin","np.sin").replace("sqrt","np.sqrt").replace("np.arcnp.cos", "np.arccos").replace("exp", "np.exp").replace("sech", "np.sech"); print(x); import sympy as sp; y = x.replace("np","sp").replace("arccos","acos"); print(y); x0 = sp.symbols("x0"); print(str(eval(y)).replace('cos','sp.cos').replace("x0","s").replace("sech","sp.sech"))
+import numpy as np; np.sech = lambda x: 1/np.cosh(x); x='(1.063081 + (cos((12.904707 * x0)) / ~(0.231952)))'.replace("acos", "np.arccos").replace("cos", "np.cos").replace("^","**").replace("~", "-").replace("sin","np.sin").replace("sqrt","np.sqrt").replace("np.arcnp.cos", "np.arccos").replace("exp", "np.exp").replace("sech", "np.sech"); print(x); import sympy as sp; y = x.replace("np","sp").replace("arccos","acos"); print(y); x0 = sp.symbols("x0"); print(str(eval(y)).replace('cos','sp.cos').replace("x0","s").replace("sech","sp.sech")); round_floats = lambda expr, ndigits: expr.xreplace({f: sp.Float(round(float(f), ndigits)) for f in expr.atoms(sp.Float)}); func_sym_r = round_floats(eval(y), 2); print(sp.latex(func_sym_r));
      
      '''
      
@@ -10884,10 +10884,10 @@ namespace ExampleProblems
                 1 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
                 std::vector<int>{5} /*fixed depths of generated solution*/,
-                "postfix" /*expression representation*/,
+                "prefix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
-                500 /*number of fit iterations*/,
+                50 /*number of fit iterations*/,
                 "naive_numerical" /*method for computing the gradient*/,
                 true /*cache*/,
                 time /*time to run the algorithm in seconds*/,
@@ -10902,14 +10902,14 @@ namespace ExampleProblems
                 "WierdTrackSR.txt", // "" /*filename to save current best expression found (instead of outputting them to standard out)*/
                 std::vector<int>{17} /*optional max-sizes of each of the expressions in the generated solution*/,
                 {/*split(seed_exprs[track_idx])*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
-                {split("32.963733 2.007435 -7.438650 x0 * cos ^ / -0.629287 x0 -0.192839 + -0.089423 / sech + *")} /*seed expressions*/,
+                {split("* / 32.963733 ^ 2.007435 cos * -7.438650 x0 + -0.629287 sech / + x0 -0.192839 -0.089423")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
                 0.0 /*T_max*/,
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "WierdTrackSR.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
-                false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
+                true /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
                 false /*whether to perturb sub-arrays (true) of the current expression-vector or sub-trees (false)*/);
         }
     }
