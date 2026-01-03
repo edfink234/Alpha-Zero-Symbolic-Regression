@@ -8176,10 +8176,10 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
     /*
-     Best score = 7.87531e-05, SNE = 12696.9
-     Squared-norm error for each equation: 12685.4 11.5084 0
-     Best expression = ((((((1 + x0) ^ 11) * 2.717825964282383e-13) + 0.7081941989561602) - (((0.9999500004166652 ^ (x0 ^ 4)) * (sin(x1) * 0.9999500004166652)) * (0.9989466681769272 * (sin(x0) * 0.9999500004166652)))) - ((((5 + (x1 + 4)) / -11.83772233983162) * 0.01936790070373252) + (((x0 / (x0 + 2)) ^ ((x0 + 0.010000) + 6.343189999999999)) + 0.08395124401384103)))
-     Best expression (original format) = 1 x0 + 11 ^ 2.717825964282383e-13 * 0.7081941989561602 + 0.9999500004166652 x0 4 ^ ^ x1 sin 0.9999500004166652 * * 0.9989466681769272 x0 sin 0.9999500004166652 * * * - 5 x1 4 + + -11.83772233983162 / 0.01936790070373252 * x0 x0 2 + / x0 0.010000 + 6.343189999999999 + ^ 0.08395124401384103 + + -
+     Best score = 7.87563e-05, SNE = 12696.4
+     Squared-norm error for each equation: 12685.7 10.6888 0 
+     Best expression = ((((((1 + x0) ^ 11) * 2.714063472005533e-13) + 0.7085804914952496) - (((0.9999500004166652 ^ (x0 ^ 4)) * (sin(x1) * 0.9999500004166652)) * (0.9989466681769272 * (sin(x0) * 0.9999500004166652)))) - ((((5.02 + (x1 + 4)) / -11.85772233983162) * 0.01869697542275992) + (((x0 / (x0 + 2)) ^ ((x0 + 0.010000) + 6.343189999999999)) + 0.08386044415450322)))
+     Best expression (original format) = 1 x0 + 11 ^ 2.714063472005533e-13 * 0.7085804914952496 + 0.9999500004166652 x0 4 ^ ^ x1 sin 0.9999500004166652 * * 0.9989466681769272 x0 sin 0.9999500004166652 * * * - 5.02 x1 4 + + -11.85772233983162 / 0.01869697542275992 * x0 x0 2 + / x0 0.010000 + 6.343189999999999 + ^ 0.08386044415450322 + + -
      ```
 x = "(((((10.36319 ^ (0.010000 + x0)) * 2.717825964282383e-13) + 0.7081941989561602) - (((0.9999500004166652 ^ (x0 ^ 4)) * (sin(x1) * 0.9999500004166652)) * (0.9989466681769272 * (sin(x0) * 0.9999500004166652)))) - ((((6.28319 + (x1 + 6.283190)) / -11.83772233983162) * 0.0194179015370882) + (((x0 / (x0 + 2)) ^ ((x0 + 0.010000) + 6.343189999999999)) + 0.08395124401384103)))"
 print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-"))
@@ -10543,7 +10543,7 @@ namespace ExampleProblems
                 "SwiftHohenbergBest.txt", //"" /*filename to save current best expression found (instead of outputting them to standard out*/
                 {} /*optional max-sizes of each of the expressions in the generated solution*/,
                 {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
-                {split("1 x0 + 11 ^ 2.717825964282383e-13 * 0.7081941989561602 + 0.9999500004166652 x0 4 ^ ^ x1 sin 0.9999500004166652 * * 0.9989466681769272 x0 sin 0.9999500004166652 * * * - 5 x1 4 + + -11.83772233983162 / 0.01936790070373252 * x0 x0 2 + / x0 0.010000 + 6.343189999999999 + ^ 0.08395124401384103 + + -")} /*seed expressions*/,
+                {split("1 x0 + 11 ^ 2.714063472005533e-13 * 0.7085804914952496 + 0.9999500004166652 x0 4 ^ ^ x1 sin 0.9999500004166652 * * 0.9989466681769272 x0 sin 0.9999500004166652 * * * - 5.02 x1 4 + + -11.85772233983162 / 0.01869697542275992 * x0 x0 2 + / x0 0.010000 + 6.343189999999999 + ^ 0.08386044415450322 + + -")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
@@ -10989,7 +10989,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
     
-    ProblemOption choice = ProblemOption::WierdTrackFitter;
+    ProblemOption choice = ProblemOption::SwiftHohenberg;
     switch (choice)
     {
         case ProblemOption::SwiftHohenberg:
