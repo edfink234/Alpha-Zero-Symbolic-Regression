@@ -3328,209 +3328,209 @@ float Feynman_5(const Eigen::VectorXf& x)
 
 //https://dl.acm.org/doi/pdf/10.1145/3449639.3459345?casa_token=Np-_TMqxeJEAAAAA:8u-d6UyINV6Ex02kG9LthsQHAXMh2oxx3M4FG8ioP0hGgstIW45X8b709XOuaif5D_DVOm_FwFo
 //https://core.ac.uk/download/pdf/6651886.pdf
-void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, const unsigned long num_epochs = 1000, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f, float lambda = 0.01f /*weight decay AdamW*/)
-{
-    std::map<int, std::vector<float>> scores; //map to store the scores
-    size_t measure_period = static_cast<size_t>(time/interval);
-    
-    if (num_threads == 0)
-    {
-        unsigned int temp = std::thread::hardware_concurrency();
-        num_threads = ((temp <= 1) ? 1 : temp-1);
-    }
-    
-    std::vector<std::thread> threads(num_threads);
-    std::latch sync_point(num_threads);
-    
-    for (int run = 1; run <= num_runs; run++)
-    {
-        /*
-         Outside of thread:
-         */
-        std::atomic<float> max_score{0.0};
-        std::vector<std::pair<int, float>> temp_scores;
-        std::string best_expression, orig_expression;
-        
-        auto start_time = Clock::now();
-        std::thread pushBackThread([&]() // Separate thread to push_back the pair every measure_period seconds
-        {
-            while (timeElapsedSince(start_time) < time)
-            {
-                std::this_thread::sleep_for(std::chrono::seconds(measure_period));
-                temp_scores.push_back(std::make_pair(static_cast<size_t>(timeElapsedSince(start_time)), max_score.load()));
-            }
-        });
-        
-        /*
-         Inside of thread:
-         */
-        
-        auto func = [&depth, &expression_type, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &layer_types, &num_epochs, &bias, &eta, &theta, &gamma, &epsilon, &beta_1, &beta_2, &lambda, &best_expression, &orig_expression]()
-        {
-            std::random_device rand_dev;
-            std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-            Board x(depth, expression_type, data, false, cache, layers, layer_types, num_epochs, bias, eta, theta, gamma, epsilon, beta_1, beta_2, lambda);
-            sync_point.arrive_and_wait();
-            Board secondary(depth, expression_type, cache); //For perturbations
-
-            float score = 0.0f, check_point_score = 0.0f;
-            
-            std::vector<std::string> current;
-            std::vector<std::pair<int, int>> sub_exprs;
-            std::vector<std::string> temp_legal_moves;
-            std::uniform_int_distribution<int> rand_depth_dist(0, x.n);
-            size_t temp_sz;
-    //        std::string expression, orig_expression, best_expression;
-            constexpr float T_max = 0.1f;
-            constexpr float T_min = 0.012f;
-            constexpr float ratio = T_min/T_max;
-            float T = T_max;
-            
-            auto P = [&](float delta)
-            {
-                return exp(delta/T);
-            };
-            
-            auto updateScore = [&](float r = 1.0f)
-            {
-    //            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.srnn.pieces) : x.getRPNdepth(x.srnn.pieces)).first == x.n);
-    //            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.srnn.pieces) : x.getRPNdepth(x.srnn.pieces)).second);
-                if ((score > max_score) || (x.pos_dist(generator) < P(score-max_score)))
-                {
-                    current = x.srnn.pieces; //update current expression
-                    if (score > max_score)
-                    {
-    //                    expression = x._to_infix();
-    //                    orig_expression = x.expression();
-                        max_score = score;
-    //                    std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-    //                    std::cout << "Best expression = " << expression << '\n';
-    //                    std::cout << "Best expression (original format) = " << orig_expression << '\n';
-    //                    best_expression = std::move(expression);
-                        std::scoped_lock str_lock(Board::thread_locker);
-                        best_expression = x._to_infix();
-                        orig_expression = x.expression();
-                    }
-                }
-                else
-                {
-                    x.srnn.pieces = current; //reset perturbed state to current state
-                }
-                T = r*T;
-            };
-            
-            //Another way to do this might be clustering...
-            auto Perturbation = [&](int n, int i)
-            {
-                //Step 1: Generate a random depth-n sub-expression `secondary_one.srnn.pieces`
-                secondary.srnn.pieces.clear();
-                sub_exprs.clear();
-                secondary.n = n;
-                while (secondary.complete_status() == -1)
-                {
-                    temp_legal_moves = secondary.get_legal_moves();
-                    std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
-                    secondary.srnn.pieces.push_back(temp_legal_moves[distribution(generator)]);
-                }
-                
-    //            assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.srnn.pieces) : secondary.getRPNdepth(secondary.srnn.pieces)).first == secondary.n);
-    //            assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.srnn.pieces) : secondary.getRPNdepth(secondary.srnn.pieces)).second);
-                
-                if (n == x.n)
-                {
-                    std::swap(secondary.srnn.pieces, x.srnn.pieces);
-                }
-                else
-                {
-                    //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
-                    //in `x.srnn.pieces` and store them in an std::vector<std::pair<int, int>>
-                    //called `sub_exprs`.
-                    secondary.get_indices(sub_exprs, x.srnn.pieces);
-                    
-                    //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `pert_ind`
-
-                    std::uniform_int_distribution<int> distribution(0, sub_exprs.size() - 1);
-                    int pert_ind = distribution(generator);
-                    
-                    //Step 4: Substitute sub_exprs_1[pert_ind] in x.srnn.pieces with secondary_one.srnn.pieces
-                    
-                    auto start = x.srnn.pieces.begin() + sub_exprs[pert_ind].first;
-                    auto end = std::min(x.srnn.pieces.begin() + sub_exprs[pert_ind].second, x.srnn.pieces.end());
-                    x.srnn.pieces.erase(start, end+1);
-                    x.srnn.pieces.insert(start, secondary.srnn.pieces.begin(), secondary.srnn.pieces.end()); //could be a move operation: secondary.srnn.pieces doesn't need to be in a defined state after this->params
-                }
-                
-                //Step 5: Evaluate the new mutated `x.srnn.pieces` and update score if needed
-                score = x.complete_status(false);
-                updateScore(pow(ratio, 1.0f/(i+1)));
-            };
-
-            //Step 1: generate a random expression
-            while ((score = x.complete_status()) == -1)
-            {
-                temp_legal_moves = x.get_legal_moves(); //the legal moves
-                temp_sz = temp_legal_moves.size(); //the number of legal moves
-                std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
-                x.srnn.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
-                current.push_back(x.srnn.pieces.back());
-            }
-            updateScore();
-            
-            for (int i = 0; (timeElapsedSince(start_time) < time); i++)
-            {
-                if (i && (i%50000 == 0))
-                {
-    //                std::cout << "Unique expressions = " << Board::expression_set.size() << '\n';
-                    if (check_point_score == max_score)
-                    {
-                        T = std::min(T*10.0f, T_max);
-                    }
-                    else
-                    {
-                        T = std::max(T/10.0f, T_min);
-                    }
-                    check_point_score = max_score;
-                }
-                Perturbation(rand_depth_dist(generator), i);
-                
-            }
-        };
-        
-        for (unsigned int i = 0; i < num_threads; i++)
-        {
-            threads[i] = std::thread(func);
-        }
-        
-        for (unsigned int i = 0; i < num_threads; i++)
-        {
-            threads[i].join();
-        }
-        
-        // Join the separate thread to ensure it has finished before exiting
-        pushBackThread.join();
-        
-        for (auto& i: temp_scores)
-        {
-            scores[i.first].push_back(i.second);
-        }
-        
-        std::cout << "\nUnique expressions = " << Board::expression_set.size() << '\n';
-        std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-        std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-        std::cout << "Best expression = " << best_expression << '\n';
-        std::cout << "Best expression (original format) = " << orig_expression << '\n';
-    }
-    std::ofstream out(filename);
-    for (auto& i: scores)
-    {
-        out << i.first << ',';
-        for (auto& j: i.second)
-        {
-            out << j << ((&j == &i.second.back()) ? '\n' : ',');
-        }
-    }
-    out.close();
-}
+//void SimulatedAnnealing(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, const unsigned long num_epochs = 1000, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f, float lambda = 0.01f /*weight decay AdamW*/)
+//{
+//    std::map<int, std::vector<float>> scores; //map to store the scores
+//    size_t measure_period = static_cast<size_t>(time/interval);
+//    
+//    if (num_threads == 0)
+//    {
+//        unsigned int temp = std::thread::hardware_concurrency();
+//        num_threads = ((temp <= 1) ? 1 : temp-1);
+//    }
+//    
+//    std::vector<std::thread> threads(num_threads);
+//    std::latch sync_point(num_threads);
+//    
+//    for (int run = 1; run <= num_runs; run++)
+//    {
+//        /*
+//         Outside of thread:
+//         */
+//        std::atomic<float> max_score{0.0};
+//        std::vector<std::pair<int, float>> temp_scores;
+//        std::string best_expression, orig_expression;
+//        
+//        auto start_time = Clock::now();
+//        std::thread pushBackThread([&]() // Separate thread to push_back the pair every measure_period seconds
+//        {
+//            while (timeElapsedSince(start_time) < time)
+//            {
+//                std::this_thread::sleep_for(std::chrono::seconds(measure_period));
+//                temp_scores.push_back(std::make_pair(static_cast<size_t>(timeElapsedSince(start_time)), max_score.load()));
+//            }
+//        });
+//        
+//        /*
+//         Inside of thread:
+//         */
+//        
+//        auto func = [&depth, &expression_type, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &layer_types, &num_epochs, &bias, &eta, &theta, &gamma, &epsilon, &beta_1, &beta_2, &lambda, &best_expression, &orig_expression]()
+//        {
+//            std::random_device rand_dev;
+//            std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
+//            Board x(depth, expression_type, data, false, cache, layers, layer_types, num_epochs, bias, eta, theta, gamma, epsilon, beta_1, beta_2, lambda);
+//            sync_point.arrive_and_wait();
+//            Board secondary(depth, expression_type, cache); //For perturbations
+//
+//            float score = 0.0f, check_point_score = 0.0f;
+//            
+//            std::vector<std::string> current;
+//            std::vector<std::pair<int, int>> sub_exprs;
+//            std::vector<std::string> temp_legal_moves;
+//            std::uniform_int_distribution<int> rand_depth_dist(0, x.n);
+//            size_t temp_sz;
+//    //        std::string expression, orig_expression, best_expression;
+//            constexpr float T_max = 0.1f;
+//            constexpr float T_min = 0.012f;
+//            constexpr float ratio = T_min/T_max;
+//            float T = T_max;
+//            
+//            auto P = [&](float delta)
+//            {
+//                return exp(delta/T);
+//            };
+//            
+//            auto updateScore = [&](float r = 1.0f)
+//            {
+//    //            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.srnn.pieces) : x.getRPNdepth(x.srnn.pieces)).first == x.n);
+//    //            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.srnn.pieces) : x.getRPNdepth(x.srnn.pieces)).second);
+//                if ((score > max_score) || (x.pos_dist(generator) < P(score-max_score)))
+//                {
+//                    current = x.srnn.pieces; //update current expression
+//                    if (score > max_score)
+//                    {
+//    //                    expression = x._to_infix();
+//    //                    orig_expression = x.expression();
+//                        max_score = score;
+//    //                    std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+//    //                    std::cout << "Best expression = " << expression << '\n';
+//    //                    std::cout << "Best expression (original format) = " << orig_expression << '\n';
+//    //                    best_expression = std::move(expression);
+//                        std::scoped_lock str_lock(Board::thread_locker);
+//                        best_expression = x._to_infix();
+//                        orig_expression = x.expression();
+//                    }
+//                }
+//                else
+//                {
+//                    x.srnn.pieces = current; //reset perturbed state to current state
+//                }
+//                T = r*T;
+//            };
+//            
+//            //Another way to do this might be clustering...
+//            auto Perturbation = [&](int n, int i)
+//            {
+//                //Step 1: Generate a random depth-n sub-expression `secondary_one.srnn.pieces`
+//                secondary.srnn.pieces.clear();
+//                sub_exprs.clear();
+//                secondary.n = n;
+//                while (secondary.complete_status() == -1)
+//                {
+//                    temp_legal_moves = secondary.get_legal_moves();
+//                    std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
+//                    secondary.srnn.pieces.push_back(temp_legal_moves[distribution(generator)]);
+//                }
+//                
+//    //            assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.srnn.pieces) : secondary.getRPNdepth(secondary.srnn.pieces)).first == secondary.n);
+//    //            assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.srnn.pieces) : secondary.getRPNdepth(secondary.srnn.pieces)).second);
+//                
+//                if (n == x.n)
+//                {
+//                    std::swap(secondary.srnn.pieces, x.srnn.pieces);
+//                }
+//                else
+//                {
+//                    //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
+//                    //in `x.srnn.pieces` and store them in an std::vector<std::pair<int, int>>
+//                    //called `sub_exprs`.
+//                    secondary.get_indices(sub_exprs, x.srnn.pieces);
+//                    
+//                    //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `pert_ind`
+//
+//                    std::uniform_int_distribution<int> distribution(0, sub_exprs.size() - 1);
+//                    int pert_ind = distribution(generator);
+//                    
+//                    //Step 4: Substitute sub_exprs_1[pert_ind] in x.srnn.pieces with secondary_one.srnn.pieces
+//                    
+//                    auto start = x.srnn.pieces.begin() + sub_exprs[pert_ind].first;
+//                    auto end = std::min(x.srnn.pieces.begin() + sub_exprs[pert_ind].second, x.srnn.pieces.end());
+//                    x.srnn.pieces.erase(start, end+1);
+//                    x.srnn.pieces.insert(start, secondary.srnn.pieces.begin(), secondary.srnn.pieces.end()); //could be a move operation: secondary.srnn.pieces doesn't need to be in a defined state after this->params
+//                }
+//                
+//                //Step 5: Evaluate the new mutated `x.srnn.pieces` and update score if needed
+//                score = x.complete_status(false);
+//                updateScore(pow(ratio, 1.0f/(i+1)));
+//            };
+//
+//            //Step 1: generate a random expression
+//            while ((score = x.complete_status()) == -1)
+//            {
+//                temp_legal_moves = x.get_legal_moves(); //the legal moves
+//                temp_sz = temp_legal_moves.size(); //the number of legal moves
+//                std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
+//                x.srnn.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
+//                current.push_back(x.srnn.pieces.back());
+//            }
+//            updateScore();
+//            
+//            for (int i = 0; (timeElapsedSince(start_time) < time); i++)
+//            {
+//                if (i && (i%50000 == 0))
+//                {
+//    //                std::cout << "Unique expressions = " << Board::expression_set.size() << '\n';
+//                    if (check_point_score == max_score)
+//                    {
+//                        T = std::min(T*10.0f, T_max);
+//                    }
+//                    else
+//                    {
+//                        T = std::max(T/10.0f, T_min);
+//                    }
+//                    check_point_score = max_score;
+//                }
+//                Perturbation(rand_depth_dist(generator), i);
+//                
+//            }
+//        };
+//        
+//        for (unsigned int i = 0; i < num_threads; i++)
+//        {
+//            threads[i] = std::thread(func);
+//        }
+//        
+//        for (unsigned int i = 0; i < num_threads; i++)
+//        {
+//            threads[i].join();
+//        }
+//        
+//        // Join the separate thread to ensure it has finished before exiting
+//        pushBackThread.join();
+//        
+//        for (auto& i: temp_scores)
+//        {
+//            scores[i.first].push_back(i.second);
+//        }
+//        
+//        std::cout << "\nUnique expressions = " << Board::expression_set.size() << '\n';
+//        std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
+//        std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+//        std::cout << "Best expression = " << best_expression << '\n';
+//        std::cout << "Best expression (original format) = " << orig_expression << '\n';
+//    }
+//    std::ofstream out(filename);
+//    for (auto& i: scores)
+//    {
+//        out << i.first << ',';
+//        for (auto& j: i.second)
+//        {
+//            out << j << ((&j == &i.second.back()) ? '\n' : ',');
+//        }
+//    }
+//    out.close();
+//}
 
 //https://arxiv.org/abs/2310.06609
 void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, const unsigned long num_epochs = 100, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f, float lambda = 0.01f /*weight decay AdamW*/)
@@ -3607,24 +3607,29 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
                 }
                 else if (doneGeneratingInitPop)
                 {
+                    
 //                    exit(1);
                     //TODO: figure out why score is nan here!!!
                     //TODO: Also figure out if/how simplification is possible, might require recalculating the depth in mutation and crossover function calls.
-                    static int countPrints = 0;
+                    thread_local int countPrints = 0;
                     std::scoped_lock str_lock(Board::thread_locker);
-                    std::cout << "pieces = " << x.srnn.pieces << ", score = "
-                    << score << '\n';
-                    if (++countPrints > 100)
+                    if (!countPrints)
                     {
-                        exit(1);
+                        puts("doneGeneratingInitPop");
                     }
-                }
-                else
-                {
-                    std::scoped_lock str_lock(Board::thread_locker);
                     std::cout << "pieces = " << x.srnn.pieces << ", score = "
                     << score << '\n';
+//                    if (++countPrints > 100)
+//                    {
+//                        exit(1);
+//                    }
                 }
+//                else
+//                {
+//                    std::scoped_lock str_lock(Board::thread_locker);
+//                    std::cout << "pieces = " << x.srnn.pieces << ", score = "
+//                    << score << '\n';
+//                }
             };
             
             //Step 1, generate init_population expressions
@@ -3849,497 +3854,497 @@ void GP(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type 
     out.close();
 }
 
-void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, const unsigned long num_epochs = 1000, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f, float lambda = 0.01f /*weight decay AdamW*/)
-{
-    std::map<int, std::vector<float>> scores; //map to store the scores
-    size_t measure_period = static_cast<size_t>(time/interval);
-    
-    if (num_threads == 0)
-    {
-        unsigned int temp = std::thread::hardware_concurrency();
-        num_threads = ((temp <= 1) ? 1 : temp-1);
-    }
-    
-    std::vector<std::thread> threads(num_threads);
-    std::latch sync_point(num_threads);
-    
-    for (int run = 1; run <= num_runs; run++)
-    {
-        /*
-         Outside of thread:
-         */
-        
-        std::atomic<float> max_score{0.0};
-        std::vector<std::pair<int, float>> temp_scores;
-        std::string best_expression, orig_expression;
-        
-        auto start_time = Clock::now();
-        std::thread pushBackThread([&]() // Separate thread to push_back the pair every measure_period seconds
-        {
-            while (timeElapsedSince(start_time) < time)
-            {
-                std::this_thread::sleep_for(std::chrono::seconds(measure_period));
-                temp_scores.push_back(std::make_pair(static_cast<size_t>(timeElapsedSince(start_time)), max_score.load()));
-            }
-        });
-        
-        /*
-         Inside of thread:
-         */
-        
-        auto func = [&depth, &expression_type, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &layer_types, &num_epochs, &bias, &eta, &theta, &gamma, &epsilon, &beta_1, &beta_2, &lambda, &best_expression, &orig_expression]()
-        {
-            std::random_device rand_dev;
-            std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-            Board x(depth, expression_type, data, false, cache, layers, layer_types, num_epochs, bias, eta, theta, gamma, epsilon, beta_1, beta_2, lambda);
-            sync_point.arrive_and_wait();
-            float score = 0, check_point_score = 0;
-            std::vector<std::string> temp_legal_moves;
-            
-            size_t temp_sz;
-        //    std::string expression, orig_expression, best_expression;
-            
-            /*
-             For this setup, we don't know a-priori the number of particles, so we generate them and their corresponding velocities as needed
-             */
-            std::vector<float> particle_positions, best_positions, v, curr_positions;
-            particle_positions.reserve(x.reserve_amount); //stores record of all current particle position indices
-            best_positions.reserve(x.reserve_amount); //indices corresponding to best pieces
-            curr_positions.reserve(x.reserve_amount); //indices corresponding to x.pieces
-            v.reserve(x.reserve_amount); //stores record of all current particle velocities
-            float rp, rg, new_v, c = 0.0f;
-            int c_count = 0;
-            std::unordered_map<float, std::unordered_map<int, int>> Nsa;
-            std::unordered_map<float, std::unordered_map<int, float>> Psa;
-            std::unordered_map<int, float> p_i_vals, p_i;
-            
-            /*
-             In this implementation of PSO:
-             
-                 The traditional PSO initializes the particle positions to be between 0 and 1. However, in this application,
-                 the particle positions are discrete values and any of the legal integer tokens (moves). The
-                 velocities are continuous-valued and perturb the postions, which are subsequently constrained by rounding to
-                 the nearest whole number then taking the modulo w.r.t. the # of allowed legal moves.
-             
-             */
-            
-            for (int iter = 0; (timeElapsedSince(start_time) < time); iter++)
-            {
-                if (iter && (iter%50000 == 0))
-                {
-        //            std::cout << "Unique expressions = " << Board::expression_set.size() << '\n';
-        //            std::cout << "check_point_score = " << check_point_score
-        //            << ", max_score = " << max_score << ", c = " << c << '\n';
-                    if (check_point_score == max_score)
-                    {
-                        c_count++;
-                        std::uniform_real_distribution<float> temp(-c_count, c_count);
-        //                std::cout << "c: " << c << " -> ";
-                        c = temp(generator);
-        //                std::cout << c << '\n';
-                    }
-                    else
-                    {
-        //                std::cout << "c: " << c << " -> ";
-                        c = 0.0f; //if new best found, reset c and try to exploit the new best
-                        c_count = 0;
-        //                std::cout << c << '\n';
-                    }
-                    check_point_score = max_score;
-                }
-                
-                for (int i = 0; (score = x.complete_status()) == -1; i++) //i is the index of the token
-                {
-                    rp = x.pos_dist(generator), rg = x.pos_dist(generator);
-                    temp_legal_moves = x.get_legal_moves(); //the legal moves
-                    temp_sz = temp_legal_moves.size(); //the number of legal moves
-
-                    if (i == particle_positions.size()) //Then we need to create a new particle with some initial position and velocity
-                    {
-                        particle_positions.push_back(x.pos_dist(generator));
-                        v.push_back(x.vel_dist(generator));
-                    }
-                    
-                    particle_positions[i] = trueMod(std::round(particle_positions[i]), temp_sz);
-                    x.srnn.pieces.push_back(temp_legal_moves[particle_positions[i]]); //x.srnn.pieces holds the pieces corresponding to the indices
-                    curr_positions.push_back(particle_positions[i]);
-                    if (i == best_positions.size())
-                    {
-                        best_positions.push_back(x.pos_dist(generator));
-                        best_positions[i] = trueMod(std::round(best_positions[i]), temp_sz);
-                    }
-                    //https://hal.science/hal-00764996
-                    //https://www.researchgate.net/publication/216300408_An_off-the-shelf_PSO
-                    new_v = (0.721*v[i] + x.phi_1*rg*(best_positions[i] - particle_positions[i]) + x.phi_2*rp*(p_i[i] - particle_positions[i]) + c);
-                    v[i] = copysign(std::min(new_v, FLT_MAX), new_v);
-                    particle_positions[i] += v[i];
-                    Nsa[curr_positions[i]][i]++;
-                }
-                
-                for (int i = 0; i < curr_positions.size(); i++)
-                {
-                    Psa[curr_positions[i]][i] = (Psa[curr_positions[i]][i]+score)/Nsa[curr_positions[i]][i];
-                    if (Psa[curr_positions[i]][i] > p_i_vals[i])
-                    {
-                        p_i[i] = curr_positions[i];
-                    }
-                    p_i_vals[i] = std::max(p_i_vals[i], Psa[curr_positions[i]][i]);
-                    
-                }
-                
-                if (score > max_score)
-                {
-                    for (int idx = 0; idx < curr_positions.size(); idx++)
-                    {
-                        best_positions[idx] = curr_positions[idx];
-                    }
-        //            expression = x._to_infix();
-        //            orig_expression = x.expression();
-                    max_score = score;
-                    std::scoped_lock str_lock(Board::thread_locker);
-                    best_expression = x._to_infix();
-                    orig_expression = x.expression();
-        //            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-        //            std::cout << "Best expression = " << expression << '\n';
-        //            std::cout << "Best expression (original format) = " << orig_expression << '\n';
-        //            best_expression = std::move(expression);
-                }
-                x.srnn.pieces.clear();
-                curr_positions.clear();
-            }
-        };
-        
-        for (unsigned int i = 0; i < num_threads; i++)
-        {
-            threads[i] = std::thread(func); 
-        }
-        
-        for (unsigned int i = 0; i < num_threads; i++)
-        {
-            threads[i].join();
-        }
-        
-        // Join the separate thread to ensure it has finished before exiting
-        pushBackThread.join();
-        
-        for (auto& i: temp_scores)
-        {
-            scores[i.first].push_back(i.second);
-        }
-        
-        std::cout << "\nUnique expressions = " << Board::expression_set.size() << '\n';
-        std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-        std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-        std::cout << "Best expression = " << best_expression << '\n';
-        std::cout << "Best expression (original format) = " << orig_expression << '\n';
-    }
-    std::ofstream out(filename);
-    for (auto& i: scores)
-    {
-        out << i.first << ',';
-        for (auto& j: i.second)
-        {
-            out << j << ((&j == &i.second.back()) ? '\n' : ',');
-        }
-    }
-    out.close();
-}
-
-//https://arxiv.org/abs/2205.13134
-void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, const unsigned long num_epochs = 1000, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f, float lambda = 0.01f /*weight decay AdamW*/)
-{
-    std::map<int, std::vector<float>> scores; //map to store the scores
-    size_t measure_period = static_cast<size_t>(time/interval);
-    
-    if (num_threads == 0)
-    {
-        unsigned int temp = std::thread::hardware_concurrency();
-        num_threads = ((temp <= 1) ? 1 : temp-1);
-    }
-    
-    std::vector<std::thread> threads(num_threads);
-    std::latch sync_point(num_threads);
-    
-    for (int run = 1; run <= num_runs; run++)
-    {
-        /*
-         Outside of thread:
-         */
-        std::atomic<float> max_score{0.0};
-        std::vector<std::pair<size_t, float>> temp_scores;
-        std::string best_expression, orig_expression;
-
-        auto start_time = Clock::now();
-        std::thread pushBackThread([&]()
-        {
-            while (timeElapsedSince(start_time) < time)
-            {
-                std::this_thread::sleep_for(std::chrono::seconds(measure_period));
-                temp_scores.push_back(std::make_pair(static_cast<size_t>(timeElapsedSince(start_time)), max_score.load()));
-            }
-        });
-        
-        /*
-         Inside of thread:
-         */
-        
-        auto func = [&depth, &expression_type, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &layer_types, &num_epochs, &bias, &eta, &theta, &gamma, &epsilon, &beta_1, &beta_2, &lambda, &best_expression, &orig_expression]()
-        {
-            std::random_device rand_dev;
-            std::mt19937 thread_local generator(rand_dev());
-            Board x(depth, expression_type, data, false, cache, layers, layer_types, num_epochs, bias, eta, theta, gamma, epsilon, beta_1, beta_2, lambda);
-            sync_point.arrive_and_wait();
-            std::string best_act;
-            float score = 0.0f, check_point_score = 0.0f, UCT, UCT_best;
-            
-            std::vector<std::string> temp_legal_moves;
-            std::unordered_map<std::string, std::unordered_map<std::string, float>> Qsa, Nsa;
-            std::unordered_map<std::string, float> Ns;
-            std::string state;
-            
-            float c = 1.4f; //"controls the balance between exploration and exploitation", see equation 2 here: https://web.engr.oregonstate.edu/~afern/classes/cs533/notes/uct.pdf, top of page 8 here: https://arxiv.org/pdf/1402.6028.pdf, first formula in section 4. Experiments here: https://cesa-bianchi.di.unimi.it/Pubblicazioni/ml-02.pdf
-            std::vector<std::pair<std::string, std::string>> moveTracker;
-            moveTracker.reserve(x.reserve_amount);
-            temp_legal_moves.reserve(x.reserve_amount);
-            state.reserve(2*x.reserve_amount);
-            //        double str_convert_time = 0.0;
-            auto getString  = [&]()
-            {
-                if (!x.srnn.pieces.empty())
-                {
-                    state += x.srnn.pieces[x.srnn.pieces.size()-1] + " ";
-                }
-            };
-            
-            for (int i = 0; (timeElapsedSince(start_time) < time); i++)
-            {
-                if (i && (i%50000 == 0))
-                {
-                    //                    std::cout << "Unique expressions = " << Board::expression_set.size() << '\n';
-                    //                    std::cout << "check_point_score = " << check_point_score
-                    //                    << ", max_score = " << max_score << ", c = " << c << '\n';
-                    if (check_point_score == max_score)
-                    {
-                        //                        std::cout << "c: " << c << " -> ";
-                        c += 1.4;
-                        //                        std::cout << c << '\n';
-                    }
-                    else
-                    {
-                        //                        std::cout << "c: " << c << " -> ";
-                        c = 1.4; //if new best found, reset c and try to exploit the new best
-                        //                        std::cout << c << '\n';
-                        check_point_score = max_score;
-                    }
-                }
-                state.clear();
-                while ((score = x.complete_status()) == -1)
-                {
-                    temp_legal_moves = x.get_legal_moves();
-//                    auto start_time = Clock::now();
-                    getString();
-//                    str_convert_time += timeElapsedSince(start_time);
-                    UCT = 0.0f;
-                    UCT_best = -FLT_MAX;
-                    best_act = "-1";
-                    std::vector<std::string> best_acts;
-                    best_acts.reserve(temp_legal_moves.size());
-                    
-                    for (const std::string& a: temp_legal_moves)
-                    {
-                        if (Nsa[state].count(a))
-                        {
-                            UCT = Qsa[state][a] + c*sqrt(log(Ns[state])/Nsa[state][a]);
-                        }
-                        else
-                        {
-                            //not explored -> explore it.
-                            best_acts.push_back(a);
-                            UCT = -FLT_MAX;
-                        }
-                        
-                        if (UCT > UCT_best)
-                        {
-                            best_act = a;
-                            UCT_best = UCT;
-                        }
-                    }
-                    
-                    if (best_acts.size())
-                    {
-                        std::uniform_int_distribution<int> distribution(0, best_acts.size() - 1);
-                        best_act = best_acts[distribution(generator)];
-                    }
-                    x.srnn.pieces.push_back(best_act);
-                    moveTracker.push_back(make_pair(state, best_act));
-                    Ns[state]++;
-                    Nsa[state][best_act]++;
-                }
-                //backprop reward `score`
-                for (auto& state_action: moveTracker)
-                {
-                    Qsa[state_action.first][state_action.second] = std::max(Qsa[state_action.first][state_action.second], score);
-                }
-                
-                if (score > max_score)
-                {
-                    max_score = score;
-                    std::scoped_lock str_lock(Board::thread_locker);
-                    best_expression = x._to_infix();
-                    orig_expression = x.expression();
-                }
-                x.srnn.pieces.clear();
-                moveTracker.clear();
-            }
-        };
-        
-        for (unsigned int i = 0; i < num_threads; i++)
-        {
-            threads[i] = std::thread(func); 
-        }
-        
-        for (unsigned int i = 0; i < num_threads; i++)
-        {
-            threads[i].join();
-        }
-        
-        // Join the separate thread to ensure it has finished before exiting
-        pushBackThread.join();
-        
-        for (auto& i: temp_scores)
-        {
-            scores[i.first].push_back(i.second);
-        }
-        
-        std::cout << "\nUnique expressions = " << Board::expression_set.size() << '\n';
-        std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-        std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-        std::cout << "Best expression = " << best_expression << '\n';
-        std::cout << "Best expression (original format) = " << orig_expression << '\n';
-    }
-    std::ofstream out(filename);
-    for (auto& i: scores)
-    {
-        out << i.first << ',';
-        for (auto& j: i.second)
-        {
-            out << j << ((&j == &i.second.back()) ? '\n' : ',');
-        }
-    }
-    out.close();
-}
-
-void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::string expression_type = "prefix", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, const int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, const int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, const unsigned long num_epochs = 1000, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f, float lambda = 0.01f /*weight decay AdamW*/)
-{
-    std::map<int, std::vector<float>> scores; //map to store the scores
-    size_t measure_period = static_cast<size_t>(time/interval);
-    
-    if (num_threads == 0)
-    {
-        unsigned int temp = std::thread::hardware_concurrency();
-        num_threads = ((temp <= 1) ? 1 : temp-1);
-    }
-    
-    std::vector<std::thread> threads(num_threads);
-    std::latch sync_point(num_threads);
-    
-    for (int run = 1; run <= num_runs; run++)
-    {
-        /*
-         Outside of thread:
-         */
-        
-        std::atomic<float> max_score{0.0};
-        std::vector<std::pair<size_t, float>> temp_scores;
-        std::string best_expression, orig_expression;
-        
-        auto start_time = Clock::now();
-        std::thread pushBackThread([&]()
-        {
-            while (timeElapsedSince(start_time) < time)
-            {
-                std::this_thread::sleep_for(std::chrono::seconds(measure_period));
-                
-                temp_scores.push_back(std::make_pair(static_cast<size_t>(timeElapsedSince(start_time)), max_score.load()));
-            }
-        });
-        
-        /*
-         Inside of thread:
-         */
-        
-        auto func = [&depth, &expression_type, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &layer_types, &num_epochs, &bias, &eta, &theta, &gamma, &epsilon, &beta_1, &beta_2, &lambda, &best_expression, &orig_expression]()
-        {
-            std::random_device rand_dev;
-            std::mt19937 thread_local generator(rand_dev()); // Mersenne Twister random number generator
-            Board x(depth, expression_type, data, false, cache, layers, layer_types, num_epochs, bias, eta, theta, gamma, epsilon, beta_1, beta_2, lambda);
-            sync_point.arrive_and_wait();
-            float score = 0.0f;
-            std::vector<std::string> temp_legal_moves;
-            size_t temp_sz;
-            while (timeElapsedSince(start_time) < time)
-            {
-                while ((score = x.complete_status()) == -1)
-                {
-                    temp_legal_moves = x.get_legal_moves(); //the legal moves
-                    temp_sz = temp_legal_moves.size(); //the number of legal moves
-//                    assert(temp_sz);
-                    std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
-                    {
-                        x.srnn.pieces.emplace_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
-                    }
-                }
-                assert(((x.expression_type == "prefix") ? x.getPNdepth(x.srnn.pieces) : x.getRPNdepth(x.srnn.pieces)).first == x.n);
-                assert(((x.expression_type == "prefix") ? x.getPNdepth(x.srnn.pieces) : x.getRPNdepth(x.srnn.pieces)).second);
-
-                if (score > max_score)
-                {
-                    max_score = score;
-                    std::scoped_lock str_lock(Board::thread_locker);
-                    best_expression = x._to_infix();
-                    orig_expression = x.expression();
-                }
-                x.srnn.pieces.clear();
-            }
-        };
-        
-        for (unsigned int i = 0; i < num_threads; i++)
-        {
-            threads[i] = std::thread(func); 
-        }
-        
-        for (unsigned int i = 0; i < num_threads; i++)
-        {
-            threads[i].join();
-        }
-        
-        // Join the separate thread to ensure it has finished before exiting
-        pushBackThread.join();
-        
-        for (auto& i: temp_scores)
-        {
-            scores[i.first].push_back(i.second);
-        }
-        
-        std::cout << "\nUnique expressions = " << Board::expression_set.size() << '\n';
-        std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-        std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
-        std::cout << "Best expression = " << best_expression << '\n';
-        std::cout << "Best expression (original format) = " << orig_expression << '\n';
-        
-    }
-    std::ofstream out(filename);
-    for (auto& i: scores)
-    {
-        out << i.first << ',';
-        for (auto& j: i.second)
-        {
-            out << j << ((&j == &i.second.back()) ? '\n' : ',');
-        }
-    }
-    out.close();
-    
-}
+//void PSO(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, const unsigned long num_epochs = 1000, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f, float lambda = 0.01f /*weight decay AdamW*/)
+//{
+//    std::map<int, std::vector<float>> scores; //map to store the scores
+//    size_t measure_period = static_cast<size_t>(time/interval);
+//    
+//    if (num_threads == 0)
+//    {
+//        unsigned int temp = std::thread::hardware_concurrency();
+//        num_threads = ((temp <= 1) ? 1 : temp-1);
+//    }
+//    
+//    std::vector<std::thread> threads(num_threads);
+//    std::latch sync_point(num_threads);
+//    
+//    for (int run = 1; run <= num_runs; run++)
+//    {
+//        /*
+//         Outside of thread:
+//         */
+//        
+//        std::atomic<float> max_score{0.0};
+//        std::vector<std::pair<int, float>> temp_scores;
+//        std::string best_expression, orig_expression;
+//        
+//        auto start_time = Clock::now();
+//        std::thread pushBackThread([&]() // Separate thread to push_back the pair every measure_period seconds
+//        {
+//            while (timeElapsedSince(start_time) < time)
+//            {
+//                std::this_thread::sleep_for(std::chrono::seconds(measure_period));
+//                temp_scores.push_back(std::make_pair(static_cast<size_t>(timeElapsedSince(start_time)), max_score.load()));
+//            }
+//        });
+//        
+//        /*
+//         Inside of thread:
+//         */
+//        
+//        auto func = [&depth, &expression_type, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &layer_types, &num_epochs, &bias, &eta, &theta, &gamma, &epsilon, &beta_1, &beta_2, &lambda, &best_expression, &orig_expression]()
+//        {
+//            std::random_device rand_dev;
+//            std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
+//            Board x(depth, expression_type, data, false, cache, layers, layer_types, num_epochs, bias, eta, theta, gamma, epsilon, beta_1, beta_2, lambda);
+//            sync_point.arrive_and_wait();
+//            float score = 0, check_point_score = 0;
+//            std::vector<std::string> temp_legal_moves;
+//            
+//            size_t temp_sz;
+//        //    std::string expression, orig_expression, best_expression;
+//            
+//            /*
+//             For this setup, we don't know a-priori the number of particles, so we generate them and their corresponding velocities as needed
+//             */
+//            std::vector<float> particle_positions, best_positions, v, curr_positions;
+//            particle_positions.reserve(x.reserve_amount); //stores record of all current particle position indices
+//            best_positions.reserve(x.reserve_amount); //indices corresponding to best pieces
+//            curr_positions.reserve(x.reserve_amount); //indices corresponding to x.pieces
+//            v.reserve(x.reserve_amount); //stores record of all current particle velocities
+//            float rp, rg, new_v, c = 0.0f;
+//            int c_count = 0;
+//            std::unordered_map<float, std::unordered_map<int, int>> Nsa;
+//            std::unordered_map<float, std::unordered_map<int, float>> Psa;
+//            std::unordered_map<int, float> p_i_vals, p_i;
+//            
+//            /*
+//             In this implementation of PSO:
+//             
+//                 The traditional PSO initializes the particle positions to be between 0 and 1. However, in this application,
+//                 the particle positions are discrete values and any of the legal integer tokens (moves). The
+//                 velocities are continuous-valued and perturb the postions, which are subsequently constrained by rounding to
+//                 the nearest whole number then taking the modulo w.r.t. the # of allowed legal moves.
+//             
+//             */
+//            
+//            for (int iter = 0; (timeElapsedSince(start_time) < time); iter++)
+//            {
+//                if (iter && (iter%50000 == 0))
+//                {
+//        //            std::cout << "Unique expressions = " << Board::expression_set.size() << '\n';
+//        //            std::cout << "check_point_score = " << check_point_score
+//        //            << ", max_score = " << max_score << ", c = " << c << '\n';
+//                    if (check_point_score == max_score)
+//                    {
+//                        c_count++;
+//                        std::uniform_real_distribution<float> temp(-c_count, c_count);
+//        //                std::cout << "c: " << c << " -> ";
+//                        c = temp(generator);
+//        //                std::cout << c << '\n';
+//                    }
+//                    else
+//                    {
+//        //                std::cout << "c: " << c << " -> ";
+//                        c = 0.0f; //if new best found, reset c and try to exploit the new best
+//                        c_count = 0;
+//        //                std::cout << c << '\n';
+//                    }
+//                    check_point_score = max_score;
+//                }
+//                
+//                for (int i = 0; (score = x.complete_status()) == -1; i++) //i is the index of the token
+//                {
+//                    rp = x.pos_dist(generator), rg = x.pos_dist(generator);
+//                    temp_legal_moves = x.get_legal_moves(); //the legal moves
+//                    temp_sz = temp_legal_moves.size(); //the number of legal moves
+//
+//                    if (i == particle_positions.size()) //Then we need to create a new particle with some initial position and velocity
+//                    {
+//                        particle_positions.push_back(x.pos_dist(generator));
+//                        v.push_back(x.vel_dist(generator));
+//                    }
+//                    
+//                    particle_positions[i] = trueMod(std::round(particle_positions[i]), temp_sz);
+//                    x.srnn.pieces.push_back(temp_legal_moves[particle_positions[i]]); //x.srnn.pieces holds the pieces corresponding to the indices
+//                    curr_positions.push_back(particle_positions[i]);
+//                    if (i == best_positions.size())
+//                    {
+//                        best_positions.push_back(x.pos_dist(generator));
+//                        best_positions[i] = trueMod(std::round(best_positions[i]), temp_sz);
+//                    }
+//                    //https://hal.science/hal-00764996
+//                    //https://www.researchgate.net/publication/216300408_An_off-the-shelf_PSO
+//                    new_v = (0.721*v[i] + x.phi_1*rg*(best_positions[i] - particle_positions[i]) + x.phi_2*rp*(p_i[i] - particle_positions[i]) + c);
+//                    v[i] = copysign(std::min(new_v, FLT_MAX), new_v);
+//                    particle_positions[i] += v[i];
+//                    Nsa[curr_positions[i]][i]++;
+//                }
+//                
+//                for (int i = 0; i < curr_positions.size(); i++)
+//                {
+//                    Psa[curr_positions[i]][i] = (Psa[curr_positions[i]][i]+score)/Nsa[curr_positions[i]][i];
+//                    if (Psa[curr_positions[i]][i] > p_i_vals[i])
+//                    {
+//                        p_i[i] = curr_positions[i];
+//                    }
+//                    p_i_vals[i] = std::max(p_i_vals[i], Psa[curr_positions[i]][i]);
+//                    
+//                }
+//                
+//                if (score > max_score)
+//                {
+//                    for (int idx = 0; idx < curr_positions.size(); idx++)
+//                    {
+//                        best_positions[idx] = curr_positions[idx];
+//                    }
+//        //            expression = x._to_infix();
+//        //            orig_expression = x.expression();
+//                    max_score = score;
+//                    std::scoped_lock str_lock(Board::thread_locker);
+//                    best_expression = x._to_infix();
+//                    orig_expression = x.expression();
+//        //            std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+//        //            std::cout << "Best expression = " << expression << '\n';
+//        //            std::cout << "Best expression (original format) = " << orig_expression << '\n';
+//        //            best_expression = std::move(expression);
+//                }
+//                x.srnn.pieces.clear();
+//                curr_positions.clear();
+//            }
+//        };
+//        
+//        for (unsigned int i = 0; i < num_threads; i++)
+//        {
+//            threads[i] = std::thread(func); 
+//        }
+//        
+//        for (unsigned int i = 0; i < num_threads; i++)
+//        {
+//            threads[i].join();
+//        }
+//        
+//        // Join the separate thread to ensure it has finished before exiting
+//        pushBackThread.join();
+//        
+//        for (auto& i: temp_scores)
+//        {
+//            scores[i.first].push_back(i.second);
+//        }
+//        
+//        std::cout << "\nUnique expressions = " << Board::expression_set.size() << '\n';
+//        std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
+//        std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+//        std::cout << "Best expression = " << best_expression << '\n';
+//        std::cout << "Best expression (original format) = " << orig_expression << '\n';
+//    }
+//    std::ofstream out(filename);
+//    for (auto& i: scores)
+//    {
+//        out << i.first << ',';
+//        for (auto& j: i.second)
+//        {
+//            out << j << ((&j == &i.second.back()) ? '\n' : ',');
+//        }
+//    }
+//    out.close();
+//}
+//
+////https://arxiv.org/abs/2205.13134
+//void MCTS(const Eigen::MatrixXf& data, int depth = 3, std::string expression_type = "prefix", bool cache = true, double time = 120 /*time to run the algorithm in seconds*/, int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, const unsigned long num_epochs = 1000, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f, float lambda = 0.01f /*weight decay AdamW*/)
+//{
+//    std::map<int, std::vector<float>> scores; //map to store the scores
+//    size_t measure_period = static_cast<size_t>(time/interval);
+//    
+//    if (num_threads == 0)
+//    {
+//        unsigned int temp = std::thread::hardware_concurrency();
+//        num_threads = ((temp <= 1) ? 1 : temp-1);
+//    }
+//    
+//    std::vector<std::thread> threads(num_threads);
+//    std::latch sync_point(num_threads);
+//    
+//    for (int run = 1; run <= num_runs; run++)
+//    {
+//        /*
+//         Outside of thread:
+//         */
+//        std::atomic<float> max_score{0.0};
+//        std::vector<std::pair<size_t, float>> temp_scores;
+//        std::string best_expression, orig_expression;
+//
+//        auto start_time = Clock::now();
+//        std::thread pushBackThread([&]()
+//        {
+//            while (timeElapsedSince(start_time) < time)
+//            {
+//                std::this_thread::sleep_for(std::chrono::seconds(measure_period));
+//                temp_scores.push_back(std::make_pair(static_cast<size_t>(timeElapsedSince(start_time)), max_score.load()));
+//            }
+//        });
+//        
+//        /*
+//         Inside of thread:
+//         */
+//        
+//        auto func = [&depth, &expression_type, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &layer_types, &num_epochs, &bias, &eta, &theta, &gamma, &epsilon, &beta_1, &beta_2, &lambda, &best_expression, &orig_expression]()
+//        {
+//            std::random_device rand_dev;
+//            std::mt19937 thread_local generator(rand_dev());
+//            Board x(depth, expression_type, data, false, cache, layers, layer_types, num_epochs, bias, eta, theta, gamma, epsilon, beta_1, beta_2, lambda);
+//            sync_point.arrive_and_wait();
+//            std::string best_act;
+//            float score = 0.0f, check_point_score = 0.0f, UCT, UCT_best;
+//            
+//            std::vector<std::string> temp_legal_moves;
+//            std::unordered_map<std::string, std::unordered_map<std::string, float>> Qsa, Nsa;
+//            std::unordered_map<std::string, float> Ns;
+//            std::string state;
+//            
+//            float c = 1.4f; //"controls the balance between exploration and exploitation", see equation 2 here: https://web.engr.oregonstate.edu/~afern/classes/cs533/notes/uct.pdf, top of page 8 here: https://arxiv.org/pdf/1402.6028.pdf, first formula in section 4. Experiments here: https://cesa-bianchi.di.unimi.it/Pubblicazioni/ml-02.pdf
+//            std::vector<std::pair<std::string, std::string>> moveTracker;
+//            moveTracker.reserve(x.reserve_amount);
+//            temp_legal_moves.reserve(x.reserve_amount);
+//            state.reserve(2*x.reserve_amount);
+//            //        double str_convert_time = 0.0;
+//            auto getString  = [&]()
+//            {
+//                if (!x.srnn.pieces.empty())
+//                {
+//                    state += x.srnn.pieces[x.srnn.pieces.size()-1] + " ";
+//                }
+//            };
+//            
+//            for (int i = 0; (timeElapsedSince(start_time) < time); i++)
+//            {
+//                if (i && (i%50000 == 0))
+//                {
+//                    //                    std::cout << "Unique expressions = " << Board::expression_set.size() << '\n';
+//                    //                    std::cout << "check_point_score = " << check_point_score
+//                    //                    << ", max_score = " << max_score << ", c = " << c << '\n';
+//                    if (check_point_score == max_score)
+//                    {
+//                        //                        std::cout << "c: " << c << " -> ";
+//                        c += 1.4;
+//                        //                        std::cout << c << '\n';
+//                    }
+//                    else
+//                    {
+//                        //                        std::cout << "c: " << c << " -> ";
+//                        c = 1.4; //if new best found, reset c and try to exploit the new best
+//                        //                        std::cout << c << '\n';
+//                        check_point_score = max_score;
+//                    }
+//                }
+//                state.clear();
+//                while ((score = x.complete_status()) == -1)
+//                {
+//                    temp_legal_moves = x.get_legal_moves();
+////                    auto start_time = Clock::now();
+//                    getString();
+////                    str_convert_time += timeElapsedSince(start_time);
+//                    UCT = 0.0f;
+//                    UCT_best = -FLT_MAX;
+//                    best_act = "-1";
+//                    std::vector<std::string> best_acts;
+//                    best_acts.reserve(temp_legal_moves.size());
+//                    
+//                    for (const std::string& a: temp_legal_moves)
+//                    {
+//                        if (Nsa[state].count(a))
+//                        {
+//                            UCT = Qsa[state][a] + c*sqrt(log(Ns[state])/Nsa[state][a]);
+//                        }
+//                        else
+//                        {
+//                            //not explored -> explore it.
+//                            best_acts.push_back(a);
+//                            UCT = -FLT_MAX;
+//                        }
+//                        
+//                        if (UCT > UCT_best)
+//                        {
+//                            best_act = a;
+//                            UCT_best = UCT;
+//                        }
+//                    }
+//                    
+//                    if (best_acts.size())
+//                    {
+//                        std::uniform_int_distribution<int> distribution(0, best_acts.size() - 1);
+//                        best_act = best_acts[distribution(generator)];
+//                    }
+//                    x.srnn.pieces.push_back(best_act);
+//                    moveTracker.push_back(make_pair(state, best_act));
+//                    Ns[state]++;
+//                    Nsa[state][best_act]++;
+//                }
+//                //backprop reward `score`
+//                for (auto& state_action: moveTracker)
+//                {
+//                    Qsa[state_action.first][state_action.second] = std::max(Qsa[state_action.first][state_action.second], score);
+//                }
+//                
+//                if (score > max_score)
+//                {
+//                    max_score = score;
+//                    std::scoped_lock str_lock(Board::thread_locker);
+//                    best_expression = x._to_infix();
+//                    orig_expression = x.expression();
+//                }
+//                x.srnn.pieces.clear();
+//                moveTracker.clear();
+//            }
+//        };
+//        
+//        for (unsigned int i = 0; i < num_threads; i++)
+//        {
+//            threads[i] = std::thread(func); 
+//        }
+//        
+//        for (unsigned int i = 0; i < num_threads; i++)
+//        {
+//            threads[i].join();
+//        }
+//        
+//        // Join the separate thread to ensure it has finished before exiting
+//        pushBackThread.join();
+//        
+//        for (auto& i: temp_scores)
+//        {
+//            scores[i.first].push_back(i.second);
+//        }
+//        
+//        std::cout << "\nUnique expressions = " << Board::expression_set.size() << '\n';
+//        std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
+//        std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+//        std::cout << "Best expression = " << best_expression << '\n';
+//        std::cout << "Best expression (original format) = " << orig_expression << '\n';
+//    }
+//    std::ofstream out(filename);
+//    for (auto& i: scores)
+//    {
+//        out << i.first << ',';
+//        for (auto& j: i.second)
+//        {
+//            out << j << ((&j == &i.second.back()) ? '\n' : ',');
+//        }
+//    }
+//    out.close();
+//}
+//
+//void RandomSearch(const Eigen::MatrixXf& data, const int depth = 3, const std::string expression_type = "prefix", const bool cache = true, const double time = 120.0 /*time to run the algorithm in seconds*/, const int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/, const char* filename = "" /*name of file to save the results to*/, const int num_runs = 50 /*number of runs*/, unsigned int num_threads = 0, std::vector<int> layers = {}, std::deque<std::string> layer_types = {}, const unsigned long num_epochs = 1000, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f, float lambda = 0.01f /*weight decay AdamW*/)
+//{
+//    std::map<int, std::vector<float>> scores; //map to store the scores
+//    size_t measure_period = static_cast<size_t>(time/interval);
+//    
+//    if (num_threads == 0)
+//    {
+//        unsigned int temp = std::thread::hardware_concurrency();
+//        num_threads = ((temp <= 1) ? 1 : temp-1);
+//    }
+//    
+//    std::vector<std::thread> threads(num_threads);
+//    std::latch sync_point(num_threads);
+//    
+//    for (int run = 1; run <= num_runs; run++)
+//    {
+//        /*
+//         Outside of thread:
+//         */
+//        
+//        std::atomic<float> max_score{0.0};
+//        std::vector<std::pair<size_t, float>> temp_scores;
+//        std::string best_expression, orig_expression;
+//        
+//        auto start_time = Clock::now();
+//        std::thread pushBackThread([&]()
+//        {
+//            while (timeElapsedSince(start_time) < time)
+//            {
+//                std::this_thread::sleep_for(std::chrono::seconds(measure_period));
+//                
+//                temp_scores.push_back(std::make_pair(static_cast<size_t>(timeElapsedSince(start_time)), max_score.load()));
+//            }
+//        });
+//        
+//        /*
+//         Inside of thread:
+//         */
+//        
+//        auto func = [&depth, &expression_type, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &layer_types, &num_epochs, &bias, &eta, &theta, &gamma, &epsilon, &beta_1, &beta_2, &lambda, &best_expression, &orig_expression]()
+//        {
+//            std::random_device rand_dev;
+//            std::mt19937 thread_local generator(rand_dev()); // Mersenne Twister random number generator
+//            Board x(depth, expression_type, data, false, cache, layers, layer_types, num_epochs, bias, eta, theta, gamma, epsilon, beta_1, beta_2, lambda);
+//            sync_point.arrive_and_wait();
+//            float score = 0.0f;
+//            std::vector<std::string> temp_legal_moves;
+//            size_t temp_sz;
+//            while (timeElapsedSince(start_time) < time)
+//            {
+//                while ((score = x.complete_status()) == -1)
+//                {
+//                    temp_legal_moves = x.get_legal_moves(); //the legal moves
+//                    temp_sz = temp_legal_moves.size(); //the number of legal moves
+////                    assert(temp_sz);
+//                    std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
+//                    {
+//                        x.srnn.pieces.emplace_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
+//                    }
+//                }
+//                assert(((x.expression_type == "prefix") ? x.getPNdepth(x.srnn.pieces) : x.getRPNdepth(x.srnn.pieces)).first == x.n);
+//                assert(((x.expression_type == "prefix") ? x.getPNdepth(x.srnn.pieces) : x.getRPNdepth(x.srnn.pieces)).second);
+//
+//                if (score > max_score)
+//                {
+//                    max_score = score;
+//                    std::scoped_lock str_lock(Board::thread_locker);
+//                    best_expression = x._to_infix();
+//                    orig_expression = x.expression();
+//                }
+//                x.srnn.pieces.clear();
+//            }
+//        };
+//        
+//        for (unsigned int i = 0; i < num_threads; i++)
+//        {
+//            threads[i] = std::thread(func); 
+//        }
+//        
+//        for (unsigned int i = 0; i < num_threads; i++)
+//        {
+//            threads[i].join();
+//        }
+//        
+//        // Join the separate thread to ensure it has finished before exiting
+//        pushBackThread.join();
+//        
+//        for (auto& i: temp_scores)
+//        {
+//            scores[i.first].push_back(i.second);
+//        }
+//        
+//        std::cout << "\nUnique expressions = " << Board::expression_set.size() << '\n';
+//        std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
+//        std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
+//        std::cout << "Best expression = " << best_expression << '\n';
+//        std::cout << "Best expression (original format) = " << orig_expression << '\n';
+//        
+//    }
+//    std::ofstream out(filename);
+//    for (auto& i: scores)
+//    {
+//        out << i.first << ',';
+//        for (auto& j: i.second)
+//        {
+//            out << j << ((&j == &i.second.back()) ? '\n' : ',');
+//        }
+//    }
+//    out.close();
+//    
+//}
 
 int main()
 {
