@@ -434,10 +434,10 @@ def test_visualize():
             os.system(f"open -a Xcode {file_name}.tex")
             os.system(f"open -a Safari {file_name}.pdf")
     else:
-        pn_to_rpn = False
+        pn_to_rpn = True
         rpn_to_pn = False
         if pn_to_rpn:
-            prefix_expr = "+ + 2.470186 / cos * 12.904707 x0 -0.231952 * -34.520199 sech - / -1.672608 x0 -3.543392"
+            prefix_expr = "* * 32.963733 ^ 0.498148 cos * 7.438650 x0 + -0.629287 sech - * x0 11.182829 2.156483"
             print(prefix_to_postfix(prefix_expr))
         elif rpn_to_pn:
             postfix_expr = "μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -"

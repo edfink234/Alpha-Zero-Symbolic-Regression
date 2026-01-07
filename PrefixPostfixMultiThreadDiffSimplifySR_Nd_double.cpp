@@ -10913,7 +10913,7 @@ namespace ExampleProblems
                 1 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
                 std::vector<int>{5} /*fixed depths of generated solution*/,
-                "prefix" /*expression representation*/,
+                "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
                 5 /*number of fit iterations*/,
@@ -10931,14 +10931,14 @@ namespace ExampleProblems
                 "WierdTrackSR.txt", // "" /*filename to save current best expression found (instead of outputting them to standard out)*/
                 std::vector<int>{17} /*optional max-sizes of each of the expressions in the generated solution*/,
                 {/*split(seed_exprs[track_idx])*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
-                {split("* / 32.963733 ^ 2.007435 cos * -7.438650 x0 + -0.629287 sech / + x0 -0.192839 -0.089423")} /*seed expressions*/,
+                {split("32.963733 0.498148 7.438650 x0 * cos ^ * -0.629287 x0 11.182829 * 2.156483 - sech + *")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
                 0.0 /*T_max*/,
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "WierdTrackSR.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
-                false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
+                true /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
                 "n_random" /*perturbation option: either "sub_array", "n_random", or (default) "sub_tree"*/);
         }
     }
