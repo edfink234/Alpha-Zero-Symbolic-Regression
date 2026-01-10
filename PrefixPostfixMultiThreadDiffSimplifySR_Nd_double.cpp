@@ -6694,7 +6694,7 @@ std::vector<std::vector<std::string>> WierdTrackFitter(Board& x, bool fit)
 {
     /*
      '''
-import numpy as np; np.sech = lambda x: 1/np.cosh(x); x='(1.063081 + (cos((12.904707 * x0)) / ~(0.231952)))'.replace("acos", "np.arccos").replace("cos", "np.cos").replace("^","**").replace("~", "-").replace("sin","np.sin").replace("sqrt","np.sqrt").replace("np.arcnp.cos", "np.arccos").replace("exp", "np.exp").replace("sech", "np.sech"); print(x); import sympy as sp; y = x.replace("np","sp").replace("arccos","acos"); print(y); x0 = sp.symbols("x0"); print(str(eval(y)).replace('cos','sp.cos').replace("x0","s").replace("sech","sp.sech")); round_floats = lambda expr, ndigits: expr.xreplace({f: sp.Float(round(float(f), ndigits)) for f in expr.atoms(sp.Float)}); func_sym_r = round_floats(eval(y), 2); print(sp.latex(func_sym_r));
+import numpy as np; np.sech = lambda x: 1/np.cosh(x); x='((((32.447514 * (0.504605 ^ cos((-7.366583 * x0)))) * (-0.625838 + sech((-2.228831 - (-11.506890 * x0))))) + cos((4 ^ (2.493088 - x0)))) + ((1.013971 - x0) ^ 94.208788))'.replace("acos", "np.arccos").replace("cos", "np.cos").replace("^","**").replace("~", "-").replace("sin","np.sin").replace("sqrt","np.sqrt").replace("np.arcnp.cos", "np.arccos").replace("exp", "np.exp").replace("sech", "np.sech").replace("x0","s"); print(x); import sympy as sp; y = x.replace("np","sp").replace("arccos","acos"); print(y); s = sp.symbols("s"); print(str(eval(y)).replace('cos','sp.cos').replace("x0","s").replace("sech","sp.sech")); round_floats = lambda expr, ndigits: expr.xreplace({f: sp.Float(round(float(f), ndigits)) for f in expr.atoms(sp.Float)}); func_sym_r = round_floats(eval(y), 2); print(sp.latex(func_sym_r));
      
      '''
      
@@ -6714,6 +6714,16 @@ import numpy as np; np.sech = lambda x: 1/np.cosh(x); x='(1.063081 + (cos((12.90
             Squared-norm error for each equation: 117.356
             Best expression = ((32.963733 / (2.007435 ^ cos((-7.438650 * x0)))) * (-0.629287 + sech(((x0 + -0.192839) / -0.089423))))
             Best expression (original format) = 32.963733 2.007435 -7.438650 x0 * cos ^ / -0.629287 x0 -0.192839 + -0.089423 / sech + *
+        depth = 6, maxsize = 24:
+            Best score = 0.0164764, SNE = 59.6928
+            Squared-norm error for each equation: 59.6928
+            Best expression = (((-32.328441 * (0.499611 ^ cos((7.372799 * x0)))) * (0.628265 - sech((-11.271965 * (x0 - 0.192670))))) + cos((-31.669971 / (4 ^ x0))))
+            Best expression (original format) = + * * -32.328441 ^ 0.499611 cos * 7.372799 x0 - 0.628265 sech * -11.271965 - x0 0.192670 cos / -31.669971 ^ 4 x0
+        depth = 7, maxsize = 30:
+            Best score = 0.0222969, SNE = 43.8493
+            Squared-norm error for each equation: 43.8493
+            Best expression = ((((32.515621 * (0.505796 ^ cos((-7.366583 * x0)))) * (-0.623987 + sech((-2.245282 - (-11.582661 * x0))))) + cos((4 ^ (2.493088 - x0)))) + ((1.013971 - x0) ^ 95.073134))
+            Best expression (original format) = 32.515621 0.505796 -7.366583 x0 * cos ^ * -0.623987 -2.245282 -11.582661 x0 * - sech + * 4 2.493088 x0 - ^ cos + 1.013971 x0 - 95.073134 ^ +
 
      */
     const thread_local bool add_aditive = x.additiveCorrections.size();
@@ -8176,10 +8186,10 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
     /*
-     Best score = 7.87564e-05, SNE = 12696.4
-     Squared-norm error for each equation: 12685.8 10.6349 0 
-     Best expression = ((((((1 + x0) ^ 11) * 2.714063472005533e-13) + 0.708613313588054) - (((0.9999500004166652 ^ (x0 ^ 4)) * (sin(x1) * 0.9999500004166652)) * (0.9989466681769272 * (sin(x0) * 0.9999500004166652)))) - ((((5.039999999999999 + (x1 + 4)) / -11.887722339831619) * 0.01869697542275992) + (((x0 / (x0 + 2)) ^ ((x0 + 0.010000) + 6.343189999999999)) + 0.08381983896197509)))
-     Best expression (original format) = 1 x0 + 11 ^ 2.714063472005533e-13 * 0.708613313588054 + 0.9999500004166652 x0 4 ^ ^ x1 sin 0.9999500004166652 * * 0.9989466681769272 x0 sin 0.9999500004166652 * * * - 5.039999999999999 x1 4 + + -11.887722339831619 / 0.01869697542275992 * x0 x0 2 + / x0 0.010000 + 6.343189999999999 + ^ 0.08381983896197509 + + -
+     Best score = 7.87565e-05, SNE = 12696.4
+     Squared-norm error for each equation: 12685.8 10.5746 0
+     Best expression = ((((((1 + x0) ^ 11) * 2.714063472005533e-13) + 0.7086086207679116) - (((0.9999500004166652 ^ (x0 ^ 4)) * (sin(x1) * 0.9999500004166652)) * (0.9989466681769272 * (sin(x0) * 0.9999500004166652)))) - ((((5.049999999999999 + (x1 + 4)) / -11.89772233983162) * 0.01865962687364277) + (((x0 / (x0 + 2)) ^ ((x0 + 0.010000) + 6.343189999999999)) + 0.08376984979528616)))
+     Best expression (original format) = 1 x0 + 11 ^ 2.714063472005533e-13 * 0.7086086207679116 + 0.9999500004166652 x0 4 ^ ^ x1 sin 0.9999500004166652 * * 0.9989466681769272 x0 sin 0.9999500004166652 * * * - 5.049999999999999 x1 4 + + -11.89772233983162 / 0.01865962687364277 * x0 x0 2 + / x0 0.010000 + 6.343189999999999 + ^ 0.08376984979528616 + + -
      ```
 x = "(((((10.36319 ^ (0.010000 + x0)) * 2.717825964282383e-13) + 0.7081941989561602) - (((0.9999500004166652 ^ (x0 ^ 4)) * (sin(x1) * 0.9999500004166652)) * (0.9989466681769272 * (sin(x0) * 0.9999500004166652)))) - ((((6.28319 + (x1 + 6.283190)) / -11.83772233983162) * 0.0194179015370882) + (((x0 / (x0 + 2)) ^ ((x0 + 0.010000) + 6.343189999999999)) + 0.08395124401384103)))"
 print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-"))
@@ -10878,7 +10888,7 @@ namespace ExampleProblems
                 "-34.520199 9.030267 sqrt x0 -1.453420 ^ - sech * 4 x0 0.077712 / cos ~ * +",
                 "* -34.520199 sech - sqrt 9.030267 ^ x0 -1.453420",
                 "32.963733 0.498148 7.438650 x0 * cos ^ * -0.629287 x0 11.182829 * 2.156483 - sech + *",
-                "32.588686 0.498852 7.438650 x0 * cos ^ * -0.632568 x0 11.182829 * 2.156483 - sech + * 54.598150033144236 1.076503 x0 + / cos +"
+                "1.977080 5.108000 -7.366583 x0 * cos - ^ -0.623987 -2.245282 -11.582661 x0 * - sech + * 4 2.493088 x0 - ^ cos + 1.013971 x0 - 95.073134 ^ +"
                 "",
             }[6]
         };
@@ -10914,11 +10924,11 @@ namespace ExampleProblems
             SimulatedAnnealing(WierdTrackFitter /*differential equation to solve*/,
                 1 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{6} /*fixed depths of generated solution*/,
+                std::vector<int>{7} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
-                5 /*number of fit iterations*/,
+                500 /*number of fit iterations*/,
                 "naive_numerical" /*method for computing the gradient*/,
                 true /*cache*/,
                 time /*time to run the algorithm in seconds*/,
@@ -10931,7 +10941,7 @@ namespace ExampleProblems
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "WierdTrackSR.txt", // "" /*filename to save current best expression found (instead of outputting them to standard out)*/
-                std::vector<int>{24} /*optional max-sizes of each of the expressions in the generated solution*/,
+                std::vector<int>{30} /*optional max-sizes of each of the expressions in the generated solution*/,
                 {/*split(seed_exprs[track_idx])*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 {split(seed_exprs[track_idx])} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
@@ -10940,7 +10950,7 @@ namespace ExampleProblems
                 0.0 /*T_max*/,
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "WierdTrackSR.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
-                false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
+                true /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
                 "sub_tree" /*perturbation option: either "sub_array", "n_random", or (default) "sub_tree"*/);
         }
     }
@@ -11087,3 +11097,7 @@ g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd_double PrefixP
 
 
 //a half built garden
+
+
+//g++ -Wall -std=c++20 -o PrefixPostfixMultiThreadDiffSimplifySR_Nd_double PrefixPostfixMultiThreadDiffSimplifySR_Nd_double.cpp -O2 -I/usr/include/eigen3 -I./LBFGSpp/include -I./boost/1.84.0/include -march=native
+

@@ -437,10 +437,10 @@ def test_visualize():
         pn_to_rpn = False
         rpn_to_pn = False
         if pn_to_rpn:
-            prefix_expr = "* * 32.963733 ^ 0.498148 cos * 7.438650 x0 + -0.629287 sech - * x0 11.182829 2.156483"
+            prefix_expr = "+ + * * -32.328441 ^ 0.499684 cos * 7.372799 x0 - 0.629393 sech * 11.236163 + -0.192660 x0 cos ^ 4 - 2.492479 x0 ^ - 1.004849 x0 256"
             print(prefix_to_postfix(prefix_expr))
         elif rpn_to_pn:
-            postfix_expr = "μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -"
+            postfix_expr = "-32.328441 0.500132 7.372799 x0 * cos ^ * 0.628265 -11.305168 x0 0.192794 - * sech - * -31.669971 4 x0 ^ / cos +"
             print(postfix_to_prefix(postfix_expr))
         else:
             expression_type_to_plot = ["prefix", "postfix"][1]
@@ -456,7 +456,7 @@ def test_visualize():
                 plot_pn_expression_tree(complete_pn_expr, save = save, include_expression_in_title = False)
 
             else:
-                complete_rpn_expr = "32.963733 0.498148 7.438650 x0 * cos ^ * -0.629287 x0 11.182829 * 2.156483 - sech + * 54.598150033144236 1.076817 x0 + / cos +"
+                complete_rpn_expr = "-32.328441 0.499684 7.372799 x0 * cos ^ * 0.629393 11.236163 -0.192660 x0 + * sech - * 4 2.492479 x0 - ^ cos + 1.004849 x0 - 256 ^ +"
                 if completeTree:
                     complete_rpn_expr = complete_tree(complete_rpn_expr.split(), "postfix") #returns a list
                 else:
