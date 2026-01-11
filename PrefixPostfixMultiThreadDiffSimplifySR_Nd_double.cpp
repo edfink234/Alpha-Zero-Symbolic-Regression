@@ -884,6 +884,64 @@ double loss_func(const Eigen::VectorXd& actual, const Eigen::VectorXd& predicted
 
 struct Board
 {
+    struct ExprDag
+    {
+        enum class Kind : uint8_t
+        {
+            Leaf,
+            Unary,
+            Binary
+        };
+
+        struct Node
+        {
+            Kind kind = Kind::Leaf;
+
+            // For Leaf: token stores the leaf token (e.g. "const3", "x", "0", "1", "2", "4", "3.14")
+            // For Unary/Binary: token stores the operator (e.g. "sin", "+", "^", "~")
+            std::string token;
+
+            // Child indices in nodes vector. Unused for Leaf.
+            int child0 = -1; // unary child, or binary left child
+            int child1 = -1; // binary right child
+        };
+
+        std::vector<Node> nodes;
+        int root = -1;
+    };
+    
+    struct DagNodeKey
+    {
+        ExprDag::Kind kind;
+        std::string token;
+        int c0;
+        int c1;
+
+        bool operator==(const DagNodeKey& other) const
+        {
+            return kind == other.kind && token == other.token && c0 == other.c0 && c1 == other.c1;
+        }
+    };
+
+    struct DagNodeKeyHash
+    {
+        std::size_t operator()(const DagNodeKey& k) const
+        {
+            // A simple hash combine
+            std::size_t h = 1469598103934665603ULL; // FNV offset basis
+            auto mix = [&](std::size_t x) {
+                h ^= x;
+                h *= 1099511628211ULL;
+            };
+
+            mix(static_cast<std::size_t>(k.kind));
+            mix(std::hash<std::string>{}(k.token));
+            mix(std::hash<int>{}(k.c0));
+            mix(std::hash<int>{}(k.c1));
+            return h;
+        }
+    };
+    
     static boost::concurrent_flat_map<std::string, Eigen::VectorXd> inline expression_dict;
     static constexpr size_t max_expression_dict_sz = 100000000; //one-hundred million
     static std::atomic<double> inline fit_time = 0.0;
@@ -946,6 +1004,7 @@ struct Board
     bool simplify_original;
     bool mustHaveAllFeatures;
     std::vector<std::vector<std::string>> customFeatures;
+    bool graph_eval;
     bool complete_Tree;
     std::vector<int> maxSize; //max size (number of tokens) for each expression
     std::vector<std::vector<std::string>> additiveCorrections; //Starting-point, s.t candidate-expression += additiveCorrections (user-implemented though)
@@ -971,8 +1030,9 @@ struct Board
           const std::vector<std::vector<std::string>>& custom_features = {},
           std::vector<int> max_size = {},
           const std::vector<std::vector<std::string>>& additive_corrections = {},
+          bool graphEval = false,
           bool completeTree = false) :
-          gen{rd()}, vel_dist{-1.0, 1.0}, pos_dist{0.0, 1.0}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, n{depth}, is_primary{primary}, simplify_original{simplifyOriginal}, mustHaveAllFeatures{must_have_all_features}, customFeatures{custom_features}, complete_Tree{completeTree}, maxSize{max_size}, additiveCorrections{additive_corrections}
+            gen{rd()}, vel_dist{-1.0, 1.0}, pos_dist{0.0, 1.0}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, n{depth}, is_primary{primary}, simplify_original{simplifyOriginal}, mustHaveAllFeatures{must_have_all_features}, customFeatures{custom_features}, graph_eval{graphEval}, complete_Tree{completeTree}, maxSize{max_size}, additiveCorrections{additive_corrections}
     {
         assert(n.size());
         assert(((!maxSize.size()) || (maxSize.size() && maxSize.size() == n.size())) && "if `maxSize` is not empty it much be equal in size to the depth-vector `n`");
@@ -4109,7 +4169,199 @@ struct Board
         temp += expression(pieces[sz], show_consts);
         return temp;
     }
+    
+    ExprDag pieces_to_dag(const std::vector<std::string>& pieces) const
+    {
+        ExprDag dag;
+        dag.nodes.reserve(pieces.size()); // upper bound
 
+        // Intern table: key -> node id
+        std::unordered_map<DagNodeKey, int, DagNodeKeyHash> intern;
+        intern.reserve(pieces.size() * 2);
+
+        auto intern_node = [&](ExprDag::Kind kind,
+                               const std::string& token,
+                               int c0,
+                               int c1) -> int
+        {
+            DagNodeKey key{kind, token, c0, c1};
+            auto it = intern.find(key);
+            if (it != intern.end())
+                return it->second;
+
+            int id = static_cast<int>(dag.nodes.size());
+            ExprDag::Node n;
+            n.kind = kind;
+            n.token = token;
+            n.child0 = c0;
+            n.child1 = c1;
+            dag.nodes.push_back(std::move(n));
+            intern.emplace(std::move(key), id);
+            return id;
+        };
+
+        std::stack<int> st;
+        const bool is_prefix = (expression_type == "prefix");
+
+        for (int i = (is_prefix ? (static_cast<int>(pieces.size()) - 1) : 0);
+             (is_prefix ? (i >= 0) : (i < static_cast<int>(pieces.size())));
+             (is_prefix ? --i : ++i))
+        {
+            const std::string& token = pieces[i];
+            assert(!token.empty());
+
+            if (is_const(token)) // leaf
+            {
+                int id = intern_node(ExprDag::Kind::Leaf, token, -1, -1);
+                st.push(id);
+            }
+            else if (is_unary(token))
+            {
+                if (st.empty())
+                    throw std::runtime_error("Malformed expression: unary operator with empty stack: " + token);
+
+                int child = st.top(); st.pop();
+                int id = intern_node(ExprDag::Kind::Unary, token, child, -1);
+                st.push(id);
+            }
+            else // binary
+            {
+                if (st.size() < 2)
+                    throw std::runtime_error("Malformed expression: binary operator with <2 operands: " + token);
+
+                int first = st.top(); st.pop();
+                int second = st.top(); st.pop();
+
+                // IMPORTANT:
+                // This matches your evaluator’s pop order + its postfix swap logic.
+                // - postfix: right_operand is second pop, left_operand is first pop in code,
+                //            but the operation is (right op left) => semantic left=second, right=first
+                // - prefix (scanning reversed): operation is (left op right) with left=first, right=second
+                int left  = (expression_type == "postfix") ? second : first;
+                int right = (expression_type == "postfix") ? first  : second;
+
+                int id = intern_node(ExprDag::Kind::Binary, token, left, right);
+                st.push(id);
+            }
+        }
+
+        if (st.empty())
+            throw std::runtime_error("Malformed expression: empty result stack.");
+
+        if (st.size() != 1)
+            throw std::runtime_error("Malformed expression: stack has extra items at end.");
+
+        dag.root = st.top();
+        return dag;
+    }
+
+    Eigen::VectorXd evaluate_dag(const Eigen::VectorXd& params, const ExprDag& dag) const
+    {
+        if (dag.root < 0 || dag.root >= static_cast<int>(dag.nodes.size()))
+            throw std::runtime_error("Invalid DAG root.");
+
+        const int N = static_cast<int>(dag.nodes.size());
+        std::vector<std::optional<Eigen::VectorXd>> memo(N);
+
+        auto eval_leaf = [&](const std::string& token) -> Eigen::VectorXd
+        {
+            // This is your leaf logic, unchanged in behavior.
+            if (token.compare(0, 5, "const") == 0)
+            {
+                int temp_idx = std::stoi(token.substr(5));
+                if (temp_idx >= params.size())
+                {
+                    throw std::runtime_error("\ntemp_idx = " + std::to_string(temp_idx)
+                                             + "\nparams.size() = " + std::to_string(params.size())
+                                             + "\nnum_consts = " + std::to_string(this->__num_consts())
+                                             + "\nBoard::expression_dict.size() = " + std::to_string(Board::expression_dict.size()));
+                }
+                return Eigen::VectorXd::Ones(Board::data.numRows()) * params(temp_idx);
+            }
+            else if (token == "0")
+            {
+                return Eigen::VectorXd::Zero(Board::data.numRows());
+            }
+            else if (token == "1")
+            {
+                return Eigen::VectorXd::Ones(Board::data.numRows());
+            }
+            else if (token == "2")
+            {
+                return Eigen::VectorXd::Ones(Board::data.numRows()) * 2.0;
+            }
+            else if (token == "4")
+            {
+                return Eigen::VectorXd::Ones(Board::data.numRows()) * 4.0;
+            }
+            else if (isdouble(token))
+            {
+                return Eigen::VectorXd::Ones(Board::data.numRows()) * Stod(token);
+            }
+            else if (this->subs_dict.size() && this->subs_dict.count(token))
+            {
+                return this->subs_dict.at(token);
+            }
+            else
+            {
+                return Board::data[token];
+            }
+        };
+
+        // Recursive lambda needs std::function (or a y-combinator).
+        std::function<const Eigen::VectorXd&(int)> dfs = [&](int id) -> const Eigen::VectorXd&
+        {
+            auto& slot = memo[id];
+            if (slot.has_value())
+                return *slot;
+
+            const auto& node = dag.nodes[id];
+
+            if (node.kind == ExprDag::Kind::Leaf)
+            {
+                slot = eval_leaf(node.token);
+                return *slot;
+            }
+
+            if (node.kind == ExprDag::Kind::Unary)
+            {
+                const Eigen::VectorXd& x = dfs(node.child0);
+
+                if (node.token == "cos")      slot = x.array().cos();
+                else if (node.token == "exp") slot = x.array().exp();
+                else if (node.token == "sqrt")slot = x.array().sqrt();
+                else if (node.token == "sin") slot = x.array().sin();
+                else if (node.token == "asin" || node.token == "arcsin") slot = x.array().asin();
+                else if (node.token == "log"  || node.token == "ln")     slot = x.array().log();
+                else if (node.token == "tanh") slot = x.array().tanh();
+                else if (node.token == "sech") slot = 1.0 / x.array().cosh();
+                else if (node.token == "acos" || node.token == "arccos") slot = x.array().acos();
+                else if (node.token == "~")    slot = (-x.array()).matrix();
+                else if (node.token == "abs")  slot = x.array().cwiseAbs();
+                else
+                    throw std::runtime_error("Unknown unary operator in DAG: " + node.token);
+
+                return *slot;
+            }
+
+            // Binary
+            const Eigen::VectorXd& L = dfs(node.child0);
+            const Eigen::VectorXd& R = dfs(node.child1);
+
+            if (node.token == "+")      slot = (L.array() + R.array()).matrix();
+            else if (node.token == "-") slot = (L.array() - R.array()).matrix();
+            else if (node.token == "*") slot = (L.array() * R.array()).matrix();
+            else if (node.token == "/") slot = (L.array() / R.array()).matrix();
+            else if (node.token == "^") slot = (L.array().pow(R.array())).matrix();
+            else
+                throw std::runtime_error("Unknown binary operator in DAG: " + node.token);
+
+            return *slot;
+        };
+
+        return dfs(dag.root); // returns a copy (memo holds the stored value)
+    }
+    
     double expression_evaluator(const Eigen::VectorXd& params, const std::vector<std::string>& pieces, double t) const
     {
         std::stack<double> stack;
@@ -4564,7 +4816,15 @@ struct Board
 
         for (size_t idx = 0; idx < sz; idx++) //looping over each equation
         {
-            temp[idx] = expression_evaluator(params, pieces[idx]);
+            if (this->graph_eval)
+            {
+                ExprDag dag = pieces_to_dag(pieces[idx]);
+                temp[idx] = evaluate_dag(params, dag);
+            }
+            else
+            {
+                temp[idx] = expression_evaluator(params, pieces[idx]);
+            }
         }
         return temp;
     }
@@ -6694,7 +6954,7 @@ std::vector<std::vector<std::string>> WierdTrackFitter(Board& x, bool fit)
 {
     /*
      '''
-import numpy as np; np.sech = lambda x: 1/np.cosh(x); x='((((32.447514 * (0.504605 ^ cos((-7.366583 * x0)))) * (-0.625838 + sech((-2.228831 - (-11.506890 * x0))))) + cos((4 ^ (2.493088 - x0)))) + ((1.013971 - x0) ^ 94.208788))'.replace("acos", "np.arccos").replace("cos", "np.cos").replace("^","**").replace("~", "-").replace("sin","np.sin").replace("sqrt","np.sqrt").replace("np.arcnp.cos", "np.arccos").replace("exp", "np.exp").replace("sech", "np.sech").replace("x0","s"); print(x); import sympy as sp; y = x.replace("np","sp").replace("arccos","acos"); print(y); s = sp.symbols("s"); print(str(eval(y)).replace('cos','sp.cos').replace("x0","s").replace("sech","sp.sech")); round_floats = lambda expr, ndigits: expr.xreplace({f: sp.Float(round(float(f), ndigits)) for f in expr.atoms(sp.Float)}); func_sym_r = round_floats(eval(y), 2); print(sp.latex(func_sym_r));
+import numpy as np; np.sech = lambda x: 1/np.cosh(x); x='(((((0.509134 ^ (-5.151904 + cos((x0 * 7.366820)))) * (-0.621943 + sech((-2.278212 + (11.746326 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.981511 + x0) ^ -72.822877)) - (0.010065 / (-0.481231 + x0)))'.replace("acos", "np.arccos").replace("cos", "np.cos").replace("^","**").replace("~", "-").replace("sin","np.sin").replace("sqrt","np.sqrt").replace("np.arcnp.cos", "np.arccos").replace("exp", "np.exp").replace("sech", "np.sech").replace("x0","s"); print(x); import sympy as sp; y = x.replace("np","sp").replace("arccos","acos"); print(y); s = sp.symbols("s"); print(str(eval(y)).replace('cos','sp.cos').replace("x0","s").replace("sech","sp.sech")); round_floats = lambda expr, ndigits: expr.xreplace({f: sp.Float(round(float(f), ndigits)) for f in expr.atoms(sp.Float)}); func_sym_r = round_floats(eval(y), 2); print(sp.latex(func_sym_r));
      
      '''
      
@@ -6720,10 +6980,15 @@ import numpy as np; np.sech = lambda x: 1/np.cosh(x); x='((((32.447514 * (0.5046
             Best expression = (((-32.328441 * (0.499611 ^ cos((7.372799 * x0)))) * (0.628265 - sech((-11.271965 * (x0 - 0.192670))))) + cos((-31.669971 / (4 ^ x0))))
             Best expression (original format) = + * * -32.328441 ^ 0.499611 cos * 7.372799 x0 - 0.628265 sech * -11.271965 - x0 0.192670 cos / -31.669971 ^ 4 x0
         depth = 7, maxsize = 30:
-            Best score = 0.0222969, SNE = 43.8493
-            Squared-norm error for each equation: 43.8493
-            Best expression = ((((32.515621 * (0.505796 ^ cos((-7.366583 * x0)))) * (-0.623987 + sech((-2.245282 - (-11.582661 * x0))))) + cos((4 ^ (2.493088 - x0)))) + ((1.013971 - x0) ^ 95.073134))
-            Best expression (original format) = 32.515621 0.505796 -7.366583 x0 * cos ^ * -0.623987 -2.245282 -11.582661 x0 * - sech + * 4 2.493088 x0 - ^ cos + 1.013971 x0 - 95.073134 ^ +
+            Best score = 0.0224682, SNE = 43.5074
+            Squared-norm error for each equation: 43.5074
+            Best expression = ((((0.507194 ^ (-5.130599 + cos((x0 * -7.361629)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.981453 + x0) ^ -72.499292))
+            Best expression (original format) = 0.507194 -5.130599 x0 -7.361629 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.981453 x0 + -72.499292 ^ +
+        depth = 8, maxsize = 36:
+            Best score = 0.0275565, SNE = 35.2891
+            Squared-norm error for each equation: 35.2891
+            Best expression = (((((0.509134 ^ (-5.151904 + cos((x0 * 7.366820)))) * (-0.621943 + sech((-2.278212 + (11.746326 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.981511 + x0) ^ -72.822877)) - (0.010065 / (-0.481231 + x0)))
+            Best expression (original format) = 0.509134 -5.151904 x0 7.366820 * cos + ^ -0.621943 -2.278212 11.746326 x0 * + sech + * 4 2.492631 x0 - ^ cos + 0.981511 x0 + -72.822877 ^ + 0.010065 -0.481231 x0 + / -
 
      */
     const thread_local bool add_aditive = x.additiveCorrections.size();
@@ -8188,10 +8453,10 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
     /*
      Best score = 7.87565e-05, SNE = 12696.4
      Squared-norm error for each equation: 12685.8 10.5746 0
-     Best expression = ((((((1 + x0) ^ 11) * 2.714063472005533e-13) + 0.7086086207679116) - (((0.9999500004166652 ^ (x0 ^ 4)) * (sin(x1) * 0.9999500004166652)) * (0.9989466681769272 * (sin(x0) * 0.9999500004166652)))) - ((((5.049999999999999 + (x1 + 4)) / -11.89772233983162) * 0.01865962687364277) + (((x0 / (x0 + 2)) ^ ((x0 + 0.010000) + 6.343189999999999)) + 0.08376984979528616)))
-     Best expression (original format) = 1 x0 + 11 ^ 2.714063472005533e-13 * 0.7086086207679116 + 0.9999500004166652 x0 4 ^ ^ x1 sin 0.9999500004166652 * * 0.9989466681769272 x0 sin 0.9999500004166652 * * * - 5.049999999999999 x1 4 + + -11.89772233983162 / 0.01865962687364277 * x0 x0 2 + / x0 0.010000 + 6.343189999999999 + ^ 0.08376984979528616 + + -
+     Best expression = ((((((1 + x0) ^ 11) * 2.714063472005533e-13) + 0.708606338968803) - (((0.9999500004166652 ^ (x0 ^ 4)) * (sin(x1) * 0.9999500004166652)) * (0.9989466681771987 * (sin(x0) * 0.9999500004166652)))) - ((((5.049999999999999 + (x1 + 4)) / -11.89772233983162) * 0.01865962687364277) + (((x0 / (x0 + 2)) ^ ((x0 + 0.010000) + 6.343189999999999)) + 0.08377453094903319)))
+     Best expression (original format) = 1 x0 + 11 ^ 2.714063472005533e-13 * 0.708606338968803 + 0.9999500004166652 x0 4 ^ ^ x1 sin 0.9999500004166652 * * 0.9989466681771987 x0 sin 0.9999500004166652 * * * - 5.049999999999999 x1 4 + + -11.89772233983162 / 0.01865962687364277 * x0 x0 2 + / x0 0.010000 + 6.343189999999999 + ^ 0.08377453094903319 + + -
      ```
-x = "(((((10.36319 ^ (0.010000 + x0)) * 2.717825964282383e-13) + 0.7081941989561602) - (((0.9999500004166652 ^ (x0 ^ 4)) * (sin(x1) * 0.9999500004166652)) * (0.9989466681769272 * (sin(x0) * 0.9999500004166652)))) - ((((6.28319 + (x1 + 6.283190)) / -11.83772233983162) * 0.0194179015370882) + (((x0 / (x0 + 2)) ^ ((x0 + 0.010000) + 6.343189999999999)) + 0.08395124401384103)))"
+x = "((((((1 + x0) ^ 11) * 2.714063472005533e-13) + 0.708606338968803) - (((0.9999500004166652 ^ (x0 ^ 4)) * (sin(x1) * 0.9999500004166652)) * (0.9989466681771987 * (sin(x0) * 0.9999500004166652)))) - ((((5.049999999999999 + (x1 + 4)) / -11.89772233983162) * 0.01865962687364277) + (((x0 / (x0 + 2)) ^ ((x0 + 0.010000) + 6.343189999999999)) + 0.08377453094903319)))"
 print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-"))
      */
     
@@ -9008,6 +9273,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                         const std::string& bestExpressionFileName = "",
                         const std::vector<int>& maxSize = {},
                         const std::vector<std::vector<std::string>>& additive_corrections = {},
+                        bool graphEval = false,
                         const std::vector<std::vector<std::string>>& seed_expressions = {},
                         bool exit_early = false,
                         int custom_rand_seed = -1,
@@ -9066,7 +9332,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
     /*
      Inside of thread:
      */
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &custom_features, &seed_expressions, &exit_early, &custom_rand_seed, &T_min, &T_max, &temp_func, &completeTree, &pert_option, &best_SNE, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &outFile, &out]()
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &custom_features, &seed_expressions, &exit_early, &custom_rand_seed, &T_min, &T_max, &temp_func, &completeTree, &pert_option, &best_SNE, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &graphEval, &outFile, &out]()
     {
         std::random_device rand_dev;
         #if RANDOM_SEED < 0
@@ -9079,9 +9345,9 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
         {
             generator.seed(custom_rand_seed);
         }
-        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols, mustHaveAllFeatures, custom_features, maxSize, additive_corrections, completeTree);
+        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols, mustHaveAllFeatures, custom_features, maxSize, additive_corrections, graphEval, completeTree);
         sync_point.arrive_and_wait();
-        Board secondary(diffeq, num_diff_eqns, false, std::vector<int>(depth.size(), 0), expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols, mustHaveAllFeatures, custom_features, maxSize, additive_corrections, completeTree); //For perturbations
+        Board secondary(diffeq, num_diff_eqns, false, std::vector<int>(depth.size(), 0), expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols, mustHaveAllFeatures, custom_features, maxSize, additive_corrections, graphEval, completeTree); //For perturbations
         assert(secondary.pieces.size() == secondary.n.size());
         assert(secondary.pieces.size() == x.pieces.size());
         assert(secondary.pieces.size() == x.n.size());
@@ -10372,7 +10638,8 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
                   const std::vector<std::vector<std::string>>& custom_features = {},
                   const std::string& bestExpressionFileName = "",
                   const std::vector<int>& maxSize = {},
-                  const std::vector<std::vector<std::string>>& additive_corrections = {})
+                  const std::vector<std::vector<std::string>>& additive_corrections = {},
+                  bool graphEval = false)
 {
     if (num_threads == 0)
     {
@@ -10400,12 +10667,12 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
      Inside of thread:
      */
 
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &use_const_pieces, &numDataCols, &mustHaveAllFeatures, &custom_features, &isConstTol, &best_SNE, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &outFile, &out]()
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &use_const_pieces, &numDataCols, &mustHaveAllFeatures, &custom_features, &isConstTol, &best_SNE, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &graphEval, &outFile, &out]()
     {
         std::random_device rand_dev;
         std::mt19937 thread_local generator(rand_dev()); // Mersenne Twister random number generator
 
-        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, true, numDataCols, mustHaveAllFeatures, custom_features, maxSize, additive_corrections);
+        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, true, numDataCols, mustHaveAllFeatures, custom_features, maxSize, additive_corrections, graphEval);
 
         sync_point.arrive_and_wait();
         double score = 0.0;
@@ -10582,6 +10849,7 @@ namespace ExampleProblems
                 "SwiftHohenbergBest.txt", //"" /*filename to save current best expression found (instead of outputting them to standard out*/
                 {} /*optional max-sizes of each of the expressions in the generated solution*/,
                 {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
+                false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
                 {split("1 x0 + 11 ^ 2.714063472005533e-13 * 0.708613313588054 + 0.9999500004166652 x0 4 ^ ^ x1 sin 0.9999500004166652 * * 0.9989466681769272 x0 sin 0.9999500004166652 * * * - 5.039999999999999 x1 4 + + -11.887722339831619 / 0.01869697542275992 * x0 x0 2 + / x0 0.010000 + 6.343189999999999 + ^ 0.08381983896197509 + + -")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -10646,6 +10914,7 @@ namespace ExampleProblems
                 "" /*filename to save current best expression found (instead of outputting them to standard out)*/,
                 {} /*optional max-sizes of each of the expressions in the generated solution*/,
                 {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
+                false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
                 {} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -10712,6 +10981,7 @@ namespace ExampleProblems
                 "" /*filename to save current best expression found (instead of outputting them to standard out)*/,
                 {} /*optional max-sizes of each of the expressions in the generated solution*/,
                 {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
+                false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
                 {split("x0 sech tanh tanh 0 0 + 0 -6.4342880000000005 + + x0 tanh 0 2.61657 + / - /"), split("0 0 + 0 -3.2171440000000002 + + x0 sech 0 0.9640275800758169 + ^ * sech")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -10787,6 +11057,7 @@ namespace ExampleProblems
                 "",// "BestNextDayFire.txt" /*filename to save current best expression found (instead of outputting them to standard out)*/,
                 {} /*optional max-sizes of each of the expressions in the generated solution*/,
                 {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
+                false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
                 {split("-2.640000 0.051731 x7 sqrt x15 8.000000 - - / / -1803.016571 x21 36.293228 x0 * * x17 -843.000000 + x15 15893.000000 + + + + x6 x19 -100.000000 x8 + - / x14 -211800 / x15 + + / - x18 x24 - x2 x7 x0 1684.200012 - - + - + -7.446376466569234 -3.225653 x6 8.800000 - + -508 + -0.9081765689798138 38.000000 x16 sin / * + + x1 x0 - 0.0007699998478223693 + -16.82119949898502 + x0 x15 ^ -100 + -279.200012 -2.640000 x16 / + + + -28.995355508740936 + + -88.959518 1.000000 88.856491 x1 / / * -2118 x8 2118.000000 - x22 ~ + + + 0.00077 x5 + * 25.400000 x20 1.0021072170678698 / ^ 15893.000000 x22 x8 + + x1 -1405.000000 - 15666.000000 x24 + + + + x0 x25 + 16.000000 x23 + 9736 - / ~ / - + *")} /*seed expressions*/,
                 validation /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -10861,6 +11132,7 @@ namespace ExampleProblems
                 "", //"BestInpaint.txt" /*filename to save current best expression found (instead of outputting them to standard out)*/
                 {} /*optional max-sizes of each of the expressions in the generated solution*/,
                 {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
+                false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
                 {split("/ + * + + ln cos x46 + + 0 0 + 0 -3.4799761065034414 + * + 0 x95 + 0 1.620943 + + 0 x95 ~ x48 ~ ^ + cos x41 + 0 52.64009483497598 - + 0 2.7907071011403315 cos x93 + ^ + * + 0 3.1585732538600397 ^ x12 x54 + cos x21 + 0.365382 x13 + ~ + 0 x20 + + 0 0 + 0 1.5729403267948965 * + + + 0 0 + 0 0 + + 0 0 + 0 x3 sqrt + + 0 0 + 0 x48 - + / - + + 0 0 + 0 0.9867622178470573 - - 7169.463400 x100 * x17 11181230.000000 + acos tanh x23 + + 0 0 + 0 57.67636600070402 sin + + + 0 0 + 0 -2.884980 + + 0 0 + 0 x50 - sqrt ^ ^ + 0 x17 + 0 x59 + + 0 x71 ~ x87 ^ + + + 0 0 + 0 0 + + 0 0 + 0 0.9910929232006058 * + + 0 0 + 0 -4.0405169999999995 * - x61 x101 + 0 -0.04344899097047564")} /*seed expressions*/,
                 validation /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -10888,9 +11160,10 @@ namespace ExampleProblems
                 "-34.520199 9.030267 sqrt x0 -1.453420 ^ - sech * 4 x0 0.077712 / cos ~ * +",
                 "* -34.520199 sech - sqrt 9.030267 ^ x0 -1.453420",
                 "32.963733 0.498148 7.438650 x0 * cos ^ * -0.629287 x0 11.182829 * 2.156483 - sech + *",
-                "1.977080 5.108000 -7.366583 x0 * cos - ^ -0.623987 -2.245282 -11.582661 x0 * - sech + * 4 2.493088 x0 - ^ cos + 1.013971 x0 - 95.073134 ^ +"
+                "0.507194 -5.130599 x0 -7.361629 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.981453 x0 + -72.499292 ^ +",
+                "0.509134 -5.151904 x0 7.366820 * cos + ^ -0.621943 -2.278212 11.746326 x0 * + sech + * 4 2.492631 x0 - ^ cos + 0.981511 x0 + -72.822877 ^ + 0.010065 -0.481231 x0 + / -"
                 "",
-            }[6]
+            }[7]
         };
         std::cout << "seed_exprs[" << track_idx << "] = {" << seed_exprs[track_idx] << "}\n";
         Eigen::MatrixXd data = load_csv(file_path[track_idx], 61, 2, false /*no header in these `file_path` files*/);
@@ -10924,7 +11197,7 @@ namespace ExampleProblems
             SimulatedAnnealing(WierdTrackFitter /*differential equation to solve*/,
                 1 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{7} /*fixed depths of generated solution*/,
+                std::vector<int>{8} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -10941,8 +11214,9 @@ namespace ExampleProblems
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "WierdTrackSR.txt", // "" /*filename to save current best expression found (instead of outputting them to standard out)*/
-                std::vector<int>{30} /*optional max-sizes of each of the expressions in the generated solution*/,
+                std::vector<int>{36} /*optional max-sizes of each of the expressions in the generated solution*/,
                 {/*split(seed_exprs[track_idx])*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
+                false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
                 {split(seed_exprs[track_idx])} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -10950,8 +11224,8 @@ namespace ExampleProblems
                 0.0 /*T_max*/,
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "WierdTrackSR.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
-                true /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                "sub_tree" /*perturbation option: either "sub_array", "n_random", or (default) "sub_tree"*/);
+                false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
+                "sub_array" /*perturbation option: either "sub_array", "n_random", or (default) "sub_tree"*/);
         }
     }
 };
