@@ -8456,10 +8456,10 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
     /*
-     Best score = 9.27257e-05, SNE = 10783.5
-     Squared-norm error for each equation: 10760.7 22.7461 4.79405e-28 
-     Best expression = ((((((x0 + 0.6480542736638855) ^ 11) * 2.714063472005533e-13) + (((x0 * 6.283190) * 1e-08) + 0.7292770392303919)) - (((0.9999500004166652 ^ (x0 ^ 4.02)) * (sin(~(x1)) * 0.9972802451715356)) * (0.989329299739067 * (sin(x0) * 0.9999500004166652)))) - ((((12.275114109512337 + ((1 + x1) + 1.5807963267948966)) / -13.80772233983162) * 0.034267588474850064) + (((x0 / ((0.010000 + x0) + 2.302585092994046)) ^ ((sin(x0) + (0.010000 + x0)) * (sin(x1) + (10.000000 / x0)))) + (((9.079985933781724e-05 * (x1 + x1)) + -0.01) + 0.08372453178234426))))
-     Best expression (original format) = x0 0.6480542736638855 + 11 ^ 2.714063472005533e-13 * x0 6.283190 * 1e-08 * 0.7292770392303919 + + 0.9999500004166652 x0 4.02 ^ ^ x1 ~ sin 0.9972802451715356 * * 0.989329299739067 x0 sin 0.9999500004166652 * * * - 12.275114109512337 1 x1 + 1.5807963267948966 + + -13.80772233983162 / 0.034267588474850064 * x0 0.010000 x0 + 2.302585092994046 + / x0 sin 0.010000 x0 + + x1 sin 10.000000 x0 / + * ^ 9.079985933781724e-05 x1 x1 + * -0.01 + 0.08372453178234426 + + + -
+     Best score = 9.27488e-05, SNE = 10780.8
+     Squared-norm error for each equation: 10759.6 21.1934 4.89712e-28
+     Best expression = ((((((x0 + 0.6480542736638855) ^ 11) * 2.714063472005533e-13) + ((((x0 * 10.000000) * 1e-08) + 1.877128165512275e-05) + (((x0 * 0.010000) * 4.692820413780688e-06) + 0.7292770392303919))) - (((0.9999500004166652 ^ (x0 ^ 4.02)) * (sin(~(x1)) * 0.9972802451715356)) * (0.989329299739067 * (sin(x0) * 0.9999500004166652)))) - ((((12.373522561270123 + ((1 + x1) + 2)) / -13.80772233983162) * 0.0331643929109202) + (((x0 / ((0.010000 + x0) + 2.302585092994046)) ^ ((sin(x0) + (0.010000 + x0)) * (sin(x1) + (10.000000 / x0)))) + (((9.079985933781724e-05 * (x1 + x1)) + -0.01) + 0.08367453094898858))))
+     Best expression (original format) = x0 0.6480542736638855 + 11 ^ 2.714063472005533e-13 * x0 10.000000 * 1e-08 * 1.877128165512275e-05 + x0 0.010000 * 4.692820413780688e-06 * 0.7292770392303919 + + + 0.9999500004166652 x0 4.02 ^ ^ x1 ~ sin 0.9972802451715356 * * 0.989329299739067 x0 sin 0.9999500004166652 * * * - 12.373522561270123 1 x1 + 2 + + -13.80772233983162 / 0.0331643929109202 * x0 0.010000 x0 + 2.302585092994046 + / x0 sin 0.010000 x0 + + x1 sin 10.000000 x0 / + * ^ 9.079985933781724e-05 x1 x1 + * -0.01 + 0.08367453094898858 + + + -
      ```
 x = "((((((1 + x0) ^ 11) * 2.714063472005533e-13) + 0.708606338968803) - (((0.9999500004166652 ^ (x0 ^ 4)) * (sin(x1) * 0.9999500004166652)) * (0.9989466681771987 * (sin(x0) * 0.9999500004166652)))) - ((((5.049999999999999 + (x1 + 4)) / -11.89772233983162) * 0.01865962687364277) + (((x0 / (x0 + 2)) ^ ((x0 + 0.010000) + 6.343189999999999)) + 0.08377453094903319)))"
 print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-"))
@@ -9394,16 +9394,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                 if (completeTree) //update current expression
                 {
 //                    std::cout << "x.pieces before complete_tree = " << x.pieces << '\n';
-//                    std::cout << "x.temp_pieces before complete_tree = " << x.temp_pieces << '\n';
-                    if (use_const_pieces)
-                    {
-                        x.temp_pieces = x.complete_tree(x.temp_pieces);
-                    }
-                    else
-                    {
-                        x.pieces = x.complete_tree(x.pieces);
-                    }
-//                    std::cout << "x.temp_pieces before complete_tree = " << x.temp_pieces << '\n';
+                    x.pieces = x.complete_tree(x.pieces);
 //                    std::cout << "x.pieces after complete_tree = " << x.pieces << '\n';
                 }
                 current = x.pieces; //update current expression
@@ -11230,7 +11221,7 @@ namespace ExampleProblems
                 0.0 /*T_max*/,
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "WierdTrackSR.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
-                false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
+                true /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
                 "sub_tree" /*perturbation option: either "sub_array", "n_random", or (default) "sub_tree"*/);
         }
     }

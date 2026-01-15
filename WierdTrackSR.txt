@@ -1,0 +1,637 @@
+
+Unique expressions = 8
+Time spent fitting = 0 seconds
+Best score = 0.0372662, SNE = 25.834
+Squared-norm error for each equation: 25.834 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -72.499292)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -72.499292 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -72.499292)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -72.499292 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -72.499292)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -72.499292 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 37
+Time spent fitting = 0.00147792 seconds
+Best score = 0.0374163, SNE = 25.7263
+Squared-norm error for each equation: 25.7263 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -81.393039)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -81.393039 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -81.393039)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -81.393039 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -81.393)}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -81.393039)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -81.393039 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 518
+Time spent fitting = 0.106335 seconds
+Best score = 0.0374486, SNE = 25.7033
+Squared-norm error for each equation: 25.7033 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.255750 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -72.499292)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.255750 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -72.499292 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.255750 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -72.499292)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.255750 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -72.499292 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -2.25575)}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.255750 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -72.499292)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.255750 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -72.499292 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 1350
+Time spent fitting = 0.508603 seconds
+Best score = 0.0374486, SNE = 25.7033
+Squared-norm error for each equation: 25.7033 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.255750 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -72.499292)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.255750 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -72.499292 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.255750 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -72.499292)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.255750 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -72.499292 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -2.25575)}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.255750 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -72.499292)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.255750 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -72.499292 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 3832
+Time spent fitting = 3.49071 seconds
+Best score = 0.0377166, SNE = 25.5135
+Squared-norm error for each equation: 25.5135 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.544980)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.544980 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.544980)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.544980 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 0.990606), (const1, -106.545)}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.544980)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.544980 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 3923
+Time spent fitting = 3.51099 seconds
+Best score = 0.0377166, SNE = 25.5135
+Squared-norm error for each equation: 25.5135 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990607 + x0) ^ -106.559291)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990607 x0 + -106.559291 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990607 + x0) ^ -106.559291)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990607 x0 + -106.559291 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 0.990607), (const1, -106.559)}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990607 + x0) ^ -106.559291)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990607 x0 + -106.559291 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 8357
+Time spent fitting = 8.16785 seconds
+Best score = 0.0377166, SNE = 25.5135
+Squared-norm error for each equation: 25.5135 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.552551)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.552551 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.552551)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.552551 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 0.990606), (const1, -106.553)}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.552551)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.552551 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 13418
+Time spent fitting = 12.6647 seconds
+Best score = 0.0377166, SNE = 25.5135
+Squared-norm error for each equation: 25.5135 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.555725)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.555725 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.555725)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.555725 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 0.990606), (const1, -106.556)}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.555725)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.555725 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 13645
+Time spent fitting = 13.0177 seconds
+Best score = 0.0377166, SNE = 25.5135
+Squared-norm error for each equation: 25.5135 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.554231)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.554231 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.554231)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.554231 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 0.990606), (const1, -106.554)}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.554231)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.554231 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 15571
+Time spent fitting = 15.0439 seconds
+Best score = 0.0377166, SNE = 25.5135
+Squared-norm error for each equation: 25.5135 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.554934)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.554934 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.554934)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.554934 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 0.990606), (const1, -106.555)}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.554934)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.554934 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 17065
+Time spent fitting = 16.8233 seconds
+Best score = 0.0377166, SNE = 25.5135
+Squared-norm error for each equation: 25.5135 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.554604)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.554604 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.554604)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.554604 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 0.990606), (const1, -106.555)}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.554604)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.554604 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 17273
+Time spent fitting = 17.0718 seconds
+Best score = 0.0377166, SNE = 25.5135
+Squared-norm error for each equation: 25.5135 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.554759)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.554759 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.554759)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.554759 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 0.990606), (const1, -106.555)}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.554759)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.554759 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 18782
+Time spent fitting = 19.3735 seconds
+Best score = 0.0377166, SNE = 25.5135
+Squared-norm error for each equation: 25.5135 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.554686)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.554686 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.554686)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.554686 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 0.990606), (const1, -106.555)}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.554686)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.554686 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 19700
+Time spent fitting = 20.0799 seconds
+Best score = 0.0377166, SNE = 25.5135
+Squared-norm error for each equation: 25.5135 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.554721)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.554721 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.554721)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.554721 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 0.990606), (const1, -106.555)}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.554721)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.554721 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 21942
+Time spent fitting = 22.5729 seconds
+Best score = 0.0377166, SNE = 25.5135
+Squared-norm error for each equation: 25.5135 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.554704)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.554704 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.554704)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.554704 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 0.990606), (const1, -106.555)}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.990606 + x0) ^ -106.554704)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.990606 x0 + -106.554704 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 1
+Time spent fitting = 0 seconds
+Best score = 0.0372662, SNE = 25.834
+Squared-norm error for each equation: 25.834 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -72.499292)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -72.499292 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -72.499292)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -72.499292 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -72.499292)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -72.499292 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 36
+Time spent fitting = 0.000684 seconds
+Best score = 0.0372777, SNE = 25.8257
+Squared-norm error for each equation: 25.8257 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -72.86580492058167)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -72.86580492058167 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -72.86580492058167)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -72.86580492058167 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -72.86580492058167)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -72.86580492058167 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 80
+Time spent fitting = 0.00381421 seconds
+Best score = 0.0372967, SNE = 25.812
+Squared-norm error for each equation: 25.812 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -73.499292)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -73.499292 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -73.499292)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -73.499292 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -73.499292)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -73.499292 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 401
+Time spent fitting = 0.0314264 seconds
+Best score = 0.0373047, SNE = 25.8063
+Squared-norm error for each equation: 25.8063 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -73.77753883536863)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -73.77753883536863 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -73.77753883536863)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -73.77753883536863 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -73.77753883536863)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -73.77753883536863 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 561
+Time spent fitting = 0.033248 seconds
+Best score = 0.0373128, SNE = 25.8005
+Squared-norm error for each equation: 25.8005 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -74.07008832679489)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -74.07008832679489 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -74.07008832679489)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -74.07008832679489 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -74.07008832679489)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -74.07008832679489 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 900
+Time spent fitting = 0.0461295 seconds
+Best score = 0.0373697, SNE = 25.7596
+Squared-norm error for each equation: 25.7596 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -76.54883431944074)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -76.54883431944074 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -76.54883431944074)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -76.54883431944074 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -76.54883431944074)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -76.54883431944074 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 1363
+Time spent fitting = 0.156734 seconds
+Best score = 0.0373868, SNE = 25.7474
+Squared-norm error for each equation: 25.7474 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -77.56121989930092)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -77.56121989930092 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -77.56121989930092)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -77.56121989930092 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((-2.263896 - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -77.56121989930092)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 -2.263896 -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -77.56121989930092 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 1483
+Time spent fitting = 0.159206 seconds
+Best score = 0.0374791, SNE = 25.6815
+Squared-norm error for each equation: 25.6815 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104794) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -73.499292)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104794 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -73.499292 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104794) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -73.499292)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104794 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -73.499292 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 0.104794)}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104794) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -73.499292)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104794 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -73.499292 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 1562
+Time spent fitting = 0.214033 seconds
+Best score = 0.0374791, SNE = 25.6815
+Squared-norm error for each equation: 25.6815 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104794) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -73.499292)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104794 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -73.499292 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104794) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -73.499292)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104794 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -73.499292 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 0.104794)}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104794) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -73.499292)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104794 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -73.499292 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 1621
+Time spent fitting = 0.218926 seconds
+Best score = 0.0375301, SNE = 25.6453
+Squared-norm error for each equation: 25.6453 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104792) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.499292)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104792 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.499292 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104792) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.499292)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104792 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.499292 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 0.104792)}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104792) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.499292)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104792 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.499292 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 1696
+Time spent fitting = 0.223597 seconds
+Best score = 0.0375301, SNE = 25.6453
+Squared-norm error for each equation: 25.6453 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104792) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.499292)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104792 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.499292 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104792) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.499292)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104792 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.499292 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 0.104792)}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104792) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.499292)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104792 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.499292 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 1733
+Time spent fitting = 0.275723 seconds
+Best score = 0.0375301, SNE = 25.6453
+Squared-norm error for each equation: 25.6453 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104792) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.499292)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104792 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.499292 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104792) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.499292)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104792 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.499292 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 0.104792)}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104792) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.499292)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104792 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.499292 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 1959
+Time spent fitting = 0.293622 seconds
+Best score = 0.0375355, SNE = 25.6415
+Squared-norm error for each equation: 25.6415 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104792) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.749292)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104792 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.749292 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104792) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.749292)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104792 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.749292 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 0.104792)}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104792) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.749292)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104792 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.749292 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 2327
+Time spent fitting = 0.37041 seconds
+Best score = 0.0375355, SNE = 25.6415
+Squared-norm error for each equation: 25.6415 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104792) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.749292)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104792 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.749292 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104792) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.749292)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104792 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.749292 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 0.104792)}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104792) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.749292)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104792 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.749292 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 2651
+Time spent fitting = 0.533142 seconds
+Best score = 0.0375371, SNE = 25.6403
+Squared-norm error for each equation: 25.6403 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104791) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.82962917720272)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104791 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.82962917720272 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104791) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.82962917720272)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104791 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.82962917720272 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 0.104791)}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104791) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.82962917720272)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104791 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.82962917720272 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 2952
+Time spent fitting = 0.76566 seconds
+Best score = 0.0375371, SNE = 25.6403
+Squared-norm error for each equation: 25.6403 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104791) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.82962917720272)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104791 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.82962917720272 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104791) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.82962917720272)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104791 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.82962917720272 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 0.104791)}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104791) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.82962917720272)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104791 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.82962917720272 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 3005
+Time spent fitting = 0.768462 seconds
+Best score = 0.0375371, SNE = 25.6403
+Squared-norm error for each equation: 25.6403 
+Best expression = (((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104791) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.82962917720272)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104791 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.82962917720272 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104791) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.82962917720272)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104791 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.82962917720272 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, 0.104791)}
+Total system result = abs(((((((0.508292 ^ (-5.130599 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104791) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.82962917720272)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130599 x0 7.306336 * cos + ^ -0.622545 0.104791 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.82962917720272 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 3334
+Time spent fitting = 1.02606 seconds
+Best score = 0.0375409, SNE = 25.6376
+Squared-norm error for each equation: 25.6376 
+Best expression = (((((0.508292 ^ (-5.130010 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104826) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.82962917720272)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130010 x0 7.306336 * cos + ^ -0.622545 0.104826 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.82962917720272 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130010 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104826) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.82962917720272)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130010 x0 7.306336 * cos + ^ -0.622545 0.104826 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.82962917720272 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -5.13001), (const1, 0.104826)}
+Total system result = abs(((((((0.508292 ^ (-5.130010 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104826) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.82962917720272)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130010 x0 7.306336 * cos + ^ -0.622545 0.104826 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.82962917720272 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 3448
+Time spent fitting = 1.03904 seconds
+Best score = 0.0375409, SNE = 25.6376
+Squared-norm error for each equation: 25.6376 
+Best expression = (((((0.508292 ^ (-5.130010 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104826) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.82962917720272)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130010 x0 7.306336 * cos + ^ -0.622545 0.104826 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.82962917720272 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130010 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104826) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.82962917720272)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130010 x0 7.306336 * cos + ^ -0.622545 0.104826 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.82962917720272 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -5.13001), (const1, 0.104826)}
+Total system result = abs(((((((0.508292 ^ (-5.130010 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104826) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.82962917720272)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130010 x0 7.306336 * cos + ^ -0.622545 0.104826 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.82962917720272 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 3510
+Time spent fitting = 1.05423 seconds
+Best score = 0.0375409, SNE = 25.6376
+Squared-norm error for each equation: 25.6376 
+Best expression = (((((0.508292 ^ (-5.130010 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104826) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.82962917720272)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130010 x0 7.306336 * cos + ^ -0.622545 0.104826 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.82962917720272 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130010 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104826) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.82962917720272)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130010 x0 7.306336 * cos + ^ -0.622545 0.104826 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.82962917720272 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -5.13001), (const1, 0.104826)}
+Total system result = abs(((((((0.508292 ^ (-5.130010 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104826) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -75.82962917720272)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130010 x0 7.306336 * cos + ^ -0.622545 0.104826 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -75.82962917720272 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 3526
+Time spent fitting = 1.05701 seconds
+Best score = 0.0375665, SNE = 25.6195
+Squared-norm error for each equation: 25.6195 
+Best expression = (((((0.508292 ^ (-5.130032 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104822) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -77.24577601374986)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130032 x0 7.306336 * cos + ^ -0.622545 0.104822 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -77.24577601374986 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130032 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104822) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -77.24577601374986)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130032 x0 7.306336 * cos + ^ -0.622545 0.104822 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -77.24577601374986 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -5.13003), (const1, 0.104822)}
+Total system result = abs(((((((0.508292 ^ (-5.130032 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104822) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -77.24577601374986)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130032 x0 7.306336 * cos + ^ -0.622545 0.104822 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -77.24577601374986 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 3843
+Time spent fitting = 1.34932 seconds
+Best score = 0.0375726, SNE = 25.6152
+Squared-norm error for each equation: 25.6152 
+Best expression = (((((0.508292 ^ (-5.130039 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104821) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -77.661922850297)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130039 x0 7.306336 * cos + ^ -0.622545 0.104821 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -77.661922850297 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130039 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104821) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -77.661922850297)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130039 x0 7.306336 * cos + ^ -0.622545 0.104821 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -77.661922850297 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -5.13004), (const1, 0.104821)}
+Total system result = abs(((((((0.508292 ^ (-5.130039 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104821) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -77.661922850297)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130039 x0 7.306336 * cos + ^ -0.622545 0.104821 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -77.661922850297 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 4324
+Time spent fitting = 1.49183 seconds
+Best score = 0.0375726, SNE = 25.6152
+Squared-norm error for each equation: 25.6152 
+Best expression = (((((0.508292 ^ (-5.130039 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104821) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -77.661922850297)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130039 x0 7.306336 * cos + ^ -0.622545 0.104821 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -77.661922850297 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130039 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104821) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -77.661922850297)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130039 x0 7.306336 * cos + ^ -0.622545 0.104821 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -77.661922850297 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -5.13004), (const1, 0.104821)}
+Total system result = abs(((((((0.508292 ^ (-5.130039 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104821) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -77.661922850297)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130039 x0 7.306336 * cos + ^ -0.622545 0.104821 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -77.661922850297 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 6313
+Time spent fitting = 2.14686 seconds
+Best score = 0.0375924, SNE = 25.6011
+Squared-norm error for each equation: 25.6011 
+Best expression = (((((0.508292 ^ (-5.130074 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104815) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -79.661922850297)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130074 x0 7.306336 * cos + ^ -0.622545 0.104815 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -79.661922850297 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130074 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104815) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -79.661922850297)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130074 x0 7.306336 * cos + ^ -0.622545 0.104815 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -79.661922850297 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -5.13007), (const1, 0.104815)}
+Total system result = abs(((((((0.508292 ^ (-5.130074 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104815) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -79.661922850297)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130074 x0 7.306336 * cos + ^ -0.622545 0.104815 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -79.661922850297 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 6382
+Time spent fitting = 2.15423 seconds
+Best score = 0.0375924, SNE = 25.6011
+Squared-norm error for each equation: 25.6011 
+Best expression = (((((0.508292 ^ (-5.130074 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104815) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -79.661922850297)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130074 x0 7.306336 * cos + ^ -0.622545 0.104815 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -79.661922850297 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130074 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104815) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -79.661922850297)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130074 x0 7.306336 * cos + ^ -0.622545 0.104815 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -79.661922850297 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -5.13007), (const1, 0.104815)}
+Total system result = abs(((((((0.508292 ^ (-5.130074 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104815) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -79.661922850297)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130074 x0 7.306336 * cos + ^ -0.622545 0.104815 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -79.661922850297 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 6582
+Time spent fitting = 2.17702 seconds
+Best score = 0.0375924, SNE = 25.6011
+Squared-norm error for each equation: 25.6011 
+Best expression = (((((0.508292 ^ (-5.130074 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104815) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -79.661922850297)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130074 x0 7.306336 * cos + ^ -0.622545 0.104815 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -79.661922850297 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130074 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104815) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -79.661922850297)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130074 x0 7.306336 * cos + ^ -0.622545 0.104815 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -79.661922850297 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -5.13007), (const1, 0.104815)}
+Total system result = abs(((((((0.508292 ^ (-5.130074 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104815) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -79.661922850297)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130074 x0 7.306336 * cos + ^ -0.622545 0.104815 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -79.661922850297 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 6611
+Time spent fitting = 2.17901 seconds
+Best score = 0.0375924, SNE = 25.6011
+Squared-norm error for each equation: 25.6011 
+Best expression = (((((0.508292 ^ (-5.130074 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104815) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -79.661922850297)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130074 x0 7.306336 * cos + ^ -0.622545 0.104815 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -79.661922850297 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130074 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104815) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -79.661922850297)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130074 x0 7.306336 * cos + ^ -0.622545 0.104815 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -79.661922850297 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -5.13007), (const1, 0.104815)}
+Total system result = abs(((((((0.508292 ^ (-5.130074 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104815) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -79.661922850297)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130074 x0 7.306336 * cos + ^ -0.622545 0.104815 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -79.661922850297 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 10588
+Time spent fitting = 3.44461 seconds
+Best score = 0.0375963, SNE = 25.5984
+Squared-norm error for each equation: 25.5984 
+Best expression = (((((0.508292 ^ (-5.130092 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104812) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -80.65293438190518)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130092 x0 7.306336 * cos + ^ -0.622545 0.104812 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -80.65293438190518 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130092 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104812) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -80.65293438190518)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130092 x0 7.306336 * cos + ^ -0.622545 0.104812 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -80.65293438190518 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -5.13009), (const1, 0.104812)}
+Total system result = abs(((((((0.508292 ^ (-5.130092 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104812) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -80.65293438190518)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130092 x0 7.306336 * cos + ^ -0.622545 0.104812 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -80.65293438190518 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 10782
+Time spent fitting = 3.4733 seconds
+Best score = 0.0375966, SNE = 25.5981
+Squared-norm error for each equation: 25.5981 
+Best expression = (((((0.508292 ^ (-5.130097 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104811) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -80.89043116622166)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130097 x0 7.306336 * cos + ^ -0.622545 0.104811 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -80.89043116622166 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130097 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104811) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -80.89043116622166)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130097 x0 7.306336 * cos + ^ -0.622545 0.104811 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -80.89043116622166 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -5.1301), (const1, 0.104811)}
+Total system result = abs(((((((0.508292 ^ (-5.130097 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104811) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -80.89043116622166)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130097 x0 7.306336 * cos + ^ -0.622545 0.104811 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -80.89043116622166 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 10806
+Time spent fitting = 3.47576 seconds
+Best score = 0.0375966, SNE = 25.5981
+Squared-norm error for each equation: 25.5981 
+Best expression = (((((0.508292 ^ (-5.130097 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104811) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -80.89043116622166)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130097 x0 7.306336 * cos + ^ -0.622545 0.104811 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -80.89043116622166 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130097 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104811) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -80.89043116622166)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130097 x0 7.306336 * cos + ^ -0.622545 0.104811 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -80.89043116622166 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -5.1301), (const1, 0.104811)}
+Total system result = abs(((((((0.508292 ^ (-5.130097 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104811) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -80.89043116622166)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130097 x0 7.306336 * cos + ^ -0.622545 0.104811 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -80.89043116622166 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 12086
+Time spent fitting = 4.30838 seconds
+Best score = 0.0375967, SNE = 25.5981
+Squared-norm error for each equation: 25.5981 
+Best expression = (((((0.508292 ^ (-5.130101 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104810) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -81.12792795053812)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130101 x0 7.306336 * cos + ^ -0.622545 0.104810 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -81.12792795053812 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130101 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104810) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -81.12792795053812)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130101 x0 7.306336 * cos + ^ -0.622545 0.104810 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -81.12792795053812 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -5.1301), (const1, 0.10481)}
+Total system result = abs(((((((0.508292 ^ (-5.130101 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104810) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -81.12792795053812)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130101 x0 7.306336 * cos + ^ -0.622545 0.104810 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -81.12792795053812 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 12806
+Time spent fitting = 4.68807 seconds
+Best score = 0.0375967, SNE = 25.5981
+Squared-norm error for each equation: 25.5981 
+Best expression = (((((0.508292 ^ (-5.130101 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104810) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -81.12792795053812)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130101 x0 7.306336 * cos + ^ -0.622545 0.104810 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -81.12792795053812 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130101 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104810) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -81.12792795053812)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130101 x0 7.306336 * cos + ^ -0.622545 0.104810 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -81.12792795053812 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -5.1301), (const1, 0.10481)}
+Total system result = abs(((((((0.508292 ^ (-5.130101 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104810) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -81.12792795053812)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130101 x0 7.306336 * cos + ^ -0.622545 0.104810 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -81.12792795053812 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 12826
+Time spent fitting = 4.68973 seconds
+Best score = 0.0375967, SNE = 25.5981
+Squared-norm error for each equation: 25.5981 
+Best expression = (((((0.508292 ^ (-5.130101 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104810) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -81.12792795053812)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130101 x0 7.306336 * cos + ^ -0.622545 0.104810 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -81.12792795053812 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130101 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104810) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -81.12792795053812)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130101 x0 7.306336 * cos + ^ -0.622545 0.104810 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -81.12792795053812 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -5.1301), (const1, 0.10481)}
+Total system result = abs(((((((0.508292 ^ (-5.130101 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104810) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -81.12792795053812)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130101 x0 7.306336 * cos + ^ -0.622545 0.104810 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -81.12792795053812 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+
+Unique expressions = 12849
+Time spent fitting = 4.69012 seconds
+Best score = 0.0375967, SNE = 25.5981
+Squared-norm error for each equation: 25.5981 
+Best expression = (((((0.508292 ^ (-5.130101 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104810) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -81.12792795053812)) + cos((sin(x0) / 0.029743073429435017)))
+Best expression (original format) = 0.508292 -5.130101 x0 7.306336 * cos + ^ -0.622545 0.104810 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -81.12792795053812 ^ + x0 sin 0.029743073429435017 / cos +
+Best diff result = abs(((((((0.508292 ^ (-5.130101 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104810) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -81.12792795053812)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Best expression (original format) = 0.508292 -5.130101 x0 7.306336 * cos + ^ -0.622545 0.104810 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -81.12792795053812 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
+Best differential equation parameters = {}
+Best expression parameters = {(const0, -5.1301), (const1, 0.10481)}
+Total system result = abs(((((((0.508292 ^ (-5.130101 + cos((x0 * 7.306336)))) * (-0.622545 + sech((ln(0.104810) - (-11.663861 * x0))))) + cos((4 ^ (2.492631 - x0)))) + ((0.987333 + x0) ^ -81.12792795053812)) + cos((sin(x0) / 0.029743073429435017))) - x1))
+Total system result (original format) = 0.508292 -5.130101 x0 7.306336 * cos + ^ -0.622545 0.104810 ln -11.663861 x0 * - sech + * 4 2.492631 x0 - ^ cos + 0.987333 x0 + -81.12792795053812 ^ + x0 sin 0.029743073429435017 / cos + x1 - abs
