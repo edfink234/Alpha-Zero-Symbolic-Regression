@@ -444,9 +444,9 @@ def test_visualize():
             print(postfix_to_prefix(postfix_expr))
         else:
             expression_type_to_plot = ["prefix", "postfix"][1]
-            completeTree = [True, False][1]
+            completeTree = [True, False][0]
             if expression_type_to_plot == "prefix":
-                complete_pn_expr = "- - - - - - + * μ f - * * ν f f * f * f f f * 2 ∂^2f/∂r^2 ∂^4f/∂r^4 / + - + * 2 ∂^3f/∂r^3 / ∂^2f/∂r^2 r / (∂f/∂r) * r r + - / (∂^3f/∂θ^2∂r) * r r / * 2 ∂^2f/∂r^2 * * r r r * 2 ∂f/∂r r / + - + + * 2 ∂^4f/∂θ^2∂r^2 / ∂^3f/∂θ^2∂r r / (∂^4f/∂θ^4) * r r * 2 ∂^2f/∂r^2 * 2 ∂^2f/∂θ^2 * r r * / 2 * * r r r + - ∂f/∂r * 2 ∂^3f/∂θ^2∂r * / 3 r ∂^2f/∂θ^2"
+                complete_pn_expr = "+ 1 * 2 3"
                 if completeTree:
                     complete_pn_expr = complete_tree(complete_pn_expr.split(), "prefix") #returns a list
                 else:
@@ -456,7 +456,7 @@ def test_visualize():
                 plot_pn_expression_tree(complete_pn_expr, save = save, include_expression_in_title = False)
 
             else:
-                complete_rpn_expr = "x0 0.6480542736638855 + 11 ^ 2.714063472005533e-13 * x0 6.283190 * 1e-08 * 0.7292844106954601 + + 0.9999500004166652 x0 4.02 ^ ^ x1 ~ sin 0.9972802451715356 * * 0.989329299739067 x0 sin 0.9999500004166652 * * * - 12.373522561270123 1 x1 + 2 + + -13.80772233983162 / 0.033471801093524385 * x0 0.010000 x0 + 2.302585092994046 + / x0 sin 0.010000 x0 + + x1 sin 10.000000 x0 / + * ^ 9.079985933781724e-05 x1 x1 + * -0.01 + 0.08372453177133307 + + + -"
+                complete_rpn_expr = "x0 x1 sech + 11.01 ^ 2.714063472005533e-13 * x0 10.000000 * 1e-08 * 4.692820413780688e-06 x1 10.000000 * * + x0 0.010000 * 4.692820413780688e-06 * 0.7292770392303919 + + + 0.9999500004166652 x0 4.02 ^ ^ x1 ~ sin 0.9972802451715356 * * 0.989329299739067 x0 sin 0.9999500004166652 * * * - 12.253522561270126 1 x1 + 2 + + -13.697722006474953 / 628.3190000000001 1.919508324939976e+06 x1 sin - / 0.034267588474850064 + * x0 0.010000 x0 + 2.3225850929940455 + / x0 sin 0.010000 x0 + + x1 sin 10.000000 x0 / + * ^ 0.07381533164099088 + + -"
                 if completeTree:
                     complete_rpn_expr = complete_tree(complete_rpn_expr.split(), "postfix") #returns a list
                 else:
