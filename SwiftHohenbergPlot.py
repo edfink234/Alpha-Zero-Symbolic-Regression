@@ -4,7 +4,7 @@ from sympy import *
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 show = False
-sech = lambda x: 1.0/np.cosh(x)
+np.sech = lambda x: 1.0/np.cosh(x)
 
 PERIODIC_IN_THETA = True
 PlotType = "2D"
@@ -14,10 +14,10 @@ r_edges = np.linspace(0.01, 10, N)
 theta_edges = np.linspace(0, 2*np.pi, N, endpoint=False)
 
 round_floats = lambda expr, ndigits: expr.xreplace({f: Float(round(float(f), ndigits)) for f in expr.atoms(Float)})
-f_per_idx = 3
+f_per_idx = 4
 
 r, theta = symbols('r theta')
-f =  [-0.998846776839887*0.999950000416665**(r**4)*sin(r)*sin(theta) + 2.71782596428238e-13*10.36319**(r + 0.01) + 0.00164034101997398*theta - (r/(r + 2))**(r + 6.35319) + 0.6448561035289, sin(r)*sin(theta)+0.604, sin(r)*sin(theta), 0.998846776839887*0.999950000416665**(r**4)*sin(r)*sin(theta) + 0.604][f_per_idx] \
+f =  [sin(r)*sin(theta), sin(r)*sin(theta)+0.604, 0.998846776839887*0.999950000416665**(r**4)*sin(r)*sin(theta) + 0.604, 0.88898139159952*0.999884875453817**(r**4.03)*sqrt(1 - cos(r)**2)*sin(theta) - (r/(r + 1.01))**((sin(theta) + 10.0/r)*(r + sin(r) + 0.01)) + 0.760176150613572][f_per_idx] \
         if PERIODIC_IN_THETA else \
         (((0.148475282221305 * theta) - (sin(theta) * (1.0000132758892615 * sin(r)))) - 0.0922858190550785)
 
@@ -27,7 +27,7 @@ theta_centers = 0.5 * (theta_edges[:-1] + theta_edges[1:])
 R, Theta = np.meshgrid(r_centers, theta_centers)
 
 # Evaluate function on cell centers
-Z = [-0.998846776839887*0.999950000416665**(R**4)*np.sin(R)*np.sin(Theta) + 2.71782596428238e-13*10.36319**(R + 0.01) + 0.00164034101997398*Theta - (R/(R + 2))**(R + 6.35319) + 0.6448561035289, np.sin(R)*np.sin(Theta) + 0.604, np.sin(R)*np.sin(Theta), 0.998846776839887*0.999950000416665**(R**4)*np.sin(R)*np.sin(Theta) + 0.604][f_per_idx] \
+Z = [np.sin(R)*np.sin(Theta), np.sin(R)*np.sin(Theta) + 0.604, 0.998846776839887*0.999950000416665**(R**4)*np.sin(R)*np.sin(Theta) + 0.604, 0.88898139159952*0.999884875453817**(R**4.03)*np.sqrt(1 - np.cos(R)**2)*np.sin(Theta) - (R/(R + 1.01))**((np.sin(Theta) + 10.0/R)*(R + np.sin(R) + 0.01)) + 0.760176150613572][f_per_idx] \
     if PERIODIC_IN_THETA else (((0.148475282221305 * Theta) - (np.sin(Theta) * (1.0000132758892615 * np.sin(R)))) - 0.0922858190550785)
 
 # Convert to Cartesian
@@ -35,7 +35,7 @@ X = R * np.cos(Theta)
 Y = R * np.sin(Theta)
 
 print(f'sp.latex(f) = {latex(f)}')
-formula_label = latex(round_floats(f, 5), mul_symbol='dot')
+formula_label = latex(round_floats(f, 4), mul_symbol='dot')
 formula_label = r"$f(r,\theta) = " + formula_label + "$"
 
 # 3D Plot
