@@ -41,14 +41,15 @@ mu, nu = 1, 1
 GENERIC = False
 PERIODIC_IN_THETA = True
 COMPUTE_NUMERIC = False
+PRINT_SH = False
 f = None
 if GENERIC:
     f = Function('f')(r, theta)
 else:
-    f =  [-0.998846776839887*0.999950000416665**(r**4)*sin(r)*sin(theta) + 2.71782596428238e-13*10.36319**(r + 0.01) + 0.00164034101997398*theta - (r/(r + 2))**(r + 6.35319) + 0.6448561035289, sin(r)*sin(theta)+0.604, sin(r)*sin(theta), 0.998846776839887*0.999950000416665**(r**4)*sin(r)*sin(theta) + 0.604, 0.88898139159952*0.999884875453817**(r**4.03)*sqrt(1 - cos(r)**2)*sin(theta) - (r/(r + 1.01))**((sin(theta) + 10.0/r)*(r + sin(r) + 0.01)) + 0.760176150613572][-1] \
+    f =  [-0.998846776839887*0.999950000416665**(r**4)*sin(r)*sin(theta) + 2.71782596428238e-13*10.36319**(r + 0.01) + 0.00164034101997398*theta - (r/(r + 2))**(r + 6.35319) + 0.6448561035289, sin(r)*sin(theta)+0.604, sin(r)*sin(theta), 0.998846776839887*0.999950000416665**(r**4)*sin(r)*sin(theta) + 0.604, 0.88898139159952*0.999884875453817**(r**4.03)*sqrt(1 - cos(r)**2)*sin(theta) + 0.760176150613572,\
+        -0.28580222883408**(r + 10)*(1.01 - sin(theta))*(167.620651926117*r**7.38905609893065 + 0.000105912014609458) + 0.833098208613807*0.999884875453817**(r**(17/4))*sqrt(1 - cos(r)**2)*sin(theta)  + 0.797073913381706][-1] \
         if PERIODIC_IN_THETA else \
         (((0.148475282221305 * theta) - (sin(theta) * (1.0000132758892615 * sin(r)))) - 0.0922858190550785)
-
 #11284
 #38469
 #-0.998846776839887*0.999950000416665**(r**4)*sin(r)*sin(theta) + 2.71782596428238e-13*10.36319**(r + 0.01) + 0.00164034101997398*theta - (r/(r + 2))**(r + 6.35319) + 0.6448561035289
@@ -68,13 +69,13 @@ laplacian_f = diff(f, r, 2) + (1/r) * diff(f, r) + (1/(r**2)) * diff(f, theta, 2
 double_laplacian_f = diff(laplacian_f, r, 2) + (1/r) * diff(laplacian_f, r) + (1/(r**2)) * diff(laplacian_f, theta, 2)
 
 swift_hohenberg = mu*f + nu*f*f - f*f*f - (f + 2*laplacian_f + double_laplacian_f)
-
-print(f"swift_hohenberg = {str(swift_hohenberg.evalf()).replace('r','r_val').replace('theta', 'theta_val')}\n")
+if PRINT_SH:
+    print(f"swift_hohenberg = {str(swift_hohenberg.evalf()).replace('r','r_val').replace('theta', 'theta_val')}\n")
 
 # print(*swift_hohenberg.args, sep="\n")
 r_vals, theta_vals = [None]*2
 func_vals = None
-N = 330
+N = 1000
 if not GENERIC:
     r_vals, theta_vals = np.meshgrid(np.linspace(0.01, 10, N), np.linspace(0, 2*pi, N))
     f_SR = lambdify((r, theta), f)
