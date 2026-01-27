@@ -446,7 +446,7 @@ def test_visualize():
             expression_type_to_plot = ["prefix", "postfix"][1]
             completeTree = [True, False][1]
             if expression_type_to_plot == "prefix":
-                complete_pn_expr = "27.3924136249185 8.08595403545918 15.9431602175423 x0 * cos * -"
+                complete_pn_expr = "+ 1 * 2 3"
                 if completeTree:
                     complete_pn_expr = complete_tree(complete_pn_expr.split(), "prefix") #returns a list
                 else:
@@ -456,7 +456,7 @@ def test_visualize():
                 plot_pn_expression_tree(complete_pn_expr, save = save, include_expression_in_title = False)
 
             else:
-                complete_rpn_expr = "24.250575 -10.413060 x0 asin 0.077233 / cos * +"
+                complete_rpn_expr = "27.3924136249185 8.08595403545918 0 15.9431602175423 + x0 * cos * -"
                 if completeTree:
                     complete_rpn_expr = complete_tree(complete_rpn_expr.split(), "postfix") #returns a list
                 else:
