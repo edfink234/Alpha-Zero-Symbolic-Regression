@@ -7006,7 +7006,17 @@ import numpy as np; np.sech = lambda x: 1/np.cosh(x); x='(24.250575 + (-10.41306
             Squared-norm error for each equation: 1541.56
             Best expression = (28.651600 - (19.777920439906723 ^ cos((exp(2.730276) * x0))))
             Best expression (original format) = 28.651600 19.777920439906723 2.730276 exp x0 * cos ^ -
-            
+        depth = 6, maxsize = 19:
+            Best score = 0.00126638, SNE = 788.651
+            Squared-norm error for each equation: 788.651
+            Best expression = ((-1.017979 * (18.498194 ^ cos((15.337119480777421 * x0)))) + (30.291526 - (16.614206 ^ cos((-7.274237 * exp(x0))))))
+            Best expression (original format) = -1.017979 18.498194 15.337119480777421 x0 * cos ^ * 30.291526 16.614206 -7.274237 x0 exp * cos ^ - +
+        depth = 7, maxsize = 28:
+            Best score = 0.00915374, SNE = 108.245
+            Squared-norm error for each equation: 108.245
+            Best expression = (((-1.428788 * (0.36787944117144233 / (x0 + 0.026702))) + (29.890052 - (0.073784 ^ cos((-7.274237 * exp(x0)))))) + (13.257474 * sin((11.924012 * (2 ^ arcsin(x0))))))
+            Best expression (original format) = -1.428788 0.36787944117144233 x0 0.026702 + / * 29.890052 0.073784 -7.274237 x0 exp * cos ^ - + 13.257474 11.924012 2 x0 arcsin ^ * sin * +
+        depth = 8, maxsize = 37:
      */
     const thread_local bool add_aditive = x.additiveCorrections.size();
     static bool added_aditive = false;
@@ -8474,10 +8484,10 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
         Best expression = (((((((0.010000 + x0) + sech(x1)) ^ (sech(x0) + 11.13)) * 2.714063472005533e-13) + ((((x0 ^ 6.283190) * 1e-08) + 0.01) + 0.7419039201568504)) - (((0.9998848754538172 ^ (x0 ^ 4.029999999999999)) * (sin(~(x1)) * 0.9972802451715356)) * (0.8912763105205549 * cos(asin(cos(x0)))))) - (((0.00010591201460945816 * ((0.28580222883407974 ^ (x0 + 10.000000)) * (1 - sin(x1)))) + ((4.692820413780688e-06 * (12.56638 * (x1 * 2))) + -0.07517032657318981)) + ((((x0 ^ 0.9999500004166653) / ((0.010000 + x0) + 1)) ^ ((sin(x0) + (0.010000 + x0)) * (sin(x1) + (10.000000 / x0)))) + 0.06683273758330441)))
         Best expression (original format) = 0.010000 x0 + x1 sech + x0 sech 11.13 + ^ 2.714063472005533e-13 * x0 6.283190 ^ 1e-08 * 0.01 + 0.7419039201568504 + + 0.9998848754538172 x0 4.029999999999999 ^ ^ x1 ~ sin 0.9972802451715356 * * 0.8912763105205549 x0 cos asin cos * * - 0.00010591201460945816 0.28580222883407974 x0 10.000000 + ^ 1 x1 sin - * * 4.692820413780688e-06 12.56638 x1 2 * * * -0.07517032657318981 + + x0 0.9999500004166653 ^ 0.010000 x0 + 1 + / x0 sin 0.010000 x0 + + x1 sin 10.000000 x0 / + * ^ 0.06683273758330441 + + -
     Depth = 8:
-        Best score = 0.000242734, SNE = 4118.74
-        Squared-norm error for each equation: 4090.56 28.1744 0.000131323
-        Best expression = (((((((0.02 + (x0 + 0.010000)) + sech(x1)) ^ 11.13) * 2.714063572022206e-13) + (((((0.010000 + x0) ^ 6.28319) * 1e-08) + -0.00899966667999946) + 0.7456387750685652)) - (((0.9998848754538172 ^ (arcsin(tanh(x0)) / (1 / (x0 ^ 4)))) * (sin(~((6.283190 + x1))) * 0.980049833749168)) * (0.8027863849639187 * cos(asin(cos(x0)))))) - (((((x0 + x0) ^ 7.4027909538423655) * ((0.28580222883407974 ^ (x0 + 10)) * (1.01 - sin((0.010000 + x1))))) + -0.0576701598990227) + (((((0.005 + x0) ^ 0.9999500004166652) / ((-0.01 + x0) + 1.5079230113819708)) ^ ((sin(x0) + ((x0 * 0.010000) + x0)) * (sin((6.283190 + x1)) + (10.01 / x0)))) + 1.5375685511725117e-07)))
-        Best expression (original format) = 0.02 x0 0.010000 + + x1 sech + 11.13 ^ 2.714063572022206e-13 * 0.010000 x0 + 6.28319 ^ 1e-08 * -0.00899966667999946 + 0.7456387750685652 + + 0.9998848754538172 x0 tanh arcsin 1 x0 4 ^ / / ^ 6.283190 x1 + ~ sin 0.980049833749168 * * 0.8027863849639187 x0 cos asin cos * * - x0 x0 + 7.4027909538423655 ^ 0.28580222883407974 x0 10 + ^ 1.01 0.010000 x1 + sin - * * -0.0576701598990227 + 0.005 x0 + 0.9999500004166652 ^ -0.01 x0 + 1.5079230113819708 + / x0 sin x0 0.010000 * x0 + + 6.283190 x1 + sin 10.01 x0 / + * ^ 1.5375685511725117e-07 + + -
+        Best score = 0.000249142, SNE = 4012.78
+        Squared-norm error for each equation: 3984.61 28.1696 0.000131323
+        Best expression = (((((((0.02 + (x0 + 0.010000)) + sech(x1)) ^ 11.13) * 2.714063572022206e-13) + (((((0.010000 + x0) ^ 6.28319) * 1e-08) + -0.006499666679999459) + 0.7456387750685652)) - (((0.9998848754538172 ^ (arcsin(tanh(x0)) / (1 / (x0 ^ 4)))) * (sin(~((6.283190 + x1))) * 0.980049833749168)) * (0.8027863849639187 * cos(asin(cos(x0)))))) - (((((x0 + x0) ^ 7.49905609893065) * ((0.28580222883407974 ^ (x0 + 10)) * (1.01 - sin(x1)))) + (0.003734854911714874 + (((0.010000 + x1) / -1.919508324939976e+06) + -0.0576701598990227))) + (((((0.015 + x0) ^ 0.9999500004166652) / ((-0.01 + x0) + 1.5079230113819708)) ^ ((sin(x0) + ((x0 * 0.010000) + x0)) * (sin((6.283190 + x1)) + (10.01 / x0)))) + -0.009900153756855119)))
+        Best expression (original format) = 0.02 x0 0.010000 + + x1 sech + 11.13 ^ 2.714063572022206e-13 * 0.010000 x0 + 6.28319 ^ 1e-08 * -0.006499666679999459 + 0.7456387750685652 + + 0.9998848754538172 x0 tanh arcsin 1 x0 4 ^ / / ^ 6.283190 x1 + ~ sin 0.980049833749168 * * 0.8027863849639187 x0 cos asin cos * * - x0 x0 + 7.49905609893065 ^ 0.28580222883407974 x0 10 + ^ 1.01 x1 sin - * * 0.003734854911714874 0.010000 x1 + -1.919508324939976e+06 / -0.0576701598990227 + + + 0.015 x0 + 0.9999500004166652 ^ -0.01 x0 + 1.5079230113819708 + / x0 sin x0 0.010000 * x0 + + 6.283190 x1 + sin 10.01 x0 / + * ^ -0.009900153756855119 + + -
      ```
 x = "(((((((0.02 + (x0 + 0.010000)) + sech(x1)) ^ 11.13) * 2.714063572022206e-13) + (((((0.010000 + x0) ^ 6.28319) * 1e-08) + (-0.00999966667999946 + (x1 * 0.001))) + 0.7456387750685652)) - (((0.9998848754538172 ^ (arcsin(tanh(x0)) / (1 / (x0 ^ 4)))) * (sin(~((6.283190 + x1))) * 0.980049833749168)) * (0.8027863870888163 * cos(asin(cos(x0)))))) - (((((x0 + x0) ^ 7.38905609893065) * ((0.28580222883407974 ^ (x0 + 10)) * (1.01 - sin((0.010000 + x1))))) + -0.055170326573189814) + ((((0.005 + x0) ^ 0.9999500004166652) / ((0.01 + x0) + 1.5079230113819708)) ^ ((sin(x0) + x0) * (sin((6.283190 + x1)) + (10.01 / x0))))))"
 print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-"))
@@ -11185,8 +11195,10 @@ namespace ExampleProblems
             }[8],
             std::vector<std::string>
             {
-                "28.651600 19.777920439906723 2.730276 exp x0 * cos ^ -"
-            }[0]
+                "28.651600 19.777920439906723 2.730276 exp x0 * cos ^ -",
+                "-1.428788 0.36787944117144233 x0 0.026702 + / * 29.890052 0.073784 -7.274237 x0 exp * cos ^ - + 13.257474 11.924012 2 x0 arcsin ^ * sin * +",
+                "-783.295596 0.546549 x0 0.026702 + / - 813.493925 0.073784 14.318483 x0 0.639403 ^ ^ cos ^ - + 13.257474 11.924012 2 x0 arcsin ^ * sin * + 1.039266 0.892020 x0 - / cos arcsin +"
+            }[2]
         };
         std::cout << "seed_exprs[" << track_idx << "] = {" << seed_exprs[track_idx] << "}\n";
         Eigen::MatrixXd data = load_csv(file_path[track_idx], 61, 2, false /*no header in these `file_path` files*/);
@@ -11224,7 +11236,7 @@ namespace ExampleProblems
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
-                5000 /*number of fit iterations*/,
+                500 /*number of fit iterations*/,
                 "naive_numerical" /*method for computing the gradient*/,
                 true /*cache*/,
                 time /*time to run the algorithm in seconds*/,
@@ -11247,7 +11259,7 @@ namespace ExampleProblems
                 0.0 /*T_max*/,
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "WierdTrackSR.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
-                true /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
+                false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
                 "sub_tree" /*perturbation option: either "sub_array", "n_random", or (default) "sub_tree"*/);
         }
     }
