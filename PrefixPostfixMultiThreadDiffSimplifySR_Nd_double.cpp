@@ -6954,7 +6954,7 @@ std::vector<std::vector<std::string>> WierdTrackFitter(Board& x, bool fit)
 {
     /*
      '''
-x='((((((4 * (-0.205286 / (0.040581 + x0))) + (31.099742 - (0.064285 ^ cos((14.318483 ^ (x0 ^ 0.637718)))))) + (13.961638 * sin((11.924012 * (2 ^ arcsin(x0)))))) + arcsin(cos((x0 / (0.870774 - x0))))) - sin(((arcsin((x0 ^ 0.733265)) - 1.124456) / 0.03661899347368653))) + (log(1.145812) / (0.998597 - (acos(x0) / 0.883515))))'.replace("^","**").replace("~", "-").replace("x0","s"); print(x); import sympy as sp; y = x.replace("arccos","acos").replace("arcsin","asin"); print(y); s = sp.symbols("s"); from sympy.printing.pycode import pycode; print(x:=pycode(eval(y)).replace('math','sp')); print(x.replace("sp","np")); round_floats = lambda expr, ndigits: expr.xreplace({f: sp.Float(round(float(f), ndigits)) for f in expr.atoms(sp.Float)}); func_sym_r = round_floats(eval(y), 2); print(sp.latex(func_sym_r));
+x='(2.345027 + (x0 / (cos(sqrt(x0)) - 2.266180070913597)))'.replace("^","**").replace("~", "-").replace("x0","s"); print(x); from sympy import *; y = x.replace("arccos","acos").replace("arcsin","asin"); print(y); s = sp.symbols("s"); from sympy.printing.pycode import pycode; print(x:=pycode(eval(y)).replace('math','sp')); print(x.replace("sp","np")); round_floats = lambda expr, ndigits: expr.xreplace({f: sp.Float(round(float(f), ndigits)) for f in expr.atoms(sp.Float)}); func_sym_r = round_floats(eval(y), 2); print(sp.latex(func_sym_r));
      
      '''
      
@@ -7006,6 +7006,18 @@ x='((((((4 * (-0.205286 / (0.040581 + x0))) + (31.099742 - (0.064285 ^ cos((14.3
             Squared-norm error for each equation: 609.831
             Best expression = ((x0 + -0.450211) / ((arccos(x0) * (x0 ^ 0.476227)) - sech((0.785077 - (x0 ^ 7.38905609893065)))))
             Best expression (original format) = x0 -0.450211 + x0 arccos x0 0.476227 ^ * 0.785077 x0 7.38905609893065 ^ - sech - /
+
+     track_idx = 2:
+        depth = 5, maxsize = 9:
+            Best score = 1.57292e-05, SNE = 63574.9
+            Squared-norm error for each equation: 63574.9
+            Best expression = (2.345027 + (x0 / (cos(sqrt(x0)) - 2.266180070913597)))
+            Best expression (original format) = 2.345027 x0 x0 sqrt cos 2.266180070913597 - / +
+        depth = 6, maxsize = 19:
+            Best score = 3.30092e-05, SNE = 30293.6
+            Squared-norm error for each equation: 30293.6
+            Best expression = (20.114252 * cos((4.207354924039483 * sqrt((168.000000 + x0)))))
+            Best expression (original format) = 20.114252 4.207354924039483 168.000000 x0 + sqrt * cos *
      */
     const thread_local bool add_aditive = x.additiveCorrections.size();
     static bool added_aditive = false;
@@ -8474,10 +8486,10 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
         Best expression = (((((((0.010000 + x0) + sech(x1)) ^ (sech(x0) + 11.13)) * 2.714063472005533e-13) + ((((x0 ^ 6.283190) * 1e-08) + 0.01) + 0.7419039201568504)) - (((0.9998848754538172 ^ (x0 ^ 4.029999999999999)) * (sin(~(x1)) * 0.9972802451715356)) * (0.8912763105205549 * cos(asin(cos(x0)))))) - (((0.00010591201460945816 * ((0.28580222883407974 ^ (x0 + 10.000000)) * (1 - sin(x1)))) + ((4.692820413780688e-06 * (12.56638 * (x1 * 2))) + -0.07517032657318981)) + ((((x0 ^ 0.9999500004166653) / ((0.010000 + x0) + 1)) ^ ((sin(x0) + (0.010000 + x0)) * (sin(x1) + (10.000000 / x0)))) + 0.06683273758330441)))
         Best expression (original format) = 0.010000 x0 + x1 sech + x0 sech 11.13 + ^ 2.714063472005533e-13 * x0 6.283190 ^ 1e-08 * 0.01 + 0.7419039201568504 + + 0.9998848754538172 x0 4.029999999999999 ^ ^ x1 ~ sin 0.9972802451715356 * * 0.8912763105205549 x0 cos asin cos * * - 0.00010591201460945816 0.28580222883407974 x0 10.000000 + ^ 1 x1 sin - * * 4.692820413780688e-06 12.56638 x1 2 * * * -0.07517032657318981 + + x0 0.9999500004166653 ^ 0.010000 x0 + 1 + / x0 sin 0.010000 x0 + + x1 sin 10.000000 x0 / + * ^ 0.06683273758330441 + + -
     Depth = 8:
-        Best score = 0.000286883, SNE = 3484.74
-        Squared-norm error for each equation: 3459.97 24.7675 0.000115067
-        Best expression = (((((((-0.02 + (x0 + 0.010000)) + sech(x1)) ^ 11.119909200140661) * 2.714063572022206e-13) + (((((0.010000 + x0) ^ 6.28319) * 1e-08) + 0.002504692820413781) + 0.7456387750685652)) - (((0.9998848754538172 ^ (arcsin(tanh(x0)) / (1 / (x0 ^ 4)))) * (sin(~((6.283190 + x1))) * 0.940049833749168)) * (0.7927863849639187 * cos(asin(cos(x0)))))) - ((((((0.01 + x0) + (0.009999833334166664 + x0)) ^ 7.50905609893065) * ((0.28580222883407974 ^ (x0 + 10)) * (1.02 - sin(x1)))) + (0.003734854911714874 + (((2.302585092994046 + (0.010000 + x1)) / ((x1 / 10.000000) - 1.9195083249399762e+06)) + -0.0576701598990227))) + (((((0.02 + x0) ^ 0.9801980198019802) / ((-0.01 + x0) + 1.5079230113819708)) ^ ((sin((0.010000 + x0)) + x0) * (sin((6.283190 + x1)) + (10.01 / x0)))) + -0.013433444452222899)))
-        Best expression (original format) = -0.02 x0 0.010000 + + x1 sech + 11.119909200140661 ^ 2.714063572022206e-13 * 0.010000 x0 + 6.28319 ^ 1e-08 * 0.002504692820413781 + 0.7456387750685652 + + 0.9998848754538172 x0 tanh arcsin 1 x0 4 ^ / / ^ 6.283190 x1 + ~ sin 0.940049833749168 * * 0.7927863849639187 x0 cos asin cos * * - 0.01 x0 + 0.009999833334166664 x0 + + 7.50905609893065 ^ 0.28580222883407974 x0 10 + ^ 1.02 x1 sin - * * 0.003734854911714874 2.302585092994046 0.010000 x1 + + x1 10.000000 / 1.9195083249399762e+06 - / -0.0576701598990227 + + + 0.02 x0 + 0.9801980198019802 ^ -0.01 x0 + 1.5079230113819708 + / 0.010000 x0 + sin x0 + 6.283190 x1 + sin 10.01 x0 / + * ^ -0.013433444452222899 + + -
+        Best score = 0.00029301, SNE = 3411.85
+        Squared-norm error for each equation: 3386.07 25.7811 0.000120051
+        Best expression = (((((((x0 + 0.010000) + sech(x1)) ^ 11.11990920014066) * 2.714063572022206e-13) + (((((0.010000 + x0) ^ 6.28319) * 1e-08) + 0.002504692820413781) + 0.7456387750685652)) - (((0.9998848754538172 ^ (arcsin(tanh(x0)) / (0.7615941559557649 / (x0 ^ 4)))) * (sin(~((6.283190 + x1))) * 0.940049833749168)) * (0.7927863849639187 * cos(asin(cos(x0)))))) - ((((((0.01 + x0) + (0.009999833334166664 + x0)) ^ 7.570169558264211) * ((0.28580222883407974 ^ (x0 + 10)) * (1.02 - sin(x1)))) + (((2.302585092994046 + (6.283190 + x1)) / ((x1 / 10.000000) - 1.919508324939976e+06)) + -0.0576701598990227)) + (((((0.02 + x0) ^ 0.9801980198019802) / ((-0.01 + x0) + 1.5079230113819708)) ^ ((sin((0.010000 + x0)) + x0) * (sin((6.283190 + x1)) + (10.01 / x0)))) + -0.0134334444522229)))
+        Best expression (original format) = x0 0.010000 + x1 sech + 11.11990920014066 ^ 2.714063572022206e-13 * 0.010000 x0 + 6.28319 ^ 1e-08 * 0.002504692820413781 + 0.7456387750685652 + + 0.9998848754538172 x0 tanh arcsin 0.7615941559557649 x0 4 ^ / / ^ 6.283190 x1 + ~ sin 0.940049833749168 * * 0.7927863849639187 x0 cos asin cos * * - 0.01 x0 + 0.009999833334166664 x0 + + 7.570169558264211 ^ 0.28580222883407974 x0 10 + ^ 1.02 x1 sin - * * 2.302585092994046 6.283190 x1 + + x1 10.000000 / 1.919508324939976e+06 - / -0.0576701598990227 + + 0.02 x0 + 0.9801980198019802 ^ -0.01 x0 + 1.5079230113819708 + / 0.010000 x0 + sin x0 + 6.283190 x1 + sin 10.01 x0 / + * ^ -0.0134334444522229 + + -
      ```
 x = "(((((((-0.02 + (x0 + 0.010000)) + sech(x1)) ^ 11.119909200140661) * 2.714063572022206e-13) + (((((0.010000 + x0) ^ 6.28319) * 1e-08) + 0.0025) + 0.7456387750685652)) - (((0.9998848754538172 ^ (arcsin(tanh(x0)) / (1 / (x0 ^ 4)))) * (sin(~((6.283190 + x1))) * 0.940049833749168)) * (0.7927863849639187 * cos(asin(cos(x0)))))) - ((((((0.01 + x0) + (0.009999833334166664 + x0)) ^ 7.50905609893065) * ((0.28580222883407974 ^ (x0 + 10)) * (1.02 - sin(x1)))) + (0.003734854911714874 + (((2.302585092994046 + (0.010000 + x1)) / ((x1 / 10.000000) - 1.9195083249399762e+06)) + -0.0576701598990227))) + (((((0.02 + x0) ^ 0.9801980198019802) / ((-0.01 + x0) + 1.5079230113819708)) ^ ((sin((6.283190 + x0)) + x0) * (sin((6.283190 + x1)) + (10.01 / x0)))) + -0.0132334444522229)))"
 print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-"))
@@ -11201,13 +11213,14 @@ namespace ExampleProblems
     void WierdTrackFitterTest(int random_seed, const char* algorithm, double time)
     {
         double threshold = 0.0;
-        int track_idx = 1;
+        int track_idx = 2;
         constexpr const char* file_path[] =
         {
-            "/Users/edwardfinkelstein/SDSU_UCI/WhitesonResearch/TrackProject/stubborn_track_csvs/event100000003-hits_Z.csv",
-            "/Users/edwardfinkelstein/SDSU_UCI/WhitesonResearch/TrackProject/stubborn_track_csvs/event1000000039-hits_X.csv"
+            "/Users/edwardfinkelstein/SDSU_UCI/WhitesonResearch/TrackProject/stubborn_track_csvs/v1_noiseless_69000event100000003-hits_Z.csv",
+            "/Users/edwardfinkelstein/SDSU_UCI/WhitesonResearch/TrackProject/stubborn_track_csvs/event1000000039-hits_X.csv",
+            "/Users/edwardfinkelstein/SDSU_UCI/WhitesonResearch/TrackProject/stubborn_track_csvs/v20260122_163839__train10_test10__layers25_len320p0__r3p1-53p0__fd25-25__func3-3__noiseXY0p01_Z0p01event100000003-hits_Z.csv"
         };
-        constexpr int sizes[] = {61, 85};
+        constexpr int sizes[] = {61, 85, 169};
         const std::vector<std::string> seed_exprs =
         {
             std::vector<std::string>
@@ -11227,8 +11240,14 @@ namespace ExampleProblems
             {
                 "31.554215 18.997395 16 x0 * cos ^ -",
                 "x0 -0.449935 + x0 arccos x0 0.499351 ^ * x0 x0 arcsin ^ arccos sech - /"
-            }[1]
+            }[1],
+            std::vector<std::string>
+            {
+                "2.345027 x0 x0 sqrt cos 2.266180070913597 - / +",
+                "2.345027 x0 x0 sqrt cos 2.266180070913597 - / + 20.114252 4.207354924039483 168.000000 x0 + sqrt * cos * +"
+            }[0]
         };
+        assert(track_idx < seed_exprs.size());
         std::cout << "seed_exprs[" << track_idx << "] = {" << seed_exprs[track_idx] << "}\n";
         Eigen::MatrixXd data = load_csv(file_path[track_idx], sizes[track_idx], 2, false /*no header in these `file_path` files*/);
         std::cout << "data = " << data << '\n';
@@ -11280,11 +11299,11 @@ namespace ExampleProblems
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "WierdTrackSR.txt", // "" /*filename to save current best expression found (instead of outputting them to standard out)*/
-                std::vector<int>{18} /*optional max-sizes of each of the expressions in the generated solution*/,
-                {split(seed_exprs[track_idx])} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
+                std::vector<int>{19} /*optional max-sizes of each of the expressions in the generated solution*/,
+                {/*split(seed_exprs[track_idx])*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
                 1000000 /*`print_every` number of expressions generated before thread prints to standard out*/,
-                {/*split(seed_exprs[track_idx])*/} /*seed expressions*/,
+                {split(seed_exprs[track_idx])} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
@@ -11371,7 +11390,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
     
-    ProblemOption choice = ProblemOption::SwiftHohenberg;
+    ProblemOption choice = ProblemOption::WierdTrackFitter;
     switch (choice)
     {
         case ProblemOption::SwiftHohenberg:

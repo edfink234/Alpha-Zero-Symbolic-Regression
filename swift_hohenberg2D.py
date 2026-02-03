@@ -81,7 +81,7 @@ r_vals, theta_vals = [None]*2
 func_vals = None
 N = 1000
 if not GENERIC:
-    r_vals, theta_vals = np.meshgrid(np.linspace(0.01, 100, N), np.linspace(0, 2*pi, N))
+    r_vals, theta_vals = np.meshgrid(np.linspace(0.01, 10, N), np.linspace(0, 2*pi, N))
     f_SR = lambdify((r, theta), f)
     f_SR_r = lambdify((r, theta), f_r := diff(f, r))
     f_SR_theta = lambdify((r, theta), f_theta := diff(f, theta))
