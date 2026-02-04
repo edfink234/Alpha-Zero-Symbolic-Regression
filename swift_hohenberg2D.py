@@ -46,6 +46,7 @@ f = None
 if GENERIC:
     f = Function('f')(r, theta)
 else:
+    #TODO: Implement a loop to optimize the constants (perhaps greedy annealing and asserting the variance > baseline)
     f =  [-0.998846776839887*0.999950000416665**(r**4)*sin(r)*sin(theta) + 2.71782596428238e-13*10.36319**(r + 0.01) + 0.00164034101997398*theta - (r/(r + 2))**(r + 6.35319) + 0.6448561035289, \
         sin(r)*sin(theta)+0.604, \
         sin(r)*sin(theta), \

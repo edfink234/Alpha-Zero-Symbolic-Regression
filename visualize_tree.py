@@ -444,7 +444,7 @@ def test_visualize():
             print(postfix_to_prefix(postfix_expr))
         else:
             expression_type_to_plot = ["prefix", "postfix"][1]
-            completeTree = [True, False][0]
+            completeTree = [True, False][1]
             if expression_type_to_plot == "prefix":
                 complete_pn_expr = "+ 1 * 2 3"
                 if completeTree:
@@ -456,7 +456,7 @@ def test_visualize():
                 plot_pn_expression_tree(complete_pn_expr, save = save, include_expression_in_title = False)
 
             else:
-                complete_rpn_expr = "-0.02 x0 0.010000 + + x1 sech + 11.119909200140661 ^ 2.714063572022206e-13 * 0.010000 x0 + 6.28319 ^ 1e-08 * 0.002504692820413781 + 0.7456387750685652 + + 0.9998848754538172 x0 tanh arcsin 1 x0 4 ^ / / ^ 6.283190 x1 + ~ sin 0.940049833749168 * * 0.7927863849639187 x0 cos asin cos * * - 0.01 x0 + 0.009999833334166664 x0 + + 7.50905609893065 ^ 0.28580222883407974 x0 10 + ^ 1.02 x1 sin - * * 0.003734854911714874 2.302585092994046 0.010000 x1 + + x1 10.000000 / 1.9195083249399762e+06 - / -0.0576701598990227 + + + 0.02 x0 + 0.9801980198019802 ^ -0.01 x0 + 1.5079230113819708 + / 0.010000 x0 + sin x0 + 6.283190 x1 + sin 10.01 x0 / + * ^ -0.013433444452222899 + + -"
+                complete_rpn_expr = "-0.435995 x0 0.537501 x0 sqrt cos ^ / * 25.633881 4.207354924039483 168.220938 x0 + sqrt * cos * + 2.659658 23.229391 1.014344 x0 ^ cos tanh * + + 7.991940 -0.867100 2 x0 ln ^ + sin * + x0 0.579037 ^ 118.95633426995997 x0 1.000973 ^ - / + -1.180394 x0 2.685784865116654 / - cos 4.122059 * + 1.502449 x0 0.7371027432716666 ^ * cos arcsin + 2.587281 -2.209863 x0 + 0.2658022288340797 * sin * ~ +"
                 if completeTree:
                     complete_rpn_expr = complete_tree(complete_rpn_expr.split(), "postfix") #returns a list
                 else:

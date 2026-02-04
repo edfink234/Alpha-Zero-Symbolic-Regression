@@ -6954,7 +6954,7 @@ std::vector<std::vector<std::string>> WierdTrackFitter(Board& x, bool fit)
 {
     /*
      '''
-x='(2.345027 + (x0 / (cos(sqrt(x0)) - 2.266180070913597)))'.replace("^","**").replace("~", "-").replace("x0","s"); print(x); from sympy import *; y = x.replace("arccos","acos").replace("arcsin","asin"); print(y); s = sp.symbols("s"); from sympy.printing.pycode import pycode; print(x:=pycode(eval(y)).replace('math','sp')); print(x.replace("sp","np")); round_floats = lambda expr, ndigits: expr.xreplace({f: sp.Float(round(float(f), ndigits)) for f in expr.atoms(sp.Float)}); func_sym_r = round_floats(eval(y), 2); print(sp.latex(func_sym_r));
+x='(((((((-0.440079 * (x0 / (0.541699 ^ cos(sqrt(x0))))) + (25.661740 * cos((4.207354924039483 * sqrt((168.220938 + x0)))))) + (2.850168 + (23.212961 * tanh(cos((1.014344 ^ x0)))))) + (7.991940 * sin((5.412041 + (2 ^ ln(x0)))))) + ((x0 ^ 0.579373) / (118.95633426995997 - (x0 ^ 1.000973)))) + (cos((-1.180060 - (x0 / 2.685784865116654))) * 4.122059)) + arcsin(cos((1.502449 * (x0 ^ 0.7371027432716666)))))'.replace("^","**").replace("~", "-").replace("x0","s"); print(x); from sympy import *; import sympy as sp; y = x.replace("arccos","acos").replace("arcsin","asin"); print(y); s = sp.symbols("s"); from sympy.printing.pycode import pycode; print(x:=pycode(eval(y)).replace('math','sp')); print(x.replace("sp","np")); round_floats = lambda expr, ndigits: expr.xreplace({f: sp.Float(round(float(f), ndigits)) for f in expr.atoms(sp.Float)}); func_sym_r = round_floats(eval(y), 2); print(sp.latex(func_sym_r));
      
      '''
      
@@ -7014,19 +7014,45 @@ x='(2.345027 + (x0 / (cos(sqrt(x0)) - 2.266180070913597)))'.replace("^","**").re
             Best expression = (2.345027 + (x0 / (cos(sqrt(x0)) - 2.266180070913597)))
             Best expression (original format) = 2.345027 x0 x0 sqrt cos 2.266180070913597 - / +
         depth = 6, maxsize = 19:
-            Best score = 3.30092e-05, SNE = 30293.6
-            Squared-norm error for each equation: 30293.6
-            Best expression = (20.114252 * cos((4.207354924039483 * sqrt((168.000000 + x0)))))
-            Best expression (original format) = 20.114252 4.207354924039483 168.000000 x0 + sqrt * cos *
+            Best score = 3.57377e-05, SNE = 27980.7
+            Squared-norm error for each equation: 27980.7
+            Best expression = ((0.832126 * (x0 / (cos(sqrt(x0)) - 2))) - (-21.615306 * cos((4.207354924039483 * sqrt((168.000000 + x0))))))
+            Best expression (original format) = 0.832126 x0 x0 sqrt cos 2 - / * -21.615306 4.207354924039483 168.000000 x0 + sqrt * cos * -
+        depth = 7, maxsize = 29:
+            Best score = 8.01385e-05, SNE = 12477.4
+            Squared-norm error for each equation: 12477.4
+            Best expression = (((-0.452316 * (x0 / (0.558241 ^ cos(sqrt(x0))))) + (23.928732 * cos((4.207354924039483 * sqrt((168.000000 + x0)))))) + (3.467233 - (-21.559683 * tanh(cos((1.014850 ^ x0))))))
+            Best expression (original format) = -0.452316 x0 0.558241 x0 sqrt cos ^ / * 23.928732 4.207354924039483 168.000000 x0 + sqrt * cos * + 3.467233 -21.559683 1.014850 x0 ^ cos tanh * - +
+        depth = 8, maxsize = 39:
+            Best score = 0.000128622, SNE = 7773.74
+            Squared-norm error for each equation: 7773.74
+            Best expression = ((((-0.432626 * (x0 * (1.882588 ^ cos(sqrt(x0))))) + (25.974640 * cos((4.207354924039483 * sqrt((168.220938 + x0)))))) + (2.565390 - (-22.862463 * tanh(cos((1.014421 ^ x0)))))) + (7.407921 * sin((-21.205194 - (2 ^ ln(x0))))))
+            Best expression (original format) = -0.432626 x0 1.882588 x0 sqrt cos ^ * * 25.974640 4.207354924039483 168.220938 x0 + sqrt * cos * + 2.565390 -22.862463 1.014421 x0 ^ cos tanh * - + 7.407921 -21.205194 2 x0 ln ^ - sin * +
+        depth = 9, maxsize = 49:
+            Best score = 0.000213868, SNE = 4674.79
+            Squared-norm error for each equation: 4674.79
+            Best expression = (((((-0.436897 * (x0 / (0.542974 ^ cos(sqrt(x0))))) - (-25.464032 * cos((4.207354924039483 * sqrt((168.220938 + x0)))))) + (2.526539 - (-23.049172 * tanh(cos((1.014421 ^ x0)))))) - (-7.157784 * cos((-2.448741 + (2 ^ ln(x0)))))) + ((x0 ^ 0.595393) / (118.95633426995997 - (x0 ^ 1.000996))))
+            Best expression (original format) = -0.436897 x0 0.542974 x0 sqrt cos ^ / * -25.464032 4.207354924039483 168.220938 x0 + sqrt * cos * - 2.526539 -23.049172 1.014421 x0 ^ cos tanh * - + -7.157784 -2.448741 2 x0 ln ^ + cos * - x0 0.595393 ^ 118.95633426995997 x0 1.000996 ^ - / +
+        depth = 10, maxsize = 59:
+            Best score = 0.00032041, SNE = 3120
+            Squared-norm error for each equation: 3120
+            Best expression = ((((((-0.440023 * (x0 / (0.542656 ^ cos(sqrt(x0))))) - (-25.646620 * cos((4.207354924039483 * sqrt((168.220938 + x0)))))) + (2.850168 + (23.229391 * tanh(cos((1.014421 ^ x0)))))) - (7.688486 * cos((-49.540434 + (2 ^ ln(x0)))))) + ((x0 ^ 0.576049) / (118.95633426995997 - (x0 ^ 1.000996)))) - (cos((5.056729 - (x0 / exp(0.988960)))) * -4.366545))
+            Best expression (original format) = -0.440023 x0 0.542656 x0 sqrt cos ^ / * -25.646620 4.207354924039483 168.220938 x0 + sqrt * cos * - 2.850168 23.229391 1.014421 x0 ^ cos tanh * + + 7.688486 -49.540434 2 x0 ln ^ + cos * - x0 0.576049 ^ 118.95633426995997 x0 1.000996 ^ - / + 5.056729 x0 0.988960 exp / - cos -4.366545 * -
+        depth = 11, maxsize = 69:
+            Best score = 0.000392308, SNE = 2548.01
+            Squared-norm error for each equation: 2548.01
+            Best expression = (((((((-0.435995 * (x0 / (0.537501 ^ cos(sqrt(x0))))) + (25.633881 * cos((4.207354924039483 * sqrt((168.220938 + x0)))))) + (2.659658 + (23.229391 * tanh(cos((1.014344 ^ x0)))))) + (7.991940 * sin((-0.867100 + (2 ^ ln(x0)))))) + ((x0 ^ 0.579037) / (118.95633426995997 - (x0 ^ 1.000973)))) + (cos((-1.180394 - (x0 / 2.685784865116654))) * 4.122059)) + arcsin(cos((1.502449 * (x0 ^ 0.7371027432716666)))))
+            Best expression (original format) = -0.435995 x0 0.537501 x0 sqrt cos ^ / * 25.633881 4.207354924039483 168.220938 x0 + sqrt * cos * + 2.659658 23.229391 1.014344 x0 ^ cos tanh * + + 7.991940 -0.867100 2 x0 ln ^ + sin * + x0 0.579037 ^ 118.95633426995997 x0 1.000973 ^ - / + -1.180394 x0 2.685784865116654 / - cos 4.122059 * + 1.502449 x0 0.7371027432716666 ^ * cos arcsin +
+        depth = 12, maxsize = 76
      */
-    const thread_local bool add_aditive = x.additiveCorrections.size();
-    static bool added_aditive = false;
+    const thread_local bool add_additive = x.additiveCorrections.size();
+    static bool added_additive = false;
     thread_local std::vector<std::vector<std::string>> results(x.num_diff_eqns);
     assert(x.num_diff_eqns == 1);
-    if (add_aditive)
+    if (add_additive)
     {
         std::scoped_lock str_lock(Board::thread_locker);
-        if (!added_aditive)
+        if (!added_additive)
         {
             if (x.expression_type == "prefix")
             {
@@ -7050,7 +7076,7 @@ x='(2.345027 + (x0 / (cos(sqrt(x0)) - 2.266180070913597)))'.replace("^","**").re
             }
             //Fit the residual `x1 - additiveCorrections`, instead of `x1`
             Board::data["x1"] = x.expression_evaluator(x.params, results[0]);
-            added_aditive = true;
+            added_additive = true;
             results[0].clear();
         }
     }
@@ -8486,18 +8512,20 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
         Best expression = (((((((0.010000 + x0) + sech(x1)) ^ (sech(x0) + 11.13)) * 2.714063472005533e-13) + ((((x0 ^ 6.283190) * 1e-08) + 0.01) + 0.7419039201568504)) - (((0.9998848754538172 ^ (x0 ^ 4.029999999999999)) * (sin(~(x1)) * 0.9972802451715356)) * (0.8912763105205549 * cos(asin(cos(x0)))))) - (((0.00010591201460945816 * ((0.28580222883407974 ^ (x0 + 10.000000)) * (1 - sin(x1)))) + ((4.692820413780688e-06 * (12.56638 * (x1 * 2))) + -0.07517032657318981)) + ((((x0 ^ 0.9999500004166653) / ((0.010000 + x0) + 1)) ^ ((sin(x0) + (0.010000 + x0)) * (sin(x1) + (10.000000 / x0)))) + 0.06683273758330441)))
         Best expression (original format) = 0.010000 x0 + x1 sech + x0 sech 11.13 + ^ 2.714063472005533e-13 * x0 6.283190 ^ 1e-08 * 0.01 + 0.7419039201568504 + + 0.9998848754538172 x0 4.029999999999999 ^ ^ x1 ~ sin 0.9972802451715356 * * 0.8912763105205549 x0 cos asin cos * * - 0.00010591201460945816 0.28580222883407974 x0 10.000000 + ^ 1 x1 sin - * * 4.692820413780688e-06 12.56638 x1 2 * * * -0.07517032657318981 + + x0 0.9999500004166653 ^ 0.010000 x0 + 1 + / x0 sin 0.010000 x0 + + x1 sin 10.000000 x0 / + * ^ 0.06683273758330441 + + -
     Depth = 8:
-        Best score = 0.00029301, SNE = 3411.85
-        Squared-norm error for each equation: 3386.07 25.7811 0.000120051
-        Best expression = (((((((x0 + 0.010000) + sech(x1)) ^ 11.11990920014066) * 2.714063572022206e-13) + (((((0.010000 + x0) ^ 6.28319) * 1e-08) + 0.002504692820413781) + 0.7456387750685652)) - (((0.9998848754538172 ^ (arcsin(tanh(x0)) / (0.7615941559557649 / (x0 ^ 4)))) * (sin(~((6.283190 + x1))) * 0.940049833749168)) * (0.7927863849639187 * cos(asin(cos(x0)))))) - ((((((0.01 + x0) + (0.009999833334166664 + x0)) ^ 7.570169558264211) * ((0.28580222883407974 ^ (x0 + 10)) * (1.02 - sin(x1)))) + (((2.302585092994046 + (6.283190 + x1)) / ((x1 / 10.000000) - 1.919508324939976e+06)) + -0.0576701598990227)) + (((((0.02 + x0) ^ 0.9801980198019802) / ((-0.01 + x0) + 1.5079230113819708)) ^ ((sin((0.010000 + x0)) + x0) * (sin((6.283190 + x1)) + (10.01 / x0)))) + -0.0134334444522229)))
-        Best expression (original format) = x0 0.010000 + x1 sech + 11.11990920014066 ^ 2.714063572022206e-13 * 0.010000 x0 + 6.28319 ^ 1e-08 * 0.002504692820413781 + 0.7456387750685652 + + 0.9998848754538172 x0 tanh arcsin 0.7615941559557649 x0 4 ^ / / ^ 6.283190 x1 + ~ sin 0.940049833749168 * * 0.7927863849639187 x0 cos asin cos * * - 0.01 x0 + 0.009999833334166664 x0 + + 7.570169558264211 ^ 0.28580222883407974 x0 10 + ^ 1.02 x1 sin - * * 2.302585092994046 6.283190 x1 + + x1 10.000000 / 1.919508324939976e+06 - / -0.0576701598990227 + + 0.02 x0 + 0.9801980198019802 ^ -0.01 x0 + 1.5079230113819708 + / 0.010000 x0 + sin x0 + 6.283190 x1 + sin 10.01 x0 / + * ^ -0.0134334444522229 + + -
+        Best score = 0.000309664, SNE = 3228.3
+        Squared-norm error for each equation: 3197.56 30.7451 0.000142576
+        Best expression = (((((((x0 + 0.01) + sech(x1)) ^ 11.156528193614346) * 2.714063572022206e-13) + (((((0.010000 + x0) ^ 6.28319) * 1e-08) + 0.0100003333566687) + 0.7493736126143709)) - (((0.9998848754538172 ^ (arcsin(tanh(x0)) / (0.7615941559557649 / (x0 ^ 4)))) * (sin(~((6.283190 + x1))) * 0.9171523356672744)) * (0.7927863849639187 * cos(asin(cos(x0)))))) - ((((((0.02 + x0) + (0.009999833334166664 + x0)) ^ 7.570169558264211) * ((0.28580222883407974 ^ (x0 + 10)) * (1.03 - sin(x1)))) + (((3.302585092994046 + x1) / ((x1 / 0.005) - 1.919508324939976e+06)) + -0.0576701598990227)) + (((((0.02 + x0) ^ 0.9801980198019802) / ((-0.01 + x0) + 1.5079230113819708)) ^ ((sin((0.010000 + x0)) + x0) * (sin((6.283190 + x1)) + (10.01 / x0)))) + -0.01339203113140294)))
+        Best expression (original format) = x0 0.01 + x1 sech + 11.156528193614346 ^ 2.714063572022206e-13 * 0.010000 x0 + 6.28319 ^ 1e-08 * 0.0100003333566687 + 0.7493736126143709 + + 0.9998848754538172 x0 tanh arcsin 0.7615941559557649 x0 4 ^ / / ^ 6.283190 x1 + ~ sin 0.9171523356672744 * * 0.7927863849639187 x0 cos asin cos * * - 0.02 x0 + 0.009999833334166664 x0 + + 7.570169558264211 ^ 0.28580222883407974 x0 10 + ^ 1.03 x1 sin - * * 3.302585092994046 x1 + x1 0.005 / 1.919508324939976e+06 - / -0.0576701598990227 + + 0.02 x0 + 0.9801980198019802 ^ -0.01 x0 + 1.5079230113819708 + / 0.010000 x0 + sin x0 + 6.283190 x1 + sin 10.01 x0 / + * ^ -0.01339203113140294 + + -
      ```
 x = "(((((((-0.02 + (x0 + 0.010000)) + sech(x1)) ^ 11.119909200140661) * 2.714063572022206e-13) + (((((0.010000 + x0) ^ 6.28319) * 1e-08) + 0.0025) + 0.7456387750685652)) - (((0.9998848754538172 ^ (arcsin(tanh(x0)) / (1 / (x0 ^ 4)))) * (sin(~((6.283190 + x1))) * 0.940049833749168)) * (0.7927863849639187 * cos(asin(cos(x0)))))) - ((((((0.01 + x0) + (0.009999833334166664 + x0)) ^ 7.50905609893065) * ((0.28580222883407974 ^ (x0 + 10)) * (1.02 - sin(x1)))) + (0.003734854911714874 + (((2.302585092994046 + (0.010000 + x1)) / ((x1 / 10.000000) - 1.9195083249399762e+06)) + -0.0576701598990227))) + (((((0.02 + x0) ^ 0.9801980198019802) / ((-0.01 + x0) + 1.5079230113819708)) ^ ((sin((6.283190 + x0)) + x0) * (sin((6.283190 + x1)) + (10.01 / x0)))) + -0.0132334444522229)))"
 print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-"))
      */
     
-    //TODO: UNCOMMENT
-//    const thread_local bool add_aditive = x.additiveCorrections.size();
-//    static bool added_aditive = false;
+    const thread_local bool add_additive = x.additiveCorrections.size();
+    static std::atomic<bool> added_additive{false};
+    static std::once_flag init_flag;
+    static std::vector<std::vector<std::string>> additive_results(3);
+    static std::vector<Eigen::VectorXd> f_res(3);
     std::vector<std::vector<std::string>> results;
     results.reserve(3);
     assert((x.num_diff_eqns == 3) && "SwiftHohenberg is a system of 3 equations!");
@@ -8524,25 +8552,276 @@ print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-
 
     std::string infty = std::to_string(DBL_MAX);
     
-    //TODO: UNCOMMENT
-//    if (add_additive)
-//    {
-//        std::scoped_lock str_lock(Board::thread_locker);
-//        if (!added_aditive)
-//        {
-//            if (x.expression_type == "prefix")
-//            {
-//                
-//            }
-//            else if (x.expression_type == "postfix")
-//            {
-//                
-//            }
-//        }
-//        
-//    }
+//    open -a Google\ Chrome SwiftHohenbergBoosting.png
+    if (add_additive)
+    {
+        std::call_once(init_flag, [&]()
+        {
+            std::scoped_lock str_lock(Board::thread_locker);
+            if (!added_additive)
+            {
+                if (x.expression_type == "prefix")
+                {
+                    throw std::invalid_argument("Prefix Additive Corrections not implemented yet for this SwiftHohenberg function!");
+                }
+                else if (x.expression_type == "postfix")
+                {
+                    //μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -
+                    additive_results[0].push_back(mu); // μ
+                    for (const std::string& i: x.additiveCorrections[0]) // f
+                    {
+                        additive_results[0].push_back(i);
+                    }
+                    additive_results[0].push_back("*"); // *
+                    additive_results[0].push_back(nu); // ν
+                    for (const std::string& i: x.additiveCorrections[0]) // f
+                    {
+                        additive_results[0].push_back(i);
+                    }
+                    additive_results[0].push_back("*"); // *
+                    for (const std::string& i: x.additiveCorrections[0]) // f
+                    {
+                        additive_results[0].push_back(i);
+                    }
+                    additive_results[0].push_back("*"); // *
+                    for (const std::string& i: x.additiveCorrections[0]) // f
+                    {
+                        additive_results[0].push_back(i);
+                    }
+                    for (const std::string& i: x.additiveCorrections[0]) // f
+                    {
+                        additive_results[0].push_back(i);
+                    }
+                    for (const std::string& i: x.additiveCorrections[0]) // f
+                    {
+                        additive_results[0].push_back(i);
+                    }
+                    additive_results[0].push_back("*"); // *
+                    additive_results[0].push_back("*"); // *
+                    additive_results[0].push_back("-"); // -
+                    additive_results[0].push_back("+"); // +
+                    for (const std::string& i: x.additiveCorrections[0]) // f
+                    {
+                        additive_results[0].push_back(i);
+                    }
+                    additive_results[0].push_back("-"); // -
+                    additive_results[0].push_back("2"); // 2
+                    x.derivePostfix(0, x.additiveCorrections[0].size()-1, "x0", x.additiveCorrections[0], grasp);
+                    dfdr1 = x.derivat;
+                    x.derivePostfix(0, dfdr1.size()-1, "x0", dfdr1, grasp);
+                    d2fdr2 = x.derivat;
+                    for (const std::string& i: d2fdr2) // ∂^2f/∂r^2
+                    {
+                        additive_results[0].push_back(i);
+                    }
+                    additive_results[0].push_back("*"); // *
+                    additive_results[0].push_back("-"); // -
+                    x.derivePostfix(0, d2fdr2.size()-1, "x0", d2fdr2, grasp);
+                    d3fdr3 = x.derivat;
+                    x.derivePostfix(0, d3fdr3.size()-1, "x0", d3fdr3, grasp);
+                    d4fdr4 = x.derivat;
+                    for (const std::string& i: d4fdr4) // ∂^4f/∂r^4
+                    {
+                        additive_results[0].push_back(i);
+                    }
+                    additive_results[0].push_back("-"); // -
+                    additive_results[0].push_back("2"); // 2
+                    for (const std::string& i: d3fdr3) // ∂^3f/∂r^3
+                    {
+                        additive_results[0].push_back(i);
+                    }
+                    additive_results[0].push_back("*"); // *
+                    for (const std::string& i: d2fdr2) // ∂^2f/∂r^2
+                    {
+                        additive_results[0].push_back(i);
+                    }
+                    additive_results[0].push_back("x0"); // r
+                    additive_results[0].push_back("/"); // /
+                    additive_results[0].push_back("+"); // +
+                    for (const std::string& i: dfdr1) // ∂f/∂r
+                    {
+                        additive_results[0].push_back(i);
+                    }
+                    if (!prefactors_computed)
+                    {
+                        prefac_temp = {"x0", "x0", "*"};
+                        x.subs_dict["r_squared"] = x.expression_evaluator(x.params, prefac_temp);
+                    }
+                    additive_results[0].push_back("r_squared"); // r r *
+                    additive_results[0].push_back("/"); // /
+                    additive_results[0].push_back("-"); // -
+                    x.derivePostfix(0, x.additiveCorrections[0].size()-1, "x1", x.additiveCorrections[0], grasp);
+                    dfdtheta1 = x.derivat;
+                    x.derivePostfix(0, dfdtheta1.size()-1, "x1", dfdtheta1, grasp);
+                    d2fdtheta2 = x.derivat;
+                    x.derivePostfix(0, d2fdtheta2.size()-1, "x0", d2fdtheta2, grasp);
+                    df3dtheta2dr1 = x.derivat;
+                    for (const std::string& i: df3dtheta2dr1) // ∂^3f/∂θ^2∂r
+                    {
+                        additive_results[0].push_back(i);
+                    }
+                    additive_results[0].push_back("r_squared"); // r r *
+                    additive_results[0].push_back("/"); // /
+                    additive_results[0].push_back("2"); // 2
+                    for (const std::string& i: d2fdr2) // ∂^2f/∂r^2
+                    {
+                        additive_results[0].push_back(i);
+                    }
+                    additive_results[0].push_back("*"); // *
+                    if (!prefactors_computed)
+                    {
+                        prefac_temp = {"x0", "x0", "*", "x0", "*"};
+                        x.subs_dict["r_cubed"] = x.expression_evaluator(x.params, prefac_temp);
+                    }
+                    additive_results[0].push_back("r_cubed"); // r r * r *
+                    additive_results[0].push_back("/"); // /
+                    additive_results[0].push_back("-"); // -
+                    additive_results[0].push_back("2"); // 2
+                    for (const std::string& i: dfdr1) // ∂f/∂r
+                    {
+                        additive_results[0].push_back(i);
+                    }
+                    additive_results[0].push_back("*"); // *
+                    additive_results[0].push_back("+"); // +
+                    additive_results[0].push_back("+"); // +
+                    additive_results[0].push_back("x0"); // r
+                    additive_results[0].push_back("/"); // /
+                    additive_results[0].push_back("-"); // -
+                    additive_results[0].push_back("2"); // 2
+                    x.derivePostfix(0, df3dtheta2dr1.size()-1, "x0", df3dtheta2dr1, grasp);
+                    for (const std::string& i: x.derivat) //∂^4f/∂θ^2∂r^2
+                    {
+                        additive_results[0].push_back(i);
+                    }
+                    additive_results[0].push_back("*"); // *
+                    for (const std::string& i: df3dtheta2dr1) // ∂^3f/∂θ^2∂r
+                    {
+                        additive_results[0].push_back(i);
+                    }
+                    additive_results[0].push_back("x0"); // r
+                    additive_results[0].push_back("/"); // /
+                    additive_results[0].push_back("+"); // +
+                    x.derivePostfix(0, d2fdtheta2.size()-1, "x1", d2fdtheta2, grasp);
+                    d3fdtheta3 = x.derivat;
+                    x.derivePostfix(0, d3fdtheta3.size()-1, "x1", d3fdtheta3, grasp);
+                    d4fdtheta4 = x.derivat;
+                    for (const std::string& i: d4fdtheta4) // ∂^4f/∂θ^4
+                    {
+                        additive_results[0].push_back(i);
+                    }
+                    additive_results[0].push_back("r_squared"); // r r *
+                    additive_results[0].push_back("/"); // /
+                    additive_results[0].push_back("+"); // +
+                    additive_results[0].push_back("2"); // 2
+                    for (const std::string& i: d2fdr2) // ∂^2f/∂r^2
+                    {
+                        additive_results[0].push_back(i);
+                    }
+                    additive_results[0].push_back("*"); // *
+                    additive_results[0].push_back("-"); // -
+                    additive_results[0].push_back("2"); // 2
+                    for (const std::string& i: d2fdtheta2) // ∂^2f/∂θ^2
+                    {
+                        additive_results[0].push_back(i);
+                    }
+                    additive_results[0].push_back("*"); // *
+                    additive_results[0].push_back("+"); // +
+                    additive_results[0].push_back("r_squared"); // r r *
+                    additive_results[0].push_back("/"); // /
+                    additive_results[0].push_back("-"); // -
+                    additive_results[0].push_back("2"); // 2
+                    additive_results[0].push_back("r_cubed"); // r r * r *
+                    additive_results[0].push_back("/"); // /
+                    for (const std::string& i: dfdr1) // ∂f/∂r
+                    {
+                        additive_results[0].push_back(i);
+                    }
+                    additive_results[0].push_back("2"); // 2
+                    for (const std::string& i: df3dtheta2dr1) // ∂^3f/∂θ^2∂r
+                    {
+                        additive_results[0].push_back(i);
+                    }
+                    additive_results[0].push_back("*"); // *
+                    additive_results[0].push_back("-"); // -
+                    if (!prefactors_computed)
+                    {
+                        prefac_temp = {"3", "x0", "/"};
+                        x.subs_dict["3_over_r"] = x.expression_evaluator(x.params, prefac_temp);
+                    }
+                    additive_results[0].push_back("3_over_r"); // 3 r /
+                    for (const std::string& i: d2fdtheta2) // ∂^2f/∂θ^2
+                    {
+                        additive_results[0].push_back(i);
+                    }
+                    additive_results[0].push_back("*"); // *
+                    additive_results[0].push_back("+"); // +
+                    additive_results[0].push_back("*"); // *
+                    additive_results[0].push_back("-"); // -
+                    //f(r, θ=2*π) f(r, θ = 0) -
+                    for (const std::string& i: x.additiveCorrections[0]) //f(r, θ=2*π)
+                    {
+                        if (i == "x1")
+                        {
+                            additive_results[1].push_back("6.283185307179586");
+                        }
+                        else
+                        {
+                            additive_results[1].push_back(i);
+                        }
+                    }
+                    for (const std::string& i: x.additiveCorrections[0]) //f(r, θ = 0)
+                    {
+                        if (i == "x1")
+                        {
+                            additive_results[1].push_back("0");
+                        }
+                        else
+                        {
+                            additive_results[1].push_back(i);
+                        }
+                    }
+                    additive_results[1].push_back("-");
+                    //∂f/∂θ(r, θ=2*π) ∂f/∂θ(r, θ = 0) -
+                    for (const std::string& i: dfdtheta1) //∂f/∂θ(r, θ=2*π)
+                    {
+                        if (i == "x1")
+                        {
+                            additive_results[2].push_back("6.283185307179586");
+                        }
+                        else
+                        {
+                            additive_results[2].push_back(i);
+                        }
+                    }
+                    for (const std::string& i: dfdtheta1) //∂f/∂θ(r, θ = 0)
+                    {
+                        if (i == "x1")
+                        {
+                            additive_results[2].push_back("0");
+                        }
+                        else
+                        {
+                            additive_results[2].push_back(i);
+                        }
+                    }
+                    additive_results[2].push_back("-");
+                }
+                f_res[0] = x.expression_evaluator(x.params, additive_results[0]);
+                f_res[1] = x.expression_evaluator(x.params, additive_results[1]);
+                f_res[2] = x.expression_evaluator(x.params, additive_results[2]);
+                added_additive = true;
+            }
+        });
+        if (!prefactors_computed)
+        {
+           x.subs_dict["fres0"] = f_res[0];
+           x.subs_dict["fres1"] = f_res[1];
+           x.subs_dict["fres2"] = f_res[2];
+           x.subs_dict["f"] = x.expression_evaluator(x.params, x.additiveCorrections[0]);
+           prefactors_computed = true;
+        }
+    }
     
-
     if (x.expression_type == "prefix")
     {
         //- - - - - - + * μ f - * * ν f f * f * f f f * 2 ∂^2f/∂r^2 ∂^4f/∂r^4 / + - + * 2 ∂^3f/∂r^3 / ∂^2f/∂r^2 r / (∂f/∂r) * r r + - / (∂^3f/∂θ^2∂r) * r r / * 2 ∂^2f/∂r^2 * * r r r * 2 ∂f/∂r r / + - + + * 2 ∂^4f/∂θ^2∂r^2 / ∂^3f/∂θ^2∂r r / (∂^4f/∂θ^4) * r r * 2 ∂^2f/∂r^2 * 2 ∂^2f/∂θ^2 * r r * / 2 * * r r r + - ∂f/∂r * 2 ∂^3f/∂θ^2∂r * / 3 r ∂^2f/∂θ^2
@@ -8950,6 +9229,17 @@ print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-
         results.push_back(result);
         result.clear();
     }
+    if (add_additive)
+    {
+        if (x.expression_type == "prefix")
+        {
+            throw std::invalid_argument("Prefix not implemented yet for this SwiftHohenberg function!");
+        }
+        else if (x.expression_type == "postfix")
+        {
+            
+        }
+    }
     prefactors_computed = true;
     return results;
 }
@@ -9332,6 +9622,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                         const std::vector<std::vector<std::string>>& additive_corrections = {},
                         bool graphEval = false,
                         int print_every = 1000000,
+                        bool printDiffEq = false,
                         const std::vector<std::vector<std::string>>& seed_expressions = {},
                         bool exit_early = false,
                         int custom_rand_seed = -1,
@@ -9390,7 +9681,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
     /*
      Inside of thread:
      */
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &custom_features, &seed_expressions, &exit_early, &custom_rand_seed, &T_min, &T_max, &temp_func, &completeTree, &pert_option, &best_SNE, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &graphEval, &print_every, &outFile, &out](int thread_idx)
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &custom_features, &seed_expressions, &exit_early, &custom_rand_seed, &T_min, &T_max, &temp_func, &completeTree, &pert_option, &best_SNE, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &graphEval, &print_every, &printDiffEq, &outFile, &out](int thread_idx)
     {
         std::random_device rand_dev;
         #if RANDOM_SEED < 0
@@ -9479,12 +9770,15 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                     (*out) << "Squared-norm error for each equation: " << best_sne_vec << '\n';
                     (*out) << "Best expression = " << best_expression << '\n';
                     (*out) << "Best expression (original format) = " << orig_expression << '\n';
-                    (*out) << "Best diff result = " << best_expr_result << '\n';
-                    (*out) << "Best expression (original format) = " << orig_expr_result << '\n';
-                    (*out) << "Best differential equation parameters = " << x.print_diff_params() << '\n';
-                    (*out) << "Best expression parameters = " << x.print_expression_params() << '\n';
-                    (*out) << "Total system result = " << best_expr_result << '\n';
-                    (*out) << "Total system result (original format) = " << orig_expr_result << '\n';
+                    if (printDiffEq)
+                    {
+                        (*out) << "Best diff result = " << best_expr_result << '\n';
+                        (*out) << "Best expression (original format) = " << orig_expr_result << '\n';
+                        (*out) << "Best differential equation parameters = " << x.print_diff_params() << '\n';
+                        (*out) << "Best expression parameters = " << x.print_expression_params() << '\n';
+                        (*out) << "Total system result = " << best_expr_result << '\n';
+                        (*out) << "Total system result (original format) = " << orig_expr_result << '\n';
+                    }
                     if (outFile.is_open())
                     {
                         outFile.close();
@@ -9787,8 +10081,11 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
     std::cout << "Squared-norm error for each equation: " << best_sne_vec << '\n';
     std::cout << "Best expression = " << best_expression << '\n';
     std::cout << "Best expression (original format) = " << orig_expression << '\n';
-    std::cout << "Best diff result = " << best_expr_result << '\n';
-    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
+    if (printDiffEq)
+    {
+        std::cout << "Best diff result = " << best_expr_result << '\n';
+        std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
+    }
 }
 ////
 //////https://arxiv.org/abs/2310.06609
@@ -10689,7 +10986,8 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
                   const std::vector<int>& maxSize = {},
                   const std::vector<std::vector<std::string>>& additive_corrections = {},
                   bool graphEval = false,
-                  int print_every = 1000000)
+                  int print_every = 1000000,
+                  bool printDiffEq = false)
 {
     if (num_threads == 0)
     {
@@ -10717,7 +11015,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
      Inside of thread:
      */
 
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &use_const_pieces, &numDataCols, &mustHaveAllFeatures, &custom_features, &isConstTol, &best_SNE, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &graphEval, &print_every, &outFile, &out](int thread_idx)
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &use_const_pieces, &numDataCols, &mustHaveAllFeatures, &custom_features, &isConstTol, &best_SNE, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &graphEval, &print_every, &printDiffEq, &outFile, &out](int thread_idx)
     {
         std::random_device rand_dev;
         std::mt19937 thread_local generator(rand_dev()); // Mersenne Twister random number generator
@@ -10796,12 +11094,15 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
                 (*out) << "Squared-norm error for each equation: " << best_sne_vec << '\n';
                 (*out) << "Best expression = " << best_expression << '\n';
                 (*out) << "Best expression (original format) = " << orig_expression << '\n';
-                (*out) << "Best diff result = " << best_expr_result << '\n';
-                (*out) << "Best expression (original format) = " << orig_expr_result << '\n';
-                (*out) << "Best differential equation parameters = " << x.print_diff_params() << '\n';
-                (*out) << "Best expression parameters = " << x.print_expression_params() << '\n';
-                (*out) << "Total system result = " << best_expr_result << '\n';
-                (*out) << "Total system result (original format) = " << orig_expr_result << '\n';
+                if (printDiffEq)
+                {
+                    (*out) << "Best diff result = " << best_expr_result << '\n';
+                    (*out) << "Best expression (original format) = " << orig_expr_result << '\n';
+                    (*out) << "Best differential equation parameters = " << x.print_diff_params() << '\n';
+                    (*out) << "Best expression parameters = " << x.print_expression_params() << '\n';
+                    (*out) << "Total system result = " << best_expr_result << '\n';
+                    (*out) << "Total system result (original format) = " << orig_expr_result << '\n';
+                }
                 if (outFile.is_open())
                 {
                     outFile.close();
@@ -10837,8 +11138,11 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
     std::cout << "Squared-norm error for each equation: " << best_sne_vec << '\n';
     std::cout << "Best expression = " << best_expression << '\n';
     std::cout << "Best expression (original format) = " << orig_expression << '\n';
-    std::cout << "Best diff result = " << best_expr_result << '\n';
-    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
+    if (printDiffEq)
+    {
+        std::cout << "Best diff result = " << best_expr_result << '\n';
+        std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
+    }
 }
 
 namespace ExampleProblems
@@ -10875,7 +11179,8 @@ namespace ExampleProblems
                          {} /*optional max-sizes of each of the expressions in the generated solution*/,
                          {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                          false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
-                         50 /*`print_every` number of expressions generated before thread prints to standard out*/);
+                         50 /*`print_every` number of expressions generated before thread prints to standard out*/,
+                         false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/);
         }
         else
         {
@@ -10903,7 +11208,8 @@ namespace ExampleProblems
                 {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 true /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
                 50 /*`print_every` number of expressions generated before thread prints to standard out*/,
-                {split("0 -0.02 + x0 0.010000 + + 0 x1 + sech + 0 0 + 0 0 + + 0 0 + 0 11.119909200140661 + + + ^ 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 2.714063572022206e-13 + + + + * 0.010000 x0 + 0 6.28319 + ^ 0 0 + 0 1e-08 + + * 0 0 + 0 0 + + 0 0 + 0 0.002504692820413781 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.7456387750685652 + + + + + + 0 0 + 0 0 + + 0 0 + 0 0.9998848754538172 + + + x0 tanh arcsin 0 1 + x0 4 ^ / / ^ 6.283190 x1 + ~ sin 0 0 + 0 0 + + 0 0 + 0 0.940049833749168 + + + * * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.7927863849639187 + + + + 0 x0 + cos asin cos * * - 0 0.01 + 0 x0 + + 0 0.009999833334166664 + 0 x0 + + + 0 0 + 0 0 + + 0 0 + 0 7.50905609893065 + + + ^ 0 0 + 0 0.28580222883407974 + + 0 x0 + 0 10 + + ^ 0 0 + 0 1.02 + + 0 x1 + sin - * * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.003734854911714874 + + + + 0 2.302585092994046 + 0.010000 x1 + + x1 10.000000 / 0 1.9195083249399762e+06 + - / 0 0 + 0 0 + + 0 0 + 0 -0.0576701598990227 + + + + + + 0 0.02 + 0 x0 + + 0 0 + 0 0.9801980198019802 + + ^ 0 -0.01 + 0 x0 + + 0 0 + 0 1.5079230113819708 + + + / 0.010000 x0 + sin 0 0 + 0 x0 + + + 6.283190 x1 + sin 0 10.01 + 0 x0 + / + * ^ 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -0.013433444452222899 + + + + + + + -")} /*seed expressions*/,
+                false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
+                {split("0 x0 + 0 0.010000 + + 0 x1 + sech + 0 0 + 0 0 + + 0 0 + 0 11.156528193614346 + + + ^ 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 2.714063572022206e-13 + + + + * 0.010000 x0 + 0 6.28319 + ^ 0 0 + 0 1e-08 + + * 0 0 + 0 0 + + 0 0 + 0 0.002504692820413781 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.7493736126143709 + + + + + + 0 0 + 0 0 + + 0 0 + 0 0.9998848754538172 + + + x0 tanh arcsin 0 0.7615941559557649 + x0 4 ^ / / ^ 6.283190 x1 + ~ sin 0 0 + 0 0 + + 0 0 + 0 0.940049833749168 + + + * * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.7927863849639187 + + + + 0 x0 + cos asin cos * * - 0 0.01 + 0 x0 + + 0 0.009999833334166664 + 0 x0 + + + 0 0 + 0 0 + + 0 0 + 0 7.570169558264211 + + + ^ 0 0 + 0 0.28580222883407974 + + 0 x0 + 0 10 + + ^ 0 0 + 0 1.03 + + 0 x1 + sin - * * 0 0 + 0 2.302585092994046 + + 0 6.283190 + 0 x1 + + + 0 x1 + 0 10.000000 + / 0 0 + 0 1.919508324939976e+06 + + - / 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -0.0576701598990227 + + + + + + 0 0.02 + 0 x0 + + 0 0 + 0 0.9801980198019802 + + ^ 0 -0.01 + 0 x0 + + 0 0 + 0 1.5079230113819708 + + + / 0.010000 x0 + sin 0 0 + 0 x0 + + + 6.283190 x1 + sin 0 10.01 + 0 x0 + / + * ^ 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -0.01342875163180912 + + + + + + + -")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
@@ -10943,7 +11249,8 @@ namespace ExampleProblems
                          {} /*optional max-sizes of each of the expressions in the generated solution*/,
                          {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                          false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
-                         50 /*`print_every` number of expressions generated before thread prints to standard out*/);
+                         50 /*`print_every` number of expressions generated before thread prints to standard out*/,
+                         false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/);
         }
         else
         {
@@ -10971,6 +11278,7 @@ namespace ExampleProblems
                 {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
                 1000000 /*`print_every` number of expressions generated before thread prints to standard out*/,
+                false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                 {} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -11013,7 +11321,8 @@ namespace ExampleProblems
                  {} /*optional max-sizes of each of the expressions in the generated solution*/,
                  {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                  false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
-                 50 /*`print_every` number of expressions generated before thread prints to standard out*/);
+                 50 /*`print_every` number of expressions generated before thread prints to standard out*/,
+                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/);
         }
         else
         {
@@ -11041,6 +11350,7 @@ namespace ExampleProblems
                 {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
                 1000000 /*`print_every` number of expressions generated before thread prints to standard out*/,
+                false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                 {split("x0 sech tanh tanh 0 0 + 0 -6.4342880000000005 + + x0 tanh 0 2.61657 + / - /"), split("0 0 + 0 -3.2171440000000002 + + x0 sech 0 0.9640275800758169 + ^ * sech")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -11092,7 +11402,8 @@ namespace ExampleProblems
                  {} /*optional max-sizes of each of the expressions in the generated solution*/,
                  {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                  false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
-                 50 /*`print_every` number of expressions generated before thread prints to standard out*/);
+                 50 /*`print_every` number of expressions generated before thread prints to standard out*/,
+                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/);
         }
         else
         {
@@ -11120,6 +11431,7 @@ namespace ExampleProblems
                 {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
                 50 /*`print_every` number of expressions generated before thread prints to standard out*/,
+                false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                 {split("-2.640000 0.051731 x7 sqrt x15 8.000000 - - / / -1803.016571 x21 36.293228 x0 * * x17 -843.000000 + x15 15893.000000 + + + + x6 x19 -100.000000 x8 + - / x14 -211800 / x15 + + / - x18 x24 - x2 x7 x0 1684.200012 - - + - + -7.446376466569234 -3.225653 x6 8.800000 - + -508 + -0.9081765689798138 38.000000 x16 sin / * + + x1 x0 - 0.0007699998478223693 + -16.82119949898502 + x0 x15 ^ -100 + -279.200012 -2.640000 x16 / + + + -28.995355508740936 + + -88.959518 1.000000 88.856491 x1 / / * -2118 x8 2118.000000 - x22 ~ + + + 0.00077 x5 + * 25.400000 x20 1.0021072170678698 / ^ 15893.000000 x22 x8 + + x1 -1405.000000 - 15666.000000 x24 + + + + x0 x25 + 16.000000 x23 + 9736 - / ~ / - + *")} /*seed expressions*/,
                 validation /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -11170,7 +11482,8 @@ namespace ExampleProblems
                  {} /*optional max-sizes of each of the expressions in the generated solution*/,
                  {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                  false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
-                 50 /*`print_every` number of expressions generated before thread prints to standard out*/);
+                 50 /*`print_every` number of expressions generated before thread prints to standard out*/,
+                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/);
         }
         else
         {
@@ -11198,6 +11511,7 @@ namespace ExampleProblems
                 {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
                 50 /*`print_every` number of expressions generated before thread prints to standard out*/,
+                false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                 {split("/ + * + + ln cos x46 + + 0 0 + 0 -3.4799761065034414 + * + 0 x95 + 0 1.620943 + + 0 x95 ~ x48 ~ ^ + cos x41 + 0 52.64009483497598 - + 0 2.7907071011403315 cos x93 + ^ + * + 0 3.1585732538600397 ^ x12 x54 + cos x21 + 0.365382 x13 + ~ + 0 x20 + + 0 0 + 0 1.5729403267948965 * + + + 0 0 + 0 0 + + 0 0 + 0 x3 sqrt + + 0 0 + 0 x48 - + / - + + 0 0 + 0 0.9867622178470573 - - 7169.463400 x100 * x17 11181230.000000 + acos tanh x23 + + 0 0 + 0 57.67636600070402 sin + + + 0 0 + 0 -2.884980 + + 0 0 + 0 x50 - sqrt ^ ^ + 0 x17 + 0 x59 + + 0 x71 ~ x87 ^ + + + 0 0 + 0 0 + + 0 0 + 0 0.9910929232006058 * + + 0 0 + 0 -4.0405169999999995 * - x61 x101 + 0 -0.04344899097047564")} /*seed expressions*/,
                 validation /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -11244,8 +11558,14 @@ namespace ExampleProblems
             std::vector<std::string>
             {
                 "2.345027 x0 x0 sqrt cos 2.266180070913597 - / +",
-                "2.345027 x0 x0 sqrt cos 2.266180070913597 - / + 20.114252 4.207354924039483 168.000000 x0 + sqrt * cos * +"
-            }[0]
+                "0.832126 x0 x0 sqrt cos 2 - / * -21.615306 4.207354924039483 168.000000 x0 + sqrt * cos * -",
+                "-0.452316 x0 0.558241 x0 sqrt cos ^ / * 23.928732 4.207354924039483 168.000000 x0 + sqrt * cos * + 3.467233 -21.559683 1.014850 x0 ^ cos tanh * - +",
+                "-0.432626 x0 1.882588 x0 sqrt cos ^ * * 25.974640 4.207354924039483 168.220938 x0 + sqrt * cos * + 2.565390 -22.862463 1.014421 x0 ^ cos tanh * - + 7.407921 -21.205194 2 x0 ln ^ - sin * +",
+                "-0.436897 x0 0.542974 x0 sqrt cos ^ / * -25.464032 4.207354924039483 168.220938 x0 + sqrt * cos * - 2.526539 -23.049172 1.014421 x0 ^ cos tanh * - + -7.157784 -2.448741 2 x0 ln ^ + cos * - x0 0.595393 ^ 118.95633426995997 x0 1.000996 ^ - / +",
+                "-0.440023 x0 0.542656 x0 sqrt cos ^ / * -25.646620 4.207354924039483 168.220938 x0 + sqrt * cos * - 2.850168 23.229391 1.014421 x0 ^ cos tanh * + + 7.688486 -49.540434 2 x0 ln ^ + cos * - x0 0.576049 ^ 118.95633426995997 x0 1.000996 ^ - / + 5.056729 x0 0.988960 exp / - cos -4.366545 * -",
+                "-0.435995 x0 0.537501 x0 sqrt cos ^ / * 25.633881 4.207354924039483 168.220938 x0 + sqrt * cos * + 2.659658 23.229391 1.014344 x0 ^ cos tanh * + + 7.991940 -0.867100 2 x0 ln ^ + sin * + x0 0.579037 ^ 118.95633426995997 x0 1.000973 ^ - / + -1.180394 x0 2.685784865116654 / - cos 4.122059 * + 1.502449 x0 0.7371027432716666 ^ * cos arcsin +",
+                "-0.435995 x0 0.537501 x0 sqrt cos ^ / * 25.633881 4.207354924039483 168.220938 x0 + sqrt * cos * + 2.659658 23.229391 1.014344 x0 ^ cos tanh * + + 7.991940 -0.867100 2 x0 ln ^ + sin * + x0 0.579037 ^ 118.95633426995997 x0 1.000973 ^ - / + -1.180394 x0 2.685784865116654 / - cos 4.122059 * + 1.502449 x0 0.7371027432716666 ^ * cos arcsin + 2.587281 -2.209863 x0 + 0.2658022288340797 * sin * ~ +",
+            }[7]
         };
         assert(track_idx < seed_exprs.size());
         std::cout << "seed_exprs[" << track_idx << "] = {" << seed_exprs[track_idx] << "}\n";
@@ -11275,14 +11595,15 @@ namespace ExampleProblems
                  std::vector<int>{9} /*optional max-sizes of each of the expressions in the generated solution*/,
                  {/*split(seed_exprs[track_idx])*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                  false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
-                 1000000 /*`print_every` number of expressions generated before thread prints to standard out*/);
+                 1000000 /*`print_every` number of expressions generated before thread prints to standard out*/,
+                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/);
         }
         else
         {
             SimulatedAnnealing(WierdTrackFitter /*differential equation to solve*/,
                 1 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{6} /*fixed depths of generated solution*/,
+                std::vector<int>{12} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -11299,10 +11620,11 @@ namespace ExampleProblems
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "WierdTrackSR.txt", // "" /*filename to save current best expression found (instead of outputting them to standard out)*/
-                std::vector<int>{19} /*optional max-sizes of each of the expressions in the generated solution*/,
+                std::vector<int>{76} /*optional max-sizes of each of the expressions in the generated solution*/,
                 {/*split(seed_exprs[track_idx])*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
                 1000000 /*`print_every` number of expressions generated before thread prints to standard out*/,
+                false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                 {split(seed_exprs[track_idx])} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
