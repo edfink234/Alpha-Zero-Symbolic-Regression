@@ -456,7 +456,7 @@ def test_visualize():
                 plot_pn_expression_tree(complete_pn_expr, save = save, include_expression_in_title = False)
 
             else:
-                complete_rpn_expr = "-0.435995 x0 0.537501 x0 sqrt cos ^ / * 25.633881 4.207354924039483 168.220938 x0 + sqrt * cos * + 2.659658 23.229391 1.014344 x0 ^ cos tanh * + + 7.991940 -0.867100 2 x0 ln ^ + sin * + x0 0.579037 ^ 118.95633426995997 x0 1.000973 ^ - / + -1.180394 x0 2.685784865116654 / - cos 4.122059 * + 1.502449 x0 0.7371027432716666 ^ * cos arcsin + 2.587281 -2.209863 x0 + 0.2658022288340797 * sin * ~ +"
+                complete_rpn_expr = "-1.435127 x0 1.044677 x0 sqrt cos ^ ^ * -26.250286 4.207354924039483 168.000000 x0 + sqrt * cos * - x0 -25.143824 1.014267 x0 ^ cos tanh * - + 8.212401 1.007622 x0 0.6931471805599453 ^ - sin * - -104.520203 x0 + 118.95633426995997 x0 0.995431 / - / + 1.137694 x0 2.685784865116654 / + cos -4.486179 * - 1.502449 x0 0.7371027432716666 ^ * cos arcsin + 1.952246 -2.721564 x0 - 0.2658022288340797 * cos * exp + x0 -0.45018598229727835 * sin 0.5 x0 tanh - / + 0.461399 exp x0 1.034777 2.718281828459045 - / cos * +"
                 if completeTree:
                     complete_rpn_expr = complete_tree(complete_rpn_expr.split(), "postfix") #returns a list
                 else:
