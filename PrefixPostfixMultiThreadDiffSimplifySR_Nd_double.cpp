@@ -1006,6 +1006,7 @@ struct Board
     std::vector<std::vector<std::string>> customFeatures;
     bool graph_eval;
     bool complete_Tree;
+    bool add_additive;
     std::vector<int> maxSize; //max size (number of tokens) for each expression
     std::vector<std::vector<std::string>> additiveCorrections; //Starting-point, s.t candidate-expression += additiveCorrections (user-implemented though)
 
@@ -1036,7 +1037,8 @@ struct Board
     {
         assert(n.size());
         assert(((!maxSize.size()) || (maxSize.size() && maxSize.size() == n.size())) && "if `maxSize` is not empty it much be equal in size to the depth-vector `n`");
-        assert(((!additiveCorrections.size()) || (additiveCorrections.size() && additiveCorrections.size() == n.size())) && "if `additiveCorrections` is not empty it much be equal in size to the depth-vector `n`");
+        assert(((!additiveCorrections.size()) || (additiveCorrections.size() && additiveCorrections.size() == n.size())) && "if `additiveCorrections` is not empty it must be equal in size to the depth-vector `n`");
+        this->add_additive = additiveCorrections.size();
         this->num_objectives = n.size();
         int max_n = n[0];
         int counter = 0;
@@ -6954,7 +6956,7 @@ std::vector<std::vector<std::string>> WierdTrackFitter(Board& x, bool fit)
 {
     /*
      '''
-x='((((((((((-1.435127 * (x0 ^ (1.044676 ^ cos(sqrt(x0))))) - (-26.289380 * cos((4.207354924039483 * sqrt((168.000000 + x0)))))) + (x0 - (-25.114767 * tanh(cos((1.014267 ^ x0)))))) - (8.290024 * sin((1.008228 - (x0 ^ 0.6931471805599453))))) + ((-104.996698 + x0) / (118.95633426995997 - (x0 ^ 1.000949)))) - (cos((1.130663 + (x0 / 2.685784865116654))) * -4.486179)) + arcsin(cos((1.502449 * (x0 ^ 0.7371027432716666))))) + exp((1.942773 * cos(((-2.600572 - x0) * 0.2658022288340797))))) + (sin((x0 * -0.45018598229727835)) / (0.5 - 0.966472))) + ((2 / 1.222737) * cos((x0 / (1.034229 - 2.718281828459045)))))'.replace("^","**").replace("~", "-").replace("x0","s"); print("\n", x); from sympy import *; import sympy as sp; y = x.replace("arccos","acos").replace("arcsin","asin"); print(y); s = sp.symbols("s"); from sympy.printing.pycode import pycode; print(x:=pycode(eval(y)).replace('math','sp'), end = ""); print(" if fitPlotFunc else lambda s: ", end = ""); print(x.replace("sp","np")); round_floats = lambda expr, ndigits: expr.xreplace({f: sp.Float(round(float(f), ndigits)) for f in expr.atoms(sp.Float)}); func_sym_r = round_floats(eval(y), 2); print(sp.latex(func_sym_r));
+x='((((((((((((((((-2.444413 * (x0 ^ (1.026195 ^ cos(sqrt(x0))))) - (-26.199496 * cos((4.207354924039483 * sqrt((168.000000 + x0)))))) + (x0 + (25.019477 * tanh(cos((1.014280 ^ x0)))))) - (-8.056819 * cos((-2.633602 + (x0 ^ 0.6931471805599453))))) + (11.706926 / (118.95633426995997 - (x0 / 0.995059)))) - (sin((x0 * 0.3670833851233197)) * 4.956417)) + cos(log((1.502449 ^ (x0 ^ 0.997889))))) + exp((-2.060603 * sin(((44.498356 + x0) * 0.2658022288340797))))) + (sin((x0 * -0.45018598229727835)) * -2.701240)) - (-1.599485 * cos((x0 / -1.6880058284590451)))) + (x0 + cos((0.696976831813758 * x0)))) - (0.032499 / sin((4 * (x0 - 0.7615941559557649))))) + sin(sqrt((2.702079 + (1.052177 ^ (x0 ^ 0.992804)))))) + cos((-1.027736 * (2 * (x0 ^ 0.8414709848078965))))) - (1.225249 - (2.024455 / (11.175638 + (x0 - 54.598150033144236))))) - (-6.130043 / ((1.216664 + x0) / cos((x0 - 6.804936)))))'.replace("^","**").replace("~", "-").replace("x0","s"); print("\n", x); from sympy import *; import sympy as sp; y = x.replace("arccos","acos").replace("arcsin","asin"); print(y); s = sp.symbols("s"); from sympy.printing.pycode import pycode; print(x:=pycode(eval(y)).replace('math','sp'), end = ""); print(" if fitPlotFunc else lambda s: ", end = ""); print(x.replace("sp","np")); round_floats = lambda expr, ndigits: expr.xreplace({f: sp.Float(round(float(f), ndigits)) for f in expr.atoms(sp.Float)}); func_sym_r = round_floats(eval(y), 2); print(sp.latex(func_sym_r));
      
      '''
      
@@ -7083,16 +7085,30 @@ x='((((((((((-1.435127 * (x0 ^ (1.044676 ^ cos(sqrt(x0))))) - (-26.289380 * cos(
             Best expression = ((((((((((((((-2.446317 * (x0 ^ (1.026171 ^ cos(sqrt(x0))))) - (-26.267023 * cos((4.207354924039483 * sqrt((168.000000 + x0)))))) + (x0 + (25.114484 * tanh(cos((1.014280 ^ x0)))))) - (-8.094348 * cos((-3.652141 - (x0 ^ 0.6931471805599453))))) + ((-106.639258 + x0) / (118.95633426995997 - (x0 / 0.995137)))) - (sin((0.985554 * (x0 / 2.685784865116654))) * 5.048220)) + cos(log((1.502449 ^ (x0 ^ 0.997721))))) + exp((2.081938 * sin(((2.962750 - x0) * 0.2658022288340797))))) + (sin((x0 * -0.45018598229727835)) * -2.744077)) - (-1.635574 * cos((x0 / -1.6880058284590451)))) + (x0 + cos((0.696976831813758 * x0)))) - (0.031400 / sin((4 * (x0 - 0.7615941559557649))))) + sin(sqrt((4.063501 + (1.052177 ^ (x0 ^ 0.992804)))))) + cos((~(1.027196) * (2 * (x0 ^ 0.8414709848078965)))))
             Best expression (original format) = -2.446317 x0 1.026171 x0 sqrt cos ^ ^ * -26.267023 4.207354924039483 168.000000 x0 + sqrt * cos * - x0 25.114484 1.014280 x0 ^ cos tanh * + + -8.094348 -3.652141 x0 0.6931471805599453 ^ - cos * - -106.639258 x0 + 118.95633426995997 x0 0.995137 / - / + 0.985554 x0 2.685784865116654 / * sin 5.048220 * - 1.502449 x0 0.997721 ^ ^ log cos + 2.081938 2.962750 x0 - 0.2658022288340797 * sin * exp + x0 -0.45018598229727835 * sin -2.744077 * + -1.635574 x0 -1.6880058284590451 / cos * - x0 0.696976831813758 x0 * cos + + 0.031400 4 x0 0.7615941559557649 - * sin / - 4.063501 1.052177 x0 0.992804 ^ ^ + sqrt sin + 1.027196 ~ 2 x0 0.8414709848078965 ^ * * cos +
         depth = 19, maxsize = 135:
-            Best score = 0.00325667, SNE = 306.063
-            Squared-norm error for each equation: 306.063
-            Best expression = (((((((((((((((-2.446549 * (x0 ^ (1.026171 ^ cos(sqrt(x0))))) - (-26.267023 * cos((4.207354924039483 * sqrt((168.000000 + x0)))))) + (x0 + (25.114484 * tanh(cos((1.014280 ^ x0)))))) - (-8.032594 * cos((-3.652141 - (x0 ^ 0.6931471805599453))))) + ((-106.644486 + x0) / (118.95633426995997 - (x0 / 0.995137)))) - (sin((x0 * (0.985711 / 2.685784865116654))) * 5.048220)) + cos(log((1.502449 ^ (x0 ^ 0.997721))))) + exp((2.081938 * sin(((2.872226 - x0) * 0.2658022288340797))))) + (sin((x0 * -0.45018598229727835)) * -2.695628)) - (-1.676754 * cos((x0 / -1.6880058284590451)))) + (x0 + cos((0.696976831813758 * x0)))) - (0.031764 / sin((4 * (x0 - 0.7615941559557649))))) + sin(sqrt((3.404893 + (1.052177 ^ (x0 ^ 0.992804)))))) + cos((-1.027196 * (2 * (x0 ^ 0.8414709848078965))))) + (168.000000 * (0.011701 / (11.175638 + (x0 - 54.598150033144236)))))
-            Best expression (original format) = -2.446549 x0 1.026171 x0 sqrt cos ^ ^ * -26.267023 4.207354924039483 168.000000 x0 + sqrt * cos * - x0 25.114484 1.014280 x0 ^ cos tanh * + + -8.032594 -3.652141 x0 0.6931471805599453 ^ - cos * - -106.644486 x0 + 118.95633426995997 x0 0.995137 / - / + x0 0.985711 2.685784865116654 / * sin 5.048220 * - 1.502449 x0 0.997721 ^ ^ log cos + 2.081938 2.872226 x0 - 0.2658022288340797 * sin * exp + x0 -0.45018598229727835 * sin -2.695628 * + -1.676754 x0 -1.6880058284590451 / cos * - x0 0.696976831813758 x0 * cos + + 0.031764 4 x0 0.7615941559557649 - * sin / - 3.404893 1.052177 x0 0.992804 ^ ^ + sqrt sin + -1.027196 2 x0 0.8414709848078965 ^ * * cos + 168.000000 0.011701 11.175638 x0 54.598150033144236 - + / * +
+            Best score = 0.00327277, SNE = 304.552
+            Squared-norm error for each equation: 304.552
+            Best expression = (((((((((((((((-2.446627 * (x0 ^ (1.026127 ^ cos(sqrt(x0))))) - (-26.155498 * cos((4.207354924039483 * sqrt((168.000000 + x0)))))) + (x0 - (-25.093806 * tanh(cos((1.014280 ^ x0)))))) - (8.001965 * cos((-0.515339 - (x0 ^ 0.6931471805599453))))) + ((-106.697598 + x0) / (118.95633426995997 - (x0 * 1.004942)))) - (sin((x0 * (0.985907 / 2.685784865116654))) * 5.048220)) + cos(log((1.502449 ^ (x0 ^ 0.997906))))) + exp((2.070110 * sin(((2.852405 - x0) * 0.2658022288340797))))) - (sin((x0 * -0.45018598229727835)) * 2.698598)) - (-1.678895 * cos((x0 / -1.6880058284590451)))) + (x0 + cos((0.696976831813758 * x0)))) - (0.032015 / sin((4 * (x0 - 0.7615941559557649))))) + sin(sqrt((3.218607 + (1.052177 ^ (x0 ^ 0.992804)))))) + cos((~(1.027706) * (2 * (x0 ^ 0.8414709848078965))))) + (168.000000 * (0.012165 / (11.175638 + (x0 - 54.598150033144236)))))
+            Best expression (original format) = -2.446627 x0 1.026127 x0 sqrt cos ^ ^ * -26.155498 4.207354924039483 168.000000 x0 + sqrt * cos * - x0 -25.093806 1.014280 x0 ^ cos tanh * - + 8.001965 -0.515339 x0 0.6931471805599453 ^ - cos * - -106.697598 x0 + 118.95633426995997 x0 1.004942 * - / + x0 0.985907 2.685784865116654 / * sin 5.048220 * - 1.502449 x0 0.997906 ^ ^ log cos + 2.070110 2.852405 x0 - 0.2658022288340797 * sin * exp + x0 -0.45018598229727835 * sin 2.698598 * - -1.678895 x0 -1.6880058284590451 / cos * - x0 0.696976831813758 x0 * cos + + 0.032015 4 x0 0.7615941559557649 - * sin / - 3.218607 1.052177 x0 0.992804 ^ ^ + sqrt sin + 1.027706 ~ 2 x0 0.8414709848078965 ^ * * cos + 168.000000 0.012165 11.175638 x0 54.598150033144236 - + / * +
+        depth = 20, maxsize = 141:
+            Best score = 0.00359927, SNE = 276.834
+            Squared-norm error for each equation: 276.834
+            Best expression = ((((((((((((((((-2.444296 * (x0 ^ (1.026203 ^ cos(sqrt(x0))))) - (-26.199496 * cos((4.207354924039483 * sqrt((168.000000 + x0)))))) + (x0 + (25.019477 * tanh(cos((1.014280 ^ x0)))))) - (-8.058567 * cos((-2.633602 + (x0 ^ 0.6931471805599453))))) + (11.696530 / (118.95633426995997 - (x0 / 0.995059)))) - (sin((x0 * 0.3670833851233197)) * 4.957468)) + cos(log((1.502449 ^ (x0 ^ 0.997889))))) + exp((-2.060603 * sin(((44.498356 + x0) * 0.2658022288340797))))) + (sin((x0 * -0.45018598229727835)) * -2.701240)) - (-1.599485 * cos((x0 / -1.6880058284590451)))) + (x0 + cos((0.696976831813758 * x0)))) - (0.032499 / sin((4 * (x0 - 0.7615941559557649))))) + sin(sqrt((2.702079 + (1.052177 ^ (x0 ^ 0.992888)))))) + cos((1.027621 * (2 * (x0 ^ 0.8414709848078965))))) - (1.225249 - (2.020931 / (11.175638 + (x0 - 54.598150033144236))))) - (-6.130043 / ((1.218107 + x0) / cos((x0 - 6.804936)))))
+            Best expression (original format) = -2.444296 x0 1.026203 x0 sqrt cos ^ ^ * -26.199496 4.207354924039483 168.000000 x0 + sqrt * cos * - x0 25.019477 1.014280 x0 ^ cos tanh * + + -8.058567 -2.633602 x0 0.6931471805599453 ^ + cos * - 11.696530 118.95633426995997 x0 0.995059 / - / + x0 0.3670833851233197 * sin 4.957468 * - 1.502449 x0 0.997889 ^ ^ log cos + -2.060603 44.498356 x0 + 0.2658022288340797 * sin * exp + x0 -0.45018598229727835 * sin -2.701240 * + -1.599485 x0 -1.6880058284590451 / cos * - x0 0.696976831813758 x0 * cos + + 0.032499 4 x0 0.7615941559557649 - * sin / - 2.702079 1.052177 x0 0.992888 ^ ^ + sqrt sin + 1.027621 2 x0 0.8414709848078965 ^ * * cos + 1.225249 2.020931 11.175638 x0 54.598150033144236 - + / - - -6.130043 1.218107 x0 + x0 6.804936 - cos / / -
+        depth = 21, maxsize = 150:
+            Best score = 0.004133, SNE = 240.955
+            Squared-norm error for each equation: 240.955
+            Best expression = (((((((((((((((((-2.443340 * (x0 ^ (1.026195 ^ cos(sqrt(x0))))) - (-26.141684 * cos((4.207354924039483 * sqrt((168.000000 + x0)))))) + (x0 + (25.068585 * tanh(cos((1.014280 ^ x0)))))) - (-8.087407 * cos((-2.638495 + (x0 ^ 0.6931471805599453))))) - (-11.661316 / (118.95633426995997 - (x0 + 0.579601)))) + (sin((x0 * 0.3670833851233197)) * -4.949110)) + cos(log((1.502449 ^ (x0 ^ 0.998111))))) + exp((2.027208 * sin(((2.782294 - x0) * 0.2658022288340797))))) + (sin((x0 * -0.45018598229727835)) * -2.666797)) + (1.509721 * cos((x0 / -1.6880058284590451)))) + (x0 + cos((0.696976831813758 * x0)))) - (0.032277 / sin((4 * (x0 - 0.7615941559557649))))) + sin(sqrt((2.923343 + (1.052177 ^ (x0 ^ 0.992888)))))) + cos((1.027655 * (2 * (x0 ^ 0.8414709848078965))))) - (1.244610 - (2.026644 / (11.175638 + (x0 - 54.598150033144236))))) + (-6.551556 / ((1.214443 + x0) / cos((x0 - -2.647537))))) + (-0.036732 / asin(cos(sqrt((1.132285 + x0))))))
+            Best expression (original format) = + + - + + - + + + + + + - - + - * -2.443340 ^ x0 ^ 1.026195 cos sqrt x0 * -26.141684 cos * 4.207354924039483 sqrt + 168.000000 x0 + x0 * 25.068585 tanh cos ^ 1.014280 x0 * -8.087407 cos + -2.638495 ^ x0 0.6931471805599453 / -11.661316 - 118.95633426995997 + x0 0.579601 * sin * x0 0.3670833851233197 -4.949110 cos log ^ 1.502449 ^ x0 0.998111 exp * 2.027208 sin * - 2.782294 x0 0.2658022288340797 * sin * x0 -0.45018598229727835 -2.666797 * 1.509721 cos / x0 -1.6880058284590451 + x0 cos * 0.696976831813758 x0 / 0.032277 sin * 4 - x0 0.7615941559557649 sin sqrt + 2.923343 ^ 1.052177 ^ x0 0.992888 cos * 1.027655 * 2 ^ x0 0.8414709848078965 - 1.244610 / 2.026644 + 11.175638 - x0 54.598150033144236 / -6.551556 / + 1.214443 x0 cos - x0 -2.647537 / -0.036732 asin cos sqrt + 1.132285 x0
+        depth = 22, maxsize = 160:
+            Best score = 0.00531365, SNE = 187.195
+            Squared-norm error for each equation: 187.195
+            Best expression = ((((((((((((((((((-2.443340 * (x0 ^ (1.026205 ^ cos(sqrt(x0))))) - (-26.134535 * cos((4.207354924039483 * sqrt((168.000000 + x0)))))) + (x0 + (25.152657 * tanh(cos((1.014280 ^ x0)))))) - (-8.162444 * cos((-2.638495 + (x0 ^ 0.6931471805599453))))) - (-11.891217 / (118.95633426995997 - (x0 + 0.567287)))) - (sin((x0 * 0.3670833851233197)) * 4.846034)) + cos(log((1.502449 ^ (x0 ^ 0.997729))))) + exp((1.982657 * sin(((2.514225 - x0) * 0.2658022288340797))))) + (sin((x0 * -0.45018598229727835)) * -2.453809)) + (1.545488 * cos((x0 / -1.6880058284590451)))) + (x0 + cos((0.696976831813758 * x0)))) - (0.031557 / sin((4 * (x0 - 0.7615941559557649))))) + sin(sqrt((3.212886 + (1.052177 ^ (x0 ^ 0.992888)))))) + cos((1.027655 * (2 * (x0 ^ 0.8414709848078965))))) - (1.143581 - (2.253225 / (11.175638 + (x0 - 54.598150033144236))))) + (-6.012152 / ((1.214443 + x0) / cos((x0 - 9.779302))))) + (-0.041021 / asin(cos(sqrt((1.133684 + x0)))))) + sin(cos(((x0 / 3.152574) ^ 1.113573))))
+            Best expression (original format) = + + + - + + - + + + + + - - - + - * -2.443340 ^ x0 ^ 1.026205 cos sqrt x0 * -26.134535 cos * 4.207354924039483 sqrt + 168.000000 x0 + x0 * 25.152657 tanh cos ^ 1.014280 x0 * -8.162444 cos + -2.638495 ^ x0 0.6931471805599453 / -11.891217 - 118.95633426995997 + x0 0.567287 * sin * x0 0.3670833851233197 4.846034 cos log ^ 1.502449 ^ x0 0.997729 exp * 1.982657 sin * - 2.514225 x0 0.2658022288340797 * sin * x0 -0.45018598229727835 -2.453809 * 1.545488 cos / x0 -1.6880058284590451 + x0 cos * 0.696976831813758 x0 / 0.031557 sin * 4 - x0 0.7615941559557649 sin sqrt + 3.212886 ^ 1.052177 ^ x0 0.992888 cos * 1.027655 * 2 ^ x0 0.8414709848078965 - 1.143581 / 2.253225 + 11.175638 - x0 54.598150033144236 / -6.012152 / + 1.214443 x0 cos - x0 9.779302 / -0.041021 asin cos sqrt + 1.133684 x0 sin cos ^ / x0 3.152574 1.113573
      */
-    const thread_local bool add_additive = x.additiveCorrections.size();
     static bool added_additive = false;
     thread_local std::vector<std::vector<std::string>> results(x.num_diff_eqns);
     assert(x.num_diff_eqns == 1);
-    if (add_additive)
+    if (x.add_additive)
     {
         std::scoped_lock str_lock(Board::thread_locker);
         if (!added_additive)
@@ -8577,16 +8593,15 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
         Best expression = (((((((0.010000 + x0) + sech(x1)) ^ (sech(x0) + 11.13)) * 2.714063472005533e-13) + ((((x0 ^ 6.283190) * 1e-08) + 0.01) + 0.7419039201568504)) - (((0.9998848754538172 ^ (x0 ^ 4.029999999999999)) * (sin(~(x1)) * 0.9972802451715356)) * (0.8912763105205549 * cos(asin(cos(x0)))))) - (((0.00010591201460945816 * ((0.28580222883407974 ^ (x0 + 10.000000)) * (1 - sin(x1)))) + ((4.692820413780688e-06 * (12.56638 * (x1 * 2))) + -0.07517032657318981)) + ((((x0 ^ 0.9999500004166653) / ((0.010000 + x0) + 1)) ^ ((sin(x0) + (0.010000 + x0)) * (sin(x1) + (10.000000 / x0)))) + 0.06683273758330441)))
         Best expression (original format) = 0.010000 x0 + x1 sech + x0 sech 11.13 + ^ 2.714063472005533e-13 * x0 6.283190 ^ 1e-08 * 0.01 + 0.7419039201568504 + + 0.9998848754538172 x0 4.029999999999999 ^ ^ x1 ~ sin 0.9972802451715356 * * 0.8912763105205549 x0 cos asin cos * * - 0.00010591201460945816 0.28580222883407974 x0 10.000000 + ^ 1 x1 sin - * * 4.692820413780688e-06 12.56638 x1 2 * * * -0.07517032657318981 + + x0 0.9999500004166653 ^ 0.010000 x0 + 1 + / x0 sin 0.010000 x0 + + x1 sin 10.000000 x0 / + * ^ 0.06683273758330441 + + -
     Depth = 8:
-        Best score = 0.000315582, SNE = 3167.75
-        Squared-norm error for each equation: 3138.22 29.5322 0.000136637
-        Best expression = (((((((x0 + -0.01) + sech(x1)) ^ 11.156528193614346) * 2.714063572022206e-13) + (((((0.010000 + x0) ^ 6.29319) * 1e-08) + 0.0100003333566687) + 0.7493736126143709)) - (((0.9998848754538172 ^ (arcsin(tanh(x0)) / (0.7615941559557649 / (x0 ^ 4)))) * (sin(~((6.283190 + x1))) * 0.9171523356672744)) * (0.7927863849639187 * cos(asin(cos(x0)))))) - ((((((0.03661899347368653 + x0) + x0) ^ ((0.003734854911714874 ^ (6.283190 / x0)) + 7.570169558264211)) * ((0.28580222883407974 ^ ((0.010000 + x0) + 10)) * (1.03 - sin(x1)))) + (((15 + (2 + (10.000000 + x1))) / (((10.000000 + x1) / 0.005) - 1.9195020417499759e+06)) + -0.06767485271943648)) + (((((0.2658022288340797 + x0) ^ 0.9801980198019802) / (x0 + 1.517923178056138)) ^ ((sin((0.010000 + x0)) + (0.03661899347368653 + x0)) * (sin((6.283190 + x1)) + (10.01 / x0)))) + -0.01705411770794854)))
-        Best expression (original format) = x0 -0.01 + x1 sech + 11.156528193614346 ^ 2.714063572022206e-13 * 0.010000 x0 + 6.29319 ^ 1e-08 * 0.0100003333566687 + 0.7493736126143709 + + 0.9998848754538172 x0 tanh arcsin 0.7615941559557649 x0 4 ^ / / ^ 6.283190 x1 + ~ sin 0.9171523356672744 * * 0.7927863849639187 x0 cos asin cos * * - 0.03661899347368653 x0 + x0 + 0.003734854911714874 6.283190 x0 / ^ 7.570169558264211 + ^ 0.28580222883407974 0.010000 x0 + 10 + ^ 1.03 x1 sin - * * 15 2 10.000000 x1 + + + 10.000000 x1 + 0.005 / 1.9195020417499759e+06 - / -0.06767485271943648 + + 0.2658022288340797 x0 + 0.9801980198019802 ^ x0 1.517923178056138 + / 0.010000 x0 + sin 0.03661899347368653 x0 + + 6.283190 x1 + sin 10.01 x0 / + * ^ -0.01705411770794854 + + -
+        Best score = 0.000315979, SNE = 3163.77
+        Squared-norm error for each equation: 3134.24 29.5272 0.000136635
+        Best expression = (((((((x0 + -0.01) + sech(x1)) ^ 11.156528193614346) * 2.714063572022206e-13) + (((((0.010000 + x0) ^ 6.29319) * 1e-08) + 0.0100003333566687) + 0.7493736126143709)) - (((0.9998848754538172 ^ (arcsin(tanh(x0)) / (0.7615941559557649 / (x0 ^ 4)))) * (sin(~((6.283190 + x1))) * 0.9171523356672744)) * (0.7927863849639187 * cos(asin(cos(x0)))))) - (((((x0 + x0) ^ ((0.003734854911714874 ^ (6.283190 / x0)) + 7.570169558264211)) * ((0.28580222883407974 ^ ((0.010000 + x0) + 10)) * (((0.010000 ^ x0) + 1.03) - sin(x1)))) + (((0.9999999999889887 + (8 + (x1 + x1))) / (((10.000000 + x1) / 0.005) - 1.9195020417499759e+06)) + -0.06767485271943648)) + (((((0.2658022288340797 + x0) ^ 0.9801980198019802) / (x0 + 1.517923178056138)) ^ ((sin((0.010000 + x0)) + (0.03661899347368653 + x0)) * (sin((6.283190 + x1)) + (10.01 / x0)))) + -0.014753092106278107)))
+        Best expression (original format) = x0 -0.01 + x1 sech + 11.156528193614346 ^ 2.714063572022206e-13 * 0.010000 x0 + 6.29319 ^ 1e-08 * 0.0100003333566687 + 0.7493736126143709 + + 0.9998848754538172 x0 tanh arcsin 0.7615941559557649 x0 4 ^ / / ^ 6.283190 x1 + ~ sin 0.9171523356672744 * * 0.7927863849639187 x0 cos asin cos * * - x0 x0 + 0.003734854911714874 6.283190 x0 / ^ 7.570169558264211 + ^ 0.28580222883407974 0.010000 x0 + 10 + ^ 0.010000 x0 ^ 1.03 + x1 sin - * * 0.9999999999889887 8 x1 x1 + + + 10.000000 x1 + 0.005 / 1.9195020417499759e+06 - / -0.06767485271943648 + + 0.2658022288340797 x0 + 0.9801980198019802 ^ x0 1.517923178056138 + / 0.010000 x0 + sin 0.03661899347368653 x0 + + 6.283190 x1 + sin 10.01 x0 / + * ^ -0.014753092106278107 + + -
      ```
 x = "(((((((-0.02 + (x0 + 0.010000)) + sech(x1)) ^ 11.119909200140661) * 2.714063572022206e-13) + (((((0.010000 + x0) ^ 6.28319) * 1e-08) + 0.0025) + 0.7456387750685652)) - (((0.9998848754538172 ^ (arcsin(tanh(x0)) / (1 / (x0 ^ 4)))) * (sin(~((6.283190 + x1))) * 0.940049833749168)) * (0.7927863849639187 * cos(asin(cos(x0)))))) - ((((((0.01 + x0) + (0.009999833334166664 + x0)) ^ 7.50905609893065) * ((0.28580222883407974 ^ (x0 + 10)) * (1.02 - sin(x1)))) + (0.003734854911714874 + (((2.302585092994046 + (0.010000 + x1)) / ((x1 / 10.000000) - 1.9195083249399762e+06)) + -0.0576701598990227))) + (((((0.02 + x0) ^ 0.9801980198019802) / ((-0.01 + x0) + 1.5079230113819708)) ^ ((sin((6.283190 + x0)) + x0) * (sin((6.283190 + x1)) + (10.01 / x0)))) + -0.0132334444522229)))"
 print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-"))
      */
     
-    const thread_local bool add_additive = x.additiveCorrections.size();
     static std::atomic<bool> added_additive{false};
     static std::once_flag init_flag;
     static std::vector<std::vector<std::string>> additive_results(3);
@@ -8616,10 +8631,11 @@ print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-
     std::string nu = ((Board::__num_features == 2) ? "1" : "x3");
 
     std::string infty = std::to_string(DBL_MAX);
-    
-//    open -a Google\ Chrome SwiftHohenbergBoosting.png
-    if (add_additive)
+       
+    // First, compute the Swift-Hohenberg residual of "f0" if provided (namely, as additiveCorrections)
+    if (x.add_additive)
     {
+        // open -a Google\ Chrome SwiftHohenbergBoosting.png
         std::call_once(init_flag, [&]()
         {
             std::scoped_lock str_lock(Board::thread_locker);
@@ -8879,14 +8895,16 @@ print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-
         });
         if (!prefactors_computed)
         {
-           x.subs_dict["fres0"] = f_res[0];
-           x.subs_dict["fres1"] = f_res[1];
-           x.subs_dict["fres2"] = f_res[2];
-           x.subs_dict["f"] = x.expression_evaluator(x.params, x.additiveCorrections[0]);
-           prefactors_computed = true;
+            assert(added_additive);
+            x.subs_dict["fres0"] = f_res[0];
+            x.subs_dict["fres1"] = f_res[1];
+            x.subs_dict["fres2"] = f_res[2];
+            x.subs_dict["f0"] = x.expression_evaluator(x.params, x.additiveCorrections[0]);
+            prefactors_computed = true;
         }
     }
     
+    //Now, compute the main SH equations for the function "f" being sought
     if (x.expression_type == "prefix")
     {
         //- - - - - - + * μ f - * * ν f f * f * f f f * 2 ∂^2f/∂r^2 ∂^4f/∂r^4 / + - + * 2 ∂^3f/∂r^3 / ∂^2f/∂r^2 r / (∂f/∂r) * r r + - / (∂^3f/∂θ^2∂r) * r r / * 2 ∂^2f/∂r^2 * * r r r * 2 ∂f/∂r r / + - + + * 2 ∂^4f/∂θ^2∂r^2 / ∂^3f/∂θ^2∂r r / (∂^4f/∂θ^4) * r r * 2 ∂^2f/∂r^2 * 2 ∂^2f/∂θ^2 * r r * / 2 * * r r r + - ∂f/∂r * 2 ∂^3f/∂θ^2∂r * / 3 r ∂^2f/∂θ^2
@@ -9294,8 +9312,16 @@ print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-
         results.push_back(result);
         result.clear();
     }
-    if (add_additive)
+    
+    // Finally, add everything together for the "f0 + f" candidate solution!
+    if (x.add_additive)
     {
+        assert(results.size() == 3);
+        assert(x.subs_dict.count("f0"));
+        assert(x.subs_dict.count("fres0"));
+        assert(x.subs_dict.count("fres1"));
+        assert(x.subs_dict.count("fres2"));
+        //f0 * (2*nu*f - 3*f0*f - 3*f*f)
         if (x.expression_type == "prefix")
         {
             throw std::invalid_argument("Prefix not implemented yet for this SwiftHohenberg function!");
@@ -9303,9 +9329,85 @@ print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-
         else if (x.expression_type == "postfix")
         {
             
+            //f0 2 ν * f * 3 f0 * f * - 3 f * f * - *
+            results[0].push_back("f0"); //f0
+            results[0].push_back("2"); //2
+            results[0].push_back(nu); //ν
+            results[0].push_back("*"); //*
+            if (fit)
+            {
+                for (const std::string& i: x.pieces[0]) // f
+                {
+                    results[0].push_back(i);
+                }
+            }
+            else
+            {
+                results[0].push_back("f"); // f
+            }
+            results[0].push_back("*"); //*
+            results[0].push_back("3"); //3
+            results[0].push_back("f0"); //f0
+            results[0].push_back("*"); //*
+            if (fit)
+            {
+                for (const std::string& i: x.pieces[0]) // f
+                {
+                    results[0].push_back(i);
+                }
+            }
+            else
+            {
+                results[0].push_back("f"); // f
+            }
+            results[0].push_back("*"); //*
+            results[0].push_back("-"); //-
+            results[0].push_back("3"); //3
+            if (fit)
+            {
+                for (const std::string& i: x.pieces[0]) // f
+                {
+                    results[0].push_back(i);
+                }
+            }
+            else
+            {
+                results[0].push_back("f"); // f
+            }
+            results[0].push_back("*"); //*
+            if (fit)
+            {
+                for (const std::string& i: x.pieces[0]) // f
+                {
+                    results[0].push_back(i);
+                }
+            }
+            else
+            {
+                results[0].push_back("f"); // f
+            }
+            results[0].push_back("*"); //*
+            results[0].push_back("-"); //-
+            results[0].push_back("*"); //*
+            
+            //Add "f0 2 ν * f * 3 f0 * f * - 3 f * f * - *" to SH(f)[0]
+            results[0].push_back("+"); //+
+            
+            //Add SH(f0)[0] to results[0]
+            results[0].push_back("fres0");
+            results[0].push_back("+");
+            
+            //Add SH(f0)[1] to results[1]
+            results[1].push_back("fres1");
+            results[1].push_back("+");
+
+            //Add SH(f0)[2] to results[2]
+            results[2].push_back("fres2");
+            results[2].push_back("+");
         }
     }
     prefactors_computed = true;
+    std::cout << "results = " << results << '\n';
     return results;
 }
 
@@ -11252,7 +11354,7 @@ namespace ExampleProblems
             SimulatedAnnealing(SwiftHohenberg /*differential equation to solve*/,
                 3 /*number of equations in differential equation system*/,
                 data1 /*data used to solve differential equation*/,
-                std::vector<int>{8} /*fixed depths of generated solution*/,
+                std::vector<int>{2} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0/*2*/ /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -11260,7 +11362,7 @@ namespace ExampleProblems
                 "naive_numerical" /*method for computing the gradient*/,
                 true /*cache*/,
                 time /*time to run the algorithm in seconds*/,
-                0 /*num threads*/,
+                1 /*num threads*/,
                 true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
                 false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
@@ -11270,11 +11372,11 @@ namespace ExampleProblems
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "SwiftHohenbergBest.txt", //"" /*filename to save current best expression found (instead of outputting them to standard out*/
                 {} /*optional max-sizes of each of the expressions in the generated solution*/,
-                {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
+                {split("x0 -0.01 + x1 sech + 11.156528193614346 ^ 2.714063572022206e-13 * 0.010000 x0 + 6.29319 ^ 1e-08 * 0.0100003333566687 + 0.7493736126143709 + + 0.9998848754538172 x0 tanh arcsin 0.7615941559557649 x0 4 ^ / / ^ 6.283190 x1 + ~ sin 0.9171523356672744 * * 0.7927863849639187 x0 cos asin cos * * - x0 x0 + 0.003734854911714874 6.283190 x0 / ^ 7.570169558264211 + ^ 0.28580222883407974 0.010000 x0 + 10 + ^ 0.010000 x0 ^ 1.03 + x1 sin - * * 0.9999999999889887 8 x1 x1 + + + 10.000000 x1 + 0.005 / 1.9195020417499759e+06 - / -0.06767485271943648 + + 0.2658022288340797 x0 + 0.9801980198019802 ^ x0 1.517923178056138 + / 0.010000 x0 + sin 0.03661899347368653 x0 + + 6.283190 x1 + sin 10.01 x0 / + * ^ -0.014753092106278107 + + -")} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 true /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
                 50 /*`print_every` number of expressions generated before thread prints to standard out*/,
-                false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
-                {split("0 x0 + 0 0.010000 + + 0 x1 + sech + 0 0 + 0 0 + + 0 0 + 0 11.156528193614346 + + + ^ 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 2.714063572022206e-13 + + + + * 0.010000 x0 + 0 6.28319 + ^ 0 0 + 0 1e-08 + + * 0 0 + 0 0 + + 0 0 + 0 0.002504692820413781 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.7493736126143709 + + + + + + 0 0 + 0 0 + + 0 0 + 0 0.9998848754538172 + + + x0 tanh arcsin 0 0.7615941559557649 + x0 4 ^ / / ^ 6.283190 x1 + ~ sin 0 0 + 0 0 + + 0 0 + 0 0.940049833749168 + + + * * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.7927863849639187 + + + + 0 x0 + cos asin cos * * - 0 0.01 + 0 x0 + + 0 0.009999833334166664 + 0 x0 + + + 0 0 + 0 0 + + 0 0 + 0 7.570169558264211 + + + ^ 0 0 + 0 0.28580222883407974 + + 0 x0 + 0 10 + + ^ 0 0 + 0 1.03 + + 0 x1 + sin - * * 0 0 + 0 2.302585092994046 + + 0 6.283190 + 0 x1 + + + 0 x1 + 0 10.000000 + / 0 0 + 0 1.919508324939976e+06 + + - / 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -0.0576701598990227 + + + + + + 0 0.02 + 0 x0 + + 0 0 + 0 0.9801980198019802 + + ^ 0 -0.01 + 0 x0 + + 0 0 + 0 1.5079230113819708 + + + / 0.010000 x0 + sin 0 0 + 0 x0 + + + 6.283190 x1 + sin 0 10.01 + 0 x0 + / + * ^ 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -0.01342875163180912 + + + + + + + -")} /*seed expressions*/,
+                true /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
+                {/*split("0 x0 + 0 0.010000 + + 0 x1 + sech + 0 0 + 0 0 + + 0 0 + 0 11.156528193614346 + + + ^ 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 2.714063572022206e-13 + + + + * 0.010000 x0 + 0 6.28319 + ^ 0 0 + 0 1e-08 + + * 0 0 + 0 0 + + 0 0 + 0 0.002504692820413781 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.7493736126143709 + + + + + + 0 0 + 0 0 + + 0 0 + 0 0.9998848754538172 + + + x0 tanh arcsin 0 0.7615941559557649 + x0 4 ^ / / ^ 6.283190 x1 + ~ sin 0 0 + 0 0 + + 0 0 + 0 0.940049833749168 + + + * * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.7927863849639187 + + + + 0 x0 + cos asin cos * * - 0 0.01 + 0 x0 + + 0 0.009999833334166664 + 0 x0 + + + 0 0 + 0 0 + + 0 0 + 0 7.570169558264211 + + + ^ 0 0 + 0 0.28580222883407974 + + 0 x0 + 0 10 + + ^ 0 0 + 0 1.03 + + 0 x1 + sin - * * 0 0 + 0 2.302585092994046 + + 0 6.283190 + 0 x1 + + + 0 x1 + 0 10.000000 + / 0 0 + 0 1.919508324939976e+06 + + - / 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -0.0576701598990227 + + + + + + 0 0.02 + 0 x0 + + 0 0 + 0 0.9801980198019802 + + ^ 0 -0.01 + 0 x0 + + 0 0 + 0 1.5079230113819708 + + + / 0.010000 x0 + sin 0 0 + 0 x0 + + + 6.283190 x1 + sin 0 10.01 + 0 x0 + / + * ^ 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -0.01342875163180912 + + + + + + + -")*/} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
@@ -11637,7 +11739,10 @@ namespace ExampleProblems
                 "-1.438588 x0 1.043900 x0 sqrt cos ^ ^ * -26.218935 4.207354924039483 168.000000 x0 + sqrt * cos * - x0 24.750491 1.014294 x0 ^ cos tanh * + + 8.151847 1.023804 x0 0.6931471805599453 ^ - sin * - -106.088260 x0 + 118.95633426995997 x0 0.995287 / - / + 0.985199 x0 2.685784865116654 / * sin -4.586794 * + 1.502449 x0 0.997872 ^ ^ log cos + -1.995201 44.248750 x0 + 0.2658022288340797 * sin * exp + x0 -0.45018598229727835 * sin -0.4107263935558514 / + 1.497965 x0 -1.6880058284590451 / cos * + x0 sech 0.696976831813758 x0 * cos + + 0.031806 tanh 4 x0 0.7615941559557649 - * sin / -",
                 "-2.446553 x0 1.026091 x0 sqrt cos ^ ^ * -26.239310 4.207354924039483 168.000000 x0 + sqrt * cos * - x0 25.089302 1.014294 x0 ^ cos tanh * + + -7.997338 -1.057546 x0 0.6931471805599453 ^ + sin * - -106.322846 x0 + 118.95633426995997 x0 0.995131 / - / + 0.985374 x0 2.685784865116654 / * sin -4.973426 * + 1.502449 x0 0.997305 ^ ^ log cos + -2.066466 20.589308 x0 + 0.2658022288340797 * sin * exp + x0 -0.45018598229727835 * sin -0.4107263935558514 / + 1.609716 x0 -1.6880058284590451 / cos * + x0 0.696976831813758 x0 * cos + + 0.033090 4 x0 0.7615941559557649 - * sin / - 3.751510 1.052177 x0 0.993021 ^ ^ + sqrt sin +",
                 "-2.446317 x0 1.026171 x0 sqrt cos ^ ^ * -26.267023 4.207354924039483 168.000000 x0 + sqrt * cos * - x0 25.114484 1.014280 x0 ^ cos tanh * + + -8.094348 -3.652141 x0 0.6931471805599453 ^ - cos * - -106.639258 x0 + 118.95633426995997 x0 0.995137 / - / + 0.985554 x0 2.685784865116654 / * sin 5.048220 * - 1.502449 x0 0.997721 ^ ^ log cos + 2.081938 2.962750 x0 - 0.2658022288340797 * sin * exp + x0 -0.45018598229727835 * sin -2.744077 * + -1.635574 x0 -1.6880058284590451 / cos * - x0 0.696976831813758 x0 * cos + + 0.031400 4 x0 0.7615941559557649 - * sin / - 4.063501 1.052177 x0 0.992804 ^ ^ + sqrt sin + 1.027196 ~ 2 x0 0.8414709848078965 ^ * * cos +",
-                "-2.446317 x0 1.026171 x0 sqrt cos ^ ^ * -26.267023 4.207354924039483 168.000000 x0 + sqrt * cos * - x0 25.114484 1.014280 x0 ^ cos tanh * + + -8.094348 -3.652141 x0 0.6931471805599453 ^ - cos * - -106.639258 x0 + 118.95633426995997 x0 0.995137 / - / + 0.985554 x0 2.685784865116654 / * sin 5.048220 * - 1.502449 x0 0.997721 ^ ^ log cos + 2.081938 2.962750 x0 - 0.2658022288340797 * sin * exp + x0 -0.45018598229727835 * sin -2.744077 * + -1.635574 x0 -1.6880058284590451 / cos * - x0 0.696976831813758 x0 * cos + + 0.031400 4 x0 0.7615941559557649 - * sin / - 4.063501 1.052177 x0 0.992804 ^ ^ + sqrt sin + 1.027196 ~ 2 x0 0.8414709848078965 ^ * * cos + 50.065514 0.03661899347368653 11.175638 x0 54.598150033144236 - + / * +",
+                "-2.446627 x0 1.026127 x0 sqrt cos ^ ^ * -26.155498 4.207354924039483 168.000000 x0 + sqrt * cos * - x0 -25.093806 1.014280 x0 ^ cos tanh * - + 8.001965 -0.515339 x0 0.6931471805599453 ^ - cos * - -106.697598 x0 + 118.95633426995997 x0 1.004942 * - / + x0 0.985907 2.685784865116654 / * sin 5.048220 * - 1.502449 x0 0.997906 ^ ^ log cos + 2.070110 2.852405 x0 - 0.2658022288340797 * sin * exp + x0 -0.45018598229727835 * sin 2.698598 * - -1.678895 x0 -1.6880058284590451 / cos * - x0 0.696976831813758 x0 * cos + + 0.032015 4 x0 0.7615941559557649 - * sin / - 3.218607 1.052177 x0 0.992804 ^ ^ + sqrt sin + 1.027706 ~ 2 x0 0.8414709848078965 ^ * * cos + 168.000000 0.012165 11.175638 x0 54.598150033144236 - + / * +",
+                "-2.444296 x0 1.026203 x0 sqrt cos ^ ^ * -26.199496 4.207354924039483 168.000000 x0 + sqrt * cos * - x0 25.019477 1.014280 x0 ^ cos tanh * + + -8.058567 -2.633602 x0 0.6931471805599453 ^ + cos * - 11.696530 118.95633426995997 x0 0.995059 / - / + x0 0.3670833851233197 * sin 4.957468 * - 1.502449 x0 0.997889 ^ ^ log cos + -2.060603 44.498356 x0 + 0.2658022288340797 * sin * exp + x0 -0.45018598229727835 * sin -2.701240 * + -1.599485 x0 -1.6880058284590451 / cos * - x0 0.696976831813758 x0 * cos + + 0.032499 4 x0 0.7615941559557649 - * sin / - 2.702079 1.052177 x0 0.992888 ^ ^ + sqrt sin + 1.027621 2 x0 0.8414709848078965 ^ * * cos + 1.225249 2.020931 11.175638 x0 54.598150033144236 - + / - - -6.130043 1.218107 x0 + x0 6.804936 - cos / / -",
+                "+ + - + + - + + + + + + - - + - * -2.443340 ^ x0 ^ 1.026195 cos sqrt x0 * -26.141684 cos * 4.207354924039483 sqrt + 168.000000 x0 + x0 * 25.068585 tanh cos ^ 1.014280 x0 * -8.087407 cos + -2.638495 ^ x0 0.6931471805599453 / -11.661316 - 118.95633426995997 + x0 0.579601 * sin * x0 0.3670833851233197 -4.949110 cos log ^ 1.502449 ^ x0 0.998111 exp * 2.027208 sin * - 2.782294 x0 0.2658022288340797 * sin * x0 -0.45018598229727835 -2.666797 * 1.509721 cos / x0 -1.6880058284590451 + x0 cos * 0.696976831813758 x0 / 0.032277 sin * 4 - x0 0.7615941559557649 sin sqrt + 2.923343 ^ 1.052177 ^ x0 0.992888 cos * 1.027655 * 2 ^ x0 0.8414709848078965 - 1.244610 / 2.026644 + 11.175638 - x0 54.598150033144236 / -6.551556 / + 1.214443 x0 cos - x0 -2.647537 / -0.036732 asin cos sqrt + 1.132285 x0",
+                "+ + + - + + - + + + + + + - - + - * -2.443340 ^ x0 ^ 1.026195 cos sqrt x0 * -26.141684 cos * 4.207354924039483 sqrt + 168.000000 x0 + x0 * 25.068585 tanh cos ^ 1.014280 x0 * -8.087407 cos + -2.638495 ^ x0 0.6931471805599453 / -11.661316 - 118.95633426995997 + x0 0.579601 * sin * x0 0.3670833851233197 -4.949110 cos log ^ 1.502449 ^ x0 0.998111 exp * 2.027208 sin * - 2.782294 x0 0.2658022288340797 * sin * x0 -0.45018598229727835 -2.666797 * 1.509721 cos / x0 -1.6880058284590451 + x0 cos * 0.696976831813758 x0 / 0.032277 sin * 4 - x0 0.7615941559557649 sin sqrt + 2.923343 ^ 1.052177 ^ x0 0.992888 cos * 1.027655 * 2 ^ x0 0.8414709848078965 - 1.244610 / 2.026644 + 11.175638 - x0 54.598150033144236 / -6.551556 / + 1.214443 x0 cos - x0 -2.647537 / -0.036732 asin cos sqrt + 1.132285 x0 tanh cos ^ / x0 * 2 1.576287 1.113573",
             }.back()
         };
         assert(track_idx < seed_exprs.size());
@@ -11676,8 +11781,8 @@ namespace ExampleProblems
             SimulatedAnnealing(WierdTrackFitter /*differential equation to solve*/,
                 1 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{19} /*fixed depths of generated solution*/,
-                "postfix" /*expression representation*/,
+                std::vector<int>{22} /*fixed depths of generated solution*/,
+                "prefix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
                 5 /*number of fit iterations*/,
@@ -11693,7 +11798,7 @@ namespace ExampleProblems
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "WierdTrackSR.txt", // "" /*filename to save current best expression found (instead of outputting them to standard out)*/
-                std::vector<int>{135} /*optional max-sizes of each of the expressions in the generated solution*/,
+                std::vector<int>{160} /*optional max-sizes of each of the expressions in the generated solution*/,
                 {/*split(seed_exprs[track_idx])*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
                 1000000 /*`print_every` number of expressions generated before thread prints to standard out*/,
@@ -11706,7 +11811,7 @@ namespace ExampleProblems
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "WierdTrackSR.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                "sub_array" /*perturbation option: either "sub_array", "n_random", or (default) "sub_tree"*/);
+                "sub_tree" /*perturbation option: either "sub_array", "n_random", or (default) "sub_tree"*/);
         }
     }
 };
