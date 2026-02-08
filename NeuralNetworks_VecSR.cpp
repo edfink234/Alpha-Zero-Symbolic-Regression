@@ -4395,6 +4395,15 @@ int main()
 /*
  Outline for NeuralNetworkWeightUpdate
  
+ 1. 10 benchmarks
+    a. For each benchmark, 3 neural nets
+        i.  Each neural net has 5, 6, 7 layers (including the input layer) with N inputs and 1 output
+            - Neural net 1: {N, 2, 7, 6, 1}
+            - Neural net 2: {N, 6, 8, 1, 5, 1}
+            - Neural net 3: {N, 10, 9, 8, 10, 8, 1}
+
+ 
+ 
  1. For each benchmark
  2. Pick a Neural network architecture with N inputs, 1-10 hidden layers with 1 - 10 neurons each, output_type = "none", learning_rate in {1e-1, 1e-2, 1e-3, 1e-4, 1e-5}
     - Fixed at start
