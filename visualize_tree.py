@@ -437,16 +437,16 @@ def test_visualize():
         pn_to_rpn = False
         rpn_to_pn = False
         if pn_to_rpn:
-            prefix_expr = "+ + * * -32.328441 ^ 0.499684 cos * 7.372799 x0 - 0.629393 sech * 11.236163 + -0.192660 x0 cos ^ 4 - 2.492479 x0 ^ - 1.004849 x0 256"
+            prefix_expr = "+ + * sin * + x0 sin sqrt x0 0.13599420224810638 ~ + * 0.204703 x0 -36.871109 * * x0 0.276493 - -1.868178 sin * 1.095518 sqrt x0 * -5.206597 cos * x0 - 1 sin 0.957523"
             print(prefix_to_postfix(prefix_expr))
         elif rpn_to_pn:
             postfix_expr = "-2.444296 x0 1.026203 x0 sqrt cos ^ ^ * -26.199496 4.207354924039483 168.000000 x0 + sqrt * cos * - x0 25.019477 1.014280 x0 ^ cos tanh * + + -8.058567 -2.633602 x0 0.6931471805599453 ^ + cos * - 11.696530 118.95633426995997 x0 0.995059 / - / + x0 0.3670833851233197 * sin 4.957468 * - 1.502449 x0 0.997889 ^ ^ log cos + -2.060603 44.498356 x0 + 0.2658022288340797 * sin * exp + x0 -0.45018598229727835 * sin -2.701240 * + -1.599485 x0 -1.6880058284590451 / cos * - x0 0.696976831813758 x0 * cos + + 0.032499 4 x0 0.7615941559557649 - * sin / - 2.702079 1.052177 x0 0.992888 ^ ^ + sqrt sin + 1.027621 2 x0 0.8414709848078965 ^ * * cos + 1.225249 2.020931 11.175638 x0 54.598150033144236 - + / - - -6.130043 1.218107 x0 + x0 6.804936 - cos / / - -0.032252 1.134681 x0 + sqrt cos asin / +"
             print(postfix_to_prefix(postfix_expr))
         else:
-            expression_type_to_plot = ["prefix", "postfix"][0]
+            expression_type_to_plot = ["prefix", "postfix"][1]
             completeTree = [True, False][1]
             if expression_type_to_plot == "prefix":
-                complete_pn_expr = "+ + + - + + - + + + + + + - - + - * -2.443340 ^ x0 ^ 1.026195 cos sqrt x0 * -26.141684 cos * 4.207354924039483 sqrt + 168.000000 x0 + x0 * 25.068585 tanh cos ^ 1.014280 x0 * -8.087407 cos + -2.638495 ^ x0 0.6931471805599453 / -11.661316 - 118.95633426995997 + x0 0.579601 * sin * x0 0.3670833851233197 -4.949110 cos log ^ 1.502449 ^ x0 0.998111 exp * 2.027208 sin * - 2.782294 x0 0.2658022288340797 * sin * x0 -0.45018598229727835 -2.666797 * 1.509721 cos / x0 -1.6880058284590451 + x0 cos * 0.696976831813758 x0 / 0.032277 sin * 4 - x0 0.7615941559557649 sin sqrt + 2.923343 ^ 1.052177 ^ x0 0.992888 cos * 1.027655 * 2 ^ x0 0.8414709848078965 - 1.244610 / 2.026644 + 11.175638 - x0 54.598150033144236 / -6.551556 / + 1.214443 x0 cos - x0 -2.647537 / -0.036732 asin cos sqrt + 1.132285 x0 tanh cos ^ / x0 * 2 1.576287 1.113573"
+                complete_pn_expr = "+ + * sin * + x0 sin sqrt x0 0.13599420224810638 ~ + * 0.204703 x0 -36.871109 * * x0 0.276493 - -1.868178 sin * 1.095518 sqrt x0 * -5.206597 cos * x0 - 1 sin 0.957523"
                 if completeTree:
                     complete_pn_expr = complete_tree(complete_pn_expr.split(), "prefix") #returns a list
                 else:
@@ -456,7 +456,7 @@ def test_visualize():
                 plot_pn_expression_tree(complete_pn_expr, save = save, include_expression_in_title = False)
 
             else:
-                complete_rpn_expr = "-2.444296 x0 1.026203 x0 sqrt cos ^ ^ * -26.199496 4.207354924039483 168.000000 x0 + sqrt * cos * - x0 25.019477 1.014280 x0 ^ cos tanh * + + -8.058567 -2.633602 x0 0.6931471805599453 ^ + cos * - 11.696530 118.95633426995997 x0 0.995059 / - / + x0 0.3670833851233197 * sin 4.957468 * - 1.502449 x0 0.997889 ^ ^ log cos + -2.060603 44.498356 x0 + 0.2658022288340797 * sin * exp + x0 -0.45018598229727835 * sin -2.701240 * + -1.599485 x0 -1.6880058284590451 / cos * - x0 0.696976831813758 x0 * cos + + 0.032499 4 x0 0.7615941559557649 - * sin / - 2.702079 1.052177 x0 0.992888 ^ ^ + sqrt sin + 1.027621 2 x0 0.8414709848078965 ^ * * cos + 1.225249 2.020931 11.175638 x0 54.598150033144236 - + / - - -6.130043 1.218107 x0 + x0 6.804936 - cos / / -  -0.032252 1.134681 x0 + sqrt cos asin / +"
+                complete_rpn_expr = "x0 x0 sqrt sin + 0.13599420224810638 * sin 29.034195 -0.000009 x0 * x0 x0 * * + * x0 0.270243 * -1.900608 1.095518 x0 sqrt * sin - * + 7.504397 x0 0.18450196567500599 * cos * - 0.2787780894020867 0.999693 x0 2 - * * cos asin +"
                 if completeTree:
                     complete_rpn_expr = complete_tree(complete_rpn_expr.split(), "postfix") #returns a list
                 else:

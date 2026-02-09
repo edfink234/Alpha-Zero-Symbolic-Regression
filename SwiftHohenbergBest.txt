@@ -1,91 +1,21 @@
 
 Unique expressions = 0
 Time spent fitting = 0 seconds
-Best score = 0, SNE = 1.79769e+308
-Squared-norm error for each equation: 
-Best expression = 1.5707963267948966
-Best expression (original format) = 1.5707963267948966
-Best diff result = 
-Best expression (original format) = 
-Best differential equation parameters = {}
-Best expression parameters = {}
-Total system result = 
-Total system result (original format) = 
+Best score = 0.000324862, SNE = 3077.23
+Squared-norm error for each equation: 3047.7 29.5272 0.000136635 
+Best expression = (((((((x0 + -0.01) + sech(x1)) ^ 11.156528193614346) * 2.714063572022206e-13) + (((((0.01 + x0) ^ 6.29319) * 1e-08) + 0.0100003333566687) + 0.7493736126143709)) - (((0.9998848754538172 ^ (arcsin(tanh(x0)) / (0.7615941559557649 / (x0 ^ 4)))) * (sin(~((6.28319 + x1))) * 0.9171523356672744)) * (0.7827863849639187 * cos(asin(cos(x0)))))) - (((((x0 + (0.010000166674167114 + x0)) ^ ((0.003734854911714874 ^ (6.28319 / x0)) + 7.570169558264211)) * ((0.28580222883407974 ^ ((0.01 + x0) + 10.01)) * (((0.01 ^ x0) + 1.03) - sin(x1)))) + (((-6.1759665127829875 + (-10 + (x1 + x1))) / ((x1 / 0.005) - 1.9195169107150692e+06)) + -0.06767485271943648)) + (((((0.2658022288340797 + x0) ^ 0.9801980198019802) / (x0 + 1.517923178056138)) ^ ((sin((0.01 + x0)) + (0.03661899347368653 + x0)) * (sin(x1) + (10.01 / (0.01 + x0))))) + -0.01842414214696351)))
+Best expression (original format) = x0 -0.01 + x1 sech + 11.156528193614346 ^ 2.714063572022206e-13 * 0.01 x0 + 6.29319 ^ 1e-08 * 0.0100003333566687 + 0.7493736126143709 + + 0.9998848754538172 x0 tanh arcsin 0.7615941559557649 x0 4 ^ / / ^ 6.28319 x1 + ~ sin 0.9171523356672744 * * 0.7827863849639187 x0 cos asin cos * * - x0 0.010000166674167114 x0 + + 0.003734854911714874 6.28319 x0 / ^ 7.570169558264211 + ^ 0.28580222883407974 0.01 x0 + 10.01 + ^ 0.01 x0 ^ 1.03 + x1 sin - * * -6.1759665127829875 -10 x1 x1 + + + x1 0.005 / 1.9195169107150692e+06 - / -0.06767485271943648 + + 0.2658022288340797 x0 + 0.9801980198019802 ^ x0 1.517923178056138 + / 0.01 x0 + sin 0.03661899347368653 x0 + + x1 sin 10.01 0.01 x0 + / + * ^ -0.01842414214696351 + + -
 
 Unique expressions = 0
 Time spent fitting = 0 seconds
-Best score = 0, SNE = 1.79769e+308
-Squared-norm error for each equation: 
-Best expression = 1
-Best expression (original format) = 1
-Best diff result = 
-Best expression (original format) = 
-Best differential equation parameters = {}
-Best expression parameters = {}
-Total system result = 
-Total system result (original format) = 
+Best score = 0.000324862, SNE = 3077.23
+Squared-norm error for each equation: 3047.7 29.5272 0.000136635 
+Best expression = (((((((x0 + -0.01) + sech(x1)) ^ 11.156528193614346) * 2.714063572022206e-13) + (((((0.01 + x0) ^ 6.29319) * 1e-08) + 0.0100003333566687) + 0.7493736126143709)) - (((0.9998848754538172 ^ (arcsin(tanh(x0)) / (0.7615941559557649 / (x0 ^ 4)))) * (sin(~((6.28319 + x1))) * 0.9171523356672744)) * (0.7827863849639187 * cos(asin(cos(x0)))))) - (((((x0 + (0.010000166674167114 + x0)) ^ ((0.003734854911714874 ^ (6.28319 / x0)) + 7.570169558264211)) * ((0.28580222883407974 ^ ((0.01 + x0) + 10.01)) * (((0.01 ^ x0) + 1.03) - sin(x1)))) + (((-6.829610133646599 + (-10 + (x1 + x1))) / ((x1 / 0.005) - 1.9195169107150692e+06)) + -0.06767485271943648)) + (((((0.2658022288340797 + x0) ^ 0.9801980198019802) / (x0 + 1.517923178056138)) ^ ((sin((0.01 + x0)) + (0.03661899347368653 + x0)) * (sin(x1) + (10.01 / (0.01 + x0))))) + -0.01842414214696351)))
+Best expression (original format) = x0 -0.01 + x1 sech + 11.156528193614346 ^ 2.714063572022206e-13 * 0.01 x0 + 6.29319 ^ 1e-08 * 0.0100003333566687 + 0.7493736126143709 + + 0.9998848754538172 x0 tanh arcsin 0.7615941559557649 x0 4 ^ / / ^ 6.28319 x1 + ~ sin 0.9171523356672744 * * 0.7827863849639187 x0 cos asin cos * * - x0 0.010000166674167114 x0 + + 0.003734854911714874 6.28319 x0 / ^ 7.570169558264211 + ^ 0.28580222883407974 0.01 x0 + 10.01 + ^ 0.01 x0 ^ 1.03 + x1 sin - * * -6.829610133646599 -10 x1 x1 + + + x1 0.005 / 1.9195169107150692e+06 - / -0.06767485271943648 + + 0.2658022288340797 x0 + 0.9801980198019802 ^ x0 1.517923178056138 + / 0.01 x0 + sin 0.03661899347368653 x0 + + x1 sin 10.01 0.01 x0 + / + * ^ -0.01842414214696351 + + -
 
 Unique expressions = 0
 Time spent fitting = 0 seconds
-Best score = 0, SNE = 1.79769e+308
-Squared-norm error for each equation: 
-Best expression = (x1 ^ 9)
-Best expression (original format) = x1 9 ^
-Best diff result = 
-Best expression (original format) = 
-Best differential equation parameters = {}
-Best expression parameters = {}
-Total system result = 
-Total system result (original format) = 
-
-Unique expressions = 0
-Time spent fitting = 0 seconds
-Best score = 0, SNE = 1.79769e+308
-Squared-norm error for each equation: 
-Best expression = 0.7615941559557649
-Best expression (original format) = 0.7615941559557649
-Best diff result = 
-Best expression (original format) = 
-Best differential equation parameters = {}
-Best expression parameters = {}
-Total system result = 
-Total system result (original format) = 
-
-Unique expressions = 0
-Time spent fitting = 0 seconds
-Best score = 0, SNE = 1.79769e+308
-Squared-norm error for each equation: 
-Best expression = 0.6636437875377791
-Best expression (original format) = 0.6636437875377791
-Best diff result = 
-Best expression (original format) = 
-Best differential equation parameters = {}
-Best expression parameters = {}
-Total system result = 
-Total system result (original format) = 
-
-Unique expressions = 0
-Time spent fitting = 0 seconds
-Best score = 0, SNE = 1.79769e+308
-Squared-norm error for each equation: 
-Best expression = 0.7615941559557649
-Best expression (original format) = 0.7615941559557649
-Best diff result = 
-Best expression (original format) = 
-Best differential equation parameters = {}
-Best expression parameters = {}
-Total system result = 
-Total system result (original format) = 
-
-Unique expressions = 0
-Time spent fitting = 0 seconds
-Best score = 0, SNE = 1.79769e+308
-Squared-norm error for each equation: 
-Best expression = 0.4559788891106302
-Best expression (original format) = 0.4559788891106302
-Best diff result = 
-Best expression (original format) = 
-Best differential equation parameters = {}
-Best expression parameters = {}
-Total system result = 
-Total system result (original format) = 
+Best score = 0.000324935, SNE = 3076.54
+Squared-norm error for each equation: 3047.01 29.5272 0.000136635 
+Best expression = (((((((x0 + -0.01) + sech(x1)) ^ 11.156528193614346) * 2.714063572022206e-13) + (((((0.01 + x0) ^ 6.29319) * 1e-08) + 0.0100003333566687) + 0.7493736126143709)) - (((0.9998848754538172 ^ (arcsin(tanh(x0)) / (0.7615941559557649 / (x0 ^ 4)))) * (sin(~((6.28319 + x1))) * 0.9171523356672744)) * (0.7827863849639187 * cos(asin(cos(x0)))))) - (((((x0 + (0.010000166674167114 + x0)) ^ ((0.003734854911714874 ^ (6.28319 / x0)) + 7.570169558264211)) * ((0.28580222883407974 ^ ((0.01 + x0) + 10.01)) * (((0.01 ^ x0) + 1.03) - sin(x1)))) + (((-6.1759665127829875 + (-10 + (x1 + x1))) / ((x1 / 0.005) - 1.9195169107150692e+06)) + -0.06767485271943648)) + (((((0.2658022288340797 + x0) ^ 0.9801980198019802) / (x0 + 1.5707963267948966)) ^ ((sin((0.01 + x0)) + (0.03661899347368653 + x0)) * (sin(x1) + (10.01 / (0.01 + x0))))) + -0.01842414214696351)))
+Best expression (original format) = x0 -0.01 + x1 sech + 11.156528193614346 ^ 2.714063572022206e-13 * 0.01 x0 + 6.29319 ^ 1e-08 * 0.0100003333566687 + 0.7493736126143709 + + 0.9998848754538172 x0 tanh arcsin 0.7615941559557649 x0 4 ^ / / ^ 6.28319 x1 + ~ sin 0.9171523356672744 * * 0.7827863849639187 x0 cos asin cos * * - x0 0.010000166674167114 x0 + + 0.003734854911714874 6.28319 x0 / ^ 7.570169558264211 + ^ 0.28580222883407974 0.01 x0 + 10.01 + ^ 0.01 x0 ^ 1.03 + x1 sin - * * -6.1759665127829875 -10 x1 x1 + + + x1 0.005 / 1.9195169107150692e+06 - / -0.06767485271943648 + + 0.2658022288340797 x0 + 0.9801980198019802 ^ x0 1.5707963267948966 + / 0.01 x0 + sin 0.03661899347368653 x0 + + x1 sin 10.01 0.01 x0 + / + * ^ -0.01842414214696351 + + -

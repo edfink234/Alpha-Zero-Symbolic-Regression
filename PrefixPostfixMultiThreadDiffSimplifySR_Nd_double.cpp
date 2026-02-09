@@ -958,6 +958,7 @@ struct Board
     static size_t inline num_leaf_operands;
     static std::unordered_set<std::string> inline __unary_operators_uset;
     static std::unordered_set<std::string> inline __binary_operators_uset;
+    static std::unordered_set<std::string> inline __bad_operators_uset;
     static std::vector<std::string> inline __operators;
     static std::vector<std::string> inline __other_tokens; //denotes the other leaf-nodes besides the input variables
     static std::vector<std::string> inline __tokens;
@@ -1032,7 +1033,8 @@ struct Board
           std::vector<int> max_size = {},
           const std::vector<std::vector<std::string>>& additive_corrections = {},
           bool graphEval = false,
-          bool completeTree = false) :
+          bool completeTree = false,
+          const std::vector<std::string> bad_operators = {}) :
             gen{rd()}, vel_dist{-1.0, 1.0}, pos_dist{0.0, 1.0}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, n{depth}, is_primary{primary}, simplify_original{simplifyOriginal}, mustHaveAllFeatures{must_have_all_features}, customFeatures{custom_features}, graph_eval{graphEval}, complete_Tree{completeTree}, maxSize{max_size}, additiveCorrections{additive_corrections}
     {
         assert(n.size());
@@ -1098,6 +1100,7 @@ struct Board
                 Board::__binary_operators = {"+", "-", "*", "/", "^"};
                 std::copy(Board::__unary_operators.begin(), Board::__unary_operators.end(), std::inserter(Board::__unary_operators_uset, Board::__unary_operators_uset.end()));
                 std::copy(Board::__binary_operators.begin(), Board::__binary_operators.end(), std::inserter(Board::__binary_operators_uset, Board::__binary_operators_uset.end()));
+                for (const std::string& i: bad_operators){Board::__bad_operators_uset.emplace(i);}
                 for (const std::string& i: Board::__unary_operators_uset) {std::cout << i << ' ';}puts("");
                 for (const std::string& i: Board::__binary_operators_uset) {std::cout << i << ' ';}puts("");
                 Board::__operators.clear();
@@ -1321,6 +1324,11 @@ struct Board
     bool is_binary(const std::string& token) const
     {
         return (Board::__binary_operators_uset.find(token) != Board::__binary_operators_uset.end());
+    }
+    
+    bool is_bad_op(const std::string& token) const
+    {
+        return (Board::__bad_operators_uset.find(token) != Board::__bad_operators_uset.end());
     }
 
     bool is_operator(const std::string& token) const
@@ -4561,6 +4569,9 @@ struct Board
                 }
                 else
                 {
+//                    printf("token = %s\n", token.c_str());
+//                    assert(token[0] == 'x');
+                    if(token[0] != 'x'){throw std::runtime_error("token = " + token + " not entered into subs_dict!");}
                     stack.push(Board::data[token]);
                 }
             }
@@ -5112,10 +5123,15 @@ struct Board
                 return score;
             }
             
-            //This block below checks if `this->pieces[jdx]` has nans or infs.
+            //This block below checks if `this->pieces[jdx]` has nans or infs or bad_ops
             for (const auto& piece: this->pieces[jdx])
             {
                 assert(piece.size());
+                if (this->is_bad_op(piece))
+                {
+                    this->SNE_curr = DBL_MAX;
+                    return score;
+                }
                 for (int i = 0; i < static_cast<int>(piece.size())-2; i++)
                 {
                     //checks if next 3 characters are 'n', 'a', 'n' or 'i', 'n', 'f'
@@ -5126,6 +5142,7 @@ struct Board
                         return score;
                     }
                 }
+                
             }
             //If all of the features must be non-trivially in each expression in the vector of expressions `pieces`
             if (this->mustHaveAllFeatures)
@@ -5330,7 +5347,7 @@ struct Board
      where 0 <= score <= 1 and -1 if not complete or if
      the desired depth has not been reached.
      */
-    //TODO: maybe only fit the constants of the ones that give with all consts = 1 like some percentage of the best thus-far (like maybe 80%)...?
+    //TODO: maybe only fit the constants of the ones that yield, when set to 1, some percentage of the best thus-far (like maybe 80%)...?
     double complete_status(int idx, bool cache = true)
     {
         assert(this->stack.size() > static_cast<decltype(this->stack.size())>(idx));
@@ -6956,7 +6973,7 @@ std::vector<std::vector<std::string>> WierdTrackFitter(Board& x, bool fit)
 {
     /*
      '''
-x='((((((((((((((((-2.444413 * (x0 ^ (1.026195 ^ cos(sqrt(x0))))) - (-26.199496 * cos((4.207354924039483 * sqrt((168.000000 + x0)))))) + (x0 + (25.019477 * tanh(cos((1.014280 ^ x0)))))) - (-8.056819 * cos((-2.633602 + (x0 ^ 0.6931471805599453))))) + (11.706926 / (118.95633426995997 - (x0 / 0.995059)))) - (sin((x0 * 0.3670833851233197)) * 4.956417)) + cos(log((1.502449 ^ (x0 ^ 0.997889))))) + exp((-2.060603 * sin(((44.498356 + x0) * 0.2658022288340797))))) + (sin((x0 * -0.45018598229727835)) * -2.701240)) - (-1.599485 * cos((x0 / -1.6880058284590451)))) + (x0 + cos((0.696976831813758 * x0)))) - (0.032499 / sin((4 * (x0 - 0.7615941559557649))))) + sin(sqrt((2.702079 + (1.052177 ^ (x0 ^ 0.992804)))))) + cos((-1.027736 * (2 * (x0 ^ 0.8414709848078965))))) - (1.225249 - (2.024455 / (11.175638 + (x0 - 54.598150033144236))))) - (-6.130043 / ((1.216664 + x0) / cos((x0 - 6.804936)))))'.replace("^","**").replace("~", "-").replace("x0","s"); print("\n", x); from sympy import *; import sympy as sp; y = x.replace("arccos","acos").replace("arcsin","asin"); print(y); s = sp.symbols("s"); from sympy.printing.pycode import pycode; print(x:=pycode(eval(y)).replace('math','sp'), end = ""); print(" if fitPlotFunc else lambda s: ", end = ""); print(x.replace("sp","np")); round_floats = lambda expr, ndigits: expr.xreplace({f: sp.Float(round(float(f), ndigits)) for f in expr.atoms(sp.Float)}); func_sym_r = round_floats(eval(y), 2); print(sp.latex(func_sym_r));
+x='((((sin(((x0 + sin(sqrt(x0))) * 0.13599420224810638)) * (29.026558 + ((-0.000009 * x0) * (x0 * x0)))) + ((x0 * 0.270898) * (-1.896980 - sin((1.095518 * sqrt(x0)))))) - (7.604140 * cos((x0 * 0.18450196567500599)))) + asin(cos((0.2787780894020867 * (0.999693 * (x0 - 2))))))'.replace("^","**").replace("~", "-").replace("x0","s"); from sympy import *; import sympy as sp; y = x.replace("arccos","acos").replace("arcsin","asin"); s = sp.symbols("s"); from sympy.printing.pycode import pycode; print('\n',x:=pycode(eval(y)).replace('math','sp'), end = ""); print(" if fitPlotFunc else lambda s: ", end = ""); print(x.replace("sp","np")); round_floats = lambda expr, ndigits: expr.xreplace({f: sp.Float(round(float(f), ndigits)) for f in expr.atoms(sp.Float)}); func_sym_r = round_floats(eval(y), 2); print(sp.latex(func_sym_r));
      
      '''
      
@@ -7104,6 +7121,28 @@ x='((((((((((((((((-2.444413 * (x0 ^ (1.026195 ^ cos(sqrt(x0))))) - (-26.199496 
             Squared-norm error for each equation: 187.195
             Best expression = ((((((((((((((((((-2.443340 * (x0 ^ (1.026205 ^ cos(sqrt(x0))))) - (-26.134535 * cos((4.207354924039483 * sqrt((168.000000 + x0)))))) + (x0 + (25.152657 * tanh(cos((1.014280 ^ x0)))))) - (-8.162444 * cos((-2.638495 + (x0 ^ 0.6931471805599453))))) - (-11.891217 / (118.95633426995997 - (x0 + 0.567287)))) - (sin((x0 * 0.3670833851233197)) * 4.846034)) + cos(log((1.502449 ^ (x0 ^ 0.997729))))) + exp((1.982657 * sin(((2.514225 - x0) * 0.2658022288340797))))) + (sin((x0 * -0.45018598229727835)) * -2.453809)) + (1.545488 * cos((x0 / -1.6880058284590451)))) + (x0 + cos((0.696976831813758 * x0)))) - (0.031557 / sin((4 * (x0 - 0.7615941559557649))))) + sin(sqrt((3.212886 + (1.052177 ^ (x0 ^ 0.992888)))))) + cos((1.027655 * (2 * (x0 ^ 0.8414709848078965))))) - (1.143581 - (2.253225 / (11.175638 + (x0 - 54.598150033144236))))) + (-6.012152 / ((1.214443 + x0) / cos((x0 - 9.779302))))) + (-0.041021 / asin(cos(sqrt((1.133684 + x0)))))) + sin(cos(((x0 / 3.152574) ^ 1.113573))))
             Best expression (original format) = + + + - + + - + + + + + - - - + - * -2.443340 ^ x0 ^ 1.026205 cos sqrt x0 * -26.134535 cos * 4.207354924039483 sqrt + 168.000000 x0 + x0 * 25.152657 tanh cos ^ 1.014280 x0 * -8.162444 cos + -2.638495 ^ x0 0.6931471805599453 / -11.891217 - 118.95633426995997 + x0 0.567287 * sin * x0 0.3670833851233197 4.846034 cos log ^ 1.502449 ^ x0 0.997729 exp * 1.982657 sin * - 2.514225 x0 0.2658022288340797 * sin * x0 -0.45018598229727835 -2.453809 * 1.545488 cos / x0 -1.6880058284590451 + x0 cos * 0.696976831813758 x0 / 0.031557 sin * 4 - x0 0.7615941559557649 sin sqrt + 3.212886 ^ 1.052177 ^ x0 0.992888 cos * 1.027655 * 2 ^ x0 0.8414709848078965 - 1.143581 / 2.253225 + 11.175638 - x0 54.598150033144236 / -6.012152 / + 1.214443 x0 cos - x0 9.779302 / -0.041021 asin cos sqrt + 1.133684 x0 sin cos ^ / x0 3.152574 1.113573
+        
+        depth = 6, maxsize = 25, bad_ops = {"exp", "ln", "log", "^", "/"}
+            Best score = 6.98285e-05, SNE = 14319.8
+            Squared-norm error for each equation: 14319.8
+            Best expression = ((cos(((x0 + 11.968373) * 0.13598386240567323)) * ~(((-0.231705 * x0) + 39.219198))) - ((x0 * -0.276514) * (-1.863160 - sin((1.094133 * sqrt(x0))))))
+            Best expression (original format) = - * cos * + x0 11.968373 0.13598386240567323 ~ + * -0.231705 x0 39.219198 * * x0 -0.276514 - -1.863160 sin * 1.094133 sqrt x0
+        depth = 7, maxsize = 27, bad_ops = {"exp", "ln", "log", "^", "/"}
+            Best score = 8.19886e-05, SNE = 12195.8
+            Squared-norm error for each equation: 12195.8
+            Best expression = ((sin(((x0 + sin(sqrt(x0))) * 0.13599420224810638)) * ~(((0.223351 * x0) + -39.031218))) + ((x0 * 0.272925) * (-1.884260 - sin((1.096031 * sqrt(x0))))))
+            Best expression (original format) = + * sin * + x0 sin sqrt x0 0.13599420224810638 ~ + * 0.223351 x0 -39.031218 * * x0 0.272925 - -1.884260 sin * 1.096031 sqrt x0
+        depth = 8, maxsize = 36, bad_ops = {"exp", "ln", "log", "^", "/"}
+            Best score = 0.000112852, SNE = 8860.18
+            Squared-norm error for each equation: 8860.18
+            Best expression = (((sin(((x0 + sin(sqrt(x0))) * 0.13599420224810638)) * (29.034195 + ((-0.000009 * x0) * (x0 * x0)))) + ((x0 * 0.270243) * (-1.900612 - sin((1.095518 * sqrt(x0)))))) - (7.504397 * cos((x0 * 0.18450196567500599))))
+            Best expression (original format) = x0 x0 sqrt sin + 0.13599420224810638 * sin 29.034195 -0.000009 x0 * x0 x0 * * + * x0 0.270243 * -1.900612 1.095518 x0 sqrt * sin - * + 7.504397 x0 0.18450196567500599 * cos * -
+        depth = 9, maxsize = 47, bad_ops = {"exp", "ln", "log", "^", "/"}
+            Best score = 0.000124985, SNE = 7999.93
+            Squared-norm error for each equation: 7999.93
+            Best expression = ((((sin(((x0 + sin(sqrt(x0))) * 0.13599420224810638)) * (29.026558 - ((0.000009 * x0) * (x0 * x0)))) + ((x0 * 0.271497) * (-1.896980 - sin((1.094607 * sqrt(x0)))))) - (7.604140 * cos((x0 * 0.18450196567500599)))) + asin(cos((0.2787780894020867 * (0.999693 * (x0 - 2))))))
+            Best expression (original format) = x0 x0 sqrt sin + 0.13599420224810638 * sin 29.026558 0.000009 x0 * x0 x0 * * - * x0 0.271497 * -1.896980 1.094607 x0 sqrt * sin - * + 7.604140 x0 0.18450196567500599 * cos * - 0.2787780894020867 0.999693 x0 2 - * * cos asin +
+     
      */
     static bool added_additive = false;
     thread_local std::vector<std::vector<std::string>> results(x.num_diff_eqns);
@@ -8586,6 +8625,7 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 */
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
+//    puts("called SwiftHohenberg");
     /*
     Depth = 7:
         Best score = 0.000155487, SNE = 6430.41
@@ -8593,10 +8633,15 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
         Best expression = (((((((0.010000 + x0) + sech(x1)) ^ (sech(x0) + 11.13)) * 2.714063472005533e-13) + ((((x0 ^ 6.283190) * 1e-08) + 0.01) + 0.7419039201568504)) - (((0.9998848754538172 ^ (x0 ^ 4.029999999999999)) * (sin(~(x1)) * 0.9972802451715356)) * (0.8912763105205549 * cos(asin(cos(x0)))))) - (((0.00010591201460945816 * ((0.28580222883407974 ^ (x0 + 10.000000)) * (1 - sin(x1)))) + ((4.692820413780688e-06 * (12.56638 * (x1 * 2))) + -0.07517032657318981)) + ((((x0 ^ 0.9999500004166653) / ((0.010000 + x0) + 1)) ^ ((sin(x0) + (0.010000 + x0)) * (sin(x1) + (10.000000 / x0)))) + 0.06683273758330441)))
         Best expression (original format) = 0.010000 x0 + x1 sech + x0 sech 11.13 + ^ 2.714063472005533e-13 * x0 6.283190 ^ 1e-08 * 0.01 + 0.7419039201568504 + + 0.9998848754538172 x0 4.029999999999999 ^ ^ x1 ~ sin 0.9972802451715356 * * 0.8912763105205549 x0 cos asin cos * * - 0.00010591201460945816 0.28580222883407974 x0 10.000000 + ^ 1 x1 sin - * * 4.692820413780688e-06 12.56638 x1 2 * * * -0.07517032657318981 + + x0 0.9999500004166653 ^ 0.010000 x0 + 1 + / x0 sin 0.010000 x0 + + x1 sin 10.000000 x0 / + * ^ 0.06683273758330441 + + -
     Depth = 8:
-        Best score = 0.000315979, SNE = 3163.77
-        Squared-norm error for each equation: 3134.24 29.5272 0.000136635
-        Best expression = (((((((x0 + -0.01) + sech(x1)) ^ 11.156528193614346) * 2.714063572022206e-13) + (((((0.010000 + x0) ^ 6.29319) * 1e-08) + 0.0100003333566687) + 0.7493736126143709)) - (((0.9998848754538172 ^ (arcsin(tanh(x0)) / (0.7615941559557649 / (x0 ^ 4)))) * (sin(~((6.283190 + x1))) * 0.9171523356672744)) * (0.7927863849639187 * cos(asin(cos(x0)))))) - (((((x0 + x0) ^ ((0.003734854911714874 ^ (6.283190 / x0)) + 7.570169558264211)) * ((0.28580222883407974 ^ ((0.010000 + x0) + 10)) * (((0.010000 ^ x0) + 1.03) - sin(x1)))) + (((0.9999999999889887 + (8 + (x1 + x1))) / (((10.000000 + x1) / 0.005) - 1.9195020417499759e+06)) + -0.06767485271943648)) + (((((0.2658022288340797 + x0) ^ 0.9801980198019802) / (x0 + 1.517923178056138)) ^ ((sin((0.010000 + x0)) + (0.03661899347368653 + x0)) * (sin((6.283190 + x1)) + (10.01 / x0)))) + -0.014753092106278107)))
-        Best expression (original format) = x0 -0.01 + x1 sech + 11.156528193614346 ^ 2.714063572022206e-13 * 0.010000 x0 + 6.29319 ^ 1e-08 * 0.0100003333566687 + 0.7493736126143709 + + 0.9998848754538172 x0 tanh arcsin 0.7615941559557649 x0 4 ^ / / ^ 6.283190 x1 + ~ sin 0.9171523356672744 * * 0.7927863849639187 x0 cos asin cos * * - x0 x0 + 0.003734854911714874 6.283190 x0 / ^ 7.570169558264211 + ^ 0.28580222883407974 0.010000 x0 + 10 + ^ 0.010000 x0 ^ 1.03 + x1 sin - * * 0.9999999999889887 8 x1 x1 + + + 10.000000 x1 + 0.005 / 1.9195020417499759e+06 - / -0.06767485271943648 + + 0.2658022288340797 x0 + 0.9801980198019802 ^ x0 1.517923178056138 + / 0.010000 x0 + sin 0.03661899347368653 x0 + + 6.283190 x1 + sin 10.01 x0 / + * ^ -0.014753092106278107 + + -
+        Best score = 0.000324862, SNE = 3077.23
+        Squared-norm error for each equation: 3047.7 29.5272 0.000136635
+        Best expression = (((((((x0 + -0.01) + sech(x1)) ^ 11.156528193614346) * 2.714063572022206e-13) + (((((0.010000 + x0) ^ 6.29319) * 1e-08) + 0.0100003333566687) + 0.7493736126143709)) - (((0.9998848754538172 ^ (arcsin(tanh(x0)) / (0.7615941559557649 / (x0 ^ 4)))) * (sin(~((6.283190 + x1))) * 0.9171523356672744)) * (0.7827863849639187 * cos(asin(cos(x0)))))) - (((((x0 + (0.010000166674167114 + x0)) ^ ((0.003734854911714874 ^ (6.283190 / x0)) + 7.570169558264211)) * ((0.28580222883407974 ^ ((0.010000 + x0) + 10.01)) * (((0.010000 ^ x0) + 1.03) - sin(x1)))) + (((-6.1759665127829875 + (-10 + (x1 + x1))) / ((x1 / 0.005) - 1.9195169107150692e+06)) + -0.06767485271943648)) + (((((0.2658022288340797 + x0) ^ 0.9801980198019802) / (x0 + 1.517923178056138)) ^ ((sin((0.010000 + x0)) + (0.03661899347368653 + x0)) * (sin(x1) + (10.01 / (0.010000 + x0))))) + -0.01842414214696351)))
+        Best expression (original format) = x0 -0.01 + x1 sech + 11.156528193614346 ^ 2.714063572022206e-13 * 0.010000 x0 + 6.29319 ^ 1e-08 * 0.0100003333566687 + 0.7493736126143709 + + 0.9998848754538172 x0 tanh arcsin 0.7615941559557649 x0 4 ^ / / ^ 6.283190 x1 + ~ sin 0.9171523356672744 * * 0.7827863849639187 x0 cos asin cos * * - x0 0.010000166674167114 x0 + + 0.003734854911714874 6.283190 x0 / ^ 7.570169558264211 + ^ 0.28580222883407974 0.010000 x0 + 10.01 + ^ 0.010000 x0 ^ 1.03 + x1 sin - * * -6.1759665127829875 -10 x1 x1 + + + x1 0.005 / 1.9195169107150692e+06 - / -0.06767485271943648 + + 0.2658022288340797 x0 + 0.9801980198019802 ^ x0 1.517923178056138 + / 0.010000 x0 + sin 0.03661899347368653 x0 + + x1 sin 10.01 0.010000 x0 + / + * ^ -0.01842414214696351 + + -
+     Depth = 9:
+        Best score = 0.000324935, SNE = 3076.54
+        Squared-norm error for each equation: 3047.01 29.5272 0.000136635
+        Best expression = (((((((x0 + -0.01) + sech(x1)) ^ 11.156528193614346) * 2.714063572022206e-13) + (((((0.01 + x0) ^ 6.29319) * 1e-08) + 0.0100003333566687) + 0.7493736126143709)) - (((0.9998848754538172 ^ (arcsin(tanh(x0)) / (0.7615941559557649 / (x0 ^ 4)))) * (sin(~((6.28319 + x1))) * 0.9171523356672744)) * (0.7827863849639187 * cos(asin(cos(x0)))))) - (((((x0 + (0.010000166674167114 + x0)) ^ ((0.003734854911714874 ^ (6.28319 / x0)) + 7.570169558264211)) * ((0.28580222883407974 ^ ((0.01 + x0) + 10.01)) * (((0.01 ^ x0) + 1.03) - sin(x1)))) + (((-6.1759665127829875 + (-10 + (x1 + x1))) / ((x1 / 0.005) - 1.9195169107150692e+06)) + -0.06767485271943648)) + (((((0.2658022288340797 + x0) ^ 0.9801980198019802) / (x0 + 1.5707963267948966)) ^ ((sin((0.01 + x0)) + (0.03661899347368653 + x0)) * (sin(x1) + (10.01 / (0.01 + x0))))) + -0.01842414214696351)))
+        Best expression (original format) = x0 -0.01 + x1 sech + 11.156528193614346 ^ 2.714063572022206e-13 * 0.01 x0 + 6.29319 ^ 1e-08 * 0.0100003333566687 + 0.7493736126143709 + + 0.9998848754538172 x0 tanh arcsin 0.7615941559557649 x0 4 ^ / / ^ 6.28319 x1 + ~ sin 0.9171523356672744 * * 0.7827863849639187 x0 cos asin cos * * - x0 0.010000166674167114 x0 + + 0.003734854911714874 6.28319 x0 / ^ 7.570169558264211 + ^ 0.28580222883407974 0.01 x0 + 10.01 + ^ 0.01 x0 ^ 1.03 + x1 sin - * * -6.1759665127829875 -10 x1 x1 + + + x1 0.005 / 1.9195169107150692e+06 - / -0.06767485271943648 + + 0.2658022288340797 x0 + 0.9801980198019802 ^ x0 1.5707963267948966 + / 0.01 x0 + sin 0.03661899347368653 x0 + + x1 sin 10.01 0.01 x0 + / + * ^ -0.01842414214696351 + + -
      ```
 x = "(((((((-0.02 + (x0 + 0.010000)) + sech(x1)) ^ 11.119909200140661) * 2.714063572022206e-13) + (((((0.010000 + x0) ^ 6.28319) * 1e-08) + 0.0025) + 0.7456387750685652)) - (((0.9998848754538172 ^ (arcsin(tanh(x0)) / (1 / (x0 ^ 4)))) * (sin(~((6.283190 + x1))) * 0.940049833749168)) * (0.7927863849639187 * cos(asin(cos(x0)))))) - ((((((0.01 + x0) + (0.009999833334166664 + x0)) ^ 7.50905609893065) * ((0.28580222883407974 ^ (x0 + 10)) * (1.02 - sin(x1)))) + (0.003734854911714874 + (((2.302585092994046 + (0.010000 + x1)) / ((x1 / 10.000000) - 1.9195083249399762e+06)) + -0.0576701598990227))) + (((((0.02 + x0) ^ 0.9801980198019802) / ((-0.01 + x0) + 1.5079230113819708)) ^ ((sin((6.283190 + x0)) + x0) * (sin((6.283190 + x1)) + (10.01 / x0)))) + -0.0132334444522229)))"
 print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-"))
@@ -8887,10 +8932,14 @@ print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-
                     }
                     additive_results[2].push_back("-");
                 }
+                puts("Evaluating additive_results");
                 f_res[0] = x.expression_evaluator(x.params, additive_results[0]);
+                puts("Done evaluating additive_results[0]");
                 f_res[1] = x.expression_evaluator(x.params, additive_results[1]);
+                puts("Done evaluating additive_results[1]");
                 f_res[2] = x.expression_evaluator(x.params, additive_results[2]);
                 added_additive = true;
+                puts("Done evaluating additive_results");
             }
         });
         if (!prefactors_computed)
@@ -8900,7 +8949,6 @@ print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-
             x.subs_dict["fres1"] = f_res[1];
             x.subs_dict["fres2"] = f_res[2];
             x.subs_dict["f0"] = x.expression_evaluator(x.params, x.additiveCorrections[0]);
-            prefactors_computed = true;
         }
     }
     
@@ -9055,7 +9103,7 @@ print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-
 //        result.push_back("x0"); // r
 //        result.push_back("x0"); // r
 //        result.push_back("*"); // *
-        if (!prefactors_computed)
+        if (!x.subs_dict.count("r_squared"))
         {
             prefac_temp = {"x0", "x0", "*"};
             x.subs_dict["r_squared"] = x.expression_evaluator(x.params, prefac_temp);
@@ -9104,7 +9152,7 @@ print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-
 //        result.push_back("*"); // *
 //        result.push_back("x0"); // r
 //        result.push_back("*"); // *
-        if (!prefactors_computed)
+        if (!x.subs_dict.count("r_cubed"))
         {
             prefac_temp = {"x0", "x0", "*", "x0", "*"};
             x.subs_dict["r_cubed"] = x.expression_evaluator(x.params, prefac_temp);
@@ -9236,7 +9284,7 @@ print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-
 //        result.push_back("3"); // 3
 //        result.push_back("x0"); // r
 //        result.push_back("/"); // /
-        if (!prefactors_computed)
+        if (!x.subs_dict.count("3_over_r"))
         {
             prefac_temp = {"3", "x0", "/"};
             x.subs_dict["3_over_r"] = x.expression_evaluator(x.params, prefac_temp);
@@ -9321,6 +9369,8 @@ print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-
         assert(x.subs_dict.count("fres0"));
         assert(x.subs_dict.count("fres1"));
         assert(x.subs_dict.count("fres2"));
+        assert(x.subs_dict.count("f"));
+        assert(x.subs_dict.count("r_squared"));
         //f0 * (2*nu*f - 3*f0*f - 3*f*f)
         if (x.expression_type == "prefix")
         {
@@ -9407,7 +9457,7 @@ print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-
         }
     }
     prefactors_computed = true;
-    std::cout << "results = " << results << '\n';
+//    std::cout << "results = " << results << '\n';
     return results;
 }
 
@@ -9790,6 +9840,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                         bool graphEval = false,
                         int print_every = 1000000,
                         bool printDiffEq = false,
+                        const std::vector<std::string>& bad_ops = {},
                         const std::vector<std::vector<std::string>>& seed_expressions = {},
                         bool exit_early = false,
                         int custom_rand_seed = -1,
@@ -9848,7 +9899,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
     /*
      Inside of thread:
      */
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &custom_features, &seed_expressions, &exit_early, &custom_rand_seed, &T_min, &T_max, &temp_func, &completeTree, &pert_option, &best_SNE, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &graphEval, &print_every, &printDiffEq, &outFile, &out](int thread_idx)
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &custom_features, &seed_expressions, &exit_early, &custom_rand_seed, &T_min, &T_max, &temp_func, &completeTree, &pert_option, &best_SNE, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &graphEval, &print_every, &printDiffEq, &bad_ops, &outFile, &out](int thread_idx)
     {
         std::random_device rand_dev;
         #if RANDOM_SEED < 0
@@ -9861,9 +9912,9 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
         {
             generator.seed(custom_rand_seed);
         }
-        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols, mustHaveAllFeatures, custom_features, maxSize, additive_corrections, graphEval, completeTree);
+        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols, mustHaveAllFeatures, custom_features, maxSize, additive_corrections, graphEval, completeTree, bad_ops);
         sync_point.arrive_and_wait();
-        Board secondary(diffeq, num_diff_eqns, false, std::vector<int>(depth.size(), 0), expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols, mustHaveAllFeatures, custom_features, maxSize, additive_corrections, graphEval, completeTree); //For perturbations
+        Board secondary(diffeq, num_diff_eqns, false, std::vector<int>(depth.size(), 0), expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols, mustHaveAllFeatures, custom_features, maxSize, additive_corrections, graphEval, completeTree, bad_ops); //For perturbations
         assert(secondary.pieces.size() == secondary.n.size());
         assert(secondary.pieces.size() == x.pieces.size());
         assert(secondary.pieces.size() == x.n.size());
@@ -11154,7 +11205,8 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
                   const std::vector<std::vector<std::string>>& additive_corrections = {},
                   bool graphEval = false,
                   int print_every = 1000000,
-                  bool printDiffEq = false)
+                  bool printDiffEq = false,
+                  const std::vector<std::string>& bad_ops = {})
 {
     if (num_threads == 0)
     {
@@ -11182,12 +11234,12 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
      Inside of thread:
      */
 
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &use_const_pieces, &numDataCols, &mustHaveAllFeatures, &custom_features, &isConstTol, &best_SNE, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &graphEval, &print_every, &printDiffEq, &outFile, &out](int thread_idx)
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &use_const_pieces, &numDataCols, &mustHaveAllFeatures, &custom_features, &isConstTol, &best_SNE, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &graphEval, &print_every, &printDiffEq, &bad_ops, &outFile, &out](int thread_idx)
     {
         std::random_device rand_dev;
         std::mt19937 thread_local generator(rand_dev()); // Mersenne Twister random number generator
 
-        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, true, numDataCols, mustHaveAllFeatures, custom_features, maxSize, additive_corrections, graphEval);
+        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, true, numDataCols, mustHaveAllFeatures, custom_features, maxSize, additive_corrections, graphEval, false, bad_ops);
 
         sync_point.arrive_and_wait();
         double score = 0.0;
@@ -11347,14 +11399,15 @@ namespace ExampleProblems
                          {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                          false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
                          50 /*`print_every` number of expressions generated before thread prints to standard out*/,
-                         false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/);
+                         false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
+                         std::vector<std::string>{} /*operators to restrict in the search*/);
         }
         else
         {
             SimulatedAnnealing(SwiftHohenberg /*differential equation to solve*/,
                 3 /*number of equations in differential equation system*/,
                 data1 /*data used to solve differential equation*/,
-                std::vector<int>{2} /*fixed depths of generated solution*/,
+                std::vector<int>{9} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0/*2*/ /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -11362,7 +11415,7 @@ namespace ExampleProblems
                 "naive_numerical" /*method for computing the gradient*/,
                 true /*cache*/,
                 time /*time to run the algorithm in seconds*/,
-                1 /*num threads*/,
+                0 /*num threads*/,
                 true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
                 false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
@@ -11372,11 +11425,12 @@ namespace ExampleProblems
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "SwiftHohenbergBest.txt", //"" /*filename to save current best expression found (instead of outputting them to standard out*/
                 {} /*optional max-sizes of each of the expressions in the generated solution*/,
-                {split("x0 -0.01 + x1 sech + 11.156528193614346 ^ 2.714063572022206e-13 * 0.010000 x0 + 6.29319 ^ 1e-08 * 0.0100003333566687 + 0.7493736126143709 + + 0.9998848754538172 x0 tanh arcsin 0.7615941559557649 x0 4 ^ / / ^ 6.283190 x1 + ~ sin 0.9171523356672744 * * 0.7927863849639187 x0 cos asin cos * * - x0 x0 + 0.003734854911714874 6.283190 x0 / ^ 7.570169558264211 + ^ 0.28580222883407974 0.010000 x0 + 10 + ^ 0.010000 x0 ^ 1.03 + x1 sin - * * 0.9999999999889887 8 x1 x1 + + + 10.000000 x1 + 0.005 / 1.9195020417499759e+06 - / -0.06767485271943648 + + 0.2658022288340797 x0 + 0.9801980198019802 ^ x0 1.517923178056138 + / 0.010000 x0 + sin 0.03661899347368653 x0 + + 6.283190 x1 + sin 10.01 x0 / + * ^ -0.014753092106278107 + + -")} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
+                {/*split("x0 -0.01 + x1 sech + 11.156528193614346 ^ 2.714063572022206e-13 * 0.010000 x0 + 6.29319 ^ 1e-08 * 0.0100003333566687 + 0.7493736126143709 + + 0.9998848754538172 x0 tanh arcsin 0.7615941559557649 x0 4 ^ / / ^ 6.283190 x1 + ~ sin 0.9171523356672744 * * 0.7827863849639187 x0 cos asin cos * * - x0 x0 + 0.003734854911714874 6.283190 x0 / ^ 7.570169558264211 + ^ 0.28580222883407974 0.010000 x0 + 10.01 + ^ 0.010000 x0 ^ 1.03 + x1 sin - * * -6.1759665127829875 -10 x1 x1 + + + x1 0.005 / 1.9195169107150692e+06 - / -0.06767485271943648 + + 0.2658022288340797 x0 + 0.9801980198019802 ^ x0 1.517923178056138 + / 0.010000 x0 + sin 0.03661899347368653 x0 + + x1 sin 10.01 0.010000 x0 + / + * ^ -0.01842414214696351 + + -")*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 true /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
                 50 /*`print_every` number of expressions generated before thread prints to standard out*/,
-                true /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
-                {/*split("0 x0 + 0 0.010000 + + 0 x1 + sech + 0 0 + 0 0 + + 0 0 + 0 11.156528193614346 + + + ^ 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 2.714063572022206e-13 + + + + * 0.010000 x0 + 0 6.28319 + ^ 0 0 + 0 1e-08 + + * 0 0 + 0 0 + + 0 0 + 0 0.002504692820413781 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.7493736126143709 + + + + + + 0 0 + 0 0 + + 0 0 + 0 0.9998848754538172 + + + x0 tanh arcsin 0 0.7615941559557649 + x0 4 ^ / / ^ 6.283190 x1 + ~ sin 0 0 + 0 0 + + 0 0 + 0 0.940049833749168 + + + * * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.7927863849639187 + + + + 0 x0 + cos asin cos * * - 0 0.01 + 0 x0 + + 0 0.009999833334166664 + 0 x0 + + + 0 0 + 0 0 + + 0 0 + 0 7.570169558264211 + + + ^ 0 0 + 0 0.28580222883407974 + + 0 x0 + 0 10 + + ^ 0 0 + 0 1.03 + + 0 x1 + sin - * * 0 0 + 0 2.302585092994046 + + 0 6.283190 + 0 x1 + + + 0 x1 + 0 10.000000 + / 0 0 + 0 1.919508324939976e+06 + + - / 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -0.0576701598990227 + + + + + + 0 0.02 + 0 x0 + + 0 0 + 0 0.9801980198019802 + + ^ 0 -0.01 + 0 x0 + + 0 0 + 0 1.5079230113819708 + + + / 0.010000 x0 + sin 0 0 + 0 x0 + + + 6.283190 x1 + sin 0 10.01 + 0 x0 + / + * ^ 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -0.01342875163180912 + + + + + + + -")*/} /*seed expressions*/,
+                false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
+                std::vector<std::string>{} /*operators to restrict in the search*/,
+                {split("0 0 + x0 0 + + 0 0 + 0 -0.01 + + + 0 0 + 0 x1 + + sech + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 11.156528193614346 + + + + ^ 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 2.714063572022206e-13 + + + + + * 0 0.010000 + 0 x0 + + 0 0 + 0 6.29319 + + ^ 0 0 + 0 0 + + 0 0 + 0 1e-08 + + + * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.0100003333566687 + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.7493736126143709 + + + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.9998848754538172 + + + + 0 x0 + tanh arcsin 0 0 + 0 0.7615941559557649 + + 0 x0 + 0 4 + ^ / / ^ 0 6.283190 + 0 x1 + + ~ sin 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.9171523356672744 + + + + * * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.7827863849639187 + + + + + 0 0 + 0 x0 + + cos asin cos * * - 0 0 + 0 0 + + 0 0 + 0 x0 + + + 0 0 + 0 0.010000166674167114 + + 0 0 + 0 x0 + + + + 0 0 + 0 0.003734854911714874 + + 0 6.283190 + 0 x0 + / ^ 0 0 + 0 0 + + 0 0 + 0 7.570169558264211 + + + + ^ 0 0 + 0 0 + + 0 0 + 0 0.28580222883407974 + + + 0 0.010000 + 0 x0 + + 0 0 + 0 10.01 + + + ^ 0 0.010000 + 0 x0 + ^ 0 0 + 0 1.03 + + + 0 0 + 0 x1 + + sin - * * 0 0 + 0 0 + + 0 0 + 0 -6.1759665127829875 + + + 0 0 + 0 -10 + + 0 x1 + 0 x1 + + + + 0 0 + 0 x1 + + 0 0 + 0 0.005 + + / 0 0 + 0 0 + + 0 0 + 0 1.9195169107150692e+06 + + + - / 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -0.06767485271943648 + + + + + + + 0 0 + 0 0.2658022288340797 + + 0 0 + 0 x0 + + + 0 0 + 0 0 + + 0 0 + 0 0.9801980198019802 + + + ^ 0 0 + 0 0 + + 0 0 + 0 x0 + + + 0 0 + 0 0 + + 0 0 + 0 1.517923178056138 + + + + / 0 0.010000 + 0 x0 + + sin 0 0 + 0 0.03661899347368653 + + 0 0 + 0 x0 + + + + 0 0 + 0 x1 + + sin 0 0 + 0 10.01 + + 0 0.010000 + 0 x0 + + / + * ^ 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -0.01842414214696351 + + + + + + + + -")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
@@ -11417,7 +11471,8 @@ namespace ExampleProblems
                          {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                          false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
                          50 /*`print_every` number of expressions generated before thread prints to standard out*/,
-                         false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/);
+                         false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
+                         std::vector<std::string>{} /*operators to restrict in the search*/);
         }
         else
         {
@@ -11446,6 +11501,7 @@ namespace ExampleProblems
                 false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
                 1000000 /*`print_every` number of expressions generated before thread prints to standard out*/,
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
+                std::vector<std::string>{} /*operators to restrict in the search*/,
                 {} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -11489,7 +11545,8 @@ namespace ExampleProblems
                  {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                  false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
                  50 /*`print_every` number of expressions generated before thread prints to standard out*/,
-                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/);
+                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
+                 std::vector<std::string>{} /*operators to restrict in the search*/);
         }
         else
         {
@@ -11518,6 +11575,7 @@ namespace ExampleProblems
                 false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
                 1000000 /*`print_every` number of expressions generated before thread prints to standard out*/,
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
+                std::vector<std::string>{} /*operators to restrict in the search*/,
                 {split("x0 sech tanh tanh 0 0 + 0 -6.4342880000000005 + + x0 tanh 0 2.61657 + / - /"), split("0 0 + 0 -3.2171440000000002 + + x0 sech 0 0.9640275800758169 + ^ * sech")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -11570,7 +11628,8 @@ namespace ExampleProblems
                  {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                  false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
                  50 /*`print_every` number of expressions generated before thread prints to standard out*/,
-                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/);
+                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
+                 std::vector<std::string>{} /*operators to restrict in the search*/);
         }
         else
         {
@@ -11599,6 +11658,7 @@ namespace ExampleProblems
                 false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
                 50 /*`print_every` number of expressions generated before thread prints to standard out*/,
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
+                std::vector<std::string>{} /*operators to restrict in the search*/,
                 {split("-2.640000 0.051731 x7 sqrt x15 8.000000 - - / / -1803.016571 x21 36.293228 x0 * * x17 -843.000000 + x15 15893.000000 + + + + x6 x19 -100.000000 x8 + - / x14 -211800 / x15 + + / - x18 x24 - x2 x7 x0 1684.200012 - - + - + -7.446376466569234 -3.225653 x6 8.800000 - + -508 + -0.9081765689798138 38.000000 x16 sin / * + + x1 x0 - 0.0007699998478223693 + -16.82119949898502 + x0 x15 ^ -100 + -279.200012 -2.640000 x16 / + + + -28.995355508740936 + + -88.959518 1.000000 88.856491 x1 / / * -2118 x8 2118.000000 - x22 ~ + + + 0.00077 x5 + * 25.400000 x20 1.0021072170678698 / ^ 15893.000000 x22 x8 + + x1 -1405.000000 - 15666.000000 x24 + + + + x0 x25 + 16.000000 x23 + 9736 - / ~ / - + *")} /*seed expressions*/,
                 validation /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -11650,7 +11710,8 @@ namespace ExampleProblems
                  {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                  false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
                  50 /*`print_every` number of expressions generated before thread prints to standard out*/,
-                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/);
+                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
+                 std::vector<std::string>{} /*operators to restrict in the search*/);
         }
         else
         {
@@ -11679,6 +11740,7 @@ namespace ExampleProblems
                 false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
                 50 /*`print_every` number of expressions generated before thread prints to standard out*/,
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
+                std::vector<std::string>{} /*operators to restrict in the search*/,
                 {split("/ + * + + ln cos x46 + + 0 0 + 0 -3.4799761065034414 + * + 0 x95 + 0 1.620943 + + 0 x95 ~ x48 ~ ^ + cos x41 + 0 52.64009483497598 - + 0 2.7907071011403315 cos x93 + ^ + * + 0 3.1585732538600397 ^ x12 x54 + cos x21 + 0.365382 x13 + ~ + 0 x20 + + 0 0 + 0 1.5729403267948965 * + + + 0 0 + 0 0 + + 0 0 + 0 x3 sqrt + + 0 0 + 0 x48 - + / - + + 0 0 + 0 0.9867622178470573 - - 7169.463400 x100 * x17 11181230.000000 + acos tanh x23 + + 0 0 + 0 57.67636600070402 sin + + + 0 0 + 0 -2.884980 + + 0 0 + 0 x50 - sqrt ^ ^ + 0 x17 + 0 x59 + + 0 x71 ~ x87 ^ + + + 0 0 + 0 0 + + 0 0 + 0 0.9910929232006058 * + + 0 0 + 0 -4.0405169999999995 * - x61 x101 + 0 -0.04344899097047564")} /*seed expressions*/,
                 validation /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -11742,10 +11804,13 @@ namespace ExampleProblems
                 "-2.446627 x0 1.026127 x0 sqrt cos ^ ^ * -26.155498 4.207354924039483 168.000000 x0 + sqrt * cos * - x0 -25.093806 1.014280 x0 ^ cos tanh * - + 8.001965 -0.515339 x0 0.6931471805599453 ^ - cos * - -106.697598 x0 + 118.95633426995997 x0 1.004942 * - / + x0 0.985907 2.685784865116654 / * sin 5.048220 * - 1.502449 x0 0.997906 ^ ^ log cos + 2.070110 2.852405 x0 - 0.2658022288340797 * sin * exp + x0 -0.45018598229727835 * sin 2.698598 * - -1.678895 x0 -1.6880058284590451 / cos * - x0 0.696976831813758 x0 * cos + + 0.032015 4 x0 0.7615941559557649 - * sin / - 3.218607 1.052177 x0 0.992804 ^ ^ + sqrt sin + 1.027706 ~ 2 x0 0.8414709848078965 ^ * * cos + 168.000000 0.012165 11.175638 x0 54.598150033144236 - + / * +",
                 "-2.444296 x0 1.026203 x0 sqrt cos ^ ^ * -26.199496 4.207354924039483 168.000000 x0 + sqrt * cos * - x0 25.019477 1.014280 x0 ^ cos tanh * + + -8.058567 -2.633602 x0 0.6931471805599453 ^ + cos * - 11.696530 118.95633426995997 x0 0.995059 / - / + x0 0.3670833851233197 * sin 4.957468 * - 1.502449 x0 0.997889 ^ ^ log cos + -2.060603 44.498356 x0 + 0.2658022288340797 * sin * exp + x0 -0.45018598229727835 * sin -2.701240 * + -1.599485 x0 -1.6880058284590451 / cos * - x0 0.696976831813758 x0 * cos + + 0.032499 4 x0 0.7615941559557649 - * sin / - 2.702079 1.052177 x0 0.992888 ^ ^ + sqrt sin + 1.027621 2 x0 0.8414709848078965 ^ * * cos + 1.225249 2.020931 11.175638 x0 54.598150033144236 - + / - - -6.130043 1.218107 x0 + x0 6.804936 - cos / / -",
                 "+ + - + + - + + + + + + - - + - * -2.443340 ^ x0 ^ 1.026195 cos sqrt x0 * -26.141684 cos * 4.207354924039483 sqrt + 168.000000 x0 + x0 * 25.068585 tanh cos ^ 1.014280 x0 * -8.087407 cos + -2.638495 ^ x0 0.6931471805599453 / -11.661316 - 118.95633426995997 + x0 0.579601 * sin * x0 0.3670833851233197 -4.949110 cos log ^ 1.502449 ^ x0 0.998111 exp * 2.027208 sin * - 2.782294 x0 0.2658022288340797 * sin * x0 -0.45018598229727835 -2.666797 * 1.509721 cos / x0 -1.6880058284590451 + x0 cos * 0.696976831813758 x0 / 0.032277 sin * 4 - x0 0.7615941559557649 sin sqrt + 2.923343 ^ 1.052177 ^ x0 0.992888 cos * 1.027655 * 2 ^ x0 0.8414709848078965 - 1.244610 / 2.026644 + 11.175638 - x0 54.598150033144236 / -6.551556 / + 1.214443 x0 cos - x0 -2.647537 / -0.036732 asin cos sqrt + 1.132285 x0",
-                "+ + + - + + - + + + + + + - - + - * -2.443340 ^ x0 ^ 1.026195 cos sqrt x0 * -26.141684 cos * 4.207354924039483 sqrt + 168.000000 x0 + x0 * 25.068585 tanh cos ^ 1.014280 x0 * -8.087407 cos + -2.638495 ^ x0 0.6931471805599453 / -11.661316 - 118.95633426995997 + x0 0.579601 * sin * x0 0.3670833851233197 -4.949110 cos log ^ 1.502449 ^ x0 0.998111 exp * 2.027208 sin * - 2.782294 x0 0.2658022288340797 * sin * x0 -0.45018598229727835 -2.666797 * 1.509721 cos / x0 -1.6880058284590451 + x0 cos * 0.696976831813758 x0 / 0.032277 sin * 4 - x0 0.7615941559557649 sin sqrt + 2.923343 ^ 1.052177 ^ x0 0.992888 cos * 1.027655 * 2 ^ x0 0.8414709848078965 - 1.244610 / 2.026644 + 11.175638 - x0 54.598150033144236 / -6.551556 / + 1.214443 x0 cos - x0 -2.647537 / -0.036732 asin cos sqrt + 1.132285 x0 tanh cos ^ / x0 * 2 1.576287 1.113573",
+                "+ + + - + + - + + + + + + - - + - * -2.443340 * x0 * 1.026195 cos sqrt x0 * -26.141684 cos * 4.207354924039483 sqrt + 168.000000 x0 + x0 * 25.068585 tanh cos * 1.014280 x0 * -8.087407 cos + -2.638495 * x0 0.6931471805599453 * -11.661316 - 118.95633426995997 + x0 0.579601 * sin * x0 0.3670833851233197 -4.949110 cos tanh * 1.502449 * x0 0.998111 cos * 2.027208 sin * - 2.782294 x0 0.2658022288340797 * sin * x0 -0.45018598229727835 -2.666797 * 1.509721 cos * x0 -1.6880058284590451 + x0 cos * 0.696976831813758 x0 * 0.032277 sin * 4 - x0 0.7615941559557649 sin sqrt + 2.923343 * 1.052177 * x0 0.992888 cos * 1.027655 * 2 * x0 0.8414709848078965 - 1.244610 * 2.026644 + 11.175638 - x0 54.598150033144236 * -6.551556 * + 1.214443 x0 cos - x0 -2.647537 * -0.036732 asin cos sqrt + 1.132285 x0 tanh cos * * x0 * 2 1.576287 1.113573",
+                "+ * sin * + x0 sin sqrt x0 0.13599420224810638 ~ + * 0.223351 x0 -39.031218 * * x0 0.272925 - -1.884260 sin * 1.096031 sqrt x0",
+                "x0 x0 sqrt sin + 0.13599420224810638 * sin 29.034195 -0.000009 x0 * x0 x0 * * + * x0 0.270243 * -1.900608 1.095518 x0 sqrt * sin - * + 7.504397 x0 0.18450196567500599 * cos * -",
+                "x0 x0 sqrt sin + 0.13599420224810638 * sin 29.026558 -0.000009 x0 * x0 x0 * * + * x0 0.270898 * -1.896980 1.095518 x0 sqrt * sin - * + 7.604140 x0 0.18450196567500599 * cos * - 0.2787780894020867 0.999693 x0 2 - * * cos asin +",
             }.back()
         };
-        assert(track_idx < seed_exprs.size());
+        assert(track_idx < static_cast<int>(seed_exprs.size()));
         std::cout << "seed_exprs[" << track_idx << "] = {" << seed_exprs[track_idx] << "}\n";
         Eigen::MatrixXd data = load_csv(file_path[track_idx], sizes[track_idx], 2, false /*no header in these `file_path` files*/);
         std::cout << "data = " << data << '\n';
@@ -11774,15 +11839,16 @@ namespace ExampleProblems
                  {/*split(seed_exprs[track_idx])*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                  false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
                  1000000 /*`print_every` number of expressions generated before thread prints to standard out*/,
-                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/);
+                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
+                 std::vector<std::string>{"exp", "ln", "log", "^", "/"} /*operators to restrict in the search*/);
         }
         else
         {
             SimulatedAnnealing(WierdTrackFitter /*differential equation to solve*/,
                 1 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{22} /*fixed depths of generated solution*/,
-                "prefix" /*expression representation*/,
+                std::vector<int>{9} /*fixed depths of generated solution*/,
+                "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
                 5 /*number of fit iterations*/,
@@ -11798,11 +11864,12 @@ namespace ExampleProblems
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "WierdTrackSR.txt", // "" /*filename to save current best expression found (instead of outputting them to standard out)*/
-                std::vector<int>{160} /*optional max-sizes of each of the expressions in the generated solution*/,
+                std::vector<int>{47} /*optional max-sizes of each of the expressions in the generated solution*/,
                 {/*split(seed_exprs[track_idx])*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 false /*whether or not to evaluate the expression as a directed-acylclic graph (dag); maybe useful if many repeated strucures present in diffeq*/,
                 1000000 /*`print_every` number of expressions generated before thread prints to standard out*/,
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
+                std::vector<std::string>{"exp", "ln", "log", "^", "/"} /*operators to restrict in the search*/,
                 {split(seed_exprs[track_idx])} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -11811,7 +11878,7 @@ namespace ExampleProblems
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "WierdTrackSR.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                "sub_tree" /*perturbation option: either "sub_array", "n_random", or (default) "sub_tree"*/);
+                "n_random" /*perturbation option: either "sub_array", "n_random", or (default) "sub_tree"*/);
         }
     }
 };
