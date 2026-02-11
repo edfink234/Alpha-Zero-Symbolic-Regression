@@ -36,25 +36,27 @@ sech=lambda x:1/cosh(x)
 # Define the polar coordinates
 SH = symbols('\\text{SwiftHohenberg} r theta mu nu')
 r, theta = symbols('r theta')
-mu, nu = 1, 1
+mu, nu = 0, 0
 # Define the function f as a function of r and theta
 GENERIC = False
 PERIODIC_IN_THETA = True
 COMPUTE_NUMERIC = False
 PRINT_SH = False
 f = None
+f_per_idx = 5
+
 if GENERIC:
     f = Function('f')(r, theta)
 else:
     #TODO: Implement a loop to optimize the constants (perhaps greedy annealing and asserting the variance > baseline)
-    f =  [-0.998846776839887*0.999950000416665**(r**4)*sin(r)*sin(theta) + 2.71782596428238e-13*10.36319**(r + 0.01) + 0.00164034101997398*theta - (r/(r + 2))**(r + 6.35319) + 0.6448561035289, \
-        sin(r)*sin(theta)+0.604, \
-        sin(r)*sin(theta), \
-        0.998846776839887*0.999950000416665**(r**4)*sin(r)*sin(theta) + 0.604, 0.88898139159952*0.999884875453817**(r**4.03)*sqrt(1 - cos(r)**2)*sin(theta) + 0.760176150613572,\
-        -0.28580222883408**(r + 10)*(1.01 - sin(theta))*(167.620651926117*r**7.38905609893065 + 0.000105912014609458) + 0.833098208613807*0.999884875453817**(r**4.25)*sqrt(1 - cos(r)**2)*sin(theta) + 0.797073913381706,\
-        -182.159206127457*0.28580222883408**(r + 10)*(1.02 - sin(theta))*(r + 0.00999991666708333)**7.50905609893065 + 0.745258709383936*0.999884875453817**(r**4.25)*sqrt(1 - cos(r)**2)*sin(theta + 6.28319)  + 0.815307524508096][-1] \
-        if PERIODIC_IN_THETA else \
-        (((0.148475282221305 * theta) - (sin(theta) * (1.0000132758892615 * sin(r)))) - 0.0922858190550785)
+    f =  [sin(r)*sin(theta), \
+          sin(r)*sin(theta)+0.604, \
+          0.998846776839887*0.999950000416665**(r**4)*sin(r)*sin(theta) + 0.604, \
+              0.88898139159952*0.999884875453817**(r**4.03)*sqrt(1 - cos(r)**2)*sin(theta) + 0.760176150613572, \
+          -0.28580222883408**(r + 10)*(1.01 - sin(theta))*(167.620651926117*r**7.38905609893065 + 0.000105912014609458) + 0.833098208613807*0.999884875453817**(r**(17/4))*sqrt(1 - cos(r)**2)*sin(theta)  + 0.797073913381706, \
+          -182.159206127457*0.28580222883408**(r + 10)*(1.02 - sin(theta))*(r + 0.00999991666708333)**7.50905609893065 + 0.745258709383936*0.999884875453817**(r**4.25)*sqrt(1 - cos(r)**2)*sin(theta + 6.28319)  + 0.815307524508096][f_per_idx] \
+            if PERIODIC_IN_THETA else \
+            (((0.148475282221305 * theta) - (sin(theta) * (1.0000132758892615 * sin(r)))) - 0.0922858190550785)
 #11284
 #38469
 #-0.998846776839887*0.999950000416665**(r**4)*sin(r)*sin(theta) + 2.71782596428238e-13*10.36319**(r + 0.01) + 0.00164034101997398*theta - (r/(r + 2))**(r + 6.35319) + 0.6448561035289
