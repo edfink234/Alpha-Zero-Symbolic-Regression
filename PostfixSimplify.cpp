@@ -3806,6 +3806,12 @@ int main()
     printf("after: ");print_container(test_expr);
     puts("");
     
+    test_expr = {"x0", "x0", "sqrt", "sin", "+", "0.13599420224810638", "*", "sin", "3.493865", "x0", "-0.000001", "*", "x0", "x0", "*", "*", "+", "*", "x0", "0.039876", "*", "1.092289", "x0", "sqrt", "*", "sin", "sin", "*", "-", "0.162054", "x0", "0.18450196567500599", "*", "cos", "-", "+", "8", "*", "-5.198050", "x0", "-0.36787944117144233", "*", "sin", "*", "-", "-5.180590", "1.611181", "x0", "x0", "+", "+", "-0.146954", "x0", "sech", "sqrt", "+", "*", "*", "-", "0.057546", "x0", "*", "x0", "0.2627831798005332", "*", "sin", "*", "-", "x0", "0.5175124998053154", "*", "-0.856282", "+", "cos", "asin", "-", "0.4515827052894548", "x0", "x0", "tanh", "-", "*", "sin", "3.027980", "*", "+", "x0", "0.5296673418744632", "x0", "*", "sin", "~", "+", "+", "-0.5949327780232085", "x0", "*", "cos", "arcsin", "+", "x0", "-0.25", "*", "cos", "arcsin", "+", "x0", "sqrt", "1.5707963267948966", "x0", "tanh", "+", "*", "cos", "asin", "+", "0.7137316379600931", "x0", "*", "sin", "1.4142135623730951", "*", "+", "x0", "sqrt", "x0", "sqrt", "sqrt", "0.7834104183963978", "*", "*", "sin", "+"};
+    printf("before: ");print_container(test_expr);printf(", test_expr.size() = %lu\n", test_expr.size());
+    simplifyRPN(test_expr);
+    printf("after: ");print_container(test_expr);printf(", test_expr.size() = %lu\n", test_expr.size());
+    puts("");
+    
     #ifdef TIME_STUFF
         auto t1 = clk::now();
         std::cout << "Time taken = " << std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count() / 1e9 << " s\n";

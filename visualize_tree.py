@@ -456,7 +456,7 @@ def test_visualize():
                 plot_pn_expression_tree(complete_pn_expr, save = save, include_expression_in_title = False)
 
             else:
-                complete_rpn_expr = "x0 x0 sqrt sin + 0.13599420224810638 * sin 27.780250 x0 -0.000007 * x0 x0 * * + * x0 0.348102 * 1.092289 x0 sqrt * sin tanh * - -7.544650 x0 0.18450196567500599 * cos * + x0 0.25 * cos arcsin + -5.117139 x0 -0.36787944117144233 * sin * - 5.187309 x0 x0 1.891351 + + -0.050304 x0 sech sqrt + * * + 0.058252 x0 * x0 0.2627831798005332 * sin * - x0 0.5175124998053154 * -0.796576 + cos arcsin - 0.4515827052894548 x0 x0 tanh - * sin 2.966195 * + 0.423966 0.5296673418744632 x0 * sin ~ + + -0.5949327780232085 x0 * cos arcsin +"
+                complete_rpn_expr = "x0 x0 sqrt sin + 0.13599420224810638 * sin 3.475083 x0 -0.000001 * x0 x0 * * + * x0 0.039977 * 1.092289 x0 sqrt * sin sin * - 0.002132 x0 0.18450196567500599 * cos - + 8 * -5.117139 x0 -0.36787944117144233 * sin * - 5.181003 2 x0 x0 + + -0.146954 x0 sech sqrt + * * + 0.057546 x0 * x0 0.2627831798005332 * sin * - x0 0.5175124998053154 * -0.796576 + cos asin - 0.4515827052894548 x0 x0 tanh - * sin 3.027980 * + x0 0.5296673418744632 x0 * sin acos + + -0.5949327780232085 x0 * cos arcsin + x0 -0.25 * cos arcsin + x0 sqrt 1.5707963267948966 x0 tanh + * cos asin + 0.7137316379600931 x0 * sin 1.4142135623730951 * + x0 sqrt x0 sqrt sqrt 0.7834104183963978 * * sin +"
                 if completeTree:
                     complete_rpn_expr = complete_tree(complete_rpn_expr.split(), "postfix") #returns a list
                 else:
