@@ -30,38 +30,245 @@ from scipy.optimize import least_squares
 from numpy import linalg as LA
 from math import pi
 import matplotlib.pyplot as plt
-
+from warnings import filterwarnings
+filterwarnings('ignore')
 sech=lambda x:1/cosh(x)
+
+# -------------------------
+# Helpers: parameterization
+# -------------------------
+def extract_parameter_atoms(expr, max_params=12):
+    floats = list(expr.atoms(sp.Float))
+    floats = [c for c in floats if float(c) not in (0.0, 1.0)]
+    # frequency heuristic
+    floats_sorted = sorted(floats, key=lambda c: expr.count(c), reverse=True)
+    picked, seen = [], set()
+    for c in floats_sorted:
+        if c in seen:
+            continue
+        seen.add(c)
+        picked.append(c)
+        if len(picked) >= max_params:
+            break
+    return picked
+
+def make_parametrized_expr(expr, atoms):
+    params = [sp.Symbol(f"p{i}", real=True) for i in range(len(atoms))]
+    subs_map = {atoms[i]: params[i] for i in range(len(atoms))}
+    expr_param = expr.xreplace(subs_map)
+    p0 = np.array([float(a) for a in atoms], dtype=float)
+    return expr_param, params, p0, subs_map
+
+def build_sh_residual(f_expr_param, r, theta, mu=1.0, nu=1.0):
+    laplacian_f = diff(f_expr_param, r, 2) + (1/r) * diff(f_expr_param, r) + (1/(r**2)) * diff(f_expr_param, theta, 2)
+    double_laplacian_f = diff(laplacian_f, r, 2) + (1/r) * diff(laplacian_f, r) + (1/(r**2)) * diff(laplacian_f, theta, 2)
+    swift_hohenberg = mu*f_expr_param + nu*f_expr_param*f_expr_param - f_expr_param**3 - (f_expr_param + 2*laplacian_f + double_laplacian_f)
+    return swift_hohenberg
+
+def make_grids(N, r_max, stride=1):
+    r_lin = np.linspace(0.01, r_max, N)[::stride]
+    th_lin = np.linspace(0.0, 2*pi, N)[::stride]
+    return np.meshgrid(r_lin, th_lin)
+
+def sh_metrics(sh_num, p, r_vals, th_vals):
+    res = np.asarray(sh_num(r_vals, th_vals, *p), dtype=float).ravel()
+    sqnorm = float(LA.norm(res)**2)
+    mse = sqnorm / res.size
+    return sqnorm, mse
+
+def variance_of_f(f_num, p, r_vals, th_vals):
+    vals = np.asarray(f_num(r_vals, th_vals, *p), dtype=float)
+    return float(np.var(vals))
+
+# -------------------------
+# Naive random search
+# -------------------------
+def naive_random_optimize(
+    f_expr,
+    r, theta,
+    f_thresh,
+    N=1000,
+    mu=1.0, nu=1.0,
+    # compute cost controls:
+    opt_stride=5,          # evaluate candidates on strided grids
+    max_params=12,
+    n_iters=2000,
+    step_scale=0.05,       # relative perturbation size
+    additive_step=1e-3,    # absolute perturbation fallback
+    # acceptance:
+    use_annealing=False,
+    T0=0.1,
+    Tf=1e-4,
+    # variance handling:
+    reject_if_var_below=False,
+    var_penalty_weight=1e6,
+    rng_seed=0,
+    print_every=50
+):
+    rng = np.random.default_rng(rng_seed)
+
+    # 1) Parameterize expression
+    atoms = extract_parameter_atoms(f_expr, max_params=max_params)
+    f_param, params, p0, subs_map = make_parametrized_expr(f_expr, atoms)
+
+    # 2) Build SH residual (symbolic) and lambdify
+    sh_param = build_sh_residual(f_param, r, theta, mu=mu, nu=nu)
+    f_num = lambdify((r, theta, *params), f_param, modules="numpy")
+    sh_num = lambdify((r, theta, *params), sh_param, modules="numpy")
+
+    # 3) Grids
+    r1_opt, th1_opt = make_grids(N, r_max=10.0, stride=opt_stride)
+    r2_opt, th2_opt = make_grids(N, r_max=100.0, stride=opt_stride)
+
+    # Full grids only for initial + final reporting (expensive at N=1000)
+    r1_full, th1_full = make_grids(N, r_max=10.0, stride=1)
+    r2_full, th2_full = make_grids(N, r_max=100.0, stride=1)
+
+    # 4) Initial residuals (stored!)
+    initial_sq1, initial_mse1 = sh_metrics(sh_num, p0, r1_full, th1_full)
+    initial_sq2, initial_mse2 = sh_metrics(sh_num, p0, r2_full, th2_full)
+    initial_var1 = variance_of_f(f_num, p0, r1_full, th1_full)
+    initial_var2 = variance_of_f(f_num, p0, r2_full, th2_full)
+
+    initial_residual = {
+        "grid1_rmax10_sqnorm": initial_sq1,
+        "grid1_rmax10_mse": initial_mse1,
+        "grid2_rmax100_sqnorm": initial_sq2,
+        "grid2_rmax100_mse": initial_mse2,
+        "combined_mse": (initial_mse1 + initial_mse2) / 2.0,
+        "var_grid1": initial_var1,
+        "var_grid2": initial_var2,
+    }
+
+    # Objective on OPT grids (fast)
+    def objective(p):
+        # base: mean of MSEs across the two grids
+        _, mse1 = sh_metrics(sh_num, p, r1_opt, th1_opt)
+        _, mse2 = sh_metrics(sh_num, p, r2_opt, th2_opt)
+        base = 0.5 * (mse1 + mse2)
+
+        v1 = variance_of_f(f_num, p, r1_opt, th1_opt)
+        v2 = variance_of_f(f_num, p, r2_opt, th2_opt)
+
+        if reject_if_var_below and (v1 < f_thresh[0] or v2 < f_thresh[1]):
+            return np.inf, v1, v2
+
+        # soft penalty (still useful even if not rejecting)
+        pen = 0.0
+        if v1 < f_thresh[0]:
+            pen += (f_thresh[0] - v1)
+        if v2 < f_thresh[1]:
+            pen += (f_thresh[1] - v2)
+        base_plus = base + var_penalty_weight * pen
+        return base_plus, v1, v2
+
+    # 5) Initialize best
+    p_best = p0.copy()
+    best_obj, best_v1, best_v2 = objective(p_best)
+
+    # 6) Random search loop
+    for k in range(1, n_iters + 1):
+        # annealing temperature schedule
+        if use_annealing:
+            t = (k - 1) / max(1, n_iters - 1)
+            T = T0 * (Tf / T0) ** t
+        else:
+            T = 0.0
+
+        # propose perturbation: mix relative + absolute
+        rel = step_scale * (np.abs(p_best) + 1.0)
+        delta = rng.normal(0.0, rel) + rng.normal(0.0, additive_step, size=p_best.shape)
+        p_try = p_best + delta
+
+        obj_try, v1_try, v2_try = objective(p_try)
+
+        accept = False
+        if obj_try < best_obj:
+            accept = True
+        elif use_annealing and np.isfinite(obj_try) and np.isfinite(best_obj) and T > 0:
+            # accept worse move with probability exp(-(Δ)/T)
+            d = obj_try - best_obj
+            if rng.random() < np.exp(-d / max(1e-12, T)):
+                accept = True
+
+        if accept:
+            p_best = p_try
+            best_obj, best_v1, best_v2 = obj_try, v1_try, v2_try
+
+        if (k % print_every) == 0 or k == 1:
+            print(f"[{k:5d}/{n_iters}] best_obj={best_obj:.6e} var1={best_v1:.6e} var2={best_v2:.6e}")
+
+    # 7) Build optimized expression back in SymPy
+    back_map = {params[i]: sp.Float(p_best[i]) for i in range(len(params))}
+    f_optimized_expr = sp.simplify(f_param.subs(back_map))
+
+    # 8) Final full-grid reporting
+    final_sq1, final_mse1 = sh_metrics(sh_num, p_best, r1_full, th1_full)
+    final_sq2, final_mse2 = sh_metrics(sh_num, p_best, r2_full, th2_full)
+    final_var1 = variance_of_f(f_num, p_best, r1_full, th1_full)
+    final_var2 = variance_of_f(f_num, p_best, r2_full, th2_full)
+
+    final_residual = {
+        "grid1_rmax10_sqnorm": final_sq1,
+        "grid1_rmax10_mse": final_mse1,
+        "grid2_rmax100_sqnorm": final_sq2,
+        "grid2_rmax100_mse": final_mse2,
+        "combined_mse": (final_mse1 + final_mse2) / 2.0,
+        "var_grid1": final_var1,
+        "var_grid2": final_var2,
+    }
+
+    return {
+        "atoms_optimized": atoms,
+        "params": params,
+        "p0": p0,
+        "p_best": p_best,
+        "initial_residual": initial_residual,
+        "final_residual": final_residual,
+        "f_optimized_expr": f_optimized_expr,
+    }
 
 # Define the polar coordinates
 SH = symbols('\\text{SwiftHohenberg} r theta mu nu')
 r, theta = symbols('r theta')
-mu, nu = 0, 0
+mu, nu = 1, 1
 # Define the function f as a function of r and theta
 GENERIC = False
 PERIODIC_IN_THETA = True
 COMPUTE_NUMERIC = False
-PRINT_SH = False
+PRINT_SH = True
 f = None
-f_per_idx = 5
+f_per_idx = 6
 
 if GENERIC:
     f = Function('f')(r, theta)
 else:
-    #TODO: Implement a loop to optimize the constants (perhaps greedy annealing and asserting the variance > baseline)
     f =  [sin(r)*sin(theta), \
           sin(r)*sin(theta)+0.604, \
           0.998846776839887*0.999950000416665**(r**4)*sin(r)*sin(theta) + 0.604, \
               0.88898139159952*0.999884875453817**(r**4.03)*sqrt(1 - cos(r)**2)*sin(theta) + 0.760176150613572, \
           -0.28580222883408**(r + 10)*(1.01 - sin(theta))*(167.620651926117*r**7.38905609893065 + 0.000105912014609458) + 0.833098208613807*0.999884875453817**(r**(17/4))*sqrt(1 - cos(r)**2)*sin(theta)  + 0.797073913381706, \
-          -182.159206127457*0.28580222883408**(r + 10)*(1.02 - sin(theta))*(r + 0.00999991666708333)**7.50905609893065 + 0.745258709383936*0.999884875453817**(r**4.25)*sqrt(1 - cos(r)**2)*sin(theta + 6.28319)  + 0.815307524508096][f_per_idx] \
+          -182.159206127457*0.28580222883408**(r + 10)*(1.02 - sin(theta))*(r + 0.00999991666708333)**7.50905609893065 + 0.745258709383936*0.999884875453817**(r**4.25)*sqrt(1 - cos(r)**2)*sin(theta + 6.28319)  + 0.815307524508096, \
+          -0.28580222883408**(r + 10.02)*(2*r + 0.0137395477321287)**(0.01**(6.28319/(r + 0.01)) + 7.57016955826421)*(0.01**r - sin(theta) + 1) + 0.708762837941528*0.999884875453817**(1.3213487088109*r**4*(1.6*(tanh(.6*r))))*sqrt(1 - cos(r)**2)*sin(0.999999999988989*theta) + 0.845330825627302][f_per_idx] \
             if PERIODIC_IN_THETA else \
             (((0.148475282221305 * theta) - (sin(theta) * (1.0000132758892615 * sin(r)))) - 0.0922858190550785)
-#11284
-#38469
-#-0.998846776839887*0.999950000416665**(r**4)*sin(r)*sin(theta) + 2.71782596428238e-13*10.36319**(r + 0.01) + 0.00164034101997398*theta - (r/(r + 2))**(r + 6.35319) + 0.6448561035289
-#A(r)*f(r,theta) + const + hoc. (higher-order corrections)
 
+f_thresh = (0.14752525676079256, 0.01694062336705199)
+optimize = False
+
+if optimize:
+    info = naive_random_optimize(f, r, theta, f_thresh=f_thresh, N=1000, mu=mu, nu=nu, opt_stride=1, max_params=12)
+
+    #Access stored initial residuals:
+    initial_residual = info["initial_residual"]
+    print("Initial residuals:", initial_residual)
+
+    #See optimized expression:
+    print("Optimized f:", info["f_optimized_expr"])
+
+    #See final metrics:
+    print("Final residuals:", info["final_residual"])
+    exit()
 
 print(f"f = {f}\n")
 latex_f = sp.latex(f)
@@ -82,7 +289,7 @@ if PRINT_SH:
 # print(*swift_hohenberg.args, sep="\n")
 r_vals, theta_vals = [None]*2
 func_vals = None
-N = 1000
+N = 330
 if not GENERIC:
     r_vals, theta_vals = np.meshgrid(np.linspace(0.01, 10, N), np.linspace(0, 2*pi, N))
     f_SR = lambdify((r, theta), f)
