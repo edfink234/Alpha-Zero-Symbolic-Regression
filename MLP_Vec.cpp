@@ -2,6 +2,7 @@
 #include <cassert>
 #include <stack>
 #define FLUSHTHETOILET std::flush
+#define INTERACTIVE_TRAIN true
 
 //Source: https://github.com/LinkedInLearning/training-neural-networks-in-cpp-4404365
 
@@ -59,7 +60,7 @@ float Perceptron::scale_between(float unscaled_num, float min, float max, float 
 }
 
 // Return a new MultiLayerPerceptron object with the specified parameters.
-MultiLayerPerceptron::MultiLayerPerceptron(std::vector<int> layers, std::deque<std::string> layer_types, float bias, float eta, float theta, float gamma, const std::string& weight_update, const std::string& expression_type, float epsilon, float beta_1, float beta_2, float lambda)
+MultiLayerPerceptron::MultiLayerPerceptron(const std::vector<int>& layers, const std::deque<std::string>& layer_types, float bias, float eta, float theta, float gamma, const std::string& weight_update, const std::string& expression_type, float epsilon, float beta_1, float beta_2, float lambda)
 {
     // Set up the signal handler
     signal(SIGINT, signalHandler);
@@ -386,31 +387,43 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
     return MSE;
 }
 
-float MultiLayerPerceptron::train(const std::vector<Eigen::VectorXf>& x_train, const std::vector<Eigen::VectorXf>& y_train, unsigned long num_epochs, bool interactive)
+float MultiLayerPerceptron::train(const std::vector<Eigen::VectorXf>& x_train, const std::vector<Eigen::VectorXf>& y_train, unsigned long num_epochs)
 {
     if (x_train.size() != y_train.size())
     {
         throw std::runtime_error("# of x_train rows != # of y_train rows");
     }
+    
 //    puts("Press ctrl-c to continue");
     float MSE;
     unsigned long int num_rows = x_train.size();
     assert(num_rows);
     for (unsigned long epoch = 0; ((num_epochs != 0) ? (epoch < (num_epochs - 1)) : true); epoch++)
     {
+        #ifndef INTERACTIVE_TRAIN
+            #define INTERACTIVE_TRAIN false
+        #endif
+        #if INTERACTIVE_TRAIN
+            MSE = 0.0;
+        #endif
         for (unsigned long i = 0; i < num_rows; i++)
         {
-            this->bp(x_train[i], y_train[i]);
+            #if INTERACTIVE_TRAIN
+                MSE += this->bp(x_train[i], y_train[i]);
+            #else
+                this->bp(x_train[i], y_train[i]);
+            #endif
         }
-        //if (interactive)
-        //{
-        //    if (MultiLayerPerceptron::interrupted)
-        //    {
-        //        std::cout << "\nInterrupted by Ctrl-C. Exiting loop.\n";
-        //        MultiLayerPerceptron::interrupted = 0; //reset MultiLayerPerceptron::interrupted
-        //        break;
-        //    }
-        //}
+        
+        #if INTERACTIVE_TRAIN
+            std::cout << "Epoch " << epoch << " MSE = " << MSE/num_rows << '\r' << FLUSHTHETOILET;
+            if (MultiLayerPerceptron::interrupted)
+            {
+                std::cout << "\nInterrupted by Ctrl-C. Exiting loop.\n";
+                MultiLayerPerceptron::interrupted = 0; //reset MultiLayerPerceptron::interrupted
+                break;
+            }
+        #endif // INTERACTIVE_TRAIN
         this->t++; //increase t by 1 for Adam
     }
     //On the last epoch, we update the MSE

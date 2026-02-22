@@ -43,14 +43,14 @@ class MultiLayerPerceptron
         std::vector<std::string> pieces; //expression list for Symbolic Regressor
 
     MultiLayerPerceptron() = default;
-    MultiLayerPerceptron(std::vector<int> layers, std::deque<std::string> layer_types, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, const std::string& weight_update = "basic", const std::string& expression_type = "prefix", float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f, float lambda = 0.01f /*weight decay AdamW*/);
+    MultiLayerPerceptron(const std::vector<int>& layers, const std::deque<std::string>& layer_types, float bias = 1.0f, float eta = 0.5f, float theta = 0.01f, float gamma = 0.9f, const std::string& weight_update = "basic", const std::string& expression_type = "prefix", float epsilon = 0.1f, float beta_1 = 0.9f, float beta_2 = 0.999f, float lambda = 0.01f /*weight decay AdamW*/);
         void set_weights(std::vector<Eigen::MatrixXf>&& w_init);
         void reset_params();
         void print_weights();
         Eigen::VectorXf run(const Eigen::VectorXf& x);
         static float mse(const Eigen::VectorXf& x, const Eigen::VectorXf& y);
         float bp(const Eigen::VectorXf& x, const Eigen::VectorXf& y);
-        float train(const std::vector<Eigen::VectorXf>& x_train, const std::vector<Eigen::VectorXf>& y_train, const unsigned long num_epochs = 0, bool interactive = true);
+        float train(const std::vector<Eigen::VectorXf>& x_train, const std::vector<Eigen::VectorXf>& y_train, const unsigned long num_epochs = 0);
         std::vector<int> layers; //# of neurons per layer including the input layer (in which case layers[0] refers to the number of inputs)
         std::deque<std::string> layer_types;
         static void signalHandler(int signum);
@@ -79,4 +79,4 @@ class MultiLayerPerceptron
         std::string weight_update;
 };
 
-#endif
+#endif // !MLP_H
