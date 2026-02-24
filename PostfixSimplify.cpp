@@ -3806,7 +3806,7 @@ int main()
     printf("after: ");print_container(test_expr);
     puts("");
     
-    test_expr = {"0.43802068541505423", "0.37143567095079294", "x0", "*", "sech", "x0", "3.8729623293730344", "-", "-0.21344454422683798", "x0", "sin", "x0", "x0", "cos", "*", "+", "+", "*", "*", "*"};
+    test_expr = {"0.012474933946516747", "0.2658022288340797", "x0", "+", "x0", "*", "cos", "tanh", "0.3041628092505834", "*", "-1.4431262815454942", "x0", "*", "cos", "1.4142135623730951", "1.2063404910871989", "-", "asin", "*", "+", "+"};
     printf("before: ");print_container(test_expr);printf(", test_expr.size() = %lu\n", test_expr.size());
     simplifyRPN(test_expr);
     printf("after: ");print_container(test_expr);printf(", test_expr.size() = %lu\n", test_expr.size());
