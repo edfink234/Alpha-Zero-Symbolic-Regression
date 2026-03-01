@@ -994,6 +994,11 @@ void graspSimplifyPrefix(std::vector<std::string>& expression, int low, int up, 
     expression = new_expression;
 }
 
+
+1 + 2
++ 1 2 (prefix-notation (operator comes BEFORE operand(s)) aka polish-notation)
++ x + 1 2 -> + x 3
+(x + (1+2)) -> (x+3)
 //scans entire `expression` for the following:
 //     bin_op number1 number2 -> numberResult
 //     un_op number1 -> numberResult
