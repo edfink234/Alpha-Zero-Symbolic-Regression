@@ -32,7 +32,157 @@ def is_binary_operator(token):
 def is_unary_operator(token):
     return token in {"cos", "exp", "sqrt", "sin", "asin", "arcsin", "log", "tanh", "acos", "arccos", "~", "ln", "MYBRACKETSQRT", "tan", "MYCOS", "MYSIN", "MYTAN", "sech"}
 def is_operand(token):
-    return not is_operator(token)
+    return (not is_operator(token) and token not in {'(', ')'})
+
+def prec(c):
+    if is_unary_operator(c):
+        return 4
+    if c == '^':
+        return 3
+    elif c == '/' or c == '*':
+        return 2
+    elif c == '+' or c == '-':
+        return 1
+    else:
+        return -1
+
+#^ because x^y^z = x^(y^z) #right sub-expression first
+#unary because unary unary x = unary(unary(x)) #right sub-expression first
+#- is left because x-y-z = (x-y)-z
+#/ is left because x/y/z = (x/y)/z
+def isRightAssociative(c):
+    return (c == '^' or is_unary_operator(c))
+    
+def tokenize_infix(expr: str):
+    """
+    Turn an infix string into tokens, separating parentheses and operators.
+    Examples:
+      "(((12.7)/(x0+-0.06))*cos(x0))"
+        -> ['(', '(', '(', '12.7', ')', '/', '(', 'x0', '+', '-0.06', ')', ')', '*', 'cos', '(', 'x0', ')', ')']
+    Assumptions:
+      - identifiers can contain letters, digits, underscores (e.g. x0, var_1, cos)
+      - numbers can include decimal points and scientific notation (e.g. -1.2e-3)
+      - unary +/- will be handled later in infix_to_rpn (recommended)
+    """
+    tokens = []
+    i = 0
+    n = len(expr)
+
+    def is_ident_char(ch):
+        return ch.isalnum() or ch == '_'  # x0, cos, foo_bar
+
+    while i < n:
+        ch = expr[i]
+
+        # skip whitespace
+        if ch.isspace():
+            i += 1
+            continue
+
+        # single-char tokens
+        if ch in '()^*/':
+            tokens.append(ch)
+            i += 1
+            continue
+
+        # + or - : could be operator OR could start a signed number (e.g. -0.0615, +3.2e-1)
+        if ch in '+-':
+            # signed number if next char looks like digit or '.'
+            if i + 1 < n and (expr[i + 1].isdigit() or expr[i + 1] == '.'):
+                j = i + 1
+                # integer/decimal part
+                while j < n and (expr[j].isdigit() or expr[j] == '.'):
+                    j += 1
+                # optional exponent
+                if j < n and expr[j] in 'eE':
+                    k = j + 1
+                    if k < n and expr[k] in '+-':
+                        k += 1
+                    if k < n and expr[k].isdigit():
+                        k += 1
+                        while k < n and expr[k].isdigit():
+                            k += 1
+                        j = k
+                tokens.append(expr[i:j])
+                i = j
+            else:
+                tokens.append(ch)
+                i += 1
+            continue
+
+        # number starting with digit or '.'
+        if ch.isdigit() or ch == '.':
+            j = i + 1
+            while j < n and (expr[j].isdigit() or expr[j] == '.'):
+                j += 1
+            # optional exponent
+            if j < n and expr[j] in 'eE':
+                k = j + 1
+                if k < n and expr[k] in '+-':
+                    k += 1
+                if k < n and expr[k].isdigit():
+                    k += 1
+                    while k < n and expr[k].isdigit():
+                        k += 1
+                    j = k
+            tokens.append(expr[i:j])
+            i = j
+            continue
+
+        # identifier / function name
+        if is_ident_char(ch):
+            j = i + 1
+            while j < n and is_ident_char(expr[j]):
+                j += 1
+            tokens.append(expr[i:j])
+            i = j
+            continue
+
+        raise ValueError(f"Unexpected character {ch!r} at position {i}")
+
+    return tokens
+
+def infix_to_rpn(infix_expression):
+    st = []
+    res = []
+    print(f"infix_expression = {infix_expression}")
+    if isinstance(infix_expression, str):
+        infix_expression = tokenize_infix(infix_expression)
+    print(f"infix_expression = {infix_expression}")
+    
+#    exit()
+    prev_token = None
+
+    for c in infix_expression:
+
+        # If operand, add to result
+        if is_operand(c):
+            res.append(c)
+
+        # If '(', push to stack
+        elif c == '(':
+            st.append('(')
+
+        # If ')', pop until '('
+        elif c == ')':
+            while st and st[-1] != '(':
+                res.append(st.pop())
+            st.pop()
+
+        # If operator
+        else:
+            while st and st[-1] != '(' and \
+                (prec(st[-1]) > prec(c) or (prec(st[-1]) == prec(c) \
+                                    and not isRightAssociative(c))):
+                res.append(st.pop())
+            st.append(c)
+            
+    print(f"res = {res}")
+    print(f"st = {st}")
+    while st:
+        res.append(st.pop())
+
+    return ' '.join(res)
 
 def rpn_to_infix(rpn_expression):
     stack = []
@@ -436,14 +586,18 @@ def test_visualize():
     else:
         pn_to_rpn = False
         rpn_to_pn = False
+        in_to_rpn = True
         if pn_to_rpn:
             prefix_expr = "+ + * sin * + x0 sin sqrt x0 0.13599420224810638 ~ + * 0.204703 x0 -36.871109 * * x0 0.276493 - -1.868178 sin * 1.095518 sqrt x0 * -5.206597 cos * x0 - 1 sin 0.957523"
             print(prefix_to_postfix(prefix_expr))
         elif rpn_to_pn:
             postfix_expr = "-2.444296 x0 1.026203 x0 sqrt cos ^ ^ * -26.199496 4.207354924039483 168.000000 x0 + sqrt * cos * - x0 25.019477 1.014280 x0 ^ cos tanh * + + -8.058567 -2.633602 x0 0.6931471805599453 ^ + cos * - 11.696530 118.95633426995997 x0 0.995059 / - / + x0 0.3670833851233197 * sin 4.957468 * - 1.502449 x0 0.997889 ^ ^ log cos + -2.060603 44.498356 x0 + 0.2658022288340797 * sin * exp + x0 -0.45018598229727835 * sin -2.701240 * + -1.599485 x0 -1.6880058284590451 / cos * - x0 0.696976831813758 x0 * cos + + 0.032499 4 x0 0.7615941559557649 - * sin / - 2.702079 1.052177 x0 0.992888 ^ ^ + sqrt sin + 1.027621 2 x0 0.8414709848078965 ^ * * cos + 1.225249 2.020931 11.175638 x0 54.598150033144236 - + / - - -6.130043 1.218107 x0 + x0 6.804936 - cos / / - -0.032252 1.134681 x0 + sqrt cos asin / +"
             print(postfix_to_prefix(postfix_expr))
+        elif in_to_rpn:
+            infix_expr = "(((12.785252 / sech(x0 + -0.061502)) * ((0.985492 - cos(x0)) - (x0 ^ 0.285370))) * (((x0 * 0.962481) ^ (x0 ^ -0.798924)) ^ (cos(8.423473 ^ x0))))"
+            print(infix_to_rpn(infix_expr))
         else:
-            expression_type_to_plot = ["prefix", "postfix"][0]
+            expression_type_to_plot = ["prefix", "postfix"][1]
             completeTree = [True, False][1]
             if expression_type_to_plot == "prefix":
                 complete_pn_expr = "+ ^ x 3 1"
@@ -456,7 +610,7 @@ def test_visualize():
                 plot_pn_expression_tree(complete_pn_expr, save = save, include_expression_in_title = False)
 
             else:
-                complete_rpn_expr = "x0 0.44519605012430796 + 6.28319 x1 + sin 6.976337180559946 - cos + x0 sqrt sin 11.209602895080659 + ^ 6.123233995736766e-17 0.8489010810836706 6.28319 x0 * - / 2.7140635720055333e-13 + * x0 1.0000000000000002e-20 * 2.714063472005533e-13 + x0 sech x0 ~ - 0.01 x1 1.9118173344004632 + + + 2.062511003414438 x0 6.28319 + x0 x1 + + + + x1 cos x1 sech ~ - ^ * 4.692820413780688e-06 99.9900001666625 x1 -1 - + * 0.7967617625021352 + + + 0.9998848754538172 x0 tanh arcsin x0 sech sin 0.6931471805599453 + 0.01 x0 + 4.01 ^ / / ^ 0.02 x1 + ~ sin 0.8654609161733191 * * 1.2518232555756803 x0 1.7052976466670444e-12 * * -0.0008853278508583436 + 0.7072944917314867 + x0 cos asin cos * * - x0 -5.000083335568168e-05 x0 0.9999930254050717 ^ + x0 0.01 ^ ^ + 0.01 10 x1 + / 0.015090799859337816 + 6.29319 2 x0 + / ^ x0 22026.465794806718 / 7.593328980574705 + + ^ 0.2858069216544935 9.079985960922359e-05 1e-08 x0 + + 10.010090799859338 + ^ x0 sech x0 11 / ^ x0 ln sin + 0.06283190000000001 x1 + x1 cos + sin - * * -16.420459961892366 x1 -4.605170185988091 + x1 -10 + + x1 1.5707963267948966 + 12.56638 * - + 0.00999966667999946 x0 / 0.0037348549117148747 x0 + 1.5607961601207294 ^ ^ 1.5174271293851465 1 x0 - ~ ^ -1.9201576456778923e+06 + - / 4.692820413780688e-06 x1 tanh - x0 tanh 6.28319 x0 ^ - + 6.28319 x0 + ~ -4.605170185988091 x1 ~ + + * 16 x1 1 + ^ 54.598150033144236 x0 exp * * 3.645259197967372e+11 + / -0.06883640719947688 + + + 0.33334271897416085 x1 sin 0.010000166674167114 * 0.00999966667999946 x0 + + + 0.9801980198019802 ^ 0.02 0.04661899347368653 0.01 x0 + + + x0 x0 + x0 30 + + 0.01 x0 ^ * 1.558014144589643 + + / 0.03661899347368653 x1 exp ^ 0.02747440264384353 + 0.01 x0 sin + + 0.17416110468183257 0.125 0.01 x0 + + + + x1 cos 0.04 0.01 x1 + + + sin 9.99 0.1991548242214544 0.01 0.01 x0 + + + / + * ^ -12.536625324309732 46.01954314648535 16.28319 x0 ln + ~ + + -10 -0.1784982098886334 x0 x0 + 2 * * - ^ 10.771624485572866 0.01 x0 + 1 - 0.6931484363797729 * 1.5607961601207294 x0 + -10432.804563901069 + + / 6.123233995736766e-17 0.009154748368421632 9.079985933781725e-05 2 x1 - / * * -0.014930498997959629 + + + + + -"
+                complete_rpn_expr = "12.785252 x0 -0.061502 + sech / 0.985492 x0 cos - x0 0.285370 ^ - * x0 0.962481 * x0 -0.798924 ^ ^ 8.423473 x0 ^ cos ^ *"
                 
                 
                 
