@@ -32,7 +32,7 @@ from math import pi
 import matplotlib.pyplot as plt
 from warnings import filterwarnings
 filterwarnings('ignore')
-sech=lambda x:1/cosh(x)
+#sech=lambda x:1/cosh(x)
 
 # -------------------------
 # Helpers: parameterization
@@ -238,7 +238,7 @@ PERIODIC_IN_THETA = True
 COMPUTE_NUMERIC = False
 PRINT_SH = False
 f = None
-f_per_idx = 0
+f_per_idx = 9
 
 if GENERIC:
     f = Function('f')(r, theta)
