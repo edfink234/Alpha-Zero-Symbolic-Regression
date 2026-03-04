@@ -2,7 +2,7 @@
 #include <cassert>
 #include <stack>
 #define FLUSHTHETOILET std::flush
-#define INTERACTIVE_TRAIN true
+//#define INTERACTIVE_TRAIN true
 
 //Source: https://github.com/LinkedInLearning/training-neural-networks-in-cpp-4404365
 
@@ -400,22 +400,16 @@ float MultiLayerPerceptron::train(const std::vector<Eigen::VectorXf>& x_train, c
     assert(num_rows);
     for (unsigned long epoch = 0; ((num_epochs != 0) ? (epoch < (num_epochs - 1)) : true); epoch++)
     {
-        #ifndef INTERACTIVE_TRAIN
-            #define INTERACTIVE_TRAIN false
-        #endif
-        #if INTERACTIVE_TRAIN
-            MSE = 0.0;
-        #endif
+        MSE = 0.0;
         for (unsigned long i = 0; i < num_rows; i++)
         {
-            #if INTERACTIVE_TRAIN
-                MSE += this->bp(x_train[i], y_train[i]);
-            #else
-                this->bp(x_train[i], y_train[i]);
-            #endif
+            MSE += this->bp(x_train[i], y_train[i]);
         }
-        
-        #if INTERACTIVE_TRAIN
+        if (std::isinf(MSE) || std::isnan(MSE))
+        {
+            return MSE;
+        }
+        #ifdef INTERACTIVE_TRAIN
             std::cout << "Epoch " << epoch << " MSE = " << MSE/num_rows << '\r' << FLUSHTHETOILET;
             if (MultiLayerPerceptron::interrupted)
             {

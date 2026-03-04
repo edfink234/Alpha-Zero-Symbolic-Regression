@@ -3161,7 +3161,7 @@ struct Board
                 this->expression_string.clear();
                 for (const std::string& i: this->srnn.pieces){this->expression_string += i+" ";}
                 Board::expression_set.insert(this->expression_string);
-                return (1.0f/(1.0f+this->srnn.train(data.rows, data.labels, this->epochs))); //"fitFunctionToData"
+                return (1.0f/(1.0f+this->srnn.train(data.rows, data.labels, this->epochs)));
             }
             return 0.0f;
         }
@@ -3641,46 +3641,48 @@ std::vector<std::pair<std::vector<std::string>, float>>
 
 int main()
 {
-    MultiLayerPerceptron mlp(
-         std::vector<int>{2,10,5,5,1},
-         std::deque<std::string>{"sigmoid", "sigmoid", "none", "none"},
-         /* bias = */ 1.0f,
-         /*eta = */ 0.001f,
-         /*theta = */ 0.8f,
-         /*gamma = */ 0.9f,
-         /*weight_update = */ "NAG",
-         /*expression_type = */ "prefix", //IRRELEVANT
-         /*float epsilon = */ 0.1f,
-         /*float beta_1 = */ 0.9f,
-         /*float beta_2 = */ 0.999f,
-         /*float lambda = */ 0.01f /*weight decay AdamW*/);
+    auto start_time = Clock::now();
+//    MultiLayerPerceptron mlp(
+//         std::vector<int>{2,10,9,8,10,8,1},
+//         std::deque<std::string>{"sigmoid", "sigmoid", "sigmoid", "none", "none", "none"},
+//         /* bias = */ 1.0f,
+//         /*eta = */ 0.0001f,
+//         /*theta = */ 0.8f,
+//         /*gamma = */ 0.9f,
+//         /*weight_update = */ "NAG",
+//         /*expression_type = */ "prefix", //IRRELEVANT
+//         /*float epsilon = */ 0.1f,
+//         /*float beta_1 = */ 0.9f,
+//         /*float beta_2 = */ 0.999f,
+//         /*float lambda = */ 0.01f /*weight decay AdamW*/);
+//    
+//    Eigen::MatrixXf my_temp_test_data = generateData(20 /*rows*/, 3 /*columns*/, Hemberg_2 /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f);
+//    Data my_test_data;
+//    my_test_data = my_temp_test_data;
+//    my_test_data.print();
+//    float MSE = mlp.train(my_test_data.rows, my_test_data.labels, 100000);
+//    std::cout << "\nFINAL MSE = " << MSE << '\n';
     
-    Eigen::MatrixXf my_temp_test_data = generateData(20 /*rows*/, 3 /*columns*/, Hemberg_2 /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f);
-    Data my_test_data;
-    my_test_data = my_temp_test_data;
-    my_test_data.print();
-    float MSE = mlp.train(my_test_data.rows, my_test_data.labels, 10000);
-    std::cout << "\nFINAL MSE = " << MSE << '\n';
+    GP(generateData(20 /*rows*/, 3 /*columns*/, Hemberg_2 /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f),
+       5 /*fixed depth*/,
+       "postfix",
+       true /*cache*/,
+       100 /*time to run the algorithm in seconds*/,
+       4 /*number of equally spaced points in time to sample the best score thus far*/,
+       "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/,
+       1 /*num threads*/,
+       {2,10,5,5,1} /*Neural Network number of perceptrons in i'th layers; first layer is number of inputs (input-layer) */,
+       std::deque<std::string>{"sigmoid", "sigmoid", "none", "none"},
+       100000 /*num_epochs*/,
+       /* bias = */ 1.0f,
+       /*eta = */ 0.5f,
+       /*theta = */ 0.01f,
+       /*gamma = */ 0.9f,
+       /*beta_1 = */ 0.9f,
+       /*beta_2 = */ 0.999f,
+       /*lambda = */ 0.01f);
     
-    
-//    GP(generateData(20 /*rows*/, 3 /*columns*/, Hemberg_2 /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f),
-//       5 /*fixed depth*/,
-//       "postfix",
-//       true /*cache*/,
-//       100 /*time to run the algorithm in seconds*/,
-//       4 /*number of equally spaced points in time to sample the best score thus far*/,
-//       "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/,
-//       1 /*num threads*/,
-//       {2,10,5,5,1} /*Neural Network number of perceptrons in i'th layers; first layer is number of inputs (input-layer) */,
-//       std::deque<std::string>{"sigmoid", "sigmoid", "none", "none"},
-//       10 /*num_epochs*/,
-//       /* bias = */ 1.0f,
-//       /*eta = */ 0.5f,
-//       /*theta = */ 0.01f,
-//       /*gamma = */ 0.9f,
-//       /*beta_1 = */ 0.9f,
-//       /*beta_2 = */ 0.999f,
-//       /*lambda = */ 0.01f);
+    std::cout << "Time Elapsed = " << timeElapsedSince(start_time) << " seconds" << '\n';
     
     return 0;
 }
@@ -3691,41 +3693,41 @@ int main()
  ===============
  NUM_EPOCHS = 10
  ===============
- 1. 10 benchmarks
-    A. For each benchmark, 3 neural nets
+ 1. 10 benchmarks -> 1410 established weight-update rule configs
+    A. For each benchmark, 3 neural nets -> 141 established weight-update rule configs
         I.  Each neural net has 5, 6, 7 layers (including the input layer) with N inputs and 1 output
-            a. Neural net 1: {N, {2}, {7}, {6}, {1, "none"}}
-                i. Established Weight-Update Rules
-                    - Gradient-Descent: η ∈ {1e-4, 3e-4, 1e-3, 3e-3, 1e-2}
-                    - Heavy Ball: θ ∈ {0.8, 0.9}, η ∈ {1e-3, 3e-3, 1e-2}
-                    - Nesterov: θ ∈ {0.8, 0.9}, η ∈ {1e-3, 3e-3, 1e-2}
-                    - AdaGrad: ε ∈ {1e-8, 1e-6}, η ∈ {1e-2, 3e-2, 1e-1}
-                    - RMSProp: ε ∈ {1e-8}, η ∈ {1e-4, 3e-4, 1e-3, 3e-3}, Ɣ ∈ {0.9, 0.99}
-                    - AdaDelta: ε ∈ {1e-6, 1e-8}, Ɣ ∈ {0.95, 0.99}
-                    - Adam: η ∈ {1e-4, 3e-4, 1e-3}, ε ∈ {1e-8}, β_1 ∈ {0.9, 0.95}, β_2 ∈ {0.999}
-                    - AdamW: λ ∈ {1e-5, 1e-4, 1e-3}, η ∈ {3e-4, 1e-3}, ε ∈ {1e-8}, β_1 ∈ {0.9}, β_2 ∈ {0.999}
+            a. Neural net 1: {N, {2, "sigmoid"}, {7, "sigmoid"}, {6, "sigmoid"}, {1, "none"}}
+                i. Established Weight-Update Rules -> 5+6+6+6+8+4+6+6 = 47 configs
+                    - Gradient-Descent: η ∈ {1e-5, 3e-5, 1e-4, 3e-4, 1e-3} -> 5 configs
+                    - Heavy Ball: θ ∈ {0.8, 0.9}, η ∈ {1e-4, 3e-4, 1e-3} -> 6 configs
+                    - Nesterov: θ ∈ {0.8, 0.9}, η ∈ {1e-4, 3e-4, 1e-3} -> 6 configs
+                    - AdaGrad: ε ∈ {1e-8, 1e-6}, η ∈ {1e-3, 3e-3, 1e-2} -> 6 configs
+                    - RMSProp: ε ∈ {1e-8}, η ∈ {1e-5, 3e-5, 1e-4, 3e-4}, Ɣ ∈ {0.9, 0.99} -> 8 configs
+                    - AdaDelta: ε ∈ {1e-6, 1e-8}, Ɣ ∈ {0.95, 0.99} -> 4 configs
+                    - Adam: η ∈ {1e-5, 3e-5, 1e-4}, ε ∈ {1e-8}, β_1 ∈ {0.9, 0.95}, β_2 ∈ {0.999} -> 6 configs
+                    - AdamW: λ ∈ {1e-5, 1e-4, 1e-3}, η ∈ {3e-5, 1e-4}, ε ∈ {1e-8}, β_1 ∈ {0.9}, β_2 ∈ {0.999} -> 6 configs
                 ii. SR: start with empty population and continue until N SR-updates-rules that perform 80% of the best established weight-update rule -> returns individuals ("last population")
-            b. Neural net 2: {N, 6, 8, 1, 5, {1, "none"}}
+            b. Neural net 2: {N, {6, "sigmoid"}, {8, "sigmoid"}, {1, "sigmoid}, {5, "none"}, {1, "none"}}
                 i. Established Weight-Update Rules
-                    - Gradient-Descent: η ∈ {1e-4, 3e-4, 1e-3, 3e-3, 1e-2}
-                    - Heavy Ball: θ ∈ {0.8, 0.9}, η ∈ {1e-3, 3e-3, 1e-2}
-                    - Nesterov: θ ∈ {0.8, 0.9}, η ∈ {1e-3, 3e-3, 1e-2}
-                    - AdaGrad: ε ∈ {1e-8, 1e-6}, η ∈ {1e-2, 3e-2, 1e-1}
-                    - RMSProp: ε ∈ {1e-8}, η ∈ {1e-4, 3e-4, 1e-3, 3e-3}, Ɣ ∈ {0.9, 0.99}
+                    - Gradient-Descent: η ∈ {1e-5, 3e-5, 1e-4, 3e-4, 1e-3}
+                    - Heavy Ball: θ ∈ {0.8, 0.9}, η ∈ {1e-4, 3e-4, 1e-3}
+                    - Nesterov: θ ∈ {0.8, 0.9}, η ∈ {1e-4, 3e-4, 1e-3}
+                    - AdaGrad: ε ∈ {1e-8, 1e-6}, η ∈ {1e-3, 3e-3, 1e-2}
+                    - RMSProp: ε ∈ {1e-8}, η ∈ {1e-5, 3e-5, 1e-4, 3e-4}, Ɣ ∈ {0.9, 0.99}
                     - AdaDelta: ε ∈ {1e-6, 1e-8}, Ɣ ∈ {0.95, 0.99}
-                    - Adam: η ∈ {1e-4, 3e-4, 1e-3}, ε ∈ {1e-8}, β_1 ∈ {0.9, 0.95}, β_2 ∈ {0.999}
-                    - AdamW: λ ∈ {1e-5, 1e-4, 1e-3}, η ∈ {3e-4, 1e-3}, ε ∈ {1e-8}, β_1 ∈ {0.9}, β_2 ∈ {0.999}
+                    - Adam: η ∈ {1e-5, 3e-5, 1e-4}, ε ∈ {1e-8}, β_1 ∈ {0.9, 0.95}, β_2 ∈ {0.999}
+                    - AdamW: λ ∈ {1e-5, 1e-4, 1e-3}, η ∈ {3e-5, 1e-4}, ε ∈ {1e-8}, β_1 ∈ {0.9}, β_2 ∈ {0.999}
                 ii. SR: start with last population and continue until N SR-updates-rules that perform 80% of the best established weight-update rule -> returns individuals
-            c. Neural net 3: {N, 10, 9, 8, 10, 8, {1, "none"}}
+            c. Neural net 3: {N, {10, "sigmoid}, {9, "sigmoid"}, {8, "sigmoid"}, {10, "none"}, {8, "none"}, {1, "none"}}
                 i. Established Weight-Update Rules
-                    - Gradient-Descent: η ∈ {1e-4, 3e-4, 1e-3, 3e-3, 1e-2}
-                    - Heavy Ball: θ ∈ {0.8, 0.9}, η ∈ {1e-3, 3e-3, 1e-2}
-                    - Nesterov: θ ∈ {0.8, 0.9}, η ∈ {1e-3, 3e-3, 1e-2}
-                    - AdaGrad: ε ∈ {1e-8, 1e-6}, η ∈ {1e-2, 3e-2, 1e-1}
-                    - RMSProp: ε ∈ {1e-8}, η ∈ {1e-4, 3e-4, 1e-3, 3e-3}, Ɣ ∈ {0.9, 0.99}
+                    - Gradient-Descent: η ∈ {1e-5, 3e-5, 1e-4, 3e-4, 1e-3}
+                    - Heavy Ball: θ ∈ {0.8, 0.9}, η ∈ {1e-4, 3e-4, 1e-3}
+                    - Nesterov: θ ∈ {0.8, 0.9}, η ∈ {1e-4, 3e-4, 1e-3}
+                    - AdaGrad: ε ∈ {1e-8, 1e-6}, η ∈ {1e-3, 3e-3, 1e-2}
+                    - RMSProp: ε ∈ {1e-8}, η ∈ {1e-5, 3e-5, 1e-4, 3e-4}, Ɣ ∈ {0.9, 0.99}
                     - AdaDelta: ε ∈ {1e-6, 1e-8}, Ɣ ∈ {0.95, 0.99}
-                    - Adam: η ∈ {1e-4, 3e-4, 1e-3}, ε ∈ {1e-8}, β_1 ∈ {0.9, 0.95}, β_2 ∈ {0.999}
-                    - AdamW: λ ∈ {1e-5, 1e-4, 1e-3}, η ∈ {3e-4, 1e-3}, ε ∈ {1e-8}, β_1 ∈ {0.9}, β_2 ∈ {0.999}
+                    - Adam: η ∈ {1e-5, 3e-5, 1e-4}, ε ∈ {1e-8}, β_1 ∈ {0.9, 0.95}, β_2 ∈ {0.999}
+                    - AdamW: λ ∈ {1e-5, 1e-4, 1e-3}, η ∈ {3e-5, 1e-4}, ε ∈ {1e-8}, β_1 ∈ {0.9}, β_2 ∈ {0.999}
                 ii. SR: start with last population and continue until N SR-updates-rules that perform 80% of the best established weight-update rule -> returns individuals
 
  Option 1 (Key: Depth, Value: NumThreads): {1: 1, 5: 1, 2: 2, 4: 2, 3: 2}
