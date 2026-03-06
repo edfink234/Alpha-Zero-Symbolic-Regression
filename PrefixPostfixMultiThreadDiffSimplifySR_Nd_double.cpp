@@ -761,6 +761,22 @@ public:
     {
         return this->data == other.data;
     }
+    
+    const Eigen::VectorXd& at(const std::string& key) const
+    {
+        auto it = features.find(key);
+        if (it == features.end())
+            throw std::runtime_error("Data::at: unknown feature key: " + key);
+        return it->second;
+    }
+
+    Eigen::VectorXd& at(const std::string& key)
+    {
+        auto it = features.find(key);
+        if (it == features.end())
+            throw std::runtime_error("Data::at: unknown feature key: " + key);
+        return it->second;
+    }
 
     const Eigen::VectorXd& operator[] (int i){return rows[i];}
     Eigen::VectorXd& operator[] (const std::string& i)
@@ -4351,6 +4367,21 @@ struct Board
                 return Board::data[token];
             }
         };
+        
+        auto try_leaf_ptr = [&](const std::string& token) -> const Eigen::VectorXd*
+        {
+            if (this->subs_dict.size())
+            {
+                auto it = this->subs_dict.find(token);
+                if (it != this->subs_dict.end()) return &it->second;
+            }
+            // variables live in Board::data features:
+            if (!token.empty() && token[0] == 'x')
+            {
+                return &Board::data.at(token); // non-inserting accessor
+            }
+            return nullptr;
+        };
 
         // Recursive lambda needs std::function (or a y-combinator).
         std::function<const Eigen::VectorXd&(int)> dfs = [&](int id) -> const Eigen::VectorXd&
@@ -4363,7 +4394,12 @@ struct Board
 
             if (node.kind == ExprDag::Kind::Leaf)
             {
-                slot = eval_leaf(node.token);
+                if (const Eigen::VectorXd* p = try_leaf_ptr(node.token))
+                {
+                    // return a reference to borrowed vector WITHOUT memoizing
+                    return *p;
+                }
+                slot = eval_leaf(node.token);  // constants/literals/constK only
                 return *slot;
             }
 
@@ -9264,10 +9300,11 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
         Best expression = ((((((((0.0037348549117148743 + x0) + 0.3533380261537471) + cos((sin(x1) - 0.6931471805599453))) ^ (sin(sqrt(x0)) + 11.176528193614349)) * 2.714063572005533e-13) + ((2.714063472005533e-13 * (((x0 + 1.9118173344004632) + ((x0 + x1) + (6.28319 + x1))) ^ (cos(x1) - ~(sech(x1))))) + 0.796000037462495)) - (((0.9998848754538172 ^ (arcsin(tanh(x0)) / ((sech(x0) + 0.6931471805599453) / ((0.01 + x0) ^ 4)))) * (sin(~((x1 - 4.692820413780688e-06))) * 0.8654678907925701)) * (0.7073944917315313 * cos(asin(cos(x0)))))) - ((((((x0 ^ 0.9999930254050717) + (x0 ^ ((1 + x0) ^ 0.01))) ^ ((0.015090799859337816 ^ (6.28319 / (2 + x0))) + 7.593328980574705)) * ((0.2858069216544935 ^ ((9.079985933781724e-05 + x0) + 10.010090799859338)) * (((sech(x0) ^ (x0 / 10)) + sin(ln(x0))) - sin(((0.01 + x1) + cos(x1)))))) + (((-6.89937253158146 + (-10 - ((x1 + 1) * 12.56638))) / (((0.00999966667999946 / x0) ^ (x0 ^ 1.5607961601207294)) - ((x0 / 0.6931471805599453) + ((x0 * x1) + 1.9201520944996069e+06)))) + (((((x1 + x1) + x1) * (~(x0) + x1)) / (((x0 ^ x0) - 1.5707963267948966) + 3.645259197930204e+11)) + -0.06816548191850429))) + (((((0.3333380261537471 + (0.0001 + x0)) ^ 0.9801980198019802) / ((0.02 + (0.04661899347368653 + (0.010000 + x0))) + (((x0 + 30) * (0.01 ^ x0)) + 1.547923178056138))) ^ (((0.02746970982342975 + (0.01 + sin(x0))) + (0.16042608309595058 + (0.1 + (0.01 + x0)))) * (sin((cos(x1) + (0.01 + x1))) + (10 / (0.1691548242214544 + (0.01 + x0)))))) + ((((x1 + (0.7615941559557649 * x1)) * 0.7437513329402264) / (((10 * (0.01 * x0)) - -1.6781430581529049) + -7619.606596214227)) + ((10.761594155955764 / (((x0 - 4) * 0.9092974268256816) + ((2 + x0) + -10434.804563901069))) + -0.014461216956581561)))))
         Best expression (original format) = 0.0037348549117148743 x0 + 0.3533380261537471 + x1 sin 0.6931471805599453 - cos + x0 sqrt sin 11.176528193614349 + ^ 2.714063572005533e-13 * 2.714063472005533e-13 x0 1.9118173344004632 + x0 x1 + 6.28319 x1 + + + x1 cos x1 sech ~ - ^ * 0.796000037462495 + + 0.9998848754538172 x0 tanh arcsin x0 sech 0.6931471805599453 + 0.01 x0 + 4 ^ / / ^ x1 4.692820413780688e-06 - ~ sin 0.8654678907925701 * * 0.7073944917315313 x0 cos asin cos * * - x0 0.9999930254050717 ^ x0 1 x0 + 0.01 ^ ^ + 0.015090799859337816 6.28319 2 x0 + / ^ 7.593328980574705 + ^ 0.2858069216544935 9.079985933781724e-05 x0 + 10.010090799859338 + ^ x0 sech x0 10 / ^ x0 ln sin + 0.01 x1 + x1 cos + sin - * * -6.89937253158146 -10 x1 1 + 12.56638 * - + 0.00999966667999946 x0 / x0 1.5607961601207294 ^ ^ x0 0.6931471805599453 / x0 x1 * 1.9201520944996069e+06 + + - / x1 x1 + x1 + x0 ~ x1 + * x0 x0 ^ 1.5707963267948966 - 3.645259197930204e+11 + / -0.06816548191850429 + + + 0.3333380261537471 0.0001 x0 + + 0.9801980198019802 ^ 0.02 0.04661899347368653 0.010000 x0 + + + x0 30 + 0.01 x0 ^ * 1.547923178056138 + + / 0.02746970982342975 0.01 x0 sin + + 0.16042608309595058 0.1 0.01 x0 + + + + x1 cos 0.01 x1 + + sin 10 0.1691548242214544 0.01 x0 + + / + * ^ x1 0.7615941559557649 x1 * + 0.7437513329402264 * 10 0.01 x0 * * -1.6781430581529049 - -7619.606596214227 + / 10.761594155955764 x0 4 - 0.9092974268256816 * 2 x0 + -10434.804563901069 + + / -0.014461216956581561 + + + + -
     Depth = 10:
-        Best score = 0.000670868, SNE = 1489.61
-        Squared-norm error for each equation: 1488.91 0.138498 0.560399
-        Best expression = ((((((((4.692820413780688e-06 + x0) + 0.46106274650074164) + cos((sin(x1) - 13.259527180559946))) ^ (sin(sqrt(x0)) + 11.241464214124743)) * ((6.123233995736766e-17 / (((0.01 / (x0 + 6.28319)) + 2) - (6.29319 * x0))) + 2.7140635720055333e-13)) + ((2.7140633128507087e-13 * ((((exp(x0) - ~(x1)) + (x0 + (x1 + 1.9118173344004632))) + (2.8241051593702027 + (6 + (x0 + x1)))) ^ (cos((-0.01 + x1)) - ~(sech(x1))))) + ((10 ^ (x0 - (10 ^ (x1 + 10)))) + 0.7974835466612099))) - (((0.9998848754538172 ^ (arcsin(tanh(x0)) / ((sin(sech(x0)) + 0.6931471805599453) / ((0.010000166674167114 + x0) ^ 4.02)))) * (sin(~((0.02 + x1))) * 0.8596315818983925)) * (0.7061183640212906 * cos(asin(cos(x0)))))) - (((((x0 + ((-5.000083335568168e-05 + (x0 ^ 0.9999930254050716)) ^ (x0 ^ 0.01))) ^ ((0.016340799859337816 ^ (6.29319 / (2 + x0))) + (((1 + x0) / 1570.5501127696766) + 7.593328980574705))) * ((0.2858069216544935 ^ ((9.07998596092236e-05 + (1e-08 + x0)) + 10.013825654771052)) * (((sech(x0) ^ (x0 / 13.01)) + sin(ln(x0))) - sin((((1 / x0) + x1) + cos(x1)))))) + ((x0 - (x0 + 0.01000469282041378)) + ((((1.5707963267948966 + (0.03661899347368653 - (6.28319 ^ x0))) * (~((x0 * 2)) + -8.60517018598809)) / ((((6.28319 + x0) ^ (x1 + 1)) * (54.60815003314424 * exp(x0))) + (~((4 + x0)) + 3.645259197967372e+11))) + -0.065101552287762))) + (((((0.33334271897416085 + ((sin(x1) * 0.010000166674167114) + (0.00999966667999946 + x0))) ^ 0.9801980198019802) / ((0.03259079985933782 + (0.04661899347368653 + (0.01 + x0))) + ((((10 * x0) + (x0 + 30)) * (0.01 ^ x0)) + 1.5707963267948966))) ^ (((((0.03661899347368653 ^ exp(x1)) + 0.02747440264384353) + (0.013734854911714875 + sin(x0))) + (0.1983032403055635 + (0.12659154824221455 + (0.01 + x0)))) * (sin((cos(x1) + (0.04 + (0.01 + x1)))) + (9.99 / (0.2091548242214544 + (0.01 + (0.01 + x0))))))) + (((-12.509998141849568 + ((tanh(sin(x0)) + 46.01954314648535) + ~((16.28319 + ln(x0))))) ^ ((0.01216662521460952 + ((tanh(x1) / 6.28319) + -9.655455496645379)) - (-0.1784982098886334 * ((x0 + x0) * 2)))) + ((15.597268244860237 / (4.999999999988988 + ((2 + x0) + -10431.794563901069))) + -0.014930498997959629)))))
-        Best expression (original format) = 4.692820413780688e-06 x0 + 0.46106274650074164 + x1 sin 13.259527180559946 - cos + x0 sqrt sin 11.241464214124743 + ^ 6.123233995736766e-17 0.01 x0 6.28319 + / 2 + 6.29319 x0 * - / 2.7140635720055333e-13 + * 2.7140633128507087e-13 x0 exp x1 ~ - x0 x1 1.9118173344004632 + + + 2.8241051593702027 6 x0 x1 + + + + -0.01 x1 + cos x1 sech ~ - ^ * 10 x0 10 x1 10 + ^ - ^ 0.7974835466612099 + + + 0.9998848754538172 x0 tanh arcsin x0 sech sin 0.6931471805599453 + 0.010000166674167114 x0 + 4.02 ^ / / ^ 0.02 x1 + ~ sin 0.8596315818983925 * * 0.7061183640212906 x0 cos asin cos * * - x0 -5.000083335568168e-05 x0 0.9999930254050716 ^ + x0 0.01 ^ ^ + 0.016340799859337816 6.29319 2 x0 + / ^ 1 x0 + 1570.5501127696766 / 7.593328980574705 + + ^ 0.2858069216544935 9.07998596092236e-05 1e-08 x0 + + 10.013825654771052 + ^ x0 sech x0 13.01 / ^ x0 ln sin + 1 x0 / x1 + x1 cos + sin - * * x0 x0 0.01000469282041378 + - 1.5707963267948966 0.03661899347368653 6.28319 x0 ^ - + x0 2 * ~ -8.60517018598809 + * 6.28319 x0 + x1 1 + ^ 54.60815003314424 x0 exp * * 4 x0 + ~ 3.645259197967372e+11 + + / -0.065101552287762 + + + 0.33334271897416085 x1 sin 0.010000166674167114 * 0.00999966667999946 x0 + + + 0.9801980198019802 ^ 0.03259079985933782 0.04661899347368653 0.01 x0 + + + 10 x0 * x0 30 + + 0.01 x0 ^ * 1.5707963267948966 + + / 0.03661899347368653 x1 exp ^ 0.02747440264384353 + 0.013734854911714875 x0 sin + + 0.1983032403055635 0.12659154824221455 0.01 x0 + + + + x1 cos 0.04 0.01 x1 + + + sin 9.99 0.2091548242214544 0.01 0.01 x0 + + + / + * ^ -12.509998141849568 x0 sin tanh 46.01954314648535 + 16.28319 x0 ln + ~ + + 0.01216662521460952 x1 tanh 6.28319 / -9.655455496645379 + + -0.1784982098886334 x0 x0 + 2 * * - ^ 15.597268244860237 4.999999999988988 2 x0 + -10431.794563901069 + + / -0.014930498997959629 + + + + -
+        Best score = 0.000672717, SNE = 1485.51
+        Squared-norm error for each equation: 1482.84 0.901718 1.7671
+        Best expression = (((((((x0 + 0.455196050124308) + cos((sin(x1) - 38.39228718055995))) ^ (sin(sqrt(x0)) + 11.255585899866201)) * ((6.123233995736766e-17 / (2.000909090909091 - (6.293194692820414 * x0))) + 2.7140635720055333e-13)) + ((((cos(x1) * 1e-20) + 2.714063472005533e-13) * ((((exp(x0) - ~(x1)) + (x0 + (x1 + 1.9118173344004632))) + (2.7105652770783233 + (6 + (x0 + x1)))) ^ (cos((-0.01 + ~(x1))) - ~(sech(x1))))) + ((10 ^ (x0 - (10 ^ (x1 + 10)))) + 0.797505621626542))) - ((((sech((10 + x0)) + 0.9998848754538172) ^ (arcsin(tanh(x0)) / ((sin(sech(x0)) + 0.6931471805599453) / ((0.010000166674167114 + x0) ^ 4.029999999999999)))) * (sin(~(x1)) * 0.859581582731662)) * (0.7060683648546017 * cos(asin(cos(x0)))))) - (((((x0 + ((-5.000083335568168e-05 + (x0 ^ 0.9999930254050716)) ^ (x0 ^ 0.01))) ^ ((0.016684885165218877 ^ (6.29319 / (2 + x0))) + (((-0.6536436208636119 + x0) / 1576.5501127696766) + 7.593328980574705))) * ((0.2858069216544935 ^ ((9.07998596092236e-05 + (1e-08 + x0)) + 10.013825654771052)) * (((sech(x0) ^ (x0 / 13.01)) + sin(ln(x0))) - sin((((1 / x0) + x1) + cos(x1)))))) + ((x0 - (x0 + 0.010029524422775975)) + ((((0.6480542736638855 + ((0.01 + x1) - (6.28319 ^ x0))) * (~((x0 * 2)) + -8.60517018598809)) / ((((6.28319 + x0) ^ (x1 + 1)) * (54.598150033144236 * exp(x0))) + (~((x0 * x0)) + 3.645259197967372e+11))) + -0.06510624510817578))) + (((((0.33334271897416085 + ((sin(x1) * 0.010000166674167114) + (0.00999966667999946 + x0))) ^ 0.980198015679673) / ((0.03259079985933782 + (0.04661899347368653 + (0.01 + x0))) + ((((10 * x0) + (x0 + 30)) * (0.01 ^ x0)) + 1.5707963267948966))) ^ ((((sech(sin(x1)) / (x0 + (x1 * x0))) + (0.013734854911714875 + sin(x0))) + (0.20830340697973063 + (0.12659154824221455 + (0.01 + x0)))) * (sin((cos(x1) + (0.04 + (0.01 + x1)))) + (9.99 / (0.2201548242214544 + (0.01 + (0.01 + x0))))))) + (((-11.816850961289623 + ((tanh(sin(x0)) + 46.01954314648535) + ~((16.28319 + ln(x0))))) ^ (-9.394134380565985 - (-0.1784982098886334 * ((x0 + (0.01 + x0)) * 2)))) + ((16.017322181667527 / ((0.6931471805599453 * x1) + ((10 + x0) + -10431.794563901069))) + -0.013694541176634045)))))
+        Best expression (original format) = x0 0.455196050124308 + x1 sin 38.39228718055995 - cos + x0 sqrt sin 11.255585899866201 + ^ 6.123233995736766e-17 2.000909090909091 6.293194692820414 x0 * - / 2.7140635720055333e-13 + * x1 cos 1e-20 * 2.714063472005533e-13 + x0 exp x1 ~ - x0 x1 1.9118173344004632 + + + 2.7105652770783233 6 x0 x1 + + + + -0.01 x1 ~ + cos x1 sech ~ - ^ * 10 x0 10 x1 10 + ^ - ^ 0.797505621626542 + + + 10 x0 + sech 0.9998848754538172 + x0 tanh arcsin x0 sech sin 0.6931471805599453 + 0.010000166674167114 x0 + 4.029999999999999 ^ / / ^ x1 ~ sin 0.859581582731662 * * 0.7060683648546017 x0 cos asin cos * * - x0 -5.000083335568168e-05 x0 0.9999930254050716 ^ + x0 0.01 ^ ^ + 0.016684885165218877 6.29319 2 x0 + / ^ -0.6536436208636119 x0 + 1576.5501127696766 / 7.593328980574705 + + ^ 0.2858069216544935 9.07998596092236e-05 1e-08 x0 + + 10.013825654771052 + ^ x0 sech x0 13.01 / ^ x0 ln sin + 1 x0 / x1 + x1 cos + sin - * * x0 x0 0.010029524422775975 + - 0.6480542736638855 0.01 x1 + 6.28319 x0 ^ - + x0 2 * ~ -8.60517018598809 + * 6.28319 x0 + x1 1 + ^ 54.598150033144236 x0 exp * * x0 x0 * ~ 3.645259197967372e+11 + + / -0.06510624510817578 + + + 0.33334271897416085 x1 sin 0.010000166674167114 * 0.00999966667999946 x0 + + + 0.980198015679673 ^ 0.03259079985933782 0.04661899347368653 0.01 x0 + + + 10 x0 * x0 30 + + 0.01 x0 ^ * 1.5707963267948966 + + / x1 sin sech x0 x1 x0 * + / 0.013734854911714875 x0 sin + + 0.20830340697973063 0.12659154824221455 0.01 x0 + + + + x1 cos 0.04 0.01 x1 + + + sin 9.99 0.2201548242214544 0.01 0.01 x0 + + + / + * ^ -11.816850961289623 x0 sin tanh 46.01954314648535 + 16.28319 x0 ln + ~ + + -9.394134380565985 -0.1784982098886334 x0 0.01 x0 + + 2 * * - ^ 16.017322181667527 0.6931471805599453 x1 * 10 x0 + -10431.794563901069 + + / -0.013694541176634045 + + + + -
+
 
 
      ```
@@ -10957,882 +10994,6 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
     }
     std::cout << "Time elapsed = " << timeElapsedSince(start_time) << '\n';
 }
-////
-//////https://arxiv.org/abs/2310.06609
-//void GP(std::vector<std::string> (*diffeq)(Board&), size_t num_diff_eqns, const Eigen::MatrixXd& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, double isConstTol = 1e-1)
-//{
-//    if (num_threads == 0)
-//    {
-//        unsigned int temp = std::thread::hardware_concurrency();
-//        num_threads = ((temp <= 1) ? 1 : temp);
-//    }
-//
-//    std::vector<std::thread> threads(num_threads);
-//    std::latch sync_point(num_threads);
-//
-//    /*
-//     Outside of thread:
-//     */
-//    std::atomic<double> max_score{0.0};
-//    std::atomic<double> best_SNE{DBL_MAX};
-//    std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
-//
-//    auto start_time = Clock::now();
-//
-//    /*
-//     Inside of thread:
-//     */
-//
-//    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &best_SNE]()
-//    {
-//        std::random_device rand_dev;
-//        std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-//        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol);
-//        sync_point.arrive_and_wait();
-//        Board secondary_one(diffeq, false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol), secondary_two(diffeq, false, (depth > 0) ? depth-1 : 0, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol); //For crossover and mutations
-//        double score = 0.0, mut_prob = 0.8, rand_mut_cross;
-//        constexpr int init_population = 2000;
-//        std::vector<std::pair<std::vector<std::string>, double>> individuals;
-//        std::pair<std::vector<std::string>, double> individual_1, individual_2;
-//        std::vector<std::pair<int, int>> sub_exprs_1, sub_exprs_2;
-//        individuals.reserve(2*init_population);
-//        std::vector<std::string> temp_legal_moves;
-//        std::uniform_int_distribution<int> rand_depth_dist(0, x.n - 1), selector_dist(0, init_population - 1);
-//        int rand_depth, rand_individual_idx_1, rand_individual_idx_2;
-//        std::uniform_real_distribution<double> rand_mut_cross_dist(0.0, 1.0);
-//        size_t temp_sz;
-//    //    std::string expression, orig_expression, best_expression;
-//
-//        auto updateScore = [&]()
-//        {
-//            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).first == x.n);
-//            assert(((x.expression_type == "prefix") ? x.getPNdepth(x.pieces) : x.getRPNdepth(x.pieces)).second);
-//            if (score > max_score)
-//            {
-//                max_score = score;
-//                std::scoped_lock str_lock(Board::thread_locker);
-//                best_SNE = x.SNE_curr;
-//                best_expression = x._to_infix();
-//                orig_expression = x.expression();
-//                best_expr_result = x._to_infix(x.diffeq_result);
-//                orig_expr_result = x.expression(x.diffeq_result);
-//                std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
-//                std::cout << "Best score = " << score << ", SNE = " << best_SNE << '\n';
-//                std::cout << "Best expression = " << best_expression << '\n';
-//                std::cout << "Best expression (original format) = " << orig_expression << '\n';
-//                std::cout << "Best diff result = " << best_expr_result << '\n';
-//                std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
-//            }
-//        };
-//
-//        //Step 1, generate init_population expressions
-//        for (int i = 0; i < init_population; i++)
-//        {
-//            while ((score = x.complete_status()) == -1)
-//            {
-//                temp_legal_moves = x.get_legal_moves(); //the legal moves
-//                temp_sz = temp_legal_moves.size(); //the number of legal moves
-//                assert(temp_sz);
-//                std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
-//                x.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
-//            }
-//            updateScore();
-//            individuals.push_back(std::make_pair(x.pieces, score));
-//            x.pieces.clear();
-//        }
-//
-//        auto Mutation = [&](int n)
-//        {
-//            //Step 1: Generate a random depth-n sub-expression `secondary_one.pieces`
-//            secondary_one.pieces.clear();
-//            sub_exprs_1.clear();
-//            secondary_one.n = n;
-//            while (secondary_one.complete_status() == -1)
-//            {
-//                temp_legal_moves = secondary_one.get_legal_moves();
-//                std::uniform_int_distribution<int> distribution(0, temp_legal_moves.size() - 1);
-//                secondary_one.pieces.push_back(temp_legal_moves[distribution(generator)]);
-//            }
-//
-//            assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).first == secondary_one.n);
-//            assert(((secondary_one.expression_type == "prefix") ? secondary_one.getPNdepth(secondary_one.pieces) : secondary_one.getRPNdepth(secondary_one.pieces)).second);
-//
-//            //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
-//            //in `x.pieces` and store them in an std::vector<std::pair<int, int>>
-//            //called `sub_exprs_1`.
-//            x.pieces = individuals[selector_dist(generator)].first; //A randomly selected individual to be mutated
-//            secondary_one.get_indices(sub_exprs_1, x.pieces);
-//
-//            //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `mut_ind`
-//            std::uniform_int_distribution<int> distribution(0, sub_exprs_1.size() - 1);
-//            int mut_ind = distribution(generator);
-//
-//            //Step 4: Substitute sub_exprs_1[mut_ind] in x.pieces with secondary_one.pieces
-//
-//            auto start = x.pieces.begin() + sub_exprs_1[mut_ind].first;
-//            auto end = std::min(x.pieces.begin() + sub_exprs_1[mut_ind].second, x.pieces.end()-1);
-//            x.pieces.erase(start, end+1);
-//            x.pieces.insert(start, secondary_one.pieces.begin(), secondary_one.pieces.end());
-//
-//            //Step 5: Reset const token labels in pieces
-//            size_t const_counter = 0;
-//            for (std::string& token: x.pieces)
-//            {
-//                if (token.compare(0, 5, "const") == 0)
-//                {
-//                    token = "const" + to_string_general(const_counter++);
-//                }
-//            }
-//
-//            //Step 6: Evaluate the new mutated `x.pieces` and update score if needed
-//            score = x.complete_status(false);
-//            updateScore();
-//            individuals.push_back(std::make_pair(x.pieces, score));
-//        };
-//
-//        auto Crossover = [&](int n)
-//        {
-//            sub_exprs_1.clear();
-//            sub_exprs_2.clear();
-//            secondary_one.n = n;
-//            secondary_two.n = n;
-//
-//            rand_individual_idx_1 = selector_dist(generator);
-//            assert(individuals.size() && rand_individual_idx_1 < individuals.size());
-//            individual_1 = individuals[rand_individual_idx_1];
-//
-//            do {
-//                rand_individual_idx_2 = selector_dist(generator);
-//            } while (rand_individual_idx_2 == rand_individual_idx_1);
-//            assert(individuals.size() && rand_individual_idx_1 < individuals.size());
-//            individual_2 = individuals[rand_individual_idx_2];
-//
-//            //Step 1: Identify the starting and stopping index pairs of all depth-n sub-expressions
-//            //in `individual_1.first` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_1`.
-//            secondary_one.get_indices(sub_exprs_1, individual_1.first);
-//
-//            //Step 2: Identify the starting and stopping index pairs of all depth-n sub-expressions
-//            //in `individual_2.first` and store them in an std::vector<std::pair<int, int>> called `sub_exprs_2`.
-//            secondary_two.get_indices(sub_exprs_2, individual_2.first);
-//
-//            //Step 3: Generate a random uniform int from 0 to sub_exprs_1.size() - 1 called `mut_ind_1`
-//            std::uniform_int_distribution<int> distribution_1(0, sub_exprs_1.size() - 1);
-//            int mut_ind_1 = distribution_1(generator);
-//
-//            //Step 4: Generate a random uniform int from 0 to sub_exprs_2.size() - 1 called `mut_ind_2`
-//            std::uniform_int_distribution<int> distribution_2(0, sub_exprs_2.size() - 1);
-//            int mut_ind_2 = distribution_2(generator);
-//
-//            //Step 5: Swap sub_exprs_1[mut_ind_1] in individual_1.first with sub_exprs_2[mut_ind_2] in individual_2.first
-//            auto start_1 = individual_1.first.begin() + sub_exprs_1[mut_ind_1].first;
-//            auto end_1 = std::min(individual_1.first.begin() + sub_exprs_1[mut_ind_1].second, individual_1.first.end());
-//
-//            auto start_2 = individual_2.first.begin() + sub_exprs_2[mut_ind_2].first;
-//            auto end_2 = std::min(individual_2.first.begin() + sub_exprs_2[mut_ind_2].second, individual_2.first.end());
-//
-//    //        insert the range start_2, end_2+1 into individual_1 and the range start_1, end_1+1 into individual_2.
-//
-//            if ((end_1 - start_1) < (end_2 - start_2))
-//            {
-//                std::swap_ranges(start_1, end_1+1, start_2);
-//                //Insert remaining part of sub_individual_2.first into individual_1.first
-//                individual_1.first.insert(end_1+1, start_2 + (end_1+1-start_1), end_2+1);
-//                //Remove the remaining part of sub_individual_2.first from individual_2.first
-//                individual_2.first.erase(start_2 + (end_1+1-start_1), end_2+1);
-//            }
-//            else if ((end_2 - start_2) < (end_1 - start_1))
-//            {
-//                std::swap_ranges(start_2, end_2+1, start_1);
-//                //Insert remaining part of sub_individual_1.first into individual_2.first
-//                individual_2.first.insert(end_2+1, start_1 + (end_2+1-start_2), end_1+1);
-//                //Remove the remaining part of sub_individual_1.first from individual_1.first
-//                individual_1.first.erase(start_1 + (end_2+1-start_2), end_1+1);
-//            }
-//            else
-//            {
-//                std::swap_ranges(start_1, end_1+1, start_2);
-//            }
-//
-//            //Step 6: Reset const token labels in individual_1.first
-//            size_t const_counter = 0;
-//            for (std::string& token: individual_1.first)
-//            {
-//                if (token.compare(0, 5, "const") == 0)
-//                {
-//                    token = "const" + to_string_general(const_counter++);
-//                }
-//            }
-//
-//            //Step 7: Evaluate the new `x.pieces` and update score if needed
-//            x.pieces = individual_1.first;
-//            score = x.complete_status(false);
-//            updateScore();
-//
-//            individuals.push_back(std::make_pair(x.pieces, score));
-//
-//            //Step 8: Reset const token labels in individual_2.first
-//            const_counter = 0;
-//            for (std::string& token: individual_2.first)
-//            {
-//                if (token.compare(0, 5, "const") == 0)
-//                {
-//                    token = "const" + to_string_general(const_counter++);
-//                }
-//            }
-//
-//            //Step 9: Evaluate the new `x.pieces` and update score if needed
-//            x.pieces = individual_2.first;
-//            score = x.complete_status(false);
-//            updateScore();
-//
-//            individuals.push_back(std::make_pair(x.pieces, score));
-//        };
-//
-//
-//        for (/*int ngen = 0*/; (timeElapsedSince(start_time) < time); /*ngen++*/)
-//        {
-////            if (ngen && (ngen%5 == 0))
-////            {
-////                std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
-////            }
-//            //Produce N additional individuals through crossover and mutation
-//            for (int n = 0; n < init_population; n++)
-//            {
-//                //Step 1: Generate a random number between 0 and 1 called `rand_mut_cross`
-//                rand_mut_cross = rand_mut_cross_dist(generator);
-//
-//                //Step 2: Generate a random uniform int from 0 to x.n - 1 called `rand_depth`
-//                rand_depth = rand_depth_dist(generator);
-//
-//                //Step 4: Call Mutation function if 0 <= rand_mut_cross <= mut_prob, else select Crossover
-//                if (rand_mut_cross <= mut_prob)
-//                {
-//                    Mutation(rand_depth);
-//                }
-//                else
-//                {
-//                    Crossover(rand_depth);
-//                }
-//            }
-//            std::sort(individuals.begin(), individuals.end(),
-//            [](std::pair<std::vector<std::string>, double>& individual_1, std::pair<std::vector<std::string>, double>& individual_2)
-//            {
-//                return individual_1.second > individual_2.second;
-//            });
-//            individuals.resize(init_population);
-//        }
-//    };
-//
-//    for (unsigned int i = 0; i < num_threads; i++)
-//    {
-//        threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
-//    }
-//
-//    for (unsigned int i = 0; i < num_threads; i++)
-//    {
-//        threads[i].join();
-//    }
-//
-//    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
-//    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-//    std::cout << "Best score = " << max_score << ", SNE = " << best_SNE << '\n';
-//    std::cout << "Best expression = " << best_expression << '\n';
-//    std::cout << "Best expression (original format) = " << orig_expression << '\n';
-//    std::cout << "Best diff result = " << best_expr_result << '\n';
-//    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
-//}
-//
-//void PSO(std::vector<std::string> (*diffeq)(Board&), size_t num_diff_eqns, const Eigen::MatrixXd& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, double isConstTol = 1e-1)
-//{
-//    if (num_threads == 0)
-//    {
-//        unsigned int temp = std::thread::hardware_concurrency();
-//        num_threads = ((temp <= 1) ? 1 : temp);
-//    }
-//
-//    std::vector<std::thread> threads(num_threads);
-//    std::latch sync_point(num_threads);
-//
-//    /*
-//     Outside of thread:
-//     */
-//
-//    std::atomic<double> max_score{0.0};
-//    std::atomic<double> best_SNE{DBL_MAX};
-//    std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
-//
-//    auto start_time = Clock::now();
-//
-//    /*
-//     Inside of thread:
-//     */
-//
-//    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &best_SNE]()
-//    {
-//        std::random_device rand_dev;
-//        std::mt19937 generator(rand_dev()); // Mersenne Twister random number generator
-//        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol);
-//
-//        sync_point.arrive_and_wait();
-//        double score = 0, check_point_score = 0;
-//        std::vector<std::string> temp_legal_moves;
-//
-//        size_t temp_sz;
-//    //    std::string expression, orig_expression, best_expression;
-//
-//        /*
-//         For this setup, we don't know a-priori the number of particles, so we generate them and their corresponding velocities as needed
-//         */
-//        std::vector<double> particle_positions, best_positions, v, curr_positions;
-//        particle_positions.reserve(x.reserve_amount); //stores record of all current particle position indices
-//        best_positions.reserve(x.reserve_amount); //indices corresponding to best pieces
-//        curr_positions.reserve(x.reserve_amount); //indices corresponding to x.pieces
-//        v.reserve(x.reserve_amount); //stores record of all current particle velocities
-//        double rp, rg, new_v, c = 0.0;
-//        int c_count = 0;
-//        std::unordered_map<double, std::unordered_map<int, int>> Nsa;
-//        std::unordered_map<double, std::unordered_map<int, double>> Psa;
-//        std::unordered_map<int, double> p_i_vals, p_i;
-//
-//        /*
-//         In this implementation of PSO:
-//
-//             The traditional PSO initializes the particle positions to be between 0 and 1. However, in this application,
-//             the particle positions are discrete values and any of the legal integer tokens (moves). The
-//             velocities are continuous-valued and perturb the postions, which are subsequently constrained by rounding to
-//             the nearest whole number then taking the modulo w.r.t. the # of allowed legal moves.
-//
-//         */
-//
-//        for (int iter = 0; (timeElapsedSince(start_time) < time); iter++)
-//        {
-//            if (iter && (iter%50000 == 0))
-//            {
-//    //            std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
-//    //            std::cout << "check_point_score = " << check_point_score
-//    //            << ", max_score = " << max_score << ", c = " << c << '\n';
-//                if (check_point_score == max_score)
-//                {
-//                    c_count++;
-//                    std::uniform_real_distribution<double> temp(-c_count, c_count);
-//    //                std::cout << "c: " << c << " -> ";
-//                    c = temp(generator);
-//    //                std::cout << c << '\n';
-//                }
-//                else
-//                {
-//    //                std::cout << "c: " << c << " -> ";
-//                    c = 0.0; //if new best found, reset c and try to exploit the new best
-//                    c_count = 0;
-//    //                std::cout << c << '\n';
-//                }
-//                check_point_score = max_score;
-//            }
-//
-//            for (int i = 0; (score = x.complete_status()) == -1; i++) //i is the index of the token
-//            {
-//                rp = x.pos_dist(generator), rg = x.pos_dist(generator);
-//                temp_legal_moves = x.get_legal_moves(); //the legal moves
-//                temp_sz = temp_legal_moves.size(); //the number of legal moves
-//
-//                if (i == static_cast<int>(particle_positions.size())) //Then we need to create a new particle with some initial position and velocity
-//                {
-//                    particle_positions.push_back(x.pos_dist(generator));
-//                    v.push_back(x.vel_dist(generator));
-//                }
-//
-//                particle_positions[i] = trueMod(std::round(particle_positions[i]), temp_sz);
-//                x.pieces.push_back(temp_legal_moves[particle_positions[i]]); //x.pieces holds the pieces corresponding to the indices
-//                curr_positions.push_back(particle_positions[i]);
-//                if (i == static_cast<int>(best_positions.size()))
-//                {
-//                    best_positions.push_back(x.pos_dist(generator));
-//                    best_positions[i] = trueMod(std::round(best_positions[i]), temp_sz);
-//                }
-//                //https://hal.science/hal-00764996
-//                //https://www.researchgate.net/publication/216300408_An_off-the-shelf_PSO
-//                new_v = (0.721*v[i] + x.phi_1*rg*(best_positions[i] - particle_positions[i]) + x.phi_2*rp*(p_i[i] - particle_positions[i]) + c);
-//                v[i] = copysign(std::min(new_v, DBL_MAX), new_v);
-//                particle_positions[i] += v[i];
-//                Nsa[curr_positions[i]][i]++;
-//            }
-//
-//            for (int i = 0; i < static_cast<int>(curr_positions.size()); i++)
-//            {
-//                Psa[curr_positions[i]][i] = (Psa[curr_positions[i]][i]+score)/Nsa[curr_positions[i]][i];
-//                if (Psa[curr_positions[i]][i] > p_i_vals[i])
-//                {
-//                    p_i[i] = curr_positions[i];
-//                }
-//                p_i_vals[i] = std::max(p_i_vals[i], Psa[curr_positions[i]][i]);
-//
-//            }
-//
-//            if (score > max_score)
-//            {
-//                for (int idx = 0; idx < static_cast<int>(curr_positions.size()); idx++)
-//                {
-//                    best_positions[idx] = curr_positions[idx];
-//                }
-//                max_score = score;
-//                std::scoped_lock str_lock(Board::thread_locker);
-//                best_SNE = x.SNE_curr;
-//                best_expression = x._to_infix();
-//                orig_expression = x.expression();
-//                best_expr_result = x._to_infix(x.diffeq_result);
-//                orig_expr_result = x.expression(x.diffeq_result);
-//                std::cout << "Best score = " << score << ", SNE = " << best_SNE << '\n';
-//                std::cout << "Best expression = " << best_expression << '\n';
-//                std::cout << "Best expression (original format) = " << orig_expression << '\n';
-//                std::cout << "Best diff result = " << best_expr_result << '\n';
-//                std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
-//            }
-//            x.pieces.clear();
-//            curr_positions.clear();
-//        }
-//    };
-//
-//    for (unsigned int i = 0; i < num_threads; i++)
-//    {
-//        threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
-//    }
-//
-//    for (unsigned int i = 0; i < num_threads; i++)
-//    {
-//        threads[i].join();
-//    }
-//
-//    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
-//    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-//    std::cout << "Best score = " << max_score << ", SNE = " << best_SNE << '\n';
-//    std::cout << "Best expression = " << best_expression << '\n';
-//    std::cout << "Best expression (original format) = " << orig_expression << '\n';
-//    std::cout << "Best diff result = " << best_expr_result << '\n';
-//    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
-//}
-//
-////https://arxiv.org/abs/2205.13134
-//void ConcurrentMCTS(std::vector<std::string> (*diffeq)(Board&), size_t num_diff_eqns, const Eigen::MatrixXd& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, double isConstTol = 1e-1)
-//{
-//    if (num_threads == 0)
-//    {
-//        unsigned int temp = std::thread::hardware_concurrency();
-//        num_threads = ((temp <= 1) ? 1 : temp);
-//    }
-//
-//    std::vector<std::thread> threads(num_threads);
-//    std::latch sync_point(num_threads);
-//
-//    /*
-//     Outside of thread:
-//     */
-//    std::atomic<double> max_score{0.0};
-//    std::atomic<double> best_SNE{DBL_MAX};
-//
-//    std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
-//
-//    auto start_time = Clock::now();
-//
-//    /*
-//     Inside of thread:
-//     */
-//
-//    boost::concurrent_flat_map<std::string, boost::concurrent_flat_map<std::string, double>> Qsa;
-//    boost::concurrent_flat_map<std::string, boost::concurrent_flat_map<std::string, int>> Nsa;
-//    boost::concurrent_flat_map<std::string, int> Ns;
-//
-//    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &best_SNE, &Qsa, &Nsa, &Ns]()
-//    {
-//        std::random_device rand_dev;
-//        std::mt19937 thread_local generator(rand_dev());
-//        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol);
-//
-//        sync_point.arrive_and_wait();
-//        double score = 0.0, check_point_score = 0.0, UCT, UCT_best;
-//        std::string best_act;
-//
-//        std::vector<std::string> temp_legal_moves;
-//        std::string state;
-//
-//        double c = 1.4; //"controls the balance between exploration and exploitation", see equation 2 here: https://web.engr.oregonstate.edu/~afern/classes/cs533/notes/uct.pdf, top of page 8 here: https://arxiv.org/pdf/1402.6028.pdf, first formula in section 4. Experiments here: https://cesa-bianchi.di.unimi.it/Pubblicazioni/ml-02.pdf
-//        std::vector<std::pair<std::string, std::string>> moveTracker;
-//        moveTracker.reserve(x.reserve_amount);
-//        temp_legal_moves.reserve(x.reserve_amount);
-//        state.reserve(2*x.reserve_amount);
-//        //        double str_convert_time = 0.0;
-//        auto getString  = [&]()
-//        {
-//            if (!x.pieces.empty())
-//            {
-//                state += x.pieces[x.pieces.size()-1] + " ";
-//            }
-//        };
-//
-//        for (int i = 0; (timeElapsedSince(start_time) < time); i++)
-//        {
-//            if (i && (i%1000 == 0))
-//            {
-//                //                    std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
-//                //                    std::cout << "check_point_score = " << check_point_score
-//                //                    << ", max_score = " << max_score << ", c = " << c << '\n';
-//                if (check_point_score == max_score)
-//                {
-//                    //                        std::cout << "c: " << c << " -> ";
-//                    c += 1.4;
-//                    //                        std::cout << c << '\n';
-//                }
-//                else
-//                {
-//                    //                        std::cout << "c: " << c << " -> ";
-//                    c = 1.4; //if new best found, reset c and try to exploit the new best
-//                    //                        std::cout << c << '\n';
-//                    check_point_score = max_score;
-//                }
-//            }
-//            state.clear();
-//            while ((score = x.complete_status()) == -1)
-//            {
-//                temp_legal_moves = x.get_legal_moves();
-//                assert(temp_legal_moves.size());
-//
-////                for (double i: temp_legal_moves)
-////                {
-////                    assert(i >= 0.0);
-////                }
-////                    auto start_time = Clock::now();
-//                getString();
-////                    str_convert_time += timeElapsedSince(start_time);
-//                UCT = 0.0;
-//                UCT_best = -DBL_MAX;
-//                best_act = temp_legal_moves[0];
-//                std::vector<std::string> best_acts;
-//                best_acts.reserve(temp_legal_moves.size());
-//
-//                for (const std::string& a : temp_legal_moves)
-//                {
-////                    assert(a > -1.0);
-////                    boost::concurrent_flat_map<std::string, boost::concurrent_flat_map<double, double>>
-//                    if (Nsa.contains(state))
-//                    {
-//                        int Nsa_contains_a = 0;
-//                        Nsa.cvisit(state, [&](const auto& x)
-//                        {
-//                            if (x.second.contains(a))
-//                            {
-//                               x.second.cvisit(a, [&](const auto& y)
-//                               {
-//                                   Nsa_contains_a = y.second;
-//                               });
-//                            }
-//                        });
-//                        if (Nsa_contains_a)
-//                        {
-//                            double Qsa_s_a;
-//                            int Ns_s, Nsa_s_a;
-//                            Qsa.cvisit(state, [&](const auto& x)
-//                            {
-//                                x.second.cvisit(a, [&](const auto& y)
-//                                {
-//                                    Qsa_s_a = y.second;
-//                                });
-//                            });
-//                            Nsa.cvisit(state, [&](const auto& x)
-//                            {
-//                                x.second.cvisit(a, [&](const auto& y)
-//                                {
-//                                    Nsa_s_a = y.second;
-//                                });
-//                            });
-//                            Ns.cvisit(state, [&](const auto& x)
-//                            {
-//                                Ns_s = x.second;
-//                            });
-//                            UCT = Qsa_s_a + c*sqrt(log(Ns_s)/Nsa_s_a);
-//                        }
-//                        else
-//                        {
-//                            Nsa.visit(state, [&](auto& x)
-//                            {
-//                                x.second.insert_or_assign(a, 0);
-//                            });
-//                            Qsa.visit(state, [&](auto& x)
-//                            {
-//                               x.second.insert_or_assign(a, 0.0);
-//                            });
-//                            Ns.insert_or_assign(state, 0);
-//                            best_acts.push_back(a);
-//                            UCT = -DBL_MAX;
-//                        }
-//                    }
-//                    else
-//                    {
-//                        Nsa.insert_or_assign(state, boost::concurrent_flat_map<std::string, int>({{a, 0}}));
-//                        Qsa.insert_or_assign(state, boost::concurrent_flat_map<std::string, double>({{a, 0.0}}));
-//                        Ns.insert_or_assign(state, 0);
-//                        best_acts.push_back(a);
-//                        UCT = -DBL_MAX;
-//                    }
-//
-//                    if (UCT > UCT_best)
-//                    {
-//                        best_act = a;
-//                        UCT_best = UCT;
-//                    }
-//                }
-////                assert(best_acts.size() || (best_act > -1.0));
-//                if (best_acts.size())
-//                {
-//                    std::uniform_int_distribution<int> distribution(0, best_acts.size() - 1);
-//                    best_act = best_acts[distribution(generator)];
-//                }
-//
-//                x.pieces.push_back(best_act);
-//                moveTracker.push_back(make_pair(state, best_act));
-////                assert(Ns.contains(state));
-//                Ns.visit(state, [&](auto& x)
-//                {
-//                    x.second++;
-//                });
-////                assert(Nsa.contains(state));
-//                Nsa.visit(state, [&](auto& x)
-//                {
-//                    if (!x.second.contains(best_act))
-//                    {
-//                        x.second.insert_or_assign(best_act, 0);
-//                    }
-////                    assert( x.second.contains(best_act));
-//                    x.second.visit(best_act, [&](auto& y)
-//                    {
-//                       y.second++;
-//                    });
-//                });
-//            }
-//            //backprop reward `score`
-//            for (auto& state_action: moveTracker)
-//            {
-////                assert(Qsa.contains(state_action.first));
-//                Qsa.visit(state_action.first, [&](auto& x)
-//                {
-////                    assert(x.second.contains(state_action.second));
-//                    if (!x.second.contains(state_action.second))
-//                    {
-//                        Nsa.visit(state, [&](auto& y)
-//                        {
-//                            y.second.insert_or_assign(state_action.second, 0);
-//                        });
-//                        x.second.insert_or_assign(state_action.second, 0.0);
-//                    }
-//
-//                    x.second.visit(state_action.second, [&](auto& y)
-//                    {
-//                        y.second = std::max(y.second, score);
-//                    });
-//                });
-//            }
-//
-//            if (score > max_score)
-//            {
-//                max_score = score;
-//                std::scoped_lock str_lock(Board::thread_locker);
-//                best_SNE = x.SNE_curr;
-//                best_expression = x._to_infix();
-//                orig_expression = x.expression();
-//                best_expr_result = x._to_infix(x.diffeq_result);
-//                orig_expr_result = x.expression(x.diffeq_result);
-//            }
-//            x.pieces.clear();
-//            moveTracker.clear();
-//        }
-//    };
-//
-//    for (unsigned int i = 0; i < num_threads; i++)
-//    {
-//        threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
-//    }
-//
-//    for (unsigned int i = 0; i < num_threads; i++)
-//    {
-//        threads[i].join();
-//    }
-//
-//    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
-//    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-//    std::cout << "Best score = " << max_score << ", SNE = " << best_SNE << '\n';
-//    std::cout << "Best expression = " << best_expression << '\n';
-//    std::cout << "Best expression (original format) = " << orig_expression << '\n';
-//    std::cout << "Best diff result = " << best_expr_result << '\n';
-//    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
-//}
-//
-////https://arxiv.org/abs/2205.13134
-//void MCTS(std::vector<std::string> (*diffeq)(Board&), size_t num_diff_eqns, const Eigen::MatrixXd& data, int depth = 3, std::string expression_type = "prefix", std::string method = "LevenbergMarquardt", int num_fit_iter = 1, const std::string& fit_grad_method = "naive_numerical", bool cache = true, double time = 120, unsigned int num_threads = 0, bool const_tokens = false, double isConstTol = 1e-1)
-//{
-//    if (num_threads == 0)
-//    {
-//        unsigned int temp = std::thread::hardware_concurrency();
-//        num_threads = ((temp <= 1) ? 1 : temp);
-//    }
-//
-//    std::vector<std::thread> threads(num_threads);
-//    std::latch sync_point(num_threads);
-//
-//    /*
-//     Outside of thread:
-//     */
-//    std::atomic<double> max_score{0.0};
-//    std::atomic<double> best_SNE{DBL_MAX};
-//    std::string best_expression, orig_expression, best_expr_result, orig_expr_result;
-//
-//    auto start_time = Clock::now();
-//
-//    /*
-//     Inside of thread:
-//     */
-//
-//    auto func = [&diffeq, &depth, &expression_type, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &best_SNE]()
-//    {
-//        std::random_device rand_dev;
-//        std::mt19937 thread_local generator(rand_dev());
-//        Board x(diffeq, true, depth, expression_type, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol);
-//
-//        sync_point.arrive_and_wait();
-//        double score = 0.0, check_point_score = 0.0, UCT, UCT_best;
-//        std::string best_act;
-//
-//        std::vector<std::string> temp_legal_moves;
-//        std::unordered_map<std::string, std::unordered_map<std::string, double>> Qsa, Nsa;
-//        std::unordered_map<std::string, double> Ns;
-//        std::string state;
-//
-//        double c = 1.4; //"controls the balance between exploration and exploitation", see equation 2 here: https://web.engr.oregonstate.edu/~afern/classes/cs533/notes/uct.pdf, top of page 8 here: https://arxiv.org/pdf/1402.6028.pdf, first formula in section 4. Experiments here: https://cesa-bianchi.di.unimi.it/Pubblicazioni/ml-02.pdf
-//        std::vector<std::pair<std::string, std::string>> moveTracker;
-//        moveTracker.reserve(x.reserve_amount);
-//        temp_legal_moves.reserve(x.reserve_amount);
-//        state.reserve(2*x.reserve_amount);
-//        //        double str_convert_time = 0.0;
-//        auto getString  = [&]()
-//        {
-//            if (!x.pieces.empty())
-//            {
-//                state += (x.pieces[x.pieces.size()-1] + " ");
-//            }
-//        };
-//
-//        for (int i = 0; (((timeElapsedSince(start_time) < time) || (Board::expression_dict.size() < 105614388))); i++)
-//        {
-//            if (!(Board::expression_dict.size()%1000000))
-//            {
-//                std::scoped_lock str_lock(Board::thread_locker);
-//                std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
-//            }
-//            if (i && (i%500 == 0))
-//            {
-//                //                    std::cout << "Unique expressions = " << Board::expression_dict.size() << '\n';
-//                //                    std::cout << "check_point_score = " << check_point_score
-//                //                    << ", max_score = " << max_score << ", c = " << c << '\n';
-//                if (check_point_score == max_score)
-//                {
-//                    //                        std::cout << "c: " << c << " -> ";
-//                    c += 1.4;
-//                    //                        std::cout << c << '\n';
-//                }
-//                else
-//                {
-//                    //                        std::cout << "c: " << c << " -> ";
-//                    c = 1.4; //if new best found, reset c and try to exploit the new best
-//                    //                        std::cout << c << '\n';
-//                    check_point_score = max_score;
-//                }
-//            }
-//            state.clear();
-//            while ((score = x.complete_status()) == -1)
-//            {
-//                temp_legal_moves = x.get_legal_moves();
-//                assert(temp_legal_moves.size());
-////                    auto start_time = Clock::now();
-//                getString();
-////                    str_convert_time += timeElapsedSince(start_time);
-//                UCT = 0.0;
-//                UCT_best = -DBL_MAX;
-//                best_act = temp_legal_moves[0];
-//                std::vector<std::string> best_acts;
-//                best_acts.reserve(temp_legal_moves.size());
-//
-//                for (const std::string& a : temp_legal_moves)
-//                {
-//                    if (Nsa[state].count(a))
-//                    {
-//                        UCT = Qsa[state][a] + c*sqrt(log(Ns[state])/Nsa[state][a]);
-//                    }
-//                    else
-//                    {
-//                        //not explored -> explore it.
-//                        best_acts.push_back(a);
-//                        UCT = -DBL_MAX;
-//                    }
-//
-//                    if (UCT > UCT_best)
-//                    {
-//                        best_act = a;
-//                        UCT_best = UCT;
-//                    }
-//                }
-//
-//                if (best_acts.size())
-//                {
-//                    std::uniform_int_distribution<int> distribution(0, best_acts.size() - 1);
-//                    best_act = best_acts[distribution(generator)];
-//                }
-//                x.pieces.push_back(best_act);
-//                moveTracker.push_back(make_pair(state, best_act));
-//                Ns[state]++;
-//                Nsa[state][best_act]++;
-//            }
-//            //backprop reward `score`
-//            for (auto& state_action: moveTracker)
-//            {
-//                Qsa[state_action.first][state_action.second] = std::max(Qsa[state_action.first][state_action.second], score);
-//            }
-//
-//            if (score > max_score)
-//            {
-//                max_score = score;
-//                std::scoped_lock str_lock(Board::thread_locker);
-//                best_SNE = x.SNE_curr;
-//                best_expression = x._to_infix();
-//                orig_expression = x.expression();
-//                best_expr_result = x._to_infix(x.diffeq_result);
-//                orig_expr_result = x.expression(x.diffeq_result);
-//                std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
-//                std::cout << "Best score = " << score << ", SNE = " << best_SNE << '\n';
-//                std::cout << "Best expression = " << best_expression << '\n';
-//                std::cout << "Best expression (original format) = " << orig_expression << '\n';
-//                std::cout << "Best diff result = " << best_expr_result << '\n';
-//                std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
-//            }
-//            x.pieces.clear();
-//            moveTracker.clear();
-//        }
-//    };
-//
-//    for (unsigned int i = 0; i < num_threads; i++)
-//    {
-//        threads[i] = std::thread(func); //TODO: (maybe) provide a depth argument to func to specify if different threads should focus on different depth expressions (and modify the search functions accordingly)?
-//    }
-//
-//    for (unsigned int i = 0; i < num_threads; i++)
-//    {
-//        threads[i].join();
-//    }
-//
-//    std::cout << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
-//    std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
-//    std::cout << "Best score = " << max_score << ", SNE = " << best_SNE << '\n';
-//    std::cout << "Best expression = " << best_expression << '\n';
-//    std::cout << "Best expression (original format) = " << orig_expression << '\n';
-//    std::cout << "Best diff result = " << best_expr_result << '\n';
-//    std::cout << "Best expression (original format) = " << orig_expr_result << '\n';
-//}
 
 void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
                   size_t num_diff_eqns,
@@ -12040,7 +11201,7 @@ namespace ExampleProblems
     void SwiftHohenbergTest(int random_seed, const char* algorithm, double time)
     {
         double threshold = 1.0;
-        unsigned int num_threads = 0;
+        unsigned int num_threads = 1;
         bool mu_equals_nu_1_only = true;
         auto data1 = ((mu_equals_nu_1_only) ?
                      createMeshgridVectors(330, 2, {0.01, 0.0}, {10.0, 6.28319}) :
@@ -12104,7 +11265,7 @@ namespace ExampleProblems
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                 std::vector<std::string>{} /*operators to restrict in the search*/,
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
-                {split("0 0 + 0 0 + + 0 0 + 0 x0 + + + 0 0 + 0 0 + + 0 0 + 0 0.445196050124308 + + + + 6.28319 x1 + sin 0 0 + 0 6.976337180559946 + + - cos + 0 0 + 0 x0 + + sqrt sin 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 11.21960775457524 + + + + + ^ 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 6.123233995736766e-17 + + + + 0 0 + 0 0 + + 0 0 + 0 0.8489010810836706 + + + 0 0 + 0 6.29319 + + 0 0 + 0 x0 + + * - / 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 2.7140635720055333e-13 + + + + + + * 0 9.079985933781724e-05 + x1 x1 + + 0 0 + 0 0.6420149920119997 + + + 0 0 + 0 0 + + 0 0 + 0 1e-20 + + + * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 2.714063472005533e-13 + + + + + x0 sech x1 ~ - 0 0.01 + x1 1.9118173344004632 + + + 0 0 + 0 2.062511003414438 + + x0 6.28319 + x0 x1 + + + + 0 0 + 0 x1 + + cos 0 x1 + sech ~ - ^ * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.7974835466612099 + + + + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.9998848754538172 + + + + + 0 0 + 0 x0 + + tanh arcsin x0 sech sin 0 0 + 0 0.6931471805599453 + + + 0 0.01 + 0 x0 + + 0 0 + 0 4.02 + + ^ / / ^ 0 0 + 0 0.02 + + 0 0 + 0 x1 + + + ~ sin 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.8596315818983925 + + + + + * * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.7061183640212906 + + + + + + 0 0 + 0 0 + + 0 0 + 0 x0 + + + cos asin cos * * - 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x0 + + + + 0 0 + 0 -5.000083335568168e-05 + + 0 x0 + 0 0.9999930254050716 + ^ + 0 0 + 0 x0 + + 0 0 + 0 0.01 + + ^ ^ + 0 0.01 + 10 x1 + / 0 0 + 0 0.015090799859337816 + + + 0 0 + 0 6.29319 + + 0 2 + 0 x0 + + / ^ 0 1 + 0 x0 + + 0 0 + 0 1572.5501127696766 + + / 0 0 + 0 0 + + 0 0 + 0 7.593328980574705 + + + + + ^ 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.2858069216544935 + + + + 0 0 + 0 9.07998596092236e-05 + + 0 1e-08 + 0 x0 + + + 0 0 + 0 0 + + 0 0 + 0 10.013825654771052 + + + + ^ 0 x0 + sech 0 x0 + 0 13 + / ^ 0 x0 + ln sin + 0 0.06283190000000001 + 0 x1 + + 0 x1 + cos + sin - * * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x0 + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.01000469282041378 + + + + + - 0 4.692820413780688e-06 + x1 tanh - 0 0.03661899347368653 + 6.28319 x0 ^ - + 6.28319 x0 + ~ 0 0 + 0 -8.60517018598809 + + + * 0 16 + x1 1 + ^ 0 54.59815003314424 + x0 exp * * 0 x0 + ~ 0 0 + 0 3.645259197967372e+11 + + + + / 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -0.065101552287762 + + + + + + + + 0 0 + 0 0 + + 0 0 + 0 0.33334271897416085 + + + x1 sin 0 0.010000166674167114 + * 0 0.00999966667999946 + 0 x0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.9801980198019802 + + + + ^ 0 0 + 0 0 + + 0 0 + 0 0.0325 + + + 0 0 + 0 0.04661899347368653 + + 0 0.01 + 0 x0 + + + + 10 x0 * x0 30 + + 0 0.01 + 0 x0 + ^ * 0 0 + 0 0 + + 0 0 + 0 1.568014144589643 + + + + + / 0 0.03661899347368653 + x1 exp ^ 0 0 + 0 0.02747440264384353 + + + 0 0 + 0 0.01 + + 0 x0 + sin + + 0 0 + 0 0 + + 0 0 + 0 0.1983032403055635 + + + 0 0 + 0 0.125 + + 0 0.01 + 0 x0 + + + + + 0 x1 + cos 0 0.04 + 0.01 x1 + + + sin 0 0 + 0 0 + + 0 0 + 0 9.99 + + + 0 0 + 0 0.2091548242214544 + + 0 0.01 + 0.01 x0 + + + / + * ^ 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -12.509998141849568 + + + + 0 0 + 0 0 + + 0 0 + 0 46.01954314648535 + + + 0 16.28319 + x0 ln + ~ + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -9.657955496645378 + + + + 0 0 + 0 0 + + 0 0 + 0 -0.1784982098886334 + + + 0 x0 + 0 x0 + + 0 0 + 0 2 + + * * - ^ 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 11.771624485572866 + + + + 0 0 + 0 0 + + 0 0 + 0 1 + + + 0 2 + 0 x0 + + 0 0 + 0 -10432.794563901069 + + + + / 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -0.014930498997959629 + + + + + + + + + -")} /*seed expressions*/,
+                {split("0 0 + 0 0 + + 0 0 + 0 x0 + + + 0 0 + 0 0 + + 0 0 + 0 0.455196050124308 + + + + 0 x1 + sin 0 0 + 0 38.39228718055995 + + - cos + 0 0 + 0 x0 + + sqrt sin 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 11.255585899866201 + + + + + ^ 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 6.123233995736766e-17 + + + + 0 0 + 0 0 + + 0 0 + 0 2.000909090909091 + + + 0 0 + 0 6.293194692820414 + + 0 0 + 0 x0 + + * - / 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 2.7140635720055333e-13 + + + + + + * 0 0 + 0 x1 + + cos 0 0 + 0 0 + + 0 0 + 0 1e-20 + + + * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 2.714063472005533e-13 + + + + + x0 exp x1 ~ - 0 x0 + x1 1.9118173344004632 + + + 0 0 + 0 2.7105652770783233 + + 0 6 + x0 x1 + + + + 0 -0.01 + x1 ~ + cos 0 x1 + sech ~ - ^ * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 10 + + + + 0 0 + 0 0 + + 0 0 + 0 x0 + + + 0 0 + 0 10 + + 0 x1 + 0 10 + + ^ - ^ 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.797505621626542 + + + + + + + + 0 0 + 0 10 + + 0 0 + 0 x0 + + + sech 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.9998848754538172 + + + + + 0 0 + 0 x0 + + tanh arcsin x0 sech sin 0 0 + 0 0.6931471805599453 + + + 0 0.010000166674167114 + 0 x0 + + 0 0 + 0 4.029999999999999 + + ^ / / ^ 0 0 + 0 0 + + 0 0 + 0 x1 + + + ~ sin 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.859581582731662 + + + + + * * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.7060683648546017 + + + + + + 0 0 + 0 0 + + 0 0 + 0 x0 + + + cos asin cos * * - 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x0 + + + + 0 0 + 0 -5.000083335568168e-05 + + 0 x0 + 0 0.9999930254050716 + ^ + 0 0 + 0 x0 + + 0 0 + 0 0.01 + + ^ ^ + 0 0 + 0 0 + + 0 0 + 0 0.016684885165218877 + + + 0 0 + 0 6.29319 + + 0 2 + 0 x0 + + / ^ 0 -0.6536436208636119 + 0 x0 + + 0 0 + 0 1576.5501127696766 + + / 0 0 + 0 0 + + 0 0 + 0 7.593328980574705 + + + + + ^ 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.2858069216544935 + + + + 0 0 + 0 9.07998596092236e-05 + + 0 1e-08 + 0 x0 + + + 0 0 + 0 0 + + 0 0 + 0 10.013825654771052 + + + + ^ 0 x0 + sech 0 x0 + 0 13.01 + / ^ 0 x0 + ln sin + 1 x0 / 0 x1 + + 0 x1 + cos + sin - * * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x0 + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.010029524422775975 + + + + + - 0 0 + 0 0.6480542736638855 + + 0.01 x1 + 6.28319 x0 ^ - + x0 2 * ~ 0 0 + 0 -8.60517018598809 + + + * 6.28319 x0 + x1 1 + ^ 0 54.598150033144236 + x0 exp * * x0 x0 * ~ 0 0 + 0 3.645259197967372e+11 + + + + / 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -0.06510624510817578 + + + + + + + + 0 0 + 0 0 + + 0 0 + 0 0.33334271897416085 + + + x1 sin 0 0.010000166674167114 + * 0 0.00999966667999946 + 0 x0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.980198015679673 + + + + ^ 0 0 + 0 0 + + 0 0 + 0 0.03259079985933782 + + + 0 0 + 0 0.04661899347368653 + + 0 0.01 + 0 x0 + + + + 10 x0 * x0 30 + + 0 0.01 + 0 x0 + ^ * 0 0 + 0 0 + + 0 0 + 0 1.5707963267948966 + + + + + / x1 sin sech 0 x0 + x1 x0 * + / 0 0 + 0 0.013734854911714875 + + 0 x0 + sin + + 0 0 + 0 0 + + 0 0 + 0 0.20830340697973063 + + + 0 0 + 0 0.12659154824221455 + + 0 0.01 + 0 x0 + + + + + 0 x1 + cos 0 0.04 + 0.01 x1 + + + sin 0 0 + 0 0 + + 0 0 + 0 9.99 + + + 0 0 + 0 0.2201548242214544 + + 0 0.01 + 0.01 x0 + + + / + * ^ 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -11.816850961289623 + + + + x0 sin tanh 0 0 + 0 46.01954314648535 + + + 0 16.28319 + x0 ln + ~ + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -9.394134380565985 + + + + 0 0 + 0 0 + + 0 0 + 0 -0.1784982098886334 + + + 0 x0 + 0.01 x0 + + 0 0 + 0 2 + + * * - ^ 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 16.017322181667527 + + + + 0 0 + 0 0.6931471805599453 + + 0 0 + 0 x1 + + * 0 10 + 0 x0 + + 0 0 + 0 -10431.794563901069 + + + + / 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -0.013694541176634045 + + + + + + + + + -")} /*seed expressions*/,
                 (num_threads == 1) /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
@@ -12706,7 +11867,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
     
-    ProblemOption choice = ProblemOption::WierdTrackFitter;
+    ProblemOption choice = ProblemOption::SwiftHohenberg;
     switch (choice)
     {
         case ProblemOption::SwiftHohenberg:

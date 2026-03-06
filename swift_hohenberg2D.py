@@ -238,7 +238,7 @@ PERIODIC_IN_THETA = True
 COMPUTE_NUMERIC = False
 PRINT_SH = False
 f = None
-f_per_idx = 9
+f_per_idx = 7
 
 if GENERIC:
     f = Function('f')(r, theta)
@@ -258,9 +258,7 @@ else:
           -0.28580222883408**(r + 10.02)*(2*r + 0.0137395477321287)**(0.01**(6.28319/(r + 0.01)) + 7.57016955826421)*(0.01**r - sin(theta) + 1) + 0.708762837941528*0.999884875453817**(1.3213487088109*r**4*(1.6*(tanh(.6*r))))*sqrt(1 - cos(r)**2)*sin(0.999999999988989*theta) + 0.845330825627302, \
           
           -0.285806921654494**(r + 10.0100907998593)*(r**1.00009081398177 + r**((r + 1)**0.0100001666741671))**(0.015**(6.28319/(r + 2)) + 7.59399521303526)*(- sin(theta + cos(theta) + 6.28319) + sin(log(r)))
-           + 0.612417858855597*0.999884875453817**(1.4426686039141*(r + 0.01)**4*(1.6*(tanh(.6*r))))*sqrt(1 - cos(r)**2)*sin(theta) + 0.879032771381193, \
-           
-           -0.285806921654494**(r + 10.0100907998593)*(r**1.00009081398177 + r**((r + 1)**0.0100001666741671))**(0.015**(6.28319/(r + 2)) + 7.59399521303526)*((1/cosh(r))**(r/10) - sin(theta + cos(theta) + 6.28319) + sin(log(r))) + 0.612417858855597*0.999884875453817**(1.4426686039141*(r + 0.01)**4*asin(tanh(r)))*sqrt(1 - cos(r)**2)*sin(theta) - ((r + 0.333333333333333)**0.98019801980198/(0.01**r*(theta + 20) + r + 1.61454687435024))**((sin(theta + cos(theta)) + 10/(r + 0.169154824221454))*(r + sin(r) + 0.289160938007665)) + 2.71406347200553e-13*(r + 0.333333333333333 + 1/cosh(sin(theta) - 1.38629436111989))**(12.1302630485261 - r/10) - log(0.999950000416665**(theta + 3.47065679078888)) + 0.879032771381193 - (-100.0*theta - 5852.19746316763)/(11.5066292107131*r + 1920156.09449961) - 7.7707749958711/(2*r - 10450.0877539011)][f_per_idx] \
+           + 0.612417858855597*0.999884875453817**(1.4426686039141*(r + 0.01)**4*(1.6*(tanh(.6*r))))*sqrt(1 - cos(r)**2)*sin(theta) + 0.879032771381193][f_per_idx] \
             if PERIODIC_IN_THETA else \
             (((0.148475282221305 * theta) - (sin(theta) * (1.0000132758892615 * sin(r)))) - 0.0922858190550785)
 
@@ -303,7 +301,7 @@ r_vals, theta_vals = [None]*2
 func_vals = None
 N = 1000
 if not GENERIC:
-    r_vals, theta_vals = np.meshgrid(np.linspace(0.01, 10, N), np.linspace(0, 2*pi, N))
+    r_vals, theta_vals = np.meshgrid(np.linspace(0.01, 100, N), np.linspace(0, 2*pi, N))
     f_SR = lambdify((r, theta), f)
     f_SR_r = lambdify((r, theta), f_r := diff(f, r))
     f_SR_theta = lambdify((r, theta), f_theta := diff(f, theta))
@@ -332,11 +330,11 @@ if not GENERIC:
 ##############
 
 # Build grids (overwrite any previous r_vals/theta_vals for the solver part)
-N = 50
+N = 1000
 Nr = N
 Nth = N
 th_vec = np.linspace(0.0, 2.0*np.pi, Nth, endpoint=False)  # periodic, no duplicate endpoint
-r_edges = np.linspace(0.0, 10.0, Nr + 1)                   # edges include r=0
+r_edges = np.linspace(0.0, r_vals.max(), Nr + 1)                   # edges include r=0
 r_vec   = 0.5*(r_edges[:-1] + r_edges[1:])                 # midpoints: strictly r>0
 func_vals = func(r_vec, th_vec)
 #print(f"Mean-squared error = {(LA.norm(func_vals.flatten())**2) / func_vals.size}")
@@ -411,7 +409,7 @@ print(f"Grid checks: dr={dr}, dth={dth}, r_min={r_vec.min()}, r_max={r_vec.max()
 print("Any nonfinite in U0? ", np.any(~np.isfinite(U0)))
 print("Any nonfinite in R0? ", np.any(~np.isfinite(R0)))
 print(f"Initial ||R(U0)||^2 = {float(np.dot(R0, R0))}")
-print(f"Initial mean-squared residual = {float(np.dot(R0, R0))/R0.size}")
+print(f"Initial mean-squared residual = {float(np.dot(R0, R0))/R0.size:.3f}")
 if not COMPUTE_NUMERIC:
     exit()
 tolerance = 1e-6
