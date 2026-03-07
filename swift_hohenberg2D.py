@@ -31,6 +31,8 @@ from numpy import linalg as LA
 from math import pi
 import matplotlib.pyplot as plt
 from warnings import filterwarnings
+from sympy.utilities.autowrap import ufuncify
+
 filterwarnings('ignore')
 #sech=lambda x:1/cosh(x)
 
@@ -230,7 +232,7 @@ def naive_random_optimize(
 
 # Define the polar coordinates
 SH = symbols('\\text{SwiftHohenberg} r theta mu nu')
-r, theta = symbols('r theta')
+r, theta = symbols('r theta', real = True, positive = True)
 mu, nu = 1, 1
 # Define the function f as a function of r and theta
 GENERIC = False
@@ -238,7 +240,7 @@ PERIODIC_IN_THETA = True
 COMPUTE_NUMERIC = False
 PRINT_SH = False
 f = None
-f_per_idx = 7
+f_per_idx = 8
 
 if GENERIC:
     f = Function('f')(r, theta)
@@ -258,12 +260,34 @@ else:
           -0.28580222883408**(r + 10.02)*(2*r + 0.0137395477321287)**(0.01**(6.28319/(r + 0.01)) + 7.57016955826421)*(0.01**r - sin(theta) + 1) + 0.708762837941528*0.999884875453817**(1.3213487088109*r**4*(1.6*(tanh(.6*r))))*sqrt(1 - cos(r)**2)*sin(0.999999999988989*theta) + 0.845330825627302, \
           
           -0.285806921654494**(r + 10.0100907998593)*(r**1.00009081398177 + r**((r + 1)**0.0100001666741671))**(0.015**(6.28319/(r + 2)) + 7.59399521303526)*(- sin(theta + cos(theta) + 6.28319) + sin(log(r)))
-           + 0.612417858855597*0.999884875453817**(1.4426686039141*(r + 0.01)**4*(1.6*(tanh(.6*r))))*sqrt(1 - cos(r)**2)*sin(theta) + 0.879032771381193][f_per_idx] \
+           + 0.612417858855597*0.999884875453817**(1.4426686039141*(r + 0.01)**4.03*(1.58*(tanh(.59*r))))*sqrt(1 - cos(r)**2)*sin(theta) + 0.879032771381193, \
+           
+           -0.285806921654494**(r + 10.0139164646307)*(r + (r**0.999993025405072 - 5.00008333556817e-5)**(r**0.01))**(0.0166848951652189**(6.23978883640503/(r + 2)) + 0.000631778468553939*r + 7.59291602260893)*(-sin(theta + cos(theta) + 1/r) + sin(log(r)))
+#            + 10**(-10**(theta + 10) + r)
+#            - ((r + 0.0100001666741671*sin(theta) + 0.34334238565416)**0.980198015679673/(0.01**r*(11*r + 30) + r + 1.67000612012792 + 10**(-r)))**(((0.0100001666741671*0.01**theta + 9.99)/(r + 0.240154824221454) + sin(theta + cos(theta + 0.01) + 0.05))*(r + sin(r) + sech(sin(theta))**(r*theta + r) + 0.35862981013366))
+#             + (2.71406347200553e-13 + 9.86961177255443e-20/r)*(2*r + 3*theta + exp(r) + 10.6223826114788)**(cos(theta - 0.01) + sech(theta))
+#             + (2.71406357200553e-13 + 6.12323399573677e-17/(2.00090909090909 - 6.29319469282041*r + 1e-6))*(r + cos(sin(theta) - 38.41228718056) + 0.455196050124308)**(sin(sqrt(r)) + 11.259320763461)
+             + 0.606923362578475*sqrt(1 - cos(r)**2)*(sech(r + 10) + 0.999884875453817)**((r + 0.02)**4.03*(1.58*(tanh(.59*r)))/(sin(sech(r)) + 0.693147180559945))*sin(theta + 6.28319)
+#             - (-2*r - 8.60517018598809)*(-6.28319**r + theta + 20.29319)/(-r**2 + 54.5981500331442*(r + 6.28319)**(theta + 1)*exp(r) + 364525919796.747)
+#             - (-log(r) + 1.01005016708417*sin(r) + tanh(sin(r)) + 17.9095021851957)**(0.714028539196511*r - 9.36056423787)
+             + 0.886342906953379
+#             - 16.047123831843/(r + theta - 10405.8182267205)
+             , \
+             
+            -0.285806921654494**(r + 10.0101815997187)*(r**1.00009081398177 + r**((r + 1)**0.01))**(0.0150907998593378**(6.28319/(r + 2)) + 7.59399990585568)*(-sin(theta + cos(theta) + 0.01) + sin(log(r)) + sech(r)**(r/10))
+            + 0.612309082637831*0.999884875453817**(1.4426686039141*(r + 0.01)**4*asin(tanh(r)))*sqrt(1 - cos(r)**2)*sin(theta - 4.69282041378069e-6)
+            - 5.48657829636844e-12*theta*(-r + theta + 2)
+            + 0.000194759452736256*theta
+            - ((r + 0.333333333333333)**0.98019801980198/(0.01**r*(r + 30) + r + 1.61454687435024))**((sin(theta + cos(theta) + 0.01) + 10/(r + 0.179154824221454))*(r + sin(r) + 0.30789579291938)) - (-9.56638*theta - 28.626681002505)/(theta + (0.01/tanh(r))**(r**1.56079616012073) - sin(theta) - 1920153.09449961)
+            + 2.71406357200553e-13*(theta + 8.29319)**(cos(theta) + sech(theta))
+            + 2.71406347200553e-13*(r + cos(sin(theta) - 0.693147180559945) + 0.355680581247829)**(sin(sqrt(r)) + 11.1765281936143)
+            + 0.879248603142091
+            - (0.01*theta + 10.7615941559558)/(1.90929742682568*r - 10426.8045639011)][f_per_idx] \
             if PERIODIC_IN_THETA else \
             (((0.148475282221305 * theta) - (sin(theta) * (1.0000132758892615 * sin(r)))) - 0.0922858190550785)
 
 
-f_thresh = (0.14752525676079256, 0.01694062336705199)
+f_thresh = (0.13014006102898107, 0.014037022014875142)
 optimize = False
 
 if optimize:
@@ -302,6 +326,20 @@ func_vals = None
 N = 1000
 if not GENERIC:
     r_vals, theta_vals = np.meshgrid(np.linspace(0.01, 100, N), np.linspace(0, 2*pi, N))
+    terms = sp.Add.make_args(f)  # f is your full expression
+    term_funcs = [sp.lambdify((r, theta), t, "numpy") for t in terms]
+
+    bad = []
+    for k, tf in enumerate(term_funcs):
+        v = tf(r_vals, theta_vals)
+        imag = np.max(np.abs(np.imag(v))) if np.iscomplexobj(v) else 0.0
+        n_nan = np.isnan(v).sum()
+        n_inf = np.isinf(v).sum()
+        if imag > 1e-12 or n_nan or n_inf:
+            bad.append((k, imag, n_nan, n_inf))
+    print(*bad, " ... total bad:", len(bad), sep='\n')
+    
+    
     f_SR = lambdify((r, theta), f)
     f_SR_r = lambdify((r, theta), f_r := diff(f, r))
     f_SR_theta = lambdify((r, theta), f_theta := diff(f, theta))
@@ -315,6 +353,7 @@ if not GENERIC:
 
     func = lambdify((r, theta), swift_hohenberg)
     func_vals = func(r_vals, theta_vals)
+
 #    print(f"func_vals.size = {func_vals.size}")
 #    print(f"func_vals.shape = {func_vals.shape}")
 #    print(f"func_vals = {func_vals}");
