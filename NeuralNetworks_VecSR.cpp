@@ -3345,7 +3345,6 @@ std::vector<std::pair<std::vector<std::string>, float>>
         std::string expression_type = "prefix",
         bool cache = true,
         double time = 120 /*time to run the algorithm in seconds*/,
-        int interval = 20 /*number of equally spaced points in time to sample the best score thus far*/,
         const char* filename = "" /*name of file to save the results to*/,
         unsigned int num_threads = 0,
         std::vector<int> layers = {},
@@ -3566,6 +3565,7 @@ std::vector<std::pair<std::vector<std::string>, float>>
         {
             throw std::runtime_error("Primary pieces size = 0");
         }
+        puts("Starting evolution now...");
         for (/*int ngen = 0*/; (timeElapsedSince(start_time) < time); /*ngen++*/)
         {
 //            if (ngen && (ngen%5 == 0))
@@ -3641,6 +3641,26 @@ std::vector<std::pair<std::vector<std::string>, float>>
 
 int main()
 {
+    const std::unordered_map<std::string, float (*)(const Eigen::VectorXf&)> func_map =
+    {
+        {"Hemberg_1", Hemberg_1},
+        {"Hemberg_2", Hemberg_2},
+        {"Hemberg_3", Hemberg_3},
+        {"Hemberg_4", Hemberg_4},
+        {"Hemberg_5", Hemberg_5},
+        {"Feynman_1", Feynman_1},
+        {"Feynman_2", Feynman_2},
+        {"Feynman_3", Feynman_3},
+        {"Feynman_4", Feynman_4},
+        {"Feynman_5", Feynman_5},
+    };
+    
+    std::vector<int> layers;
+    std::deque<std::string> layer_types;
+    std::string func_type, weight_update_rule;
+    float eta, theta, gamma, epsilon, beta_1, beta_2, lambda;
+    
+//
     auto start_time = Clock::now();
 //    MultiLayerPerceptron mlp(
 //         std::vector<int>{2,10,9,8,10,8,1},
@@ -3655,29 +3675,30 @@ int main()
 //         /*float beta_1 = */ 0.9f,
 //         /*float beta_2 = */ 0.999f,
 //         /*float lambda = */ 0.01f /*weight decay AdamW*/);
-//    
+////    
 //    Eigen::MatrixXf my_temp_test_data = generateData(20 /*rows*/, 3 /*columns*/, Hemberg_2 /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f);
 //    Data my_test_data;
 //    my_test_data = my_temp_test_data;
 //    my_test_data.print();
-//    float MSE = mlp.train(my_test_data.rows, my_test_data.labels, 100000);
+//    float MSE = mlp.train(my_test_data.rows, my_test_data.labels, 10);
 //    std::cout << "\nFINAL MSE = " << MSE << '\n';
-    
-    GP(generateData(20 /*rows*/, 3 /*columns*/, Hemberg_2 /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f),
+//    exit(1);
+
+    GP(generateData(20 /*rows*/, 3 /*columns*/, func_map.at("Hemberg_2") /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f),
        5 /*fixed depth*/,
        "postfix",
        true /*cache*/,
        100 /*time to run the algorithm in seconds*/,
-       4 /*number of equally spaced points in time to sample the best score thus far*/,
        "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/,
-       1 /*num threads*/,
+       0 /*num threads*/,
        {2,10,5,5,1} /*Neural Network number of perceptrons in i'th layers; first layer is number of inputs (input-layer) */,
        std::deque<std::string>{"sigmoid", "sigmoid", "none", "none"},
-       100000 /*num_epochs*/,
+       10 /*num_epochs*/,
        /* bias = */ 1.0f,
        /*eta = */ 0.5f,
        /*theta = */ 0.01f,
        /*gamma = */ 0.9f,
+       /*epsilon = */ 1e-8f,
        /*beta_1 = */ 0.9f,
        /*beta_2 = */ 0.999f,
        /*lambda = */ 0.01f);

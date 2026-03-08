@@ -1,0 +1,11 @@
+2 2 7 6 1
+sigmoid sigmoid sigmoid none
+Hemberg_1
+NAG
+1e-5
+.8
+.9
+1e-8
+.9
+.999
+1e-5

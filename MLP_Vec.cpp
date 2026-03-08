@@ -226,18 +226,19 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
     
     // STEP 3: Calculate the output error terms
     
-//        delta_k = d MSE(y_k, o_k) / d w_k
-//                = d MSE(y_k, sigmoid(x_k*w_k + b_k)) / d w_k
-//                = d ((1/n) * \sum_{i = 0}^{n-1} (y_{k_{i}} - sigmoid(x_k*w_k + b_k)_{k_{i}})^2) / d w_k
-//                = (1/n) * d (\sum_{i = 0}^{n-1} (y_{k_{i}} - sigmoid(x_k*w_k + b_k)_{k_{i}})^2) / d w_k
-//                = d (y_{k} - sigmoid(x_k*w_k + b_k))^2) / d w_k
-//                = 2 * (y_{k} - o_{k}) * d (- o_{k}) / d w_k
-//                = -2 * (y_k - o_k) * o_k * (1 - o_k)
-//                \propto o_k * (1 - o_k) * (y_k - o_k)
+//       Sigmoid: delta_k = d MSE(y_k, o_k) / d w_k
+//                        = d MSE(y_k, sigmoid(x_k*w_k + b_k)) / d w_k
+//                        = d ((1/n) * \sum_{i = 0}^{n-1} (y_{k_{i}} - sigmoid(x_k*w_k + b_k)_{k_{i}})^2) / d w_k
+//                        = (1/n) * d (\sum_{i = 0}^{n-1} (y_{k_{i}} - sigmoid(x_k*w_k + b_k)_{k_{i}})^2) / d w_k
+//                        = d (y_{k} - sigmoid(x_k*w_k + b_k))^2) / d w_k
+//                        = 2 * (y_{k} - o_{k}) * d (- o_{k}) / d w_k
+//                        = -2 * (y_k - o_k) * o_k * (1 - o_k)
+//                        \propto o_k * (1 - o_k) * (y_k - o_k) * x_k
     
-//                = d (y_{k} - (x_k*w_k + b_k))^2) / d w_k
-//                = 2 * (y_{k} - (x_k*w_k + b_k)) * d (- (x_k*w_k + b_k)) / d w_k
-//                = -2 * (y_k - (x_k*w_k + b_k)) * x_k
+//        Linear: delta_k = d MSE(y_k, o_k) / d w_k
+//                        = d (y_{k} - (x_k*w_k + b_k))^2) / d w_k
+//                        = 2 * (y_{k} - (x_k*w_k + b_k)) * d (- (x_k*w_k + b_k)) / d w_k
+//                        = -2 * (y_k - (x_k*w_k + b_k)) * x_k
 
     //Calculate the error terms for the output layer
     for (int i = 0; i < this->layers.back(); i++) //each neuron in the last layer 
