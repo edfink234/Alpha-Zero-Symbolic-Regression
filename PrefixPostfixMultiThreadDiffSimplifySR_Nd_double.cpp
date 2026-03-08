@@ -34,7 +34,7 @@
 #include <unsupported/Eigen/AutoDiff>
 #include <boost/unordered/concurrent_flat_map.hpp>
 #include <boost/spirit/include/qi.hpp> //For fast string-to-double conversion!
-#define TIME_EVAL false
+#define TIME_EVAL true
 
 #ifndef DBL_MAX
     #define DBL_MAX std::numeric_limits<double>::max()
@@ -654,7 +654,9 @@ bool isZero(const Eigen::VectorXd& vec, double tolerance = 1e-5)
             return true; // Return true if any NaN is present in values
         }
     }
-    return ((vec.array().abs().maxCoeff() <= tolerance) && (median(vec) <= tolerance));
+    double variation = vec.array().abs().maxCoeff();
+//    std::cout << "variation = " << variation << ", tolerance = " << tolerance << '\n';
+    return ((variation <= tolerance) && (median(vec) <= tolerance));
     //MARK: If we want to make sure that the max value AND the median are both bigger than `tolerance`, then we should change the `&&` to `||` (and maybe also change `median(vec)` to `median(abs(vec))`)
 }
 
@@ -5850,7 +5852,14 @@ struct Board
                 if (!this->simplify_original)
                 {
                     //this->pieces = this->temp_pieces;
-                    this->pieces.swap(this->temp_pieces);
+                    #if TIME_EVAL
+                    {
+                        ScopedTimer t_build("swapping_pieces_with_temp_pieces");
+                        this->pieces.swap(this->temp_pieces);
+                    }
+                    #else
+                        this->pieces.swap(this->temp_pieces);
+                    #endif
                 }
                 return res;
             }
@@ -9347,13 +9356,10 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
         Best expression = ((((((((0.0037348549117148743 + x0) + 0.3533380261537471) + cos((sin(x1) - 0.6931471805599453))) ^ (sin(sqrt(x0)) + 11.176528193614349)) * 2.714063572005533e-13) + ((2.714063472005533e-13 * (((x0 + 1.9118173344004632) + ((x0 + x1) + (6.28319 + x1))) ^ (cos(x1) - ~(sech(x1))))) + 0.796000037462495)) - (((0.9998848754538172 ^ (arcsin(tanh(x0)) / ((sech(x0) + 0.6931471805599453) / ((0.01 + x0) ^ 4)))) * (sin(~((x1 - 4.692820413780688e-06))) * 0.8654678907925701)) * (0.7073944917315313 * cos(asin(cos(x0)))))) - ((((((x0 ^ 0.9999930254050717) + (x0 ^ ((1 + x0) ^ 0.01))) ^ ((0.015090799859337816 ^ (6.28319 / (2 + x0))) + 7.593328980574705)) * ((0.2858069216544935 ^ ((9.079985933781724e-05 + x0) + 10.010090799859338)) * (((sech(x0) ^ (x0 / 10)) + sin(ln(x0))) - sin(((0.01 + x1) + cos(x1)))))) + (((-6.89937253158146 + (-10 - ((x1 + 1) * 12.56638))) / (((0.00999966667999946 / x0) ^ (x0 ^ 1.5607961601207294)) - ((x0 / 0.6931471805599453) + ((x0 * x1) + 1.9201520944996069e+06)))) + (((((x1 + x1) + x1) * (~(x0) + x1)) / (((x0 ^ x0) - 1.5707963267948966) + 3.645259197930204e+11)) + -0.06816548191850429))) + (((((0.3333380261537471 + (0.0001 + x0)) ^ 0.9801980198019802) / ((0.02 + (0.04661899347368653 + (0.010000 + x0))) + (((x0 + 30) * (0.01 ^ x0)) + 1.547923178056138))) ^ (((0.02746970982342975 + (0.01 + sin(x0))) + (0.16042608309595058 + (0.1 + (0.01 + x0)))) * (sin((cos(x1) + (0.01 + x1))) + (10 / (0.1691548242214544 + (0.01 + x0)))))) + ((((x1 + (0.7615941559557649 * x1)) * 0.7437513329402264) / (((10 * (0.01 * x0)) - -1.6781430581529049) + -7619.606596214227)) + ((10.761594155955764 / (((x0 - 4) * 0.9092974268256816) + ((2 + x0) + -10434.804563901069))) + -0.014461216956581561)))))
         Best expression (original format) = 0.0037348549117148743 x0 + 0.3533380261537471 + x1 sin 0.6931471805599453 - cos + x0 sqrt sin 11.176528193614349 + ^ 2.714063572005533e-13 * 2.714063472005533e-13 x0 1.9118173344004632 + x0 x1 + 6.28319 x1 + + + x1 cos x1 sech ~ - ^ * 0.796000037462495 + + 0.9998848754538172 x0 tanh arcsin x0 sech 0.6931471805599453 + 0.01 x0 + 4 ^ / / ^ x1 4.692820413780688e-06 - ~ sin 0.8654678907925701 * * 0.7073944917315313 x0 cos asin cos * * - x0 0.9999930254050717 ^ x0 1 x0 + 0.01 ^ ^ + 0.015090799859337816 6.28319 2 x0 + / ^ 7.593328980574705 + ^ 0.2858069216544935 9.079985933781724e-05 x0 + 10.010090799859338 + ^ x0 sech x0 10 / ^ x0 ln sin + 0.01 x1 + x1 cos + sin - * * -6.89937253158146 -10 x1 1 + 12.56638 * - + 0.00999966667999946 x0 / x0 1.5607961601207294 ^ ^ x0 0.6931471805599453 / x0 x1 * 1.9201520944996069e+06 + + - / x1 x1 + x1 + x0 ~ x1 + * x0 x0 ^ 1.5707963267948966 - 3.645259197930204e+11 + / -0.06816548191850429 + + + 0.3333380261537471 0.0001 x0 + + 0.9801980198019802 ^ 0.02 0.04661899347368653 0.010000 x0 + + + x0 30 + 0.01 x0 ^ * 1.547923178056138 + + / 0.02746970982342975 0.01 x0 sin + + 0.16042608309595058 0.1 0.01 x0 + + + + x1 cos 0.01 x1 + + sin 10 0.1691548242214544 0.01 x0 + + / + * ^ x1 0.7615941559557649 x1 * + 0.7437513329402264 * 10 0.01 x0 * * -1.6781430581529049 - -7619.606596214227 + / 10.761594155955764 x0 4 - 0.9092974268256816 * 2 x0 + -10434.804563901069 + + / -0.014461216956581561 + + + + -
     Depth = 10:
-        Best score = 0.000686916, SNE = 1454.78
-        Squared-norm error for each equation: 1454.59 0.184206 0.00512123
-        Best expression = ((((((((-0.01 + x0) + 0.455196050124308) + cos((sin(x1) - 44.68547718055995))) ^ (sin(sqrt(x0)) + 11.267752026755982)) * ((6.123233995736766e-17 / (2.000909090909091 - (6.293194692820414 * x0))) + 2.7140635720055333e-13)) + (((((((x1 / x0) / (10 / x0)) + ((6.28319 / x0) * 4)) * 1e-20) + 2.714063472005533e-13) * (((exp(x0) + (x1 + (x1 + 1.9118173344004632))) + (2.7105652770783233 + (6 + x1))) ^ (cos((0.01 + ~(x1))) - ~(sech(x1))))) + ((10 ^ (x0 - (10 ^ (x1 + 10)))) + 0.797505621626542))) - ((((sech((10 + x0)) + 0.9998848754538172) ^ (arcsin(tanh(x0)) / ((tanh(sech(x0)) + 0.6931471805599453) / ((0.02 + x0) ^ 4.029999999999999)))) * (sin(~((6.28319 + x1))) * 0.859581582731662)) * (0.705026843555238 * cos(asin(cos(x0)))))) - (((((x0 + ((-0.003734854911714874 + (x0 ^ 0.9999930254050716)) ^ (x0 ^ 0.01))) ^ ((0.016684885165218877 ^ (6.28319 / (2 + x0))) + (((-1 + x0) / 1586.8333027696767) + 7.593328980574705))) * ((0.2858069216544935 ^ ((9.07998596092236e-05 + (1e-08 + x0)) + 10.01391645463039)) * (((sech(x0) ^ (x0 / 13.01)) + sin(ln(x0))) - sin((((1 / x0) + x1) + cos(x1)))))) + (((0.0001 + x0) - (x0 + 0.00999966667999946)) + ((((1 + (6.29319 - (6.28319 ^ x0))) * (~((x0 * 2)) + -10.60517018598809)) / ((((6.28319 + x0) ^ (x1 + 1)) * (54.59815003314424 * exp(x0))) + (~((x0 * x0)) + (~(x0) + 3.645259197967372e+11)))) + -0.0650154443175154))) + (((((0.3370775738858757 + ((sin(x1) * 0.010000166674167114) + (0.01 + x0))) ^ 0.9801980115573659) / ((0.03259079985933782 + (0.04661899347368653 + (0.01 + x0))) + ((((10 ^ x0) + (x0 + 30)) * (0.01 ^ x0)) + (((x0 + 10) ^ ~(x0)) + 1.5707963267948966)))) ^ ((((sech(sin(x1)) ^ (x1 * x0)) + (0.01831563888873418 + sin(x0))) + (0.20830340697973063 + (0.12659154824221455 + (-0.01 + x0)))) * (sin((cos((0.01 + x1)) + (0.04 + (0.01 + x1)))) + (((0.010000166674167114 * (0.01 ^ x1)) + 9.99) / (0.2201548242214544 + (0.01 + (0.01 + x0))))))) + (((((sin(x0) * 1.010050167084168) + -11.826850961289624) + ((tanh(sin(x0)) + 46.01954314648535) + ~((16.28319 + ln(x0))))) ^ (-9.347415387092296 - (-0.1784982098886334 * ((x0 + (0.01 + x0)) * 2.0001)))) + ((17.351727765946997 / (((2 + x1) / 0.9999500004166321) + ((x0 - -1) + -10421.794563901069))) + -0.013689848356220264)))))
-        Best expression (original format) = -0.01 x0 + 0.455196050124308 + x1 sin 44.68547718055995 - cos + x0 sqrt sin 11.267752026755982 + ^ 6.123233995736766e-17 2.000909090909091 6.293194692820414 x0 * - / 2.7140635720055333e-13 + * x1 x0 / 10 x0 / / 6.28319 x0 / 4 * + 1e-20 * 2.714063472005533e-13 + x0 exp x1 x1 1.9118173344004632 + + + 2.7105652770783233 6 x1 + + + 0.01 x1 ~ + cos x1 sech ~ - ^ * 10 x0 10 x1 10 + ^ - ^ 0.797505621626542 + + + 10 x0 + sech 0.9998848754538172 + x0 tanh arcsin x0 sech tanh 0.6931471805599453 + 0.02 x0 + 4.029999999999999 ^ / / ^ 6.28319 x1 + ~ sin 0.859581582731662 * * 0.705026843555238 x0 cos asin cos * * - x0 -0.003734854911714874 x0 0.9999930254050716 ^ + x0 0.01 ^ ^ + 0.016684885165218877 6.28319 2 x0 + / ^ -1 x0 + 1586.8333027696767 / 7.593328980574705 + + ^ 0.2858069216544935 9.07998596092236e-05 1e-08 x0 + + 10.01391645463039 + ^ x0 sech x0 13.01 / ^ x0 ln sin + 1 x0 / x1 + x1 cos + sin - * * 0.0001 x0 + x0 0.00999966667999946 + - 1 6.29319 6.28319 x0 ^ - + x0 2 * ~ -10.60517018598809 + * 6.28319 x0 + x1 1 + ^ 54.59815003314424 x0 exp * * x0 x0 * ~ x0 ~ 3.645259197967372e+11 + + + / -0.0650154443175154 + + + 0.3370775738858757 x1 sin 0.010000166674167114 * 0.01 x0 + + + 0.9801980115573659 ^ 0.03259079985933782 0.04661899347368653 0.01 x0 + + + 10 x0 ^ x0 30 + + 0.01 x0 ^ * x0 10 + x0 ~ ^ 1.5707963267948966 + + + / x1 sin sech x1 x0 * ^ 0.01831563888873418 x0 sin + + 0.20830340697973063 0.12659154824221455 -0.01 x0 + + + + 0.01 x1 + cos 0.04 0.01 x1 + + + sin 0.010000166674167114 0.01 x1 ^ * 9.99 + 0.2201548242214544 0.01 0.01 x0 + + + / + * ^ x0 sin 1.010050167084168 * -11.826850961289624 + x0 sin tanh 46.01954314648535 + 16.28319 x0 ln + ~ + + -9.347415387092296 -0.1784982098886334 x0 0.01 x0 + + 2.0001 * * - ^ 17.351727765946997 2 x1 + 0.9999500004166321 / x0 -1 - -10421.794563901069 + + / -0.013689848356220264 + + + + -
-
-
-
+        Best score = 0.000727603, SNE = 1373.38
+        Squared-norm error for each equation: 1373.21 0.166377 0.000505837
+        Best expression = ((((((((-0.01 + x0) + 0.455196050124308) + cos((sin(x1) - 38.41228718055995))) ^ (sin(sqrt(x0)) + 11.277752026755984)) * ((6.123233995736766e-17 / (2.000909090909091 - (6.293194692820414 * x0))) + 2.7140635720055333e-13)) + ((((((524.9650208478826 / sqrt(x0)) - -0.6270287938321961) * 1e-20) + 2.714063472005533e-13) * ((((exp(x0) * 3.9093412132121808) + ((x1 - 1.2731418403287036) + (x1 + 0.9536123177025205))) + (1.8744477281649745 + (5.538718354569751 + tanh(x1)))) ^ (cos((0.02 + ~(x1))) - ~(sech(x1))))) + ((10 ^ (x0 - (10 ^ (x1 + 10)))) + 0.797505621626542))) - ((((sech(((cos(x0) + 8.337644957022206) + x0)) + 0.9998848754538172) ^ (arcsin(tanh(x0)) / ((tanh(sech(x0)) + 0.6931471805599453) / ((0.02 + x0) ^ 4.029999999999999)))) * (sin(~((4.692820413780688e-06 + (6.28319 + x1)))) * 0.859581582731662)) * (0.705026843555238 * cos(asin(cos(x0)))))) - ((((((-0.0006709252809725988 + x0) + ((-0.003734854911714874 + (x0 ^ 0.9999930254050716)) ^ (x0 ^ 0.01))) ^ ((0.016684885165218877 ^ (6.107727907258404 / (1.5121364201163399 + x0))) + (((-2.980591979401443 + x0) / 1578.023163355777) + 7.589167512209233))) * ((0.2858069216544935 ^ ((9.07998596092236e-05 + (0.04016556402485511 + x0)) + (sech(x0) + 10.01391645463039))) * (((sech(x0) ^ (x0 / 14.377259279870714)) + sin(ln(x0))) - sin((((1 / x0) + x1) + cos(x1)))))) + (((0.0001 + x0) - (x0 + 0.010000166674167114)) + ((((6.675924171137609 + (-0.6991524944848346 - (6.28319 ^ x0))) * (~((x0 * 2)) + -15.630605014297943)) / ((((5.188338280534169 + x0) ^ (x1 + 1)) * (54.49042306836374 * exp(x0))) + (~((x0 * x0)) + (~(x0) + 3.645259197920546e+11)))) + -0.06501075242842422))) + (((((0.3370775738858757 + ((sin(x1) * 0.04909145344368279) + (0.01 + x0))) ^ 0.9801980115573659) / ((0.0877463714544842 + (0.04661899347368653 + x0)) + (((4.10897227379548 + (x0 + 34.86073759978012)) * (0.01 ^ x0)) + (((x0 + 11.858193715326825) ^ ~(x0)) + 1.5915874345874084)))) ^ ((((sech(sin(x1)) ^ (x1 + x0)) + (0.0018674339681551788 + sin(x0))) + (0.20830340697973063 + (0.02 + x0))) * (sin((cos((0.013890483542275503 + x1)) + (6.32319 + (0.01 + x1)))) + (9.743054999010756 / (0.2201548242214544 + (0.0880337499474819 + (0.07107225622959067 + x0))))))) + (((((sin(x0) * 0.8411564562560385) + -11.58096524875302) + ((tanh(sin(x0)) + 46.175485228361104) + ~((15.82438606762003 + ln(x0))))) ^ (-9.337515387092296 - (-0.1784982098886334 * ((x0 + (-0.07070467021988204 + x0)) * 2.0001)))) + ((14.358501558861873 / ((2.5243523628294544 - (-2.701891244393644 + x1)) + (x0 + -10427.268448598319))) + -0.013694541176634044)))))
+        Best expression (original format) = -0.01 x0 + 0.455196050124308 + x1 sin 38.41228718055995 - cos + x0 sqrt sin 11.277752026755984 + ^ 6.123233995736766e-17 2.000909090909091 6.293194692820414 x0 * - / 2.7140635720055333e-13 + * 524.9650208478826 x0 sqrt / -0.6270287938321961 - 1e-20 * 2.714063472005533e-13 + x0 exp 3.9093412132121808 * x1 1.2731418403287036 - x1 0.9536123177025205 + + + 1.8744477281649745 5.538718354569751 x1 tanh + + + 0.02 x1 ~ + cos x1 sech ~ - ^ * 10 x0 10 x1 10 + ^ - ^ 0.797505621626542 + + + x0 cos 8.337644957022206 + x0 + sech 0.9998848754538172 + x0 tanh arcsin x0 sech tanh 0.6931471805599453 + 0.02 x0 + 4.029999999999999 ^ / / ^ 4.692820413780688e-06 6.28319 x1 + + ~ sin 0.859581582731662 * * 0.705026843555238 x0 cos asin cos * * - -0.0006709252809725988 x0 + -0.003734854911714874 x0 0.9999930254050716 ^ + x0 0.01 ^ ^ + 0.016684885165218877 6.107727907258404 1.5121364201163399 x0 + / ^ -2.980591979401443 x0 + 1578.023163355777 / 7.589167512209233 + + ^ 0.2858069216544935 9.07998596092236e-05 0.04016556402485511 x0 + + x0 sech 10.01391645463039 + + ^ x0 sech x0 14.377259279870714 / ^ x0 ln sin + 1 x0 / x1 + x1 cos + sin - * * 0.0001 x0 + x0 0.010000166674167114 + - 6.675924171137609 -0.6991524944848346 6.28319 x0 ^ - + x0 2 * ~ -15.630605014297943 + * 5.188338280534169 x0 + x1 1 + ^ 54.49042306836374 x0 exp * * x0 x0 * ~ x0 ~ 3.645259197920546e+11 + + + / -0.06501075242842422 + + + 0.3370775738858757 x1 sin 0.04909145344368279 * 0.01 x0 + + + 0.9801980115573659 ^ 0.0877463714544842 0.04661899347368653 x0 + + 4.10897227379548 x0 34.86073759978012 + + 0.01 x0 ^ * x0 11.858193715326825 + x0 ~ ^ 1.5915874345874084 + + + / x1 sin sech x1 x0 + ^ 0.0018674339681551788 x0 sin + + 0.20830340697973063 0.02 x0 + + + 0.013890483542275503 x1 + cos 6.32319 0.01 x1 + + + sin 9.743054999010756 0.2201548242214544 0.0880337499474819 0.07107225622959067 x0 + + + / + * ^ x0 sin 0.8411564562560385 * -11.58096524875302 + x0 sin tanh 46.175485228361104 + 15.82438606762003 x0 ln + ~ + + -9.337515387092296 -0.1784982098886334 x0 -0.07070467021988204 x0 + + 2.0001 * * - ^ 14.358501558861873 2.5243523628294544 -2.701891244393644 x1 + - x0 -10427.268448598319 + + / -0.013694541176634044 + + + + -
      ```
 x = "-0.285806921654494**(r + 10.0100907998593)*(r**1.00009081398177 + r**((r + 1)**0.0100001666741671))**(0.015**(6.28319/(r + 2)) + 7.59399521303526)*(- sin(theta + cos(theta) + 6.28319) + sin(log(r))) + 0.612417858855597*0.999884875453817**(1.4426686039141*(r + 0.01)**4*(1.6*(tanh(.6*r))))*sqrt(1 - cos(r)**2)*sin(theta) + 0.879032771381193"
 print(x.replace("x0","r").replace("x1","theta").replace("^","**").replace("~","-"))
@@ -10840,7 +10846,21 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                 }
                 else if (pert_option == "constants_only")
                 {
-                    //TODO: Exactly the same as (n[jdx] == 0) except only perturb constants (so the part `piece_to_replace_with = Board::una_bin_leaf_legal_moves_dict[false][false][true][Board::leaf_dist(generator)];` only)
+                    //TODO: MAKE MORE EFFICIENT
+                    std::vector<int> const_idxs; //indices of constants
+                    for (size_t piece_idx = 0; piece_idx < x.pieces[jdx].size(); piece_idx++)
+                    {
+                        if (isdouble(x.pieces[jdx][piece_idx]))
+                        {
+                            const_idxs.push_back(piece_idx); //push back index of that double
+                        }
+                    }
+                    temp_sz = const_idxs.size();
+                    std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
+                    piece_to_perturb_idx = distribution(generator);
+                    piece_to_perturb = x.pieces[jdx][const_idxs[piece_to_perturb_idx]]; //index of randomly selected double
+                    x.pieces[jdx][const_idxs[piece_to_perturb_idx]] =
+                    to_string_general(Stod(piece_to_perturb) + x.vel_dist(generator)); //perturb the double by a random real ∈ (-1, 1)
                 }
                 //else: `pert_option == "sub_tree"`
                 //Step 1a: check for the special case of a depth-0 (i.e. 1 operand) perturbation
@@ -11316,15 +11336,15 @@ namespace ExampleProblems
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                 std::vector<std::string>{} /*operators to restrict in the search*/,
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
-                {split("x0 0.455196050124308 + x1 sin 38.39228718055995 - cos + x0 sqrt sin 11.259320763460972 + ^ 6.123233995736766e-17 2.000909090909091 6.293194692820414 x0 * - / 2.7140635720055333e-13 + * 0.7615941559557649 6.28319 x0 / 1.5707963267948966 * + 1e-20 * 2.714063472005533e-13 + x0 exp x1 ~ - x0 x1 1.9118173344004632 + + + 2.7105652770783233 6 x0 x1 + + + + -0.01 x1 ~ + cos x1 sech ~ - ^ * 10 x0 10 x1 10 + ^ - ^ 0.797505621626542 + + + 10 x0 + sech 0.9998848754538172 + x0 tanh arcsin x0 sech sin 0.6931471805599453 + 0.010000166674167114 x0 + 4.029999999999999 ^ / / ^ 6.28319 6.28319 x1 + + ~ sin 0.859581582731662 * * 0.7060683648546017 x0 cos asin cos * * - x0 -5.000083335568168e-05 x0 0.9999930254050716 ^ + x0 0.01 ^ ^ + 0.01668489516521888 6.29319 2 x0 + / ^ -0.6536436208636119 x0 + 6.28319 x0 / 1576.5501127696766 + / 7.593328980574705 + + ^ 0.2858069216544935 9.07998596092236e-05 1e-08 x0 + + 10.013825654771052 + ^ x0 sech x0 13.01 / ^ x0 ln sin + 1 x0 / x1 + x1 cos + sin - * * x0 x0 0.010029524422775975 + - 10.283190000000001 0.01 x1 + 6.28319 x0 ^ - + x0 2 * ~ -8.60517018598809 + * 6.28319 x0 + x1 1 + ^ 54.59815003314424 x0 exp * * x0 x0 * ~ 0.01 x0 / 3.645259197967372e+11 + + + / -0.06510624510817578 + + + 0.33334271897416085 x1 sin 0.010000166674167114 * 0.00999966667999946 x0 + + + 0.980198015679673 ^ 0.04259079985933782 0.04661899347368653 0.01 x0 + + + 10 x0 * x0 30 + + 0.01 x0 ^ * 1.5707963267948966 + + / x1 sin sech x0 x1 x0 * + ^ 0.013734854911714877 x0 sin + + 0.20830340697973063 0.12659154824221455 0.01 x0 + + + + 0.01 x1 + cos 0.04 0.01 x1 + + + sin 9.99 0.2201548242214544 0.01 0.01 x0 + + + / + * ^ x0 sin 1.010050167084168 * -11.826850961289624 + x0 sin tanh 46.01954314648535 + 16.28319 x0 ln + ~ + + -9.374043580706646 -0.1784982098886334 x0 0.01 x0 + + 2.0001 * * - ^ 16.315340317033833 0.6931471805599453 7.28319 x1 + * 10 x0 + -10427.794563901069 + + / -0.013694541176634044 + + + + -")} /*seed expressions*/,
-                (num_threads == 1) /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
+                {split("-0.01 x0 + 0.455196050124308 + x1 sin 38.41228718055995 - cos + x0 sqrt sin 11.277752026755984 + ^ 6.123233995736766e-17 2.000909090909091 6.293194692820414 x0 * - / 2.7140635720055333e-13 + * 525.2520203645739 x0 sqrt / -1.3093366573019112 - 1e-20 * 2.714063472005533e-13 + x0 exp 3.5885192505732406 * x1 1.0933883232518977 - x1 1.9118173344004632 + + + 1.4196983652883857 5.538718354569751 x1 tanh + + + 0.02 x1 ~ + cos x1 sech ~ - ^ * 10 x0 10 x1 10 + ^ - ^ 0.797505621626542 + + + x0 cos 8.336006893072513 + x0 + sech 0.9998848754538172 + x0 tanh arcsin x0 sech tanh 0.6931471805599453 + 0.02 x0 + 4.029999999999999 ^ / / ^ 4.692820413780688e-06 6.28319 x1 + + ~ sin 0.859581582731662 * * 0.705026843555238 x0 cos asin cos * * - -0.0006709252809725988 x0 + -0.003734854911714874 x0 0.9999930254050716 ^ + x0 0.01 ^ ^ + 0.016684885165218877 6.158960788875678 1.2854719256238702 x0 + / ^ -3.4526384524240594 x0 + 1579.0055898968415 / 7.589167512209233 + + ^ 0.2858069216544935 9.07998596092236e-05 1e-08 x0 + + x0 sech 10.01391645463039 + + ^ x0 sech x0 14.377259279870714 / ^ x0 ln sin + 1 x0 / x1 + x1 cos + sin - * * 0.0001 x0 + x0 0.010000166674167114 + - 7.76624303132544 -0.6991524944848346 6.28319 x0 ^ - + x0 2 * ~ -15.236594602537023 + * 5.57045151329814 x0 + x1 1 + ^ 52.74087337792383 x0 exp * * x0 x0 * ~ x0 ~ 3.645259197930597e+11 + + + / -0.06501075242842422 + + + 0.3370775738858757 x1 sin 0.04909145344368279 * 0.01 x0 + + + 0.9801980115573659 ^ 0.0877463714544842 0.04661899347368653 x0 + + 2.8801662362551346 x0 33.9631840629633 + + 0.01 x0 ^ * x0 11.963259989500429 + x0 ~ ^ 1.5915874345874084 + + + / x1 sin sech x1 x0 + ^ 0.0018674339681551788 x0 sin + + 0.20830340697973063 0.02 x0 + + + 0.013890483542275503 x1 + cos 6.32319 0.01 x1 + + + sin 9.983463454845857 0.2201548242214544 0.0880337499474819 0.07107225622959067 x0 + + + / + * ^ x0 sin 1.3356110484572103 * -11.765829489087697 + x0 sin tanh 46.06852000410661 + 15.82438606762003 x0 ln + ~ + + -9.337515387092296 -0.1784982098886334 x0 0.01 x0 + + 2.0001 * * - ^ 15.1369135551189 2.5438686236020427 -2.701891244393644 x1 + - x0 -10427.268448598319 + + / -0.013694541176634044 + + + + -")} /*seed expressions*/,
+                false/*(num_threads == 1)*/ /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
                 0.0 /*T_max*/,
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
-                true /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                "sub_tree" /*perturbation option: either "sub_array", "n_random", or (default) "sub_tree"*/);
+                false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
+                "constants_only" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/);
         }
     }
     
@@ -11398,7 +11418,7 @@ namespace ExampleProblems
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                "sub_tree" /*perturbation option: either "sub_array", "n_random", or (default) "sub_tree"*/);
+                "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/);
         }
     }
 
@@ -11474,7 +11494,7 @@ namespace ExampleProblems
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                "sub_tree" /*perturbation option: either "sub_array", "n_random", or (default) "sub_tree"*/);
+                "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/);
         }
     }
     void WildfireSpreadTSTest(int random_seed, const char* algorithm, double time)
@@ -11559,7 +11579,7 @@ namespace ExampleProblems
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                "sub_tree" /*perturbation option: either "sub_array", "n_random", or (default) "sub_tree"*/);
+                "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/);
         }
     }
     void InPaintWildfireSpreadTSTest(int random_seed, const char* algorithm, double time)
@@ -11643,7 +11663,7 @@ namespace ExampleProblems
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                "sub_tree" /*perturbation option: either "sub_array", "n_random", or (default) "sub_tree"*/);
+                "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/);
         }
     }
 
@@ -11839,7 +11859,7 @@ for i in range(len(consts)):
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "WierdTrackSR.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                "sub_array" /*perturbation option: either "sub_array", "n_random", or (default) "sub_tree"*/);
+                "sub_array" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/);
         }
     }
 };

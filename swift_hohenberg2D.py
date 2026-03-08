@@ -325,7 +325,7 @@ r_vals, theta_vals = [None]*2
 func_vals = None
 N = 1000
 if not GENERIC:
-    r_vals, theta_vals = np.meshgrid(np.linspace(0.01, 100, N), np.linspace(0, 2*pi, N))
+    r_vals, theta_vals = np.meshgrid(np.linspace(0.01, 10, N), np.linspace(0, 2*pi, N))
     terms = sp.Add.make_args(f)  # f is your full expression
     term_funcs = [sp.lambdify((r, theta), t, "numpy") for t in terms]
 
