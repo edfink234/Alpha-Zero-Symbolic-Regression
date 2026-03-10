@@ -648,7 +648,7 @@ def test_visualize():
                 plot_pn_expression_tree(complete_pn_expr, save = save, include_expression_in_title = False)
 
             else:
-                complete_rpn_expr = "-6.437971983873846 x0 -5.4145382360994985 * sin * 4 * 21.70067586695228 13.412300028120239 x0 * sin * 4.277109509481168 + - 9.486665504681843 x0 -9.87136872484632 * sin * +"
+                complete_rpn_expr = "3.0192355096568826 60.78958587001679 78.3535580957286 x0 * - sech *"
                 print(f"rpn_to_infix = {rpn_to_infix(complete_rpn_expr)}")
                 
                 

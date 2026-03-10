@@ -11024,7 +11024,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                 
                 if (use_const_pieces)
                 {
-                    if (Board::expression_dict.size() == Board::max_expression_dict_sz)
+                    if (Board::expression_dict.size() >= Board::max_expression_dict_sz)
                     {
                         std::cout << "Clearing expression_dict now\n";
                         Board::expression_dict.clear();
@@ -11170,7 +11170,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
                 
                 if (use_const_pieces)
                 {
-                    if (Board::expression_dict.size() == Board::max_expression_dict_sz)
+                    if (Board::expression_dict.size() >= Board::max_expression_dict_sz)
                     {
                         std::cout << "Clearing expression_dict now\n";
                         Board::expression_dict.clear();
@@ -11879,7 +11879,7 @@ for i in range(len(consts)):
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                 std::vector<std::string>{"exp", "ln", "log", "^", "/"} /*operators to restrict in the search*/,
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
-                {/*split(seed_exprs[track_idx])*/} /*seed expressions*/,
+                {split("3.0192355096568826 60.78958587001679 78.3535580957286 x0 * - sech *")/*split(seed_exprs[track_idx])*/} /*seed expressions*/,
                 (num_threads == 1) /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,

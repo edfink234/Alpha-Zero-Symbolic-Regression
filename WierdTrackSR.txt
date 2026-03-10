@@ -817,3 +817,10 @@ Best score = 0.0102255, SNE = 96.7944
 Squared-norm error for each equation: 93.2705 3.52397 
 Best expression = (3.0192355096568826 * sech((60.78958587001679 - (78.3535580957286 * x0))))
 Best expression (original format) = 3.0192355096568826 60.78958587001679 78.3535580957286 x0 * - sech *
+
+Unique expressions = 14
+Time spent fitting = 0 seconds
+Best score = 0.0102255, SNE = 96.7944
+Squared-norm error for each equation: 93.2705 3.52397 
+Best expression = (3.0192355096568826 * sech((60.78958587001679 - (78.3535580957286 * x0))))
+Best expression (original format) = 3.0192355096568826 60.78958587001679 78.3535580957286 x0 * - sech *
