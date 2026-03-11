@@ -1,602 +1,553 @@
 
-Unique expressions = 28
+Unique expressions = 21
 Time spent fitting = 0 seconds
-Best score = 0.00704677, SNE = 140.909
-Squared-norm error for each equation: 140.333 0.576043 
-Best expression = (1 + (x0 + -0.6536436208636119))
-Best expression (original format) = 1 x0 -0.6536436208636119 + +
-
-Unique expressions = 33
-Time spent fitting = 0.0001585 seconds
-Best score = 0.00957947, SNE = 103.39
-Squared-norm error for each equation: 102.82 0.569653 
-Best expression = (x0 - 1.1661655356283531)
-Best expression (original format) = x0 1.1661655356283531 -
-
-Unique expressions = 41
-Time spent fitting = 0.0001585 seconds
-Best score = 0.0141069, SNE = 69.8874
-Squared-norm error for each equation: 69.3053 0.582122 
-Best expression = (tanh((sqrt(x0) * 1.391142550503047)) - 0.7237368419565787)
-Best expression (original format) = x0 sqrt 1.391142550503047 * tanh 0.7237368419565787 -
-
-Unique expressions = 53
-Time spent fitting = 0.000499625 seconds
-Best score = 0.0147757, SNE = 66.6787
-Squared-norm error for each equation: 66.0081 0.670623 
-Best expression = (~(x0) - (4 - 4.574980777408063))
-Best expression (original format) = x0 ~ 4 4.574980777408063 - -
-
-Unique expressions = 72
-Time spent fitting = 0.000852459 seconds
-Best score = 0.0157122, SNE = 62.6447
-Squared-norm error for each equation: 62.0661 0.57858 
-Best expression = (tanh((sech(x0) * 1.1226512883143662)) - 0.7237368419565787)
-Best expression (original format) = x0 sech 1.1226512883143662 * tanh 0.7237368419565787 -
-
-Unique expressions = 182
-Time spent fitting = 0.00327221 seconds
-Best score = 0.0157408, SNE = 62.5291
-Squared-norm error for each equation: 61.9642 0.564892 
-Best expression = (sech(x0) - 0.8012583803068769)
-Best expression (original format) = x0 sech 0.8012583803068769 -
-
-Unique expressions = 209
-Time spent fitting = 0.0036305 seconds
-Best score = 0.015746, SNE = 62.5081
-Squared-norm error for each equation: 61.9064 0.601719 
-Best expression = (sech(x0) - (2 * (1 - 0.5854690204772264)))
-Best expression (original format) = x0 sech 2 1 0.5854690204772264 - * -
-
-Unique expressions = 341
-Time spent fitting = 0.00793284 seconds
-Best score = 0.0157496, SNE = 62.4938
-Squared-norm error for each equation: 61.9064 0.587381 
-Best expression = (sech(x0) - (1.6703996613762042 - 0.8414709848078965))
-Best expression (original format) = x0 sech 1.6703996613762042 0.8414709848078965 - -
-
-Unique expressions = 438
-Time spent fitting = 0.0113225 seconds
-Best score = 0.0157551, SNE = 62.4717
-Squared-norm error for each equation: 61.9064 0.565253 
-Best expression = (sech(x0) - 0.8289303595099422)
-Best expression (original format) = x0 sech 0.8289303595099422 -
-
-Unique expressions = 490
-Time spent fitting = 0.0132725 seconds
-Best score = 0.0157551, SNE = 62.4717
-Squared-norm error for each equation: 61.9064 0.565253 
-Best expression = (sech(x0) - (0.3997266863074238 - -0.42920367320510344))
-Best expression (original format) = x0 sech 0.3997266863074238 -0.42920367320510344 - -
-
-Unique expressions = 555
-Time spent fitting = 0.015327 seconds
-Best score = 0.0157562, SNE = 62.4669
-Squared-norm error for each equation: 61.9012 0.565754 
-Best expression = (sech(x0) - (0.8429972125595719 - (0.02445729748379788 * x0)))
-Best expression (original format) = x0 sech 0.8429972125595719 0.02445729748379788 x0 * - -
-
-Unique expressions = 961
-Time spent fitting = 0.029713 seconds
-Best score = 0.0167466, SNE = 58.7137
-Squared-norm error for each equation: 58.1437 0.569954 
-Best expression = (1.189207115002721 * (tanh(x0) - (x0 * x0)))
-Best expression (original format) = 1.189207115002721 x0 tanh x0 x0 * - *
-
-Unique expressions = 993
-Time spent fitting = 0.0315572 seconds
-Best score = 0.0169114, SNE = 58.1318
-Squared-norm error for each equation: 57.5589 0.5729 
-Best expression = (1.4142135623730951 * (tanh(x0) - (x0 * x0)))
-Best expression (original format) = 1.4142135623730951 x0 tanh x0 x0 * - *
-
-Unique expressions = 1005
-Time spent fitting = 0.0319771 seconds
-Best score = 0.0172163, SNE = 57.0846
-Squared-norm error for each equation: 56.4997 0.584891 
-Best expression = (~(-2.3241567111374057) * (tanh(x0) - (x0 * x0)))
-Best expression (original format) = -2.3241567111374057 ~ x0 tanh x0 x0 * - *
-
-Unique expressions = 1155
-Time spent fitting = 0.0366606 seconds
-Best score = 0.0173549, SNE = 56.6207
-Squared-norm error for each equation: 56.0351 0.585551 
-Best expression = (tanh((acos(x0) * 1.650182528049927)) - 0.7237368419565787)
-Best expression (original format) = x0 acos 1.650182528049927 * tanh 0.7237368419565787 -
-
-Unique expressions = 1175
-Time spent fitting = 0.0371752 seconds
-Best score = 0.0175567, SNE = 55.9582
-Squared-norm error for each equation: 55.3581 0.600101 
-Best expression = (tanh((acos(x0) * 2.500126975282432)) - 0.9648820791842393)
-Best expression (original format) = x0 acos 2.500126975282432 * tanh 0.9648820791842393 -
-
-Unique expressions = 1193
-Time spent fitting = 0.0385182 seconds
-Best score = 0.0175871, SNE = 55.8599
-Squared-norm error for each equation: 55.2692 0.590684 
-Best expression = (tanh((acos(x0) * 1.9631473080677704)) - 0.7972598180071276)
-Best expression (original format) = x0 acos 1.9631473080677704 * tanh 0.7972598180071276 -
-
-Unique expressions = 1302
-Time spent fitting = 0.0418088 seconds
-Best score = 0.0175875, SNE = 55.8586
-Squared-norm error for each equation: 55.2682 0.590393 
-Best expression = (tanh((acos(x0) * 1.9412253854858736)) - 0.7972598180071276)
-Best expression (original format) = x0 acos 1.9412253854858736 * tanh 0.7972598180071276 -
-
-Unique expressions = 1447
-Time spent fitting = 0.0476244 seconds
-Best score = 0.0175875, SNE = 55.8585
-Squared-norm error for each equation: 55.2682 0.590357 
-Best expression = (tanh((acos(x0) * 1.9385831357301295)) - 0.7972598180071276)
-Best expression (original format) = x0 acos 1.9385831357301295 * tanh 0.7972598180071276 -
-
-Unique expressions = 1459
-Time spent fitting = 0.0481554 seconds
-Best score = 0.0175875, SNE = 55.8585
-Squared-norm error for each equation: 55.2682 0.59035 
-Best expression = (tanh((acos(x0) * 1.9380244807512885)) - 0.7972598180071276)
-Best expression (original format) = x0 acos 1.9380244807512885 * tanh 0.7972598180071276 -
-
-Unique expressions = 1494
-Time spent fitting = 0.0491859 seconds
-Best score = 0.0176689, SNE = 55.5967
-Squared-norm error for each equation: 54.9996 0.597104 
-Best expression = (tanh((acos(x0) * 2.3756132093542854)) - 0.8657694832396585)
-Best expression (original format) = x0 acos 2.3756132093542854 * tanh 0.8657694832396585 -
-
-Unique expressions = 1873
-Time spent fitting = 0.0624857 seconds
-Best score = 0.0176835, SNE = 55.5498
-Squared-norm error for each equation: 54.9548 0.594908 
-Best expression = (tanh((acos(x0) * 2.211321008452405)) - 0.8657694832396585)
-Best expression (original format) = x0 acos 2.211321008452405 * tanh 0.8657694832396585 -
-
-Unique expressions = 1900
-Time spent fitting = 0.0635201 seconds
-Best score = 0.0176836, SNE = 55.5495
-Squared-norm error for each equation: 54.9548 0.594748 
-Best expression = (tanh((acos(x0) * 2.199405581716997)) - 0.8657694832396585)
-Best expression (original format) = x0 acos 2.199405581716997 * tanh 0.8657694832396585 -
-
-Unique expressions = 1920
-Time spent fitting = 0.0640438 seconds
-Best score = 0.0176836, SNE = 55.5495
-Squared-norm error for each equation: 54.9548 0.594754 
-Best expression = (tanh((acos(x0) * 2.1998497410948943)) - 0.8657694832396585)
-Best expression (original format) = x0 acos 2.1998497410948943 * tanh 0.8657694832396585 -
-
-Unique expressions = 1937
-Time spent fitting = 0.0647898 seconds
-Best score = 0.0176836, SNE = 55.5495
-Squared-norm error for each equation: 54.9548 0.594749 
-Best expression = (tanh((acos(x0) * 2.1994465245970365)) - 0.8657694832396585)
-Best expression (original format) = x0 acos 2.1994465245970365 * tanh 0.8657694832396585 -
-
-Unique expressions = 2507
-Time spent fitting = 0.0854363 seconds
-Best score = 0.0176836, SNE = 55.5495
-Squared-norm error for each equation: 54.9548 0.594754 
-Best expression = (tanh((acos(x0) * 2.1998125915638687)) - 0.8657694832396585)
-Best expression (original format) = x0 acos 2.1998125915638687 * tanh 0.8657694832396585 -
-
-Unique expressions = 2631
-Time spent fitting = 0.0923668 seconds
-Best score = 0.0176836, SNE = 55.5495
-Squared-norm error for each equation: 54.9548 0.594749 
-Best expression = (tanh((acos(x0) * 2.1994802670891067)) - 0.8657694832396585)
-Best expression (original format) = x0 acos 2.1994802670891067 * tanh 0.8657694832396585 -
-
-Unique expressions = 2791
-Time spent fitting = 0.100268 seconds
-Best score = 0.0176836, SNE = 55.5495
-Squared-norm error for each equation: 54.9548 0.594753 
-Best expression = (tanh((acos(x0) * 2.1997819722439256)) - 0.8657694832396585)
-Best expression (original format) = x0 acos 2.1997819722439256 * tanh 0.8657694832396585 -
-
-Unique expressions = 2897
-Time spent fitting = 0.103884 seconds
-Best score = 0.0176836, SNE = 55.5495
-Squared-norm error for each equation: 54.9548 0.59475 
-Best expression = (tanh((acos(x0) * 2.19950807599993)) - 0.8657694832396585)
-Best expression (original format) = x0 acos 2.19950807599993 * tanh 0.8657694832396585 -
-
-Unique expressions = 2920
-Time spent fitting = 0.10519 seconds
-Best score = 0.0176836, SNE = 55.5495
-Squared-norm error for each equation: 54.9548 0.594753 
-Best expression = (tanh((acos(x0) * 2.1997567353362606)) - 0.8657694832396585)
-Best expression (original format) = x0 acos 2.1997567353362606 * tanh 0.8657694832396585 -
-
-Unique expressions = 2929
-Time spent fitting = 0.105353 seconds
-Best score = 0.0176836, SNE = 55.5495
-Squared-norm error for each equation: 54.9548 0.59475 
-Best expression = (tanh((acos(x0) * 2.199530994866402)) - 0.8657694832396585)
-Best expression (original format) = x0 acos 2.199530994866402 * tanh 0.8657694832396585 -
-
-Unique expressions = 3338
-Time spent fitting = 0.129136 seconds
-Best score = 0.0176836, SNE = 55.5495
-Squared-norm error for each equation: 54.9548 0.594753 
-Best expression = (tanh((acos(x0) * 2.1997359349509904)) - 0.8657694832396585)
-Best expression (original format) = x0 acos 2.1997359349509904 * tanh 0.8657694832396585 -
-
-Unique expressions = 3427
-Time spent fitting = 0.134454 seconds
-Best score = 0.0176836, SNE = 55.5495
-Squared-norm error for each equation: 54.9548 0.59475 
-Best expression = (tanh((acos(x0) * 2.1995498836225944)) - 0.8657694832396585)
-Best expression (original format) = x0 acos 2.1995498836225944 * tanh 0.8657694832396585 -
-
-Unique expressions = 3437
-Time spent fitting = 0.13482 seconds
-Best score = 0.0176836, SNE = 55.5495
-Squared-norm error for each equation: 54.9548 0.594753 
-Best expression = (tanh((acos(x0) * 2.199718791217889)) - 0.8657694832396585)
-Best expression (original format) = x0 acos 2.199718791217889 * tanh 0.8657694832396585 -
-
-Unique expressions = 3515
-Time spent fitting = 0.13872 seconds
-Best score = 0.0176836, SNE = 55.5495
-Squared-norm error for each equation: 54.9548 0.59475 
-Best expression = (tanh((acos(x0) * 2.199565450910356)) - 0.8657694832396585)
-Best expression (original format) = x0 acos 2.199565450910356 * tanh 0.8657694832396585 -
-
-Unique expressions = 3530
-Time spent fitting = 0.139828 seconds
-Best score = 0.0176836, SNE = 55.5495
-Squared-norm error for each equation: 54.9548 0.594752 
-Best expression = (tanh((acos(x0) * 2.199704661421013)) - 0.8657694832396585)
-Best expression (original format) = x0 acos 2.199704661421013 * tanh 0.8657694832396585 -
-
-Unique expressions = 3565
-Time spent fitting = 0.140698 seconds
-Best score = 0.0176836, SNE = 55.5495
-Squared-norm error for each equation: 54.9548 0.594751 
-Best expression = (tanh((acos(x0) * 2.199578280973953)) - 0.8657694832396585)
-Best expression (original format) = x0 acos 2.199578280973953 * tanh 0.8657694832396585 -
-
-Unique expressions = 3587
-Time spent fitting = 0.141488 seconds
-Best score = 0.0176836, SNE = 55.5495
-Squared-norm error for each equation: 54.9548 0.594752 
-Best expression = (tanh((acos(x0) * 2.1996930156954426)) - 0.8657694832396585)
-Best expression (original format) = x0 acos 2.1996930156954426 * tanh 0.8657694832396585 -
-
-Unique expressions = 3679
-Time spent fitting = 0.145139 seconds
-Best score = 0.0176836, SNE = 55.5495
-Squared-norm error for each equation: 54.9548 0.594751 
-Best expression = (tanh((acos(x0) * 2.1995888550996923)) - 0.8657694832396585)
-Best expression (original format) = x0 acos 2.1995888550996923 * tanh 0.8657694832396585 -
-
-Unique expressions = 3721
-Time spent fitting = 0.146889 seconds
-Best score = 0.0176836, SNE = 55.5495
-Squared-norm error for each equation: 54.9548 0.594752 
-Best expression = (tanh((acos(x0) * 2.199683417255375)) - 0.8657694832396585)
-Best expression (original format) = x0 acos 2.199683417255375 * tanh 0.8657694832396585 -
-
-Unique expressions = 4354
-Time spent fitting = 0.174103 seconds
-Best score = 0.0176836, SNE = 55.5495
-Squared-norm error for each equation: 54.9548 0.594751 
-Best expression = (tanh((acos(x0) * 2.199597570256795)) - 0.8657694832396585)
-Best expression (original format) = x0 acos 2.199597570256795 * tanh 0.8657694832396585 -
-
-Unique expressions = 4394
-Time spent fitting = 0.176023 seconds
-Best score = 0.0178321, SNE = 55.0785
-Squared-norm error for each equation: 54.4926 0.585898 
-Best expression = (sin((acos(x0) * 1.5343341703906677)) - 0.8657694832396585)
-Best expression (original format) = x0 acos 1.5343341703906677 * sin 0.8657694832396585 -
-
-Unique expressions = 4414
-Time spent fitting = 0.176446 seconds
-Best score = 0.018016, SNE = 54.5063
-Squared-norm error for each equation: 53.9201 0.586232 
-Best expression = (sin((acos(x0) * 1.5589033582230472)) - acos(sech(0.8663857617332835)))
-Best expression (original format) = x0 acos 1.5589033582230472 * sin 0.8663857617332835 sech acos -
-
-Unique expressions = 4452
-Time spent fitting = 0.178416 seconds
-Best score = 0.0180161, SNE = 54.5059
-Squared-norm error for each equation: 53.9196 0.586285 
-Best expression = (sin((acos(x0) * 1.5598618403900637)) - acos(sech(0.8694783389937556)))
-Best expression (original format) = x0 acos 1.5598618403900637 * sin 0.8694783389937556 sech acos -
-
-Unique expressions = 4481
-Time spent fitting = 0.18009 seconds
-Best score = 0.0180161, SNE = 54.5059
-Squared-norm error for each equation: 53.9196 0.586286 
-Best expression = (sin((acos(x0) * 1.559871007785114)) - acos(sech(0.8694769051185653)))
-Best expression (original format) = x0 acos 1.559871007785114 * sin 0.8694769051185653 sech acos -
-
-Unique expressions = 4495
-Time spent fitting = 0.180815 seconds
-Best score = 0.0180161, SNE = 54.5059
-Squared-norm error for each equation: 53.9196 0.586286 
-Best expression = (sin((acos(x0) * 1.5598701561875719)) - acos(sech(0.8694770377642211)))
-Best expression (original format) = x0 acos 1.5598701561875719 * sin 0.8694770377642211 sech acos -
-
-Unique expressions = 4547
-Time spent fitting = 0.184371 seconds
-Best score = 0.0180161, SNE = 54.5059
-Squared-norm error for each equation: 53.9196 0.586286 
-Best expression = (sin((acos(x0) * 1.5598702352905043)) - acos(sech(0.8694770254397851)))
-Best expression (original format) = x0 acos 1.5598702352905043 * sin 0.8694770254397851 sech acos -
-
-Unique expressions = 4925
-Time spent fitting = 0.205471 seconds
-Best score = 0.018265, SNE = 53.7494
-Squared-norm error for each equation: 53.1679 0.581551 
-Best expression = (sin((acos(x0) * 2.071622394878097)) - acos(sech(x0)))
-Best expression (original format) = x0 acos 2.071622394878097 * sin x0 sech acos -
-
-Unique expressions = 4979
-Time spent fitting = 0.207813 seconds
-Best score = 0.0182655, SNE = 53.7481
-Squared-norm error for each equation: 53.1665 0.581623 
-Best expression = (sin((acos(x0) * 2.077082097246947)) - acos(sech(x0)))
-Best expression (original format) = x0 acos 2.077082097246947 * sin x0 sech acos -
-
-Unique expressions = 5091
-Time spent fitting = 0.21312 seconds
-Best score = 0.0182655, SNE = 53.7481
-Squared-norm error for each equation: 53.1665 0.581623 
-Best expression = (sin((acos(x0) * 2.0770836108397015)) - acos(sech(x0)))
-Best expression (original format) = x0 acos 2.0770836108397015 * sin x0 sech acos -
-
-Unique expressions = 5120
-Time spent fitting = 0.214771 seconds
-Best score = 0.0182655, SNE = 53.7481
-Squared-norm error for each equation: 53.1665 0.581623 
-Best expression = (sin((acos(x0) * 2.0770837120155083)) - acos(sech(x0)))
-Best expression (original format) = x0 acos 2.0770837120155083 * sin x0 sech acos -
-
-Unique expressions = 5395
-Time spent fitting = 0.22866 seconds
-Best score = 0.0182655, SNE = 53.7481
-Squared-norm error for each equation: 53.1665 0.581623 
-Best expression = (sin((acos(x0) * 2.0770837187743134)) - acos(sech(x0)))
-Best expression (original format) = x0 acos 2.0770837187743134 * sin x0 sech acos -
-
-Unique expressions = 5789
-Time spent fitting = 0.249783 seconds
-Best score = 0.0187112, SNE = 52.4438
-Squared-norm error for each equation: 51.8621 0.581729 
-Best expression = (sin((acos(x0) * 2.0850742439329353)) - x0)
-Best expression (original format) = x0 acos 2.0850742439329353 * sin x0 -
-
-Unique expressions = 5803
-Time spent fitting = 0.249984 seconds
-Best score = 0.0187112, SNE = 52.4438
-Squared-norm error for each equation: 51.8621 0.581717 
-Best expression = (sin((acos(x0) * 2.084171692906906)) - x0)
-Best expression (original format) = x0 acos 2.084171692906906 * sin x0 -
-
-Unique expressions = 5839
-Time spent fitting = 0.251652 seconds
-Best score = 0.0187112, SNE = 52.4438
-Squared-norm error for each equation: 51.8621 0.581717 
-Best expression = (sin((acos(x0) * 2.084170276768761)) - x0)
-Best expression (original format) = x0 acos 2.084170276768761 * sin x0 -
-
-Unique expressions = 5868
-Time spent fitting = 0.252346 seconds
-Best score = 0.0187112, SNE = 52.4438
-Squared-norm error for each equation: 51.8621 0.581717 
-Best expression = (sin((acos(x0) * 2.0841702196032004)) - x0)
-Best expression (original format) = x0 acos 2.0841702196032004 * sin x0 -
-
-Unique expressions = 7135
-Time spent fitting = 0.322321 seconds
-Best score = 0.0188111, SNE = 52.16
-Squared-norm error for each equation: 51.578 0.582047 
-Best expression = (sin((acos(x0) * 2.036414796998466)) - (x0 + 0.07272413679000164))
-Best expression (original format) = x0 acos 2.036414796998466 * sin x0 0.07272413679000164 + -
-
-Unique expressions = 7177
-Time spent fitting = 0.325712 seconds
-Best score = 0.0188111, SNE = 52.16
-Squared-norm error for each equation: 51.5779 0.582039 
-Best expression = (sin((acos(x0) * 2.036635948309811)) - (x0 + 0.07192664341655147))
-Best expression (original format) = x0 acos 2.036635948309811 * sin x0 0.07192664341655147 + -
-
-Unique expressions = 7370
-Time spent fitting = 0.333765 seconds
-Best score = 0.0192539, SNE = 50.9374
-Squared-norm error for each equation: 50.3555 0.581979 
-Best expression = (sin((acos(x0) * 2.1040051483635693)) - asin(x0))
-Best expression (original format) = x0 acos 2.1040051483635693 * sin x0 asin -
-
-Unique expressions = 7907
-Time spent fitting = 0.357398 seconds
-Best score = 0.0192539, SNE = 50.9374
-Squared-norm error for each equation: 50.3555 0.581979 
-Best expression = (sin((acos(x0) * 2.104005412311893)) - asin(x0))
-Best expression (original format) = x0 acos 2.104005412311893 * sin x0 asin -
-
-Unique expressions = 16448
-Time spent fitting = 0.982015 seconds
-Best score = 0.019602, SNE = 50.0153
-Squared-norm error for each equation: 49.4232 0.592054 
-Best expression = (sin(((x0 * x0) * 2.863252076273869)) - asin(x0))
-Best expression (original format) = x0 x0 * 2.863252076273869 * sin x0 asin -
-
-Unique expressions = 16504
-Time spent fitting = 0.9863 seconds
-Best score = 0.019602, SNE = 50.0151
-Squared-norm error for each equation: 49.4231 0.592009 
-Best expression = (sin(((x0 * x0) * 2.859830059275769)) - asin(x0))
-Best expression (original format) = x0 x0 * 2.859830059275769 * sin x0 asin -
-
-Unique expressions = 16515
-Time spent fitting = 0.987133 seconds
-Best score = 0.019602, SNE = 50.0151
-Squared-norm error for each equation: 49.4231 0.592009 
-Best expression = (sin(((x0 * x0) * 2.85987059032912)) - asin(x0))
-Best expression (original format) = x0 x0 * 2.85987059032912 * sin x0 asin -
-
-Unique expressions = 16907
-Time spent fitting = 1.0241 seconds
-Best score = 0.019602, SNE = 50.0151
-Squared-norm error for each equation: 49.4231 0.592009 
-Best expression = (sin(((x0 * x0) * 2.8598618846291974)) - asin(x0))
-Best expression (original format) = x0 x0 * 2.8598618846291974 * sin x0 asin -
-
-Unique expressions = 16916
-Time spent fitting = 1.02453 seconds
-Best score = 0.019602, SNE = 50.0151
-Squared-norm error for each equation: 49.4231 0.592009 
-Best expression = (sin(((x0 * x0) * 2.8598637543880994)) - asin(x0))
-Best expression (original format) = x0 x0 * 2.8598637543880994 * sin x0 asin -
-
-Unique expressions = 16957
-Time spent fitting = 1.0264 seconds
-Best score = 0.019602, SNE = 50.0151
-Squared-norm error for each equation: 49.4231 0.592009 
-Best expression = (sin(((x0 * x0) * 2.8598633528159327)) - asin(x0))
-Best expression (original format) = x0 x0 * 2.8598633528159327 * sin x0 asin -
-
-Unique expressions = 17093
-Time spent fitting = 1.0382 seconds
-Best score = 0.019602, SNE = 50.0151
-Squared-norm error for each equation: 49.4231 0.592009 
-Best expression = (sin(((x0 * x0) * 2.8598634390667317)) - asin(x0))
-Best expression (original format) = x0 x0 * 2.8598634390667317 * sin x0 asin -
-
-Unique expressions = 18526
-Time spent fitting = 1.16873 seconds
-Best score = 0.0196914, SNE = 49.7837
-Squared-norm error for each equation: 49.1873 0.596453 
-Best expression = (sin(((x0 * x0) * 3.192693796889703)) - x0)
-Best expression (original format) = x0 x0 * 3.192693796889703 * sin x0 -
-
-Unique expressions = 18531
-Time spent fitting = 1.16934 seconds
-Best score = 0.0196914, SNE = 49.7837
-Squared-norm error for each equation: 49.1873 0.596452 
-Best expression = (sin(((x0 * x0) * 3.192660467316376)) - x0)
-Best expression (original format) = x0 x0 * 3.192660467316376 * sin x0 -
-
-Unique expressions = 18556
-Time spent fitting = 1.17344 seconds
-Best score = 0.0196914, SNE = 49.7837
-Squared-norm error for each equation: 49.1873 0.596453 
-Best expression = (sin(((x0 * x0) * 3.1926641860198712)) - x0)
-Best expression (original format) = x0 x0 * 3.1926641860198712 * sin x0 -
-
-Unique expressions = 18574
-Time spent fitting = 1.17544 seconds
-Best score = 0.0196914, SNE = 49.7837
-Squared-norm error for each equation: 49.1873 0.596453 
-Best expression = (sin(((x0 * x0) * 3.1926637710858157)) - x0)
-Best expression (original format) = x0 x0 * 3.1926637710858157 * sin x0 -
-
-Unique expressions = 18834
-Time spent fitting = 1.19706 seconds
-Best score = 0.0196914, SNE = 49.7837
-Squared-norm error for each equation: 49.1873 0.596453 
-Best expression = (sin(((x0 * x0) * 3.192663817388594)) - x0)
-Best expression (original format) = x0 x0 * 3.192663817388594 * sin x0 -
-
-Unique expressions = 772446
-Time spent fitting = 120.357 seconds
-Best score = 0.0201046, SNE = 48.7399
-Squared-norm error for each equation: 48.1537 0.586185 
-Best expression = (sin((arcsin(x0) * (2.421784837231215 * x0))) - x0)
-Best expression (original format) = x0 arcsin 2.421784837231215 x0 * * sin x0 -
-
-Unique expressions = 772450
-Time spent fitting = 120.358 seconds
-Best score = 0.0201046, SNE = 48.7399
-Squared-norm error for each equation: 48.1537 0.586182 
-Best expression = (sin((arcsin(x0) * (2.421534180593832 * x0))) - x0)
-Best expression (original format) = x0 arcsin 2.421534180593832 x0 * * sin x0 -
-
-Unique expressions = 772464
-Time spent fitting = 120.359 seconds
-Best score = 0.0201046, SNE = 48.7399
-Squared-norm error for each equation: 48.1537 0.586182 
-Best expression = (sin((arcsin(x0) * (2.4215310199323867 * x0))) - x0)
-Best expression (original format) = x0 arcsin 2.4215310199323867 x0 * * sin x0 -
-
-Unique expressions = 772472
-Time spent fitting = 120.361 seconds
-Best score = 0.0201046, SNE = 48.7399
-Squared-norm error for each equation: 48.1537 0.586182 
-Best expression = (sin((arcsin(x0) * (2.4215313555075757 * x0))) - x0)
-Best expression (original format) = x0 arcsin 2.4215313555075757 x0 * * sin x0 -
-
-Unique expressions = 772547
-Time spent fitting = 120.371 seconds
-Best score = 0.0201046, SNE = 48.7399
-Squared-norm error for each equation: 48.1537 0.586182 
-Best expression = (sin((arcsin(x0) * (2.4215313198766477 * x0))) - x0)
-Best expression (original format) = x0 arcsin 2.4215313198766477 x0 * * sin x0 -
-
-Unique expressions = 364956
-Time spent fitting = 4290.76 seconds
-Best score = 0.0204856, SNE = 47.8149
-Squared-norm error for each equation: 47.1038 0.711089 
-Best expression = (-0.6566912458760444 * cos(((8.472430573773131 * x0) - 2.256995767740629)))
-Best expression (original format) = -0.6566912458760444 8.472430573773131 x0 * 2.256995767740629 - cos *
-
-Unique expressions = 364978
-Time spent fitting = 4290.76 seconds
-Best score = 0.0204871, SNE = 47.8112
-Squared-norm error for each equation: 47.1009 0.710311 
-Best expression = (-0.659952585206546 * cos(((8.435871476646595 * x0) - 2.237033225178667)))
-Best expression (original format) = -0.659952585206546 8.435871476646595 x0 * 2.237033225178667 - cos *
-
-Unique expressions = 365048
-Time spent fitting = 4290.77 seconds
-Best score = 0.0204871, SNE = 47.8112
-Squared-norm error for each equation: 47.1009 0.710309 
-Best expression = (-0.6599555716342687 * cos(((8.435784042624588 * x0) - 2.236988147841485)))
-Best expression (original format) = -0.6599555716342687 8.435784042624588 x0 * 2.236988147841485 - cos *
-
-Unique expressions = 365058
-Time spent fitting = 4290.77 seconds
-Best score = 0.0204871, SNE = 47.8112
-Squared-norm error for each equation: 47.1009 0.71031 
-Best expression = (-0.6599549513228975 * cos(((8.435802232641995 * x0) - 2.2369975256894463)))
-Best expression (original format) = -0.6599549513228975 8.435802232641995 x0 * 2.2369975256894463 - cos *
-
-Unique expressions = 365070
-Time spent fitting = 4290.77 seconds
-Best score = 0.0204871, SNE = 47.8112
-Squared-norm error for each equation: 47.1009 0.710309 
-Best expression = (-0.6599550804105881 * cos(((8.43579844849864 * x0) - 2.2369955747720383)))
-Best expression (original format) = -0.6599550804105881 8.43579844849864 x0 * 2.2369955747720383 - cos *
-
-Unique expressions = 365177
-Time spent fitting = 4290.79 seconds
-Best score = 0.0204871, SNE = 47.8112
-Squared-norm error for each equation: 47.1009 0.710309 
-Best expression = (-0.6599550535586075 * cos(((8.435799235753933 * x0) - 2.23699598064555)))
-Best expression (original format) = -0.6599550535586075 8.435799235753933 x0 * 2.23699598064555 - cos *
-
-Unique expressions = 365268
-Time spent fitting = 4290.8 seconds
-Best score = 0.0204871, SNE = 47.8112
-Squared-norm error for each equation: 47.1009 0.710309 
-Best expression = (-0.6599550591408232 * cos(((8.435799072038263 * x0) - 2.236995896230726)))
-Best expression (original format) = -0.6599550591408232 8.435799072038263 x0 * 2.236995896230726 - cos *
-
-Unique expressions = 365282
-Time spent fitting = 4290.81 seconds
-Best score = 0.0204871, SNE = 47.8112
-Squared-norm error for each equation: 47.1009 0.710309 
-Best expression = (-0.6599550579794976 * cos(((8.43579910610507 * x0) - 2.236995913786809)))
-Best expression (original format) = -0.6599550579794976 8.43579910610507 x0 * 2.236995913786809 - cos *
-
-Unique expressions = 1
+Best score = 0.00232155, SNE = 429.746
+Squared-norm error for each equation: 429.013 0.733425 
+Best expression = (x0 + 1.5707963267948966)
+Best expression (original format) = x0 1.5707963267948966 +
+
+Unique expressions = 27
 Time spent fitting = 0 seconds
-Best score = 0.0204871, SNE = 47.8112
-Squared-norm error for each equation: 47.1009 0.710309 
-Best expression = ((((((-6.437971983873846 * sin((x0 * -5.4145382360994985))) * 4.003522788536993) - ((21.27681688899213 * sin((13.412300028120239 * x0))) - -4.604224807643289)) - (-8.964504919736237 * sin((x0 * -9.87136872484632)))) + cos((arcsin(x0) + ((x0 * 4) * 8)))) + (-0.6599550579794976 * cos(((8.43579910610507 * x0) - 2.236995913786809))))
-Best expression (original format) = -6.437971983873846 x0 -5.4145382360994985 * sin * 4.003522788536993 * 21.27681688899213 13.412300028120239 x0 * sin * -4.604224807643289 - - -8.964504919736237 x0 -9.87136872484632 * sin * - x0 arcsin x0 4 * 8 * + cos + -0.6599550579794976 8.43579910610507 x0 * 2.236995913786809 - cos * +
+Best score = 0.0146135, SNE = 67.4298
+Squared-norm error for each equation: 66.7049 0.724982 
+Best expression = (~(arccos(x0)) + 1)
+Best expression (original format) = x0 arccos ~ 1 +
+
+Unique expressions = 54
+Time spent fitting = 0.000240083 seconds
+Best score = 0.0186956, SNE = 52.4884
+Squared-norm error for each equation: 51.7702 0.718219 
+Best expression = (0.5403023058681398 * ~(x0))
+Best expression (original format) = 0.5403023058681398 x0 ~ *
+
+Unique expressions = 58
+Time spent fitting = 0.000614958 seconds
+Best score = 0.0207383, SNE = 47.22
+Squared-norm error for each equation: 46.3735 0.846455 
+Best expression = (-0.7568024953079283 * (arcsin(x0) * (4.161115450776527 - 4)))
+Best expression (original format) = -0.7568024953079283 x0 arcsin 4.161115450776527 4 - * *
+
+Unique expressions = 65
+Time spent fitting = 0.00106233 seconds
+Best score = 0.02074, SNE = 47.2161
+Squared-norm error for each equation: 46.4742 0.741863 
+Best expression = (x0 * (-1.1380588291274425 + 1))
+Best expression (original format) = x0 -1.1380588291274425 1 + *
+
+Unique expressions = 149
+Time spent fitting = 0.00231358 seconds
+Best score = 0.0207454, SNE = 47.2035
+Squared-norm error for each equation: 46.3735 0.82996 
+Best expression = (arcsin(x0) * (3.87768961918715 - 4))
+Best expression (original format) = x0 arcsin 3.87768961918715 4 - *
+
+Unique expressions = 220
+Time spent fitting = 0.00398546 seconds
+Best score = 0.0207493, SNE = 47.1943
+Squared-norm error for each equation: 46.4742 0.720119 
+Best expression = (x0 * (-0.4038644187601399 + 0.2658022288340797))
+Best expression (original format) = x0 -0.4038644187601399 0.2658022288340797 + *
+
+Unique expressions = 232
+Time spent fitting = 0.00413538 seconds
+Best score = 0.0207862, SNE = 47.1088
+Squared-norm error for each equation: 46.3735 0.735287 
+Best expression = (arcsin(x0) * (0.786996555979511 - 0.9092974268256817))
+Best expression (original format) = x0 arcsin 0.786996555979511 0.9092974268256817 - *
+
+Unique expressions = 309
+Time spent fitting = 0.00519546 seconds
+Best score = 0.0207958, SNE = 47.0867
+Squared-norm error for each equation: 46.3735 0.713152 
+Best expression = (arcsin(x0) * (0.03619743688193666 - ~(-0.15834598566300095)))
+Best expression (original format) = x0 arcsin 0.03619743688193666 -0.15834598566300095 ~ - *
+
+Unique expressions = 574
+Time spent fitting = 0.0130448 seconds
+Best score = 0.0207962, SNE = 47.0856
+Squared-norm error for each equation: 46.3735 0.712091 
+Best expression = (arcsin(x0) * -0.12199862943948821)
+Best expression (original format) = x0 arcsin -0.12199862943948821 *
+
+Unique expressions = 2765
+Time spent fitting = 0.0883849 seconds
+Best score = 0.0208447, SNE = 46.9738
+Squared-norm error for each equation: 46.2618 0.712062 
+Best expression = (asin(x0) * (arcsin(x0) * -0.12000712348729654))
+Best expression (original format) = x0 asin x0 arcsin -0.12000712348729654 * *
+
+Unique expressions = 2826
+Time spent fitting = 0.0894644 seconds
+Best score = 0.0208463, SNE = 46.9702
+Squared-norm error for each equation: 46.2473 0.722954 
+Best expression = (x0 * (-0.862405174632473 + sqrt(arccos(x0))))
+Best expression (original format) = x0 -0.862405174632473 x0 arccos sqrt + *
+
+Unique expressions = 2862
+Time spent fitting = 0.0906651 seconds
+Best score = 0.020895, SNE = 46.8583
+Squared-norm error for each equation: 46.148 0.710309 
+Best expression = (x0 * ~((asin(x0) - x0)))
+Best expression (original format) = x0 x0 asin x0 - ~ *
+
+Unique expressions = 3107
+Time spent fitting = 0.0960169 seconds
+Best score = 0.0209121, SNE = 46.8193
+Squared-norm error for each equation: 46.0987 0.720573 
+Best expression = (0.7005562921489601 * ~((asin(x0) - x0)))
+Best expression (original format) = 0.7005562921489601 x0 asin x0 - ~ *
+
+Unique expressions = 3411
+Time spent fitting = 0.104552 seconds
+Best score = 0.0209121, SNE = 46.8193
+Squared-norm error for each equation: 46.0987 0.720573 
+Best expression = (-0.700556292158987 * (asin(x0) - x0))
+Best expression (original format) = -0.700556292158987 x0 asin x0 - *
+
+Unique expressions = 11147
+Time spent fitting = 0.363716 seconds
+Best score = 0.0209165, SNE = 46.8092
+Squared-norm error for each equation: 46.0852 0.724059 
+Best expression = (x0 + ~((arcsin(x0) * (0.5178928181135514 + 0.41947123083867055))))
+Best expression (original format) = x0 x0 arcsin 0.5178928181135514 0.41947123083867055 + * ~ +
+
+Unique expressions = 17831
+Time spent fitting = 0.709963 seconds
+Best score = 0.0210368, SNE = 46.5358
+Squared-norm error for each equation: 45.8165 0.719306 
+Best expression = (asin(x0) * (0.6143627789670947 * (x0 - asin(x0))))
+Best expression (original format) = x0 asin 0.6143627789670947 x0 x0 asin - * *
+
+Unique expressions = 107937
+Time spent fitting = 8.00737 seconds
+Best score = 0.0210368, SNE = 46.5358
+Squared-norm error for each equation: 45.8165 0.719306 
+Best expression = (asin(x0) * (-0.6143627789653722 * (asin(x0) - x0)))
+Best expression (original format) = x0 asin -0.6143627789653722 x0 asin x0 - * *
+
+Unique expressions = 165703
+Time spent fitting = 13.4144 seconds
+Best score = 0.0210482, SNE = 46.5099
+Squared-norm error for each equation: 45.7914 0.718534 
+Best expression = (x0 * (-0.5617738460170778 + (x0 * acos(x0))))
+Best expression (original format) = x0 -0.5617738460170778 x0 x0 acos * + *
+
+Unique expressions = 189296
+Time spent fitting = 15.7143 seconds
+Best score = 0.0212512, SNE = 46.0561
+Squared-norm error for each equation: 45.3365 0.719593 
+Best expression = (x0 * (-0.6339237340354322 + (arccos(x0) * asin(x0))))
+Best expression (original format) = x0 -0.6339237340354322 x0 arccos x0 asin * + *
+
+Unique expressions = 650741
+Time spent fitting = 73.2263 seconds
+Best score = 0.0213362, SNE = 45.8687
+Squared-norm error for each equation: 45.1555 0.713181 
+Best expression = (sqrt(acos(x0)) - (cos(x0) - ~(0.19653582896796024)))
+Best expression (original format) = x0 acos sqrt x0 cos 0.19653582896796024 ~ - -
+
+Unique expressions = 650897
+Time spent fitting = 73.2455 seconds
+Best score = 0.0214418, SNE = 45.6378
+Squared-norm error for each equation: 44.909 0.728725 
+Best expression = (sqrt(acos(x0)) - (cos(x0) * ~(-1.2534370826131727)))
+Best expression (original format) = x0 acos sqrt x0 cos -1.2534370826131727 ~ * -
+
+Unique expressions = 736530
+Time spent fitting = 85.3168 seconds
+Best score = 0.0216556, SNE = 45.1774
+Squared-norm error for each equation: 44.3011 0.876342 
+Best expression = (sech((10.77716761021943 * acos(x0))) * ~(x0))
+Best expression (original format) = 10.77716761021943 x0 acos * sech x0 ~ *
+
+Unique expressions = 736537
+Time spent fitting = 85.3177 seconds
+Best score = 0.0216567, SNE = 45.1752
+Squared-norm error for each equation: 44.3036 0.871607 
+Best expression = (sech((10.484736888523303 * acos(x0))) * ~(x0))
+Best expression (original format) = 10.484736888523303 x0 acos * sech x0 ~ *
+
+Unique expressions = 736600
+Time spent fitting = 85.3293 seconds
+Best score = 0.0216567, SNE = 45.1751
+Squared-norm error for each equation: 44.3044 0.870754 
+Best expression = (sech((10.43193439809785 * acos(x0))) * ~(x0))
+Best expression (original format) = 10.43193439809785 x0 acos * sech x0 ~ *
+
+Unique expressions = 736616
+Time spent fitting = 85.3337 seconds
+Best score = 0.0216567, SNE = 45.1751
+Squared-norm error for each equation: 44.3045 0.870604 
+Best expression = (sech((10.422706305028784 * acos(x0))) * ~(x0))
+Best expression (original format) = 10.422706305028784 x0 acos * sech x0 ~ *
+
+Unique expressions = 736665
+Time spent fitting = 85.3399 seconds
+Best score = 0.0217011, SNE = 45.0806
+Squared-norm error for each equation: 44.198 0.882578 
+Best expression = (sech((9.590241546709441 * acos(x0))) * -1.5707963267948966)
+Best expression (original format) = 9.590241546709441 x0 acos * sech -1.5707963267948966 *
+
+Unique expressions = 736704
+Time spent fitting = 85.3425 seconds
+Best score = 0.0218342, SNE = 44.7997
+Squared-norm error for each equation: 43.8696 0.930145 
+Best expression = (sech((12.4751716988948 * acos(x0))) * -1.5707963267948966)
+Best expression (original format) = 12.4751716988948 x0 acos * sech -1.5707963267948966 *
+
+Unique expressions = 736706
+Time spent fitting = 85.343 seconds
+Best score = 0.0218342, SNE = 44.7997
+Squared-norm error for each equation: 43.8695 0.930234 
+Best expression = (sech((12.480488528233353 * acos(x0))) * -1.5707963267948966)
+Best expression (original format) = 12.480488528233353 x0 acos * sech -1.5707963267948966 *
+
+Unique expressions = 736708
+Time spent fitting = 85.3433 seconds
+Best score = 0.0218342, SNE = 44.7997
+Squared-norm error for each equation: 43.8695 0.930194 
+Best expression = (sech((12.478126132436312 * acos(x0))) * -1.5707963267948966)
+Best expression (original format) = 12.478126132436312 x0 acos * sech -1.5707963267948966 *
+
+Unique expressions = 736718
+Time spent fitting = 85.3438 seconds
+Best score = 0.0218513, SNE = 44.7639
+Squared-norm error for each equation: 43.868 0.895864 
+Best expression = (sech((11.97450277546217 * acos(x0))) * ~(asin(x0)))
+Best expression (original format) = 11.97450277546217 x0 acos * sech x0 asin ~ *
+
+Unique expressions = 736741
+Time spent fitting = 85.3473 seconds
+Best score = 0.0218516, SNE = 44.7633
+Squared-norm error for each equation: 43.8702 0.893101 
+Best expression = (sech((11.805853715683567 * acos(x0))) * ~(asin(x0)))
+Best expression (original format) = 11.805853715683567 x0 acos * sech x0 asin ~ *
+
+Unique expressions = 736757
+Time spent fitting = 85.3488 seconds
+Best score = 0.0218516, SNE = 44.7633
+Squared-norm error for each equation: 43.8703 0.892997 
+Best expression = (sech((11.799484496844661 * acos(x0))) * ~(asin(x0)))
+Best expression (original format) = 11.799484496844661 x0 acos * sech x0 asin ~ *
+
+Unique expressions = 736805
+Time spent fitting = 85.3569 seconds
+Best score = 0.0218516, SNE = 44.7633
+Squared-norm error for each equation: 43.8703 0.892956 
+Best expression = (sech((11.7970131114522 * acos(x0))) * ~(asin(x0)))
+Best expression (original format) = 11.7970131114522 x0 acos * sech x0 asin ~ *
+
+Unique expressions = 736819
+Time spent fitting = 85.3589 seconds
+Best score = 0.0218516, SNE = 44.7633
+Squared-norm error for each equation: 43.8703 0.892975 
+Best expression = (sech((11.798145573987451 * acos(x0))) * ~(asin(x0)))
+Best expression (original format) = 11.798145573987451 x0 acos * sech x0 asin ~ *
+
+Unique expressions = 736906
+Time spent fitting = 85.3713 seconds
+Best score = 0.0218516, SNE = 44.7633
+Squared-norm error for each equation: 43.8703 0.892966 
+Best expression = (sech((11.79762687889294 * acos(x0))) * ~(asin(x0)))
+Best expression (original format) = 11.79762687889294 x0 acos * sech x0 asin ~ *
+
+Unique expressions = 736914
+Time spent fitting = 85.3748 seconds
+Best score = 0.0218516, SNE = 44.7633
+Squared-norm error for each equation: 43.8703 0.89297 
+Best expression = (sech((11.79786450528384 * acos(x0))) * ~(asin(x0)))
+Best expression (original format) = 11.79786450528384 x0 acos * sech x0 asin ~ *
+
+Unique expressions = 736968
+Time spent fitting = 85.3858 seconds
+Best score = 0.0218516, SNE = 44.7633
+Squared-norm error for each equation: 43.8703 0.892969 
+Best expression = (sech((11.797755656376399 * acos(x0))) * ~(asin(x0)))
+Best expression (original format) = 11.797755656376399 x0 acos * sech x0 asin ~ *
+
+Unique expressions = 736971
+Time spent fitting = 85.386 seconds
+Best score = 0.0218516, SNE = 44.7633
+Squared-norm error for each equation: 43.8703 0.892969 
+Best expression = (sech((11.797805520360498 * acos(x0))) * ~(asin(x0)))
+Best expression (original format) = 11.797805520360498 x0 acos * sech x0 asin ~ *
+
+Unique expressions = 737027
+Time spent fitting = 85.3971 seconds
+Best score = 0.0218516, SNE = 44.7633
+Squared-norm error for each equation: 43.8703 0.892969 
+Best expression = (sech((11.79778267583075 * acos(x0))) * ~(asin(x0)))
+Best expression (original format) = 11.79778267583075 x0 acos * sech x0 asin ~ *
+
+Unique expressions = 737127
+Time spent fitting = 85.4133 seconds
+Best score = 0.0218516, SNE = 44.7633
+Squared-norm error for each equation: 43.8703 0.892969 
+Best expression = (sech((11.797793139820367 * acos(x0))) * ~(asin(x0)))
+Best expression (original format) = 11.797793139820367 x0 acos * sech x0 asin ~ *
+
+Unique expressions = 737132
+Time spent fitting = 85.4137 seconds
+Best score = 0.0218516, SNE = 44.7633
+Squared-norm error for each equation: 43.8703 0.892969 
+Best expression = (sech((11.797788344953846 * acos(x0))) * ~(asin(x0)))
+Best expression (original format) = 11.797788344953846 x0 acos * sech x0 asin ~ *
+
+Unique expressions = 737133
+Time spent fitting = 85.4142 seconds
+Best score = 0.0218516, SNE = 44.7633
+Squared-norm error for each equation: 43.8703 0.892969 
+Best expression = (sech((11.797790545152509 * acos(x0))) * ~(asin(x0)))
+Best expression (original format) = 11.797790545152509 x0 acos * sech x0 asin ~ *
+
+Unique expressions = 353418
+Time spent fitting = 161.853 seconds
+Best score = 0.0222571, SNE = 43.9294
+Squared-norm error for each equation: 42.3762 1.55321 
+Best expression = sech((~(22.57567733850584) - (arcsin(x0) * ~(24.013943220530173))))
+Best expression (original format) = 22.57567733850584 ~ x0 arcsin 24.013943220530173 ~ * - sech
+
+Unique expressions = 353475
+Time spent fitting = 161.861 seconds
+Best score = 0.0240917, SNE = 40.508
+Squared-norm error for each equation: 38.1425 2.3655 
+Best expression = sech((~(37.929273629034974) - (arcsin(x0) * ~(42.347826111286196))))
+Best expression (original format) = 37.929273629034974 ~ x0 arcsin 42.347826111286196 ~ * - sech
+
+Unique expressions = 353543
+Time spent fitting = 161.867 seconds
+Best score = 0.0240947, SNE = 40.5029
+Squared-norm error for each equation: 38.1374 2.36544 
+Best expression = sech((~(37.948326191443016) - (arcsin(x0) * ~(42.32649511568932))))
+Best expression (original format) = 37.948326191443016 ~ x0 arcsin 42.32649511568932 ~ * - sech
+
+Unique expressions = 353600
+Time spent fitting = 161.874 seconds
+Best score = 0.0240948, SNE = 40.5027
+Squared-norm error for each equation: 38.147 2.35578 
+Best expression = sech((~(37.77764646131353) - (arcsin(x0) * ~(42.13418714506847))))
+Best expression (original format) = 37.77764646131353 ~ x0 arcsin 42.13418714506847 ~ * - sech
+
+Unique expressions = 353640
+Time spent fitting = 161.88 seconds
+Best score = 0.0240948, SNE = 40.5027
+Squared-norm error for each equation: 38.1469 2.35578 
+Best expression = sech((~(37.778512069182035) - (arcsin(x0) * ~(42.13321008569322))))
+Best expression (original format) = 37.778512069182035 ~ x0 arcsin 42.13321008569322 ~ * - sech
+
+Unique expressions = 353651
+Time spent fitting = 161.882 seconds
+Best score = 0.0240948, SNE = 40.5027
+Squared-norm error for each equation: 38.1479 2.35482 
+Best expression = sech((~(37.761808971389485) - (arcsin(x0) * ~(42.1139509634282))))
+Best expression (original format) = 37.761808971389485 ~ x0 arcsin 42.1139509634282 ~ * - sech
+
+Unique expressions = 423447
+Time spent fitting = 338.961 seconds
+Best score = 0.0246191, SNE = 39.6189
+Squared-norm error for each equation: 38.3228 1.29611 
+Best expression = sech((cos((2 * x0)) * 32.14092754909177))
+Best expression (original format) = 2 x0 * cos 32.14092754909177 * sech
+
+Unique expressions = 423489
+Time spent fitting = 338.966 seconds
+Best score = 0.0246201, SNE = 39.6172
+Squared-norm error for each equation: 38.3111 1.30609 
+Best expression = sech((cos((2 * x0)) * 32.64604995446658))
+Best expression (original format) = 2 x0 * cos 32.64604995446658 * sech
+
+Unique expressions = 423492
+Time spent fitting = 338.967 seconds
+Best score = 0.0246201, SNE = 39.6172
+Squared-norm error for each equation: 38.3115 1.30564 
+Best expression = sech((cos((2 * x0)) * 32.62357286894726))
+Best expression (original format) = 2 x0 * cos 32.62357286894726 * sech
+
+Unique expressions = 426401
+Time spent fitting = 339.501 seconds
+Best score = 0.0246428, SNE = 39.5797
+Squared-norm error for each equation: 38.3228 1.25698 
+Best expression = sech((cos((x0 + x0)) * 32.141345438130635))
+Best expression (original format) = x0 x0 + cos 32.141345438130635 * sech
+
+Unique expressions = 426412
+Time spent fitting = 339.502 seconds
+Best score = 0.024644, SNE = 39.5779
+Squared-norm error for each equation: 38.3106 1.26724 
+Best expression = sech((cos((x0 + x0)) * 32.668657151711486))
+Best expression (original format) = x0 x0 + cos 32.668657151711486 * sech
+
+Unique expressions = 426431
+Time spent fitting = 339.504 seconds
+Best score = 0.024644, SNE = 39.5779
+Squared-norm error for each equation: 38.3111 1.26677 
+Best expression = sech((cos((x0 + x0)) * 32.64430738836973))
+Best expression (original format) = x0 x0 + cos 32.64430738836973 * sech
+
+Unique expressions = 458860
+Time spent fitting = 345.67 seconds
+Best score = 0.0246553, SNE = 39.5593
+Squared-norm error for each equation: 37.9744 1.58492 
+Best expression = sech(((0.894908031165767 - asin(x0)) * 47.15671002799544))
+Best expression (original format) = 0.894908031165767 x0 asin - 47.15671002799544 * sech
+
+Unique expressions = 458907
+Time spent fitting = 345.678 seconds
+Best score = 0.0246555, SNE = 39.5589
+Squared-norm error for each equation: 37.9786 1.58032 
+Best expression = sech(((0.894806157244551 - asin(x0)) * 46.945520467474786))
+Best expression (original format) = 0.894806157244551 x0 asin - 46.945520467474786 * sech
+
+Unique expressions = 458922
+Time spent fitting = 345.681 seconds
+Best score = 0.0246555, SNE = 39.5589
+Squared-norm error for each equation: 37.978 1.5809 
+Best expression = sech(((0.8947831461991302 - asin(x0)) * 46.9720355223549))
+Best expression (original format) = 0.8947831461991302 x0 asin - 46.9720355223549 * sech
+
+Unique expressions = 996452
+Time spent fitting = 1752.78 seconds
+Best score = 0.0246564, SNE = 39.5575
+Squared-norm error for each equation: 37.9804 1.57705 
+Best expression = sech(((sqrt(0.8011883936534419) - arcsin(x0)) * 46.88870220542702))
+Best expression (original format) = 0.8011883936534419 sqrt x0 arcsin - 46.88870220542702 * sech
+
+Unique expressions = 996510
+Time spent fitting = 1752.8 seconds
+Best score = 0.0246567, SNE = 39.5569
+Squared-norm error for each equation: 37.9787 1.57826 
+Best expression = sech(((sqrt(0.8007598909725919) - arcsin(x0)) * 46.945064114407344))
+Best expression (original format) = 0.8007598909725919 sqrt x0 arcsin - 46.945064114407344 * sech
+
+Unique expressions = 996528
+Time spent fitting = 1752.8 seconds
+Best score = 0.0246567, SNE = 39.5569
+Squared-norm error for each equation: 37.9781 1.57877 
+Best expression = sech(((sqrt(0.8006591036062716) - arcsin(x0)) * 46.96855024829079))
+Best expression (original format) = 0.8006591036062716 sqrt x0 arcsin - 46.96855024829079 * sech
+
+Unique expressions = 996632
+Time spent fitting = 1752.83 seconds
+Best score = 0.0246567, SNE = 39.5569
+Squared-norm error for each equation: 37.978 1.57891 
+Best expression = sech(((sqrt(0.8006374034498472) - arcsin(x0)) * 46.97484352540478))
+Best expression (original format) = 0.8006374034498472 sqrt x0 arcsin - 46.97484352540478 * sech
+
+Unique expressions = 1000000
+Time spent fitting = 1761.98 seconds
+Best score = 0.0249155, SNE = 39.1357
+Squared-norm error for each equation: 37.8246 1.31105 
+Best expression = sech(((sqrt(9.682133898966056) - (x0 * 4)) * 21.21420857557941))
+Best expression (original format) = 9.682133898966056 sqrt x0 4 * - 21.21420857557941 * sech
+
+Unique expressions = 1000000
+Time spent fitting = 1761.98 seconds
+Best score = 0.0249382, SNE = 39.099
+Squared-norm error for each equation: 37.8135 1.28557 
+Best expression = sech(((sqrt(9.714159590102236) - (x0 * 4)) * 19.891350311953072))
+Best expression (original format) = 9.714159590102236 sqrt x0 4 * - 19.891350311953072 * sech
+
+Unique expressions = 1000000
+Time spent fitting = 1762 seconds
+Best score = 0.0249388, SNE = 39.0981
+Squared-norm error for each equation: 37.8169 1.28128 
+Best expression = sech(((sqrt(9.715586819640592) - (x0 * 4)) * 19.67129581926164))
+Best expression (original format) = 9.715586819640592 sqrt x0 4 * - 19.67129581926164 * sech
+
+Unique expressions = 1000000
+Time spent fitting = 1762 seconds
+Best score = 0.0249388, SNE = 39.0981
+Squared-norm error for each equation: 37.8176 1.28047 
+Best expression = sech(((sqrt(9.715955978802489) - (x0 * 4)) * 19.629659903475286))
+Best expression (original format) = 9.715955978802489 sqrt x0 4 * - 19.629659903475286 * sech
+
+Unique expressions = 1000000
+Time spent fitting = 1762.01 seconds
+Best score = 0.0249388, SNE = 39.0981
+Squared-norm error for each equation: 37.8178 1.28031 
+Best expression = sech(((sqrt(9.716067231732117) - (x0 * 4)) * 19.620990630670875))
+Best expression (original format) = 9.716067231732117 sqrt x0 4 * - 19.620990630670875 * sech
+
+Unique expressions = 549246
+Time spent fitting = 30993.9 seconds
+Best score = 0.0258554, SNE = 37.6767
+Squared-norm error for each equation: 34.9009 2.77576 
+Best expression = (cos((-92.45954059409503 * cos(x0))) * (0.999329299739067 - 1.6034718141389646))
+Best expression (original format) = -92.45954059409503 x0 cos * cos 0.999329299739067 1.6034718141389646 - *
+
+Unique expressions = 549260
+Time spent fitting = 30993.9 seconds
+Best score = 0.0258757, SNE = 37.6463
+Squared-norm error for each equation: 34.8689 2.77738 
+Best expression = (cos((-92.5144067144674 * cos(x0))) * (0.999329299739067 - 1.6044116490442266))
+Best expression (original format) = -92.5144067144674 x0 cos * cos 0.999329299739067 1.6044116490442266 - *
+
+Unique expressions = 549265
+Time spent fitting = 30993.9 seconds
+Best score = 0.0258757, SNE = 37.6463
+Squared-norm error for each equation: 34.8689 2.77738 
+Best expression = (cos((-92.51440686603017 * cos(x0))) * (0.999329299739067 - 1.6044116758869469))
+Best expression (original format) = -92.51440686603017 x0 cos * cos 0.999329299739067 1.6044116758869469 - *
+
+Unique expressions = 595537
+Time spent fitting = 33030.8 seconds
+Best score = 0.025882, SNE = 37.6369
+Squared-norm error for each equation: 34.8952 2.74167 
+Best expression = (cos((-92.46614182688752 * cos(x0))) * (0.4105350722160089 - 1.000670700260933))
+Best expression (original format) = -92.46614182688752 x0 cos * cos 0.4105350722160089 1.000670700260933 - *
+
+Unique expressions = 595564
+Time spent fitting = 33030.8 seconds
+Best score = 0.025899, SNE = 37.6115
+Squared-norm error for each equation: 34.8689 2.74262 
+Best expression = (cos((-92.5147968484045 * cos(x0))) * (0.3946749337267128 - 1.000670700260933))
+Best expression (original format) = -92.5147968484045 x0 cos * cos 0.3946749337267128 1.000670700260933 - *
+
+Unique expressions = 595635
+Time spent fitting = 33030.8 seconds
+Best score = 0.025899, SNE = 37.6115
+Squared-norm error for each equation: 34.8689 2.74262 
+Best expression = (cos((-92.51479674028361 * cos(x0))) * (0.3946749525107048 - 1.000670700260933))
+Best expression (original format) = -92.51479674028361 x0 cos * cos 0.3946749525107048 1.000670700260933 - *
+
+Unique expressions = 426532
+Time spent fitting = 33308.3 seconds
+Best score = 0.025899, SNE = 37.6115
+Squared-norm error for each equation: 34.8689 2.74261 
+Best expression = (cos((-92.51479753160251 * cos(x0))) * (0.39465068290985894 - 1.0006465735495034))
+Best expression (original format) = -92.51479753160251 x0 cos * cos 0.39465068290985894 1.0006465735495034 - *
+
+Unique expressions = 426635
+Time spent fitting = 33308.3 seconds
+Best score = 0.025899, SNE = 37.6115
+Squared-norm error for each equation: 34.8689 2.74261 
+Best expression = (cos((-92.51479675150759 * cos(x0))) * (0.39465082396867446 - 1.0006465735495034))
+Best expression (original format) = -92.51479675150759 x0 cos * cos 0.39465082396867446 1.0006465735495034 - *
+
+Unique expressions = 426680
+Time spent fitting = 33308.3 seconds
+Best score = 0.025899, SNE = 37.6115
+Squared-norm error for each equation: 34.8689 2.74261 
+Best expression = (cos((-92.51479673911885 * cos(x0))) * (0.3946508261274231 - 1.0006465735495034))
+Best expression (original format) = -92.51479673911885 x0 cos * cos 0.3946508261274231 1.0006465735495034 - *
+
+Unique expressions = 426709
+Time spent fitting = 33308.4 seconds
+Best score = 0.025899, SNE = 37.6115
+Squared-norm error for each equation: 34.8689 2.74261 
+Best expression = (cos((-92.51479673882085 * cos(x0))) * (0.3946508261748486 - 1.0006465735495034))
+Best expression (original format) = -92.51479673882085 x0 cos * cos 0.3946508261748486 1.0006465735495034 - *
+
+Unique expressions = 643938
+Time spent fitting = 35042.8 seconds
+Best score = 0.0258991, SNE = 37.6114
+Squared-norm error for each equation: 34.8689 2.7425 
+Best expression = (cos((-92.51479647132123 * cos(x0))) * (0.3926633564634119 - 0.9986590493169741))
+Best expression (original format) = -92.51479647132123 x0 cos * cos 0.3926633564634119 0.9986590493169741 - *
+
+Unique expressions = 644236
+Time spent fitting = 35042.9 seconds
+Best score = 0.0258991, SNE = 37.6114
+Squared-norm error for each equation: 34.8689 2.7425 
+Best expression = (cos((-92.51479676044292 * cos(x0))) * (0.3926633082659666 - 0.9986590493169741))
+Best expression (original format) = -92.51479676044292 x0 cos * cos 0.3926633082659666 0.9986590493169741 - *
