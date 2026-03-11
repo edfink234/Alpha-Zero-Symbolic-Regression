@@ -7822,6 +7822,11 @@ printer = P(); x='(((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((s
             Squared-norm error for each equation: 47.1009 0.710309
             Best expression = ((((((-6.437971983873846 * sin((x0 * -5.4145382360994985))) * 4.003522788536993) - ((21.27681688899213 * sin((13.412300028120239 * x0))) - -4.604224807643289)) - (-8.964504919736237 * sin((x0 * -9.87136872484632)))) + cos((arcsin(x0) + ((x0 * 4) * 8)))) + (-0.6599550579794976 * cos(((8.43579910610507 * x0) - 2.236995913786809))))
             Best expression (original format) = -6.437971983873846 x0 -5.4145382360994985 * sin * 4.003522788536993 * 21.27681688899213 13.412300028120239 x0 * sin * -4.604224807643289 - - -8.964504919736237 x0 -9.87136872484632 * sin * - x0 arcsin x0 4 * 8 * + cos + -0.6599550579794976 8.43579910610507 x0 * 2.236995913786809 - cos * +
+        depth = 9, maxsize = 53, bad_ops = {"exp", "ln", "log", "^", "/"}:
+            Best score = 0.0259142, SNE = 37.5889
+            Squared-norm error for each equation: 34.8689 2.72002
+            Best expression = (((((((-6.437971983873846 * sin((x0 * -5.4145382360994985))) * 4.003522788536993) - ((21.27681688899213 * sin((13.412300028120239 * x0))) - -4.604224807643289)) - (-8.964504919736237 * sin((x0 * -9.87136872484632)))) + cos((arcsin(x0) + ((x0 * 4) * 8)))) + (-0.6599550579794976 * cos(((8.43579910610507 * x0) - 2.236995913786809)))) + (cos((-92.51479676044292 * cos(x0))) * -0.6059957410510074))
+            Best expression (original format) = -6.437971983873846 x0 -5.4145382360994985 * sin * 4.003522788536993 * 21.27681688899213 13.412300028120239 x0 * sin * -4.604224807643289 - - -8.964504919736237 x0 -9.87136872484632 * sin * - x0 arcsin x0 4 * 8 * + cos + -0.6599550579794976 8.43579910610507 x0 * 2.236995913786809 - cos * + -92.51479676044292 x0 cos * cos -0.6059957410510074 * +
      */
     static std::atomic<bool> added_additive{false};
     thread_local std::vector<std::vector<std::string>> results(x.num_diff_eqns);
@@ -11855,6 +11860,7 @@ namespace ExampleProblems
                 "-6.437971983873846 x0 -5.4145382360994985 * sin * 4 * 21.70067586695228 13.412300028120239 x0 * sin * 4.277109509481168 + - 9.486665504681843 x0 -9.87136872484632 * sin * +",
                 "-6.437971983873846 x0 -5.4145382360994985 * sin * 4.003522788536993 * 21.27681688899213 13.412300028120239 x0 * sin * -4.604224807643289 - - -8.964504919736237 x0 -9.87136872484632 * sin * - x0 arcsin x0 4 * 8 * + cos +",
                 "-6.437971983873846 x0 -5.4145382360994985 * sin * 4.003522788536993 * 21.27681688899213 13.412300028120239 x0 * sin * -4.604224807643289 - - -8.964504919736237 x0 -9.87136872484632 * sin * - x0 arcsin x0 4 * 8 * + cos + -0.6599550579794976 8.43579910610507 x0 * 2.236995913786809 - cos * +",
+                "-6.437971983873846 x0 -5.4145382360994985 * sin * 4.003522788536993 * 21.27681688899213 13.412300028120239 x0 * sin * -4.604224807643289 - - -8.964504919736237 x0 -9.87136872484632 * sin * - x0 arcsin x0 4 * 8 * + cos + -0.6599550579794976 8.43579910610507 x0 * 2.236995913786809 - cos * + -92.51479676044292 x0 cos * cos 0.3926633082659666 0.9986590493169741 - * +",
                 
             }.back()
         };
@@ -11903,7 +11909,7 @@ for i in range(len(consts)):
             SimulatedAnnealing(WierdTrackFitter /*differential equation to solve*/,
                 2 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{4} /*fixed depths of generated solution*/,
+                std::vector<int>{9} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -11920,14 +11926,14 @@ for i in range(len(consts)):
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "WierdTrackSR.txt", // "" /*filename to save current best expression found (instead of outputting them to standard out)*/
-                std::vector<int>{9} /*optional max-sizes of each of the expressions in the generated solution*/,
-                {split(seed_exprs[track_idx])} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
+                std::vector<int>{53} /*optional max-sizes of each of the expressions in the generated solution*/,
+                {/*split(seed_exprs[track_idx])*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 "vector" /*evaluation type: can be "dag", "scalar", or "vector"*/,
                 1000000 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                 std::vector<std::string>{"exp", "ln", "log", "^", "/"} /*operators to restrict in the search*/,
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
-                {/*split(seed_exprs[track_idx])*/} /*seed expressions*/,
+                {split(seed_exprs[track_idx])} /*seed expressions*/,
                 (num_threads == 1) /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
@@ -11935,7 +11941,7 @@ for i in range(len(consts)):
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "WierdTrackSR.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/);
+                "sub_array" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/);
         }
     }
 };
