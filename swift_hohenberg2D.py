@@ -34,8 +34,14 @@ from warnings import filterwarnings
 from sympy.utilities.autowrap import ufuncify
 
 filterwarnings('ignore')
-#sech=lambda x:1/cosh(x)
-
+def sech_stable(x):
+    ax = np.abs(x)
+    out = np.empty_like(ax, dtype=np.float64)
+    # for large |x|, sech(x) ≈ 2*exp(-|x|) (never overflows)
+    big = ax > 20
+    out[big] = 2.0*np.exp(-ax[big])
+    out[~big] = 1.0/np.cosh(ax[~big])
+    return np.maximum(out, np.finfo(np.float64).tiny)  # <-- key line
 # -------------------------
 # Helpers: parameterization
 # -------------------------
@@ -240,7 +246,7 @@ PERIODIC_IN_THETA = True
 COMPUTE_NUMERIC = False
 PRINT_SH = False
 f = None
-f_per_idx = 8
+f_per_idx = 9
 
 if GENERIC:
     f = Function('f')(r, theta)
@@ -273,7 +279,17 @@ else:
              + 0.886342906953379
 #             - 16.047123831843/(r + theta - 10405.8182267205)
              , \
-             
+             -0.285806921654494**(r + sech(r) + 10.0540737282843)*(r + (r**0.999993025405072 - 0.00373485491171487)**(r**0.01) + 0.00880895839265857)**(0.0166848851652189**(6.52587306756706/(r - 0.00781876960101768)) + 0.000702853356876745*r + 7.57798844600458)*(-sin(theta + cos(theta) + 1.25218047866732/r) + sin(log(r)) + sech(r)**(0.0611608608465381*r))
+#              + 10**(-10**(theta + 10) + r)
+#              - ((r + 0.0675028199851666*sin(theta) + 0.319527238502232)**0.980198011557366/(0.0117005728144073**r*(r + 55.7585786235571) + r + 1.81013830026433 + (r + 10.6189532795815)**(-r)))**((sin(theta + cos(theta + 0.452450872037153) + 5.99600860790768) + 9.35715943594639/(r + 0.52683483997909))*(r + sin(r) + sech(sin(theta))**(r + theta) + 0.425613409800106))
+#              + (2.71406357200553e-13 + 6.12323399573677e-17/(2.00090909090909 - 7.78794109346426*r))*(r + cos(sin(theta) - 38.4131109482099) + 0.499577688583474)**(sin(sqrt(r)) + 11.3049428452759)
+#              + (2.71408016417197e-13 + 3.35149368755653e-18/sqrt(r))*(2*theta + 5.19646483481694*exp(r) + tanh(theta) + 7.82150631202911)**(cos(theta - 0.0325614982719992) + sech(theta))
+              + 0.604143623800264*sqrt(1 - cos(r)**2)*(sech(r + cos(r) + 8.39984108535765) + 0.999884875453817)**((r + 0.0308839840501129)**4.03*(1.58*(tanh(.59*r)))/(tanh(sech(r)) + 0.657323425267437))*sin(theta + 6.32621184985741)
+#              - (-6.28613844557487**r - 167.513687684933)*(-2.64384776247393*r - 25.9576392396297)/(-r**2 - r + 13.9321568185087*(r + 8.88197588332913)**(theta + 0.978878224067382)*exp(r) + 364525919766.594)
+#              - (-log(r) + 2.55087081076035*sin(r) + tanh(sin(r)) + 12.6004110087972)**(0.656205870576171*r - 9.67665833558963)
+              + 0.890778403056392
+#              - 50.236703696356/(r - theta - 10631.0099021024)
+              , \
             -0.285806921654494**(r + 10.0101815997187)*(r**1.00009081398177 + r**((r + 1)**0.01))**(0.0150907998593378**(6.28319/(r + 2)) + 7.59399990585568)*(-sin(theta + cos(theta) + 0.01) + sin(log(r)) + sech(r)**(r/10))
             + 0.612309082637831*0.999884875453817**(1.4426686039141*(r + 0.01)**4*asin(tanh(r)))*sqrt(1 - cos(r)**2)*sin(theta - 4.69282041378069e-6)
             - 5.48657829636844e-12*theta*(-r + theta + 2)
@@ -326,23 +342,23 @@ func_vals = None
 N = 1000
 if not GENERIC:
     r_vals, theta_vals = np.meshgrid(np.linspace(0.01, 10, N), np.linspace(0, 2*pi, N))
-    terms = sp.Add.make_args(f)  # f is your full expression
-    term_funcs = [sp.lambdify((r, theta), t, "numpy") for t in terms]
+    terms = sp.Add.make_args(diff(f, r))  # f is your full expression
+    term_funcs = [sp.lambdify((r, theta), t, modules=[{"sech": sech_stable}, "numpy"]) for t in terms]
 
     bad = []
-    for k, tf in enumerate(term_funcs):
+    for k, tf, term in zip(range(len(terms)), term_funcs, terms):
         v = tf(r_vals, theta_vals)
         imag = np.max(np.abs(np.imag(v))) if np.iscomplexobj(v) else 0.0
         n_nan = np.isnan(v).sum()
         n_inf = np.isinf(v).sum()
         if imag > 1e-12 or n_nan or n_inf:
-            bad.append((k, imag, n_nan, n_inf))
+            bad.append((k, imag, n_nan, n_inf, term))
     print(*bad, " ... total bad:", len(bad), sep='\n')
     
     
-    f_SR = lambdify((r, theta), f)
-    f_SR_r = lambdify((r, theta), f_r := diff(f, r))
-    f_SR_theta = lambdify((r, theta), f_theta := diff(f, theta))
+    f_SR = lambdify((r, theta), f, modules=[{"sech": sech_stable}, "numpy"])
+    f_SR_r = lambdify((r, theta), f_r := diff(f, r), modules=[{"sech": sech_stable}, "numpy"])
+    f_SR_theta = lambdify((r, theta), f_theta := diff(f, theta), modules=[{"sech": sech_stable}, "numpy"])
 
     print(f"Variance of f = {np.var(f_SR_vals:=f_SR(r_vals, theta_vals))}")
     print(f"||f|| = {LA.norm(f_SR_vals)}")
@@ -351,7 +367,7 @@ if not GENERIC:
     print(f"Median(∂f/∂r) = {np.median(np.sort(f_SR_r_vals))}")
     print(f"Median(∂f/∂θ) = {np.median(np.sort(f_SR_theta_vals))}")
 
-    func = lambdify((r, theta), swift_hohenberg)
+    func = lambdify((r, theta), swift_hohenberg, modules=[{"sech": sech_stable}, "numpy"])
     func_vals = func(r_vals, theta_vals)
 
 #    print(f"func_vals.size = {func_vals.size}")
@@ -438,7 +454,7 @@ def residual_vec(x):
     return R.ravel()
 
 # Initial seed: use your field f(r,theta) (NOT the residual) on the new grid
-f_func = lambdify((r, theta), f)
+f_func = lambdify((r, theta), f, modules=[{"sech": sech_stable}, "numpy"])
 U0 = f_func(r_vals, theta_vals)
 x0 = U0.ravel().copy()
 
