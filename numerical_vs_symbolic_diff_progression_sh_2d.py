@@ -1,15 +1,16 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Data provided
-iterations = np.arange(1, 9)
 # symbolic regression mse progression
-x_sym = [0.201, 0.149, 0.119, 0.078, 0.062, 0.047, 0.04, 0.027]  # 0 < r < 10
-y_sym = [0.208, 0.15, 0.032, 0.025, 0.022, 0.019, 0.015, 0.011]   # 0 < r < 100
+x_sym = [0.201, 0.149, 0.119, 0.078, 0.062, 0.047, 0.04, 0.027, 0.026, 0.022]  # 0 < r < 10
+y_sym = [0.208, 0.15, 0.032, 0.025, 0.022, 0.019, 0.015, 0.011, 0.010, 0.009]   # 0 < r < 100
 
 # finite-diff progression
-x_fd = [70.505, 150.771, 142.679, 6.861e6, 4.73e9, 3.785e9, 2.992e9, 2.123e9] # 0 < r < 10
-y_fd = [0.763, 0.706, 0.585, 9029.435, 7327.883, 5864.088, 5044.098, 3700.191] # 0 < r < 100
+x_fd = [70.505, 150.771, 142.679, 6.861e6, 4.73e9, 3.785e9, 2.992e9, 2.123e9, 2.043e9, 1.986e9] # 0 < r < 10
+y_fd = [0.763, 0.706, 0.585, 9029.435, 7327.883, 5864.088, 5044.098, 3700.191, 3629.628, 3625.238] # 0 < r < 100
+
+# Data provided
+iterations = range(1, len(x_fd)+1)
 
 # Plotting configuration
 plt.rcParams.update({'font.size': 11, 'axes.labelweight': 'bold'})
