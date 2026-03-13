@@ -907,8 +907,6 @@ int main()
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
-    exit(1);
-    
     prefix = {"+","cos","/","*","y","y","x", "y"}; // cos((y*y)/x) + y
     derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * ~ sin / * y y x / - * + * y 0 * 0 y x * * y y 1 * x x 0 (prefix) -> -sin(y*(y/x))*y*(-y)/(x*x)) (infix) ✅
                                                           //* ~ sin / * y y x / - * + * y 0 * 0 y x * * y y 1 * x x (prefix) -> -sin(y*(y/x))*y*(-y)/(x*x)) (infix) ✅
