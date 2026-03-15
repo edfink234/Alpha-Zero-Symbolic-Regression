@@ -3662,19 +3662,19 @@ int main()
     
 //
     auto start_time = Clock::now();
-//    MultiLayerPerceptron mlp(
-//         std::vector<int>{2,10,9,8,10,8,1},
-//         std::deque<std::string>{"sigmoid", "sigmoid", "sigmoid", "none", "none", "none"},
-//         /* bias = */ 1.0f,
-//         /*eta = */ 0.0001f,
-//         /*theta = */ 0.8f,
-//         /*gamma = */ 0.9f,
-//         /*weight_update = */ "NAG",
-//         /*expression_type = */ "prefix", //IRRELEVANT
-//         /*float epsilon = */ 0.1f,
-//         /*float beta_1 = */ 0.9f,
-//         /*float beta_2 = */ 0.999f,
-//         /*float lambda = */ 0.01f /*weight decay AdamW*/);
+    MultiLayerPerceptron mlp(
+         std::vector<int>{2,10,9,8,10,8,1},
+         std::deque<std::string>{"sigmoid", "sigmoid", "sigmoid", "none", "none", "none"},
+         /* bias = */ 1.0f,
+         /*eta = */ 0.0001f,
+         /*theta = */ 0.8f,
+         /*gamma = */ 0.9f,
+         /*weight_update = */ "NAG",
+         /*expression_type = */ "prefix", //IRRELEVANT
+         /*float epsilon = */ 0.1f,
+         /*float beta_1 = */ 0.9f,
+         /*float beta_2 = */ 0.999f,
+         /*float lambda = */ 0.01f /*weight decay AdamW*/);
 ////    
 //    Eigen::MatrixXf my_temp_test_data = generateData(20 /*rows*/, 3 /*columns*/, Hemberg_2 /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f);
 //    Data my_test_data;
@@ -3684,24 +3684,24 @@ int main()
 //    std::cout << "\nFINAL MSE = " << MSE << '\n';
 //    exit(1);
 
-    GP(generateData(20 /*rows*/, 3 /*columns*/, func_map.at("Hemberg_2") /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f),
-       5 /*fixed depth*/,
-       "postfix",
-       true /*cache*/,
-       100 /*time to run the algorithm in seconds*/,
-       "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/,
-       0 /*num threads*/,
-       {2,10,5,5,1} /*Neural Network number of perceptrons in i'th layers; first layer is number of inputs (input-layer) */,
-       std::deque<std::string>{"sigmoid", "sigmoid", "none", "none"},
-       10 /*num_epochs*/,
-       /* bias = */ 1.0f,
-       /*eta = */ 0.5f,
-       /*theta = */ 0.01f,
-       /*gamma = */ 0.9f,
-       /*epsilon = */ 1e-8f,
-       /*beta_1 = */ 0.9f,
-       /*beta_2 = */ 0.999f,
-       /*lambda = */ 0.01f);
+//    GP(generateData(20 /*rows*/, 3 /*columns*/, func_map.at("Hemberg_2") /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f),
+//       5 /*fixed depth*/,
+//       "postfix",
+//       true /*cache*/,
+//       100 /*time to run the algorithm in seconds*/,
+//       "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/,
+//       0 /*num threads*/,
+//       {2,10,5,5,1} /*Neural Network number of perceptrons in i'th layers; first layer is number of inputs (input-layer) */,
+//       std::deque<std::string>{"sigmoid", "sigmoid", "none", "none"},
+//       10 /*num_epochs*/,
+//       /* bias = */ 1.0f,
+//       /*eta = */ 0.5f,
+//       /*theta = */ 0.01f,
+//       /*gamma = */ 0.9f,
+//       /*epsilon = */ 1e-8f,
+//       /*beta_1 = */ 0.9f,
+//       /*beta_2 = */ 0.999f,
+//       /*lambda = */ 0.01f);
     
     std::cout << "Time Elapsed = " << timeElapsedSince(start_time) << " seconds" << '\n';
     

@@ -41,11 +41,50 @@
 
 from os import system
 
+#for benchmark in benchmarks:
+#    for neural_network in neural_networks:
+#        for weight_update_rule in weight_update_rules:
+#            for hyper_parameter_combo in hyper_parameter_combos[weight_update_rule]:
+#                with open(whateverFileName, "w") as f:
+#                    neural_network_layers = f'{benchmarks[benchmark]}' + neural_network[0][1:]
+#                    f.write(neural_network_layers+"\n")
+#                    f.write(neural_network[1]+"\n")
+#                    f.write(benchmark+"\n")
+#                    f.write(weight_update_rule+"\n")
+#                    f.write(
+                    
+                
+benchmarks = ('Hemberg_1', 'Hemberg_2', 'Hemberg_3', 'Hemberg_4', 'Hemberg_5', 'Feynman_1', 'Feynman_2', 'Feynman_3', 'Feynman_4', 'Feynman_5')
+benchmark_Ns = (2, 2, 2, 2, 2, 5, 9, 7, 8, 6)
+benchmarks = {'Hemberg_1': 2, 'Hemberg_2': 2, 'Hemberg_3': 2, 'Hemberg_4': 2, 'Hemberg_5': 2, 'Feynman_1': 5, 'Feynman_2': 9, 'Feynman_3': 7, 'Feynman_4': 8, 'Feynman_5': 6}
+print(benchmarks)
+neural_networks = (('N 2 7 6 1', 'sigmoid sigmoid sigmoid none'), ('N 6 8 1 5 1', 'sigmoid sigmoid sigmoid none none'), ('N 10 9 8 10 8 1', 'sigmoid sigmoid sigmoid none none none'))
+weight_update_rules = ("basic", "heavy ball", "NAG", "AdaGrad", "RMSProp", "AdaDelta", "Adam", "AdamW")
+default_eta = 0.5
+default_theta = 0.01
+default_gamma = 0.9
+default_epsilon = 0.1
+default_beta_1 = 0.9
+default_beta_2 = 0.999
+default_lambda = 0.01
+hyper_parameter_combos = (\
+    ({"eta": 1e-5} ,{"eta": 3e-5}, {"eta": 1e-4}, {"eta": 3e-4}, {"eta": 1e-3}), \
+    ({"theta": 0.8, "eta": 1e-4}, {"theta": 0.8, "eta": 3e-4}, {"theta": 0.8, "eta": 1e-3}, {"theta": 0.9, "eta": 1e-4}, {"theta": 0.9, "eta": 3e-4}, {"theta": 0.9, "eta": 1e-3}), \
+    ({"theta": 0.8, "eta": 1e-4}, {"theta": 0.8, "eta": 3e-4}, {"theta": 0.8, "eta": 1e-3}, {"theta": 0.9, "eta": 1e-4}, {"theta": 0.9, "eta": 3e-4}, {"theta": 0.9, "eta": 1e-3}), \
+    ({"epsilon": 1e-8, "eta": 1e-3}, {"epsilon": 1e-8, "eta": 3e-3}, {"epsilon": 1e-8, "eta": 1e-2}, {"epsilon": 1e-6, "eta": 1e-3}, {"epsilon": 1e-6, "eta": 3e-3}, {"epsilon": 1e-6, "eta": 1e-2}), \
+    ({"epsilon": 1e-8, "eta": 1e-5, "gamma": 0.9}, {"epsilon": 1e-8, "eta": 1e-5, "gamma": 0.99}, {"epsilon": 1e-8, "eta": 3e-5, "gamma": 0.9}, {"epsilon": 1e-8, "eta": 3e-5, "gamma": 0.99}, {"epsilon": 1e-8, "eta": 1e-4, "gamma": 0.9}, {"epsilon": 1e-8, "eta": 1e-4, "gamma": 0.99}, {"epsilon": 1e-8, "eta": 3e-4, "gamma": 0.9}, {"epsilon": 1e-8, "eta": 3e-4, "gamma": 0.99}), \
+    ({"epsilon": 1e-6, "gamma": 0.95}, {"epsilon": 1e-6, "gamma": 0.99}, {"epsilon": 1e-8, "gamma": 0.95}, {"epsilon": 1e-8, "gamma": 0.99}), \
+    ({"eta": 1e-5, "epsilon": 1e-8, "beta_1": 0.9, "beta_2": 0.999}, {"eta": 1e-5, "epsilon": 1e-8, "beta_1": 0.95, "beta_2": 0.999}, {"eta": 3e-5, "epsilon": 1e-8, "beta_1": 0.9, "beta_2": 0.999}, {"eta": 3e-5, "epsilon": 1e-8, "beta_1": 0.95, "beta_2": 0.999}, {"eta": 1e-4, "epsilon": 1e-8, "beta_1": 0.9, "beta_2": 0.999}, {"eta": 1e-4, "epsilon": 1e-8, "beta_1": 0.95, "beta_2": 0.999}), \
+    ({"lambda": 1e-5, "eta": 3e-5, "epsilon": 1e-8, "beta_1": 0.9, "beta_2": 0.999}, {"lambda": 1e-5, "eta": 1e-4, "epsilon": 1e-8, "beta_1": 0.9, "beta_2": 0.999}, {"lambda": 1e-4, "eta": 3e-5, "epsilon": 1e-8, "beta_1": 0.9, "beta_2": 0.999}, {"lambda": 1e-4, "eta": 1e-4, "epsilon": 1e-8, "beta_1": 0.9, "beta_2": 0.999}, {"lambda": 1e-3, "eta": 3e-5, "epsilon": 1e-8, "beta_1": 0.9, "beta_2": 0.999}, {"lambda": 1e-3, "eta": 1e-4, "epsilon": 1e-8, "beta_1": 0.9, "beta_2": 0.999}))
+    
+for hyper_parameter_combo in hyper_parameter_combos:
+    print(len(hyper_parameter_combo), hyper_parameter_combo, end='\n\n')
+
 example_config = [('layers', '2 2 7 6 1'), ('layer_types', 'sigmoid sigmoid sigmoid none'), ('func_type', 'Hemberg_1'), ('weight_update_rule', 'NAG'), ('eta', '1e-5'), ('theta', '.8'), ('gamma', '.9'), ('epsilon', '1e-8'), ('beta_1', '.9'), ('beta_2', '.999'), ('lambda', '1e-5')]
 #print(list(zip(example_config.keys(), example_config.values())))
 with open("RunTestsNeuralNetworksVecSR.txt", "w") as f:
     for config_pair in example_config:
         f.write(f'{config_pair[1]}\n')
-
+    
 system("cat RunTestsNeuralNetworksVecSR.txt")
 
