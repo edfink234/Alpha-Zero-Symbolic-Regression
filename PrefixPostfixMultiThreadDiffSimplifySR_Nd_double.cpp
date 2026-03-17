@@ -1030,6 +1030,7 @@ struct Board
     std::vector<int> maxSize; //max size (number of tokens) for each expression
     std::vector<std::vector<std::string>> additiveCorrections; //Starting-point, s.t candidate-expression += additiveCorrections (user-implemented though)
     const double const_cache_thresh;
+    const std::string simplify_mode;
 
     Board(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
           size_t num_diff_eqns,
@@ -1055,8 +1056,9 @@ struct Board
           std::string evalType = "vector",
           bool completeTree = false,
           const std::vector<std::string> bad_operators = {},
-          const double constCacheThresh = 1.2) :
-            gen{rd()}, vel_dist{-1.0, 1.0}, pos_dist{0.0, 1.0}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, n{depth}, is_primary{primary}, simplify_original{simplifyOriginal}, mustHaveAllFeatures{must_have_all_features}, customFeatures{custom_features}, eval_type{evalType}, complete_Tree{completeTree}, maxSize{max_size}, additiveCorrections{additive_corrections}, const_cache_thresh{constCacheThresh}
+          const double constCacheThresh = 1.2,
+          const std::string& SimplifyMode = "total") :
+            gen{rd()}, vel_dist{-1.0, 1.0}, pos_dist{0.0, 1.0}, num_fit_iter{numFitIter}, fit_method{fitMethod}, fit_grad_method{fitGradMethod}, n{depth}, is_primary{primary}, simplify_original{simplifyOriginal}, mustHaveAllFeatures{must_have_all_features}, customFeatures{custom_features}, eval_type{evalType}, complete_Tree{completeTree}, maxSize{max_size}, additiveCorrections{additive_corrections}, const_cache_thresh{constCacheThresh}, simplify_mode{SimplifyMode}
     {
         assert(n.size());
         assert(((!maxSize.size()) || (maxSize.size() && maxSize.size() == n.size())) && "if `maxSize` is not empty it much be equal in size to the depth-vector `n`");
@@ -2530,14 +2532,21 @@ struct Board
 
     void simplifyPN(std::vector<std::string>& expression)
     {
+        if (simplify_mode == "none")
+        {
+            return;
+        }
         size_t size_before, size_after;
         do
         {
             size_before = expression.size();
             simplifyPN_Helper(expression);
-            this->simplify_grasp.reserve(expression.size());
-            graspSimplifyPrefix(expression, 0, expression.size() - 1, this->simplify_grasp);
-            simplifyPN_Helper(expression);
+            if (simplify_mode == "total")
+            {
+                this->simplify_grasp.reserve(expression.size());
+                graspSimplifyPrefix(expression, 0, expression.size() - 1, this->simplify_grasp);
+                simplifyPN_Helper(expression);
+            }
             size_after = expression.size();
         } while (size_before != size_after);
     }
@@ -3579,14 +3588,21 @@ struct Board
     
     void simplifyRPN(std::vector<std::string>& expression)
     {
+        if (simplify_mode == "none")
+        {
+            return;
+        }
         size_t size_before, size_after;
         do
         {
             size_before = expression.size();
             simplifyRPN_Helper(expression);
-            this->simplify_grasp.reserve(expression.size());
-            graspSimplifyPostfix(expression, 0, expression.size() - 1, this->simplify_grasp);
-            simplifyRPN_Helper(expression);
+            if (simplify_mode == "total")
+            {
+                this->simplify_grasp.reserve(expression.size());
+                graspSimplifyPostfix(expression, 0, expression.size() - 1, this->simplify_grasp);
+                simplifyRPN_Helper(expression);
+            }
             size_after = expression.size();
         } while (size_before != size_after);
     }
@@ -5660,6 +5676,9 @@ struct Board
         bool checkMaxSize = (this->maxSize.size() == this->pieces.size());
         for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++) //loop over each generated symbolic expression
         {
+            #if TIME_EVAL
+                ScopedTimer t_build("expression-weeding");
+            #endif
             //This block checks if the max-size constraint is violated by any of the `this->n.size()` expressions
             if (checkMaxSize && this->pieces[jdx].size() > this->maxSize[jdx])
             {
@@ -5772,10 +5791,21 @@ struct Board
                 this->SNE_curr_vec.assign(this->diffeq_result.size(), 0); //one sne value initialized to 0 per equation in the system we're trying to solve.
             }
             assert(this->diffeq_result.size() == static_cast<decltype(this->diffeq_result.size())>(this->num_diff_eqns));
-            for (decltype(this->diffeq_result.size()) jdx = 0; jdx < this->diffeq_result.size(); jdx++)
-            {
-                ((this->expression_type == "prefix") ? simplifyPN(this->diffeq_result[jdx]) : simplifyRPN(this->diffeq_result[jdx]));
-            }
+            #if TIME_EVAL
+                {
+                    ScopedTimer t_build("simplify_diff_eq");
+                    for (decltype(this->diffeq_result.size()) jdx = 0; jdx < this->diffeq_result.size(); jdx++)
+                    {
+                        ((this->expression_type == "prefix") ? simplifyPN(this->diffeq_result[jdx]) : simplifyRPN(this->diffeq_result[jdx]));
+                    }
+                }
+            #else
+                for (decltype(this->diffeq_result.size()) jdx = 0; jdx < this->diffeq_result.size(); jdx++)
+                {
+                    ((this->expression_type == "prefix") ? simplifyPN(this->diffeq_result[jdx]) : simplifyRPN(this->diffeq_result[jdx]));
+                }
+            #endif
+
             std::pair<bool, double> improved;
             
             improved.first = true;
@@ -5783,14 +5813,23 @@ struct Board
             
             if (this->fit_method == "LBFGS")
             {
+                #if TIME_EVAL
+                    ScopedTimer t_build("LBFGS");
+                #endif
                 improved = LBFGS();
             }
             else if (this->fit_method == "LBFGSB")
             {
+                #if TIME_EVAL
+                    ScopedTimer t_build("LBFGSB");
+                #endif
                 improved = LBFGSB();
             }
             else if (this->fit_method == "LevenbergMarquardt")
             {
+                #if TIME_EVAL
+                    ScopedTimer t_build("LevenbergMarquardt");
+                #endif
                 improved = LevenbergMarquardt();
             }
             Eigen::VectorXd temp_vec; //need to have a back-up vector in case `improved == false` so we can get the score of the expression we just built.
@@ -5840,8 +5879,15 @@ struct Board
                     Board::expression_dict.insert_or_assign(this->expression_string, this->params);
                 }
             }
-            std::vector<Eigen::VectorXd> expression_eval = expression_evaluator(temp_vec, this->diffeq_result);
-
+            #if TIME_EVAL
+                std::vector<Eigen::VectorXd> expression_eval;
+                {
+                    ScopedTimer t_build("total_expression_evaluator");
+                    expression_eval = expression_evaluator(temp_vec, this->diffeq_result);
+                }
+            #else
+                std::vector<Eigen::VectorXd> expression_eval = expression_evaluator(temp_vec, this->diffeq_result);
+            #endif
             score = 0.0;
             this->SNE_curr = SNE(expression_eval[0]);
             if (isInvalid(this->SNE_curr))
@@ -5954,6 +6000,9 @@ struct Board
             {
                 if (this->simplify_original)
                 {
+                    #if TIME_EVAL
+                        ScopedTimer t_build("simplify_pieces");
+                    #endif
                     for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++)
                     {
                         ((this->expression_type == "prefix") ? simplifyPN(this->pieces[jdx]) : simplifyRPN(this->pieces[jdx])); //simplify expression
@@ -5962,6 +6011,9 @@ struct Board
                 else
                 {
                     this->temp_pieces = this->pieces;
+                    #if TIME_EVAL
+                        ScopedTimer t_build("simplify_pieces");
+                    #endif
                     for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++)
                     {
                         ((this->expression_type == "prefix") ? simplifyPN(this->pieces[jdx]) : simplifyRPN(this->pieces[jdx])); //simplify expression
@@ -7557,7 +7609,7 @@ class P(PythonCodePrinter):
  def _print_sech(self, expr):
     return f"(sp.sech({self._print(expr.args[0])}))"
 
-printer = P(); x='(((((((((((-8.822219976230814 * sin((x0 * -5.387258253707981))) * 2) - (15.121774094175496 * sin((13.400053397484177 * x0)))) + (-6.8306665534001905 * sin((x0 * 9.840284926874622)))) + cos((x0 + ((x0 * 4) * 8)))) * (0.6362553010078381 + tanh((x0 - -0.7131747117824474)))) + (cos((-92.51479676044292 * cos(x0))) * -0.7105209460761485)) + (0.6064138713176219 * sin((-26.54616168240752 * arccos(x0))))) - (5.326598770253647 - arccos(sech((x0 + x0))))) * sech((0.2911257996852284 * cos((x0 * 4))))) + (asin((x0 - (0.0013315287667302177 * x0))) - arcsin(x0)))'.replace("^","**").replace("~", "-").replace("x0","s"); from sympy import *; import sympy as sp; y = x.replace("arccos","acos").replace("arcsin","asin"); s, z = sp.symbols("s z"); from sympy.printing.pycode import pycode; print('\n',x:=printer.doprint(eval(y)).replace('math','sp'), end = ""); print(" if fitPlotFunc else lambda s: ", end = ""); print(x.replace("sp","np")); round_floats = lambda expr, ndigits: expr.xreplace({f: sp.Float(round(float(f), ndigits)) for f in expr.atoms(sp.Float)}); func_sym_r = round_floats(eval(y), 2); print(sp.multiline_latex(z, func_sym_r, 2));
+printer = P(); x='(((((((((((((((4 * sin((x0 * -5.384845885996884))) * -3.8649452402891313) + (-13.10120007639425 * sin((13.400053397484175 * x0)))) + (-5.794253234276785 * sin((x0 * 9.840284926874622)))) + cos((x0 + ((x0 * 3.996129492163092) * 8)))) * (1.2919775391911013 + sech((2.0002594499783353 - x0)))) + (cos((-92.47590021598602 * cos(x0))) * -0.6779738846267627)) + (0.5117426502589011 * sin((-26.701916766951943 * arccos(x0))))) - ~(arccos(sin((x0 * -2.2353635651867014))))) * sech((0.5103478091301622 * cos((x0 * -3.351557929474417))))) + -2.6527316428218053) - asin(sech(tanh(cos((14.75291246644264 * x0)))))) - 3.141592569296096) + (sqrt(arccos(x0)) - sqrt((0.11806700355537884 + arccos(x0))))) + (acos(x0) - arccos((x0 + -0.000539567978735189))))'.replace("^","**").replace("~", "-").replace("x0","s"); from sympy import *; import sympy as sp; y = x.replace("arccos","acos").replace("arcsin","asin"); s, z = sp.symbols("s z"); from sympy.printing.pycode import pycode; print('\n',x:=printer.doprint(eval(y)).replace('math','sp'), end = ""); print(" if fitPlotFunc else lambda s: ", end = ""); print(x.replace("sp","np")); round_floats = lambda expr, ndigits: expr.xreplace({f: sp.Float(round(float(f), ndigits)) for f in expr.atoms(sp.Float)}); func_sym_r = round_floats(eval(y), 2); print(sp.multiline_latex(z, sp.expand(func_sym_r), 2));
      '''
      
     track_idx = 0:
@@ -8072,11 +8124,16 @@ printer = P(); x='(((((((((((-8.822219976230814 * sin((x0 * -5.387258253707981))
             Squared-norm error for each equation: 3.21014 3.55679
             Best expression = ((((((((((((((4 * sin((x0 * -5.384845885996884))) * -3.8648556736563435) + (-13.10120007639425 * sin((13.400053397484177 * x0)))) + (-5.793844091786103 * sin((x0 * 9.840284926874622)))) + cos((x0 + ((x0 * 3.996129492163092) * 8)))) * (1.2919775391911013 + sech((2 - x0)))) + (cos((-92.51479676044292 * cos(x0))) * -0.6791957954712252)) - (-0.5118970564172467 * sin((-26.62309910499545 * arccos(x0))))) - ~(arccos(sin((x0 * -2.2353635651867014))))) * sech((0.5103478091301622 * cos((x0 * 3.353158606776727))))) + -2.6527316428218053) - asin(sech(tanh(cos((14.75291246644264 * x0)))))) - 3.1415913773855864) + (sqrt(arccos(x0)) - sqrt((0.12183038979730307 + arccos(x0)))))
             Best expression (original format) = 4 x0 -5.384845885996884 * sin * -3.8648556736563435 * -13.10120007639425 13.400053397484177 x0 * sin * + -5.793844091786103 x0 9.840284926874622 * sin * + x0 x0 3.996129492163092 * 8 * + cos + 1.2919775391911013 2 x0 - sech + * -92.51479676044292 x0 cos * cos -0.6791957954712252 * + -0.5118970564172467 -26.62309910499545 x0 arccos * sin * - x0 -2.2353635651867014 * sin arccos ~ - 0.5103478091301622 x0 3.353158606776727 * cos * sech * -2.6527316428218053 + 14.75291246644264 x0 * cos tanh sech asin - 3.1415913773855864 - x0 arccos sqrt 0.12183038979730307 x0 arccos + sqrt - +
-        depth = 17, maxsize = 99, l1 = 1e-3, bad_ops = {"exp", "ln", "log", "^", "/"}:
-            Best score = 0.128785, SNE = 6.76489
-            Squared-norm error for each equation: 3.20813 3.55676
-            Best expression = (((((((((((((((4 * sin((x0 * -5.384845885996884))) * -3.8648556736563435) + (-13.10120007639425 * sin((13.400053397484177 * x0)))) + (-5.793844091786103 * sin((x0 * 9.840284926874622)))) + cos((x0 + ((x0 * 3.996129492163092) * 8)))) * (1.2919775391911013 + sech((2 - x0)))) + (cos((-92.51479676044292 * cos(x0))) * -0.6791957954712252)) - (-0.5118970564172467 * sin((-26.62309910499545 * arccos(x0))))) - ~(arccos(sin((-2.2339476594684844 * x0))))) * sech((0.5103478091301622 * cos((x0 * 3.353158606776727))))) + -2.6527316428218053) - asin(sech(tanh(cos((14.75291246644264 * x0)))))) - 3.1415913773855864) + (sqrt(arccos(x0)) - sqrt((0.12183038979730307 + arccos(x0))))) + (acos(x0) - arccos((x0 - 0.0005395679263730718))))
-            Best expression (original format) = 4 x0 -5.384845885996884 * sin * -3.8648556736563435 * -13.10120007639425 13.400053397484177 x0 * sin * + -5.793844091786103 x0 9.840284926874622 * sin * + x0 x0 3.996129492163092 * 8 * + cos + 1.2919775391911013 2 x0 - sech + * -92.51479676044292 x0 cos * cos -0.6791957954712252 * + -0.5118970564172467 -26.62309910499545 x0 arccos * sin * - -2.2339476594684844 x0 * sin arccos ~ - 0.5103478091301622 x0 3.353158606776727 * cos * sech * -2.6527316428218053 + 14.75291246644264 x0 * cos tanh sech asin - 3.1415913773855864 - x0 arccos sqrt 0.12183038979730307 x0 arccos + sqrt - + x0 acos x0 0.0005395679263730718 - arccos - +
+        depth = 17, maxsize = 101, l1 = 1e-3, bad_ops = {"exp", "ln", "log", "^", "/"}:
+            Best score = 0.130142, SNE = 6.68389
+            Squared-norm error for each equation: 3.1258 3.55809
+            Best expression = (((((((((((((((4 * sin((x0 * -5.384845885996884))) * -3.8649452402891313) + (-13.10120007639425 * sin((13.400053397484175 * x0)))) + (-5.794253234276785 * sin((x0 * 9.840284926874622)))) + cos((x0 + ((x0 * 3.996129492163092) * 8)))) * (1.2919775391911013 + sech((2.0002594499783353 - x0)))) + (cos((-92.47590021598602 * cos(x0))) * -0.6779738846267627)) + (0.5117426502589011 * sin((-26.701916766951943 * arccos(x0))))) - ~(arccos(sin(((-0.005476217746030558 + x0) * -2.2353635651867014))))) * sech((0.5103478091301622 * cos((x0 * -3.351557929474417))))) + -2.6527316428218053) - asin(sech(tanh(cos((14.75291246644264 * x0)))))) - 3.141592569296096) + (sqrt(arccos(x0)) - sqrt((0.11806700355537884 + arccos(x0))))) + (acos(x0) - arccos((x0 + -0.000539567978735189))))
+            Best expression (original format) = 4 x0 -5.384845885996884 * sin * -3.8649452402891313 * -13.10120007639425 13.400053397484175 x0 * sin * + -5.794253234276785 x0 9.840284926874622 * sin * + x0 x0 3.996129492163092 * 8 * + cos + 1.2919775391911013 2.0002594499783353 x0 - sech + * -92.47590021598602 x0 cos * cos -0.6779738846267627 * + 0.5117426502589011 -26.701916766951943 x0 arccos * sin * + -0.005476217746030558 x0 + -2.2353635651867014 * sin arccos ~ - 0.5103478091301622 x0 -3.351557929474417 * cos * sech * -2.6527316428218053 + 14.75291246644264 x0 * cos tanh sech asin - 3.141592569296096 - x0 arccos sqrt 0.11806700355537884 x0 arccos + sqrt - + x0 acos x0 -0.000539567978735189 + arccos - +
+        depth = 18, maxsize = 103, l1 = 1e-3, bad_ops = {"exp", "ln", "log", "^", "/"}:
+            Best score = 0.14097, SNE = 6.09371
+            Squared-norm error for each equation: 2.75353 3.34018
+            Best expression = ((((((((((((((((3.8278568365463985 * sin((x0 * -5.384845885996884))) * -3.8651411584969577) + (-12.691310873954988 * sin((13.400053397484175 * x0)))) + (-5.289686151151171 * sin((x0 * 9.817998489561006)))) + cos((x0 + ((x0 * 3.996129492163092) * 8)))) * (1.057735226774548 + sin((0.162506062621662 * x0)))) + (cos((-92.47590021598602 * cos(x0))) * -0.4180007702062287)) + (0.2913557709858599 * sin((-26.701916766951943 * arccos(x0))))) - ~(arccos(sin(((x0 + x0) * -1.518372883534164))))) * sech((0.5905870716362039 * cos((x0 * -3.110252728538069))))) - 1.1074713432278496) - asin(sech(tanh(cos((14.75291246644264 * x0)))))) + -0.9983512823568892) + (sqrt(arccos(x0)) - acos((0.005786971128699572 - sech(x0))))) * 1.5706454344766256) - (2.49354477960439e-06 + (2.9146225270605147e-06 + arcsin(sqrt(x0)))))
+            Best expression (original format) = 3.8278568365463985 x0 -5.384845885996884 * sin * -3.8651411584969577 * -12.691310873954988 13.400053397484175 x0 * sin * + -5.289686151151171 x0 9.817998489561006 * sin * + x0 x0 3.996129492163092 * 8 * + cos + 1.057735226774548 0.162506062621662 x0 * sin + * -92.47590021598602 x0 cos * cos -0.4180007702062287 * + 0.2913557709858599 -26.701916766951943 x0 arccos * sin * + x0 x0 + -1.518372883534164 * sin arccos ~ - 0.5905870716362039 x0 -3.110252728538069 * cos * sech * 1.1074713432278496 - 14.75291246644264 x0 * cos tanh sech asin - -0.9983512823568892 + x0 arccos sqrt 0.005786971128699572 x0 sech - acos - + 1.5706454344766256 * 2.49354477960439e-06 2.9146225270605147e-06 x0 sqrt arcsin + + -
      */
     static std::atomic<bool> added_additive{false};
     thread_local std::vector<std::vector<std::string>> results(x.num_diff_eqns);
@@ -9638,10 +9695,10 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
         Best expression = ((((((((0.0037348549117148743 + x0) + 0.3533380261537471) + cos((sin(x1) - 0.6931471805599453))) ^ (sin(sqrt(x0)) + 11.176528193614349)) * 2.714063572005533e-13) + ((2.714063472005533e-13 * (((x0 + 1.9118173344004632) + ((x0 + x1) + (6.28319 + x1))) ^ (cos(x1) - ~(sech(x1))))) + 0.796000037462495)) - (((0.9998848754538172 ^ (arcsin(tanh(x0)) / ((sech(x0) + 0.6931471805599453) / ((0.01 + x0) ^ 4)))) * (sin(~((x1 - 4.692820413780688e-06))) * 0.8654678907925701)) * (0.7073944917315313 * cos(asin(cos(x0)))))) - ((((((x0 ^ 0.9999930254050717) + (x0 ^ ((1 + x0) ^ 0.01))) ^ ((0.015090799859337816 ^ (6.28319 / (2 + x0))) + 7.593328980574705)) * ((0.2858069216544935 ^ ((9.079985933781724e-05 + x0) + 10.010090799859338)) * (((sech(x0) ^ (x0 / 10)) + sin(ln(x0))) - sin(((0.01 + x1) + cos(x1)))))) + (((-6.89937253158146 + (-10 - ((x1 + 1) * 12.56638))) / (((0.00999966667999946 / x0) ^ (x0 ^ 1.5607961601207294)) - ((x0 / 0.6931471805599453) + ((x0 * x1) + 1.9201520944996069e+06)))) + (((((x1 + x1) + x1) * (~(x0) + x1)) / (((x0 ^ x0) - 1.5707963267948966) + 3.645259197930204e+11)) + -0.06816548191850429))) + (((((0.3333380261537471 + (0.0001 + x0)) ^ 0.9801980198019802) / ((0.02 + (0.04661899347368653 + (0.010000 + x0))) + (((x0 + 30) * (0.01 ^ x0)) + 1.547923178056138))) ^ (((0.02746970982342975 + (0.01 + sin(x0))) + (0.16042608309595058 + (0.1 + (0.01 + x0)))) * (sin((cos(x1) + (0.01 + x1))) + (10 / (0.1691548242214544 + (0.01 + x0)))))) + ((((x1 + (0.7615941559557649 * x1)) * 0.7437513329402264) / (((10 * (0.01 * x0)) - -1.6781430581529049) + -7619.606596214227)) + ((10.761594155955764 / (((x0 - 4) * 0.9092974268256816) + ((2 + x0) + -10434.804563901069))) + -0.014461216956581561)))))
         Best expression (original format) = 0.0037348549117148743 x0 + 0.3533380261537471 + x1 sin 0.6931471805599453 - cos + x0 sqrt sin 11.176528193614349 + ^ 2.714063572005533e-13 * 2.714063472005533e-13 x0 1.9118173344004632 + x0 x1 + 6.28319 x1 + + + x1 cos x1 sech ~ - ^ * 0.796000037462495 + + 0.9998848754538172 x0 tanh arcsin x0 sech 0.6931471805599453 + 0.01 x0 + 4 ^ / / ^ x1 4.692820413780688e-06 - ~ sin 0.8654678907925701 * * 0.7073944917315313 x0 cos asin cos * * - x0 0.9999930254050717 ^ x0 1 x0 + 0.01 ^ ^ + 0.015090799859337816 6.28319 2 x0 + / ^ 7.593328980574705 + ^ 0.2858069216544935 9.079985933781724e-05 x0 + 10.010090799859338 + ^ x0 sech x0 10 / ^ x0 ln sin + 0.01 x1 + x1 cos + sin - * * -6.89937253158146 -10 x1 1 + 12.56638 * - + 0.00999966667999946 x0 / x0 1.5607961601207294 ^ ^ x0 0.6931471805599453 / x0 x1 * 1.9201520944996069e+06 + + - / x1 x1 + x1 + x0 ~ x1 + * x0 x0 ^ 1.5707963267948966 - 3.645259197930204e+11 + / -0.06816548191850429 + + + 0.3333380261537471 0.0001 x0 + + 0.9801980198019802 ^ 0.02 0.04661899347368653 0.010000 x0 + + + x0 30 + 0.01 x0 ^ * 1.547923178056138 + + / 0.02746970982342975 0.01 x0 sin + + 0.16042608309595058 0.1 0.01 x0 + + + + x1 cos 0.01 x1 + + sin 10 0.1691548242214544 0.01 x0 + + / + * ^ x1 0.7615941559557649 x1 * + 0.7437513329402264 * 10 0.01 x0 * * -1.6781430581529049 - -7619.606596214227 + / 10.761594155955764 x0 4 - 0.9092974268256816 * 2 x0 + -10434.804563901069 + + / -0.014461216956581561 + + + + -
     Depth = 10:
-        Best score = 0.00075593, SNE = 1321.87
-        Squared-norm error for each equation: 1321.53 0.341875 2.29079e-05
-        Best expression = ((((((((0.047854036967767806 + x0) + 0.4605791172227372) + cos((sin(x1) - 38.41311094820988))) ^ (sin(sqrt(x0)) + 11.318750404644806)) * ((6.123233995736766e-17 / (1.2879723623019084 - (7.787941093464258 * x0))) + 2.7140635720055333e-13)) + (((((4.70574063753784 ^ (x1 + 5.146687716766149)) * 1e-20) + 2.714063472005533e-13) * ((((exp(x0) * 5.638844034146601) + ((x1 - 1.2518353447527208) + (x1 + x1))) + (2.1953301569138914 + (6.004778664380749 + tanh(x1)))) ^ (cos(sin(x1)) - ~(sech(x1))))) + ((10 ^ (x0 - (10 ^ (x1 + 10)))) + 0.7992600614175075))) - ((((sech(((cos(x0) + 8.399841085357654) + x0)) + 0.9998848754538172) ^ (arcsin(tanh(x0)) / ((tanh(sech(x0)) + 0.657323425267437) / ((0.030883984050112927 + x0) ^ 4.011424292868216)))) * (sin(~((0.017395884177856494 + (6.308815965679552 + x1)))) * 0.8585603401982382)) * (0.7036705465113487 * cos(asin(cos(x0)))))) - ((((((0.008808958392658574 + x0) + ((-0.003734854911714874 + (x0 ^ 0.9999930254050716)) ^ (x0 ^ 0.01))) ^ ((0.016684885165218877 ^ (6.59388563017837 / (-0.007818769601017683 + x0))) + (((-17.20128768157982 + x0) / 1381.5968024308193) + 7.589167512209233))) * ((0.2858069216544935 ^ ((-0.0003393999670235031 + (0.04016556402485511 + x0)) + (sech(x0) + 10.01424756422644))) * (((sech(x0) ^ (x0 / 16.350325782842592)) + sin(ln(x0))) - sin((((1.2521804786673227 / x0) + x1) + cos(x1)))))) + (((-0.002638399962054605 + x0) - (x0 + 0.01)) + ((((24.44349317327958 - (6.286138445574874 ^ x0)) * (~((x0 * 3.0705988433937588)) + -24.9729361242346)) / ((((x0 + x0) ^ (x1 + 0.9767956351537417)) * (8.085985344107968 * exp(x0))) + (~((x1 + x1)) + (exp(x0) + 3.645259197511474e+11)))) + -0.06501075242842422))) + (((((0.3156080008395829 + ((sin(x1) * 0.06750281998516658) + x0)) ^ 0.9801980115573659) / ((0.1205681885124466 + (0.08459842394998357 + x0)) + (((4.06842092871471 + (x0 * 38.73398918653422)) * (0.013155690065047344 ^ x0)) + (((x0 * 7.997786925087233) ^ ~(x0)) + 1.6049716878019036)))) ^ ((((sech(sin(x1)) ^ (x1 + x0)) + (0.06869934475888977 + sin(x0))) + (0.25714583754369236 + (0.099768227497524 + x0))) * (sin((cos((0.5190390440878153 + x1)) + (6.1815118489875545 + (-0.22635009294935152 + x1)))) + (9.331409314457993 / (0.26713298954330167 + (0.16796194117987784 + (0.09173990925591057 + x0))))))) + (((((sin(x0) * 2.654067838212564) + -13.422530604652344) + ((tanh(sin(x0)) + 44.608034234831216) + ~((18.761892087597996 + ln(x0))))) ^ (-9.470027861079949 - (-0.1765050086505815 * ((x0 + (-0.6067368631444117 + x0)) * 1.854433551077405)))) + ((56.56848761545228 / ((-88.11475149168002 - (68.00631118896543 + x1)) + (x0 + -10520.965587595387))) + -0.01448740176960872)))))
-        Best expression (original format) = 0.047854036967767806 x0 + 0.4605791172227372 + x1 sin 38.41311094820988 - cos + x0 sqrt sin 11.318750404644806 + ^ 6.123233995736766e-17 1.2879723623019084 7.787941093464258 x0 * - / 2.7140635720055333e-13 + * 4.70574063753784 x1 5.146687716766149 + ^ 1e-20 * 2.714063472005533e-13 + x0 exp 5.638844034146601 * x1 1.2518353447527208 - x1 x1 + + + 2.1953301569138914 6.004778664380749 x1 tanh + + + x1 sin cos x1 sech ~ - ^ * 10 x0 10 x1 10 + ^ - ^ 0.7992600614175075 + + + x0 cos 8.399841085357654 + x0 + sech 0.9998848754538172 + x0 tanh arcsin x0 sech tanh 0.657323425267437 + 0.030883984050112927 x0 + 4.011424292868216 ^ / / ^ 0.017395884177856494 6.308815965679552 x1 + + ~ sin 0.8585603401982382 * * 0.7036705465113487 x0 cos asin cos * * - 0.008808958392658574 x0 + -0.003734854911714874 x0 0.9999930254050716 ^ + x0 0.01 ^ ^ + 0.016684885165218877 6.59388563017837 -0.007818769601017683 x0 + / ^ -17.20128768157982 x0 + 1381.5968024308193 / 7.589167512209233 + + ^ 0.2858069216544935 -0.0003393999670235031 0.04016556402485511 x0 + + x0 sech 10.01424756422644 + + ^ x0 sech x0 16.350325782842592 / ^ x0 ln sin + 1.2521804786673227 x0 / x1 + x1 cos + sin - * * -0.002638399962054605 x0 + x0 0.01 + - 24.44349317327958 6.286138445574874 x0 ^ - x0 3.0705988433937588 * ~ -24.9729361242346 + * x0 x0 + x1 0.9767956351537417 + ^ 8.085985344107968 x0 exp * * x1 x1 + ~ x0 exp 3.645259197511474e+11 + + + / -0.06501075242842422 + + + 0.3156080008395829 x1 sin 0.06750281998516658 * x0 + + 0.9801980115573659 ^ 0.1205681885124466 0.08459842394998357 x0 + + 4.06842092871471 x0 38.73398918653422 * + 0.013155690065047344 x0 ^ * x0 7.997786925087233 * x0 ~ ^ 1.6049716878019036 + + + / x1 sin sech x1 x0 + ^ 0.06869934475888977 x0 sin + + 0.25714583754369236 0.099768227497524 x0 + + + 0.5190390440878153 x1 + cos 6.1815118489875545 -0.22635009294935152 x1 + + + sin 9.331409314457993 0.26713298954330167 0.16796194117987784 0.09173990925591057 x0 + + + / + * ^ x0 sin 2.654067838212564 * -13.422530604652344 + x0 sin tanh 44.608034234831216 + 18.761892087597996 x0 ln + ~ + + -9.470027861079949 -0.1765050086505815 x0 -0.6067368631444117 x0 + + 1.854433551077405 * * - ^ 56.56848761545228 -88.11475149168002 68.00631118896543 x1 + - x0 -10520.965587595387 + + / -0.01448740176960872 + + + + -
+        Best score = 0.000763537, SNE = 1308.69
+        Squared-norm error for each equation: 1308.34 0.351324 2.33986e-05
+        Best expression = ((((((((0.047854036967767806 + x0) + 0.4605791172227372) + cos((sin(x1) - 38.415610948209874))) ^ (sin(sqrt(x0)) + 11.328750404644806)) * ((6.123233995736766e-17 / (1.2879723623019084 - (7.787941093464258 * x0))) + 2.7140635720055333e-13)) + (((((4.70574063753784 ^ (x1 + 5.1566877167661485)) * 1e-20) + 2.714063472005533e-13) * ((((exp(x0) * 5.638844034146601) + ((x1 - 1.2518353447527208) + (x1 + x1))) + (2.195330156913891 + (6.004778664380749 + tanh(x1)))) ^ (cos(sin(x1)) - ~(sech(x1))))) + 0.7992609914581805)) - ((((sech(((cos(x0) + 8.399841085357654) + x0)) + 0.9998848754538172) ^ (arcsin(tanh(x0)) / ((sin(sech(x0)) + 0.657323425267437) / ((0.030883984050112927 + x0) ^ 4.011424292868216)))) * (sin(~((0.027395884177856496 + (0.009999833334166664 + x1)))) * 0.8585603401982382)) * (0.7036705465113487 * cos(asin(cos(x0)))))) - ((((((0.008808958392658574 + (4.692820413780688e-06 + x0)) + ((-0.003734854911714874 + (x0 * 0.9999930254050716)) ^ (x0 ^ 0.01))) ^ ((0.016684885165218877 ^ ((sin(x0) + 6.59388563017837) / (-0.007818769601017683 + x0))) + (((-17.20128768157982 + x0) / (6.28319 + (x0 + 1381.5968024308193))) + 7.589167512209233))) * ((0.28580695867729194 ^ ((-0.0003393999670235031 + (0.04016556402485511 + x0)) + (sech(x0) + 10.01424756422644))) * (((sech(x0) ^ (x0 / 16.350325782842592)) + sin(ln(x0))) - sin((((1.2521804786673227 / x0) + x1) + cos(x1)))))) + (((-0.002638399962054605 + x0) - (x0 + 0.01)) + ((((x1 - (6.286138445574874 ^ x0)) * (~((x0 * 3.0705988433937588)) + -25.51695723512397)) / ((((x0 + x0) ^ (x1 + 0.9767956351537417)) * (8.085985344107968 * exp(x0))) + (~((x1 + 4)) + (sech(x0) + 3.645259197611474e+11)))) + -0.06341795375355216))) + (((((0.3156080008395829 + ((sin(x1) * 0.06750281998516658) + x0)) ^ 0.9801480123906771) / ((0.12306818851244661 + (0.08459842394998357 + x0)) + (((4.06842092871471 + (x0 * 38.73398918653422)) * (0.013155690065047344 ^ x0)) + (((x0 * 7.997786925087233) ^ ~(x0)) + 1.6050624876612414)))) ^ ((((sech(sin(x1)) ^ (x1 + x0)) + (0.07869934475888976 + sin(x0))) + (0.25714583754369236 + (0.099768227497524 + x0))) * (sin((cos((0.5190390440878153 + x1)) + (6.1815118489875545 + (-0.22635009294935152 + x1)))) + (9.331409314457993 / (0.27713265622330113 + (0.16796194117987784 + (0.09173990925591057 + x0))))))) + (((((sin(x0) * 2.654067838212564) + -13.422530604652344) + ((tanh(sin(x0)) + 44.608034234831216) + ~((18.761892087597996 + ln(x0))))) ^ (-9.470027861079949 - (-0.1765050086505815 * ((x0 + (-0.6067368631444117 + x0)) * 1.854433551077405)))) + ((56.56848761545228 / ((-88.11475149168002 - (69.00631118896543 + x1)) + ((x0 + 1.5707963267948966) + -10516.975587595389))) + -0.014396601910146134)))))
+        Best expression (original format) = 0.047854036967767806 x0 + 0.4605791172227372 + x1 sin 38.415610948209874 - cos + x0 sqrt sin 11.328750404644806 + ^ 6.123233995736766e-17 1.2879723623019084 7.787941093464258 x0 * - / 2.7140635720055333e-13 + * 4.70574063753784 x1 5.1566877167661485 + ^ 1e-20 * 2.714063472005533e-13 + x0 exp 5.638844034146601 * x1 1.2518353447527208 - x1 x1 + + + 2.195330156913891 6.004778664380749 x1 tanh + + + x1 sin cos x1 sech ~ - ^ * 0.7992609914581805 + + x0 cos 8.399841085357654 + x0 + sech 0.9998848754538172 + x0 tanh arcsin x0 sech sin 0.657323425267437 + 0.030883984050112927 x0 + 4.011424292868216 ^ / / ^ 0.027395884177856496 0.009999833334166664 x1 + + ~ sin 0.8585603401982382 * * 0.7036705465113487 x0 cos asin cos * * - 0.008808958392658574 4.692820413780688e-06 x0 + + -0.003734854911714874 x0 0.9999930254050716 * + x0 0.01 ^ ^ + 0.016684885165218877 x0 sin 6.59388563017837 + -0.007818769601017683 x0 + / ^ -17.20128768157982 x0 + 6.28319 x0 1381.5968024308193 + + / 7.589167512209233 + + ^ 0.28580695867729194 -0.0003393999670235031 0.04016556402485511 x0 + + x0 sech 10.01424756422644 + + ^ x0 sech x0 16.350325782842592 / ^ x0 ln sin + 1.2521804786673227 x0 / x1 + x1 cos + sin - * * -0.002638399962054605 x0 + x0 0.01 + - x1 6.286138445574874 x0 ^ - x0 3.0705988433937588 * ~ -25.51695723512397 + * x0 x0 + x1 0.9767956351537417 + ^ 8.085985344107968 x0 exp * * x1 4 + ~ x0 sech 3.645259197611474e+11 + + + / -0.06341795375355216 + + + 0.3156080008395829 x1 sin 0.06750281998516658 * x0 + + 0.9801480123906771 ^ 0.12306818851244661 0.08459842394998357 x0 + + 4.06842092871471 x0 38.73398918653422 * + 0.013155690065047344 x0 ^ * x0 7.997786925087233 * x0 ~ ^ 1.6050624876612414 + + + / x1 sin sech x1 x0 + ^ 0.07869934475888976 x0 sin + + 0.25714583754369236 0.099768227497524 x0 + + + 0.5190390440878153 x1 + cos 6.1815118489875545 -0.22635009294935152 x1 + + + sin 9.331409314457993 0.27713265622330113 0.16796194117987784 0.09173990925591057 x0 + + + / + * ^ x0 sin 2.654067838212564 * -13.422530604652344 + x0 sin tanh 44.608034234831216 + 18.761892087597996 x0 ln + ~ + + -9.470027861079949 -0.1765050086505815 x0 -0.6067368631444117 x0 + + 1.854433551077405 * * - ^ 56.56848761545228 -88.11475149168002 69.00631118896543 x1 + - x0 1.5707963267948966 + -10516.975587595389 + + / -0.014396601910146134 + + + + -
      ```
 x = "-0.285806921654494**(r + sech(r) + 10.0540737282843)*(r + (r**0.999993025405072 - 0.00373485491171487)**(r**0.01) + 0.00880895839265857)**(0.0166848851652189**(6.52587306756706/(r - 0.00781876960101768)) + 0.000702853356876745*r + 7.57798844600458)*(-sin(theta + cos(theta) + 1.25218047866732/r) + sin(log(r)) + sech(r)**(0.0611608608465381*r)) + 0.604143623800264*sqrt(1 - cos(r)**2)*(sech(r + cos(r) + 8.39984108535765) + 0.999884875453817)**((r + 0.0308839840501129)**4.03*(1.58*(tanh(.59*r)))/(tanh(sech(r)) + 0.657323425267437))*sin(theta + 6.32621184985741) + 0.890778403056392"
 print(x.replace("r","R").replace("sqRt", "sqrt").replace("theta","Theta").replace("^","**").replace("~","-"))
@@ -10842,6 +10899,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                         bool printDiffEq = false,
                         const std::vector<std::string>& bad_ops = {},
                         const double constCacheThresh = 1.2,
+                        const std::string& simplifyMode = "total",
                         const std::vector<std::vector<std::string>>& seed_expressions = {},
                         bool exit_early = false,
                         int custom_rand_seed = -1,
@@ -10850,7 +10908,8 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                         double (*temp_func)(const double, const double) = [](double ratio, double t) -> double {return pow(ratio, t/(t+1.0));},
                         const char* SNE_file_name = "",
                         bool completeTree = false,
-                        const std::string& pert_option = "sub_tree")
+                        const std::string& pert_option = "sub_tree",
+                        bool sync_current = false)
 {
     assert(simplifyOriginal == false);
     if (pert_option != "sub_array" && pert_option != "n_random")
@@ -10900,13 +10959,20 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
     std::vector<double> best_sne_vec;
     std::ostream* out = &std::cout;
     std::ofstream outFile;
+    
+    /*
+     For "sync_current" option
+     */
+    std::vector<std::vector<std::string>> global_current(depth.size());
+    std::vector<std::vector<size_t>> global_current_const_indices(depth.size());
+    unsigned long long global_current_idx = 0;
 
     auto start_time = Clock::now();
 
     /*
      Inside of thread:
      */
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &custom_features, &seed_expressions, &exit_early, &custom_rand_seed, &T_min, &T_max, &temp_func, &completeTree, &pert_option, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &evalType, &print_and_check_fit_dict_every, &printDiffEq, &bad_ops, &constCacheThresh, &outFile, &out](int thread_idx)
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &custom_features, &seed_expressions, &exit_early, &custom_rand_seed, &T_min, &T_max, &temp_func, &completeTree, &pert_option, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &evalType, &print_and_check_fit_dict_every, &printDiffEq, &bad_ops, &constCacheThresh, &simplifyMode, &sync_current, &global_current, &global_current_const_indices, &global_current_idx, &outFile, &out](int thread_idx)
     {
         std::random_device rand_dev;
         // Use a combination of the device, the index, and time for maximum entropy
@@ -10927,9 +10993,9 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
             // Even with a custom seed, offset by thread_idx so threads don't overlap
             generator.seed(custom_rand_seed + thread_idx);
         }
-        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols, mustHaveAllFeatures, custom_features, maxSize, additive_corrections, evalType, completeTree, bad_ops, constCacheThresh);
+        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols, mustHaveAllFeatures, custom_features, maxSize, additive_corrections, evalType, completeTree, bad_ops, constCacheThresh, simplifyMode);
         sync_point.arrive_and_wait();
-        Board secondary(diffeq, num_diff_eqns, false, std::vector<int>(depth.size(), 0), expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols, mustHaveAllFeatures, custom_features, maxSize, additive_corrections, evalType, completeTree, bad_ops, constCacheThresh); //For perturbations
+        Board secondary(diffeq, num_diff_eqns, false, std::vector<int>(depth.size(), 0), expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, simplifyOriginal, numDataCols, mustHaveAllFeatures, custom_features, maxSize, additive_corrections, evalType, completeTree, bad_ops, constCacheThresh, simplifyMode); //For perturbations
         assert(secondary.pieces.size() == secondary.n.size());
         assert(secondary.pieces.size() == x.pieces.size());
         assert(secondary.pieces.size() == x.n.size());
@@ -10949,6 +11015,11 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
 
         size_t temp_sz;
 //        std::string expression, orig_expression, best_expression;
+        /*
+         For "sync_current" option
+         */
+        unsigned long long current_idx = 0;
+        
         assert((T_max >= T_min) && (T_max >= 0.0) && (T_min >= 0.0));
         const double ratio = (T_max > 0.0) ? (T_min/T_max) : std::numeric_limits<double>::infinity();
         double T = T_max;
@@ -10979,7 +11050,13 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
 //                    std::cout << "x.pieces after complete_tree = " << x.pieces << '\n';
                 }
                 current = x.pieces; //update current expression
-                //TODO: only this thread's getting the best expression, maybe should have a global best-expression?
+                if (sync_current)
+                {
+                    std::scoped_lock sync_curr_lock(Board::thread_locker);
+                    global_current = current;
+                    global_current_idx++;
+                    current_idx = global_current_idx;
+                }
                 if (pert_option == "constants_only")
                 {
                     // REFRESH THE CONSTANT INDEX CACHE HERE ---
@@ -10993,6 +11070,11 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                                 current_const_indices[jdx].push_back(piece_idx);
                             }
                         }
+                    }
+                    if (sync_current)
+                    {
+                        std::scoped_lock sync_curr_lock(Board::thread_locker);
+                        global_current_const_indices = current_const_indices;
                     }
                 }
                 if ((score > max_score) || exit_early)
@@ -11017,6 +11099,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                             out = &std::cout;
                         }
                     }
+                    (*out) << "\nThread id = " << thread_idx;
                     (*out) << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
                     (*out) << "Time spent fitting = " << Board::fit_time << " seconds\n";
                     (*out) << "Best score = " << score << ", SNE = " << Board::global_min_sne << '\n';
@@ -11041,6 +11124,16 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
             }
             else
             {
+                if (sync_current && current_idx != global_current_idx)
+                {
+                    std::scoped_lock sync_curr_lock(Board::thread_locker);
+                    current = global_current;
+                    current_idx = global_current_idx;
+                    if (pert_option == "constants_only")
+                    {
+                        current_const_indices = global_current_const_indices;
+                    }
+                }
                 x.pieces = current; //reset perturbed state to current state
             }
             T = std::max(T_min, r*T);
@@ -11124,6 +11217,9 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                     /*
                      choose n[jdx] random indices from 0 to pieces[jdx].size() to swap out
                      */
+                    #if TIME_EVAL
+                        ScopedTimer t_build("n_random");
+                    #endif
                     std::uniform_int_distribution<int> distribution(0, x.pieces[jdx].size() - 1);
                     for (int random_idx = 0; random_idx < n[jdx]; random_idx++)
                     {
@@ -11327,13 +11423,13 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                 
                 if (use_const_pieces)
                 {
+                    std::cout << "Thread " << thread_idx << " Iteration " << i << '\n';
+                    std::cout << "Thread " << thread_idx << " Unique expressions = " << Board::expression_dict.size() << '\n';
                     if (Board::expression_dict.size() >= Board::max_expression_dict_sz)
                     {
                         std::cout << "Clearing expression_dict now\n";
                         Board::expression_dict.clear();
                     }
-                    std::cout << "Thread " << thread_idx << " Iteration " << i << '\n';
-                    std::cout << "Thread " << thread_idx << " Unique expressions = " << Board::expression_dict.size() << '\n';
                 }
                 else
                 {
@@ -11417,7 +11513,8 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
                   int print_and_check_fit_dict_every = 1000000,
                   bool printDiffEq = false,
                   const std::vector<std::string>& bad_ops = {},
-                  const double constCacheThresh = 1.2)
+                  const double constCacheThresh = 1.2,
+                  const std::string& simplifyMode = "total")
 {
     for (int i: depth)
     {
@@ -11448,7 +11545,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
      Inside of thread:
      */
 
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &use_const_pieces, &numDataCols, &mustHaveAllFeatures, &custom_features, &isConstTol, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &evalType, &print_and_check_fit_dict_every, &printDiffEq, &bad_ops, &constCacheThresh, &outFile, &out](int thread_idx)
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &use_const_pieces, &numDataCols, &mustHaveAllFeatures, &custom_features, &isConstTol, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &evalType, &print_and_check_fit_dict_every, &printDiffEq, &bad_ops, &constCacheThresh, &simplifyMode, &outFile, &out](int thread_idx)
     {
         std::random_device rand_dev;
         unsigned int seed = rand_dev() ^ (
@@ -11463,7 +11560,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
             std::mt19937 generator(RANDOM_SEED + thread_idx);
         #endif
 
-        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, true, numDataCols, mustHaveAllFeatures, custom_features, maxSize, additive_corrections, evalType, false, bad_ops, constCacheThresh);
+        Board x(diffeq, num_diff_eqns, true, depth, expression_type, num_consts_diff, method, num_fit_iter, fit_grad_method, data, false, cache, const_tokens, isConstTol, use_const_pieces, true, numDataCols, mustHaveAllFeatures, custom_features, maxSize, additive_corrections, evalType, false, bad_ops, constCacheThresh, simplifyMode);
 
         sync_point.arrive_and_wait();
         double score = 0.0;
@@ -11536,6 +11633,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
                         out = &std::cout;
                     }
                 }
+                (*out) << "\nThread id = " << thread_idx;
                 (*out) << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
                 (*out) << "Time spent fitting = " << Board::fit_time << " seconds\n";
                 (*out) << "Best score = " << score << ", SNE = " << Board::global_min_sne << '\n';
@@ -11636,7 +11734,8 @@ namespace ExampleProblems
                          50 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
                          false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                          std::vector<std::string>{} /*operators to restrict in the search*/,
-                         1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */);
+                         1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
+                         "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */);
         }
         else
         {
@@ -11667,7 +11766,8 @@ namespace ExampleProblems
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                 std::vector<std::string>{} /*operators to restrict in the search*/,
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
-                {split("0 0 + 0 0.047854036967767806 + + 0 0 + 0 x0 + + + 0 0 + 0 0 + + 0 0 + 0 0.4605791172227372 + + + + 0 x1 + sin 0 0 + 0 38.41311094820988 + + - cos + 0 0 + 0 x0 + + sqrt sin 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 11.318750404644806 + + + + + ^ 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 6.123233995736766e-17 + + + + 0 0 + 0 0 + + 0 0 + 0 1.2879723623019084 + + + 0 0 + 0 7.787941093464258 + + 0 0 + 0 x0 + + * - / 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 2.7140635720055333e-13 + + + + + + * 0 0 + 0 4.70574063753784 + + 0 x1 + 0 5.146687716766149 + + ^ 0 0 + 0 0 + + 0 0 + 0 1e-20 + + + * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 2.714063472005533e-13 + + + + + x0 exp 0 5.638844034146601 + * x1 1.2518353447527208 - x1 x1 + + + 0 0 + 0 2.1953301569138914 + + 0 6.004778664380749 + x1 tanh + + + 0 x1 + sin cos 0 x1 + sech ~ - ^ * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 10 + + + + 0 0 + 0 0 + + 0 0 + 0 x0 + + + 0 0 + 0 10 + + 0 x1 + 0 10 + + ^ - ^ 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.7992600614175075 + + + + + + + + x0 cos 0 8.399841085357654 + + 0 0 + 0 x0 + + + sech 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.9998848754538172 + + + + + 0 0 + 0 x0 + + tanh arcsin x0 sech tanh 0 0 + 0 0.657323425267437 + + + 0 0.030883984050112927 + 0 x0 + + 0 0 + 0 4.011424292868216 + + ^ / / ^ 0 0 + 0 0.017395884177856494 + + 0 6.308815965679552 + 0 x1 + + + ~ sin 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.8585603401982382 + + + + + * * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.7036705465113487 + + + + + + 0 0 + 0 0 + + 0 0 + 0 x0 + + + cos asin cos * * - 0 0 + 0 0 + + 0 0 + 0 0.008808958392658574 + + + 0 0 + 0 0 + + 0 0 + 0 x0 + + + + 0 0 + 0 -0.003734854911714874 + + 0 x0 + 0 0.9999930254050716 + ^ + 0 0 + 0 x0 + + 0 0 + 0 0.01 + + ^ ^ + 0 0 + 0 0 + + 0 0 + 0 0.016684885165218877 + + + 0 0 + 0 6.59388563017837 + + 0 -0.007818769601017683 + 0 x0 + + / ^ 0 -17.20128768157982 + 0 x0 + + 0 0 + 0 1381.5968024308193 + + / 0 0 + 0 0 + + 0 0 + 0 7.589167512209233 + + + + + ^ 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.2858069216544935 + + + + 0 0 + 0 -0.0003393999670235031 + + 0 0.04016556402485511 + 0 x0 + + + 0 x0 + sech 0 0 + 0 10.01424756422644 + + + + ^ 0 x0 + sech 0 x0 + 0 16.350325782842592 + / ^ 0 x0 + ln sin + 1.2521804786673227 x0 / 0 x1 + + 0 x1 + cos + sin - * * 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -0.002638399962054605 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x0 + + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 x0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.01 + + + + + - 0 0 + 0 24.44349317327958 + + 0 6.286138445574874 + 0 x0 + ^ - x0 3.0705988433937588 * ~ 0 0 + 0 -24.9729361242346 + + + * x0 x0 + x1 0.9767956351537417 + ^ 0 8.085985344107968 + x0 exp * * x1 x1 + ~ x0 exp 0 3.645259197511474e+11 + + + + / 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -0.06501075242842422 + + + + + + + + 0 0 + 0 0 + + 0 0 + 0 0.3156080008395829 + + + x1 sin 0 0.06750281998516658 + * 0 0 + 0 x0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0.9801980115573659 + + + + ^ 0 0 + 0 0 + + 0 0 + 0 0.1205681885124466 + + + 0 0 + 0 0.08459842394998357 + + 0 0 + 0 x0 + + + + 0 4.06842092871471 + x0 38.73398918653422 * + 0 0.013155690065047344 + 0 x0 + ^ * x0 7.997786925087233 * x0 ~ ^ 0 0 + 0 1.6049716878019036 + + + + + / x1 sin sech 0 x1 + 0 x0 + + ^ 0 0 + 0 0.06869934475888977 + + 0 x0 + sin + + 0 0 + 0 0 + + 0 0 + 0 0.25714583754369236 + + + 0 0 + 0 0.099768227497524 + + 0 0 + 0 x0 + + + + + 0.5190390440878153 x1 + cos 0 6.1815118489875545 + -0.22635009294935152 x1 + + + sin 0 0 + 0 0 + + 0 0 + 0 9.331409314457993 + + + 0 0 + 0 0.26713298954330167 + + 0 0.16796194117987784 + 0.09173990925591057 x0 + + + / + * ^ 0 x0 + sin 0 0 + 0 2.654067838212564 + + * 0 0 + 0 0 + + 0 0 + 0 -13.422530604652344 + + + + x0 sin tanh 0 0 + 0 44.608034234831216 + + + 0 18.761892087597996 + x0 ln + ~ + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -9.470027861079949 + + + + 0 0 + 0 0 + + 0 0 + 0 -0.1765050086505815 + + + 0 x0 + -0.6067368631444117 x0 + + 0 0 + 0 1.854433551077405 + + * * - ^ 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 56.56848761545228 + + + + 0 0 + 0 -88.11475149168002 + + 0 68.00631118896543 + 0 x1 + + - 0 0 + 0 x0 + + 0 0 + 0 -10520.965587595387 + + + + / 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + + 0 0 + 0 0 + + 0 0 + 0 0 + + + 0 0 + 0 0 + + 0 0 + 0 -0.01448740176960872 + + + + + + + + + -")} /*seed expressions*/,
+                "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
+                {split("0.047854036967767806 x0 + 0.4605791172227372 + x1 sin 38.415610948209874 - cos + x0 sqrt sin 11.328750404644806 + ^ 6.123233995736766e-17 1.2879723623019084 7.787941093464258 x0 * - / 2.7140635720055333e-13 + * 4.70574063753784 x1 5.1566877167661485 + ^ 1e-20 * 2.714063472005533e-13 + x0 exp 5.638844034146601 * x1 1.2518353447527208 - x1 x1 + + + 2.195330156913891 6.004778664380749 x1 tanh + + + x1 sin cos x1 sech ~ - ^ * 0.7992609914581805 + + x0 cos 8.399841085357654 + x0 + sech 0.9998848754538172 + x0 tanh arcsin x0 sech sin 0.657323425267437 + 0.030883984050112927 x0 + 4.011424292868216 ^ / / ^ 0.027395884177856496 0.009999833334166664 x1 + + ~ sin 0.8585603401982382 * * 0.7036705465113487 x0 cos asin cos * * - 0.008808958392658574 4.692820413780688e-06 x0 + + -0.003734854911714874 x0 0.9999930254050716 * + x0 0.01 ^ ^ + 0.016684885165218877 x0 sin 6.59388563017837 + -0.007818769601017683 x0 + / ^ -17.20128768157982 x0 + 6.28319 x0 1381.5968024308193 + + / 7.589167512209233 + + ^ 0.28580695867729194 -0.0003393999670235031 0.04016556402485511 x0 + + x0 sech 10.01424756422644 + + ^ x0 sech x0 16.350325782842592 / ^ x0 ln sin + 1.2521804786673227 x0 / x1 + x1 cos + sin - * * -0.002638399962054605 x0 + x0 0.01 + - x1 6.286138445574874 x0 ^ - x0 3.0705988433937588 * ~ -25.51695723512397 + * x0 x0 + x1 0.9767956351537417 + ^ 8.085985344107968 x0 exp * * x1 4 + ~ x0 sech 3.645259197611474e+11 + + + / -0.06341795375355216 + + + 0.3156080008395829 x1 sin 0.06750281998516658 * x0 + + 0.9801480123906771 ^ 0.12306818851244661 0.08459842394998357 x0 + + 4.06842092871471 x0 38.73398918653422 * + 0.013155690065047344 x0 ^ * x0 7.997786925087233 * x0 ~ ^ 1.6050624876612414 + + + / x1 sin sech x1 x0 + ^ 0.07869934475888976 x0 sin + + 0.25714583754369236 0.099768227497524 x0 + + + 0.5190390440878153 x1 + cos 6.1815118489875545 -0.22635009294935152 x1 + + + sin 9.331409314457993 0.27713265622330113 0.16796194117987784 0.09173990925591057 x0 + + + / + * ^ x0 sin 2.654067838212564 * -13.422530604652344 + x0 sin tanh 44.608034234831216 + 18.761892087597996 x0 ln + ~ + + -9.470027861079949 -0.1765050086505815 x0 -0.6067368631444117 x0 + + 1.854433551077405 * * - ^ 56.56848761545228 -88.11475149168002 69.00631118896543 x1 + - x0 1.5707963267948966 + -10516.975587595389 + + / -0.014396601910146134 + + + + -")} /*seed expressions*/,
                 (num_threads == 1) /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
@@ -11675,7 +11775,8 @@ namespace ExampleProblems
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 true /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/);
+                "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/,
+                true /*whether or not to sync the current expression of each thread with the global current best*/);
         }
     }
     
@@ -11710,7 +11811,8 @@ namespace ExampleProblems
                          50 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
                          false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                          std::vector<std::string>{} /*operators to restrict in the search*/,
-                         1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */);
+                         1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
+                         "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */);
         }
         else
         {
@@ -11741,6 +11843,7 @@ namespace ExampleProblems
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                 std::vector<std::string>{} /*operators to restrict in the search*/,
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
+                "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
                 {} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -11749,7 +11852,8 @@ namespace ExampleProblems
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/);
+                "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/,
+                false /*whether or not to sync the current expression of each thread with the global current best*/);
         }
     }
 
@@ -11786,7 +11890,8 @@ namespace ExampleProblems
                  50 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
                  false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                  std::vector<std::string>{} /*operators to restrict in the search*/,
-                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */);
+                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
+                 "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */);
         }
         else
         {
@@ -11817,6 +11922,7 @@ namespace ExampleProblems
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                 std::vector<std::string>{} /*operators to restrict in the search*/,
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
+                "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
                 {split("x0 sech tanh tanh 0 0 + 0 -6.4342880000000005 + + x0 tanh 0 2.61657 + / - /"), split("0 0 + 0 -3.2171440000000002 + + x0 sech 0 0.9640275800758169 + ^ * sech")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -11825,7 +11931,8 @@ namespace ExampleProblems
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/);
+                "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/,
+                false /*whether or not to sync the current expression of each thread with the global current best*/);
         }
     }
     void WildfireSpreadTSTest(int random_seed, const char* algorithm, double time)
@@ -11871,7 +11978,8 @@ namespace ExampleProblems
                  50 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
                  false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                  std::vector<std::string>{} /*operators to restrict in the search*/,
-                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */);
+                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
+                 "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */);
         }
         else
         {
@@ -11902,6 +12010,7 @@ namespace ExampleProblems
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                 std::vector<std::string>{} /*operators to restrict in the search*/,
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
+                "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
                 {split("-2.640000 0.051731 x7 sqrt x15 8.000000 - - / / -1803.016571 x21 36.293228 x0 * * x17 -843.000000 + x15 15893.000000 + + + + x6 x19 -100.000000 x8 + - / x14 -211800 / x15 + + / - x18 x24 - x2 x7 x0 1684.200012 - - + - + -7.446376466569234 -3.225653 x6 8.800000 - + -508 + -0.9081765689798138 38.000000 x16 sin / * + + x1 x0 - 0.0007699998478223693 + -16.82119949898502 + x0 x15 ^ -100 + -279.200012 -2.640000 x16 / + + + -28.995355508740936 + + -88.959518 1.000000 88.856491 x1 / / * -2118 x8 2118.000000 - x22 ~ + + + 0.00077 x5 + * 25.400000 x20 1.0021072170678698 / ^ 15893.000000 x22 x8 + + x1 -1405.000000 - 15666.000000 x24 + + + + x0 x25 + 16.000000 x23 + 9736 - / ~ / - + *")} /*seed expressions*/,
                 validation /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -11910,7 +12019,8 @@ namespace ExampleProblems
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/);
+                "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/,
+                false /*whether or not to sync the current expression of each thread with the global current best*/);
         }
     }
     void InPaintWildfireSpreadTSTest(int random_seed, const char* algorithm, double time)
@@ -11955,7 +12065,8 @@ namespace ExampleProblems
                  50 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
                  false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                  std::vector<std::string>{} /*operators to restrict in the search*/,
-                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */);
+                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
+                 "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */);
         }
         else
         {
@@ -11986,6 +12097,7 @@ namespace ExampleProblems
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                 std::vector<std::string>{} /*operators to restrict in the search*/,
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
+                "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
                 {split("/ + * + + ln cos x46 + + 0 0 + 0 -3.4799761065034414 + * + 0 x95 + 0 1.620943 + + 0 x95 ~ x48 ~ ^ + cos x41 + 0 52.64009483497598 - + 0 2.7907071011403315 cos x93 + ^ + * + 0 3.1585732538600397 ^ x12 x54 + cos x21 + 0.365382 x13 + ~ + 0 x20 + + 0 0 + 0 1.5729403267948965 * + + + 0 0 + 0 0 + + 0 0 + 0 x3 sqrt + + 0 0 + 0 x48 - + / - + + 0 0 + 0 0.9867622178470573 - - 7169.463400 x100 * x17 11181230.000000 + acos tanh x23 + + 0 0 + 0 57.67636600070402 sin + + + 0 0 + 0 -2.884980 + + 0 0 + 0 x50 - sqrt ^ ^ + 0 x17 + 0 x59 + + 0 x71 ~ x87 ^ + + + 0 0 + 0 0 + + 0 0 + 0 0.9910929232006058 * + + 0 0 + 0 -4.0405169999999995 * - x61 x101 + 0 -0.04344899097047564")} /*seed expressions*/,
                 validation /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -11994,7 +12106,8 @@ namespace ExampleProblems
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/);
+                "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/,
+                false /*whether or not to sync the current expression of each thread with the global current best*/);
         }
     }
 
@@ -12130,8 +12243,8 @@ namespace ExampleProblems
                 "-4.048109906817274 x0 -5.387258253707981 * sin * 3.9011377996974876 * 13.412115038962167 13.400053397484177 x0 * sin * - -5.961872910637736 x0 9.840284926874622 * sin * + x0 x0 4 * 8 * + cos + 1.2462218234839832 1.9920638002997968 x0 - sech + * -92.51479676044292 x0 cos * cos 0.692615015853893 * - 0.5964539959342741 -26.62309910499545 x0 arccos * sin * + x0 -2.2353635651867014 * sin arccos ~ - -0.47726658600865646 x0 3.383015476414602 * cos * cos * 5.890533047199815 - 14.75291246644264 x0 * cos sech asin sqrt -",
                 "4 x0 -5.384845885996884 * sin * -3.8724049638748346 * -13.111175940458915 13.400053397484177 x0 * sin * + -5.791446515686041 x0 9.840284926874622 * sin * + x0 x0 3.996129492163092 * 8 * + cos + 1.2909160418289305 2 x0 - sech + * -92.51479676044292 x0 cos * cos -0.6928238957121061 * + -0.5125792781338314 -26.62309910499545 x0 arccos * sin * - x0 -2.2353635651867014 * sin arccos ~ - 0.5108465045205443 x0 3.383015476414602 * cos * sech * 2.7351826463503595 - 14.75291246644264 x0 * cos tanh sech asin - -8.229080551764405e-09 sech ~ acos -",
                 "4 x0 -5.384845885996884 * sin * -3.8648556736563435 * -13.10120007639425 13.400053397484177 x0 * sin * + -5.793844091786103 x0 9.840284926874622 * sin * + x0 x0 3.996129492163092 * 8 * + cos + 1.2919775391911013 2 x0 - sech + * -92.51479676044292 x0 cos * cos -0.6791957954712252 * + -0.5118970564172467 -26.62309910499545 x0 arccos * sin * - x0 -2.2353635651867014 * sin arccos ~ - 0.5103478091301622 x0 3.353158606776727 * cos * sech * -2.6527316428218053 + 14.75291246644264 x0 * cos tanh sech asin - 1.2763624416674312e-06 sech ~ acos - x0 arccos sqrt 0.12183038979730307 x0 arccos + sqrt - +",
-                "4 x0 -5.384845885996884 * sin * -3.8648556736563435 * -13.10120007639425 13.400053397484177 x0 * sin * + -5.793844091786103 x0 9.840284926874622 * sin * + x0 x0 3.996129492163092 * 8 * + cos + 1.2919775391911013 2 x0 - sech + * -92.51479676044292 x0 cos * cos -0.6791957954712252 * + -0.5118970564172467 -26.62309910499545 x0 arccos * sin * - x0 -2.2353635651867014 * sin arccos ~ - 0.5103478091301622 x0 3.353158606776727 * cos * sech * -2.6527316428218053 + 14.75291246644264 x0 * cos tanh sech asin - 1.2763624416674312e-06 sech ~ acos - x0 arccos sqrt 0.12183038979730307 x0 arccos + sqrt - + x0 acos x0 0.000539567978735189 tanh - arccos - +",
-                
+                "4 x0 -5.384845885996884 * sin * -3.8649452402891313 * -13.10120007639425 13.400053397484175 x0 * sin * + -5.794253234276785 x0 9.840284926874622 * sin * + x0 x0 3.996129492163092 * 8 * + cos + 1.2919775391911013 2.0002594499783353 x0 - sech + * -92.47590021598602 x0 cos * cos -0.6779738846267627 * + 0.5117426502589011 -26.701916766951943 x0 arccos * sin * + -0.005476217746030558 x0 + -2.2353635651867014 * sin arccos ~ - 0.5103478091301622 x0 -3.351557929474417 * cos * sech * -2.6527316428218053 + 14.75291246644264 x0 * cos tanh sech asin - 3.141592569296096 - x0 arccos sqrt 0.11806700355537884 x0 arccos + sqrt - + x0 acos x0 -0.000539567978735189 + arccos - +",
+                "3.8278568365463985 x0 -5.384845885996884 * sin * -3.8651411584969577 * -12.691310873954988 13.400053397484175 x0 * sin * + -5.289686151151171 x0 9.817998489561006 * sin * + x0 x0 3.996129492163092 * 8 * + cos + 1.057735226774548 0.162506062621662 x0 * sin + * -92.47590021598602 x0 cos * cos -0.4180007702062287 * + 0.2913557709858599 -26.701916766951943 x0 arccos * sin * + x0 x0 + -1.518372883534164 * sin arccos ~ - 0.5905870716362039 x0 -3.110252728538069 * cos * sech * 1.1074713432278496 - 14.75291246644264 x0 * cos tanh sech asin - -0.9983512823568892 + x0 arccos sqrt 0.005786971128699572 x0 sech - acos - + 1.5706454344766256 * 2.49354477960439e-06 2.9146225270605147e-06 x0 sqrt arcsin + + -",
             }.back()
         };
         /*
@@ -12172,14 +12285,15 @@ for i in range(len(consts)):
                  1000000 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
                  false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                  std::vector<std::string>{"exp", "ln", "log", "^", "/"} /*operators to restrict in the search*/,
-                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */);
+                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
+                 "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */);
         }
         else
         {
             SimulatedAnnealing(WierdTrackFitter /*differential equation to solve*/,
                 2 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{17} /*fixed depths of generated solution*/,
+                std::vector<int>{5} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -12196,14 +12310,15 @@ for i in range(len(consts)):
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "WierdTrackSR.txt", // "" /*filename to save current best expression found (instead of outputting them to standard out)*/
-                std::vector<int>{103} /*optional max-sizes of each of the expressions in the generated solution*/,
-                {/*split(seed_exprs[track_idx])*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
+                std::vector<int>{9} /*optional max-sizes of each of the expressions in the generated solution*/,
+                {split(seed_exprs[track_idx])} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 "vector" /*evaluation type: can be "dag", "scalar", or "vector"*/,
                 1000000 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                 std::vector<std::string>{"exp", "ln", "log", "^", "/"} /*operators to restrict in the search*/,
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
-                {split(seed_exprs[track_idx])} /*seed expressions*/,
+                "none" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
+                {/*split(seed_exprs[track_idx])*/} /*seed expressions*/,
                 (num_threads == 1) /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
@@ -12211,7 +12326,8 @@ for i in range(len(consts)):
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "WierdTrackSR.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                "sub_array" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/);
+                "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/,
+                true /*whether or not to sync the current expression of each thread with the global current best*/);
         }
     }
 };

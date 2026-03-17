@@ -359,7 +359,7 @@ if not GENERIC:
     f_SR = lambdify((r, theta), f, modules=[{"sech": sech_stable}, "numpy"])
     f_SR_r = lambdify((r, theta), f_r := diff(f, r), modules=[{"sech": sech_stable}, "numpy"])
     f_SR_theta = lambdify((r, theta), f_theta := diff(f, theta), modules=[{"sech": sech_stable}, "numpy"])
-
+    print(f"f_r = {f_r}"); exit()
     print(f"Variance of f = {np.var(f_SR_vals:=f_SR(r_vals, theta_vals))}")
     print(f"||f|| = {LA.norm(f_SR_vals)}")
     print(f"Max(∂f/∂r) = {np.max(f_SR_r_vals:=f_SR_r(r_vals, theta_vals))}")
