@@ -1,6 +1,7 @@
 #include <vector>
 #include <array>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -193,6 +194,16 @@ int trueMod(int N, int M)
 
 template <typename T>
 std::ostream& operator<<(std::ostream& os, const std::vector<T>& vec)
+{
+    for (const auto& i: vec)
+    {
+        os << i << ' ';
+    }
+    return os;
+}
+
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const std::deque<T>& vec)
 {
     for (const auto& i: vec)
     {
@@ -3654,35 +3665,106 @@ int main()
         {"Feynman_4", Feynman_4},
         {"Feynman_5", Feynman_5},
     };
-    
+    constexpr const char* filename = "temp_config.txt";
+    constexpr const char* tempMSE_filename = "MSE_temp.txt";
+    std::string tempInpBuf;
+
     std::vector<int> layers;
     std::deque<std::string> layer_types;
-    std::string func_type, weight_update_rule;
+    std::string benchmark_type, weight_update_rule;
     float eta, theta, gamma, epsilon, beta_1, beta_2, lambda;
     
-//
+    std::ifstream finObj(filename);
+    //1. read in `layers`
+    std::getline(finObj, tempInpBuf);
+    std::stringstream ss(tempInpBuf);
+    std::string token;
+    while (ss >> token)
+    {
+        layers.push_back(std::stoi(token));
+    }
+    std::cout << "\nlayers = " << layers;
+    //2. read in layer types
+    std::getline(finObj, tempInpBuf);
+    ss = std::stringstream(tempInpBuf);
+    while (ss >> token)
+    {
+        layer_types.push_back(token);
+    }
+    std::cout << "\nlayer-types = " << layer_types << '\n';
+    //3. read in benchmark type
+    std::getline(finObj, benchmark_type);
+    std::cout << "benchmark_type = " << benchmark_type << ", size(benchmark_type) = "
+    << benchmark_type.length() << '\n';
+    //4. read in weight-update rule
+    std::getline(finObj, weight_update_rule);
+    std::cout << "weight_update_rule = " << weight_update_rule << ", size(weight_update_rule) = "
+    << weight_update_rule.length() << '\n';
+    //5. Read in eta, theta, gamma, epsilon, beta_1, beta_2, lambda
+    finObj >> token;
+    eta = std::stof(token);
+    finObj >> token;
+    theta = std::stof(token);
+    finObj >> token;
+    gamma = std::stof(token);
+    finObj >> token;
+    epsilon = std::stof(token);
+    finObj >> token;
+    beta_1 = std::stof(token);
+    finObj >> token;
+    beta_2 = std::stof(token);
+    finObj >> token;
+    lambda = std::stof(token);
+    std::cout << "eta = " << eta
+    << "\ntheta = " << theta
+    << "\ngamma = " << gamma
+    << "\nepsilon = " << epsilon
+    << "\nbeta_1 = " << beta_1
+    << "\nbeta_2 = " << beta_2
+    << "\nlambda = " << lambda
+    << '\n';
+
     auto start_time = Clock::now();
     MultiLayerPerceptron mlp(
-         std::vector<int>{2,10,9,8,10,8,1},
-         std::deque<std::string>{"sigmoid", "sigmoid", "sigmoid", "none", "none", "none"},
+         layers,
+         layer_types,
          /* bias = */ 1.0f,
-         /*eta = */ 0.0001f,
-         /*theta = */ 0.8f,
-         /*gamma = */ 0.9f,
-         /*weight_update = */ "NAG",
+         /*eta = */ eta,
+         /*theta = */ theta,
+         /*gamma = */ gamma,
+         /*weight_update = */ weight_update_rule,
          /*expression_type = */ "prefix", //IRRELEVANT
-         /*float epsilon = */ 0.1f,
-         /*float beta_1 = */ 0.9f,
-         /*float beta_2 = */ 0.999f,
-         /*float lambda = */ 0.01f /*weight decay AdamW*/);
-////    
-//    Eigen::MatrixXf my_temp_test_data = generateData(20 /*rows*/, 3 /*columns*/, Hemberg_2 /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f);
-//    Data my_test_data;
-//    my_test_data = my_temp_test_data;
-//    my_test_data.print();
-//    float MSE = mlp.train(my_test_data.rows, my_test_data.labels, 10);
-//    std::cout << "\nFINAL MSE = " << MSE << '\n';
-//    exit(1);
+         /*float epsilon = */ epsilon,
+         /*float beta_1 = */ beta_1,
+         /*float beta_2 = */ beta_2,
+         /*float lambda = */ lambda /*weight decay AdamW*/);
+    
+    Eigen::MatrixXf my_temp_test_data = generateData(20 /*rows*/, 3 /*columns*/, func_map.at(benchmark_type) /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f);
+    Data my_test_data;
+    my_test_data = my_temp_test_data;
+    my_test_data.print();
+    float MSE = mlp.train(my_test_data.rows, my_test_data.labels, 10);
+    std::cout << "\nFINAL MSE = " << MSE << '\n';
+    std::ofstream tempMSE(tempMSE_filename);
+    tempMSE << MSE << '\n';
+    tempMSE.close();
+    system((std::string("cat ")+tempMSE_filename).c_str());
+    exit(1);
+
+    
+//    MultiLayerPerceptron mlp(
+//         std::vector<int>{2,10,9,8,10,8,1},
+//         std::deque<std::string>{"sigmoid", "sigmoid", "sigmoid", "none", "none", "none"},
+//         /* bias = */ 1.0f,
+//         /*eta = */ 0.0001f,
+//         /*theta = */ 0.8f,
+//         /*gamma = */ 0.9f,
+//         /*weight_update = */ "NAG",
+//         /*expression_type = */ "prefix", //IRRELEVANT
+//         /*float epsilon = */ 0.1f,
+//         /*float beta_1 = */ 0.9f,
+//         /*float beta_2 = */ 0.999f,
+//         /*float lambda = */ 0.01f /*weight decay AdamW*/);
 
 //    GP(generateData(20 /*rows*/, 3 /*columns*/, func_map.at("Hemberg_2") /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f),
 //       5 /*fixed depth*/,

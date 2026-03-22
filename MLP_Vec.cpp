@@ -78,10 +78,10 @@ MultiLayerPerceptron::MultiLayerPerceptron(const std::vector<int>& layers, const
         {
             this->__operators.push_back(i);
         }
-        puts("this->__unary_operators");
-        for (const std::string& i: this->__unary_operators) {std::cout << i << ' ';}puts("");
-        puts("this->__binary_operators");
-        for (const std::string& i: this->__binary_operators) {std::cout << i << ' ';}puts("");
+//        puts("this->__unary_operators");
+//        for (const std::string& i: this->__unary_operators) {std::cout << i << ' ';}puts("");
+//        puts("this->__binary_operators");
+//        for (const std::string& i: this->__binary_operators) {std::cout << i << ' ';}puts("");
     });
 
     this->layers = layers;

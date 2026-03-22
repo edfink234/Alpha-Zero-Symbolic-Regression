@@ -1,0 +1,11 @@
+2 2 7 6 1
+sigmoid sigmoid sigmoid none
+Hemberg_1
+basic
+1e-05
+1e-10
+1e-10
+1e-10
+1e-10
+1e-10
+1e-10
