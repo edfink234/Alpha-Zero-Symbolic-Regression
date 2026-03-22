@@ -966,7 +966,7 @@ struct Board
     static std::atomic<double> inline fit_time = 0.0;
     static inline std::atomic<double> global_min_sne{DBL_MAX};
     static inline thread_local std::unordered_map<std::string, Eigen::VectorXd> subexpr_cache;
-    static constexpr inline const size_t max_subexpr_cache_nodes = 200; // user configurable
+    static inline size_t max_subexpr_cache_nodes = 200; // user configurable
     static inline thread_local size_t subexpr_cache_lookups = 0;
     static inline thread_local size_t subexpr_cache_hits = 0;
     static inline thread_local size_t subexpr_cache_inserts = 0;
@@ -11034,6 +11034,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                         bool sync_current = false)
 {
     assert(simplifyOriginal == false);
+    std::cout << "pert_option = " << pert_option << '\n';
     if (pert_option != "sub_array" && pert_option != "n_random")
     {
         for (int i: depth)
@@ -11469,7 +11470,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
         //Step 1: generate a random expression
         if (seed_expressions.empty())
         {
-            assert(((pert_option != "sub_array") && (pert_option == "n_random")) && "when you provide no seed-expressions you must choose pert == 'sub_tree'");
+            assert(((pert_option != "sub_array") && (pert_option != "n_random")) && "when you provide no seed-expressions you must choose pert == 'sub_tree'");
             for (int jdx = 0; jdx < x.num_objectives; jdx++)
             {
                 while ((score = x.complete_status(jdx)) == -1)
@@ -11548,7 +11549,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                 {
                     std::cout << "Thread " << thread_idx << " Iteration " << i << '\n';
                 }
-                if (Board::max_subexpr_cache_nodes)
+                if (Board::max_subexpr_cache_nodes && evalType == "dag")
                 {
                     std::cout << "Cache size = " << Board::subexpr_cache.size()
                               << ",\n lookups = " << Board::subexpr_cache_lookups
@@ -11711,6 +11712,16 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
                 else
                 {
                     std::cout << "Thread " << thread_idx << " Iteration " << i << '\n';
+                }
+                if (Board::max_subexpr_cache_nodes && evalType == "dag")
+                {
+                    std::cout << "Cache size = " << Board::subexpr_cache.size()
+                              << ",\n lookups = " << Board::subexpr_cache_lookups
+                              << ",\n hits = " << Board::subexpr_cache_hits << '\n'
+                              << ",\n hit rate = "
+                              << (Board::subexpr_cache_lookups
+                                  ? double(Board::subexpr_cache_hits) / Board::subexpr_cache_lookups
+                                  : 0.0) << '\n';
                 }
             }
             
@@ -12376,6 +12387,7 @@ namespace ExampleProblems
                 "-3.848899480081628 x0 -5.384845885996884 * sin * 4.244075396726533 * 13.210486596389275 13.400053397484175 x0 * sin * - -5.335216366531226 x0 9.817998489561006 * sin * + x0 x0 3.996129492163092 * 8 * + cos + 0.7317287243110988 0.16202341655862862 x0 * tanh + * -92.47590021598602 x0 cos * cos -0.3249155048370777 * + -0.14417719981745525 -26.701916766951943 x0 arccos * sin * - 5.460693080558378 x0 * sin acos sin + 0.5047353411361425 3.1365606598302453 x0 * cos * cos * 14.75291246644264 x0 * cos tanh sech asin - x0 arccos tanh x0 x0 sqrt * cos - + 1.5095125762574657 * x0 sqrt sqrt - 1.4176126421618636 * 10.121535884623228 x0 sin cos -1.3263790276786662 + x0 cos arcsin + * - x0 acos x0 -0.34423322931498285 * + 4.873261721671219 x0 12.536201175965301 * 0.5812054481974158 x0 x0 arcsin * - 0.4308337968290748 x0 - x0 x0 sin x0 x0 * + * + * x0 3.133200974877574 * sin x0 arccos 49.60161349392813 * cos * * * + * + x0 0 1.4901387105205537 x0 -1.0364121821462686 + * + x0 x0 tanh - 4 x0 * sin 0.6952457891043317 x0 arccos * - - -14.812754764507567 x0 tanh 0 x0 x0 + - -4.328331981029391 * + * 0.750148804078336 - cos * * * +",
                 "-3.9950025419428905 x0 -5.384845885996884 * sin * 4 * -13.161212519788798 13.400053397484175 x0 * sin * + 5.375043893141751 x0 9.817998489561006 * sin * - x0 x0 3.996129492163092 * 8 * + cos + 0.7557376418979669 0.16202341655862862 x0 * arcsin + * -92.47590021598602 x0 cos * cos -0.3290756756360494 * + -0.15861357402908835 -26.701916766951943 x0 arccos * sin * - 5.460693080558378 x0 * sin acos sin + 0.5078830082784006 3.1365606598302453 x0 * cos * cos * -14.741606106881525 x0 * cos tanh sech asin - x0 - x0 sqrt sqrt - 2.0881427447626795 * x0 sin 0.3879828732077054 - x0 sqrt + ~ - x0 acos 0.6148315845901721 x0 - + -2.17307245809718 x0 x0 + 3.351900600619452 1.4489177946216376 x0 x0 + - * 0.19553400727898146 x0 x0 x0 asin * * + * x0 3.133200974877574 * sin x0 arccos 49.60161349392813 * cos * * * + * + x0 x0 x0 -1.002464115788516 + * 6.106557215495512 -0.5077582166551605 x0 + * -30.40504775000657 x0 * sin x0 0.5532065533361374 - 2.8750934558924555 * + * -14.812754764507567 x0 tanh x0 x0 + ~ -4.328331981029391 * + * 0.7047880362924497 + sin * * * + x0 sqrt 1.3629218934534924 * x0 x0 asin x0 x0 x0 x0 + + + 0.053562588067905724 x0 x0 ~ asin + + * ~ * * - +",
                 "4 x0 -5.384845885996884 * sin * -3.9991531711065704 * 13.159687668022338 13.400053397484175 x0 * sin * - -5.378249553358829 x0 9.817998489561006 * sin * + x0 x0 3.996129492163092 * 8 * + cos + 0.7638615169902973 0.16202341655862862 x0 * arcsin + * -92.47590021598602 x0 cos * cos -0.334317141983184 * + 0.1612529175468441 -26.701916766951943 x0 arccos * sin * + 5.460693080558378 x0 * sin acos sin + 0.508090324180722 3.1365606598302453 x0 * cos * cos * -14.741606106881525 x0 * cos tanh sech asin - 0.9467931740428464 - x0 sqrt sqrt - 2.067330160812091 * x0 sqrt tanh ~ - x0 acos 0.6022593611352557 x0 - + -1.2783007222875034 x0 x0 + 4 x0 acos 0.7577567415106445 - * 0.296674061725209 x0 x0 x0 asin * * + * x0 3.133200974877574 * sin x0 arccos 49.60161349392813 * cos * * * + * + x0 x0 x0 -0.5056147910362847 + * 6.106557215495512 x0 0.9946409859679074 - * -30.40504775000657 x0 * sin -0.5683444508154805 x0 + 3.239829570256047 * + * -14.812754764507567 x0 tanh x0 x0 + ~ -4.328331981029391 * + * 0.6887025586598067 + sin * * * + x0 sqrt 1.3836320563532465 * 0 x0 asin x0 x0 x0 1.6909053877132934 + + + 0.30850554122615576 x0 x0 ~ asin + + * ~ * + - + 0.30377612087857814 x0 acos sqrt x0 arccos sqrt sqrt sqrt sqrt - asin arcsin acos * -",
+                "4 x0 -5.384845885996884 * sin * -3.9991531711065704 * 13.159687668022338 13.400053397484175 x0 * sin * - -5.378249553358829 x0 9.817998489561006 * sin * + x0 x0 3.996129492163092 * 8 * + cos + 0.7638615169902973 0.16202341655862862 x0 * arcsin + * -92.47590021598602 x0 cos * cos -0.334317141983184 * + 0.1612529175468441 -26.701916766951943 x0 arccos * sin * + 5.460693080558378 x0 * sin acos sin + 0.508090324180722 3.1365606598302453 x0 * cos * cos * -14.741606106881525 x0 * cos tanh sech asin - 0.9467931740428464 - x0 sqrt sqrt - 2.067330160812091 * x0 sqrt tanh ~ - x0 acos 0.6022593611352557 x0 - + -1.2783007222875034 x0 x0 + 4 x0 acos 0.7577567415106445 - * 0.296674061725209 x0 x0 x0 asin * * + * x0 3.133200974877574 * sin x0 arccos 49.60161349392813 * cos * * * + * + x0 x0 x0 -0.5056147910362847 + * 6.106557215495512 x0 0.9946409859679074 - * -30.40504775000657 x0 * sin -0.5683444508154805 x0 + 3.239829570256047 * + * -14.812754764507567 x0 tanh x0 x0 + ~ -4.328331981029391 * + * 0.6887025586598067 + sin * * * + x0 sqrt 1.3836320563532465 * x0 asin x0 x0 x0 1.6909053877132934 + + + 0.30850554122615576 x0 x0 ~ asin + + * ~ * - + 0.30377612087857814 x0 acos sqrt x0 arccos sqrt sqrt sqrt sqrt - asin arcsin acos * - 0.03661899347368653 0.04029017124105634 x0 acos 0.88061075992745 + sin acos sqrt sqrt sqrt sqrt * - +",
             }.back()
         };
         /*
@@ -12424,7 +12436,7 @@ for i in range(len(consts)):
             SimulatedAnnealing(WierdTrackFitter /*differential equation to solve*/,
                 2 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{10} /*fixed depths of generated solution*/,
+                std::vector<int>{22} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -12441,15 +12453,15 @@ for i in range(len(consts)):
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "WierdTrackSR.txt", // "" /*filename to save current best expression found (instead of outputting them to standard out)*/
-                std::vector<int>{60} /*optional max-sizes of each of the expressions in the generated solution*/,
-                {split(seed_exprs[track_idx])} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
+                std::vector<int>{229} /*optional max-sizes of each of the expressions in the generated solution*/,
+                {/*split(seed_exprs[track_idx])*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 "vector" /*evaluation type: can be "dag", "scalar", or "vector"*/,
                 1000000 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                 std::vector<std::string>{"exp", "ln", "log", "^", "/"} /*operators to restrict in the search*/,
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
-                "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
-                {/*split(seed_exprs[track_idx])*/} /*seed expressions*/,
+                "fast" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
+                {split(seed_exprs[track_idx])} /*seed expressions*/,
                 (num_threads == 1) /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
@@ -12457,7 +12469,7 @@ for i in range(len(consts)):
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "WierdTrackSR.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/,
+                "sub_array" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/,
                 true /*whether or not to sync the current expression of each thread with the global current best*/);
         }
     }

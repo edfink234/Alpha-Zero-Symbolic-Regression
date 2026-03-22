@@ -42,200 +42,190 @@ def sech_stable(x):
     out[big] = 2.0*np.exp(-ax[big])
     out[~big] = 1.0/np.cosh(ax[~big])
     return np.maximum(out, np.finfo(np.float64).tiny)  # <-- key line
-# -------------------------
-# Helpers: parameterization
-# -------------------------
-def extract_parameter_atoms(expr, max_params=12):
-    floats = list(expr.atoms(sp.Float))
-    floats = [c for c in floats if float(c) not in (0.0, 1.0)]
-    # frequency heuristic
-    floats_sorted = sorted(floats, key=lambda c: expr.count(c), reverse=True)
-    picked, seen = [], set()
-    for c in floats_sorted:
-        if c in seen:
-            continue
-        seen.add(c)
-        picked.append(c)
-        if len(picked) >= max_params:
-            break
-    return picked
+    
+class SympyDagEvaluator:
+    """
+    Build a DAG from a SymPy Expr by hash-consing subexpressions,
+    then evaluate bottom-up on NumPy arrays/scalars.
 
-def make_parametrized_expr(expr, atoms):
-    params = [sp.Symbol(f"p{i}", real=True) for i in range(len(atoms))]
-    subs_map = {atoms[i]: params[i] for i in range(len(atoms))}
-    expr_param = expr.xreplace(subs_map)
-    p0 = np.array([float(a) for a in atoms], dtype=float)
-    return expr_param, params, p0, subs_map
+    Node format:
+        (op, data, children)
 
-def build_sh_residual(f_expr_param, r, theta, mu=1.0, nu=1.0):
-    laplacian_f = diff(f_expr_param, r, 2) + (1/r) * diff(f_expr_param, r) + (1/(r**2)) * diff(f_expr_param, theta, 2)
-    double_laplacian_f = diff(laplacian_f, r, 2) + (1/r) * diff(laplacian_f, r) + (1/(r**2)) * diff(laplacian_f, theta, 2)
-    swift_hohenberg = mu*f_expr_param + nu*f_expr_param*f_expr_param - f_expr_param**3 - (f_expr_param + 2*laplacian_f + double_laplacian_f)
-    return swift_hohenberg
+    where:
+        op       : string like "const", "symbol", "add", "mul", ...
+        data     : constant value or symbol name or None
+        children : tuple of child node ids
+    """
 
-def make_grids(N, r_max, stride=1):
-    r_lin = np.linspace(0.01, r_max, N)[::stride]
-    th_lin = np.linspace(0.0, 2*pi, N)[::stride]
-    return np.meshgrid(r_lin, th_lin)
+    def __init__(self, expr):
+        self.expr = expr
+        self.nodes = []
+        self.root = -1
 
-def sh_metrics(sh_num, p, r_vals, th_vals):
-    res = np.asarray(sh_num(r_vals, th_vals, *p), dtype=float).ravel()
-    sqnorm = float(LA.norm(res)**2)
-    mse = sqnorm / res.size
-    return sqnorm, mse
+        # SymPy expr -> node id
+        self._intern_expr = {}
 
-def variance_of_f(f_num, p, r_vals, th_vals):
-    vals = np.asarray(f_num(r_vals, th_vals, *p), dtype=float)
-    return float(np.var(vals))
+        # (op, data, children) -> node id
+        self._intern_node = {}
 
-# -------------------------
-# Naive random search
-# -------------------------
-def naive_random_optimize(
-    f_expr,
-    r, theta,
-    f_thresh,
-    N=1000,
-    mu=1.0, nu=1.0,
-    # compute cost controls:
-    opt_stride=5,          # evaluate candidates on strided grids
-    max_params=12,
-    n_iters=2000,
-    step_scale=0.05,       # relative perturbation size
-    additive_step=1e-3,    # absolute perturbation fallback
-    # acceptance:
-    use_annealing=False,
-    T0=0.1,
-    Tf=1e-4,
-    # variance handling:
-    reject_if_var_below=False,
-    var_penalty_weight=1e6,
-    rng_seed=0,
-    print_every=50
-):
-    rng = np.random.default_rng(rng_seed)
+        self.root = self._build(expr)
 
-    # 1) Parameterize expression
-    atoms = extract_parameter_atoms(f_expr, max_params=max_params)
-    f_param, params, p0, subs_map = make_parametrized_expr(f_expr, atoms)
+    def _intern(self, op, data, children):
+        key = (op, data, children)
+        if key in self._intern_node:
+            return self._intern_node[key]
+        idx = len(self.nodes)
+        self.nodes.append((op, data, children))
+        self._intern_node[key] = idx
+        return idx
 
-    # 2) Build SH residual (symbolic) and lambdify
-    sh_param = build_sh_residual(f_param, r, theta, mu=mu, nu=nu)
-    f_num = lambdify((r, theta, *params), f_param, modules="numpy")
-    sh_num = lambdify((r, theta, *params), sh_param, modules="numpy")
+    def _build(self, expr):
+        if expr in self._intern_expr:
+            return self._intern_expr[expr]
 
-    # 3) Grids
-    r1_opt, th1_opt = make_grids(N, r_max=10.0, stride=opt_stride)
-    r2_opt, th2_opt = make_grids(N, r_max=100.0, stride=opt_stride)
+        if expr.is_Symbol:
+            node_id = self._intern("symbol", str(expr), ())
 
-    # Full grids only for initial + final reporting (expensive at N=1000)
-    r1_full, th1_full = make_grids(N, r_max=10.0, stride=1)
-    r2_full, th2_full = make_grids(N, r_max=100.0, stride=1)
+        elif expr.is_Integer:
+            node_id = self._intern("const", float(int(expr)), ())
 
-    # 4) Initial residuals (stored!)
-    initial_sq1, initial_mse1 = sh_metrics(sh_num, p0, r1_full, th1_full)
-    initial_sq2, initial_mse2 = sh_metrics(sh_num, p0, r2_full, th2_full)
-    initial_var1 = variance_of_f(f_num, p0, r1_full, th1_full)
-    initial_var2 = variance_of_f(f_num, p0, r2_full, th2_full)
+        elif expr.is_Rational:
+            node_id = self._intern("const", float(expr), ())
 
-    initial_residual = {
-        "grid1_rmax10_sqnorm": initial_sq1,
-        "grid1_rmax10_mse": initial_mse1,
-        "grid2_rmax100_sqnorm": initial_sq2,
-        "grid2_rmax100_mse": initial_mse2,
-        "combined_mse": (initial_mse1 + initial_mse2) / 2.0,
-        "var_grid1": initial_var1,
-        "var_grid2": initial_var2,
-    }
+        elif expr.is_Float:
+            node_id = self._intern("const", float(expr), ())
 
-    # Objective on OPT grids (fast)
-    def objective(p):
-        # base: mean of MSEs across the two grids
-        _, mse1 = sh_metrics(sh_num, p, r1_opt, th1_opt)
-        _, mse2 = sh_metrics(sh_num, p, r2_opt, th2_opt)
-        base = 0.5 * (mse1 + mse2)
+        elif expr.is_Number:
+            node_id = self._intern("const", float(expr.evalf()), ())
 
-        v1 = variance_of_f(f_num, p, r1_opt, th1_opt)
-        v2 = variance_of_f(f_num, p, r2_opt, th2_opt)
-
-        if reject_if_var_below and (v1 < f_thresh[0] or v2 < f_thresh[1]):
-            return np.inf, v1, v2
-
-        # soft penalty (still useful even if not rejecting)
-        pen = 0.0
-        if v1 < f_thresh[0]:
-            pen += (f_thresh[0] - v1)
-        if v2 < f_thresh[1]:
-            pen += (f_thresh[1] - v2)
-        base_plus = base + var_penalty_weight * pen
-        return base_plus, v1, v2
-
-    # 5) Initialize best
-    p_best = p0.copy()
-    best_obj, best_v1, best_v2 = objective(p_best)
-
-    # 6) Random search loop
-    for k in range(1, n_iters + 1):
-        # annealing temperature schedule
-        if use_annealing:
-            t = (k - 1) / max(1, n_iters - 1)
-            T = T0 * (Tf / T0) ** t
         else:
-            T = 0.0
+            args = tuple(self._build(a) for a in expr.args)
 
-        # propose perturbation: mix relative + absolute
-        rel = step_scale * (np.abs(p_best) + 1.0)
-        delta = rng.normal(0.0, rel) + rng.normal(0.0, additive_step, size=p_best.shape)
-        p_try = p_best + delta
+            if expr.func is sp.Add:
+                node_id = self._intern("add", None, args)
 
-        obj_try, v1_try, v2_try = objective(p_try)
+            elif expr.func is sp.Mul:
+                node_id = self._intern("mul", None, args)
 
-        accept = False
-        if obj_try < best_obj:
-            accept = True
-        elif use_annealing and np.isfinite(obj_try) and np.isfinite(best_obj) and T > 0:
-            # accept worse move with probability exp(-(Δ)/T)
-            d = obj_try - best_obj
-            if rng.random() < np.exp(-d / max(1e-12, T)):
-                accept = True
+            elif expr.func is sp.Pow:
+                node_id = self._intern("pow", None, args)
 
-        if accept:
-            p_best = p_try
-            best_obj, best_v1, best_v2 = obj_try, v1_try, v2_try
+            elif expr.func is sp.sin:
+                node_id = self._intern("sin", None, args)
 
-        if (k % print_every) == 0 or k == 1:
-            print(f"[{k:5d}/{n_iters}] best_obj={best_obj:.6e} var1={best_v1:.6e} var2={best_v2:.6e}")
+            elif expr.func is sp.cos:
+                node_id = self._intern("cos", None, args)
 
-    # 7) Build optimized expression back in SymPy
-    back_map = {params[i]: sp.Float(p_best[i]) for i in range(len(params))}
-    f_optimized_expr = sp.simplify(f_param.subs(back_map))
+            elif expr.func is sp.exp:
+                node_id = self._intern("exp", None, args)
 
-    # 8) Final full-grid reporting
-    final_sq1, final_mse1 = sh_metrics(sh_num, p_best, r1_full, th1_full)
-    final_sq2, final_mse2 = sh_metrics(sh_num, p_best, r2_full, th2_full)
-    final_var1 = variance_of_f(f_num, p_best, r1_full, th1_full)
-    final_var2 = variance_of_f(f_num, p_best, r2_full, th2_full)
+            elif expr.func is sp.log:
+                node_id = self._intern("log", None, args)
 
-    final_residual = {
-        "grid1_rmax10_sqnorm": final_sq1,
-        "grid1_rmax10_mse": final_mse1,
-        "grid2_rmax100_sqnorm": final_sq2,
-        "grid2_rmax100_mse": final_mse2,
-        "combined_mse": (final_mse1 + final_mse2) / 2.0,
-        "var_grid1": final_var1,
-        "var_grid2": final_var2,
-    }
+            elif expr.func is sp.sqrt:
+                node_id = self._intern("sqrt", None, args)
 
-    return {
-        "atoms_optimized": atoms,
-        "params": params,
-        "p0": p0,
-        "p_best": p_best,
-        "initial_residual": initial_residual,
-        "final_residual": final_residual,
-        "f_optimized_expr": f_optimized_expr,
-    }
+            elif expr.func is sp.tanh:
+                node_id = self._intern("tanh", None, args)
 
+            elif expr.func.__name__ == "sech":
+                node_id = self._intern("sech", None, args)
+
+            elif expr.func is sp.asin:
+                node_id = self._intern("asin", None, args)
+
+            elif expr.func is sp.acos:
+                node_id = self._intern("acos", None, args)
+
+            elif expr.func is sp.Abs:
+                node_id = self._intern("abs", None, args)
+
+            else:
+                raise NotImplementedError(
+                    "Unsupported SymPy node: func=%r expr=%r" % (expr.func, expr)
+                )
+
+        self._intern_expr[expr] = node_id
+        return node_id
+
+    def evaluate(self, env, shape=None, dtype=np.float64):
+        """
+        env maps symbol names to numpy arrays/scalars, e.g.
+            {"r": r_vals, "theta": theta_vals}
+
+        shape is only needed if expression is constant and you want an array result.
+        """
+        values = [None] * len(self.nodes)
+
+        for i, node in enumerate(self.nodes):
+            op, data, children = node
+
+            if op == "symbol":
+                if data not in env:
+                    raise KeyError("Missing value for symbol '%s'" % data)
+                values[i] = env[data]
+
+            elif op == "const":
+                c = np.array(data, dtype=dtype)
+                if shape is None:
+                    values[i] = c
+                else:
+                    values[i] = np.full(shape, c, dtype=dtype)
+
+            else:
+                ch = [values[j] for j in children]
+
+                if op == "add":
+                    out = ch[0]
+                    for x in ch[1:]:
+                        out = out + x
+                    values[i] = out
+
+                elif op == "mul":
+                    out = ch[0]
+                    for x in ch[1:]:
+                        out = out * x
+                    values[i] = out
+
+                elif op == "pow":
+                    base, expo = ch
+                    values[i] = np.power(base, expo)
+
+                elif op == "sin":
+                    values[i] = np.sin(ch[0])
+
+                elif op == "cos":
+                    values[i] = np.cos(ch[0])
+
+                elif op == "exp":
+                    values[i] = np.exp(ch[0])
+
+                elif op == "log":
+                    values[i] = np.log(ch[0])
+
+                elif op == "sqrt":
+                    values[i] = np.sqrt(ch[0])
+
+                elif op == "tanh":
+                    values[i] = np.tanh(ch[0])
+
+                elif op == "sech":
+                    values[i] = sech_stable(ch[0])
+
+                elif op == "asin":
+                    values[i] = np.arcsin(ch[0])
+
+                elif op == "acos":
+                    values[i] = np.arccos(ch[0])
+
+                elif op == "abs":
+                    values[i] = np.abs(ch[0])
+
+                else:
+                    raise RuntimeError("Unknown op '%s'" % op)
+
+        return values[self.root]
+        
 # Define the polar coordinates
 SH = symbols('\\text{SwiftHohenberg} r theta mu nu')
 r, theta = symbols('r theta', real = True, positive = True)
@@ -293,13 +283,14 @@ else:
 #              0.51199266997955**(cos(theta) + tanh(theta) - 10.3131898333342)*(9.0757942726193e-14*theta - 4.96401025894239e-14)
 #               + 2.56079616012073**(theta - 100)
 #               - 8.34389366280701e-5*theta
-#               - ((r + 0.0675028199851666*sin(theta) + 0.315607996717276)**(r**(3/2)/(6061.38025205674 - r) + 0.980148012390677)/(0.0131556900650473**(r + 0.01)*(38.7339891865342*r + 16) + r + 1.81661418380918 + (7.99778692508723*r)**(-r)))**(((9.2946460352402 + 0.01/r)/(r + 0.53683450665909) + sin(theta + cos(theta + 0.519039044087815) + 5.9551617560382))*(r + sin(r - 6.28319) + sech(sin(theta))**(r + theta - 0.01) + 0.35470643308755 + tanh(r)/(r + 10)))
+               - ((r + 0.0675028199851666*sin(theta) + 0.315607996717276)**(r**(3/2)/(6061.38025205674 - r) + 0.980148012390677)/(0.0131556900650473**(r + 0.01)*(38.7339891865342*r + 16) + r + 1.81661418380918 + (7.99778692508723*r)**(-r)))**(((9.2946460352402 + 0.01/r)/(r + 0.53683450665909) + sin(theta + cos(theta + 0.519039044087815) + 5.9551617560382))*(r + sin(r - 6.28319) + sech(sin(theta))**(r + theta - 0.01) + 0.35470643308755 + tanh(r)/(r + 10)))
 #              + (2.79399001433555e-13 + 6.12323399573677e-17/(2 - 6.28319002590124*r))*(r + cos(sin(theta) - 44.7654199416836) + 0.471580705489435 + 0.0466189934736865/2**theta)**(sin(sqrt(r)) + 11.3935849545251)
-              + 0.856494891515028*sqrt(1 - cos(r)**2)*(sech(0.01**theta + r + cos(r) + 8.41984108535765) + 0.999884875420784)**(1.5592368731432*(r + 0.0308839840501129)**4.01000485949458*asin(tanh(r)))*(0.01**(r + 5.28319) + (0.01*theta + 3.57483787153797)**(sin(theta) - 16.01) + 0.702448127760476)*sin(theta - 18.8121744491421)
+              + 0.856494891515028*sqrt(1 - cos(r)**2)*(sech(0.01**theta + r + cos(r) + 8.41984108535765) + 0.999884875420784)**(1.5592368731432*(r + 0.0308839840501129)**4.03*(1.58*(tanh(.59*r))))*(0.01**(r + 5.28319) + (0.01*theta + 3.57483787153797)**(sin(theta) - 16.01) + 0.702448127760476)*sin(theta - 18.8121744491421)
 #              - (-6.28319**r + r*theta**2)*(-3.07059884339376*r + cos(theta) - 24.516957235124)/(r**(1/4) + 10*r + theta**2*(2*r)**(theta + 0.976795635153742)*exp(r) + 364526023319.73)
-#              + (9.01*theta + 187.8546257)/(sech(1/r) + 21994.4746415388)
+              + (9.01*theta + 187.8546257)/(sech(1/r) + 21994.4746415388)
 #              + (6.28319e-20*theta*(theta + 64.5981500331442)/(6.28319 - 2*r) + 2.71406347200553e-13)*(-r + 6*theta + (theta + 5.6388440341466)*exp(r) + 5.29319)**(cos(sin(theta + 0.01)) + sech(theta + 0.01))
-              - ((0.01**theta + 1.5707963267949)**(sin(theta) - 20) + 0.285806958666281)**(0.0100001666741671*0.01**theta + r + sech(r + 0.01) + 10.0546039281106)*(r + (r**0.999993025405072 - 0.00364405505237706)**((r + sech(theta) + 0.01)**0.00999966667999946) + 0.0105696310406772)**(0.0160139598842463**((sin(r) + 6.60388563017837)/(r - 0.00781876960101768)) + (r - 17.2012876815798)/(sech(theta) + 1371.59680243082) + 7.58916751220923)*(-sin(theta + cos(theta - 0.01) + 6.28319 + 1.25218047866732/r) + sin(log(r + 0.01)) + sech(r)**(0.0611608608465381*r + 0.000611608608465381))
+              - ((0.01**theta + 1.5707963267949)**(sin(theta) - 20) +
+               0.285806958666281)**(0.0100001666741671*0.01**theta + r + sech(r + 0.01) + 10.0546039281106)*(r + (r**0.999993025405072 - 0.00364405505237706)**((r + sech(theta) + 0.01)**0.00999966667999946) + 0.0105696310406772)**(0.0160139598842463**((sin(r) + 6.60388563017837)/(r - 0.00781876960101768)) + (r - 17.2012876815798)/(sech(theta) + 1371.59680243082) + 7.58916751220923)*(-sin(theta + cos(theta - 0.01) + 6.28319 + 1.25218047866732/r) + sin(log(r + 0.01)) + sech(r)**(0.0611608608465381*r + 0.000611608608465381))
 #              - ((sin(theta) + 2.71828182845905)*sin(r + 0.01) - log(r) + tanh(sin(r)) + 12.4836115425809)**(0.719687660682435*r - 9.59439345197863)
               + 0.879292797166987
 #              - (tanh(2*r)**(r**6.28319*(10 - r)) + 67.7382155589743)/(r - 10347.5164144159)
@@ -317,25 +308,8 @@ else:
             if PERIODIC_IN_THETA else \
             (((0.148475282221305 * theta) - (sin(theta) * (1.0000132758892615 * sin(r)))) - 0.0922858190550785)
 
-
-f_thresh = (0.13014006102898107, 0.014037022014875142)
-optimize = False
-
-if optimize:
-    info = naive_random_optimize(f, r, theta, f_thresh=f_thresh, N=1000, mu=mu, nu=nu, opt_stride=1, max_params=12)
-
-    #Access stored initial residuals:
-    initial_residual = info["initial_residual"]
-    print("Initial residuals:", initial_residual)
-
-    #See optimized expression:
-    print("Optimized f:", info["f_optimized_expr"])
-
-    #See final metrics:
-    print("Final residuals:", info["final_residual"])
-    exit()
-
 print(f"f = {f}\n")
+print(f"sp.expand(f) = {sp.expand(f)}")
 latex_f = sp.latex(f)
 latex_f = latex_f.replace(r"(r", r"(\sqrt{x^2 + y^2}")
 latex_f = latex_f.replace(r"\theta", r"\arctan{\dfrac{y}{x}}")
@@ -360,41 +334,55 @@ if not GENERIC:
     terms = sp.Add.make_args(diff(f, r))  # f is your full expression
     term_funcs = [sp.lambdify((r, theta), t, modules=[{"sech": sech_stable}, "numpy"]) for t in terms]
 
-    bad = []
-    for k, tf, term in zip(range(len(terms)), term_funcs, terms):
-        v = tf(r_vals, theta_vals)
-        imag = np.max(np.abs(np.imag(v))) if np.iscomplexobj(v) else 0.0
-        n_nan = np.isnan(v).sum()
-        n_inf = np.isinf(v).sum()
-        if imag > 1e-12 or n_nan or n_inf:
-            bad.append((k, imag, n_nan, n_inf, term))
-    print(*bad, " ... total bad:", len(bad), sep='\n')
-    
-    
-    f_SR = lambdify((r, theta), f, modules=[{"sech": sech_stable}, "numpy"])
-    f_SR_r = lambdify((r, theta), f_r := diff(f, r), modules=[{"sech": sech_stable}, "numpy"])
-    f_SR_theta = lambdify((r, theta), f_theta := diff(f, theta), modules=[{"sech": sech_stable}, "numpy"])
-    print(f"f_r = {f_r}");
-    print(f"Variance of f = {np.var(f_SR_vals:=f_SR(r_vals, theta_vals))}")
-    print(f"||f|| = {LA.norm(f_SR_vals)}")
-    print(f"Max(∂f/∂r) = {np.max(f_SR_r_vals:=f_SR_r(r_vals, theta_vals))}")
-    print(f"Max(∂f/∂θ) = {np.max(f_SR_theta_vals:=f_SR_theta(r_vals, theta_vals))}")
-    print(f"Median(∂f/∂r) = {np.median(np.sort(f_SR_r_vals))}")
-    print(f"Median(∂f/∂θ) = {np.median(np.sort(f_SR_theta_vals))}")
+#    bad = []
+#    for k, tf, term in zip(range(len(terms)), term_funcs, terms):
+#        v = tf(r_vals, theta_vals)
+#        imag = np.max(np.abs(np.imag(v))) if np.iscomplexobj(v) else 0.0
+#        n_nan = np.isnan(v).sum()
+#        n_inf = np.isinf(v).sum()
+#        if imag > 1e-12 or n_nan or n_inf:
+#            bad.append((k, imag, n_nan, n_inf, term))
+#    print(*bad, " ... total bad:", len(bad), sep='\n')
+#    
+#    
+#    f_SR = lambdify((r, theta), f, modules=[{"sech": sech_stable}, "numpy"])
+#    f_SR_r = lambdify((r, theta), f_r := diff(f, r), modules=[{"sech": sech_stable}, "numpy"])
+#    f_SR_theta = lambdify((r, theta), f_theta := diff(f, theta), modules=[{"sech": sech_stable}, "numpy"])
+#    print(f"f_r = {f_r}");
+#    print(f"Variance of f = {np.var(f_SR_vals:=f_SR(r_vals, theta_vals))}")
+#    print(f"||f|| = {LA.norm(f_SR_vals)}")
+#    print(f"Max(∂f/∂r) = {np.max(f_SR_r_vals:=f_SR_r(r_vals, theta_vals))}")
+#    print(f"Max(∂f/∂θ) = {np.max(f_SR_theta_vals:=f_SR_theta(r_vals, theta_vals))}")
+#    print(f"Median(∂f/∂r) = {np.median(np.sort(f_SR_r_vals))}")
+#    print(f"Median(∂f/∂θ) = {np.median(np.sort(f_SR_theta_vals))}")
+
+    # Evaluate
+    dag_eval = SympyDagEvaluator(swift_hohenberg)
+    func_vals = dag_eval.evaluate(
+        env={"r": r_vals, "theta": theta_vals},
+        shape=r_vals.shape
+    )
+
+    squared_norm_error = LA.norm(func_vals.ravel())**2
+    mean_squared_error = squared_norm_error / func_vals.size
+
+    print(f"num DAG nodes = {len(dag_eval.nodes)}")
+    print(f"squared-norm error = {squared_norm_error}")
+    print(f"mean-squared error = {mean_squared_error}")
 
     func = lambdify((r, theta), swift_hohenberg, modules=[{"sech": sech_stable}, "numpy"])
-    func_vals = func(r_vals, theta_vals)
-
-#    print(f"func_vals.size = {func_vals.size}")
-#    print(f"func_vals.shape = {func_vals.shape}")
-#    print(f"func_vals = {func_vals}");
-#    print(f"diff(func_vals, axis = 0) = {np.diff(func_vals, axis = 0)}") #diff(f, theta)
-#    print(f"diff(func_vals, axis = 1) = {np.diff(func_vals, axis = 1)}") #diff(f, r)
-    squared_norm_error = LA.norm(func_vals.flatten())**2
-    print(f"squared-norm error = {squared_norm_error}")
-#    print(sp.multiline_latex(SH, swift_hohenberg, 2).replace(r"\frac", r"\dfrac"))
-    mean_squared_error = squared_norm_error / func_vals.size
-    print(f"mean-squared_error = {mean_squared_error}")
+#    func_vals = func(r_vals, theta_vals)
+#
+##    print(f"func_vals.size = {func_vals.size}")
+##    print(f"func_vals.shape = {func_vals.shape}")
+##    print(f"func_vals = {func_vals}");
+##    print(f"diff(func_vals, axis = 0) = {np.diff(func_vals, axis = 0)}") #diff(f, theta)
+##    print(f"diff(func_vals, axis = 1) = {np.diff(func_vals, axis = 1)}") #diff(f, r)
+#    squared_norm_error = LA.norm(func_vals.flatten())**2
+#    print(f"squared-norm error = {squared_norm_error}")
+##    print(sp.multiline_latex(SH, swift_hohenberg, 2).replace(r"\frac", r"\dfrac"))
+#    mean_squared_error = squared_norm_error / func_vals.size
+#    print(f"mean-squared_error = {mean_squared_error}")
 
 #ROOT-FINDING#
 ##############
