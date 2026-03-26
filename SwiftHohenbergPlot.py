@@ -18,7 +18,7 @@ r_edges = np.linspace(0.01, r_max, N)
 theta_edges = np.linspace(0, 2*np.pi, N, endpoint=False)
 
 round_floats = lambda expr, ndigits: expr.xreplace({f: Float(round(float(f), ndigits)) for f in expr.atoms(Float)})
-f_per_idx = 9
+f_per_idx = 0
 mu, nu = 1, 1
 r, theta = symbols('r theta')
 f =  [sin(r)*sin(theta), \
