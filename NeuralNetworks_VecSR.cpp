@@ -265,7 +265,6 @@ public:
             this->rows[i] = data.row(i).head(data.row(i).size() - 1);
             y_i << this->features["y"](i);
             this->labels[i] = y_i;
-            assert(this->labels[i].size() == 1 && this->rows[i].size() == 2);
         }
 //        this->labels.push_back(this->features["y"]);
         
@@ -3683,7 +3682,7 @@ int main()
     {
         layers.push_back(std::stoi(token));
     }
-    std::cout << "\nlayers = " << layers;
+//    std::cout << "\nlayers = " << layers;
     //2. read in layer types
     std::getline(finObj, tempInpBuf);
     ss = std::stringstream(tempInpBuf);
@@ -3691,15 +3690,13 @@ int main()
     {
         layer_types.push_back(token);
     }
-    std::cout << "\nlayer-types = " << layer_types << '\n';
+//    std::cout << "\nlayer-types = " << layer_types << '\n';
     //3. read in benchmark type
     std::getline(finObj, benchmark_type);
-    std::cout << "benchmark_type = " << benchmark_type << ", size(benchmark_type) = "
-    << benchmark_type.length() << '\n';
+//    std::cout << "benchmark_type = " << benchmark_type << ", size(benchmark_type) = " << benchmark_type.length() << '\n';
     //4. read in weight-update rule
     std::getline(finObj, weight_update_rule);
-    std::cout << "weight_update_rule = " << weight_update_rule << ", size(weight_update_rule) = "
-    << weight_update_rule.length() << '\n';
+//    std::cout << "weight_update_rule = " << weight_update_rule << ", size(weight_update_rule) = " << weight_update_rule.length() << '\n';
     //5. Read in eta, theta, gamma, epsilon, beta_1, beta_2, lambda
     finObj >> token;
     eta = std::stof(token);
@@ -3715,14 +3712,14 @@ int main()
     beta_2 = std::stof(token);
     finObj >> token;
     lambda = std::stof(token);
-    std::cout << "eta = " << eta
-    << "\ntheta = " << theta
-    << "\ngamma = " << gamma
-    << "\nepsilon = " << epsilon
-    << "\nbeta_1 = " << beta_1
-    << "\nbeta_2 = " << beta_2
-    << "\nlambda = " << lambda
-    << '\n';
+//    std::cout << "eta = " << eta
+//    << "\ntheta = " << theta
+//    << "\ngamma = " << gamma
+//    << "\nepsilon = " << epsilon
+//    << "\nbeta_1 = " << beta_1
+//    << "\nbeta_2 = " << beta_2
+//    << "\nlambda = " << lambda
+//    << '\n';
 
     auto start_time = Clock::now();
     MultiLayerPerceptron mlp(
@@ -3739,16 +3736,16 @@ int main()
          /*float beta_2 = */ beta_2,
          /*float lambda = */ lambda /*weight decay AdamW*/);
     
-    Eigen::MatrixXf my_temp_test_data = generateData(20 /*rows*/, 3 /*columns*/, func_map.at(benchmark_type) /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f);
+    Eigen::MatrixXf my_temp_test_data = generateData(20 /*rows*/, layers[0]+1 /*columns*/, func_map.at(benchmark_type) /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f);
     Data my_test_data;
     my_test_data = my_temp_test_data;
-    my_test_data.print();
+//    my_test_data.print();
     float MSE = mlp.train(my_test_data.rows, my_test_data.labels, 10);
-    std::cout << "\nFINAL MSE = " << MSE << '\n';
+//    std::cout << "\nFINAL MSE = " << MSE << '\n';
     std::ofstream tempMSE(tempMSE_filename);
     tempMSE << MSE << '\n';
     tempMSE.close();
-    system((std::string("cat ")+tempMSE_filename).c_str());
+//    system((std::string("cat ")+tempMSE_filename).c_str());
     exit(1);
 
     

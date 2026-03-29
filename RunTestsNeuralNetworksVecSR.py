@@ -40,6 +40,8 @@
 #TODO: See if you can create a list of the configs above in the manner below (`example_config`) and implement a for-loop that loops over each config above and does the below operation
 
 from os import system
+from itertools import product
+
                 
 benchmarks = ('Hemberg_1', 'Hemberg_2', 'Hemberg_3', 'Hemberg_4', 'Hemberg_5', 'Feynman_1', 'Feynman_2', 'Feynman_3', 'Feynman_4', 'Feynman_5')
 benchmark_Ns = (2, 2, 2, 2, 2, 5, 9, 7, 8, 6)
@@ -81,9 +83,97 @@ hyper_parameter_combos = {\
      'Adam': ({'eta': 1e-05, 'epsilon': 1e-08, 'beta_1': 0.9, 'beta_2': 0.999}, {'eta': 1e-05, 'epsilon': 1e-08, 'beta_1': 0.95, 'beta_2': 0.999}, {'eta': 3e-05, 'epsilon': 1e-08, 'beta_1': 0.9, 'beta_2': 0.999}, {'eta': 3e-05, 'epsilon': 1e-08, 'beta_1': 0.95, 'beta_2': 0.999}, {'eta': 0.0001, 'epsilon': 1e-08, 'beta_1': 0.9, 'beta_2': 0.999}, {'eta': 0.0001, 'epsilon': 1e-08, 'beta_1': 0.95, 'beta_2': 0.999}), \
      'AdamW': ({'lambda': 1e-05, 'eta': 3e-05, 'epsilon': 1e-08, 'beta_1': 0.9, 'beta_2': 0.999}, {'lambda': 1e-05, 'eta': 0.0001, 'epsilon': 1e-08, 'beta_1': 0.9, 'beta_2': 0.999}, {'lambda': 0.0001, 'eta': 3e-05, 'epsilon': 1e-08, 'beta_1': 0.9, 'beta_2': 0.999}, {'lambda': 0.0001, 'eta': 0.0001, 'epsilon': 1e-08, 'beta_1': 0.9, 'beta_2': 0.999}, {'lambda': 0.001, 'eta': 3e-05, 'epsilon': 1e-08, 'beta_1': 0.9, 'beta_2': 0.999}, {'lambda': 0.001, 'eta': 0.0001, 'epsilon': 1e-08, 'beta_1': 0.9, 'beta_2': 0.999})}
 #print(f"\nhyper_parameter_combos = {hyper_parameter_combos}\n")
+print(f"len(hyper_parameter_combos) = {len(hyper_parameter_combos)}")
 for hyper_parameter_combo in hyper_parameter_combos:
     temp_hyper_parameter_combo = hyper_parameter_combos[hyper_parameter_combo]
-    print(len(temp_hyper_parameter_combo), hyper_parameter_combo, temp_hyper_parameter_combo, end="\n\n")
+    print(len(temp_hyper_parameter_combo), hyper_parameter_combo, end="\n\n")
+    
+hyper_parameter_combos = {
+    'basic': tuple(
+        {'eta': eta}
+        for eta in (
+            1e-06, 3e-06,
+            1e-05, 3e-05,
+            1e-04, 3e-04,
+            1e-03, 3e-03
+        )
+    ),
+
+    'heavy ball': tuple(
+        {'theta': theta, 'eta': eta}
+        for theta, eta in product(
+            (0.7, 0.8, 0.85, 0.9, 0.95),
+            (1e-05, 3e-05, 1e-04, 3e-04, 1e-03)
+        )
+    ),
+
+    'NAG': tuple(
+        {'theta': theta, 'eta': eta}
+        for theta, eta in product(
+            (0.7, 0.8, 0.85, 0.9, 0.95),
+            (1e-05, 3e-05, 1e-04, 3e-04, 1e-03)
+        )
+    ),
+
+    'AdaGrad': tuple(
+        {'epsilon': epsilon, 'eta': eta}
+        for epsilon, eta in product(
+            (1e-10, 1e-08, 1e-06, 1e-04),
+            (3e-04, 1e-03, 3e-03, 1e-02, 3e-02)
+        )
+    ),
+
+    'RMSProp': tuple(
+        {'epsilon': epsilon, 'eta': eta, 'gamma': gamma}
+        for epsilon, eta, gamma in product(
+            (1e-10, 1e-08, 1e-06),
+            (1e-06, 3e-06, 1e-05, 3e-05, 1e-04, 3e-04, 1e-03),
+            (0.9, 0.95, 0.99)
+        )
+    ),
+
+    'AdaDelta': tuple(
+        {'epsilon': epsilon, 'gamma': gamma}
+        for epsilon, gamma in product(
+            (1e-10, 1e-08, 1e-06, 1e-04),
+            (0.9, 0.95, 0.99, 0.995)
+        )
+    ),
+
+    'Adam': tuple(
+        {'eta': eta, 'epsilon': epsilon, 'beta_1': beta_1, 'beta_2': beta_2}
+        for eta, epsilon, beta_1, beta_2 in product(
+            (1e-06, 3e-06, 1e-05, 3e-05, 1e-04),
+            (1e-10, 1e-08, 1e-06, 1e-04),
+            (0.8, 0.9, 0.95),
+            (0.99, 0.995, 0.999)
+        )
+    ),
+
+    'AdamW': tuple(
+        {
+            'lambda': lam,
+            'eta': eta,
+            'epsilon': epsilon,
+            'beta_1': beta_1,
+            'beta_2': beta_2
+        }
+        for lam, eta, epsilon, beta_1, beta_2 in product(
+            (1e-06, 1e-05, 1e-04, 1e-03),
+            (1e-06, 3e-06, 1e-05, 3e-05, 1e-04),
+            (1e-10, 1e-08, 1e-06, 1e-04),
+            (0.8, 0.9, 0.95),
+            (0.99, 0.995, 0.999)
+        )
+    ),
+}
+
+#print(f"\nhyper_parameter_combos = {hyper_parameter_combos}\n")
+print(f"len(hyper_parameter_combos) = {len(hyper_parameter_combos)}")
+
+for hyper_parameter_combo in hyper_parameter_combos:
+    temp_hyper_parameter_combo = hyper_parameter_combos[hyper_parameter_combo]
+    print(len(temp_hyper_parameter_combo), hyper_parameter_combo, end="\n\n")
 
 '''
 2 2 7 6 1
@@ -103,6 +193,9 @@ filename = 'temp_config.txt'
 executable_name = 'NeuralNetworks_VecSR'
 results_csv = 'results_established_weight_update_rules_grid_search.csv'
 tempMSE_filename = "MSE_temp.txt"
+with open(results_csv, "a") as f:
+    #Write columns
+    f.write("Benchmark,NeuralNet,WeightUpdateRule,eta,theta,gamma,epsilon,beta_1,beta_2,lambda,MSE\n")
 for benchmark in benchmarks:
     for neural_network in neural_networks:
         for weight_update_rule in weight_update_rules:
@@ -110,22 +203,6 @@ for benchmark in benchmarks:
                 #1. Write SR-parameters for the given config to a temp.txt file
                 with open(filename, 'w') as f:
                     neural_network_layers = str(benchmarks[benchmark]) + neural_network[0][1:]
-#                    print(f"config {count}")
-#                    print("--------")
-#                    print(neural_network_layers)
-#                    print(neural_network[1])
-#                    print(benchmark)
-#                    print(weight_update_rule)
-#                    print(hyper_parameter_combo.get('eta', 1e-10))
-#                    print(hyper_parameter_combo.get('theta', 1e-10))
-#                    print(hyper_parameter_combo.get('gamma', 1e-10))
-#                    print(hyper_parameter_combo.get('epsilon', 1e-10))
-#                    print(hyper_parameter_combo.get('beta_1', 1e-10))
-#                    print(hyper_parameter_combo.get('beta_2', 1e-10))
-#                    print(hyper_parameter_combo.get('lambda', 1e-10))
-#                    count+=1
-#                    print('-------')
-#                    print()
                     f.write(f"{neural_network_layers}\n")
                     f.write(f"{neural_network[1]}\n")
                     f.write(f"{benchmark}\n")
@@ -137,28 +214,19 @@ for benchmark in benchmarks:
                     f.write(f"{hyper_parameter_combo.get('beta_1', 1e-10)}\n")
                     f.write(f"{hyper_parameter_combo.get('beta_2', 1e-10)}\n")
                     f.write(f"{hyper_parameter_combo.get('lambda', 1e-10)}\n")
-                system(f"cat {filename}")
+#                system(f"cat {filename}")
                 #2. Run the cpp executable via system(...)
                 system(f"./{executable_name}")
-                exit()
-                
-                
-                
                 #3. Read the results from the file that the cpp executable writes to and append those results to a csv
-                
                 MSE = None
                 with open(tempMSE_filename, "r") as f:
                     MSE = float(f.read())
-                    print(f"MSE = {MSE}")
+                    print(f"benchmark = {benchmark}, neural-net = {nn_layer_types_idxs[neural_network[1]]}, weight_update_rule = {weight_update_rule}, MSE = {MSE}")
                 
                 with open(results_csv, "a") as f:
-                    f.write()
-#                    neural_network_layers = f'{benchmarks[benchmark]}' + neural_network[0][1:]
-#                    f.write(neural_network_layers+"\n")
-#                    f.write(neural_network[1]+"\n")
-#                    f.write(benchmark+"\n")
-#                    f.write(weight_update_rule+"\n")
-#                    f.write(
+                    f.write(f"{benchmark},{nn_layer_types_idxs[neural_network[1]]},{weight_update_rule},{hyper_parameter_combo.get('eta', 1e-10)},{hyper_parameter_combo.get('theta', 1e-10)},{hyper_parameter_combo.get('gamma', 1e-10)},{hyper_parameter_combo.get('epsilon', 1e-10)},{hyper_parameter_combo.get('beta_1', 1e-10)},{hyper_parameter_combo.get('beta_2', 1e-10)},{hyper_parameter_combo.get('lambda', 1e-10)},{MSE}\n")
+#                system(f"cat {results_csv}")
+#                exit()
 
 example_config = [('layers', '2 2 7 6 1'), ('layer_types', 'sigmoid sigmoid sigmoid none'), ('func_type', 'Hemberg_1'), ('weight_update_rule', 'NAG'), ('eta', '1e-5'), ('theta', '.8'), ('gamma', '.9'), ('epsilon', '1e-8'), ('beta_1', '.9'), ('beta_2', '.999'), ('lambda', '1e-5')]
 with open("RunTestsNeuralNetworksVecSR.txt", "w") as f:
