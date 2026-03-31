@@ -34,6 +34,16 @@ from warnings import filterwarnings
 from sympy.utilities.autowrap import ufuncify
 
 filterwarnings('ignore')
+
+def phi(z):
+    return Piecewise((0, z <= 0), (exp(-1/z), True))
+
+def smooth_step(z):
+    return phi(z)/(phi(z) + phi(1 - z))
+
+def cutoff(r, r0, r1):
+    return 1 - smooth_step((r - r0)/(r1 - r0))
+
 def sech_stable(x):
     ax = np.abs(x)
     out = np.empty_like(ax, dtype=np.float64)
@@ -284,7 +294,7 @@ else:
 #              -6.97457203102658e-10*r
 #              + 7.96110622688787e-5*theta
 #              + 5.7581511072593*theta/(1.25423469760191*r - 21948.0619370553)
-              - (((r + 0.0675028199851666*sin(theta) + 0.315589358780667)**(sqrt(r)*(r + 2.87892339678315)/(5953.65096806617 - r) + 0.980141037771426)/(0.013519701745416**r*(43.687622183442*r + 8.33814060981745) + r + 0.02*sin(r) + 1.82648253593279))**(((9.2348889286512)/(r + 0.55183450665909) + sin(theta + cos(theta + 0.519039044087815) + 5.8847752990135))*(r + sin(r - 0.01) + cos(sin(theta))**(r - 1.58074387559245) + 0.37384427398835 + tanh(r)/(r + 7.97723076614237))))*((.5*(1-tanh(2e7*(r-10.01)))))
+              - (((r + 0.0675028199851666*sin(theta) + 0.315589358780667)**(sqrt(r)*(r + 2.87892339678315)/(5953.65096806617 - r) + 0.980141037771426)/(0.013519701745416**r*(43.687622183442*r + 8.33814060981745) + r + 0.02*sin(r) + 1.82648253593279))**(((9.2348889286512)/(r + 0.55183450665909) + sin(theta + cos(theta + 0.519039044087815) + 5.8847752990135))*(r + sin(r - 0.01) + cos(sin(theta))**(r - 1.58074387559245) + 0.37384427398835 + tanh(r)/(r + 7.97723076614237))))*((.5*(1-tanh(2e3*(r-10.01)))))
               
               + sqrt(1 - cos(r)**2)*(1.0e-10*0.68688067225485**(8.16109249232708*r) + 0.854229974212735)*(sech(r + cos(r) + 8.39614384384391) + 0.999884853180843)**(1.58799646315658*(r + 0.0308839840501129)**4.01549520152667*(1.57*(tanh(.62*r))))*(0.0100048594945809**(2*r + 5.29438341416157) + 0.7011748940086 - 45.6560816728088/(21934.7382737552))*sin(theta + 18.8962439891879)*(1)
               
@@ -297,9 +307,9 @@ else:
               
 #              - (tanh(2*r)**(26.0630000590122*r**6.29029115986841) + 95.2404187164865)/(r + (0.0053984397980632*r + 5.3984397980632e-5)*log(tanh(r)) - 10335.0958606709)
 
-              + (0.00273233753019377**(6.19641677671904 - sin(theta + 0.089280925720443)) + 2.79499001433555e-13 + (6.12323399573677e-17)/(2.19270786451049 - 6.28221254344588*r))*(0.999329299739067*r + 0.453212918064574)**(sin(sqrt(r + 9.07998593378172e-5)) + 11.4130415650481 + 0.00010001/(1.01005016708417 - cos(theta)))*((.5*(1-tanh(2e7*(r-10.01))))) # MARK: FIXME
+              + (0.00273233753019377**(6.19641677671904 - sin(theta + 0.089280925720443)) + 2.79499001433555e-13 + (6.12323399573677e-17)/(2.19270786451049 - 6.28221254344588*r))*(0.999329299739067*r + 0.453212918064574)**(sin(sqrt(r + 9.07998593378172e-5)) + 11.4130415650481 + 0.00010001/(1.01005016708417 - cos(theta)))*((.5*(1-tanh(2e3*(r-10.01))))) # MARK: FIXME
 #              + (0.0198370015775754**(tanh(theta) + 7.93024265961469) + 4.85851653532341e-19*r*theta**2/(5.73576501270149 - 2*r) + 2.89036725439893e-13)*(1.87368352123689*r + 10.5926268755992*theta + (theta + 6.6244829732113)*exp(r) + 2.57539899861567)**(cos(tanh(sin(theta))) + sech(theta + 0.114076364228401))
-              - ((sin(theta) + 1.81465628877088)*sin(r + 0.0428431433987448) - log(r) + tanh(sin(r)) + 11.8460597445485)**(0.74666154308685*r - 9.55656216208119)*(0) # MARK: FIXME
+#              - ((sin(theta) + 1.81465628877088)*sin(r + 0.0428431433987448) - log(r) + tanh(sin(r)) + 11.8460597445485)**(0.74666154308685*r - 9.55656216208119)*(0) # MARK: FIXME
               + 0.0101001582000134*tanh(10.0327249667171*r + 11.9956250261793)
               + 0.863191833358681
               ][f_per_idx] \
@@ -531,3 +541,55 @@ plt.savefig(f"LeastSquaresSeededBySRSolve{'Periodic' if PERIODIC_IN_THETA else '
 #```
 #
 #gives me an mse of 0.0170123 on the `N = 1000, np.meshgrid(np.linspace(0.01, 10, N), np.linspace(0, 2*pi, N))` mesh but inf on the `N = 1000, np.meshgrid(np.linspace(0.01, 100, N), np.linspace(0, 2*pi, N))` so some part of it doesn't decay or blows up I'm guessing since all my past prunes solves hosted here (https://docs.google.com/presentation/d/11YRvkZ2o9TBRSwIOQ4RcDrl1GS1Sbh_QVH6S8en5ngM/edit?slide=id.g3c6d958ab3b_0_28#slide=id.g3c6d958ab3b_0_28) decay out from the center, i.e. localized. so what's the MINIMAL amputation you can make to most likely save the mse?!
+
+#So I replaced `` by cutoff(r,10,14) and it gave me the following error:
+#```
+#Traceback (most recent call last):
+#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 368, in <module>
+#    dag_eval = SympyDagEvaluator(swift_hohenberg)
+#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 81, in __init__
+#    self.root = self._build(expr)
+#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in _build
+#    args = tuple(self._build(a) for a in expr.args)
+#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in <genexpr>
+#    args = tuple(self._build(a) for a in expr.args)
+#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in _build
+#    args = tuple(self._build(a) for a in expr.args)
+#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in <genexpr>
+#    args = tuple(self._build(a) for a in expr.args)
+#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in _build
+#    args = tuple(self._build(a) for a in expr.args)
+#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in <genexpr>
+#    args = tuple(self._build(a) for a in expr.args)
+#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in _build
+#    args = tuple(self._build(a) for a in expr.args)
+#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in <genexpr>
+#    args = tuple(self._build(a) for a in expr.args)
+#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in _build
+#    args = tuple(self._build(a) for a in expr.args)
+#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in <genexpr>
+#    args = tuple(self._build(a) for a in expr.args)
+#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in _build
+#    args = tuple(self._build(a) for a in expr.args)
+#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in <genexpr>
+#    args = tuple(self._build(a) for a in expr.args)
+#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in _build
+#    args = tuple(self._build(a) for a in expr.args)
+#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in <genexpr>
+#    args = tuple(self._build(a) for a in expr.args)
+#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in _build
+#    args = tuple(self._build(a) for a in expr.args)
+#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in <genexpr>
+#    args = tuple(self._build(a) for a in expr.args)
+#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in _build
+#    args = tuple(self._build(a) for a in expr.args)
+#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in <genexpr>
+#    args = tuple(self._build(a) for a in expr.args)
+#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in _build
+#    args = tuple(self._build(a) for a in expr.args)
+#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in <genexpr>
+#    args = tuple(self._build(a) for a in expr.args)
+#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 154, in _build
+#    raise NotImplementedError(
+#NotImplementedError: Unsupported SymPy node: func=<class 'sympy.core.relational.GreaterThan'> expr=r >= 14
+#```
