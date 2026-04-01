@@ -1,27 +1,3 @@
-'''
-    Questions for Priya:
-        1. Say that we have an approximate solution f to a PDE such that when we plug f(x) into 
-           the PDE (i.e. symbolically differentiate) and evaluate the resulting expression PDE(f(x))
-           on a collocation grid of x-points, we get a resulting vector L whose norm is some small number ε. 
-           The question we have is that, if instead of evaluating the derivatives symbolically, we evaluate them 
-           numerically, is the numerical-differentiation faulty by definition if, after proceeding with the same process 
-           as above, we get a resulting norm(L_{numerical}) that differs substantially from ε?
-           -> Yes, the symbolic residual is the right one
-        2. Why is it that a numerical solver starting with a smaller starting numerically-computed MSE can take longer to converge than a guess that has a larger starting numerically-computed MSE?
-            -> Might be in a different basin of attraction
-            -> A lot of newton/quasi-newton solvers compute/approximate a Jacobian, which may be ill-conditioned depending on the initial seed. For quasi-newton especially, the Jacobian approximate could be poor if the true-Jacobian is ill-conditioned
-        3. Does there usually/~always exist a sufficiently accurate numerical scheme that gets the close enough to the symbolically computed MSE 
-            3 a. If not, then how can we modify the SR search to penalize solutions that would be difficult to use numerically?
-                -> Add a term to the loss that penalizes the condition-number of the Jacobian 
-        4. Does it make more sense to go the direction of reducing the error of the SR f or to explore the numerics side? 
-            -> We definitely want to reduce the SR error as much as possible given that the SR-solution MSE is ~ mesh-independent
-                -> Right now the numerics is nice but not central if we can get the SR loss down sufficiently in a mesh-independent manner
-            -> Makes sense to see if we can use our solution for the mu=1, nu=1 case as an initial seed for a general function solution f(r, theta; mu, nu) 
-        5. If we do numerical continuation in (mu, nu), does it make more sense to do it from a phenmonelogical perspective (to gain e.g. insight into the "functional forms" of the solutions in the SR) or just in the numerics
-            -> Makes sense to see if we can use our solution for the mu=1, nu=1 case as an initial seed for a general function solution f(r, theta; mu, nu) 
-        
-        https://iopscience.iop.org/article/10.1088/1361-6544/acc508/pdf 
-'''
 from sympy import *
 import sympy as sp
 import numpy as np
@@ -294,24 +270,21 @@ else:
 #              -6.97457203102658e-10*r
 #              + 7.96110622688787e-5*theta
 #              + 5.7581511072593*theta/(1.25423469760191*r - 21948.0619370553)
-              - (((r + 0.0675028199851666*sin(theta) + 0.315589358780667)**(sqrt(r)*(r + 2.87892339678315)/(5953.65096806617 - r) + 0.980141037771426)/(0.013519701745416**r*(43.687622183442*r + 8.33814060981745) + r + 0.02*sin(r) + 1.82648253593279))**(((9.2348889286512)/(r + 0.55183450665909) + sin(theta + cos(theta + 0.519039044087815) + 5.8847752990135))*(r + sin(r - 0.01) + cos(sin(theta))**(r - 1.58074387559245) + 0.37384427398835 + tanh(r)/(r + 7.97723076614237))))*((.5*(1-tanh(2e3*(r-10.01)))))
-              
+                - ((1e-10 + (r + 0.0675028199851666*sin(theta) + 0.315589358780667)**(sqrt(r)*(r + 2.87892339678315)*(5953.65096806617 - r)/((5953.65096806617 - r)**2 + 1e10) + 0.980141037771426)/(0.013519701745416**r*(43.687622183442*r + 8.33814060981745) + r + 0.02*sin(r) + 1.82648253593279))**(((9.2348889286512)/(r + 0.55183450665909) + sin(theta + cos(theta + 0.519039044087815) + 5.8847752990135)*(.5*(1-tanh(1.025*(r-21.2)))))*(r + sin(r - 0.01) + (1.0e-10 + cos(sin(theta)))**(r - 1.58074387559245) + 0.37384427398835 + tanh(r)/(r + 7.97723076614237))))*((.5*(1-tanh(2e3*(r-10.01)))))*(1)
+                
               + sqrt(1 - cos(r)**2)*(1.0e-10*0.68688067225485**(8.16109249232708*r) + 0.854229974212735)*(sech(r + cos(r) + 8.39614384384391) + 0.999884853180843)**(1.58799646315658*(r + 0.0308839840501129)**4.01549520152667*(1.57*(tanh(.62*r))))*(0.0100048594945809**(2*r + 5.29438341416157) + 0.7011748940086 - 45.6560816728088/(21934.7382737552))*sin(theta + 18.8962439891879)*(1)
-              
 #              - (-6.31938761555448**(r + 0.01) + 5.92927345732395*theta*tanh(r))*(-3.07571474874356*r - theta - 48.7005902035467)/(8.51330104620672**r + 8.99586054074951**r + theta**2*(2*r)**(theta + 0.86387229970376)*exp(r) + exp(r) + 364526023290.415)
 #              + (5.52136873685152e55*6.45127057152239**(r + 0.0565869958743546) + 5.52136873685152e55*cos(theta - 1.14278632914743))*(4.69282041378069e-6*exp(theta) + 0.478323918013976)**(-11.2069358951144 - theta/1.96953999447147**theta)
 #              - (r + 0.141913233757233)**(2*theta)*(r + 4.43794472272825)*log(r)*sech(exp(10 - theta))
 #              + (8.133634781186*theta + 210.8664358206)/(sech(1.23159415646033/r) + 22208.9094631345)
-
-              - ((1.5707963267949)**(-18.3837681892581) + 0.285811651486423)**(r + sech(r + 0.0561717295263584) + 10.0547134992516)*(r + (r**0.999950000416665 - 0.00364405505237706)**((0.376065617272839**r + r)**0.00999966667999946) + 0.0106243230277353)**(-r**2/(exp(r) + 1358.42254658947) + (0.000469282041378069*r + 0.0160184860388267)**((sin(r) + 6.78974430415452)/(r - 0.00781876960101768)) + 7.58897670822754)*(-sin(theta + cos(theta - 0.0144023112886078) + 0.105413950813453) + sin(log(r + 0.390458429297535)) + ((-tanh(0.62*r)+1.01)*(pi/2))**(0.061275433230159*r + 0.00061275433230159))*(1) # MARK: FIXME
-              
+              - ((1.5707963267949)**(-18.3837681892581) + 0.285811651486423)**(r + sech(r + 0.0561717295263584) + 10.0547134992516)*(r + (r**0.999950000416665 - 0.00364405505237706)**((0.376065617272839**r + r)**0.00999966667999946) + 0.0106243230277353)**(-r**2*exp(-r)/(1 + 1358.42254658947*exp(-r)) + (0.000469282041378069*r + 0.0160184860388267)**((sin(r) + 6.78974430415452)/(r - 0.00781876960101768)) + 7.58897670822754)*(-sin(theta + cos(theta - 0.0144023112886078) + 0.105413950813453) + sin(log(r + 0.390458429297535)) + ((-tanh(0.62*r)+1.01)*(pi/2))**(0.061275433230159*r + 0.00061275433230159))
 #              - (tanh(2*r)**(26.0630000590122*r**6.29029115986841) + 95.2404187164865)/(r + (0.0053984397980632*r + 5.3984397980632e-5)*log(tanh(r)) - 10335.0958606709)
-
-              + (0.00273233753019377**(6.19641677671904 - sin(theta + 0.089280925720443)) + 2.79499001433555e-13 + (6.12323399573677e-17)/(2.19270786451049 - 6.28221254344588*r))*(0.999329299739067*r + 0.453212918064574)**(sin(sqrt(r + 9.07998593378172e-5)) + 11.4130415650481 + 0.00010001/(1.01005016708417 - cos(theta)))*((.5*(1-tanh(2e3*(r-10.01))))) # MARK: FIXME
+              + (0.00273233753019377**(6.19641677671904 - sin(theta + 0.089280925720443)) + 2.79499001433555e-13 + (6.12323399573677e-17)/(2.19270786451049 - 6.28221254344588*r))*(0.999329299739067*r + 0.453212918064574)**(sin(sqrt(r + 9.07998593378172e-5)) + 11.4130415650481 + 0.00010001/(1.01005016708417 - cos(theta)))*((.5*(1-tanh(2e3*(r-10.01))))) 
 #              + (0.0198370015775754**(tanh(theta) + 7.93024265961469) + 4.85851653532341e-19*r*theta**2/(5.73576501270149 - 2*r) + 2.89036725439893e-13)*(1.87368352123689*r + 10.5926268755992*theta + (theta + 6.6244829732113)*exp(r) + 2.57539899861567)**(cos(tanh(sin(theta))) + sech(theta + 0.114076364228401))
-#              - ((sin(theta) + 1.81465628877088)*sin(r + 0.0428431433987448) - log(r) + tanh(sin(r)) + 11.8460597445485)**(0.74666154308685*r - 9.55656216208119)*(0) # MARK: FIXME
+#              - ((sin(theta) + 1.81465628877088)*sin(r + 0.0428431433987448) - log(r) + tanh(sin(r)) + 11.8460597445485)**(0.74666154308685*r - 9.55656216208119)*(0)
               + 0.0101001582000134*tanh(10.0327249667171*r + 11.9956250261793)
               + 0.863191833358681
+#              https://chatgpt.com/c/69cb3325-be28-8328-a8d3-c503e0ef5021
               ][f_per_idx] \
             if PERIODIC_IN_THETA else \
             (((0.148475282221305 * theta) - (sin(theta) * (1.0000132758892615 * sin(r)))) - 0.0922858190550785)
@@ -338,7 +311,7 @@ r_vals, theta_vals = [None]*2
 func_vals = None
 N = 1000 #echo $?
 if not GENERIC:
-    r_vals, theta_vals = np.meshgrid(np.linspace(0.01, 10, N), np.linspace(0, 2*pi, N))
+    r_vals, theta_vals = np.meshgrid(np.linspace(0.01, 100, N), np.linspace(0, 2*pi, N))
     terms = sp.Add.make_args(diff(f, r))  # f is your full expression
     term_funcs = [sp.lambdify((r, theta), t, modules=[{"sech": sech_stable}, "numpy"]) for t in terms]
 
