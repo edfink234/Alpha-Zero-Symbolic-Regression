@@ -83,6 +83,26 @@ void RGB(int z, int& ind, const std::vector<std::string>& prefix)
     } while (z);
 }
 
+std::vector<int> getRGBs(const std::vector<std::string>& prefix)
+{
+    std::vector<int> temp(prefix.size());
+    for (size_t k = 0; k < prefix.size(); ++k)
+    {
+        int start = k;
+        int& ptr_lgb = start;
+        if (is_unary(prefix[k]))
+        {
+            RGB(1, ptr_lgb, prefix);
+        }
+        else if (is_binary(prefix[k]))
+        {
+            RGB(2, ptr_lgb, prefix);
+        }
+        temp[k]=(ptr_lgb);
+    }
+    return temp;
+}
+
 //Computes the grasp of an arbitrary element prefix[i], from https://www.jstor.org/stable/43998756 (bottom of pg. 165)
 int GR(int i, const std::vector<std::string>& prefix)
 {
@@ -1515,7 +1535,12 @@ int main()
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
-    
+    prefix = {"+", "cos", "+", "x1", "x2", "+", "x1", "x2"};
+    derivePrefix(0, prefix.size()-1, "x1", prefix, grasp); //0 (prefix) -> 0 ✅
+    std::cout << "prefix = " << prefix << '\n';
+    std::cout << grasp << '\n';
+    std::cout << "RGBs = " << getRGBs(prefix) << '\n';
+    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     return 0;
 }
 
