@@ -220,6 +220,7 @@ mu, nu = 1, 1
 GENERIC = False
 PERIODIC_IN_THETA = True
 COMPUTE_NUMERIC = False
+DEBUG_NAN = False
 PRINT_SH = False
 f = None
 f_per_idx = 10
@@ -279,7 +280,7 @@ else:
 #              + (8.133634781186*theta + 210.8664358206)/(sech(1.23159415646033/r) + 22208.9094631345)
               - ((1.5707963267949)**(-18.3837681892581) + 0.285811651486423)**(r + sech(r + 0.0561717295263584) + 10.0547134992516)*(r + (r**0.999950000416665 - 0.00364405505237706)**((0.376065617272839**r + r)**0.00999966667999946) + 0.0106243230277353)**(-r**2*exp(-r)/(1 + 1358.42254658947*exp(-r)) + (0.000469282041378069*r + 0.0160184860388267)**((sin(r) + 6.78974430415452)/(r - 0.00781876960101768)) + 7.58897670822754)*(-sin(theta + cos(theta - 0.0144023112886078) + 0.105413950813453) + sin(log(r + 0.390458429297535)) + ((-tanh(0.62*r)+1.01)*(pi/2))**(0.061275433230159*r + 0.00061275433230159))
 #              - (tanh(2*r)**(26.0630000590122*r**6.29029115986841) + 95.2404187164865)/(r + (0.0053984397980632*r + 5.3984397980632e-5)*log(tanh(r)) - 10335.0958606709)
-              + (0.00273233753019377**(6.19641677671904 - sin(theta + 0.089280925720443)) + 2.79499001433555e-13 + (6.12323399573677e-17)/(2.19270786451049 - 6.28221254344588*r))*(0.999329299739067*r + 0.453212918064574)**(sin(sqrt(r + 9.07998593378172e-5)) + 11.4130415650481 + 0.00010001/(1.01005016708417 - cos(theta)))*((.5*(1-tanh(1.775e3*(r-10.01))))) 
+              + (0.00273233753019377**(6.19641677671904 - sin(theta + 0.089280925720443)) + 2.79499001433555e-13 + (6.12323399573677e-17)/(2.19270786451049 - 6.28221254344588*r))*(0.999329299739067*r + 0.453212918064574)**(sin(sqrt(r + 9.07998593378172e-5)) + 11.4130415650481 + 0.00010001/(1.01005016708417 - cos(theta)))*((.5*(1-tanh(1.775e3*(r-10.01)))))
 #              + (0.0198370015775754**(tanh(theta) + 7.93024265961469) + 4.85851653532341e-19*r*theta**2/(5.73576501270149 - 2*r) + 2.89036725439893e-13)*(1.87368352123689*r + 10.5926268755992*theta + (theta + 6.6244829732113)*exp(r) + 2.57539899861567)**(cos(tanh(sin(theta))) + sech(theta + 0.114076364228401))
 #              - ((sin(theta) + 1.81465628877088)*sin(r + 0.0428431433987448) - log(r) + tanh(sin(r)) + 11.8460597445485)**(0.74666154308685*r - 9.55656216208119)*(0)
               + 0.0101001582000134*tanh(10.0327249667171*r + 11.9956250261793)
@@ -319,21 +320,22 @@ r_vals, theta_vals = [None]*2
 func_vals = None
 N = 1000 #echo $?
 if not GENERIC:
-    r_vals, theta_vals = np.meshgrid(np.linspace(0.01, 100, N), np.linspace(0, 2*pi, N))
+    r_vals, theta_vals = np.meshgrid(np.linspace(0.01, 10, N), np.linspace(0, 2*pi, N))
     terms = sp.Add.make_args(diff(f, r))  # f is your full expression
     term_funcs = [sp.lambdify((r, theta), t, modules=[{"sech": sech_stable}, "numpy"]) for t in terms]
 
-    bad = []
-    for k, tf, term in zip(range(len(terms)), term_funcs, terms):
-        v = tf(r_vals, theta_vals)
-        imag = np.max(np.abs(np.imag(v))) if np.iscomplexobj(v) else 0.0
-        n_nan = np.isnan(v).sum()
-        n_inf = np.isinf(v).sum()
-        if imag > 1e-12 or n_nan or n_inf:
-            bad.append((k, imag, n_nan, n_inf, term))
-    print(*bad, " ... total bad:", len(bad), sep='\n')
-#    
-#    
+    if DEBUG_NAN:
+        bad = []
+        for k, tf, term in zip(range(len(terms)), term_funcs, terms):
+            v = tf(r_vals, theta_vals)
+            imag = np.max(np.abs(np.imag(v))) if np.iscomplexobj(v) else 0.0
+            n_nan = np.isnan(v).sum()
+            n_inf = np.isinf(v).sum()
+            if imag > 1e-12 or n_nan or n_inf:
+                bad.append((k, imag, n_nan, n_inf, term))
+        print(*bad, " ... total bad:", len(bad), sep='\n')
+    
+#
 #    f_SR = lambdify((r, theta), f, modules=[{"sech": sech_stable}, "numpy"])
 #    f_SR_r = lambdify((r, theta), f_r := diff(f, r), modules=[{"sech": sech_stable}, "numpy"])
 #    f_SR_theta = lambdify((r, theta), f_theta := diff(f, theta), modules=[{"sech": sech_stable}, "numpy"])
