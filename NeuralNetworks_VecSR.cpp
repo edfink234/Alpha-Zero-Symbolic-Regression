@@ -33,6 +33,7 @@
 #include <boost/spirit/include/qi.hpp> //For fast string-to-double conversion!
 #include "MLP_Vec.h"
 #define RANDOM_SEED 42 //fixed random seed!
+#define DEBUG_TRASH_RESULTS false
 
 using Clock = std::chrono::high_resolution_clock;
 
@@ -3651,139 +3652,166 @@ std::vector<std::pair<std::vector<std::string>, float>>
 
 int main()
 {
-    const std::unordered_map<std::string, float (*)(const Eigen::VectorXf&)> func_map =
-    {
-        {"Hemberg_1", Hemberg_1},
-        {"Hemberg_2", Hemberg_2},
-        {"Hemberg_3", Hemberg_3},
-        {"Hemberg_4", Hemberg_4},
-        {"Hemberg_5", Hemberg_5},
-        {"Feynman_1", Feynman_1},
-        {"Feynman_2", Feynman_2},
-        {"Feynman_3", Feynman_3},
-        {"Feynman_4", Feynman_4},
-        {"Feynman_5", Feynman_5},
-    };
-    constexpr const char* filename = "temp_config.txt";
-    constexpr const char* tempMSE_filename = "MSE_temp.txt";
-    std::string tempInpBuf;
+    #if DEBUG_TRASH_RESULTS
+        std::vector<int> layers{6, 2, 7, 6, 1};
+        std::deque<std::string> layer_types{"sigmoid", "sigmoid", "sigmoid", "none"};
+        
+        MultiLayerPerceptron mlp(
+             layers,
+             layer_types,
+             /* bias = */ 1.f,
+             /*eta = */ 1e-8,
+             /*theta = */ 0.99,
+             /*gamma = */ 0.999,
+             /*weight_update = */ "Adam",
+             /*expression_type = */ "prefix", //IRRELEVANT
+             /*float epsilon = */ 1e-8,
+             /*float beta_1 = */ 0.999,
+             /*float beta_2 = */ 0.999,
+             /*float lambda = */ 1e-3 /*weight decay AdamW*/);
+        
+        Eigen::MatrixXf my_temp_test_data = generateData(20 /*rows*/, layers[0]+1 /*columns*/, Feynman_5 /*function of two variables to compute the values for the third column*/, 1.0f, 5.0f);
+        Data my_test_data;
+        my_test_data = my_temp_test_data;
+        my_test_data.print();
+        float MSE = mlp.train(my_test_data.rows, my_test_data.labels, 0);
+        std::cout << "MSE = " << MSE << '\n';
+    #else
+        const std::unordered_map<std::string, float (*)(const Eigen::VectorXf&)> func_map =
+        {
+            {"Hemberg_1", Hemberg_1},
+            {"Hemberg_2", Hemberg_2},
+            {"Hemberg_3", Hemberg_3},
+            {"Hemberg_4", Hemberg_4},
+            {"Hemberg_5", Hemberg_5},
+            {"Feynman_1", Feynman_1},
+            {"Feynman_2", Feynman_2},
+            {"Feynman_3", Feynman_3},
+            {"Feynman_4", Feynman_4},
+            {"Feynman_5", Feynman_5},
+        };
+        constexpr const char* filename = "temp_config.txt";
+        constexpr const char* tempMSE_filename = "MSE_temp.txt";
+        std::string tempInpBuf;
 
-    std::vector<int> layers;
-    std::deque<std::string> layer_types;
-    std::string benchmark_type, weight_update_rule;
-    float eta, theta, gamma, epsilon, beta_1, beta_2, lambda;
-    
-    std::ifstream finObj(filename);
-    //1. read in `layers`
-    std::getline(finObj, tempInpBuf);
-    std::stringstream ss(tempInpBuf);
-    std::string token;
-    while (ss >> token)
-    {
-        layers.push_back(std::stoi(token));
-    }
-//    std::cout << "\nlayers = " << layers;
-    //2. read in layer types
-    std::getline(finObj, tempInpBuf);
-    ss = std::stringstream(tempInpBuf);
-    while (ss >> token)
-    {
-        layer_types.push_back(token);
-    }
-//    std::cout << "\nlayer-types = " << layer_types << '\n';
-    //3. read in benchmark type
-    std::getline(finObj, benchmark_type);
-//    std::cout << "benchmark_type = " << benchmark_type << ", size(benchmark_type) = " << benchmark_type.length() << '\n';
-    //4. read in weight-update rule
-    std::getline(finObj, weight_update_rule);
-//    std::cout << "weight_update_rule = " << weight_update_rule << ", size(weight_update_rule) = " << weight_update_rule.length() << '\n';
-    //5. Read in eta, theta, gamma, epsilon, beta_1, beta_2, lambda
-    finObj >> token;
-    eta = std::stof(token);
-    finObj >> token;
-    theta = std::stof(token);
-    finObj >> token;
-    gamma = std::stof(token);
-    finObj >> token;
-    epsilon = std::stof(token);
-    finObj >> token;
-    beta_1 = std::stof(token);
-    finObj >> token;
-    beta_2 = std::stof(token);
-    finObj >> token;
-    lambda = std::stof(token);
-//    std::cout << "eta = " << eta
-//    << "\ntheta = " << theta
-//    << "\ngamma = " << gamma
-//    << "\nepsilon = " << epsilon
-//    << "\nbeta_1 = " << beta_1
-//    << "\nbeta_2 = " << beta_2
-//    << "\nlambda = " << lambda
-//    << '\n';
+        std::vector<int> layers;
+        std::deque<std::string> layer_types;
+        std::string benchmark_type, weight_update_rule;
+        float eta, theta, gamma, epsilon, beta_1, beta_2, lambda;
+        
+        std::ifstream finObj(filename);
+        //1. read in `layers`
+        std::getline(finObj, tempInpBuf);
+        std::stringstream ss(tempInpBuf);
+        std::string token;
+        while (ss >> token)
+        {
+            layers.push_back(std::stoi(token));
+        }
+    //    std::cout << "\nlayers = " << layers;
+        //2. read in layer types
+        std::getline(finObj, tempInpBuf);
+        ss = std::stringstream(tempInpBuf);
+        while (ss >> token)
+        {
+            layer_types.push_back(token);
+        }
+    //    std::cout << "\nlayer-types = " << layer_types << '\n';
+        //3. read in benchmark type
+        std::getline(finObj, benchmark_type);
+    //    std::cout << "benchmark_type = " << benchmark_type << ", size(benchmark_type) = " << benchmark_type.length() << '\n';
+        //4. read in weight-update rule
+        std::getline(finObj, weight_update_rule);
+    //    std::cout << "weight_update_rule = " << weight_update_rule << ", size(weight_update_rule) = " << weight_update_rule.length() << '\n';
+        //5. Read in eta, theta, gamma, epsilon, beta_1, beta_2, lambda
+        finObj >> token;
+        eta = std::stof(token);
+        finObj >> token;
+        theta = std::stof(token);
+        finObj >> token;
+        gamma = std::stof(token);
+        finObj >> token;
+        epsilon = std::stof(token);
+        finObj >> token;
+        beta_1 = std::stof(token);
+        finObj >> token;
+        beta_2 = std::stof(token);
+        finObj >> token;
+        lambda = std::stof(token);
+    //    std::cout << "eta = " << eta
+    //    << "\ntheta = " << theta
+    //    << "\ngamma = " << gamma
+    //    << "\nepsilon = " << epsilon
+    //    << "\nbeta_1 = " << beta_1
+    //    << "\nbeta_2 = " << beta_2
+    //    << "\nlambda = " << lambda
+    //    << '\n';
 
-    auto start_time = Clock::now();
-    MultiLayerPerceptron mlp(
-         layers,
-         layer_types,
-         /* bias = */ 1.0f,
-         /*eta = */ eta,
-         /*theta = */ theta,
-         /*gamma = */ gamma,
-         /*weight_update = */ weight_update_rule,
-         /*expression_type = */ "prefix", //IRRELEVANT
-         /*float epsilon = */ epsilon,
-         /*float beta_1 = */ beta_1,
-         /*float beta_2 = */ beta_2,
-         /*float lambda = */ lambda /*weight decay AdamW*/);
-    
-    Eigen::MatrixXf my_temp_test_data = generateData(20 /*rows*/, layers[0]+1 /*columns*/, func_map.at(benchmark_type) /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f);
-    Data my_test_data;
-    my_test_data = my_temp_test_data;
-//    my_test_data.print();
-    float MSE = mlp.train(my_test_data.rows, my_test_data.labels, 10);
-//    std::cout << "\nFINAL MSE = " << MSE << '\n';
-    std::ofstream tempMSE(tempMSE_filename);
-    tempMSE << MSE << '\n';
-    tempMSE.close();
-//    system((std::string("cat ")+tempMSE_filename).c_str());
-    exit(1);
+        auto start_time = Clock::now();
+        MultiLayerPerceptron mlp(
+             layers,
+             layer_types,
+             /* bias = */ 1.0f,
+             /*eta = */ eta,
+             /*theta = */ theta,
+             /*gamma = */ gamma,
+             /*weight_update = */ weight_update_rule,
+             /*expression_type = */ "prefix", //IRRELEVANT
+             /*float epsilon = */ epsilon,
+             /*float beta_1 = */ beta_1,
+             /*float beta_2 = */ beta_2,
+             /*float lambda = */ lambda /*weight decay AdamW*/);
+        
+        Eigen::MatrixXf my_temp_test_data = generateData(20 /*rows*/, layers[0]+1 /*columns*/, func_map.at(benchmark_type) /*function of two variables to compute the values for the third column*/, ((benchmark_type.substr(0,7) == "Hemberg") ? -3.0f : 1.0f), ((benchmark_type.substr(0,7) == "Hemberg") ? 3.0f : 5.0f));
+        Data my_test_data;
+        my_test_data = my_temp_test_data;
+    //    my_test_data.print();
+        float MSE = mlp.train(my_test_data.rows, my_test_data.labels, 10);
+    //    std::cout << "\nFINAL MSE = " << MSE << '\n';
+        std::ofstream tempMSE(tempMSE_filename);
+        tempMSE << MSE << '\n';
+        tempMSE.close();
+    //    system((std::string("cat ")+tempMSE_filename).c_str());
+        std::cout << "Time Elapsed = " << timeElapsedSince(start_time) << " seconds" << '\n';
 
-    
-//    MultiLayerPerceptron mlp(
-//         std::vector<int>{2,10,9,8,10,8,1},
-//         std::deque<std::string>{"sigmoid", "sigmoid", "sigmoid", "none", "none", "none"},
-//         /* bias = */ 1.0f,
-//         /*eta = */ 0.0001f,
-//         /*theta = */ 0.8f,
-//         /*gamma = */ 0.9f,
-//         /*weight_update = */ "NAG",
-//         /*expression_type = */ "prefix", //IRRELEVANT
-//         /*float epsilon = */ 0.1f,
-//         /*float beta_1 = */ 0.9f,
-//         /*float beta_2 = */ 0.999f,
-//         /*float lambda = */ 0.01f /*weight decay AdamW*/);
+        exit(1);
 
-//    GP(generateData(20 /*rows*/, 3 /*columns*/, func_map.at("Hemberg_2") /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f),
-//       5 /*fixed depth*/,
-//       "postfix",
-//       true /*cache*/,
-//       100 /*time to run the algorithm in seconds*/,
-//       "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/,
-//       0 /*num threads*/,
-//       {2,10,5,5,1} /*Neural Network number of perceptrons in i'th layers; first layer is number of inputs (input-layer) */,
-//       std::deque<std::string>{"sigmoid", "sigmoid", "none", "none"},
-//       10 /*num_epochs*/,
-//       /* bias = */ 1.0f,
-//       /*eta = */ 0.5f,
-//       /*theta = */ 0.01f,
-//       /*gamma = */ 0.9f,
-//       /*epsilon = */ 1e-8f,
-//       /*beta_1 = */ 0.9f,
-//       /*beta_2 = */ 0.999f,
-//       /*lambda = */ 0.01f);
-    
-    std::cout << "Time Elapsed = " << timeElapsedSince(start_time) << " seconds" << '\n';
-    
+        
+    //    MultiLayerPerceptron mlp(
+    //         std::vector<int>{2,10,9,8,10,8,1},
+    //         std::deque<std::string>{"sigmoid", "sigmoid", "sigmoid", "none", "none", "none"},
+    //         /* bias = */ 1.0f,
+    //         /*eta = */ 0.0001f,
+    //         /*theta = */ 0.8f,
+    //         /*gamma = */ 0.9f,
+    //         /*weight_update = */ "NAG",
+    //         /*expression_type = */ "prefix", //IRRELEVANT
+    //         /*float epsilon = */ 0.1f,
+    //         /*float beta_1 = */ 0.9f,
+    //         /*float beta_2 = */ 0.999f,
+    //         /*float lambda = */ 0.01f /*weight decay AdamW*/);
+
+    //    GP(generateData(20 /*rows*/, 3 /*columns*/, func_map.at("Hemberg_2") /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f),
+    //       5 /*fixed depth*/,
+    //       "postfix",
+    //       true /*cache*/,
+    //       100 /*time to run the algorithm in seconds*/,
+    //       "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/,
+    //       0 /*num threads*/,
+    //       {2,10,5,5,1} /*Neural Network number of perceptrons in i'th layers; first layer is number of inputs (input-layer) */,
+    //       std::deque<std::string>{"sigmoid", "sigmoid", "none", "none"},
+    //       10 /*num_epochs*/,
+    //       /* bias = */ 1.0f,
+    //       /*eta = */ 0.5f,
+    //       /*theta = */ 0.01f,
+    //       /*gamma = */ 0.9f,
+    //       /*epsilon = */ 1e-8f,
+    //       /*beta_1 = */ 0.9f,
+    //       /*beta_2 = */ 0.999f,
+    //       /*lambda = */ 0.01f);
+        
+    #endif
+
     return 0;
 }
 //git push --set-upstream origin NeuralNetworkWeightUpdate

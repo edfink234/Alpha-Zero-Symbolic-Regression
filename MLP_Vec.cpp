@@ -103,7 +103,7 @@ MultiLayerPerceptron::MultiLayerPerceptron(const std::vector<int>& layers, const
     this->beta_1 = beta_1;
     this->beta_2 = beta_2;
     this->lambda = lambda;
-    this->t = 0; //used in Adam
+    this->t = 1; //used in Adam
 
     size_t mlp_sz = this->layers.size();
 
@@ -364,6 +364,7 @@ float MultiLayerPerceptron::bp(const Eigen::VectorXf& x, const Eigen::VectorXf& 
                     float g_t_k = this->d[i][j] * this->values[i-1][k];
                     this->network[i][j].m[k] = this->beta_1*this->network[i][j].m[k] + (1-this->beta_1)*g_t_k;
                     this->network[i][j].v[k] = this->beta_2*this->network[i][j].v[k] + (1-this->beta_2)*g_t_k*g_t_k;
+//                    std::cout << "this->t = " << this->t << '\n';
                     float m_t_k_hat = this->network[i][j].m[k]/(1-pow(this->beta_1, t));
                     float v_t_k_hat = this->network[i][j].v[k]/(1-pow(this->beta_2, t));
                     this->network[i][j].weights[k] = this->network[i][j].weights[k] + (this->eta * m_t_k_hat) / (sqrt(v_t_k_hat) + this->epsilon);
@@ -396,12 +397,12 @@ float MultiLayerPerceptron::train(const std::vector<Eigen::VectorXf>& x_train, c
     }
     
 //    puts("Press ctrl-c to continue");
-    float MSE;
+    float MSE = 0.0f;
     unsigned long int num_rows = x_train.size();
     assert(num_rows);
     for (unsigned long epoch = 0; ((num_epochs != 0) ? (epoch < (num_epochs - 1)) : true); epoch++)
     {
-        MSE = 0.0;
+        MSE = 0.0f;
         for (unsigned long i = 0; i < num_rows; i++)
         {
             MSE += this->bp(x_train[i], y_train[i]);
@@ -426,6 +427,10 @@ float MultiLayerPerceptron::train(const std::vector<Eigen::VectorXf>& x_train, c
     for (unsigned long i = 0; i < num_rows; i++)
     {
         MSE += this->bp(x_train[i], y_train[i]);
+        if (std::isinf(MSE) || std::isnan(MSE))
+        {
+            return MSE;
+        }
     }
     MSE /= num_rows;
     
