@@ -8335,6 +8335,12 @@ printer = P(); x='(66.17324180739965 + ((((19.53372553144259 * (((arccos(x0) + a
             Squared-norm error for each equation: 0.00116982 0.000159714
             Best expression = (66.17324180739965 + ((((19.53372553144259 * (((arccos(x0) + arccos(x0)) * 4) - 4)) + ((((((-4 * (-11.53936205212297 - ((((((-5.389022746633803 - (x0 + 4)) * (sech(x0) - sin((4 * cos(x0))))) - ((asin(x0) + 2) * (((((x0 * ((((1.0708220101577914 + (x0 - 0.7615941559557649)) * x0) * ~((-1.2813100680061251 * arccos(x0)))) - -15.302236555669914)) + -10.446413277898797) + sech(x0)) - 0.7942655174524432) + x0))) + (23.700228153214457 * cos(asin(cos(x0))))) - 1.5707963267948966) * -8))) - (x0 * (((~(cos((-16.868090645369225 * x0))) + (x0 + 2)) * ((x0 - tanh((x0 * 4))) - ~(x0))) * -2.6757106888314217))) - tanh(((2 * x0) * 4))) * acos(sech(cos((0.8357346947979438 + x0))))) * 6.283185307179586) - 13.19946154906808)) * -3.141592653589793) * (sin(sin(sin((0.6480542736638855 - x0)))) - x0)))
             Best expression (original format) = 66.17324180739965 19.53372553144259 x0 arccos x0 arccos + 4 * 4 - * -4 -11.53936205212297 -5.389022746633803 x0 4 + - x0 sech 4 x0 cos * sin - * x0 asin 2 + x0 1.0708220101577914 x0 0.7615941559557649 - + x0 * -1.2813100680061251 x0 arccos * ~ * -15.302236555669914 - * -10.446413277898797 + x0 sech + 0.7942655174524432 - x0 + * - 23.700228153214457 x0 cos asin cos * + 1.5707963267948966 - -8 * - * x0 -16.868090645369225 x0 * cos ~ x0 2 + + x0 x0 4 * tanh - x0 ~ - * -2.6757106888314217 * * - 2 x0 * 4 * tanh - 0.8357346947979438 x0 + cos sech acos * 6.283185307179586 * 13.19946154906808 - + -3.141592653589793 * 0.6480542736638855 x0 - sin sin sin x0 - * +
+    track_idx = 6:
+        depth = 23, maxsize = 119, l1 = 1e-5, bad_ops = {"exp", "ln", "log", "^", "/"}:
+            Best score = 0.963833, SNE = 0.0375238
+            Squared-norm error for each equation: 0.0374398 8.39866e-05
+            Best expression = (4.283106326145313 + ((((0.7586333005326065 + (-4.00384411976911 * (-0.5839960535713218 - (x0 + x0)))) * ((((((x0 - -0.006047540146335671) * (((((x0 * (-7.835974036735528 * arcsin(arcsin(tanh(x0))))) - ((x0 * (x0 + 0.587653514513837)) * ((((x0 * (-1.8304224878640376 - (1.184815434059676 * tanh(sin((4 * x0)))))) + cos(asin(x0))) * 0.3955546307731708) - 7.7015653415458765))) + ~(((sqrt(x0) * 4.891951415238893) - acos(sqrt(x0))))) * 1.4901557120716613) * 4)) - (((x0 * 0.26581014186068863) + -0.27870949748847756) * ((sqrt(acos(x0)) - ((3.986655024528818 - sin((9.55978346043853 * x0))) + (4 * asin(x0)))) - 1))) * 2) - tanh(arccos(tanh((x0 * 13.415289139283663))))) * 2)) - (11.355644210068194 * sin(~(cos(((7.99942349483886 * x0) - -2.251581050894711)))))) - (acos(sech((acos(x0) - 1.0151100367090116))) * -37.07441181162521)))
+            Best expression (original format) = 4.283106326145313 0.7586333005326065 -4.00384411976911 -0.5839960535713218 x0 x0 + - * + x0 -0.006047540146335671 - x0 -7.835974036735528 x0 tanh arcsin arcsin * * x0 x0 0.587653514513837 + * x0 -1.8304224878640376 1.184815434059676 4 x0 * sin tanh * - * x0 asin cos + 0.3955546307731708 * 7.7015653415458765 - * - x0 sqrt 4.891951415238893 * x0 sqrt acos - ~ + 1.4901557120716613 * 4 * * x0 0.26581014186068863 * -0.27870949748847756 + x0 acos sqrt 3.986655024528818 9.55978346043853 x0 * sin - 4 x0 asin * + - 1 - * - 2 * x0 13.415289139283663 * tanh arccos tanh - 2 * * 11.355644210068194 7.99942349483886 x0 * -2.251581050894711 - cos ~ sin * - x0 acos 1.0151100367090116 - sech acos -37.07441181162521 * - +
 
  */
     static std::atomic<bool> added_additive{false};
@@ -12353,7 +12359,7 @@ namespace ExampleProblems
     void WierdTrackFitterTest(int random_seed, const char* algorithm, double time)
     {
         double threshold = 0.0;
-        unsigned int num_threads = 1;
+        unsigned int num_threads = 0;
         int track_idx = 6;
         constexpr bool homeComputer = true;
         constexpr const char* file_path[] =
@@ -12520,7 +12526,8 @@ namespace ExampleProblems
             std::vector<std::string>
             {
                 "910.397276913756 x0 x0 * * 0.366382982908602 x0 acos x0 sech * x0 tanh acos + 2.99908422397666 + * -8.06482169080269 x0 * 2 x0 * 0.858418335398135 + -0.0310778226598244 x0 x0 * * x0 acos 4 x0 acos * sech + * x0 asin 8.0100943104304 + x0 x0 ~ 0.716383833682647 x0 * 0.716383833682647 x0 sin * + 0.952440817816097 - 4 x0 * sin tanh * + 14.4822419995489 x0 sqrt * cos + 4.03158279900313 - * x0 + 2.23769073217509 x0 sqrt acos * + x0 0.994889699761734 + sin acos asin asin - 7.16136736888724 + * + 1.42547140229722 2.55747800491866 x0 * 6 + cos ~ acos * - x0 asin + 84.8123411667977 x0 sech * - * + 8.08033164436204 x0 * 14.2429580781579 - x0 ~ 1 x0 - acos * 7.35419779086294 x0 * - 1 9.55978346043853 x0 * sin - x0 sqrt 0.406898704961922 + * + 7.37323093580846 + * - 9.25407591481792 4 x0 * 1 - tanh * + x0 acos 0.770736556144219 + cos sech acos - 63.1335708208355 9.50777910063498 x0 * 0.648625307226131 + sech * - 44.9106606238174 - * 0.713084631656438 7.99942348701375 x0 * 8.00023973396972 + cos sin sech * + x0 acos 0.98487956174973 - tanh sech asin 4 + * +",
-                "4.283106326145313 0.7586333005326065 -4.00384411976911 -0.5839960535713218 x0 x0 + - * + x0 -0.006047540146335671 - x0 -7.835974036735528 x0 tanh arcsin arcsin * * x0 x0 0.587653514513837 + * x0 -1.8304224878640376 1.184815434059676 4 x0 * sin tanh * - * x0 asin cos + 0.3955546307731708 * 7.7015653415458765 - * - x0 sqrt 4.891951415238893 * x0 sqrt acos - ~ + 1.4901557120716613 * 4 * * x0 0.26581014186068863 * -0.27870949748847756 + x0 acos sqrt 3.986655024528818 9.55978346043853 x0 * sin - 4 x0 asin * + - 1 - * - 2 * x0 13.415289139283663 * tanh arccos tanh - 2 * * 11.355644210068194 7.99942349483886 x0 * -2.251581050894711 - cos ~ sin * - x0 acos 1.0151100367090116 - sech acos -37.07441181162521 * - +"
+                "4.283106326145313 0.7586333005326065 -4.00384411976911 -0.5839960535713218 x0 x0 + - * + x0 -0.006047540146335671 - x0 -7.835974036735528 x0 tanh arcsin arcsin * * x0 x0 0.587653514513837 + * x0 -1.8304224878640376 1.184815434059676 4 x0 * sin tanh * - * x0 asin cos + 0.3955546307731708 * 7.7015653415458765 - * - x0 sqrt 4.891951415238893 * x0 sqrt acos - ~ + 1.4901557120716613 * 4 * * x0 0.26581014186068863 * -0.27870949748847756 + x0 acos sqrt 3.986655024528818 9.55978346043853 x0 * sin - 4 x0 asin * + - 1 - * - 2 * x0 13.415289139283663 * tanh arccos tanh - 2 * * 11.355644210068194 7.99942349483886 x0 * -2.251581050894711 - cos ~ sin * - x0 acos 1.0151100367090116 - sech acos -37.07441181162521 * - +",
+                "4.283106326145313 0.7586333005326065 -4.00384411976911 -0.5839960535713218 x0 x0 + - * + x0 -0.006047540146335671 - x0 -7.835974036735528 x0 tanh arcsin arcsin * * x0 x0 0.587653514513837 + * x0 -1.8304224878640376 1.184815434059676 4 x0 * sin tanh * - * x0 asin cos + 0.3955546307731708 * 7.7015653415458765 - * - x0 sqrt 4.891951415238893 * x0 sqrt acos - ~ + 1.4901557120716613 * 4 * * x0 0.26581014186068863 * -0.27870949748847756 + x0 acos sqrt 3.986655024528818 9.55978346043853 x0 * sin - 4 x0 asin * + - 1 - * - 2 * x0 13.415289139283663 * tanh arccos tanh - 2 * * 11.355644210068194 7.99942349483886 x0 * -2.251581050894711 - cos ~ sin * - x0 acos 1.0151100367090116 - sech acos -37.07441181162521 * - + -0.019506738664450036 x0 -50.94007268568142 * sin * +"
             }.back()
         };
         /*
@@ -12570,7 +12577,7 @@ for i in range(len(consts)):
             SimulatedAnnealing(WierdTrackFitter /*differential equation to solve*/,
                 2 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{23} /*fixed depths of generated solution*/,
+                std::vector<int>{24} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -12587,14 +12594,14 @@ for i in range(len(consts)):
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "WierdTrackSR.txt", // "" /*filename to save current best expression found (instead of outputting them to standard out)*/
-                std::vector<int>{119} /*optional max-sizes of each of the expressions in the generated solution*/,
+                std::vector<int>{126} /*optional max-sizes of each of the expressions in the generated solution*/,
                 {/*split(seed_exprs[track_idx])*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 "dag" /*evaluation type: can be "dag", "scalar", or "vector"*/,
                 1000000 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                 std::vector<std::string>{"exp", "ln", "log", "^", "/"} /*operators to restrict in the search*/,
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
-                "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "total": less simplifications, "none": no simplifications */,
+                "fast" /*simplifyMode: "total": most algebraic simplification more comprehensively, "total": less simplifications, "none": no simplifications */,
                 43000 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
                 {split(seed_exprs[track_idx])} /*seed expressions*/,
                 (num_threads == 1) /*whether to exit right after computing the score for the seed expression (default `false`)*/,
@@ -12603,9 +12610,9 @@ for i in range(len(consts)):
                 0.0 /*T_max*/,
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "WierdTrackSR.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
-                true /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
+                false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
                 "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/,
-                true /*whether or not to sync the current expression of each thread with the global current best*/);
+                false /*whether or not to sync the current expression of each thread with the global current best*/);
         }
     }
 };

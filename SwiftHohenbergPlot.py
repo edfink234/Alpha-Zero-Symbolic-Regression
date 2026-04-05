@@ -1,19 +1,219 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sympy import *
+import sympy as sp
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 from math import pi
 from numpy import linalg as LA
+
+def sech_stable(x):
+    ax = np.abs(x)
+    out = np.empty_like(ax, dtype=np.float64)
+    big = ax > 20
+    out[big] = 2.0*np.exp(-ax[big])
+    out[~big] = 1.0/np.cosh(ax[~big])
+    return np.maximum(out, np.finfo(np.float64).tiny)
+
+
+class SympyDagEvaluator:
+    """
+    Hash-consed DAG evaluator for SymPy expressions.
+    Evaluates only nodes reachable from the root in postorder.
+    """
+
+    def __init__(self, expr, use_cse=False):
+        self.original_expr = expr
+        self.nodes = []
+        self.root = -1
+        self._intern_expr = {}
+        self._intern_node = {}
+
+        if use_cse:
+            replacements, reduced = sp.cse(expr, optimizations='basic')
+            if len(reduced) != 1:
+                raise RuntimeError("Expected one reduced expression from cse.")
+            expr2 = reduced[0]
+            for sym, rhs in replacements[::-1]:
+                expr2 = expr2.xreplace({sym: rhs})
+            self.expr = expr2
+        else:
+            self.expr = expr
+
+        self.root = self._build(self.expr)
+        self.postorder = []
+        self._make_postorder()
+
+    def _intern(self, op, data, children):
+        key = (op, data, children)
+        if key in self._intern_node:
+            return self._intern_node[key]
+        idx = len(self.nodes)
+        self.nodes.append((op, data, children))
+        self._intern_node[key] = idx
+        return idx
+
+    def _build(self, expr):
+        if expr in self._intern_expr:
+            return self._intern_expr[expr]
+
+        if expr.is_Symbol:
+            node_id = self._intern("symbol", str(expr), ())
+
+        elif expr.is_Integer:
+            node_id = self._intern("const", float(int(expr)), ())
+
+        elif expr.is_Rational:
+            node_id = self._intern("const", float(expr), ())
+
+        elif expr.is_Float:
+            node_id = self._intern("const", float(expr), ())
+
+        elif expr.is_Number:
+            node_id = self._intern("const", float(expr.evalf()), ())
+
+        else:
+            args = tuple(self._build(a) for a in expr.args)
+
+            if expr.func is sp.Add:
+                node_id = self._intern("add", None, args)
+
+            elif expr.func is sp.Mul:
+                node_id = self._intern("mul", None, args)
+
+            elif expr.func is sp.Pow:
+                node_id = self._intern("pow", None, args)
+
+            elif expr.func is sp.sin:
+                node_id = self._intern("sin", None, args)
+
+            elif expr.func is sp.cos:
+                node_id = self._intern("cos", None, args)
+
+            elif expr.func is sp.exp:
+                node_id = self._intern("exp", None, args)
+
+            elif expr.func is sp.log:
+                node_id = self._intern("log", None, args)
+
+            elif expr.func is sp.sqrt:
+                node_id = self._intern("sqrt", None, args)
+
+            elif expr.func is sp.tanh:
+                node_id = self._intern("tanh", None, args)
+
+            elif expr.func.__name__ == "sech":
+                node_id = self._intern("sech", None, args)
+
+            elif expr.func is sp.asin:
+                node_id = self._intern("asin", None, args)
+
+            elif expr.func is sp.acos:
+                node_id = self._intern("acos", None, args)
+
+            elif expr.func is sp.Abs:
+                node_id = self._intern("abs", None, args)
+
+            else:
+                raise NotImplementedError(
+                    "Unsupported SymPy node: func=%r expr=%r" % (expr.func, expr)
+                )
+
+        self._intern_expr[expr] = node_id
+        return node_id
+
+    def _make_postorder(self):
+        seen = set()
+        out = []
+
+        def dfs(i):
+            if i in seen:
+                return
+            seen.add(i)
+            op, data, children = self.nodes[i]
+            for c in children:
+                dfs(c)
+            out.append(i)
+
+        dfs(self.root)
+        self.postorder = out
+
+    def evaluate(self, env):
+        values = {}
+
+        for i in self.postorder:
+            op, data, children = self.nodes[i]
+
+            if op == "symbol":
+                if data not in env:
+                    raise KeyError("Missing value for symbol '%s'" % data)
+                values[i] = env[data]
+
+            elif op == "const":
+                values[i] = float(data)
+
+            else:
+                ch = [values[c] for c in children]
+
+                if op == "add":
+                    out = ch[0]
+                    for x in ch[1:]:
+                        out = out + x
+
+                elif op == "mul":
+                    out = ch[0]
+                    for x in ch[1:]:
+                        out = out * x
+
+                elif op == "pow":
+                    base, expo = ch
+                    out = np.power(base, expo)
+
+                elif op == "sin":
+                    out = np.sin(ch[0])
+
+                elif op == "cos":
+                    out = np.cos(ch[0])
+
+                elif op == "exp":
+                    out = np.exp(ch[0])
+
+                elif op == "log":
+                    out = np.log(ch[0])
+
+                elif op == "sqrt":
+                    out = np.sqrt(ch[0])
+
+                elif op == "tanh":
+                    out = np.tanh(ch[0])
+
+                elif op == "sech":
+                    out = sech_stable(ch[0])
+
+                elif op == "asin":
+                    out = np.arcsin(ch[0])
+
+                elif op == "acos":
+                    out = np.arccos(ch[0])
+
+                elif op == "abs":
+                    out = np.abs(ch[0])
+
+                else:
+                    raise RuntimeError("Unknown op '%s'" % op)
+
+                values[i] = out
+
+        return values[self.root]
+
 show = False
 np.sech = lambda x: 1.0/np.cosh(x)
 
 PERIODIC_IN_THETA = True
 PRINT_LATEX_ONLY = False
 PlotType = "2D"
-# Create edges instead of centers
 N = 1000
-r_max = 10
+r_max = 100
 r_edges = np.linspace(0.01, r_max, N)
 theta_edges = np.linspace(0, 2*np.pi, N, endpoint=False)
 
@@ -47,31 +247,30 @@ laplacian_f = diff(f, r, 2) + (1/r) * diff(f, r) + (1/(r**2)) * diff(f, theta, 2
 double_laplacian_f = diff(laplacian_f, r, 2) + (1/r) * diff(laplacian_f, r) + (1/(r**2)) * diff(laplacian_f, theta, 2)
 
 swift_hohenberg = mu*f + nu*f*f - f*f*f - (f + 2*laplacian_f + double_laplacian_f)
-r_vals, theta_vals = np.meshgrid(np.linspace(0.01, r_max, N), np.linspace(0, 2*pi, N))
-func = lambdify((r, theta), swift_hohenberg)
-func_vals = func(r_vals, theta_vals)
-squared_norm_error = LA.norm(func_vals.flatten())**2
+
+r_vals, theta_vals = np.meshgrid(
+    np.linspace(0.01, r_max, N),
+    np.linspace(0, 2*pi, N)
+)
+
+sh_eval = SympyDagEvaluator(swift_hohenberg, use_cse=False)
+func_vals = sh_eval.evaluate({"r": r_vals, "theta": theta_vals})
+
+squared_norm_error = LA.norm(func_vals.ravel())**2
 mean_squared_error = squared_norm_error / func_vals.size
+
+print("SH DAG nodes =", len(sh_eval.nodes))
 
 # Compute centers
 r_centers = 0.5 * (r_edges[:-1] + r_edges[1:])
 theta_centers = 0.5 * (theta_edges[:-1] + theta_edges[1:])
 R, Theta = np.meshgrid(r_centers, theta_centers)
 
-from numpy import *
-# Evaluate function on cell centers
-Z = [np.sin(R)*np.sin(Theta), \
-     np.sin(R)*np.sin(Theta) + 0.604, \
-     0.998846776839887*0.999950000416665**(R**4)*np.sin(R)*np.sin(Theta) + 0.604, \
-     0.88898139159952*0.999884875453817**(R**4.03)*np.sqrt(1 - np.cos(R)**2)*np.sin(Theta) - (R/(R + 1.01))**((np.sin(Theta) + 10.0/R)*(R + np.sin(R) + 0.01)) + 0.760176150613572, \
-     -0.28580222883408**(R + 10)*(1.01 - np.sin(Theta))*(167.620651926117*R**7.38905609893065 + 0.000105912014609458) + 0.833098208613807*0.999884875453817**(R**(17/4))*np.sqrt(1 - np.cos(R)**2)*np.sin(Theta)  + 0.797073913381706, \
-     -182.159206127457*0.28580222883408**(R + 10)*(1.02 - np.sin(Theta))*(R + 0.00999991666708333)**7.50905609893065 + 0.745258709383936*0.999884875453817**(R**4.25)*np.sqrt(1 - np.cos(R)**2)*np.sin(Theta + 6.28319) + 0.815307524508096, \
-      -0.28580222883408**(R + 10.02)*(2*R + 0.0137395477321287)**(0.01**(6.28319/(R + 0.01)) + 7.57016955826421)*(0.01**R - np.sin(Theta) + 1) + 0.708762837941528*0.999884875453817**(1.3213487088109*R**4*(1.6*(np.tanh(.6*R))))*np.sqrt(1 - np.cos(R)**2)*np.sin(0.999999999988989*Theta) + 0.845330825627302, \
-      -0.285806921654494**(R + 10.0100907998593)*(R**1.00009081398177 + R**((R + 1)**0.0100001666741671))**(0.015**(6.28319/(R + 2)) + 7.59399521303526)*(- np.sin(Theta + np.cos(Theta) + 6.28319) + np.sin(np.log(R))) + 0.612417858855597*0.999884875453817**(1.4426686039141*(R + 0.01)**4*(1.6*(np.tanh(.6*R))))*np.sqrt(1 - np.cos(R)**2)*np.sin(Theta) + 0.879032771381193, \
-     -0.285806921654494**(R + 10.0139164646307)*(R + (R**0.999993025405072 - 5.00008333556817e-5)**(R**0.01))**(0.0166848951652189**(6.23978883640503/(R + 2)) + 0.000631778468553939*R + 7.59291602260893)*(-np.sin(Theta + np.cos(Theta) + 1/R) + np.sin(np.log(R))) + 0.606923362578475*np.sqrt(1 - np.cos(R)**2)*(np.sech(R + 10) + 0.999884875453817)**((R + 0.02)**4.03*(1.58*(np.tanh(.59*R)))/(np.sin(np.sech(R)) + 0.693147180559945))*np.sin(Theta + 6.28319) + 0.886342906953379, \
-     - ((1e-10 + (R + 0.0675028199851666*np.sin(Theta) + 0.315589358780667)**(np.sqrt(R)*(R + 2.87892339678315)*(5953.65096806617 - R)/((5953.65096806617 - R)**2 + 1e10) + 0.980141037771426)/(0.013519701745416**R*(43.687622183442*R + 8.33814060981745) + R + 0.02*sin(R) + 1.82648253593279))**(((9.2348889286512)/(R + 0.55183450665909) + np.sin(Theta + np.cos(Theta + 0.519039044087815) + 5.8847752990135)*(.5*(1-np.tanh(1.025*(R-21.2)))))*(R + np.sin(R - 0.01) + (1.0e-10 + np.cos(sin(Theta)))**(R - 1.58074387559245) + 0.37384427398835 + np.tanh(R)/(R + 7.97723076614237))))*((.5*(1-np.tanh(1.775e3*(R-10.01))))) + np.sqrt(1 - np.cos(R)**2)*(1.0e-10*0.68688067225485**(8.16109249232708*R) + 0.854229974212735)*(np.sech(R + np.cos(R) + 8.39614384384391) + 0.999884853180843)**(1.58799646315658*(R + 0.0308839840501129)**4.01549520152667*(1.57*(np.tanh(.62*R))))*(0.0100048594945809**(2*R + 5.29438341416157) + 0.7011748940086 - 45.6560816728088/(21934.7382737552))*np.sin(Theta + 18.8962439891879)*(1) - ((1.5707963267949)**(-18.3837681892581) + 0.285811651486423)**(R + np.sech(R + 0.0561717295263584) + 10.0547134992516)*(R + (R**0.999950000416665 - 0.00364405505237706)**((0.376065617272839**R + R)**0.00999966667999946) + 0.0106243230277353)**(-R**2*np.exp(-R)/(1 + 1358.42254658947*np.exp(-R)) + (0.000469282041378069*R + 0.0160184860388267)**((np.sin(R) + 6.78974430415452)/(R - 0.00781876960101768)) + 7.58897670822754)*(-np.sin(Theta + np.cos(Theta - 0.0144023112886078) + 0.105413950813453) + np.sin(np.log(R + 0.390458429297535)) + ((-tanh(0.62*R)+1.01)*(pi/2))**(0.061275433230159*R + 0.00061275433230159)) + (0.00273233753019377**(6.19641677671904 - np.sin(Theta + 0.089280925720443)) + 2.79499001433555e-13 + (6.12323399573677e-17)/(2.19270786451049 - 6.28221254344588*R))*(0.999329299739067*R + 0.453212918064574)**(np.sin(np.sqrt(R + 9.07998593378172e-5)) + 11.4130415650481 + 0.00010001/(1.01005016708417 - np.cos(Theta)))*((.5*(1-np.tanh(1.775e3*(R-10.01))))) + 0.0101001582000134*np.tanh(10.0327249667171*R + 11.9956250261793) + 0.863191833358681][f_per_idx] \
-    if PERIODIC_IN_THETA else (((0.148475282221305 * Theta) - (np.sin(Theta) * (1.0000132758892615 * np.sin(R)))) - 0.0922858190550785)
+# Evaluate f on cell centers using the same DAG idea
+f_eval = SympyDagEvaluator(f, use_cse=False)
+Z = f_eval.evaluate({"r": R, "theta": Theta})
 
+print("f DAG nodes =", len(f_eval.nodes))
 # Convert to Cartesian
 X = R * np.cos(Theta)
 Y = R * np.sin(Theta)
