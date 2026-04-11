@@ -219,6 +219,7 @@ mu, nu = 1, 1
 # Define the function f as a function of r and theta
 GENERIC = False
 COMPUTE_NUMERIC = False
+COMPUTE_INIT_NUMERIC_ONLY = False
 DEBUG_NAN = False
 PRINT_SH_AND_EXIT = False
 PERIODIC_IN_THETA = True
@@ -298,11 +299,13 @@ else:
             if PERIODIC_IN_THETA else \
             (((0.148475282221305 * theta) - (sin(theta) * (1.0000132758892615 * sin(r)))) - 0.0922858190550785)
 
-print(f"f = {f}\n")
+
+#
+#print(f"f = {f}\n")
 #print(f"sp.expand(f) = {sp.expand(f)}")
-latex_f = sp.latex(f)
-latex_f = latex_f.replace(r"(r", r"(\sqrt{x^2 + y^2}")
-latex_f = latex_f.replace(r"\theta", r"\arctan{\dfrac{y}{x}}")
+#latex_f = sp.latex(f)
+#latex_f = latex_f.replace(r"(r", r"(\sqrt{x^2 + y^2}")
+#latex_f = latex_f.replace(r"\theta", r"\arctan{\dfrac{y}{x}}")
 #print(latex_f)
 
 # Calculate the first Laplacian (Laplacian of f)
@@ -313,14 +316,19 @@ double_laplacian_f = diff(laplacian_f, r, 2) + (1/r) * diff(laplacian_f, r) + (1
 
 swift_hohenberg = mu*f + nu*f*f - f*f*f - (f + 2*laplacian_f + double_laplacian_f)
 if PRINT_SH_AND_EXIT:
-    print(f"swift_hohenberg = {str(swift_hohenberg.evalf()).replace('r','r_val').replace('theta', 'theta_val')}\n\n")
+#    print(f"swift_hohenberg = {str(swift_hohenberg.evalf()).replace('r','r_val').replace('theta', 'theta_val')}"+'\n'*20)
     from sympy.printing.pycode import pycode;
     from sympy.printing.pycode import PythonCodePrinter
     class P(PythonCodePrinter):
         def _print_sech(self, expr):
             return f"(sp.sech({self._print(expr.args[0])}))"
     printer = P();
-    print(printer.doprint(swift_hohenberg.evalf()).replace('math','sp'));
+    sh_str = printer.doprint(swift_hohenberg.evalf()).replace('math','sp')
+    if len(sh_str) > 500:
+        sh_filename = "sh_str.txt"
+        with open(sh_filename, "w") as f:
+            f.write(sh_str+'\n')
+        print(f"done writing sh(f) to {sh_filename}")
     exit()
 
 #{r<=10, r<=100, r<=1000, r<=10000, r<=100000} threshholds:
@@ -331,15 +339,19 @@ if PRINT_SH_AND_EXIT:
 #1.775e3: {0.014645675282139147, 0.010652997285208078, 0.009418752758094926, 0.009347510063070913, 0.009337827805946159}
 #1.76e3: {0.0146460922350811, 0.011019015269055561 ❌}
 
-#{r<=10, r<=100, r<=1000, r<=10000, r<=100000} threshholds:
-#2e3: {0.014264540268755435 ,0.008889513560533092, 0.009074180998223862, 0.009103185436913842, 0.009051156332784069
+#f_per_idx = 0:
+#{0.2013604673907694, 0.2077459139516579, 0.20668954496625658, 0.20654875329411565, 0.20659748320406293}
+
+#f_per_idx = 10:
+#{0.014264540268755435, 0.008889513560533092, 0.009074180998223862, 0.009103185436913842, 0.009051156332784069}
 
 # print(*swift_hohenberg.args, sep="\n")
 r_vals, theta_vals = [None]*2
 func_vals = None
-N = 1000 #echo $?
-if not GENERIC:
-    r_vals, theta_vals = np.meshgrid(np.linspace(0.01, 100000, N), np.linspace(0, 2*pi, N))
+N = 33 #echo $?
+r_vals, theta_vals = np.meshgrid(np.linspace(0.01, 100, N), np.linspace(0, 2*pi, N))
+if not GENERIC and not COMPUTE_INIT_NUMERIC_ONLY:
+    
     terms = sp.Add.make_args(diff(f, r))  # f is your full expression
     term_funcs = [sp.lambdify((r, theta), t, modules=[{"sech": sech_stable}, "numpy"]) for t in terms]
 
@@ -529,68 +541,3 @@ fig.colorbar(surf, shrink=0.5, aspect=10, label="f(r, θ)")
 ax.view_init(elev=35, azim=235)
 plt.tight_layout()
 plt.savefig(f"LeastSquaresSeededBySRSolve{'Periodic' if PERIODIC_IN_THETA else 'NonPeriodic'}.pdf")
-
-#So the below expression
-#```
-#  - (((r + 0.0675028199851666*sin(theta) + 0.315589358780667)**(sqrt(r)*(r + 2.87892339678315)/(5953.65096806617 - r) + 0.980141037771426)/(0.013519701745416**r*(43.687622183442*r + 8.33814060981745) + r + 0.02*sin(r) + 1.82648253593279))**(((9.2348889286512)/(r + 0.55183450665909) + sin(theta + cos(theta + 0.519039044087815) + 5.8847752990135))*(r + sin(r - 0.01) + cos(sin(theta))**(r - 1.58074387559245) + 0.37384427398835 + tanh(r)/(r + 7.97723076614237))))
-#  + sqrt(1 - cos(r)**2)*(1.0e-10*0.68688067225485**(8.16109249232708*r) + 0.854229974212735)*(sech(r + cos(r) + 8.39614384384391) + 0.999884853180843)**(1.58799646315658*(r + 0.0308839840501129)**4.01549520152667*(1.57*(tanh(.62*r))))*(0.0100048594945809**(2*r + 5.29438341416157) + 0.7011748940086 - 45.6560816728088/(21934.7382737552))*sin(theta + 18.8962439891879)
-#  - ((1.5707963267949)**(-18.3837681892581) + 0.285811651486423)**(r + sech(r + 0.0561717295263584) + 10.0547134992516)*(r + (r**0.999950000416665 - 0.00364405505237706)**((0.376065617272839**r + r)**0.00999966667999946) + 0.0106243230277353)**(-r**2/(exp(r) + 1358.42254658947) + (0.000469282041378069*r + 0.0160184860388267)**((sin(r) + 6.78974430415452)/(r - 0.00781876960101768)) + 7.58897670822754)*(-sin(theta + cos(theta - 0.0144023112886078) + 0.105413950813453) + sin(log(r + 0.390458429297535)) + ((-tanh(0.62*r)+1.01)*(pi/2))**(0.061275433230159*r + 0.00061275433230159))
-#  + (0.00273233753019377**(6.19641677671904 - sin(theta + 0.089280925720443)) + 2.79499001433555e-13 + (6.12323399573677e-17)/(2.19270786451049 - 6.28221254344588*r))*(0.999329299739067*r + 0.453212918064574)**(sin(sqrt(r + 9.07998593378172e-5)) + 11.4130415650481 + 0.00010001/(1.01005016708417 - cos(theta)))
-#  - ((sin(theta) + 1.81465628877088)*sin(r + 0.0428431433987448) - log(r) + tanh(sin(r)) + 11.8460597445485)**(0.74666154308685*r - 9.55656216208119)
-#  + 0.0101001582000134*tanh(10.0327249667171*r + 11.9956250261793)*(1)
-#  + 0.863191833358681
-#```
-#
-#gives me an mse of 0.0170123 on the `N = 1000, np.meshgrid(np.linspace(0.01, 10, N), np.linspace(0, 2*pi, N))` mesh but inf on the `N = 1000, np.meshgrid(np.linspace(0.01, 100, N), np.linspace(0, 2*pi, N))` so some part of it doesn't decay or blows up I'm guessing since all my past prunes solves hosted here (https://docs.google.com/presentation/d/11YRvkZ2o9TBRSwIOQ4RcDrl1GS1Sbh_QVH6S8en5ngM/edit?slide=id.g3c6d958ab3b_0_28#slide=id.g3c6d958ab3b_0_28) decay out from the center, i.e. localized. so what's the MINIMAL amputation you can make to most likely save the mse?!
-
-#So I replaced `` by cutoff(r,10,14) and it gave me the following error:
-#```
-#Traceback (most recent call last):
-#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 368, in <module>
-#    dag_eval = SympyDagEvaluator(swift_hohenberg)
-#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 81, in __init__
-#    self.root = self._build(expr)
-#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in _build
-#    args = tuple(self._build(a) for a in expr.args)
-#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in <genexpr>
-#    args = tuple(self._build(a) for a in expr.args)
-#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in _build
-#    args = tuple(self._build(a) for a in expr.args)
-#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in <genexpr>
-#    args = tuple(self._build(a) for a in expr.args)
-#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in _build
-#    args = tuple(self._build(a) for a in expr.args)
-#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in <genexpr>
-#    args = tuple(self._build(a) for a in expr.args)
-#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in _build
-#    args = tuple(self._build(a) for a in expr.args)
-#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in <genexpr>
-#    args = tuple(self._build(a) for a in expr.args)
-#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in _build
-#    args = tuple(self._build(a) for a in expr.args)
-#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in <genexpr>
-#    args = tuple(self._build(a) for a in expr.args)
-#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in _build
-#    args = tuple(self._build(a) for a in expr.args)
-#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in <genexpr>
-#    args = tuple(self._build(a) for a in expr.args)
-#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in _build
-#    args = tuple(self._build(a) for a in expr.args)
-#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in <genexpr>
-#    args = tuple(self._build(a) for a in expr.args)
-#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in _build
-#    args = tuple(self._build(a) for a in expr.args)
-#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in <genexpr>
-#    args = tuple(self._build(a) for a in expr.args)
-#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in _build
-#    args = tuple(self._build(a) for a in expr.args)
-#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in <genexpr>
-#    args = tuple(self._build(a) for a in expr.args)
-#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in _build
-#    args = tuple(self._build(a) for a in expr.args)
-#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 112, in <genexpr>
-#    args = tuple(self._build(a) for a in expr.args)
-#  File "/Users/edwardfinkelstein/alpha-zero-general/swift_hohenberg2D.py", line 154, in _build
-#    raise NotImplementedError(
-#NotImplementedError: Unsupported SymPy node: func=<class 'sympy.core.relational.GreaterThan'> expr=r >= 14
-#```

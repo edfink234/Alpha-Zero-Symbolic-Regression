@@ -99,6 +99,26 @@ int GR(int i, const std::vector<std::string>& postfix)
     return (i - ptr_lgb);
 }
 
+std::vector<int> getLGBs(const std::vector<std::string>& postfix)
+{
+    std::vector<int> temp(postfix.size());
+    for (size_t k = 0; k < postfix.size(); ++k)
+    {
+        int start = k;
+        int& ptr_lgb = start;
+        if (is_unary(postfix[k]))
+        {
+            LGB(1, ptr_lgb, postfix);
+        }
+        else if (is_binary(postfix[k]))
+        {
+            LGB(2, ptr_lgb, postfix);
+        }
+        temp[k]=(ptr_lgb);
+    }
+    return temp;
+}
+
 
 void setGR(const std::vector<std::string>& postfix, std::vector<int>& grasp)
 {
@@ -1433,6 +1453,14 @@ int main()
     postfix = derivat;
     derivePostfix(0, postfix.size()-1, "x0", postfix, grasp);
     std::cout << grasp << '\n';
+    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    
+    postfix = {"x1", "x2", "+", "cos", "x1", "x2", "+", "+"};
+    derivePostfix(0, postfix.size()-1, "x1", postfix, grasp);
+    std::cout << "postfix = " << postfix << '\n';
+    std::cout << grasp << '\n';
+    std::cout << "LGBs = " << getLGBs(postfix) << '\n';
+
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     return 0;

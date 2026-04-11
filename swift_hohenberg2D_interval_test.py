@@ -268,7 +268,7 @@ def square_interval(x):
 # problem setup
 # -------------------------
 
-N = 1000
+N = 33
 PERIODIC_IN_THETA = True
 
 r_float_vals = linspace(0.01, 100, N).tolist()
@@ -292,8 +292,11 @@ mu, nu = 1, 1
 # -----------------------------------------------------------
 r_val, theta_val = r, theta
 expr = (
-    -(sp.sin(r) - sp.cos(r)/r + 3.0*sp.sin(r)/r**2 + 6.0*sp.cos(r)/r**3 - 6.0*sp.sin(r)/r**4)*sp.sin(theta) - sp.sin(r)**3*sp.sin(theta)**3 + sp.sin(r)**2*sp.sin(theta)**2 + 2.0*sp.sin(r)*sp.sin(theta) - (-sp.sin(theta)*sp.cos(r) - sp.sin(r)*sp.sin(theta)/r - 2.0*sp.sin(theta)*sp.cos(r)/r**2 + 2.0*sp.sin(r)*sp.sin(theta)/r**3)/r - 2.0*sp.sin(theta)*sp.cos(r)/r - (sp.sin(r) - sp.cos(r)/r + sp.sin(r)/r**2)*sp.sin(theta)/r**2 + 2.0*sp.sin(r)*sp.sin(theta)/r**2
-)
+    -(sp.sin(r) - sp.cos(r)/r + 3.0*sp.sin(r)/r**2 + 6.0*sp.cos(r)/r**3 - 6.0*sp.sin(r)/r**4)*sp.sin(theta) - sp.sin(r)**3*sp.sin(theta)**3 + sp.sin(r)**2*sp.sin(theta)**2 + 2.0*sp.sin(r)*sp.sin(theta) - (-sp.sin(theta)*sp.cos(r) - sp.sin(r)*sp.sin(theta)/r - 2.0*sp.sin(theta)*sp.cos(r)/r**2 + 2.0*sp.sin(r)*sp.sin(theta)/r**3)/r - 2.0*sp.sin(theta)*sp.cos(r)/r - (sp.sin(r) - sp.cos(r)/r + sp.sin(r)/r**2)*sp.sin(theta)/r**2 + 2.0*sp.sin(r)*sp.sin(theta)/r**2,
+    eval(open("sh_str.txt").read())
+)[-1]
+
+print(f"expr instantiated")
 
 # If you already have a SymPy SH residual expression from the symbolic script,
 # replace expr above with that exact SymPy expression.
@@ -327,7 +330,7 @@ for v2 in f_vals_squared:
     total += v2
 
 print("total =", total)
-#print(f_vals_squared)
+print("zip(product(r_vals, theta_vals), f_vals_squared) = ", *list(zip(product(r_vals, theta_vals), f_vals_squared)), sep='\n')
 
 """
 Stats
@@ -336,4 +339,7 @@ Stats
 f = sin(r)*sin(theta):
     (1000 x 1000), (0.01 <= r <= 10, 0 <= θ <= 2π): interval([201360.4665727735, 201360.46821284745])
     (1000 x 1000), (0.01 <= r <= 10, 0 <= θ <= 2π): interval([207745.91327080742, 207745.9146365905])
+
+f = 
+    (33 x 33), (0.01 <= r <= 10, 0 <= θ <= 2π): interval([36.36755788914332, 36.819654105452344])
 """

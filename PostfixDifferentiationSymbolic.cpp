@@ -33,14 +33,28 @@ bool is_binary(const std::string& token)
 template<typename T>
 std::ostream& operator<<(std::ostream& out, const std::vector<T>& vec)
 {
-    for (const T& elem: vec){out << elem << ' ';}
+    for (size_t i = 0; i < vec.size(); i++)
+    {
+        out << vec[i];
+        if (i < (vec.size() - 1))
+        {
+            out <<  " ";
+        }
+    }
     return out;
 }
 
 template<typename T>
 std::stringstream& operator<<(std::stringstream& out, const std::vector<T>& vec)
 {
-    for (const T& elem: vec){out << elem << ' ';}
+    for (size_t i = 0; i < vec.size(); i++)
+    {
+        out << vec[i];
+        if (i < (vec.size() - 1))
+        {
+            out <<  " ";
+        }
+    }
     return out;
 }
 
@@ -149,7 +163,7 @@ bool areDerivatRangesEqual(int start_idx_1, int start_idx_2, int num_steps)
 low and up: lower and upper Index bounds, respectively, for the piece of the array postfix which is to be the subject of the processing.
 dx: string representing the variable by which the derivation is to be made. (The derivative is made wrt dx)
 */
-void derivePostfixHelper(int low, int up, const std::string& dx, const std::vector<std::string>& postfix, std::vector<int>& grasp, bool setGRvar = false)
+void derivePostfixHelper(int low, int up, const std::string& dx, const std::vector<std::string>& postfix, std::vector<int>& grasp, bool setGRvar = false, bool trace_derivat = false)
 {
     if (!setGRvar)
     {
@@ -190,12 +204,18 @@ void derivePostfixHelper(int low, int up, const std::string& dx, const std::vect
             //of postfix[up-grasp(op2)-2] are the elements [(postfix[low] = postfix[0], postfix[up-grasp(op2)-2] = postfix[9-5-2] = postfix[2]]
             //i.e., the elements {"x", "x", "*"}
 
+    if (trace_derivat)
+    {
+        std::cout << "derivat = {" << derivat << "}, low = " << low << ", up = " << up
+        << ", postfix[up] = " << postfix[up] << ", postfix[low] = " << postfix[low] << '\n';
+    }
+    
     if (postfix[up] == "+" || postfix[up] == "-")
     {
         int x_prime_low = derivat.size();
         derivePostfixHelper(low, up-2-grasp[up-1], dx, postfix, grasp, true);  /*Putting x'*/
         int x_prime_high = derivat.size();
-        derivePostfixHelper(up-1-grasp[up-1], up-1, dx, postfix, grasp, true); /*Putting y'*/
+        derivePostfixHelper(up-1-grasp[up-1], up-1, dx, postfix, grasp, true, trace_derivat); /*Putting y'*/
         int y_prime_high = derivat.size();
         int step;
                 
@@ -253,7 +273,7 @@ void derivePostfixHelper(int low, int up, const std::string& dx, const std::vect
         else
         {
             int x_high = derivat.size();
-            derivePostfixHelper(up-1-grasp[up-1], up-1, dx, postfix, grasp, true); /* x y' */
+            derivePostfixHelper(up-1-grasp[up-1], up-1, dx, postfix, grasp, true, trace_derivat); /* x y' */
             if (derivat.back() == "0") //x 0 * -> 0
             {
 //                puts("hi 208");
@@ -375,7 +395,7 @@ void derivePostfixHelper(int low, int up, const std::string& dx, const std::vect
         else
         {
             int y_prime_low = derivat.size();
-            derivePostfixHelper(up-1-grasp[up-1], up-1, dx, postfix, grasp, true); /* x' y * x y' */
+            derivePostfixHelper(up-1-grasp[up-1], up-1, dx, postfix, grasp, true, trace_derivat); /* x' y * x y' */
             if (derivat.back() == "0") //x 0 * -> 0
             {
 //                puts("hi 330");
@@ -508,7 +528,7 @@ void derivePostfixHelper(int low, int up, const std::string& dx, const std::vect
             postfix_temp.push_back("*"); /* x ln y * */
         }
         setGR(postfix_temp, grasp_temp);
-        derivePostfixHelper(0, postfix_temp.size() - 1, dx, postfix_temp, grasp_temp, true); /* x y ^ (x ln y *)' */
+        derivePostfixHelper(0, postfix_temp.size() - 1, dx, postfix_temp, grasp_temp, true, trace_derivat); /* x y ^ (x ln y *)' */
         if (derivat.back() == "0") //x y ^ 0 * -> 0
         {
 //            puts("hi 455");
@@ -528,7 +548,7 @@ void derivePostfixHelper(int low, int up, const std::string& dx, const std::vect
 
     else if (postfix[up] == "cos")
     {
-        derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
+        derivePostfixHelper(low, up-1, dx, postfix, grasp, true, trace_derivat); /* x' */
         if (derivat.back() == "0") //0 x sin ~ * -> 0
         {
 //            puts("hi 514");
@@ -554,7 +574,7 @@ void derivePostfixHelper(int low, int up, const std::string& dx, const std::vect
     
     else if (postfix[up] == "sin")
     {
-        derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
+        derivePostfixHelper(low, up-1, dx, postfix, grasp, true, trace_derivat); /* x' */
         if (derivat.back() == "0") //0 x cos * -> 0
         {
 //            puts("hi 540");
@@ -579,7 +599,7 @@ void derivePostfixHelper(int low, int up, const std::string& dx, const std::vect
     
     else if (postfix[up] == "sqrt")
     {
-        derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
+        derivePostfixHelper(low, up-1, dx, postfix, grasp, true, trace_derivat); /* x' */
         if (derivat.back() == "0") //0 2 x sqrt * / -> 0
         {
 //            puts("hi 565");
@@ -598,7 +618,7 @@ void derivePostfixHelper(int low, int up, const std::string& dx, const std::vect
     else if (postfix[up] == "log" || postfix[up] == "ln")
     {
         int x_prime_low = derivat.size();
-        derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
+        derivePostfixHelper(low, up-1, dx, postfix, grasp, true, trace_derivat); /* x' */
         if (derivat.back() == "0") //0 x / -> 0
         {
 //            puts("hi 551");
@@ -624,7 +644,7 @@ void derivePostfixHelper(int low, int up, const std::string& dx, const std::vect
     
     else if (postfix[up] == "asin" || postfix[up] == "arcsin")
     {
-        derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
+        derivePostfixHelper(low, up-1, dx, postfix, grasp, true, trace_derivat); /* x' */
         if (derivat.back() == "0") //0 1 x x * - sqrt / -> 0
         {
 //            puts("hi 610");
@@ -647,7 +667,7 @@ void derivePostfixHelper(int low, int up, const std::string& dx, const std::vect
     
     else if (postfix[up] == "acos" || postfix[up] == "arccos")
     {
-        derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
+        derivePostfixHelper(low, up-1, dx, postfix, grasp, true, trace_derivat); /* x' */
         if (derivat.back() == "0") //0 1 x x * - sqrt / ~ -> 0
         {
 //            puts("hi 633");
@@ -671,7 +691,7 @@ void derivePostfixHelper(int low, int up, const std::string& dx, const std::vect
     
     else if (postfix[up] == "tanh")
     {
-        derivePostfixHelper(low, up-1, dx, postfix, grasp, true); //x'
+        derivePostfixHelper(low, up-1, dx, postfix, grasp, true, trace_derivat); //x'
         if (derivat.back() == "0") //0 x sech x sech * * -> 0
         {
 //            puts("hi 657");
@@ -702,7 +722,7 @@ void derivePostfixHelper(int low, int up, const std::string& dx, const std::vect
     
     else if (postfix[up] == "sech")
     {
-        derivePostfixHelper(low, up-1, dx, postfix, grasp, true); //x'
+        derivePostfixHelper(low, up-1, dx, postfix, grasp, true, trace_derivat); //x'
         if (derivat.back() == "0") //0 x sech ~ x tanh * * -> 0
         {
 //            puts("hi 681");
@@ -734,7 +754,7 @@ void derivePostfixHelper(int low, int up, const std::string& dx, const std::vect
     
     else if (postfix[up] == "exp")
     {
-        derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
+        derivePostfixHelper(low, up-1, dx, postfix, grasp, true, trace_derivat); /* x' */
         if (derivat.back() == "0") //0 x exp * -> 0
         {
 //            puts("hi 663");
@@ -759,7 +779,7 @@ void derivePostfixHelper(int low, int up, const std::string& dx, const std::vect
     
     else if (postfix[up] == "~")
     {
-        derivePostfixHelper(low, up-1, dx, postfix, grasp, true); /* x' */
+        derivePostfixHelper(low, up-1, dx, postfix, grasp, true, trace_derivat); /* x' */
         if (derivat.back() == "~")
         {
 //            puts("hi 561");
@@ -784,9 +804,9 @@ void derivePostfixHelper(int low, int up, const std::string& dx, const std::vect
     }
 }
 
-void derivePostfix(int low, int up, const std::string& dx, const std::vector<std::string>& postfix, std::vector<int>& grasp)
+void derivePostfix(int low, int up, const std::string& dx, const std::vector<std::string>& postfix, std::vector<int>& grasp, bool trace_derivat = false)
 {
-    derivePostfixHelper(low, up, dx, postfix, grasp, false);
+    derivePostfixHelper(low, up, dx, postfix, grasp, false, trace_derivat);
 }
 
 
@@ -796,26 +816,26 @@ int main()
     std::vector<int> grasp;
     
     postfix = {"x","x","+"}; // x+x
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 1 + (postfix) -> 1+1 = 2 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 1 + (postfix) -> 1+1 = 2 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"x","x","x","-","+"}; // (x-x)+x
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 1 1 - + (postfix) -> 1+(1-1) = 1+0 = 1 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp, true); //1 1 1 - + (postfix) -> 1+(1-1) = 1+0 = 1 ✅
                                                              //1 (postfix) -> 1 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"x","x","-","x","-","y","+"}; // (x-x)-x+y
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp);
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp);
         //1 1 - 1 - 0 +  (postfix) -> (1-1)-1+0 = -1 ✅
         //1 1 - 1 - (postfix) -> (1-1)-1 = -1 ✅
         //1 ~ (postfix) -> -1 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"y","y","x","/","*","cos", "y", "+"}; // cos((y*y)/x) + y
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp);
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp);
         //y y x / * sin ~ y 0 x * y 1 * - x x * / * 0 y x / * + * 0 + (postfix) -> -sin(y*(y/x))*y*(-y)/(x*x)) (infix) ✅
         //y y x / * sin ~ y 0 x * y 1 * - x x * / * 0 y x / * + * (postfix) -> -sin(y*(y/x))*y*(-y)/(x*x)) (infix) ✅
         //y y x / * sin ~ y 0 x * y 1 * - x x * / * 0 + * (postfix) -> -sin(y*(y/x))*y*(-y)/(x*x)) (infix) ✅
@@ -825,10 +845,10 @@ int main()
         //y y x / * sin ~ y y ~ x x * / * * (postfix) -> -sin(y*(y/x))*y*(-y)/(x*x)) (infix) ✅
         //y y ~ x x * / * y y x / * sin ~ * (postfix) -> -sin(y*(y/x))*y*(-y)/(x*x)) (infix) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"y","y","x","*","*","cos", "y", "+"}; // cos((y*x)*y) + y
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp);
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp);
     //y y x * * sin ~ y y 1 * 0 x * + * 0 y x * * + * 0 + (postfix) -> -sin((y*x)*y)*y*y (infix) ✅
     //y y x * * sin ~ y y 1 * 0 x * + * 0 y x * * + * (postfix) -> -sin((y*x)*y)*y*y (infix) ✅
     //y y x * * sin ~ y y 0 x * + * 0 y x * * + * (postfix) -> -sin((y*x)*y)*y*y (infix) ✅
@@ -836,216 +856,216 @@ int main()
     //y y x * * sin ~ y y * * (postfix) -> -sin((y*x)*y)*y*y (infix) ✅
     //y y * y y x * * sin ~ * (postfix) -> -sin((y*x)*y)*y*y (infix) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"y","x","x","*","+"}; //x*x + y
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 x 1 * 1 x * + + (postfix) -> x + x ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 x 1 * 1 x * + + (postfix) -> x + x ✅
                                                              //x 1 * 1 x * +  (postfix) -> x + x ✅
                                                              //x 1 x * + (postfix) -> x + x ✅
                                                              //x x + (postfix) -> x + x ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"y","x","x","+","+"}; //x + x + y
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 1 1 + + (postfix) -> 1 + 1 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 1 1 + + (postfix) -> 1 + 1 ✅
                                                              //1 1 + (postfix) -> 1 + 1 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
 
     postfix = {"y","x","cos","x","+","+"}; //cos(x) + x + y
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 x sin ~ 1 * 1 + + (postfix) -> -sin(x) + 1 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 x sin ~ 1 * 1 + + (postfix) -> -sin(x) + 1 ✅
                                                              //x sin ~ 1 * 1 + (postfix) -> -sin(x) + 1 ✅
                                                              //x sin ~ 1 + (postfix) -> -sin(x) + 1 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"y","x","cos","x","+","-"}; //y - (cos(x) + x)
-    derivePostfix(0, postfix.size()-1, "y", postfix, grasp); //1 x sin ~ 0 * 0 + - (postfix) -> 1 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "y", postfix, grasp); //1 x sin ~ 0 * 0 + - (postfix) -> 1 ✅
                                                              //1 x sin ~ 0 * - (postfix) -> 1 ✅
                                                              //1 (postfix) -> 1 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"y","x","-"}; //y - x
-    derivePostfix(0, postfix.size()-1, "y", postfix, grasp); //1 0 - (postfix) -> 1 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "y", postfix, grasp); //1 0 - (postfix) -> 1 ✅
                                                              //1 (postfix) -> 1 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"x", "y","x","-", "cos", "cos", "*"}; //x * cos(cos(y-x))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp);
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp);
     //x y x - cos sin ~ y x - sin ~ 0 1 - * * * 1 y x - cos cos * + (postfix) -> x*(-sin(cos(y-x))*sin(y-x))+cos(cos(y-x)) = x*sin(cos(x-y))*sin(x-y)+cos(cos(x-y)) ✅
     //x y x - cos sin ~ y x - sin ~ 1 ~ * * * 1 y x - cos cos * + (postfix) -> x*(-sin(cos(y-x))*sin(y-x))+cos(cos(y-x)) = x*sin(cos(x-y))*sin(x-y)+cos(cos(x-y)) ✅
     //x y x - cos sin ~ y x - sin ~ 1 ~ * * * y x - cos cos + (postfix) -> x*(-sin(cos(y-x))*sin(y-x))+cos(cos(y-x)) = x*sin(cos(x-y))*sin(x-y)+cos(cos(x-y)) ✅
     //x 1 ~ y x - sin ~ * y x - cos sin ~ * * y x - cos cos + (postfix) -> x*(-sin(cos(y-x))*sin(y-x))+cos(cos(y-x)) = x*sin(cos(x-y))*sin(x-y)+cos(cos(x-y)) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"x", "x", "y", "x", "-", "sin", "/", "+"}; // x + (x/sin(y-x))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp);
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp);
     //1 1 y x - sin * x y x - cos 0 1 - * * - y x - sin y x - sin * / + (postfix) -> 1 + (sin(y-x) + x*cos(y-x))/(sin(x-y)*sin(x-y)) = 1 - (1/sin(x-y)) + x*cos(y-x)/(sin(x-y)*sin(x-y)) ✅
     //1 1 y x - sin * x y x - cos 1 ~ * * - y x - sin y x - sin * / + (postfix) -> 1 + (sin(y-x) + x*cos(y-x))/(sin(x-y)*sin(x-y)) = 1 - (1/sin(x-y)) + x*cos(y-x)/(sin(x-y)*sin(x-y)) ✅
     //1 y x - sin x y x - cos 1 ~ * * - y x - sin y x - sin * / + (postfix) -> 1 + (sin(y-x) + x*cos(y-x))/(sin(x-y)*sin(x-y)) = 1 - (1/sin(x-y)) + x*cos(y-x)/(sin(x-y)*sin(x-y)) ✅
     //1 y x - sin x 1 ~ y x - cos * * - y x - sin y x - sin * / + (postfix) -> 1 + (sin(y-x) + x*cos(y-x))/(sin(x-y)*sin(x-y)) = 1 - (1/sin(x-y)) + x*cos(y-x)/(sin(x-y)*sin(x-y)) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"x", "x", "y", "y", "sin", "cos", "*", "/", "/"}; // x / (x / (y*cos(sin(y))))
-    derivePostfix(0, postfix.size()-1, "y", postfix, grasp); //0 x y y sin cos * / * x 0 y y sin cos * * x y y sin sin ~ y cos 1 * * * 1 y sin cos * + * - y y sin cos * y y sin cos * * / * - x y y sin cos * / x y y sin cos * / * / (postfix) ->  (x*x*(y*(-sin(sin(y))*cos(y))+cos(sin(y))))/(y*cos(sin(y))*y*cos(sin(y))) / ((x/(y*cos(sin(y))))*(x/(y*cos(sin(y))))) = (y*(-sin(sin(y))*cos(y))+cos(sin(y))) = cos(sin(y)) - y*sin(sin(y))*cos(y) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "y", postfix, grasp); //0 x y y sin cos * / * x 0 y y sin cos * * x y y sin sin ~ y cos 1 * * * 1 y sin cos * + * - y y sin cos * y y sin cos * * / * - x y y sin cos * / x y y sin cos * / * / (postfix) ->  (x*x*(y*(-sin(sin(y))*cos(y))+cos(sin(y))))/(y*cos(sin(y))*y*cos(sin(y))) / ((x/(y*cos(sin(y))))*(x/(y*cos(sin(y))))) = (y*(-sin(sin(y))*cos(y))+cos(sin(y))) = cos(sin(y)) - y*sin(sin(y))*cos(y) ✅
                                                              //0 x y y sin cos * / * x 0 y y sin cos * * x y y sin sin ~ y cos 1 * * * y sin cos + * - y y sin cos * y y sin cos * * / * - x y y sin cos * / x y y sin cos * / * / (postfix) ->  (x*x*(y*(-sin(sin(y))*cos(y))+cos(sin(y))))/(y*cos(sin(y))*y*cos(sin(y))) / ((x/(y*cos(sin(y))))*(x/(y*cos(sin(y))))) = (y*(-sin(sin(y))*cos(y))+cos(sin(y))) = cos(sin(y)) - y*sin(sin(y))*cos(y) ✅
                                                              //0 x 0 x y y sin sin ~ y cos 1 * * * y sin cos + * - y y sin cos * y y sin cos * * / * - x y y sin cos * / x y y sin cos * / * / (postfix) -> (x*x*(y*(-sin(sin(y))*cos(y))+cos(sin(y))))/(y*cos(sin(y))*y*cos(sin(y))) / ((x/(y*cos(sin(y))))*(x/(y*cos(sin(y))))) = (y*(-sin(sin(y))*cos(y))+cos(sin(y))) = cos(sin(y)) - y*sin(sin(y))*cos(y) ✅
                                                              //x x y y sin sin ~ y cos 1 * * * y sin cos + * ~ y y sin cos * y y sin cos * * / * ~ x y y sin cos * / x y y sin cos * / * / (postfix) -> (x*x*(y*(-sin(sin(y))*cos(y))+cos(sin(y))))/(y*cos(sin(y))*y*cos(sin(y))) / ((x/(y*cos(sin(y))))*(x/(y*cos(sin(y))))) = (y*(-sin(sin(y))*cos(y))+cos(sin(y))) = cos(sin(y)) - y*sin(sin(y))*cos(y) ✅
                                                              //x x y y cos 1 * y sin sin ~ * * y sin cos + * ~ y y sin cos * y y sin cos * * / * ~ x y y sin cos * / x y y sin cos * / * / (postfix) -> (x*x*(y*(-sin(sin(y))*cos(y))+cos(sin(y))))/(y*cos(sin(y))*y*cos(sin(y))) / ((x/(y*cos(sin(y))))*(x/(y*cos(sin(y))))) = (y*(-sin(sin(y))*cos(y))+cos(sin(y))) = cos(sin(y)) - y*sin(sin(y))*cos(y) ✅
                                                              //x x y y cos y sin sin ~ * * y sin cos + * ~ y y sin cos * y y sin cos * * / * ~ x y y sin cos * / x y y sin cos * / * / (postfix) -> (x*x*(y*(-sin(sin(y))*cos(y))+cos(sin(y))))/(y*cos(sin(y))*y*cos(sin(y))) / ((x/(y*cos(sin(y))))*(x/(y*cos(sin(y))))) = (y*(-sin(sin(y))*cos(y))+cos(sin(y))) = cos(sin(y)) - y*sin(sin(y))*cos(y) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"x", "~", "~", "sin", "y", "/"}; // sin(x)/y
-    derivePostfix(0, postfix.size()-1, "y", postfix, grasp); //x ~ ~ cos 0 ~ ~ * y * x ~ ~ sin 1 * - y y * / (postfix) -> -sin(x)/(y*y) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "y", postfix, grasp); //x ~ ~ cos 0 ~ ~ * y * x ~ ~ sin 1 * - y y * / (postfix) -> -sin(x)/(y*y) ✅
                                                              //x ~ ~ cos 0 ~ ~ * y * x ~ ~ sin - y y * / (postfix) -> -sin(x)/(y*y) ✅
                                                              //x ~ ~ cos 0 * y * x ~ ~ sin - y y * / (postfix) -> -sin(x)/(y*y) ✅
                                                              //x ~ ~ sin ~ y y * / (postfix) -> -sin(x)/(y*y) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"x", "sqrt"}; //sqrt(x)
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 2 x sqrt * / (postfix) -> 1/(2*sqrt(x)) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 2 x sqrt * / (postfix) -> 1/(2*sqrt(x)) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"x", "sqrt", "y", "*"}; //sqrt(x)*y
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x sqrt 0 * 1 2 x sqrt * / y * + (postfix) -> (1/(2*sqrt(x)))*y ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x sqrt 0 * 1 2 x sqrt * / y * + (postfix) -> (1/(2*sqrt(x)))*y ✅
                                                              //0 1 2 x sqrt * / y * + (postfix) -> (1/(2*sqrt(x)))*y ✅
                                                              //1 2 x sqrt * / y * (postfix) -> (1/(2*sqrt(x)))*y
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"x", "ln", "y", "*"}; //ln(x)*y
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x ln 0 * 1 x / y * + (postfix) -> (1/x)*y ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x ln 0 * 1 x / y * + (postfix) -> (1/x)*y ✅
                                                              //0 1 x / y * + (postfix) -> (1/x)*y ✅
                                                              //1 x / y * (postfix) -> (1/x)*y ✅
     
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"x", "~", "ln", "x", "*"}; //ln(-x) * x
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x ~ ln 1 * 1 ~ x ~ / x * + (postfix) -> ln(-x) + 1 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x ~ ln 1 * 1 ~ x ~ / x * + (postfix) -> ln(-x) + 1 ✅
                                                              //x ~ ln 1 ~ x ~ / x * + (postfix) -> ln(-x) + 1 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
 
     postfix = {"x", "sqrt", "ln", "y", "*"}; //ln(sqrt(x)) * y
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x sqrt ln 0 * 1 2 x sqrt * / x sqrt / y * + (postfix) -> y/(2*x) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x sqrt ln 0 * 1 2 x sqrt * / x sqrt / y * + (postfix) -> y/(2*x) ✅
                                                              //0 1 2 x sqrt * / x sqrt / y * + (postfix) -> y/(2*x) ✅
                                                              //1 2 x sqrt * / x sqrt / y * (postfix) -> y/(2*x) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
 
     postfix = {"x", "x", "*", "asin"}; //arcsin(x*x)
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x 1 * 1 x * + 1 x x * x x * * - sqrt / (postfix) -> (2*x)/sqrt(1-x*x*x*x) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x 1 * 1 x * + 1 x x * x x * * - sqrt / (postfix) -> (2*x)/sqrt(1-x*x*x*x) ✅
                                                              //x 1 x * + 1 x x * x x * * - sqrt / (postfix) -> (2*x)/sqrt(1-x*x*x*x) ✅
                                                              //x x + 1 x x * x x * * - sqrt / (postfix) -> (2*x)/sqrt(1-x*x*x*x) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
 
     postfix = {"x", "ln", "y", "*", "asin"}; //arcsin(ln(x)*y)
-    derivePostfix(0, postfix.size()-1, "y", postfix, grasp); //x ln 1 * 0 x / y * + 1 x ln y * x ln y * * - sqrt / (postfix) -> ln(x) / sqrt(1-ln(x)*y*ln(x)*y) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "y", postfix, grasp); //x ln 1 * 0 x / y * + 1 x ln y * x ln y * * - sqrt / (postfix) -> ln(x) / sqrt(1-ln(x)*y*ln(x)*y) ✅
                                                              //x ln 0 x / y * + 1 x ln y * x ln y * * - sqrt / (postfix) -> ln(x) / sqrt(1-ln(x)*y*ln(x)*y) ✅
                                                              //x ln 0 x / + 1 x ln y * x ln y * * - sqrt / (postfix) -> ln(x) / sqrt(1-ln(x)*y*ln(x)*y) ✅
                                                              //x ln 1 x ln y * x ln y * * - sqrt / (postfix) -> ln(x) / sqrt(1-ln(x)*y*ln(x)*y) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
 
     postfix = {"x", "ln", "y", "*", "asin"}; //arcsin(ln(x)*y)
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x ln 0 * 1 x / y * + 1 x ln y * x ln y * * - sqrt / (postfix) -> (y/x)/sqrt(1-y*ln(x)*y*ln(x)) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x ln 0 * 1 x / y * + 1 x ln y * x ln y * * - sqrt / (postfix) -> (y/x)/sqrt(1-y*ln(x)*y*ln(x)) ✅
                                                              //0 1 x / y * + 1 x ln y * x ln y * * - sqrt / (postfix) -> (y/x)/sqrt(1-y*ln(x)*y*ln(x)) ✅
                                                              //1 x / y * 1 x ln y * x ln y * * - sqrt / (postfix) -> (y/x)/sqrt(1-y*ln(x)*y*ln(x)) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
 
     postfix = {"x", "acos", "y", "/", "asin"}; //arcsin(acos(x)/y)
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 1 x x * - sqrt / ~ y * x acos 0 * - y y * / 1 x acos y / x acos y / * - sqrt / (postfix) -> (-y/sqrt(1-x*x))/(y*y) * (1/sqrt(1-((arcos(x)/y)*(arcos(x)/y)))) = -1/(y*sqrt(1-x*x)*sqrt(1-((arcos(x)/y)*(arcos(x)/y)))) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 1 x x * - sqrt / ~ y * x acos 0 * - y y * / 1 x acos y / x acos y / * - sqrt / (postfix) -> (-y/sqrt(1-x*x))/(y*y) * (1/sqrt(1-((arcos(x)/y)*(arcos(x)/y)))) = -1/(y*sqrt(1-x*x)*sqrt(1-((arcos(x)/y)*(arcos(x)/y)))) ✅
                                                              //1 1 x x * - sqrt / ~ y * 0 - y y * / 1 x acos y / x acos y / * - sqrt / (postfix) -> (-y/sqrt(1-x*x))/(y*y) * (1/sqrt(1-((arcos(x)/y)*(arcos(x)/y)))) = -1/(y*sqrt(1-x*x)*sqrt(1-((arcos(x)/y)*(arcos(x)/y)))) ✅
                                                              //1 1 x x * - sqrt / ~ y * y y * / 1 x acos y / x acos y / * - sqrt / (postfix) -> (-y/sqrt(1-x*x))/(y*y) * (1/sqrt(1-((arcos(x)/y)*(arcos(x)/y)))) = -1/(y*sqrt(1-x*x)*sqrt(1-((arcos(x)/y)*(arcos(x)/y)))) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
 
     postfix = {"x", "ln", "y", "*", "asin", "y", "acos", "+"}; //arcsin(ln(x)*y)+acos(y)
-    derivePostfix(0, postfix.size()-1, "y", postfix, grasp); //x ln 1 * 0 x / y * + 1 x ln y * x ln y * * - sqrt / 1 1 y y * - sqrt / ~ + (postfix) -> (ln(x)/sqrt(1-ln(x)*y*ln(x)*y)) + (-1/sqrt(1-y*y)) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "y", postfix, grasp); //x ln 1 * 0 x / y * + 1 x ln y * x ln y * * - sqrt / 1 1 y y * - sqrt / ~ + (postfix) -> (ln(x)/sqrt(1-ln(x)*y*ln(x)*y)) + (-1/sqrt(1-y*y)) ✅
                                                              //x ln 0 x / y * + 1 x ln y * x ln y * * - sqrt / 1 1 y y * - sqrt / ~ + (postfix) -> (ln(x)/sqrt(1-ln(x)*y*ln(x)*y)) + (-1/sqrt(1-y*y)) ✅
                                                              //x ln 0 x / + 1 x ln y * x ln y * * - sqrt / 1 1 y y * - sqrt / ~ + (postfix) -> (ln(x)/sqrt(1-ln(x)*y*ln(x)*y)) + (-1/sqrt(1-y*y)) ✅
                                                              //x ln 1 x ln y * x ln y * * - sqrt / 1 1 y y * - sqrt / ~ + (postfix) -> (ln(x)/sqrt(1-ln(x)*y*ln(x)*y)) + (-1/sqrt(1-y*y)) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
 
     postfix = {"x", "acos", "acos", "x", "~", "*", "acos"}; //arccos(arccos(arccos(x))*-x)
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x acos acos 1 ~ * 1 1 x x * - sqrt / ~ 1 x acos x acos * - sqrt / ~ x ~ * + 1 x acos acos x ~ * x acos acos x ~ * * - sqrt / ~ (postfix) -> (arccos(arccos(x)) + (x*((1/sqrt(1-x*x))/sqrt(1-acos(x)*acos(x))))) / sqrt(1-(-x*arccos(arccos(x))*-x*arccos(arccos(x)))) = (arccos(arccos(x)) + x/(sqrt(1-x*x)*sqrt(1-acos(x)*acos(x)))) / sqrt(1-(x*arccos(arccos(x))*x*arccos(arccos(x)))) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x acos acos 1 ~ * 1 1 x x * - sqrt / ~ 1 x acos x acos * - sqrt / ~ x ~ * + 1 x acos acos x ~ * x acos acos x ~ * * - sqrt / ~ (postfix) -> (arccos(arccos(x)) + (x*((1/sqrt(1-x*x))/sqrt(1-acos(x)*acos(x))))) / sqrt(1-(-x*arccos(arccos(x))*-x*arccos(arccos(x)))) = (arccos(arccos(x)) + x/(sqrt(1-x*x)*sqrt(1-acos(x)*acos(x)))) / sqrt(1-(x*arccos(arccos(x))*x*arccos(arccos(x)))) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
 
     postfix = {"x", "exp", "x", "cos", "exp", "/"}; //exp(x) / exp(cos(x))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 x exp * x cos exp * x exp x sin ~ 1 * x cos exp * * - x cos exp x cos exp * / (postfix) -> (exp(x)*exp(cos(x)) - exp(x)*-sin(x)*exp(cos(x))) / (exp(cos(x))*exp(cos(x))) = (exp(x) - exp(x)*-sin(x)) / (exp(cos(x))) = (exp(x)*(1+sin(x))) / exp(cos(x)) = exp(x-cos(x))*(1+sin(x)) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 x exp * x cos exp * x exp x sin ~ 1 * x cos exp * * - x cos exp x cos exp * / (postfix) -> (exp(x)*exp(cos(x)) - exp(x)*-sin(x)*exp(cos(x))) / (exp(cos(x))*exp(cos(x))) = (exp(x) - exp(x)*-sin(x)) / (exp(cos(x))) = (exp(x)*(1+sin(x))) / exp(cos(x)) = exp(x-cos(x))*(1+sin(x)) ✅
                                                              //x exp x cos exp * x exp x sin ~ 1 * x cos exp * * - x cos exp x cos exp * / (postfix) -> (exp(x)*exp(cos(x)) - exp(x)*-sin(x)*exp(cos(x))) / (exp(cos(x))*exp(cos(x))) = (exp(x) - exp(x)*-sin(x)) / (exp(cos(x))) = (exp(x)*(1+sin(x))) / exp(cos(x)) = exp(x-cos(x))*(1+sin(x)) ✅
                                                              //x exp x cos exp * x exp x sin ~ x cos exp * * - x cos exp x cos exp * / (postfix) -> (exp(x)*exp(cos(x)) - exp(x)*-sin(x)*exp(cos(x))) / (exp(cos(x))*exp(cos(x))) = (exp(x) - exp(x)*-sin(x)) / (exp(cos(x))) = (exp(x)*(1+sin(x))) / exp(cos(x)) = exp(x-cos(x))*(1+sin(x)) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
 
     postfix = {"x", "~", "exp", "x", "x", "y", "*", "*", "+"}; //exp(-x) + x*y*x
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 ~ x ~ exp * x x 0 * 1 y * + * 1 x y * * + + (postfix) -> -exp(-x) + x*y + x*y = -exp(-x) + 2*x*y ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 ~ x ~ exp * x x 0 * 1 y * + * 1 x y * * + + (postfix) -> -exp(-x) + x*y + x*y = -exp(-x) + 2*x*y ✅
                                                              //1 ~ x ~ exp * x 0 1 y * + * 1 x y * * + + (postfix) -> -exp(-x) + 2*x*y ✅
                                                              //1 ~ x ~ exp * x 0 y + * x y * + + (postfix) -> -exp(-x) + 2*x*y ✅
                                                              //1 ~ x ~ exp * x y * x y * + + (postfix) -> -exp(-x) + 2*x*y ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
 
     postfix = {"y", "arcsin", "exp", "x", "~", "*", "acos"}; //arccos(exp(arcsin(y))*-x)
-    derivePostfix(0, postfix.size()-1, "y", postfix, grasp); //y arcsin exp 0 ~ * 1 1 y y * - sqrt / y arcsin exp * x ~ * + 1 y arcsin exp x ~ * y arcsin exp x ~ * * - sqrt / ~ (postfix) -> ((x/sqrt(1-y*y))*exp(arcsin(y))) / sqrt(1-(x*exp(arcsin(y))*x*exp(arcsin(y)))) = (x/(sqrt(1-y*y)*sqrt(1-(x*exp(arcsin(y))*x*exp(arcsin(y))))))*exp(arcsin(y)) = (x*exp(arcsin(y)))/(sqrt(1-y*y)*sqrt(1-(x*exp(arcsin(y))*x*exp(arcsin(y))))) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "y", postfix, grasp); //y arcsin exp 0 ~ * 1 1 y y * - sqrt / y arcsin exp * x ~ * + 1 y arcsin exp x ~ * y arcsin exp x ~ * * - sqrt / ~ (postfix) -> ((x/sqrt(1-y*y))*exp(arcsin(y))) / sqrt(1-(x*exp(arcsin(y))*x*exp(arcsin(y)))) = (x/(sqrt(1-y*y)*sqrt(1-(x*exp(arcsin(y))*x*exp(arcsin(y))))))*exp(arcsin(y)) = (x*exp(arcsin(y)))/(sqrt(1-y*y)*sqrt(1-(x*exp(arcsin(y))*x*exp(arcsin(y))))) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
 
     postfix = {"x", "y", "^"}; //x ^ y
-    derivePostfix(0, postfix.size()-1, "y", postfix, grasp); //x y ^ x ln 1 * 0 x / y * + * (postfix) -> (x^y)*ln(x) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "y", postfix, grasp); //x y ^ x ln 1 * 0 x / y * + * (postfix) -> (x^y)*ln(x) ✅
                                                              //x y ^ x ln 0 x / y * + * (postfix) -> (x^y)*ln(x) ✅
                                                              //x y ^ x ln 0 x / + * (postfix) -> (x^y)*ln(x) ✅
                                                              //x y ^ x ln * (postfix) -> (x^y)*ln(x) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"x", "cos", "y", "cos", "^", "x", "*"}; //(cos(x)^(cos(y)))*x
-    derivePostfix(0, postfix.size()-1, "y", postfix, grasp); //x cos y cos ^ 0 * x cos y cos ^ x cos ln y sin ~ 1 * * x sin ~ 0 * x cos / y cos * + * x * + (postfix) -> -x*(cos(x)^(cos(y)))*ln(cos(x))*sin(y) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "y", postfix, grasp); //x cos y cos ^ 0 * x cos y cos ^ x cos ln y sin ~ 1 * * x sin ~ 0 * x cos / y cos * + * x * + (postfix) -> -x*(cos(x)^(cos(y)))*ln(cos(x))*sin(y) ✅
                                                              //0 x cos y cos ^ x cos ln y sin ~ 1 * * x sin ~ 0 * x cos / y cos * + * x * + (postfix) -> -x*(cos(x)^(cos(y)))*ln(cos(x))*sin(y) ✅
                                                              //x cos y cos ^ x cos ln y sin ~ 1 * * x sin ~ 0 * x cos / y cos * + * x * (postfix) -> -x*(cos(x)^(cos(y)))*ln(cos(x))*sin(y) ✅
                                                              //x cos y cos ^ x cos ln y sin ~ * * x * (postfix) -> -x*(cos(x)^(cos(y)))*ln(cos(x))*sin(y) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"x", "cos", "y", "cos", "^", "x", "*"}; //(cos(x)^(cos(y)))*x
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x cos y cos ^ 1 * x cos y cos ^ x cos ln y sin ~ 0 * * x sin ~ 1 * x cos / y cos * + * x * + (postfix) -> cos(x)^(cos(y)) + x*cos(x)^(cos(y)) * ((-sin(x)/cos(x))*cos(y)) = cos(x)^(cos(y)) - cos(y)*x*cos(x)^(cos(y)-1)*sin(x) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x cos y cos ^ 1 * x cos y cos ^ x cos ln y sin ~ 0 * * x sin ~ 1 * x cos / y cos * + * x * + (postfix) -> cos(x)^(cos(y)) + x*cos(x)^(cos(y)) * ((-sin(x)/cos(x))*cos(y)) = cos(x)^(cos(y)) - cos(y)*x*cos(x)^(cos(y)-1)*sin(x) ✅
                                                              //x cos y cos ^ x cos y cos ^ x cos ln y sin ~ 0 * * x sin ~ 1 * x cos / y cos * + * x * + (postfix) -> cos(x)^(cos(y)) + x*cos(x)^(cos(y)) * ((-sin(x)/cos(x))*cos(y)) = cos(x)^(cos(y)) - cos(y)*x*cos(x)^(cos(y)-1)*sin(x) ✅
                                                              //x cos y cos ^ x cos y cos ^ x sin ~ x cos / y cos * * x * + (postfix) -> cos(x)^(cos(y)) + x*cos(x)^(cos(y)) * ((-sin(x)/cos(x))*cos(y)) = cos(x)^(cos(y)) - cos(y)*x*cos(x)^(cos(y)-1)*sin(x) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"x", "x", "^", "x", "^", "y", "*"}; //((x^x)^x)*y
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x x ^ x ^ 0 * x x ^ x ^ x x ^ ln 1 * x x ^ x ln 1 * 1 x / x * + * x x ^ / x * + * y * + (postfix) -> y*((x^x)^x)*(ln(x^x) + (((x^x)*(ln(x)+1))/(x^x))*x) = y*((x^x)^x)*(ln(x^x) + x*(ln(x)+1)) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x x ^ x ^ 0 * x x ^ x ^ x x ^ ln 1 * x x ^ x ln 1 * 1 x / x * + * x x ^ / x * + * y * + (postfix) -> y*((x^x)^x)*(ln(x^x) + (((x^x)*(ln(x)+1))/(x^x))*x) = y*((x^x)^x)*(ln(x^x) + x*(ln(x)+1)) ✅
                                                              //0 x x ^ x ^ x x ^ ln 1 * x x ^ x ln 1 * 1 x / x * + * x x ^ / x * + * y * + (postfix) -> y*((x^x)^x)*(ln(x^x) + (((x^x)*(ln(x)+1))/(x^x))*x) = y*((x^x)^x)*(ln(x^x) + x*(ln(x)+1)) ✅
                                                              //0 x x ^ x ^ x x ^ ln x x ^ x ln 1 x / x * + * x x ^ / x * + * y * + (postfix) -> y*((x^x)^x)*(ln(x^x) + (((x^x)*(ln(x)+1))/(x^x))*x) = y*((x^x)^x)*(ln(x^x) + x*(ln(x)+1)) ✅
                                                              //x x ^ x ^ x x ^ ln x x ^ x ln 1 x / x * + * x x ^ / x * + * y * (postfix) -> y*((x^x)^x)*(ln(x^x) + (((x^x)*(ln(x)+1))/(x^x))*x) = y*((x^x)^x)*(ln(x^x) + x*(ln(x)+1)) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"x", "x", "^", "x", "^", "y", "*"}; //((x^x)^x)*y
-    derivePostfix(0, postfix.size()-1, "y", postfix, grasp); //x x ^ x ^ 1 * x x ^ x ^ x x ^ ln 0 * x x ^ x ln 0 * 0 x / x * + * x x ^ / x * + * y * + (postfix) -> ((x^x)^x) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "y", postfix, grasp); //x x ^ x ^ 1 * x x ^ x ^ x x ^ ln 0 * x x ^ x ln 0 * 0 x / x * + * x x ^ / x * + * y * + (postfix) -> ((x^x)^x) ✅
                                                              //x x ^ x ^ 1 * x x ^ x ^ 0 x x ^ 0 0 x / x * + * x x ^ / x * + * y * + (postfix) -> ((x^x)^x) ✅
                                                              //x x ^ x ^ x x ^ x ^ 0 x x ^ 0 0 x / x * + * x x ^ / x * + * y * + (postfix) -> ((x^x)^x) ✅
                                                              //x x ^ x ^ x x ^ x ^ 0 x x ^ 0 0 x / + * x x ^ / x * + * y * + (postfix) -> ((x^x)^x) ✅
                                                              //x x ^ x ^ x x ^ x ^ x x ^ 0 x / x * * x x ^ / x * * y * + (postfix) -> ((x^x)^x) ✅
                                                              //x x ^ x ^ (postfix) -> ((x^x)^x) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
         
     postfix = {"x", "sech", "tanh", "x", "^", "y", "*"}; //tanh(sech(x))^x * y
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x sech tanh x ^ 0 * x sech tanh x ^ x sech tanh ln 1 * x sech sech x sech sech * x sech ~ x tanh * 1 * * x sech tanh / x * + * y * + (postfix) -> y*(tanh(sech(x))^x)*(ln(tanh(sech(x)))+(x*((sech(sech(x))*sech(sech(x))*-sech(x)*tanh(x))/tanh(sech(x))))) = y*(tanh(sech(x))^x)*(ln(tanh(sech(x)))-((x*sech(sech(x))*sech(sech(x))*sech(x)*tanh(x))/tanh(sech(x)))) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x sech tanh x ^ 0 * x sech tanh x ^ x sech tanh ln 1 * x sech sech x sech sech * x sech ~ x tanh * 1 * * x sech tanh / x * + * y * + (postfix) -> y*(tanh(sech(x))^x)*(ln(tanh(sech(x)))+(x*((sech(sech(x))*sech(sech(x))*-sech(x)*tanh(x))/tanh(sech(x))))) = y*(tanh(sech(x))^x)*(ln(tanh(sech(x)))-((x*sech(sech(x))*sech(sech(x))*sech(x)*tanh(x))/tanh(sech(x)))) ✅
                                                              //0 x sech tanh x ^ x sech tanh ln 1 * x sech sech x sech sech * x sech ~ x tanh * 1 * * x sech tanh / x * + * y * + (postfix) -> y*(tanh(sech(x))^x)*(ln(tanh(sech(x)))+(x*((sech(sech(x))*sech(sech(x))*-sech(x)*tanh(x))/tanh(sech(x))))) = y*(tanh(sech(x))^x)*(ln(tanh(sech(x)))-((x*sech(sech(x))*sech(sech(x))*sech(x)*tanh(x))/tanh(sech(x)))) ✅
                                                              //0 x sech tanh x ^ x sech tanh ln x sech sech x sech sech * x sech ~ x tanh * 1 * * x sech tanh / x * + * y * + (postfix) -> y*(tanh(sech(x))^x)*(ln(tanh(sech(x)))+(x*((sech(sech(x))*sech(sech(x))*-sech(x)*tanh(x))/tanh(sech(x))))) = y*(tanh(sech(x))^x)*(ln(tanh(sech(x)))-((x*sech(sech(x))*sech(sech(x))*sech(x)*tanh(x))/tanh(sech(x)))) ✅
                                                              //x sech tanh x ^ x sech tanh ln x sech sech x sech sech * x sech ~ x tanh * 1 * * x sech tanh / x * + * y * (postfix) -> y*(tanh(sech(x))^x)*(ln(tanh(sech(x)))+(x*((sech(sech(x))*sech(sech(x))*-sech(x)*tanh(x))/tanh(sech(x))))) = y*(tanh(sech(x))^x)*(ln(tanh(sech(x)))-((x*sech(sech(x))*sech(sech(x))*sech(x)*tanh(x))/tanh(sech(x)))) ✅
@@ -1053,10 +1073,10 @@ int main()
                                                              //x sech tanh x ^ x sech tanh ln 1 x sech ~ x tanh * * x sech sech x sech sech * * x sech tanh / x * + * y * (postfix) -> y*(tanh(sech(x))^x)*(ln(tanh(sech(x)))+(x*((sech(sech(x))*sech(sech(x))*-sech(x)*tanh(x))/tanh(sech(x))))) = y*(tanh(sech(x))^x)*(ln(tanh(sech(x)))-((x*sech(sech(x))*sech(sech(x))*sech(x)*tanh(x))/tanh(sech(x)))) ✅
                                                              //x sech tanh x ^ x sech tanh ln x sech ~ x tanh * x sech sech x sech sech * * x sech tanh / x * + * y * (postfix) -> y*(tanh(sech(x))^x)*(ln(tanh(sech(x)))+(x*((sech(sech(x))*sech(sech(x))*-sech(x)*tanh(x))/tanh(sech(x))))) = y*(tanh(sech(x))^x)*(ln(tanh(sech(x)))-((x*sech(sech(x))*sech(sech(x))*sech(x)*tanh(x))/tanh(sech(x)))) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"x", "y", "/", "tanh", "x", "sin", "^", "x", "*"}; //x*tanh(x/y)^(sin(x))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x y / tanh x sin ^ 1 * x y / tanh x sin ^ x y / tanh ln x cos 1 * * x y / sech x y / sech * 1 y * x 0 * - y y * / * x y / tanh / x sin * + * x * + (postfix) -> (tanh(x/y)^(sin(x))) + x*(tanh(x/y)^(sin(x)))*(ln(tanh(x/y))*cos(x) + (sech(x/y)*sech(x/y)*(1/y)*sin(x))/(tanh(x/y))) = (tanh(x/y)^(sin(x))) + x*(tanh(x/y)^(sin(x)))*(ln(tanh(x/y))*cos(x) + (sech(x/y)*sech(x/y)*sin(x))/(tanh(x/y)*y)) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x y / tanh x sin ^ 1 * x y / tanh x sin ^ x y / tanh ln x cos 1 * * x y / sech x y / sech * 1 y * x 0 * - y y * / * x y / tanh / x sin * + * x * + (postfix) -> (tanh(x/y)^(sin(x))) + x*(tanh(x/y)^(sin(x)))*(ln(tanh(x/y))*cos(x) + (sech(x/y)*sech(x/y)*(1/y)*sin(x))/(tanh(x/y))) = (tanh(x/y)^(sin(x))) + x*(tanh(x/y)^(sin(x)))*(ln(tanh(x/y))*cos(x) + (sech(x/y)*sech(x/y)*sin(x))/(tanh(x/y)*y)) ✅
                                                              //x y / tanh x sin ^ x y / tanh x sin ^ x y / tanh ln x cos 1 * * x y / sech x y / sech * 1 y * x 0 * - y y * / * x y / tanh / x sin * + * x * + (postfix) -> (tanh(x/y)^(sin(x))) + x*(tanh(x/y)^(sin(x)))*(ln(tanh(x/y))*cos(x) + (sech(x/y)*sech(x/y)*(1/y)*sin(x))/(tanh(x/y))) = (tanh(x/y)^(sin(x))) + x*(tanh(x/y)^(sin(x)))*(ln(tanh(x/y))*cos(x) + (sech(x/y)*sech(x/y)*sin(x))/(tanh(x/y)*y)) ✅
                                                              //x y / tanh x sin ^ x y / tanh x sin ^ x y / tanh ln x cos 1 * * x y / sech x y / sech * y x 0 * - y y * / * x y / tanh / x sin * + * x * + (postfix) -> (tanh(x/y)^(sin(x))) + x*(tanh(x/y)^(sin(x)))*(ln(tanh(x/y))*cos(x) + (sech(x/y)*sech(x/y)*(1/y)*sin(x))/(tanh(x/y))) = (tanh(x/y)^(sin(x))) + x*(tanh(x/y)^(sin(x)))*(ln(tanh(x/y))*cos(x) + (sech(x/y)*sech(x/y)*sin(x))/(tanh(x/y)*y)) ✅
                                                              //x y / tanh x sin ^ x y / tanh x sin ^ x y / tanh ln x cos 1 * * x y / sech x y / sech * y 0 - y y * / * x y / tanh / x sin * + * x * + (postfix) -> (tanh(x/y)^(sin(x))) + x*(tanh(x/y)^(sin(x)))*(ln(tanh(x/y))*cos(x) + (sech(x/y)*sech(x/y)*(1/y)*sin(x))/(tanh(x/y))) = (tanh(x/y)^(sin(x))) + x*(tanh(x/y)^(sin(x)))*(ln(tanh(x/y))*cos(x) + (sech(x/y)*sech(x/y)*sin(x))/(tanh(x/y)*y)) ✅
@@ -1064,20 +1084,20 @@ int main()
                                                              //x y / tanh x sin ^ x y / tanh x sin ^ x y / tanh ln x cos * x y / sech x y / sech * y y y * / * x y / tanh / x sin * + * x * + (postfix) -> (tanh(x/y)^(sin(x))) + x*(tanh(x/y)^(sin(x)))*(ln(tanh(x/y))*cos(x) + (sech(x/y)*sech(x/y)*(1/y)*sin(x))/(tanh(x/y))) = (tanh(x/y)^(sin(x))) + x*(tanh(x/y)^(sin(x)))*(ln(tanh(x/y))*cos(x) + (sech(x/y)*sech(x/y)*sin(x))/(tanh(x/y)*y)) ✅
                                                              //x y / tanh x sin ^ x y / tanh x sin ^ x y / tanh ln x cos * y y y * / x y / sech x y / sech * * x y / tanh / x sin * + * x * + (postfix) -> (tanh(x/y)^(sin(x))) + x*(tanh(x/y)^(sin(x)))*(ln(tanh(x/y))*cos(x) + (sech(x/y)*sech(x/y)*(1/y)*sin(x))/(tanh(x/y))) = (tanh(x/y)^(sin(x))) + x*(tanh(x/y)^(sin(x)))*(ln(tanh(x/y))*cos(x) + (sech(x/y)*sech(x/y)*sin(x))/(tanh(x/y)*y)) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"x", "sin", "sech", "x", "y", "*", "^", "sin", "sin", "sech"}; //sech(sin(sin( sech(sin(x))^(x*y))))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x sin sech x y * ^ sin sin sech ~ x sin sech x y * ^ sin sin tanh * x sin sech x y * ^ sin cos x sin sech x y * ^ cos x sin sech x y * ^ x sin sech ln x 0 * 1 y * + * x sin sech ~ x sin tanh * x cos 1 * * x sin sech / x y * * + * * * * (postfix) -> -sech(sin(sin(sech(sin(x))^(x*y)))) * tanh(sin(sin(sech(sin(x))^(x*y)))) * cos(sin(sech(sin(x))^(x*y))) * cos(sech(sin(x))^(x*y)) * sech(sin(x))^(x*y) * (ln(sech(sin(x)))*y - x*y*tanh(sin(x))*cos(x)) = -sech(sin(x))^(x*y)*(y*ln(sech(sin(x))) - y*x*tanh(sin(x))*cos(x)) * cos(sech(sin(x))^(x*y)) * cos(sin(sech(sin(x))^(x*y))) * sech(sin(sin(sech(sin(x))^(x*y)))) * tanh(sin(sin(sech(sin(x))^(x*y)))) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x sin sech x y * ^ sin sin sech ~ x sin sech x y * ^ sin sin tanh * x sin sech x y * ^ sin cos x sin sech x y * ^ cos x sin sech x y * ^ x sin sech ln x 0 * 1 y * + * x sin sech ~ x sin tanh * x cos 1 * * x sin sech / x y * * + * * * * (postfix) -> -sech(sin(sin(sech(sin(x))^(x*y)))) * tanh(sin(sin(sech(sin(x))^(x*y)))) * cos(sin(sech(sin(x))^(x*y))) * cos(sech(sin(x))^(x*y)) * sech(sin(x))^(x*y) * (ln(sech(sin(x)))*y - x*y*tanh(sin(x))*cos(x)) = -sech(sin(x))^(x*y)*(y*ln(sech(sin(x))) - y*x*tanh(sin(x))*cos(x)) * cos(sech(sin(x))^(x*y)) * cos(sin(sech(sin(x))^(x*y))) * sech(sin(sin(sech(sin(x))^(x*y)))) * tanh(sin(sin(sech(sin(x))^(x*y)))) ✅
                                                              //x sin sech x y * ^ sin sin sech ~ x sin sech x y * ^ sin sin tanh * x sin sech x y * ^ sin cos x sin sech x y * ^ cos x sin sech x y * ^ x sin sech ln 0 1 y * + * x sin sech ~ x sin tanh * x cos 1 * * x sin sech / x y * * + * * * * (postfix) -> -sech(sin(sin(sech(sin(x))^(x*y)))) * tanh(sin(sin(sech(sin(x))^(x*y)))) * cos(sin(sech(sin(x))^(x*y))) * cos(sech(sin(x))^(x*y)) * sech(sin(x))^(x*y) * (ln(sech(sin(x)))*y - x*y*tanh(sin(x))*cos(x)) = -sech(sin(x))^(x*y)*(y*ln(sech(sin(x))) - y*x*tanh(sin(x))*cos(x)) * cos(sech(sin(x))^(x*y)) * cos(sin(sech(sin(x))^(x*y))) * sech(sin(sin(sech(sin(x))^(x*y)))) * tanh(sin(sin(sech(sin(x))^(x*y)))) ✅
                                                              //x sin sech x y * ^ sin sin sech ~ x sin sech x y * ^ sin sin tanh * x sin sech x y * ^ sin cos x sin sech x y * ^ cos x sin sech x y * ^ x sin sech ln 0 y + * x sin sech ~ x sin tanh * x cos 1 * * x sin sech / x y * * + * * * * (postfix) -> -sech(sin(sin(sech(sin(x))^(x*y)))) * tanh(sin(sin(sech(sin(x))^(x*y)))) * cos(sin(sech(sin(x))^(x*y))) * cos(sech(sin(x))^(x*y)) * sech(sin(x))^(x*y) * (ln(sech(sin(x)))*y - x*y*tanh(sin(x))*cos(x)) = -sech(sin(x))^(x*y)*(y*ln(sech(sin(x))) - y*x*tanh(sin(x))*cos(x)) * cos(sech(sin(x))^(x*y)) * cos(sin(sech(sin(x))^(x*y))) * sech(sin(sin(sech(sin(x))^(x*y)))) * tanh(sin(sin(sech(sin(x))^(x*y)))) ✅
                                                              //x sin sech x y * ^ sin sin sech ~ x sin sech x y * ^ sin sin tanh * x sin sech x y * ^ sin cos x sin sech x y * ^ cos x sin sech x y * ^ x sin sech ln y * x sin sech ~ x sin tanh * x cos 1 * * x sin sech / x y * * + * * * * (postfix) -> -sech(sin(sin(sech(sin(x))^(x*y)))) * tanh(sin(sin(sech(sin(x))^(x*y)))) * cos(sin(sech(sin(x))^(x*y))) * cos(sech(sin(x))^(x*y)) * sech(sin(x))^(x*y) * (ln(sech(sin(x)))*y - x*y*tanh(sin(x))*cos(x)) = -sech(sin(x))^(x*y)*(y*ln(sech(sin(x))) - y*x*tanh(sin(x))*cos(x)) * cos(sech(sin(x))^(x*y)) * cos(sin(sech(sin(x))^(x*y))) * sech(sin(sin(sech(sin(x))^(x*y)))) * tanh(sin(sin(sech(sin(x))^(x*y)))) ✅
                                                              //x sin sech x y * ^ sin sin sech ~ x sin sech x y * ^ sin sin tanh * x sin sech x y * ^ x sin sech ln y * x sin sech ~ x sin tanh * x cos * x sin sech / x y * * + * x sin sech x y * ^ cos * x sin sech x y * ^ sin cos * * (postfix) -> -sech(sin(sin(sech(sin(x))^(x*y)))) * tanh(sin(sin(sech(sin(x))^(x*y)))) * cos(sin(sech(sin(x))^(x*y))) * cos(sech(sin(x))^(x*y)) * sech(sin(x))^(x*y) * (ln(sech(sin(x)))*y - x*y*tanh(sin(x))*cos(x)) = -sech(sin(x))^(x*y)*(y*ln(sech(sin(x))) - y*x*tanh(sin(x))*cos(x)) * cos(sech(sin(x))^(x*y)) * cos(sin(sech(sin(x))^(x*y))) * sech(sin(sin(sech(sin(x))^(x*y)))) * tanh(sin(sin(sech(sin(x))^(x*y)))) ✅
                                                              //x sin sech x y * ^ x sin sech ln y * x cos x sin sech ~ x sin tanh * * x sin sech / x y * * + * x sin sech x y * ^ cos * x sin sech x y * ^ sin cos * x sin sech x y * ^ sin sin sech ~ x sin sech x y * ^ sin sin tanh * * (postfix) -> -sech(sin(sin(sech(sin(x))^(x*y)))) * tanh(sin(sin(sech(sin(x))^(x*y)))) * cos(sin(sech(sin(x))^(x*y))) * cos(sech(sin(x))^(x*y)) * sech(sin(x))^(x*y) * (ln(sech(sin(x)))*y - x*y*tanh(sin(x))*cos(x)) = -sech(sin(x))^(x*y)*(y*ln(sech(sin(x))) - y*x*tanh(sin(x))*cos(x)) * cos(sech(sin(x))^(x*y)) * cos(sin(sech(sin(x))^(x*y))) * sech(sin(sin(sech(sin(x))^(x*y)))) * tanh(sin(sin(sech(sin(x))^(x*y)))) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"x", "ln", "arccos", "x", "y", "*", "/", "sech", "~", "sin"}; //sin(-sech(arccos(ln(x))/(x*y)))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x ln arccos x y * / sech ~ cos x ln arccos x y * / sech ~ x ln arccos x y * / tanh * 1 x / 1 x ln x ln * - sqrt / ~ x y * * x ln arccos x 0 * 1 y * + * - x y * x y * * / * ~ * (postfix) -> cos(-sech(arccos(ln(x))/(x*y))) * sech(arccos(ln(x))/(x*y))*tanh(arccos(ln(x))/(x*y))* ((-y/sqrt(1-ln(x)*ln(x))) - arccos(ln(x))*y)/(x*y*x*y) = ((-arccos(ln(x))/(y*x*x)) - (1/(sqrt(1-ln(x)*ln(x))*y*x*x))) * sech(arccos(ln(x))/(x*y)) * tanh(arccos(ln(x))/(x*y)) * cos(sech(arccos(ln(x))/(x*y))) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x ln arccos x y * / sech ~ cos x ln arccos x y * / sech ~ x ln arccos x y * / tanh * 1 x / 1 x ln x ln * - sqrt / ~ x y * * x ln arccos x 0 * 1 y * + * - x y * x y * * / * ~ * (postfix) -> cos(-sech(arccos(ln(x))/(x*y))) * sech(arccos(ln(x))/(x*y))*tanh(arccos(ln(x))/(x*y))* ((-y/sqrt(1-ln(x)*ln(x))) - arccos(ln(x))*y)/(x*y*x*y) = ((-arccos(ln(x))/(y*x*x)) - (1/(sqrt(1-ln(x)*ln(x))*y*x*x))) * sech(arccos(ln(x))/(x*y)) * tanh(arccos(ln(x))/(x*y)) * cos(sech(arccos(ln(x))/(x*y))) ✅
                                                              //x ln arccos x y * / sech ~ cos x ln arccos x y * / sech ~ x ln arccos x y * / tanh * 1 x / 1 x ln x ln * - sqrt / ~ x y * * x ln arccos 0 1 y * + * - x y * x y * * / * ~ * (postfix) -> cos(-sech(arccos(ln(x))/(x*y))) * sech(arccos(ln(x))/(x*y))*tanh(arccos(ln(x))/(x*y))* ((-y/sqrt(1-ln(x)*ln(x))) - arccos(ln(x))*y)/(x*y*x*y) = ((-arccos(ln(x))/(y*x*x)) - (1/(sqrt(1-ln(x)*ln(x))*y*x*x))) * sech(arccos(ln(x))/(x*y)) * tanh(arccos(ln(x))/(x*y)) * cos(sech(arccos(ln(x))/(x*y))) ✅
                                                              //x ln arccos x y * / sech ~ cos x ln arccos x y * / sech ~ x ln arccos x y * / tanh * 1 x / 1 x ln x ln * - sqrt / ~ x y * * x ln arccos 0 y + * - x y * x y * * / * ~ * (postfix) -> (postfix) -> cos(-sech(arccos(ln(x))/(x*y))) * sech(arccos(ln(x))/(x*y))*tanh(arccos(ln(x))/(x*y))* ((-y/sqrt(1-ln(x)*ln(x))) - arccos(ln(x))*y)/(x*y*x*y) = ((-arccos(ln(x))/(y*x*x)) - (1/(sqrt(1-ln(x)*ln(x))*y*x*x))) * sech(arccos(ln(x))/(x*y)) * tanh(arccos(ln(x))/(x*y)) * cos(sech(arccos(ln(x))/(x*y))) ✅
                                                              //x ln arccos x y * / sech ~ cos x ln arccos x y * / sech ~ x ln arccos x y * / tanh * 1 x / 1 x ln x ln * - sqrt / ~ x y * * x ln arccos y * - x y * x y * * / * ~ * (postfix) -> cos(-sech(arccos(ln(x))/(x*y))) * sech(arccos(ln(x))/(x*y))*tanh(arccos(ln(x))/(x*y))* ((-y/sqrt(1-ln(x)*ln(x))) - arccos(ln(x))*y)/(x*y*x*y) = ((-arccos(ln(x))/(y*x*x)) - (1/(sqrt(1-ln(x)*ln(x))*y*x*x))) * sech(arccos(ln(x))/(x*y)) * tanh(arccos(ln(x))/(x*y)) * cos(sech(arccos(ln(x))/(x*y))) ✅
@@ -1085,383 +1105,383 @@ int main()
                                                              //1 x / 1 x ln x ln * - sqrt / ~ x y * * x ln arccos y * - x y * x y * * / x ln arccos x y * / sech ~ x ln arccos x y * / tanh * * ~ x ln arccos x y * / sech ~ cos * (postfix) -> cos(-sech(arccos(ln(x))/(x*y))) * sech(arccos(ln(x))/(x*y))*tanh(arccos(ln(x))/(x*y))* ((-y/sqrt(1-ln(x)*ln(x))) - arccos(ln(x))*y)/(x*y*x*y) = ((-arccos(ln(x))/(y*x*x)) - (1/(sqrt(1-ln(x)*ln(x))*y*x*x))) * sech(arccos(ln(x))/(x*y)) * tanh(arccos(ln(x))/(x*y)) * cos(sech(arccos(ln(x))/(x*y))) ✅
     
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
         
     postfix = {"0", "x", "*"}; //0*x
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 0 x * + (postfix) -> 0 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 0 x * + (postfix) -> 0 ✅
                                                              //0 0 + (postfix) -> 0 ✅
                                                              //0
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"0", "x", "*", "x", "x", "sin", "+", "-"}; //0*x - (x+sin(x))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 x cos 1 * + ~ (postfix) -> -1-cos(x) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 x cos 1 * + ~ (postfix) -> -1-cos(x) ✅
                                                              //1 x cos 1 * + ~ (postfix) -> -1-cos(x) ✅
                                                              //0 0 + 1 x cos 1 * + - (postfix) -> -1-cos(x) ✅
                                                              //1 x cos 1 * + ~ (postfix) -> -1-cos(x) ✅
                                                              //1 x cos + ~ (postfix) -> -1-cos(x) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"0", "x", "*", "~", "x", "tanh", "+"}; //-(0*x) + tanh(x)
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x sech x sech * 1 * (postfix) -> sech(x)*sech(x) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x sech x sech * 1 * (postfix) -> sech(x)*sech(x) ✅
                                                              //x sech x sech * 1 * (postfix) -> sech(x)*sech(x) ✅
                                                              //0 0 + ~ x sech x sech * 1 * + (postfix) -> sech(x)*sech(x) ✅
                                                              //0 ~ x sech x sech * 1 * + (postfix) -> sech(x)*sech(x) ✅
                                                              //0 ~ 1 x sech x sech * * + (postfix) -> sech(x)*sech(x) ✅
                                                              //0 ~ x sech x sech * + (postfix) -> sech(x)*sech(x) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"1", "x", "*"}; //1*x
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 0 x * + (postfix) -> 1 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 0 x * + (postfix) -> 1 ✅
                                                              //1 0 + (postfix) -> 1 ✅
                                                              //1 (postfix) -> 1 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"1", "x", "*", "x", "x", "sin", "+", "-"}; //1*x - (x+sin(x))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 0 x * + 1 x cos 1 * + - (postfix) -> 1 - (1+cos(x)) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 0 x * + 1 x cos 1 * + - (postfix) -> 1 - (1+cos(x)) ✅
                                                              //1 0 + 1 x cos 1 * + - (postfix) -> 1 - (1+cos(x)) ✅
                                                              //1 1 x cos 1 * + - (postfix) -> 1 - (1+cos(x)) ✅
                                                              //1 1 x cos + - (postfix) -> 1 - (1+cos(x)) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"1", "x", "*", "~", "x", "tanh", "+"}; //-(1*x) + tanh(x)
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 0 x * + ~ x sech x sech * 1 * + (postfix) -> -1 + sech(x)*sech(x) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 0 x * + ~ x sech x sech * 1 * + (postfix) -> -1 + sech(x)*sech(x) ✅
                                                              //1 0 + ~ x sech x sech * 1 * + (postfix) -> -1 + sech(x)*sech(x) ✅
                                                              //1 ~ x sech x sech * 1 * + (postfix) -> -1 + sech(x)*sech(x) ✅
                                                              //1 ~ 1 x sech x sech * * + (postfix) -> -1 + sech(x)*sech(x) ✅
                                                              //1 ~ x sech x sech * + (postfix) -> -1 + sech(x)*sech(x) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
         
     postfix = {"x", "0", "*"}; //x*0
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 0 + (postfix) -> 0 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 0 + (postfix) -> 0 ✅
                                                              //0 (postfix) -> 0 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"x", "0", "*", "x", "x", "sin", "+", "-"}; //x*0 - (x+sin(x))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 x cos 1 * + ~ (postfix) -> -1-cos(x) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 x cos 1 * + ~ (postfix) -> -1-cos(x) ✅
                                                              //0 0 + 1 x cos 1 * + - (postfix) -> -1-cos(x) ✅
                                                              //1 x cos 1 * + ~ (postfix) -> -1-cos(x) ✅
                                                              //1 x cos + ~ (postfix) -> -1-cos(x) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"x", "0", "*", "~", "x", "tanh", "+"}; //-(x*0) + tanh(x)
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x sech x sech * 1 * (postfix) -> sech(x)*sech(x) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x sech x sech * 1 * (postfix) -> sech(x)*sech(x) ✅
                                                              //0 0 + ~ x sech x sech * 1 * + (postfix) -> sech(x)*sech(x) ✅
                                                              //0 ~ x sech x sech * 1 * + (postfix) -> sech(x)*sech(x) ✅
                                                              //0 ~ 1 x sech x sech * * + (postfix) -> sech(x)*sech(x) ✅
                                                              //0 ~ x sech x sech * + (postfix) -> sech(x)*sech(x) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"x", "x", "*", "1", "*"}; //x*x*1
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x x +  (postfix) -> 2*x ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x x +  (postfix) -> 2*x ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"x", "x", "sin", "+", "1", "*"}; //(sin(x)+x)*1
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 x cos 1 * + (postfix) -> cos(x)*1 + 1 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 x cos 1 * + (postfix) -> cos(x)*1 + 1 ✅
                                                              //1 x cos + (postfix) -> cos(x) + 1 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"x", "1", "*", "tanh", "~", "1", "*", "1", "+"}; //-tanh(x*1)*1 + 1
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x 1 * sech x 1 * sech * 1 * ~ (postfix) -> -sech(x)*sech(x) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x 1 * sech x 1 * sech * 1 * ~ (postfix) -> -sech(x)*sech(x) ✅
                                                              //1 x 1 * sech x 1 * sech * * ~ (postfix) -> -sech(x)*sech(x) ✅
                                                              //x 1 * sech x 1 * sech * ~ (postfix) -> -sech(x)*sech(x) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"x", "sin", "x", "sin", "-", "x", "sin", "+"}; //sin(x) - sin(x) + sin(x)
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp);  //x cos 1 * (postfix) -> cos(x) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp);  //x cos 1 * (postfix) -> cos(x) ✅
                                                               //x cos (postfix) -> cos(x) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
         
     postfix = {"x", "1", "/"}; //x/1
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 x 0 * - 1 1 * / (postfix) -> 1/1 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 x 0 * - 1 1 * / (postfix) -> 1/1 ✅
                                                              //1 0 - 1 1 * / (postfix) -> 1/1 ✅
                                                              //1 0 - (postfix) -> 1/1 ✅
                                                              //1 (postfix) -> 1 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"x", "x", "*", "1", "/"}; //(x*x)/1
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x x + x x * 0 * - 1 1 * / (postfix) -> (2*x)/1 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x x + x x * 0 * - 1 1 * / (postfix) -> (2*x)/1 ✅
                                                              //x x + 0 - 1 1 * / (postfix) -> (2*x)/1 ✅
                                                              //x x + 0 - (postfix) -> x+x ✅
                                                              //x x + (postfix) -> x+x ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"x", "x", "cos", "*", "1", "/"}; //(x*cos(x))/1
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x x sin ~ 1 * * x cos + x x cos * 0 * - 1 1 * / (postfix) -> (-sin(x)*x + cos(x))/1 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x x sin ~ 1 * * x cos + x x cos * 0 * - 1 1 * / (postfix) -> (-sin(x)*x + cos(x))/1 ✅
                                                              //x x sin ~ 1 * * x cos + 0 - 1 1 * / (postfix) -> (-sin(x)*x + cos(x))/1 ✅
                                                              //x x sin ~ 1 * * x cos + 0 - (postfix) -> (-sin(x)*x + cos(x)) ✅
                                                              //x x sin ~ 1 * * x cos + (postfix) -> (-sin(x)*x + cos(x)) ✅
                                                              //x x sin ~ * x cos + (postfix) -> (-sin(x)*x + cos(x)) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"0", "x", "x", "*", "/"}; //0/(x*x)
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 0 - x x * x x * * / (postfix) -> 0/(x*x*x*x) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 0 - x x * x x * * / (postfix) -> 0/(x*x*x*x) ✅
                                                              //0 x x * x x * * / (postfix) -> 0/(x*x*x*x) ✅
                                                              //0 (postfix) -> 0 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"0", "x", "x", "cos", "*", "/"}; //0/(x*cos(x))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 0 - x x cos * x x cos * * / (postfix) -> 0/(x*cos(x)*x*cos(x)) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 0 - x x cos * x x cos * * / (postfix) -> 0/(x*cos(x)*x*cos(x)) ✅
                                                              //0 x x cos * x x cos * * / (postfix) -> 0/(x*cos(x)*x*cos(x)) ✅
                                                              //0 (postfix) -> 0 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
 
     postfix = {"0", "x", "sin", "x", "sech", "*", "/"}; //0/(sin(x)*sech(x))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 0 - x sin x sech * x sin x sech * * / (postfix) -> 0/(sin(x)*sech(x)*sin(x)*sech(x)) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 0 - x sin x sech * x sin x sech * * / (postfix) -> 0/(sin(x)*sech(x)*sin(x)*sech(x)) ✅
                                                              //0 x sin x sech * x sin x sech * * / (postfix) -> 0/(sin(x)*sech(x)*sin(x)*sech(x)) ✅
                                                              //0 (postfix) -> 0 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
 
     postfix = {"1", "x", "x", "*", "/"}; //1/(x*x)
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 x x + - x x * x x * * / (postfix) -> -2/(x*x*x) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 x x + - x x * x x * * / (postfix) -> -2/(x*x*x) ✅
                                                              //x x + ~ x x * x x * * / (postfix) -> -2/(x*x*x) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"1", "x", "cos", "/"}; //1/cos(x)
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 x sin ~ 1 * - x cos x cos * / (postfix) -> sin(x)/(cos(x)*cos(x)) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 x sin ~ 1 * - x cos x cos * / (postfix) -> sin(x)/(cos(x)*cos(x)) ✅
                                                              //x sin ~ 1 * ~ x cos x cos * / (postfix) -> sin(x)/(cos(x)*cos(x)) ✅
                                                              //x sin ~ ~ x cos x cos * / (postfix) -> sin(x)/(cos(x)*cos(x)) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"1", "x", "cos", "x", "sin", "*", "/"}; //1/(cos(x)*sin(x))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp);  //0 x cos x cos 1 * * x sin ~ 1 * x sin * + - x cos x sin * x cos x sin * * / (postfix) -> -(cos(x)*cos(x) - sin(x)*sin(x)) / ((cos(x)*sin(x))*(cos(x)*sin(x))) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp);  //0 x cos x cos 1 * * x sin ~ 1 * x sin * + - x cos x sin * x cos x sin * * / (postfix) -> -(cos(x)*cos(x) - sin(x)*sin(x)) / ((cos(x)*sin(x))*(cos(x)*sin(x))) ✅
                                                               //x cos x cos 1 * * x sin ~ 1 * x sin * + ~ x cos x sin * x cos x sin * * / (postfix) -> -(cos(x)*cos(x) - sin(x)*sin(x)) / ((cos(x)*sin(x))*(cos(x)*sin(x))) ✅
                                                               //x cos x cos 1 * * x sin ~ x sin * + ~ x cos x sin * x cos x sin * * / (postfix) -> -(cos(x)*cos(x) - sin(x)*sin(x)) / ((cos(x)*sin(x))*(cos(x)*sin(x))) ✅
                                                               //x cos x cos * x sin ~ x sin * + ~ x cos x sin * x cos x sin * * / (postfix) -> -(cos(x)*cos(x) - sin(x)*sin(x)) / ((cos(x)*sin(x))*(cos(x)*sin(x))) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"x", "x", "~", "~", "sin", "+"}; //x + sin(x)
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 x ~ ~ cos 1 * + (postfix) -> 1 + 1*cos(x) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 x ~ ~ cos 1 * + (postfix) -> 1 + 1*cos(x) ✅
                                                              //1 x ~ ~ cos + (postfix) -> 1 + cos(x) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"x", "~", "~", "tanh", "x", "-"}; //tanh(x) - x
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x ~ ~ sech x ~ ~ sech * 1 * 1 - (postfix) -> sech(x)*sech(x) - 1 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x ~ ~ sech x ~ ~ sech * 1 * 1 - (postfix) -> sech(x)*sech(x) - 1 ✅
                                                              //1 x ~ ~ sech x ~ ~ sech * * 1 - (postfix) -> sech(x)*sech(x) - 1 ✅
                                                              //x ~ ~ sech x ~ ~ sech * 1 - (postfix) -> sech(x)*sech(x) - 1 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"x", "0", "x", "^", "+"}; //x + 0^x
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 0 0 ln 0 0 / x * + * + (postfix) -> 1 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 0 0 ln 0 0 / x * + * + (postfix) -> 1 ✅
                                                              //1 (postfix) -> 1 ✅
 
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
 
     postfix = {"0", "x", "^", "x", "-"}; //0^x - x
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x ~ ~ sech x ~ ~ sech * 1 * 1 - (postfix) -> -1 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x ~ ~ sech x ~ ~ sech * 1 * 1 - (postfix) -> -1 ✅
                                                              //1 ~ (postfix) -> -1 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
 
     postfix = {"x", "cos", "0", "x", "^", "-"}; //cos(x) - 0^x
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x sin ~ 1 * 0 0 ln 0 0 / x * + * - (postfix) -> -sin(x) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x sin ~ 1 * 0 0 ln 0 0 / x * + * - (postfix) -> -sin(x) ✅
                                                              //x sin ~ 1 * (postfix) -> -sin(x) ✅
                                                              //x sin ~ (postfix) -> -sin(x) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"x", "x", "0", "^", "+"}; //x + x^0
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 1 0 * + (postfix) -> 1 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 1 0 * + (postfix) -> 1 ✅
                                                              //1 (postfix) -> 1 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
 
     postfix = {"x", "0", "^", "x", "-"}; //x^0 - x
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 0 * 1 - (postfix) -> -1 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 0 * 1 - (postfix) -> -1 ✅
                                                              //1 ~ (postfix) -> -1 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
 
     postfix = {"x", "cos", "x", "0", "^", "-"}; //cos(x) - x^0
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x sin ~ 1 * 1 0 * - (postfix) -> -sin(x) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x sin ~ 1 * 1 0 * - (postfix) -> -sin(x) ✅
                                                              //x sin ~ 1 * (postfix) -> -sin(x) ✅
                                                              //x sin ~ (postfix) -> -sin(x) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"x", "1", "x", "^", "+"}; //x + 1^x
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 0 0 ln 0 0 / x * + * + (postfix) -> 1 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 0 0 ln 0 0 / x * + * + (postfix) -> 1 ✅
                                                              //1 (postfix) -> 1 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
 
     postfix = {"1", "x", "^", "x", "-"}; //1^x - x
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x ~ ~ sech x ~ ~ sech * 1 * 1 - (postfix) -> -1 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x ~ ~ sech x ~ ~ sech * 1 * 1 - (postfix) -> -1 ✅
                                                              //1 ~ (postfix) -> -1 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
 
     postfix = {"x", "cos", "1", "x", "^", "-"}; //cos(x) - 1^x
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x sin ~ 1 * 0 0 ln 0 0 / x * + * - (postfix) -> -sin(x) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x sin ~ 1 * 0 0 ln 0 0 / x * + * - (postfix) -> -sin(x) ✅
                                                              //x sin ~ (postfix) -> -sin(x) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"x", "x", "1", "^", "+"}; //x + x^1
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 x 1 x / * + (postfix) -> 2 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 x 1 x / * + (postfix) -> 2 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
 
     postfix = {"x", "1", "^", "x", "-"}; //x^1 - x
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x 1 x / * 1 - (postfix) -> 0 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x 1 x / * 1 - (postfix) -> 0 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
 
     postfix = {"x", "cos", "x", "1", "^", "-"}; //cos(x) - x^1
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x sin ~ 1 * x 1 x / * - (postfix) -> -sin(x) - 1 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x sin ~ 1 * x 1 x / * - (postfix) -> -sin(x) - 1 ✅
                                                              //x sin ~ x 1 x / * - (postfix) -> -sin(x) - 1 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
         
     postfix = {"1", "x", "exp", "*", "ln"}; //ln(1*exp(x))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 (postfix) -> 1 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //1 (postfix) -> 1 ✅
                                                              //x exp 1 x exp * / (postfix) -> 1 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"x", "1", "x", "exp", "*", "ln", "-"}; //x - ln(1*exp(x))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 (postfix) -> 0 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 (postfix) -> 0 ✅
                                                              //1 x exp 1 x exp * / - (postfix) -> 0 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"x", "1", "x", "exp", "*", "ln", "-", "cos"}; //cos(x - ln(1*exp(x)))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x 1 x exp * ln - sin ~ 0 * (postfix) -> 0 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x 1 x exp * ln - sin ~ 0 * (postfix) -> 0 ✅
                                                              //x 1 x exp * ln - sin ~ 1 x exp 1 x exp * / - * (postfix) -> 0 ✅
                                                              //1 x exp 1 x exp * / - x 1 x exp * ln - sin ~ * (postfix) -> 0 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"y", "y", "*", "exp", "ln"}; //ln(exp(y*y))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 (postfix) -> 0 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 (postfix) -> 0 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"x", "x", "*", "exp", "y", "ln", "*"}; //exp(x*x)*ln(y)
-    derivePostfix(0, postfix.size()-1, "y", postfix, grasp); //x x * exp 1 y / * (postfix) -> exp(x*x)*(1/y) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "y", postfix, grasp); //x x * exp 1 y / * (postfix) -> exp(x*x)*(1/y) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"y", "y", "-", "exp", "exp", "x", "sin", "+"}; //exp(exp(y-y))+sin(x)
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x cos 1 * (postfix) -> cos(x) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x cos 1 * (postfix) -> cos(x) ✅
                                                              //x cos (postfix) -> cos(x) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
         
     postfix = {"x", "x", "*", "sin", "y", "/"}; // sin(x*x)/y
-    derivePostfix(0, postfix.size()-1, "y", postfix, grasp); //x x * sin ~ y y * / (postfix) -> -sin(x*x)/(y*y) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "y", postfix, grasp); //x x * sin ~ y y * / (postfix) -> -sin(x*x)/(y*y) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"x", "cos", "sin", "y", "/"}; // sin(cos(x))/y
-    derivePostfix(0, postfix.size()-1, "y", postfix, grasp); //x cos sin ~ y y * / (postfix) -> -sin(cos(x))/(y*y) ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "y", postfix, grasp); //x cos sin ~ y y * / (postfix) -> -sin(cos(x))/(y*y) ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"x", "x", "-", "sqrt", "cos"}; // cos(sqrt(x-x))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 (postfix) -> 0 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 (postfix) -> 0 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"x", "x", "*", "x", "x", "*", "-", "sqrt", "tanh", "sin"}; // sin(tanh(sqrt(x*x - x*x)))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x x * x x * - sqrt sech x x * x x * - sqrt sech * 0 * x x * x x * - sqrt tanh cos * (postfix) -> 0 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x x * x x * - sqrt sech x x * x x * - sqrt sech * 0 * x x * x x * - sqrt tanh cos * (postfix) -> 0 ✅
                                                              //0 (postfix) -> 0 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"x", "x", "cos", "*", "x", "x", "cos", "*", "-", "sqrt", "sqrt"}; // sqrt(sqrt(x*cos(x) - x*cos(x)))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 (postfix) -> 0 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 (postfix) -> 0 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
         
     postfix = {"x", "x", "-", "arcsin", "cos"}; // cos(arcsin(x-x))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 (postfix) -> 0 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 (postfix) -> 0 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"x", "x", "^", "x", "x", "^", "-", "asin", "tanh", "sin"}; // sin(tanh(arcsin(x^x - x^x)))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x x ^ x x ^ - asin sech x x ^ x x ^ - asin sech * 0 * x x ^ x x ^ - asin tanh cos * (postfix) -> 0 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x x ^ x x ^ - asin sech x x ^ x x ^ - asin sech * 0 * x x ^ x x ^ - asin tanh cos * (postfix) -> 0 ✅
                                                              //0 (postfix) -> 0 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"x", "x", "sin", "*", "x", "x", "sin", "*", "-", "arcsin", "asin"}; // arcsin(arcsin(x*sin(x) - x*sin(x)))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 (postfix) -> 0 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 (postfix) -> 0 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
         
     postfix = {"x", "tanh", "x", "tanh", "-", "acos", "exp"}; // exp(acos(tanh(x)-tanh(x)))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 (postfix) -> 0 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 (postfix) -> 0 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"x", "x", "/", "x", "x", "/", "-", "arccos", "sech", "sech"}; // sech(sech(arccos(x/x - x/x)))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x x / x x / - arccos sech sech ~ x x / x x / - arccos sech tanh * x x / x x / - arccos sech ~ x x / x x / - arccos tanh * 0 * * (postfix) -> 0 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //x x / x x / - arccos sech sech ~ x x / x x / - arccos sech tanh * x x / x x / - arccos sech ~ x x / x x / - arccos tanh * 0 * * (postfix) -> 0 ✅
                                                              //0 (postfix) -> 0 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"x", "x", "sech", "-", "x", "x", "sech", "-", "-", "arccos", "acos"}; // acos(arccos((x-sech(x)) - (x-sech(x))))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 (postfix) -> 0 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 (postfix) -> 0 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"x", "x", "exp", "*", "x", "x", "exp", "*", "-", "tanh", "acos"}; // acos(tanh(x*exp(x) - x*exp(x)))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 (postfix) -> 0 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 (postfix) -> 0 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
         
     postfix = {"x", "x", "exp", "*", "x", "x", "exp", "*", "-", "sech", "asin"}; // asin(sech(x*exp(x) - x*exp(x)))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 (postfix) -> 0 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 (postfix) -> 0 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"x", "x", "sech", "-", "x", "x", "sech", "-", "-", "sech", "acos"}; // acos(sech((x-sech(x)) - (x-sech(x))))
-    derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 (postfix) -> 0 ✅
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp); //0 (postfix) -> 0 ✅
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"x0", "x0", "cos", "/", "tanh", "acos", "cos"};
-    derivePostfix(0, postfix.size()-1, "x0", postfix, grasp);
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x0", postfix, grasp);
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = derivat;
-    derivePostfix(0, postfix.size()-1, "x0", postfix, grasp);
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x0", postfix, grasp);
     std::cout << grasp << '\n';
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     postfix = {"x1", "x2", "+", "cos", "x1", "x2", "+", "+"};
-    derivePostfix(0, postfix.size()-1, "x1", postfix, grasp);
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x1", postfix, grasp);
     std::cout << "postfix = " << postfix << '\n';
     std::cout << grasp << '\n';
     std::cout << "LGBs = " << getLGBs(postfix) << '\n';
 
-    sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
     
     return 0;
 }

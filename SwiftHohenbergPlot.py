@@ -210,7 +210,7 @@ show = False
 np.sech = lambda x: 1.0/np.cosh(x)
 
 PERIODIC_IN_THETA = True
-PRINT_LATEX_ONLY = False
+PRINT_LATEX_ONLY = True
 PlotType = "2D"
 N = 1000
 r_max = 100
@@ -220,7 +220,7 @@ theta_edges = np.linspace(0, 2*np.pi, N, endpoint=False)
 round_floats = lambda expr, ndigits: expr.xreplace({f: Float(round(float(f), ndigits)) for f in expr.atoms(Float)})
 f_per_idx = 10
 mu, nu = 1, 1
-r, theta = symbols('r theta')
+f_eqn, r, theta = symbols('f r theta')
 f =  [sin(r)*sin(theta), \
       sin(r)*sin(theta)+0.604, \
       0.998846776839887*0.999950000416665**(r**4)*sin(r)*sin(theta) + 0.604, \
@@ -235,10 +235,13 @@ f =  [sin(r)*sin(theta), \
         if PERIODIC_IN_THETA else \
         (((0.148475282221305 * theta) - (sin(theta) * (1.0000132758892615 * sin(r)))) - 0.0922858190550785)
 
-formula_label = latex(round_floats(f, 5), mul_symbol='dot')
+formula_label = latex(f_float_rounded:=round_floats(f, 5), mul_symbol='dot')
 print(f'f = {formula_label}')
 
 if PRINT_LATEX_ONLY:
+    print("MULTILINE f")
+    print("===========")
+    print(sp.multiline_latex(f_eqn, (sp.expand(f_float_rounded)), 1))
     exit()
 # Calculate the first Laplacian (Laplacian of f)
 laplacian_f = diff(f, r, 2) + (1/r) * diff(f, r) + (1/(r**2)) * diff(f, theta, 2)
