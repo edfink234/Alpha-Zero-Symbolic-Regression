@@ -34,6 +34,8 @@
 #include "MLP_Vec.h"
 #define RANDOM_SEED 42 //fixed random seed!
 #define DEBUG_TRASH_RESULTS false
+#define RUN_BENCHMARK_PART_1 false
+#define RUN_BENCHMARK_PART_2 true
 
 using Clock = std::chrono::high_resolution_clock;
 
@@ -3676,7 +3678,7 @@ int main()
         my_test_data.print();
         float MSE = mlp.train(my_test_data.rows, my_test_data.labels, 0);
         std::cout << "MSE = " << MSE << '\n';
-    #else
+    #elif RUN_BENCHMARK_PART_1
         const std::unordered_map<std::string, float (*)(const Eigen::VectorXf&)> func_map =
         {
             {"Hemberg_1", Hemberg_1},
@@ -3776,39 +3778,42 @@ int main()
 
         exit(1);
 
-        
-    //    MultiLayerPerceptron mlp(
-    //         std::vector<int>{2,10,9,8,10,8,1},
-    //         std::deque<std::string>{"sigmoid", "sigmoid", "sigmoid", "none", "none", "none"},
-    //         /* bias = */ 1.0f,
-    //         /*eta = */ 0.0001f,
-    //         /*theta = */ 0.8f,
-    //         /*gamma = */ 0.9f,
-    //         /*weight_update = */ "NAG",
-    //         /*expression_type = */ "prefix", //IRRELEVANT
-    //         /*float epsilon = */ 0.1f,
-    //         /*float beta_1 = */ 0.9f,
-    //         /*float beta_2 = */ 0.999f,
-    //         /*float lambda = */ 0.01f /*weight decay AdamW*/);
+    #elif RUN_BENCHMARK_PART_2
+        const std::unordered_map<int, 
+    
+        MultiLayerPerceptron mlp(
+             std::vector<int>{2,10,9,8,10,8,1},
+             std::deque<std::string>{"sigmoid", "sigmoid", "sigmoid", "none", "none", "none"},
+             /* bias = */ 1.0f,
+             /*eta = */ 0.0001f,
+             /*theta = */ 0.8f,
+             /*gamma = */ 0.9f,
+             /*weight_update = */ "NAG",
+             /*expression_type = */ "prefix", //IRRELEVANT
+             /*float epsilon = */ 0.1f,
+             /*float beta_1 = */ 0.9f,
+             /*float beta_2 = */ 0.999f,
+             /*float lambda = */ 0.01f /*weight decay AdamW*/);
 
-    //    GP(generateData(20 /*rows*/, 3 /*columns*/, func_map.at("Hemberg_2") /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f),
-    //       5 /*fixed depth*/,
-    //       "postfix",
-    //       true /*cache*/,
-    //       100 /*time to run the algorithm in seconds*/,
-    //       "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/,
-    //       0 /*num threads*/,
-    //       {2,10,5,5,1} /*Neural Network number of perceptrons in i'th layers; first layer is number of inputs (input-layer) */,
-    //       std::deque<std::string>{"sigmoid", "sigmoid", "none", "none"},
-    //       10 /*num_epochs*/,
-    //       /* bias = */ 1.0f,
-    //       /*eta = */ 0.5f,
-    //       /*theta = */ 0.01f,
-    //       /*gamma = */ 0.9f,
-    //       /*epsilon = */ 1e-8f,
-    //       /*beta_1 = */ 0.9f,
-    //       /*beta_2 = */ 0.999f,
-    //       /*lambda = */ 0.01f);
+        GP(generateData(20 /*rows*/, 3 /*columns*/, func_map.at("Hemberg_2") /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f),
+           5 /*fixed depth*/,
+           "postfix",
+           true /*cache*/,
+           100 /*time to run the algorithm in seconds*/,
+           "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/,
+           0 /*num threads*/,
+           {2,10,5,5,1} /*Neural Network number of perceptrons in i'th layers; first layer is number of inputs (input-layer) */,
+           std::deque<std::string>{"sigmoid", "sigmoid", "none", "none"},
+           10 /*num_epochs*/,
+           /* bias = */ 1.0f,
+           /*eta = */ 0.5f,
+           /*theta = */ 0.01f,
+           /*gamma = */ 0.9f,
+           /*epsilon = */ 1e-8f,
+           /*beta_1 = */ 0.9f,
+           /*beta_2 = */ 0.999f,
+           /*lambda = */ 0.01f);
+    
         
     #endif
 
