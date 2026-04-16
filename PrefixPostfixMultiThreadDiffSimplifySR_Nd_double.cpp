@@ -12624,7 +12624,7 @@ namespace ExampleProblems
             "/Users/edwardfinkelstein/SDSU_UCI/WhitesonResearch/TrackProject/stubborn_track_csvs/v20260305_002410__train5_test5__layers25_len320p0__r3p1-53p0__fd25-25__func3-3__noiseXY0p01_Z0p01event1000000010-hits_X.csv"
         };
         constexpr int sizes[] = {61, 85, 169, 75, 37, 27, 43, 75, 37, 83};
-        const std::vector<std::string> seed_exprs =
+        std::vector<std::string> seed_exprs =
         {
             std::vector<std::string>
             {
@@ -12807,9 +12807,14 @@ namespace ExampleProblems
             }.back(),
             std::vector<std::string>
             {
-                "2 x0 * 4.145448333701481 + 59.83997981594845 x0 * x0 asin 6 1 x0 arccos -1 x0 tanh tanh + * + + + 7.02447484476452 x0 sqrt x0 asin + sqrt * - 2.21213202658722 + * 4.678533275050403 x0 * 3.016182053287423 - x0 ~ 1.72979602188488 11.8131780914971 x0 * sin + + 2 * * + 320.4406583866402 x0 170.27530142684918 x0 x0 * - * - - * 4 - 2 x0 tanh - -943.288671607951 x0 sqrt + * - 4 x0 -1.837467984882598 1.1390147047464876 - 44.6431557933765 + * sin + - -27.18072452856437 -9.649269889954269 -10.914784548298355 x0 * - cos sech * - 3.9680614680871877 x0 -21.051315958021732 * cos * - x0 + 333.02698369792427 x0 acos 1.42269765015648 - cos asin * - 50.919926691109126 -"
+                "8.909886052319461 60.13013259367252 x0 * 22.497690582704685 31.430444972044043 x0 * tanh 9.265820723773961 x0 - x0 sqrt * -19.72159040749609 x0 * - ~ + + 10.690314137676866 x0 x0 + tanh * + * x0 acos 2.7248698510496445 2 * * 0.6954103753776116 x0 - 50.24583144461023 -11.815109370140295 x0 * sin + * * + 4 -10.725656829936336 * 12.132666222160774 * + * x0 x0 + cos 4 x0 -1018.911622002277 * * * + 1.386475822930821 x0 43.582187618788474 x0 -1.9925915907605085 * + * sin * - 51.22867312428629 0.2631423147198603 -10.914784548298355 x0 * + cos sech * + 4 18.908335183200673 -19.385296867831475 * * x0 arccos x0 cos * * - -258.3188737766213 x0 sin 0.14863971861841635 - sech arcsin * +",
+                "8.909886052319461 60.13013259367252 x0 * 22.497690582704685 31.430444972044043 x0 * tanh 9.265820723773961 x0 - x0 sqrt * -19.72159040749609 x0 * - ~ + + 10.690314137676866 x0 x0 + tanh * + * x0 acos 2.7248698510496445 2 * * 0.6954103753776116 x0 - 50.24583144461023 -11.815109370140295 x0 * sin + * * + 4 -10.725656829936336 * 12.132666222160774 * + * x0 x0 + cos 4 x0 -1018.911622002277 * * * + 1.386475822930821 x0 43.582187618788474 x0 -1.9925915907605085 * + * sin * - 51.22867312428629 0.2631423147198603 -10.914784548298355 x0 * + cos sech * + 4 18.908335183200673 -19.385296867831475 * * x0 arccos x0 cos * * - -258.3188737766213 x0 sin 0.14863971861841635 - sech arcsin * + 0.0008556838271016786 1.302211658576644 1 - 0 0 1302.1867261419375 sin x0 cos * 1 -85.61977970636087 - 0 4 x0 + - * - + cos tanh + * - +"
             }.back()
         };
+        constexpr bool read_from_file = true;
+        constexpr const char* filename = "WierdTrackFitterTestFile.txt";
+        std::string pert_mode = "sub_tree";
+        std::string simplify_mode = "none";
         /*
 x = 'x0 x0 sqrt sin + 0.13599420224810638 * sin const0 x0 const1 * x0 x0 * * - * x0 const2 * 1.092289 x0 sqrt * sin sin * - const3 x0 0.18450196567500599 * cos - + 7.953155 * -5.198050 x0 -0.36787944117144233 * sin * - const4 1.611181 x0 x0 + + -0.146954 x0 sech sqrt + * * + const5 x0 * x0 0.2627831798005332 * sin * - x0 0.5175124998053154 * -0.779342 + cos asin - 0.4515827052894548 x0 x0 tanh - * sin const6 * + x0 0.5296673418744632 x0 * sin ~ + + -0.5949327780232085 x0 * cos arcsin + x0 -0.25 * cos arcsin + x0 sqrt 1.5707963267948966 x0 tanh + * cos asin + 0.7137316379600931 x0 * sin const7 * + x0 sqrt x0 sqrt sqrt 0.7834104183963978 * * sin +'
 consts = '[(const0, 3.44883), (const1, 9.45154e-07), (const2, 0.0402215), (const3, 0.175025), (const4, 5.18365), (const5, 0.058629), (const6, 3.01441), (const7, 1.42325)]'.split('), (')
@@ -12818,6 +12823,17 @@ for i in range(len(consts)):
          x = x.replace(f"const{i}", str(consts[i]))
          */
         assert(track_idx < static_cast<int>(seed_exprs.size()));
+        if (read_from_file)
+        {
+            std::ifstream inObj(filename);
+            std::getline(inObj, seed_exprs[track_idx]);
+            std::getline(inObj, pert_mode);
+            std::getline(inObj, simplify_mode);
+            std::cout << "pert_mode = " << pert_mode << '\n';
+            std::cout << "simplify_mode = " << simplify_mode << '\n';
+//            std::cout << "seed_exprs[" << track_idx << "] = " << seed_exprs[track_idx] << '\n';
+//            exit(1);
+        }
         std::cout << "seed_exprs[" << track_idx << "] = {" << seed_exprs[track_idx] << "}\n";
         Eigen::MatrixXd data = load_csv(file_path[track_idx], sizes[track_idx], 2, false /*no header in these `file_path` files*/);
         std::cout << "data = " << data << '\n';
@@ -12857,7 +12873,7 @@ for i in range(len(consts)):
             SimulatedAnnealing(WierdTrackFitter /*differential equation to solve*/,
                 2 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{21} /*fixed depths of generated solution*/,
+                std::vector<int>{17} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -12874,14 +12890,14 @@ for i in range(len(consts)):
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "WierdTrackSR.txt", // "" /*filename to save current best expression found (instead of outputting them to standard out)*/
-                std::vector<int>{144} /*optional max-sizes of each of the expressions in the generated solution*/,
+                std::vector<int>{136} /*optional max-sizes of each of the expressions in the generated solution*/,
                 {/*split(seed_exprs[track_idx])*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 "dag" /*evaluation type: can be "dag", "scalar", or "vector"*/,
                 1000000 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                 std::vector<std::string>{"exp", "ln", "log", "^", "/"} /*operators to restrict in the search*/,
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
-                "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "total": less simplifications, "none": no simplifications */,
+                simplify_mode /*simplifyMode: "total": most algebraic simplification more comprehensively, "total": less simplifications, "none": no simplifications */,
                 43000 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
                 {split(seed_exprs[track_idx])} /*seed expressions*/,
                 (num_threads == 1) /*whether to exit right after computing the score for the seed expression (default `false`)*/,
@@ -12891,7 +12907,7 @@ for i in range(len(consts)):
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "WierdTrackSR.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/,
+                pert_mode /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/,
                 true /*whether or not to sync the current expression of each thread with the global current best*/);
         }
     }
