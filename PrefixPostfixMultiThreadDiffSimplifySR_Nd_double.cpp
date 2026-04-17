@@ -8430,6 +8430,11 @@ printer = P(); x='(((((((((((30.472204645646173 + (x0 * 17.133742761563433)) * (
             Squared-norm error for each equation: 729.657 0.00169957
             Best expression = (((((((((((16.6852706655685 * x0) + 5.25085038693716) * ((((4 * x0) * ((((((2.98838937763535 * x0) * (x0 + 0.841734601917279)) * ((((-0.034237824125218 * x0) * tanh(sin((4 * x0)))) - (0.323175360261128 * sqrt((1 - (x0 * x0))))) + 5.38499022304171)) - ((18.836097761296 * x0) * asin(asin(tanh(x0))))) - (7.02447484476452 * sqrt((sqrt(x0) + asin(x0))))) + 2.21213202658722)) + (((4 * x0) - 2.4150521687994) * (((-0.0417684941355392 * sqrt(x0)) + (1.72979602188488 * sin((11.8131780914971 * x0)))) - 1.95459210732484))) - tanh(asin(sech((13.3126975320115 * x0)))))) - (1.15393248738985 * sin((50.4013554091056 * x0)))) - (0.0832078172259879 * sin((58.2296835728636 * x0)))) - (0.958156039459019 * sin((x0 * (acos(x0) - 44.6431557933765))))) + (12.2181626552661 * sin(cos(((9.00319761589005 * x0) + 0.823246243332521))))) - (1.35290030419709 * cos((37.7188148490682 * x0)))) - (0.273927072409891 * cos((66.9135003911702 * x0)))) - (38.1564264338765 * asin(cos((acos(x0) - 1.42269765015648))))) + 25.311603155676)
             Best expression (original format) = 16.6852706655685 x0 * 5.25085038693716 + 4 x0 * 2.98838937763535 x0 * x0 0.841734601917279 + * -0.034237824125218 x0 * 4 x0 * sin tanh * 0.323175360261128 1 x0 x0 * - sqrt * - 5.38499022304171 + * 18.836097761296 x0 * x0 tanh asin asin * - 7.02447484476452 x0 sqrt x0 asin + sqrt * - 2.21213202658722 + * 4 x0 * 2.4150521687994 - -0.0417684941355392 x0 sqrt * 1.72979602188488 11.8131780914971 x0 * sin * + 1.95459210732484 - * + 13.3126975320115 x0 * sech asin tanh - * 1.15393248738985 50.4013554091056 x0 * sin * - 0.0832078172259879 58.2296835728636 x0 * sin * - 0.958156039459019 x0 x0 acos 44.6431557933765 - * sin * - 12.2181626552661 9.00319761589005 x0 * 0.823246243332521 + cos sin * + 1.35290030419709 37.7188148490682 x0 * cos * - 0.273927072409891 66.9135003911702 x0 * cos * - 38.1564264338765 x0 acos 1.42269765015648 - cos asin * - 25.311603155676 +
+        depth = 18, maxsize = 161, l1 = 1e-5, bad_ops = {"exp", "ln", "log", "^", "/"}:
+            Best score = 0.418926, SNE = 1.38705
+            Squared-norm error for each equation: 1.3565 0.0305494
+            Best expression = ((((((((8.935510874180073 * ((((59.99887108741638 * x0) * ((23.496432646988332 + (tanh((31.175521825964026 * x0)) - ~(((-9.942186085437024 * sqrt(x0)) - (15.223613006098017 * x0))))) + (7.928741188703707 * tanh((x0 + x0))))) - ((5.227338214057422 * acos(x0)) * ((x0 + -0.6859557679051573) * (69.72888722833342 + sin((-11.81564388447175 * x0)))))) - 389.03219030837244)) - (cos((x0 + x0)) * ((4.019864283035361 * x0) * 801.376902586383))) - (1.4644747892393644 * sin((x0 * (43.582187618788474 - (2.0289388755481803 * x0)))))) - (-51.87734595686013 * sech(cos((0.26845434337975044 + (-10.914887365170808 * x0)))))) - (17.126071128194905 * (asin(x0) * 61.82999977047313))) + (-69.1416471183271 * arcsin(sech((0.5961464486332728 - (4 * x0)))))) + (-0.5233623614258494 * acos(sin((((-168.66151143439296 * sech(x0)) - (cos((-3.978860686696282 * x0)) * (0.5126361336165367 + sech(x0)))) * 1.0009460409947681))))) - (asin(cos(((x0 + (4 + tanh(x0))) * (4 * (~(x0) - 9.37284768211159))))) * (cos(x0) * (16.166763981298008 * ((tanh(x0) * cos((2 * (x0 + 1.1021115536318424)))) + ((x0 * 1.0179639187375369) * (0.04402807589969109 + sech(((3.2787853562255984 * x0) + -1.4253862719380346)))))))))
+            Best expression (original format) = 8.935510874180073 59.99887108741638 x0 * 23.496432646988332 31.175521825964026 x0 * tanh -9.942186085437024 x0 sqrt * 15.223613006098017 x0 * - ~ - + 7.928741188703707 x0 x0 + tanh * + * 5.227338214057422 x0 acos * x0 -0.6859557679051573 + 69.72888722833342 -11.81564388447175 x0 * sin + * * - 389.03219030837244 - * x0 x0 + cos 4.019864283035361 x0 * 801.376902586383 * * - 1.4644747892393644 x0 43.582187618788474 2.0289388755481803 x0 * - * sin * - -51.87734595686013 0.26845434337975044 -10.914887365170808 x0 * + cos sech * - 17.126071128194905 x0 asin 61.82999977047313 * * - -69.1416471183271 0.5961464486332728 4 x0 * - sech arcsin * + -0.5233623614258494 -168.66151143439296 x0 sech * -3.978860686696282 x0 * cos 0.5126361336165367 x0 sech + * - 1.0009460409947681 * sin acos * + x0 4 x0 tanh + + 4 x0 ~ 9.37284768211159 - * * cos asin x0 cos 16.166763981298008 x0 tanh 2 x0 1.1021115536318424 + * cos * x0 1.0179639187375369 * 0.04402807589969109 3.2787853562255984 x0 * -1.4253862719380346 + sech + * + * * * -
 
  */
     static std::atomic<bool> added_additive{false};
@@ -12808,20 +12813,16 @@ namespace ExampleProblems
             std::vector<std::string>
             {
                 "8.909886052319461 60.13013259367252 x0 * 22.497690582704685 31.430444972044043 x0 * tanh 9.265820723773961 x0 - x0 sqrt * -19.72159040749609 x0 * - ~ + + 10.690314137676866 x0 x0 + tanh * + * x0 acos 2.7248698510496445 2 * * 0.6954103753776116 x0 - 50.24583144461023 -11.815109370140295 x0 * sin + * * + 4 -10.725656829936336 * 12.132666222160774 * + * x0 x0 + cos 4 x0 -1018.911622002277 * * * + 1.386475822930821 x0 43.582187618788474 x0 -1.9925915907605085 * + * sin * - 51.22867312428629 0.2631423147198603 -10.914784548298355 x0 * + cos sech * + 4 18.908335183200673 -19.385296867831475 * * x0 arccos x0 cos * * - -258.3188737766213 x0 sin 0.14863971861841635 - sech arcsin * +",
-                "8.909886052319461 60.13013259367252 x0 * 22.497690582704685 31.430444972044043 x0 * tanh 9.265820723773961 x0 - x0 sqrt * -19.72159040749609 x0 * - ~ + + 10.690314137676866 x0 x0 + tanh * + * x0 acos 2.7248698510496445 2 * * 0.6954103753776116 x0 - 50.24583144461023 -11.815109370140295 x0 * sin + * * + 4 -10.725656829936336 * 12.132666222160774 * + * x0 x0 + cos 4 x0 -1018.911622002277 * * * + 1.386475822930821 x0 43.582187618788474 x0 -1.9925915907605085 * + * sin * - 51.22867312428629 0.2631423147198603 -10.914784548298355 x0 * + cos sech * + 4 18.908335183200673 -19.385296867831475 * * x0 arccos x0 cos * * - -258.3188737766213 x0 sin 0.14863971861841635 - sech arcsin * + 0.0008556838271016786 1.302211658576644 1 - 0 0 1302.1867261419375 sin x0 cos * 1 -85.61977970636087 - 0 4 x0 + - * - + cos tanh + * - +"
+                "8.935548480456895 x0 60.01163213119674 * 23.156128982259066 31.175521825964026 x0 * tanh x0 9.622477929622754 - x0 sqrt * 17.12071807584884 x0 * - ~ - + 8.452302519482599 x0 x0 + tanh * + * x0 acos -5.319088223725028 * x0 0.6818846278434718 - 66.24967948804385 -11.81564388447175 x0 * sin + * * + 373.93422829458734 - * x0 x0 + cos -4.000276982606173 x0 * 834.3270168922396 * * + 1.3857043552632042 x0 43.582187618788474 -1.951581846785758 x0 * + * sin * - 52.066963395855126 0.2676610062637722 -10.914887365170808 x0 * + cos sech * + 4.00837601417013 x0 asin 258.35943857285685 * * - 67.90394096223217 -0.5966015292804484 4 x0 * + sech arcsin * - 0.39635216026307374 -168.66151143439296 x0 sech * 4.148527997759974 x0 * cos 2.321563428970903 x0 sech - * - x0 - sin acos * -",
+                "8.935510874180073 59.99887108741638 x0 * 23.496432646988332 31.175521825964026 x0 * tanh -9.942186085437024 x0 sqrt * 15.223613006098017 x0 * - ~ - + 7.928741188703707 x0 x0 + tanh * + * 5.227338214057422 x0 acos * x0 -0.6859557679051573 + 69.72888722833342 -11.81564388447175 x0 * sin + * * - 389.03219030837244 - * x0 x0 + cos 4.019864283035361 x0 * 801.376902586383 * * - 1.4644747892393644 x0 43.582187618788474 2.0289388755481803 x0 * - * sin * - -51.87734595686013 0.26845434337975044 -10.914887365170808 x0 * + cos sech * - 17.126071128194905 x0 asin 61.82999977047313 * * - -69.1416471183271 0.5961464486332728 4 x0 * - sech arcsin * + -0.5233623614258494 -168.66151143439296 x0 sech * -3.978860686696282 x0 * cos 0.5126361336165367 x0 sech + * - 1.0009460409947681 * sin acos * + x0 4 x0 tanh + + 4 x0 ~ 9.37284768211159 - * * cos asin x0 cos 16.166763981298008 x0 tanh 2 x0 1.1021115536318424 + * cos * x0 1.0179639187375369 * 0.04402807589969109 3.2787853562255984 x0 * -1.4253862719380346 + sech + * + * * * -"
             }.back()
         };
         constexpr bool read_from_file = true;
         constexpr const char* filename = "WierdTrackFitterTestFile.txt";
         std::string pert_mode = "sub_tree";
         std::string simplify_mode = "none";
-        /*
-x = 'x0 x0 sqrt sin + 0.13599420224810638 * sin const0 x0 const1 * x0 x0 * * - * x0 const2 * 1.092289 x0 sqrt * sin sin * - const3 x0 0.18450196567500599 * cos - + 7.953155 * -5.198050 x0 -0.36787944117144233 * sin * - const4 1.611181 x0 x0 + + -0.146954 x0 sech sqrt + * * + const5 x0 * x0 0.2627831798005332 * sin * - x0 0.5175124998053154 * -0.779342 + cos asin - 0.4515827052894548 x0 x0 tanh - * sin const6 * + x0 0.5296673418744632 x0 * sin ~ + + -0.5949327780232085 x0 * cos arcsin + x0 -0.25 * cos arcsin + x0 sqrt 1.5707963267948966 x0 tanh + * cos asin + 0.7137316379600931 x0 * sin const7 * + x0 sqrt x0 sqrt sqrt 0.7834104183963978 * * sin +'
-consts = '[(const0, 3.44883), (const1, 9.45154e-07), (const2, 0.0402215), (const3, 0.175025), (const4, 5.18365), (const5, 0.058629), (const6, 3.01441), (const7, 1.42325)]'.split('), (')
-consts = [float(i[i.find(', ')+2:].replace(')]','')) for i in consts]
-for i in range(len(consts)):
-         x = x.replace(f"const{i}", str(consts[i]))
-         */
+        std::string numThreads;
+        
         assert(track_idx < static_cast<int>(seed_exprs.size()));
         if (read_from_file)
         {
@@ -12829,8 +12830,11 @@ for i in range(len(consts)):
             std::getline(inObj, seed_exprs[track_idx]);
             std::getline(inObj, pert_mode);
             std::getline(inObj, simplify_mode);
+            std::getline(inObj, numThreads);
+            num_threads = std::stoi(numThreads);
             std::cout << "pert_mode = " << pert_mode << '\n';
             std::cout << "simplify_mode = " << simplify_mode << '\n';
+            std::cout << "num_threads = " << num_threads << '\n';
 //            std::cout << "seed_exprs[" << track_idx << "] = " << seed_exprs[track_idx] << '\n';
 //            exit(1);
         }
@@ -12873,7 +12877,7 @@ for i in range(len(consts)):
             SimulatedAnnealing(WierdTrackFitter /*differential equation to solve*/,
                 2 /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{17} /*fixed depths of generated solution*/,
+                std::vector<int>{19} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -12890,7 +12894,7 @@ for i in range(len(consts)):
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "WierdTrackSR.txt", // "" /*filename to save current best expression found (instead of outputting them to standard out)*/
-                std::vector<int>{136} /*optional max-sizes of each of the expressions in the generated solution*/,
+                std::vector<int>{199} /*optional max-sizes of each of the expressions in the generated solution*/,
                 {/*split(seed_exprs[track_idx])*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 "dag" /*evaluation type: can be "dag", "scalar", or "vector"*/,
                 1000000 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
