@@ -213,7 +213,7 @@ void derivePostfixHelper(int low, int up, const std::string& dx, const std::vect
     if (postfix[up] == "+" || postfix[up] == "-")
     {
         int x_prime_low = derivat.size();
-        derivePostfixHelper(low, up-2-grasp[up-1], dx, postfix, grasp, true);  /*Putting x'*/
+        derivePostfixHelper(low, up-2-grasp[up-1], dx, postfix, grasp, true, trace_derivat);  /*Putting x'*/
         int x_prime_high = derivat.size();
         derivePostfixHelper(up-1-grasp[up-1], up-1, dx, postfix, grasp, true, trace_derivat); /*Putting y'*/
         int y_prime_high = derivat.size();
@@ -298,7 +298,7 @@ void derivePostfixHelper(int low, int up, const std::string& dx, const std::vect
         }
 
         int x_prime_low = derivat.size();
-        derivePostfixHelper(low, up-2-grasp[up-1], dx, postfix, grasp, true); /* x y' "*" x' */
+        derivePostfixHelper(low, up-2-grasp[up-1], dx, postfix, grasp, true, trace_derivat); /* x y' "*" x' */
         if (derivat.back() == "0") //0 y * -> 0
         {
 //            puts("hi 233");
@@ -350,7 +350,7 @@ void derivePostfixHelper(int low, int up, const std::string& dx, const std::vect
     else if (postfix[up] == "/")
     {
         int x_prime_low = derivat.size();
-        derivePostfixHelper(low, up-2-grasp[up-1], dx, postfix, grasp, true); /* x' */
+        derivePostfixHelper(low, up-2-grasp[up-1], dx, postfix, grasp, true, trace_derivat); /* x' */
         int k;
         if (derivat.back() == "0") //0 y * -> 0
         {
