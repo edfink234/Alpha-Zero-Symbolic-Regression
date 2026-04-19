@@ -1,5 +1,6 @@
 #include <vector>
 #include <array>
+#include <climits>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -67,6 +68,40 @@ std::string to_string_general(double v)
         }
         out.resize(out.size() * 2);            // grow and retry (rare)
     }
+}
+
+float score_to_mse(float score)
+{
+    if (score <= 0)
+    {
+        return FLT_MAX;
+    }
+    return ((1.0f/score) - 1.0f);
+}
+
+// https://www.geeksforgeeks.org/cpp/how-to-split-string-by-delimiter-in-cpp/
+std::vector<std::string> split(const std::string& str)
+{
+    // Create a stringstream object
+    // to str
+    std::stringstream ss(str);
+    std::vector<std::string> vec;
+
+      // Temporary object to store
+      // the splitted string
+    std::string t;
+
+      // Delimiter
+    char del = ' ';
+
+       // Splitting the str string
+       // by delimiter
+    while (std::getline(ss, t, del))
+    {
+        vec.push_back(t);
+    }
+
+    return vec;
 }
 
 Eigen::MatrixXf generateData(int numRows, int numCols, float (*func)(const Eigen::VectorXf&), float min = -3.0f, float max = 3.0f)
@@ -198,20 +233,22 @@ int trueMod(int N, int M)
 template <typename T>
 std::ostream& operator<<(std::ostream& os, const std::vector<T>& vec)
 {
-    for (const auto& i: vec)
+    for (int i = 0; i < vec.size() - 1; i++)
     {
-        os << i << ' ';
+        os << vec[i] << ' ';
     }
+    os << vec.back();
     return os;
 }
 
 template <typename T>
 std::ostream& operator<<(std::ostream& os, const std::deque<T>& vec)
 {
-    for (const auto& i: vec)
+    for (int i = 0; i < vec.size() - 1; i++)
     {
-        os << i << ' ';
+        os << vec[i] << ' ';
     }
+    os << vec.back();
     return os;
 }
 
@@ -3352,13 +3389,12 @@ float Feynman_5(const Eigen::VectorXf& x)
 }
 
 //https://arxiv.org/abs/2310.06609
-std::vector<std::pair<std::vector<std::string>, float>>
-     GP(const Eigen::MatrixXf& data,
+std::vector<std::pair<std::vector<std::string>, float>> GP(const Eigen::MatrixXf& data,
         int depth = 3,
         std::string expression_type = "prefix",
         bool cache = true,
         double time = 120 /*time to run the algorithm in seconds*/,
-        const char* filename = "" /*name of file to save the results to*/,
+        const int init_population = 100,
         unsigned int num_threads = 0,
         std::vector<int> layers = {},
         std::deque<std::string> layer_types = {},
@@ -3371,14 +3407,16 @@ std::vector<std::pair<std::vector<std::string>, float>>
         float beta_1 = 0.9f,
         float beta_2 = 0.999f,
         float lambda = 0.01f /*weight decay AdamW*/,
-        const std::vector<std::pair<std::vector<std::string>, float>>& seed_individuals = {})
+        const std::vector<std::pair<std::vector<std::string>, float>>& seed_individuals = {},
+        const std::pair<int, float>& mse_thresh = {} /*number of individuals (.first) that must have an mse below (.second) before returning (.first) best individuals*/)
 {
+    
     if (num_threads == 0)
     {
         unsigned int temp = std::thread::hardware_concurrency();
         num_threads = ((temp <= 1) ? 1 : temp);
     }
-    
+    assert(mse_thresh.first <= num_threads*init_population);
     std::vector<std::thread> threads(num_threads);
     std::latch sync_point(num_threads);
 
@@ -3394,7 +3432,7 @@ std::vector<std::pair<std::vector<std::string>, float>>
      Inside of thread:
      */
     
-    auto func = [&depth, &expression_type, &data, &cache, &start_time, &time, &max_score, &sync_point, &layers, &layer_types, &num_epochs, &bias, &eta, &theta, &gamma, &epsilon, &beta_1, &beta_2, &lambda, &seed_individuals, &best_expression, &orig_expression](int thread_num)
+    auto func = [&](int thread_num)
     {
         std::random_device rand_dev;
         // Use a combination of the device, the index, and time for maximum entropy
@@ -3407,7 +3445,6 @@ std::vector<std::pair<std::vector<std::string>, float>>
         sync_point.arrive_and_wait();
         Board secondary_one((depth > 0) ? depth-1 : 0, expression_type, cache), secondary_two((depth > 0) ? depth-1 : 0, expression_type, cache); //For crossover and mutations
         float score = 0.0f, mut_prob = 0.8f, rand_mut_cross;
-        constexpr int init_population = 5;
         std::vector<std::pair<std::vector<std::string>, float>> individuals = seed_individuals;
         std::pair<std::vector<std::string>, float> individual_1, individual_2;
         std::vector<std::pair<int, int>> sub_exprs_1, sub_exprs_2;
@@ -3439,21 +3476,39 @@ std::vector<std::pair<std::vector<std::string>, float>>
         {
 //                puts("hi");
             x.srnn.pieces.clear();
-            while ((score = x.complete_status()) == -1) //this while-loop generates one weight-update-rule expression
+            if (i < individuals.size())
             {
-                temp_legal_moves = x.get_legal_moves(); //the legal moves
-                
-                assert(temp_legal_moves.size());
-                temp_sz = temp_legal_moves.size(); //the number of legal moves
-                std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
-                x.srnn.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
+                x.srnn.pieces = individuals[i].first;
+                score = x.complete_status();
+                assert(score >= 0); //make sure its a valid math expression
+            }
+            else
+            {
+                //generate an expression
+                while ((score = x.complete_status()) == -1) //this while-loop generates one weight-update-rule expression
+                {
+                    temp_legal_moves = x.get_legal_moves(); //the legal moves
+                    
+                    assert(temp_legal_moves.size());
+                    temp_sz = temp_legal_moves.size(); //the number of legal moves
+                    std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
+                    x.srnn.pieces.push_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
+                }
             }
             
             updateScore();
             if (!std::isnan(score))
             {
-                individuals.push_back(std::make_pair(x.srnn.pieces, score));
-                i++;
+                if (i < individuals.size())
+                {
+                    individuals[i].second = score;
+                    assert(x.srnn.pieces == individuals[i].first);
+                }
+                else
+                {
+                    individuals.push_back(std::make_pair(x.srnn.pieces, score));
+                }
+                i++; //increment number of individuals generated by 1
             }
         }
         
@@ -3573,13 +3628,36 @@ std::vector<std::pair<std::vector<std::string>, float>>
             updateScore(); //updating the best score achieved thus far
             individuals.push_back(std::make_pair(x.srnn.pieces, score)); //adding the first cross-over'd individual to the expression population
         };
+        
+        auto passedMSE = [&]() -> bool
+        {
+            if (mse_thresh.first == 0)
+            {
+                return true;
+            }
+            int num_passed = 0;
+            int idx_curr = 0;
+            while (score_to_mse(individuals[idx_curr].second) < mse_thresh.second)
+            {
+                num_passed++;
+                idx_curr++;
+            }
+            return (num_passed > (mse_thresh.first/num_threads));
+        };
 
         if (!x.srnn.pieces.size())
         {
             throw std::runtime_error("Primary pieces size = 0");
         }
         puts("Starting evolution now...");
-        for (/*int ngen = 0*/; (timeElapsedSince(start_time) < time); /*ngen++*/)
+        
+        std::sort(individuals.begin(), individuals.end(),
+        [](std::pair<std::vector<std::string>, float>& individual_1, std::pair<std::vector<std::string>, float>& individual_2)
+        {
+            return individual_1.second > individual_2.second;
+        }); //sorts the individuals in the population from highest to lowest score (so highest score -> first element, second highest score -> second element, etc.)
+        
+        for (/*int ngen = 0*/; (timeElapsedSince(start_time) < time) || (!passedMSE()); /*ngen++*/)
         {
 //            if (ngen && (ngen%5 == 0))
 //            {
@@ -3643,17 +3721,42 @@ std::vector<std::pair<std::vector<std::string>, float>>
         }
     }
     
+    if (mse_thresh.first > 0)
+    {
+        std::sort(allIndividuals.begin(), allIndividuals.end(),
+        [](std::pair<std::vector<std::string>, float>& individual_1, std::pair<std::vector<std::string>, float>& individual_2)
+        {
+            return individual_1.second > individual_2.second;
+        }); //sorts the individuals in the population from highest to lowest score (so highest score -> first element, second highest score -> second element, etc.)
+        allIndividuals.resize(mse_thresh.first); //keep only the best `mse_thresh.first` individuals.
+    }
+    
     std::cout << "\nUnique expressions = " << Board::expression_set.size() << '\n';
     std::cout << "Time spent fitting = " << Board::fit_time << " seconds\n";
     std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
     std::cout << "Best expression = " << best_expression << '\n';
     std::cout << "Best expression (original format) = " << orig_expression << '\n';
     
-     return allIndividuals;
+    return allIndividuals;
 }
 
 int main()
 {
+    const std::unordered_map<std::string, float (*)(const Eigen::VectorXf&)> func_map =
+    {
+        {"Hemberg_1", Hemberg_1},
+        {"Hemberg_2", Hemberg_2},
+        {"Hemberg_3", Hemberg_3},
+        {"Hemberg_4", Hemberg_4},
+        {"Hemberg_5", Hemberg_5},
+        {"Feynman_1", Feynman_1},
+        {"Feynman_2", Feynman_2},
+        {"Feynman_3", Feynman_3},
+        {"Feynman_4", Feynman_4},
+        {"Feynman_5", Feynman_5},
+    };
+    constexpr const char* filename = "temp_config.txt";
+    
     #if DEBUG_TRASH_RESULTS
         std::vector<int> layers{6, 2, 7, 6, 1};
         std::deque<std::string> layer_types{"sigmoid", "sigmoid", "sigmoid", "none"};
@@ -3679,20 +3782,6 @@ int main()
         float MSE = mlp.train(my_test_data.rows, my_test_data.labels, 0);
         std::cout << "MSE = " << MSE << '\n';
     #elif RUN_BENCHMARK_PART_1
-        const std::unordered_map<std::string, float (*)(const Eigen::VectorXf&)> func_map =
-        {
-            {"Hemberg_1", Hemberg_1},
-            {"Hemberg_2", Hemberg_2},
-            {"Hemberg_3", Hemberg_3},
-            {"Hemberg_4", Hemberg_4},
-            {"Hemberg_5", Hemberg_5},
-            {"Feynman_1", Feynman_1},
-            {"Feynman_2", Feynman_2},
-            {"Feynman_3", Feynman_3},
-            {"Feynman_4", Feynman_4},
-            {"Feynman_5", Feynman_5},
-        };
-        constexpr const char* filename = "temp_config.txt";
         constexpr const char* tempMSE_filename = "MSE_temp.txt";
         std::string tempInpBuf;
 
@@ -3775,45 +3864,105 @@ int main()
         tempMSE.close();
     //    system((std::string("cat ")+tempMSE_filename).c_str());
         std::cout << "Time Elapsed = " << timeElapsedSince(start_time) << " seconds" << '\n';
-
-        exit(1);
-
     #elif RUN_BENCHMARK_PART_2
-        const std::unordered_map<int, 
+        std::ifstream finObj(filename);
+        int benchmark_num;
+        std::string benchmark_type, benchmarkNum, nnIdx;
+        std::vector<int> neural_net_layers;
+        std::deque<std::string> neural_net_layer_types;
+        int nn_idx;
+        float mse_base;
+        
+        std::unordered_map<int, std::vector<int>> neural_net_idx_layers =
+        {
+            {1, std::vector<int>{0, 2, 7, 6, 1}},
+            {2, std::vector<int>{0, 6, 8, 1, 5, 1}},
+            {3, std::vector<int>{0, 10, 9, 8, 10, 8, 1}}
+        };
     
-        MultiLayerPerceptron mlp(
-             std::vector<int>{2,10,9,8,10,8,1},
-             std::deque<std::string>{"sigmoid", "sigmoid", "sigmoid", "none", "none", "none"},
-             /* bias = */ 1.0f,
-             /*eta = */ 0.0001f,
-             /*theta = */ 0.8f,
-             /*gamma = */ 0.9f,
-             /*weight_update = */ "NAG",
-             /*expression_type = */ "prefix", //IRRELEVANT
-             /*float epsilon = */ 0.1f,
-             /*float beta_1 = */ 0.9f,
-             /*float beta_2 = */ 0.999f,
-             /*float lambda = */ 0.01f /*weight decay AdamW*/);
+        const std::unordered_map<int, std::deque<std::string>> neural_net_idx_layer_types =
+        {
+            {1, std::deque<std::string>{"sigmoid", "sigmoid", "sigmoid", "none"}},
+            {2, std::deque<std::string>{"sigmoid", "sigmoid", "sigmoid", "none", "none"}},
+            {3, std::deque<std::string>{"sigmoid", "sigmoid", "sigmoid", "none", "none", "none"}}
+        };
+    
+        const std::unordered_map<std::string, int> func_num_args =
+        {
+            {"Hemberg_1", 2},
+            {"Hemberg_2", 2},
+            {"Hemberg_3", 2},
+            {"Hemberg_4", 2},
+            {"Hemberg_5", 2},
+            {"Feynman_1", 5},
+            {"Feynman_2", 9},
+            {"Feynman_3", 7},
+            {"Feynman_4", 8},
+            {"Feynman_5", 6}
+        };
+        std::vector<std::pair<std::vector<std::string>, float>> seedIndividuals, allIndividuals;
+    
+        std::getline(finObj, benchmarkNum);
+        benchmark_num = std::stoi(benchmarkNum);
+        std::cout << "benchmark_num = " << benchmark_num << '\n';
+        std::string individuals_file_name = "benchmark_" + std::to_string(benchmark_num) + "_individuals.txt";
+        if (benchmark_num > 1)
+        {
+            std::string prev_individuals_file_name = "benchmark_" + std::to_string(benchmark_num-1) + "_individuals.txt";
+            std::string temp_individual;
+            //read in weight-update rules from prev_individuals_file_name
+            std::ifstream individualsInObj(prev_individuals_file_name);
+            while (std::getline(individualsInObj, temp_individual))
+            {
+                std::cout << "temp_individual = " << temp_individual;
+                seedIndividuals.push_back(std::make_pair(split(temp_individual), 0.0f));
+            }
+        }
+        std::getline(finObj, benchmark_type);
+        std::cout << "benchmark_type = " << benchmark_type << '\n';
+        std::getline(finObj, nnIdx);
+        nn_idx = std::stoi(nnIdx);
+        std::cout << "nn_idx = " << nn_idx << '\n';
+        neural_net_idx_layers[nn_idx][0] = func_num_args.at(benchmark_type);
+        neural_net_layers = neural_net_idx_layers.at(nn_idx);
+        std::cout << "neural_net_layers = " << neural_net_layers << '\n';
+        neural_net_layer_types = neural_net_idx_layer_types.at(nn_idx);
+        std::cout << "neural_net_layer_types = " << neural_net_layer_types << '\n';
+        finObj >> mse_base;
+        std::cout << "mse_base = " << mse_base << '\n';
+    
+        Eigen::MatrixXf my_temp_test_data = generateData(20 /*rows*/, neural_net_layers[0]+1 /*columns*/, func_map.at(benchmark_type) /*function of two variables to compute the values for the third column*/, ((benchmark_type.substr(0,7) == "Hemberg") ? -3.0f : 1.0f), ((benchmark_type.substr(0,7) == "Hemberg") ? 3.0f : 5.0f));
+    
+        std::cout << "my_temp_test_data = " << my_temp_test_data << '\n';
 
-        GP(generateData(20 /*rows*/, 3 /*columns*/, func_map.at("Hemberg_2") /*function of two variables to compute the values for the third column*/, -3.0f, 3.0f),
-           5 /*fixed depth*/,
-           "postfix",
-           true /*cache*/,
-           100 /*time to run the algorithm in seconds*/,
-           "Hemberg_1PreRandomSearchMultiThread.txt" /*name of file to save the results to*/,
-           0 /*num threads*/,
-           {2,10,5,5,1} /*Neural Network number of perceptrons in i'th layers; first layer is number of inputs (input-layer) */,
-           std::deque<std::string>{"sigmoid", "sigmoid", "none", "none"},
-           10 /*num_epochs*/,
-           /* bias = */ 1.0f,
-           /*eta = */ 0.5f,
-           /*theta = */ 0.01f,
-           /*gamma = */ 0.9f,
-           /*epsilon = */ 1e-8f,
-           /*beta_1 = */ 0.9f,
-           /*beta_2 = */ 0.999f,
-           /*lambda = */ 0.01f);
+        allIndividuals = GP(my_temp_test_data,
+               5 /*fixed depth*/,
+               "postfix",
+               true /*cache*/,
+               10 /*time to run the algorithm in seconds*/,
+               15 /*size of initial population(s)*/,
+               0 /*num threads*/,
+               neural_net_layers /*Neural Network number of perceptrons in i'th layers; first layer is number of inputs (input-layer) */,
+               neural_net_layer_types,
+               10 /*num_epochs*/,
+               /* bias = */ 1.0f,
+               /*eta = */ 0.5f,
+               /*theta = */ 0.01f,
+               /*gamma = */ 0.9f,
+               /*epsilon = */ 1e-8f,
+               /*beta_1 = */ 0.9f,
+               /*beta_2 = */ 0.999f,
+               /*lambda = */ 0.01f,
+               seedIndividuals /*inidividuals to seed the initial populations with*/,
+               std::pair<int,float>{100, mse_base});
+        
+        std::ofstream currBenchmarkOutInds(individuals_file_name);
+        for (const auto& i: allIndividuals)
+        {
+            currBenchmarkOutInds << i.first << ',' << score_to_mse(i.second) << '\n';
+        }
     
+        exit(1);
         
     #endif
 

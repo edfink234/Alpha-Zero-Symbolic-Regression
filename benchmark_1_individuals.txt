@@ -1,0 +1,61 @@
+gamma delta_w_t_k m_t_k value beta_1 exp ^ + - *,2.25459
+gamma delta_w_t_k m_t_k v_t_k beta_1 exp ^ + - *,2.30868
+gamma delta_w_t_k m_t_k value beta_1 exp ^ + - *,2.36372
+gamma delta_w_t_k m_t_k v_t_k beta_1 exp ^ + - *,2.49338
+gamma delta_w_t_k m_t_k value beta_1 exp ^ + - *,2.54992
+gamma delta_w_t_k m_t_k beta_1 asin eta * + - *,2.58217
+delta_w_t_k_ada_delta beta_1 t beta_1 v_t_k_hat gamma / / * ^ -,2.58297
+expt_weight_squared_k gamma + delta_w_t_k theta cos beta_1 + sin / *,2.59532
+delta_w_t_k value delta_w_t_k + value delta_w_t_k + sin eta gamma ^ sqrt - - /,2.62437
+gamma delta_w_t_k m_t_k value value beta_2 + ^ + - *,2.64082
+gamma delta_w_t_k m_t_k v_t_k beta_1 exp ^ + - *,2.64322
+gamma delta_w_t_k m_t_k expt_grad_squared_k eta ^ eta * + - *,2.64793
+delta_w_t_k delta_w_t_k beta_1 sin expt_weight_squared_k expt_weight_squared_k ~ ^ - + +,2.65403
+gamma delta_w_t_k m_t_k gamma m_t_k exp ^ + - *,2.67204
+delta_w_t_k_ada_delta ~ ~ eta w_k v_t_k gamma v_t_k / * - * +,2.69269
+theta eta sqrt ln expt_weight_squared_k delta_w_t_k eta sqrt * - - +,2.72646
+gamma delta_w_t_k m_t_k value beta_1 exp ^ + - *,2.73905
+gamma delta_w_t_k m_t_k v_t_k beta_1 exp ^ + - *,2.74832
+delta_w_t_k v_t_k beta_1 tanh beta_1 sin exp - / +,2.76482
+gamma delta_w_t_k m_t_k v_t_k beta_1 exp ^ + - *,2.79088
+delta_w_t_k v_t_k m_t_k value sin exp - / +,2.80296
+delta_w_t_k_ada_delta beta_1 t beta_1 v_t_k_hat gamma / / * ^ -,2.80634
+gamma delta_w_t_k m_t_k beta_1 eta ^ eta * + - *,2.80641
+gamma delta_w_t_k m_t_k value value beta_2 + ^ + - *,2.81458
+delta_w_t_k v_t_k m_t_k v_t_k sin exp - / +,2.81497
+epsilon delta_w_t_k eta t epsilon v_t_k_hat / - ^ + +,2.91465
+delta_w_t_k v_t_k m_t_k beta_1 sin exp - / +,2.94574
+epsilon eta sqrt ln epsilon delta_w_t_k eta sqrt * - - +,2.9511
+delta_w_t_k v_t_k m_t_k beta_1 sin exp - / +,2.95352
+delta_w_t_k_ada_delta beta_1 t gamma beta_2 m_t_k + + * ^ -,2.96765
+delta_w_t_k v_t_k m_t_k beta_1 sin exp - / +,2.97942
+epsilon epsilon cos ln epsilon delta_w_t_k theta exp * - - +,2.98468
+delta_w_t_k v_t_k m_t_k beta_1 sin exp - / +,3.03051
+expt_weight_squared_k beta_2 / ~ eta w_k value cos d_ij_nest * - * +,3.04763
+theta beta_2 sin ln epsilon delta_w_t_k beta_2 sqrt * - - +,3.0614
+epsilon epsilon cos ln v_t_k delta_w_t_k eta sqrt * - - +,3.10482
+expt_weight_squared_k beta_2 / ~ eta w_k expt_weight_squared_k cos d_ij_nest * - * +,3.11851
+g_t_k d_ij m_t_k theta v_t_k_hat sqrt / - + /,3.13061
+epsilon theta cos ln v_t_k delta_w_t_k eta sqrt * - - +,3.13843
+expt_weight_squared_k gamma + gamma delta_w_t_k expt_grad_squared_k w_k velocity_k - + / + *,3.14809
+expt_weight_squared_k beta_2 / ~ eta w_k beta_2 cos d_ij_nest * - * +,3.15117
+delta_w_t_k v_t_k value exp v_t_k_hat delta_w_t_k_ada_delta d_ij - / - / +,3.15217
+epsilon delta_w_t_k eta t beta_2 theta + - ^ + +,3.18056
+d_ij m_t_k m_t_k v_t_k_hat sqrt eta epsilon + * - + /,3.18574
+expt_weight_squared_k gamma + delta_w_t_k theta cos beta_1 + sin / *,3.18882
+delta_w_t_k value delta_w_t_k + theta ~ sin beta_2 sin sqrt - - /,3.19074
+d_ij m_t_k m_t_k v_t_k_hat sqrt eta epsilon + * - + /,3.20541
+delta_w_t_k_ada_delta beta_1 t gamma beta_2 delta_w_t_k_ada_delta + + * ^ -,3.23443
+delta_w_t_k value delta_w_t_k + m_t_k ~ sin beta_2 sin sqrt - - /,3.24378
+d_ij m_t_k m_t_k v_t_k_hat sqrt eta epsilon + * - + /,3.24407
+delta_w_t_k value delta_w_t_k + m_t_k ~ sin v_t_k theta expt_grad_squared_k * ^ - - /,3.24695
+epsilon exp sqrt delta_w_t_k_ada_delta theta cos beta_1 + sin / *,3.24955
+expt_weight_squared_k beta_2 / ~ eta w_k beta_2 cos d_ij_nest * - * +,3.25121
+theta epsilon cos ln epsilon delta_w_t_k beta_2 sqrt * - - +,3.25262
+expt_weight_squared_k beta_2 / ~ eta w_k beta_2 cos d_ij_nest * - * +,3.25264
+d_ij m_t_k m_t_k v_t_k_hat sqrt eta epsilon + * - + /,3.253
+beta_1 sin sqrt gamma delta_w_t_k expt_grad_squared_k w_k velocity_k - + / + *,3.25639
+delta_w_t_k value delta_w_t_k + m_t_k ~ sin beta_2 sin sqrt - - /,3.25794
+delta_w_t_k value delta_w_t_k + m_t_k ~ sin beta_2 sin sqrt - - /,3.25948
+delta_w_t_k value delta_w_t_k + m_t_k ~ sin beta_2 sin sqrt - - /,3.27163
+expt_weight_squared_k beta_2 / ~ eta
