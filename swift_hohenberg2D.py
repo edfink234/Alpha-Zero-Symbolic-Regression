@@ -213,14 +213,14 @@ class SympyDagEvaluator:
         return values[self.root]
         
 # Define the polar coordinates
-SH = symbols('\\text{SwiftHohenberg} r theta mu nu')
 r, theta = symbols('r theta', real = True, positive = True)
-mu, nu = 1, 1
+mu_equals_nu = False
+mu, nu = (1, 1) if mu_equals_nu else symbols('mu nu', real = True)
 # Define the function f as a function of r and theta
 GENERIC = False
 COMPUTE_NUMERIC = False
 COMPUTE_INIT_NUMERIC_ONLY = False
-DEBUG_NAN = False
+DEBUG_NAN = True
 PRINT_SH_AND_EXIT = False
 PERIODIC_IN_THETA = True
 f = None
@@ -228,7 +228,7 @@ f_per_idx = 10
 
 if GENERIC:
     f = Function('f')(r, theta)
-else:
+elif mu_equals_nu:
     f =  [sin(r)*sin(theta), \
     
           sin(r)*sin(theta)+0.604, \
@@ -298,10 +298,44 @@ else:
               + 0.861955660617334][f_per_idx] \
             if PERIODIC_IN_THETA else \
             (((0.148475282221305 * theta) - (sin(theta) * (1.0000132758892615 * sin(r)))) - 0.0922858190550785)
-
+else:
+    f = [\
+         -mu*(r - 1)*tanh(0.01*mu)
+         - 1.00999966255769*mu*sin(mu)
+         + 0.149911373204456*mu
+         + 1.02753406857375*nu
+         + 8.36750647973528*r
+#         - 0.0199999999175539*theta*(mu + 0.01)*(nu + cos(mu) + 10)
+#         + 1.05373485491171*theta
+         - (6.29319 - 0)*(-0.01*mu*nu + 7.20248742682568)
+         - (11.6592038398793 - 0.2*mu)*(0.0100907998593378*nu - 0.0100907998593378*r + 1.45052799763474)*(0.02*nu + 0 + cos(0.02*mu**2 + 0.01*mu - 10) - 1.37000200009001)
+         - 0.130002166764172*(-mu + r)*tanh(mu)
+         - (mu + 0.01)*tanh(mu)
+         + (4.69282041378069e-5*0 + 4.69282041378069e-5)*(sin(cos(theta)) + 125.8638)
+#         - (theta + 10)*tanh(r - 10)
+         + (1.58079649346906*0 + 0.0159515010339393)*(cos(sqrt(mu)) + 1)
+         + ((nu + 6.28319)*asin(0.01*mu) + tanh(2*mu))*(0.02*mu**2 + 0.01*r*sech(mu) + 4.01000016667417)
+         - (-0.0559725865983503*tanh(2*r - 10) - 0.0327317333341667)*(-0.0100001666741671*mu + 0.02*nu + 9.65048123121691)*(-2*0 + tanh(mu - 2) - 31.03) + 0.0100909665335049*(-0.01*mu + sin(theta) + 2.01)*(0.02*0 + (0.0001*mu + 0.001)*(2*0 + 4) - 0.0312159232024146)*cos(theta + 0.01)
+         + (9.38564082756138e-6*mu*(1000 - 100*mu) + 0.000244363708390108*tanh(0 + 0.01) + 0.332651435448151)*(-1.24850674624177*r - 2.42001867002747*0 - sech(mu) - 12.846846649608)
+         + (-4.69282041378069e-6*nu - (0.0101213400253702 - 1.66305743820599e-6*cos(theta))*(0.0201*mu + r + 0.0602917998593378) - 0.000100003333511123*tanh(nu) + 0.00753195968505202)*(-mu + nu - 3*0 - (9.07998593378172e-5*sin(theta) + 0.0100001666741671*cos(mu) + 0.998652910212759)*(tanh(r) + tanh(0 - 10) - 22.44) + tanh(0) + acos(sech(mu)) + 86.5977291892448)
+         + ((9.99950001972143e-5*r - 1.99990000394429e-6)*(6.28314617729489*0 + 0.394782012297175)*(-0.01*nu - 0.0200001666741671*0 + 5.9633881682509) + 0.00158653047117979*sin(r) + 0.0158653047117979*sech(mu) + 0.06*sech(mu - 0.01) + 0.632188968952088)*(4.69110706287247*mu + 0.989999833325833*r + 8*0 + sin(mu) + cos(mu) + sech((1 - mu)**2) + 73.3658280287198)
+         + 2*sin(mu)
+         + sin(mu + 10)
+         + 3.46159415595577*cos(0.0100001666741671*r*(2*r + theta + 0.01))
+         + tanh(2*mu)
+         - tanh(nu)
+#         - tanh(0.02*theta)
+#         - 0.000907998593378172*tanh(theta)
+         - 0.228351234805663*tanh(sech(nu))
+         + acos(0.0829319*r)
+#         + 1.5*sin(theta+pi) + 1.5
+         + 2*sech(mu)
+         - sech(-0.137385897666266*r + 1.79261410233373*0 + (0.01 - sin(r))*(-0 - tanh(0) + 1.03) - (0.0200003333483342*r + 0.0999966667999946)*(mu*r + 5*r + 10) + 8.48770383987927)
+         - 92.338744596324
+         ][0]
 
 #
-#print(f"f = {f}\n")
+print(f"f = {f}\n")
 #print(f"sp.expand(f) = {sp.expand(f)}")
 #latex_f = sp.latex(f)
 #latex_f = latex_f.replace(r"(r", r"(\sqrt{x^2 + y^2}")
@@ -347,18 +381,24 @@ if PRINT_SH_AND_EXIT:
 
 # print(*swift_hohenberg.args, sep="\n")
 r_vals, theta_vals = [None]*2
+mu_vals, nu_vals = [None]*2
 func_vals = None
-N = 33 #echo $?
-r_vals, theta_vals = np.meshgrid(np.linspace(0.01, 100, N), np.linspace(0, 2*pi, N))
+N = 50 #echo $?
+if mu_equals_nu:
+    r_vals, theta_vals = np.meshgrid(np.linspace(0.01, 1000, N), np.linspace(0, 2*pi, N))
+else:
+    r_vals, theta_vals, mu_vals, nu_vals = np.meshgrid(np.linspace(0.01, 10000000, N), np.linspace(0, 2*pi, N), np.linspace(0.0, 100, N), np.linspace(0.0, 10000, N))
+#    print(f"r_vals.shape = {r_vals.shape}, theta_vals.shape = {theta_vals.shape}, mu_vals.shape = {mu_vals.shape}, nu_vals.shape = {nu_vals.shape}")
+#    exit()
 if not GENERIC and not COMPUTE_INIT_NUMERIC_ONLY:
     
-    terms = sp.Add.make_args(diff(f, r))  # f is your full expression
-    term_funcs = [sp.lambdify((r, theta), t, modules=[{"sech": sech_stable}, "numpy"]) for t in terms]
+    terms = sp.Add.make_args(diff(f, theta, 1))  # f is your full expression
+    term_funcs = [sp.lambdify(((r, theta) if mu_equals_nu else (r, theta, mu, nu)), t, modules=[{"sech": sech_stable}, "numpy"])  for t in terms]
 
     if DEBUG_NAN:
         bad = []
         for k, tf, term in zip(range(len(terms)), term_funcs, terms):
-            v = tf(r_vals, theta_vals)
+            v = tf(r_vals, theta_vals) if mu_equals_nu else tf(r_vals, theta_vals, mu_vals, nu_vals)
             imag = np.max(np.abs(np.imag(v))) if np.iscomplexobj(v) else 0.0
             n_nan = np.isnan(v).sum()
             n_inf = np.isinf(v).sum()
@@ -381,7 +421,7 @@ if not GENERIC and not COMPUTE_INIT_NUMERIC_ONLY:
     # Evaluate
     dag_eval = SympyDagEvaluator(swift_hohenberg)
     func_vals = dag_eval.evaluate(
-        env={"r": r_vals, "theta": theta_vals},
+        env = ({"r": r_vals, "theta": theta_vals} if mu_equals_nu else {"r": r_vals, "theta": theta_vals, "mu": mu_vals, "nu": nu_vals}),
         shape=r_vals.shape
     )
 
@@ -391,6 +431,7 @@ if not GENERIC and not COMPUTE_INIT_NUMERIC_ONLY:
     print(f"num DAG nodes = {len(dag_eval.nodes)}")
     print(f"squared-norm error = {squared_norm_error}")
     print(f"mean-squared error = {mean_squared_error}")
+    exit()
 #    func = lambdify((r, theta), swift_hohenberg, modules=[{"sech": sech_stable}, "numpy"])
 #    func_vals = func(r_vals, theta_vals)
 #
