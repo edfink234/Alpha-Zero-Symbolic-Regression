@@ -214,7 +214,7 @@ class SympyDagEvaluator:
         
 # Define the polar coordinates
 r, theta = symbols('r theta', real = True, positive = True)
-mu_equals_nu = False
+mu_equals_nu = True
 mu, nu = (1, 1) if mu_equals_nu else symbols('mu nu', real = True)
 # Define the function f as a function of r and theta
 GENERIC = False
@@ -224,7 +224,7 @@ DEBUG_NAN = True
 PRINT_SH_AND_EXIT = False
 PERIODIC_IN_THETA = True
 f = None
-f_per_idx = 10
+f_per_idx = 3
 
 if GENERIC:
     f = Function('f')(r, theta)
@@ -385,7 +385,7 @@ mu_vals, nu_vals = [None]*2
 func_vals = None
 N = 50 #echo $?
 if mu_equals_nu:
-    r_vals, theta_vals = np.meshgrid(np.linspace(0.01, 1000, N), np.linspace(0, 2*pi, N))
+    r_vals, theta_vals = np.meshgrid(np.linspace(0.01, 10, N), np.linspace(0, 2*pi, N))
 else:
     r_vals, theta_vals, mu_vals, nu_vals = np.meshgrid(np.linspace(0.01, 10000000, N), np.linspace(0, 2*pi, N), np.linspace(0.0, 100, N), np.linspace(0.0, 10000, N))
 #    print(f"r_vals.shape = {r_vals.shape}, theta_vals.shape = {theta_vals.shape}, mu_vals.shape = {mu_vals.shape}, nu_vals.shape = {nu_vals.shape}")
