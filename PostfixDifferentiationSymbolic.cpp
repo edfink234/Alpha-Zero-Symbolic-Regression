@@ -835,7 +835,7 @@ int main()
     sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"y","y","x","/","*","cos", "y", "+"}; // cos((y*y)/x) + y
-    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp);
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp, true);
         //y y x / * sin ~ y 0 x * y 1 * - x x * / * 0 y x / * + * 0 + (postfix) -> -sin(y*(y/x))*y*(-y)/(x*x)) (infix) ✅
         //y y x / * sin ~ y 0 x * y 1 * - x x * / * 0 y x / * + * (postfix) -> -sin(y*(y/x))*y*(-y)/(x*x)) (infix) ✅
         //y y x / * sin ~ y 0 x * y 1 * - x x * / * 0 + * (postfix) -> -sin(y*(y/x))*y*(-y)/(x*x)) (infix) ✅
@@ -848,7 +848,7 @@ int main()
     sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"y","y","x","*","*","cos", "y", "+"}; // cos((y*x)*y) + y
-    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp);
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp, false);
     //y y x * * sin ~ y y 1 * 0 x * + * 0 y x * * + * 0 + (postfix) -> -sin((y*x)*y)*y*y (infix) ✅
     //y y x * * sin ~ y y 1 * 0 x * + * 0 y x * * + * (postfix) -> -sin((y*x)*y)*y*y (infix) ✅
     //y y x * * sin ~ y y 0 x * + * 0 y x * * + * (postfix) -> -sin((y*x)*y)*y*y (infix) ✅
@@ -893,7 +893,7 @@ int main()
     sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     postfix = {"x", "y","x","-", "cos", "cos", "*"}; //x * cos(cos(y-x))
-    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp);
+    std::cout << "postfix = " << postfix << '\n'; derivePostfix(0, postfix.size()-1, "x", postfix, grasp, true);
     //x y x - cos sin ~ y x - sin ~ 0 1 - * * * 1 y x - cos cos * + (postfix) -> x*(-sin(cos(y-x))*sin(y-x))+cos(cos(y-x)) = x*sin(cos(x-y))*sin(x-y)+cos(cos(x-y)) ✅
     //x y x - cos sin ~ y x - sin ~ 1 ~ * * * 1 y x - cos cos * + (postfix) -> x*(-sin(cos(y-x))*sin(y-x))+cos(cos(y-x)) = x*sin(cos(x-y))*sin(x-y)+cos(cos(x-y)) ✅
     //x y x - cos sin ~ y x - sin ~ 1 ~ * * * y x - cos cos + (postfix) -> x*(-sin(cos(y-x))*sin(y-x))+cos(cos(y-x)) = x*sin(cos(x-y))*sin(x-y)+cos(cos(x-y)) ✅
