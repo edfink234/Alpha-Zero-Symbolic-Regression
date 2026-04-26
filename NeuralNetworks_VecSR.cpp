@@ -3417,7 +3417,8 @@ std::vector<std::pair<std::vector<std::string>, float>> GP(const Eigen::MatrixXf
         num_threads = ((temp <= 1) ? 1 : temp);
     }
     assert(mse_thresh.first <= num_threads*init_population);
-    std::vector<std::thread> threads(num_threads);
+    srand(RANDOM_SEED);
+    std::vector<std::thread> threads(num_threads-1);
     std::latch sync_point(num_threads);
 
     /*
@@ -3425,6 +3426,7 @@ std::vector<std::pair<std::vector<std::string>, float>> GP(const Eigen::MatrixXf
      */
     std::atomic<float> max_score{0.0}; //an atomic float variable called `max_score` that's initialized to 0
     std::string best_expression, orig_expression;
+    std::unordered_map<float, std::vector<std::string>> best_individuals;
     
     auto start_time = Clock::now();
     
@@ -3435,11 +3437,17 @@ std::vector<std::pair<std::vector<std::string>, float>> GP(const Eigen::MatrixXf
     auto func = [&](int thread_num)
     {
         std::random_device rand_dev;
-        // Use a combination of the device, the index, and time for maximum entropy
         unsigned int seed = rand_dev() ^ (
             (static_cast<unsigned int>(std::time(0)) << 16) |
             (static_cast<unsigned int>(thread_num)));
-        std::mt19937 generator(seed); // Mersenne Twister random number generator
+
+        #if RANDOM_SEED < 0
+            std::mt19937 generator(seed);
+        #else
+            // If you want reproducibility but still unique threads,
+            // offset the fixed seed by the thread index
+            std::mt19937 generator(RANDOM_SEED + thread_num);
+        #endif
         Board x(depth, expression_type, data, false, cache, layers, layer_types, num_epochs, bias, eta, theta, gamma, epsilon, beta_1, beta_2, lambda);
         
         sync_point.arrive_and_wait();
@@ -3462,12 +3470,22 @@ std::vector<std::pair<std::vector<std::string>, float>> GP(const Eigen::MatrixXf
             if (score > max_score)
             {
                 max_score = score;
+                printf("Thread %d waiting for first lock\n",thread_num);
                 std::scoped_lock str_lock(Board::thread_locker);
+                printf("Thread %d acquired first lock\n",thread_num);
                 best_expression = x._to_infix();
                 orig_expression = x.expression();
                 std::cout << "Best score = " << max_score << ", MSE = " << (1/max_score)-1 << '\n';
                 std::cout << "Best expression = " << best_expression << '\n';
                 std::cout << "Best expression (original format) = " << orig_expression << '\n';
+            }
+            if (score_to_mse(score) <= mse_thresh.second)
+            {
+                printf("Thread %d waiting for second lock\n",thread_num);
+                std::scoped_lock str_lock(Board::thread_locker);
+                printf("Thread %d acquired second lock\n",thread_num);
+                best_individuals[score] = x.srnn.pieces;
+                std::cout << "best_individuals.size() = " << best_individuals.size() << '\n';
             }
         };
         
@@ -3631,18 +3649,12 @@ std::vector<std::pair<std::vector<std::string>, float>> GP(const Eigen::MatrixXf
         
         auto passedMSE = [&]() -> bool
         {
+//            static int visits = 0;
             if (mse_thresh.first == 0)
             {
                 return true;
             }
-            int num_passed = 0;
-            int idx_curr = 0;
-            while (score_to_mse(individuals[idx_curr].second) < mse_thresh.second)
-            {
-                num_passed++;
-                idx_curr++;
-            }
-            return (num_passed > (mse_thresh.first/num_threads));
+            return (best_individuals.size() > (mse_thresh.first));
         };
 
         if (!x.srnn.pieces.size())
@@ -3650,12 +3662,6 @@ std::vector<std::pair<std::vector<std::string>, float>> GP(const Eigen::MatrixXf
             throw std::runtime_error("Primary pieces size = 0");
         }
         puts("Starting evolution now...");
-        
-        std::sort(individuals.begin(), individuals.end(),
-        [](std::pair<std::vector<std::string>, float>& individual_1, std::pair<std::vector<std::string>, float>& individual_2)
-        {
-            return individual_1.second > individual_2.second;
-        }); //sorts the individuals in the population from highest to lowest score (so highest score -> first element, second highest score -> second element, etc.)
         
         for (/*int ngen = 0*/; (timeElapsedSince(start_time) < time) || (!passedMSE()); /*ngen++*/)
         {
@@ -3689,36 +3695,30 @@ std::vector<std::pair<std::vector<std::string>, float>> GP(const Eigen::MatrixXf
             }); //sorts the individuals in the population from highest to lowest score (so highest score -> first element, second highest score -> second element, etc.)
             individuals.resize(init_population); //keep only the best `init_population` individuals.
         }
-        return individuals;
     };
     
-//        for (unsigned int i = 0; i < num_threads; i++)
-//        {
-//            threads[i] = std::thread(func, i+1);
-//        }
-//
-//        for (unsigned int i = 0; i < num_threads; i++)
-//        {
-//            threads[i].join();
-//        }
-    
-    std::vector<std::future<std::vector<std::pair<std::vector<std::string>, float>>>> futures;
-
-    for (unsigned int i = 0; i < num_threads; i++)
+    for (unsigned int i = 1; i < num_threads; i++)
     {
-        futures.push_back(std::async(std::launch::async, func, i + 1));
+        threads[i-1] = std::thread(func, i);
+    }
+
+    // Perform the first unit of work on the main thread
+    func(num_threads);
+
+    for (unsigned int i = 1; i < num_threads; i++)
+    {
+        printf("Joining thread %d\n",i);
+        threads[i-1].join();
     }
     
     std::vector<std::pair<std::vector<std::string>, float>> allIndividuals;
     
-    for (unsigned int i = 0; i < num_threads; i++) //looping over each thread
+    int ind_count = 0;
+    for (const auto& ind_pair: best_individuals) //push-back all individuals of thread-i's population into allIndividuals
     {
-        std::vector<std::pair<std::vector<std::string>, float>> result = futures[i].get();  // blocks until ready -> get the population of thread i
-        // use result
-        for (const auto& ind_pair: result) //push-back all individuals of thread-i's population into allIndividuals
-        {
-            allIndividuals.push_back(ind_pair);
-        }
+        assert(ind_pair.second.size());
+        std::cout << "ind " << ++ind_count << " = " << ind_pair.second << ", score = " << ind_pair.first << '\n';
+        allIndividuals.push_back(std::make_pair(ind_pair.second, ind_pair.first));
     }
     
     if (mse_thresh.first > 0)
@@ -3728,7 +3728,19 @@ std::vector<std::pair<std::vector<std::string>, float>> GP(const Eigen::MatrixXf
         {
             return individual_1.second > individual_2.second;
         }); //sorts the individuals in the population from highest to lowest score (so highest score -> first element, second highest score -> second element, etc.)
+        ind_count = 0;
+        for (const auto& ind_pair: allIndividuals)
+        {
+            std::cout << "ind_pair(" << ind_count << ").first = " << ind_pair.first << ", ind_pair(" << ind_count++ << ").second = " << ind_pair.second << '\n';
+        }
+        assert(allIndividuals.size() >= mse_thresh.first);
         allIndividuals.resize(mse_thresh.first); //keep only the best `mse_thresh.first` individuals.
+        puts("AFTER RESIZING ALL INDIVIDUALS");
+        ind_count = 0;
+        for (const auto& ind_pair: allIndividuals)
+        {
+            std::cout << "ind_pair(" << ind_count << ").first = " << ind_pair.first << ", ind_pair(" << ind_count++ << ").second = " << ind_pair.second << '\n';
+        }
     }
     
     std::cout << "\nUnique expressions = " << Board::expression_set.size() << '\n';
@@ -3915,7 +3927,9 @@ int main()
             while (std::getline(individualsInObj, temp_individual))
             {
                 std::cout << "temp_individual = " << temp_individual;
-                seedIndividuals.push_back(std::make_pair(split(temp_individual), 0.0f));
+                std::string mystr = temp_individual.substr(0, temp_individual.find(",", 0));
+                assert(mystr != temp_individual);
+                seedIndividuals.push_back(std::make_pair(split(mystr), 0.0f));
             }
         }
         std::getline(finObj, benchmark_type);
@@ -3961,8 +3975,6 @@ int main()
         {
             currBenchmarkOutInds << i.first << ',' << score_to_mse(i.second) << '\n';
         }
-    
-        exit(1);
         
     #endif
 

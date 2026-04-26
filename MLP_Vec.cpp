@@ -2,6 +2,7 @@
 #include <cassert>
 #include <stack>
 #define FLUSHTHETOILET std::flush
+#define RANDOM_SEED 42
 //#define INTERACTIVE_TRAIN true
 
 //Source: https://github.com/LinkedInLearning/training-neural-networks-in-cpp-4404365
@@ -11,7 +12,12 @@ Perceptron::Perceptron(int inputs, float bias, const std::string& output_type)
 {
     this->bias = bias;
     this->weights.resize(inputs);
-
+    
+    #ifdef RANDOM_SEED
+        srand(RANDOM_SEED);
+    #else
+        puts("No RANDOM SEED in MLP_VEC");
+    #endif
     // Use Eigen's random number generation to initialize the weights
     this->weights = Eigen::VectorXf::Random(inputs);
     this->velocities = Eigen::VectorXf::Random(inputs);

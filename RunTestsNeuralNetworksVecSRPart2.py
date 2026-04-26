@@ -19,5 +19,5 @@ for idx, benchmark, nn, mse in zip(config_idxs, Benchmarks, NeuralNet, MSE):
         f.write(f'{mse}\n')
     #TODO: Write neural net and mse to the file, run the executable
     system(f"./{executable_name}")
-    exit()
+#    exit()
 
