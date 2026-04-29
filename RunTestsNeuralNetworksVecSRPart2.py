@@ -21,3 +21,4 @@ for idx, benchmark, nn, mse in zip(config_idxs, Benchmarks, NeuralNet, MSE):
     system(f"./{executable_name}")
 #    exit()
 
+#Kill python script by getting pid from `ps -ef | grep python`

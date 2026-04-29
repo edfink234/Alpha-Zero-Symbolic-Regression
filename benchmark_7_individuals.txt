@@ -1,100 +1,100 @@
-d_ij_nest theta delta_w_t_k beta_2 acos w_k gamma / - + / *,1.02156e+08
-d_ij_nest theta delta_w_t_k delta_w_t_k_ada_delta expt_weight_squared_k + w_k gamma / - + / *,1.58264e+08
-d_ij_nest theta delta_w_t_k delta_w_t_k_ada_delta expt_weight_squared_k + w_k gamma / - + / *,2.37088e+08
-gamma gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k beta_2 acos - * / *,2.43929e+08
-beta_2 sqrt v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k beta_2 acos - * / *,2.48007e+08
-beta_2 sqrt v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.59295e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.59738e+08
-gamma gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.59952e+08
-gamma gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k beta_2 acos - * / *,2.61134e+08
-gamma gamma / v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.61271e+08
-gamma gamma / v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.62645e+08
-beta_2 sqrt v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k beta_2 acos - * / *,2.62834e+08
-beta_2 sqrt v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k beta_2 acos - * / *,2.62945e+08
-gamma gamma / v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.63027e+08
-beta_2 sqrt v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k beta_2 acos - * / *,2.63945e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.65197e+08
-gamma gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.65647e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.65665e+08
-gamma gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.6624e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.67145e+08
-gamma gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.67248e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.67718e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.67974e+08
-gamma gamma / v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.69986e+08
-gamma gamma / v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.70129e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.70239e+08
-gamma gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.70672e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.72422e+08
-d_ij_nest theta delta_w_t_k beta_2 acos w_k gamma / - + / *,2.73192e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.74673e+08
-d_ij_nest theta delta_w_t_k beta_2 acos w_k gamma / - + / *,2.76027e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.77686e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.78659e+08
-gamma gamma / v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.79206e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.79414e+08
-gamma gamma / v_t_k v_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.79488e+08
-gamma gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.79554e+08
-value gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.79705e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.7992e+08
-gamma gamma / v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.8e+08
-gamma gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.801e+08
-gamma gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.80434e+08
-gamma gamma / v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.80478e+08
-gamma gamma / v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.8054e+08
-gamma gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.80896e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.81122e+08
-gamma gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.8125e+08
-gamma gamma / v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.81285e+08
-gamma gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.8134e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.81527e+08
-gamma gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.81624e+08
-gamma gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.81633e+08
-value gamma / v_t_k expt_weight_squared_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.81786e+08
-beta_2 sqrt v_t_k d_ij_nest + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.81822e+08
-gamma gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.81828e+08
-gamma gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.81925e+08
-gamma gamma / v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.81931e+08
-beta_2 sqrt v_t_k beta_2 + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.81976e+08
-beta_2 sqrt v_t_k eta + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.82023e+08
-gamma gamma / v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.82072e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.82241e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.82303e+08
-beta_2 sqrt v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.82329e+08
-beta_2 sqrt v_t_k value + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.82349e+08
-gamma gamma / v_t_k g_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.82417e+08
-gamma gamma / v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.82598e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.82654e+08
-gamma gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.82688e+08
-gamma gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.82733e+08
-gamma gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.82822e+08
-gamma gamma / v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.82829e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.82862e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.8287e+08
-beta_2 sqrt v_t_k epsilon + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.82874e+08
-gamma gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.82941e+08
-gamma gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.82948e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.82981e+08
-gamma gamma / v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.83315e+08
-gamma gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.83427e+08
-gamma gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.83695e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.83723e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.83728e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.83809e+08
-gamma gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.83868e+08
-gamma gamma / v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.83904e+08
-gamma gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.83927e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.84155e+08
-value gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.84235e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.84399e+08
-gamma gamma / v_t_k velocity_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.84539e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.84544e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.84584e+08
-gamma gamma / v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.84762e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.84914e+08
-beta_2 sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.8509e+08
-value gamma / v_t_k velocity_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.85203e+08
-gamma sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.85282e+08
-value sqrt v_t_k delta_w_t_k + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.85392e+08
-value gamma / v_t_k d_ij + v_t_k_hat sqrt expt_weight_squared_k v_t_k v_t_k - - * / *,2.85433e+08
-eta expt_grad_squared_k expt_grad_squared_k theta exp cos ^ / -,2.88575e+08
+g_t_k m_t_k_hat d_ij d_ij_nest epsilon ln - - / /,2.14957e+08
+v_t_k ln v_t_k theta v_t_k expt_weight_squared_k ^ ^ * theta / +,2.21021e+08
+g_t_k m_t_k_hat d_ij d_ij_nest epsilon ln - - / /,2.40131e+08
+v_t_k ln v_t_k theta v_t_k expt_weight_squared_k ^ ^ * theta / +,2.4147e+08
+v_t_k ln v_t_k expt_weight_squared_k v_t_k expt_weight_squared_k ^ ^ * eta / +,2.56299e+08
+t expt_weight_squared_k expt_weight_squared_k expt_weight_squared_k sqrt acos ^ * /,2.57493e+08
+t expt_weight_squared_k expt_weight_squared_k expt_weight_squared_k sqrt acos ^ * /,2.57493e+08
+t expt_weight_squared_k expt_weight_squared_k expt_weight_squared_k sqrt acos ^ * /,2.57494e+08
+t expt_weight_squared_k expt_weight_squared_k expt_weight_squared_k sqrt acos ^ * /,2.57494e+08
+t expt_weight_squared_k expt_weight_squared_k expt_weight_squared_k sqrt acos ^ * /,2.57494e+08
+t expt_weight_squared_k expt_weight_squared_k expt_weight_squared_k sqrt acos ^ * /,2.57494e+08
+t expt_weight_squared_k expt_weight_squared_k expt_weight_squared_k sqrt acos ^ * /,2.57494e+08
+t expt_weight_squared_k expt_weight_squared_k expt_weight_squared_k sqrt acos ^ * /,2.57494e+08
+t expt_weight_squared_k expt_weight_squared_k expt_weight_squared_k sqrt acos ^ * /,2.57494e+08
+t expt_weight_squared_k expt_weight_squared_k expt_weight_squared_k sqrt acos ^ * /,2.57495e+08
+t expt_weight_squared_k expt_weight_squared_k expt_weight_squared_k sqrt acos ^ * /,2.57495e+08
+t expt_weight_squared_k expt_weight_squared_k expt_weight_squared_k sqrt acos ^ * /,2.57495e+08
+t expt_weight_squared_k expt_weight_squared_k expt_weight_squared_k sqrt acos ^ * /,2.57495e+08
+t expt_weight_squared_k expt_weight_squared_k expt_weight_squared_k sqrt acos ^ * /,2.57495e+08
+v_t_k ln v_t_k expt_weight_squared_k v_t_k expt_weight_squared_k ^ ^ * eta / +,2.57516e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.60466e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.61998e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.6201e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.62025e+08
+t expt_weight_squared_k expt_weight_squared_k beta_2 t ^ asin ^ * /,2.62672e+08
+v_t_k ln v_t_k theta v_t_k expt_weight_squared_k ^ ^ * theta / +,2.62943e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.63386e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.63638e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63686e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63687e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.637e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63701e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63718e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63719e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63719e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63721e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63723e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63728e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.63731e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63749e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63753e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63754e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63756e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63756e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63758e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63763e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63766e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63767e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.6377e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.63797e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63804e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63804e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63804e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.63805e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63809e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63812e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63812e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63813e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63813e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.6384e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63846e+08
+t expt_weight_squared_k expt_weight_squared_k beta_1 expt_weight_squared_k ^ asin ^ * /,2.63888e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.64558e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.65137e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.65165e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.65209e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.65218e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.6523e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.65239e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.65257e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.65282e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.6561e+08
+t expt_weight_squared_k expt_weight_squared_k theta v_t_k_hat ^ acos ^ * /,2.65645e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.65671e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.65713e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.65724e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.65816e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.6584e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.65841e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.65901e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.65921e+08
+t expt_weight_squared_k expt_weight_squared_k gamma epsilon ^ asin ^ * /,2.6593e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.65942e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.65988e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.66e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.66007e+08
+t expt_weight_squared_k expt_weight_squared_k w_k tanh asin ^ * /,2.66038e+08
+t expt_weight_squared_k expt_weight_squared_k theta sin acos ^ * /,2.67482e+08
+t expt_weight_squared_k expt_weight_squared_k expt_weight_squared_k theta ^ asin ^ * /,2.77171e+08
+t expt_weight_squared_k expt_weight_squared_k expt_weight_squared_k theta ^ asin ^ * /,2.77171e+08
+t expt_weight_squared_k expt_weight_squared_k expt_weight_squared_k theta ^ asin ^ * /,2.77171e+08
+t expt_weight_squared_k expt_weight_squared_k expt_weight_squared_k theta ^ asin ^ * /,2.77172e+08
+t expt_weight_squared_k expt_weight_squared_k expt_weight_squared_k theta ^ asin ^ * /,2.77172e+08
+t expt_weight_squared_k expt_weight_squared_k expt_weight_squared_k theta ^ asin ^ * /,2.77172e+08
+t expt_weight_squared_k expt_weight_squared_k expt_weight_squared_k theta ^ asin ^ * /,2.77172e+08
+t expt_weight_squared_k expt_weight_squared_k expt_weight_squared_k theta ^ asin ^ * /,2.77172e+08
+t expt_weight_squared_k expt_weight_squared_k expt_weight_squared_k theta ^ asin ^ * /,2.77172e+08
+t expt_weight_squared_k expt_weight_squared_k expt_weight_squared_k theta ^ asin ^ * /,2.77172e+08
+t expt_weight_squared_k expt_weight_squared_k expt_weight_squared_k theta ^ asin ^ * /,2.77172e+08
+t expt_weight_squared_k expt_weight_squared_k expt_weight_squared_k theta ^ asin ^ * /,2.77173e+08

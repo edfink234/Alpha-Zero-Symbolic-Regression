@@ -154,6 +154,11 @@ void MultiLayerPerceptron::reset_params()
     {
         this->d_nest[0] = this->d[0];
     }
+    #ifdef RANDOM_SEED
+        srand(RANDOM_SEED);
+//    #else
+//        puts("No RANDOM SEED in MLP_VEC");
+    #endif
     for (int i = 1; i < network.size(); i++)
     { //first layer is the input layer so they're no neurons there
         for (int j = 0; j < layers[i]; j++)

@@ -241,6 +241,17 @@ std::ostream& operator<<(std::ostream& os, const std::vector<T>& vec)
     return os;
 }
 
+std::string& operator+(const std::string& x, const std::vector<std::string>& y)
+{
+    static std::string z;
+    z = x + ' ';
+    for (const std::string& i: y)
+    {
+        z += i + ' ';
+    }
+    return z;
+}
+
 template <typename T>
 std::ostream& operator<<(std::ostream& os, const std::deque<T>& vec)
 {
@@ -3498,7 +3509,11 @@ std::vector<std::pair<std::vector<std::string>, float>> GP(const Eigen::MatrixXf
             {
                 x.srnn.pieces = individuals[i].first;
                 score = x.complete_status();
-                assert(score >= 0); //make sure its a valid math expression
+//                assert(score >= 0); //make sure it's a valid math expression
+                if (score < 0)
+                {
+                    throw std::runtime_error(std::string("Error, math expression") + x.srnn.pieces + " is invalid.");
+                }
             }
             else
             {
@@ -3877,6 +3892,7 @@ int main()
     //    system((std::string("cat ")+tempMSE_filename).c_str());
         std::cout << "Time Elapsed = " << timeElapsedSince(start_time) << " seconds" << '\n';
     #elif RUN_BENCHMARK_PART_2
+        std::cout << Eigen::VectorXf::Random(10) << "🍀" << Eigen::VectorXf::Random(10) << '\n'; exit(1);
         std::ifstream finObj(filename);
         int benchmark_num;
         std::string benchmark_type, benchmarkNum, nnIdx;
@@ -3926,7 +3942,7 @@ int main()
             std::ifstream individualsInObj(prev_individuals_file_name);
             while (std::getline(individualsInObj, temp_individual))
             {
-                std::cout << "temp_individual = " << temp_individual;
+                std::cout << "temp_individual = " << temp_individual << '\n';
                 std::string mystr = temp_individual.substr(0, temp_individual.find(",", 0));
                 assert(mystr != temp_individual);
                 seedIndividuals.push_back(std::make_pair(split(mystr), 0.0f));

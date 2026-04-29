@@ -1,0 +1,100 @@
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k delta_w_t_k_ada_delta beta_1 * + - / *,2.51596e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 t gamma expt_grad_squared_k * - - / *,2.51783e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 t gamma expt_grad_squared_k * - - / *,2.51872e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.52447e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k delta_w_t_k_ada_delta beta_1 * + - / *,2.52597e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k v_t_k gradient_k / + - / *,2.53088e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 t gamma expt_grad_squared_k * - - / *,2.53102e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.53179e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.53198e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k delta_w_t_k_ada_delta beta_1 * + - / *,2.53245e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.53263e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.53271e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.53323e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k delta_w_t_k_ada_delta cos + - / *,2.53323e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k delta_w_t_k_ada_delta beta_1 * + - / *,2.53354e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k eta gradient_k / + - / *,2.53381e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k delta_w_t_k_ada_delta expt_weight_squared_k * + - / *,2.53383e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k v_t_k gradient_k / + - / *,2.5342e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k delta_w_t_k_ada_delta beta_1 * + - / *,2.53455e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.53471e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.53512e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.53535e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.53551e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.53557e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k v_t_k gradient_k / + - / *,2.53593e+08
+v_t_k delta_w_t_k_ada_delta cos eta expt_grad_squared_k delta_w_t_k_ada_delta beta_1 * + - / *,2.53645e+08
+v_t_k expt_weight_squared_k cos beta_1 t gamma expt_grad_squared_k * - - / *,2.53656e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.53662e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.53701e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k delta_w_t_k_ada_delta beta_1 * + - / *,2.53717e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k delta_w_t_k_ada_delta cos + - / *,2.53724e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k delta_w_t_k_ada_delta beta_1 * + - / *,2.53735e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k delta_w_t_k_ada_delta cos + - / *,2.53735e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k delta_w_t_k_ada_delta beta_1 * + - / *,2.53736e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.53765e+08
+v_t_k delta_w_t_k_ada_delta cos delta_w_t_k_ada_delta expt_grad_squared_k gamma sin + - / *,2.53783e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k v_t_k gradient_k / + - / *,2.53805e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k delta_w_t_k_ada_delta beta_1 * + - / *,2.53811e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.53843e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k eta gradient_k / + - / *,2.53854e+08
+v_t_k delta_w_t_k_ada_delta cos delta_w_t_k_ada_delta expt_grad_squared_k gamma sin + - / *,2.53872e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.53883e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.5398e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.53995e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.54002e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k eta gradient_k / + - / *,2.54036e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.54046e+08
+v_t_k delta_w_t_k_ada_delta cos eta expt_grad_squared_k gamma sin + - / *,2.5409e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k delta_w_t_k_ada_delta cos + - / *,2.54114e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k value beta_2 + + - / *,2.54185e+08
+v_t_k delta_w_t_k_ada_delta cos t expt_grad_squared_k gamma sin + - / *,2.54219e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k t beta_2 - + - / *,2.54226e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k t beta_1 + + - / *,2.54256e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.54261e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k delta_w_t_k_ada_delta cos + - / *,2.54286e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k w_k d_ij - + - / *,2.5435e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.54363e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gradient_k ln + - / *,2.54363e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k v_t_k gradient_k / + - / *,2.54385e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.54397e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k delta_w_t_k_ada_delta beta_1 * + - / *,2.54397e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.54413e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.5444e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k velocity_k beta_2 * + - / *,2.54461e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.54466e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k v_t_k gradient_k / + - / *,2.54475e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.5448e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.54515e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.54517e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.54532e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.54532e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k delta_w_t_k_ada_delta beta_1 * + - / *,2.54549e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k delta_w_t_k_ada_delta beta_1 * + - / *,2.54562e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.54608e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.54617e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k m_t_k epsilon - + - / *,2.54632e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.54637e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k delta_w_t_k_ada_delta beta_1 * + - / *,2.54639e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.54657e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.5466e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k v_t_k gradient_k / + - / *,2.54716e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k v_t_k gradient_k / + - / *,2.5472e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k delta_w_t_k_ada_delta beta_1 * + - / *,2.54755e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k delta_w_t_k_ada_delta beta_1 * + - / *,2.54803e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.5485e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.5488e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k t t - + - / *,2.54982e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.54986e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k eta gradient_k / + - / *,2.5499e+08
+v_t_k delta_w_t_k_ada_delta cos w_k expt_grad_squared_k gamma sin + - / *,2.5509e+08
+v_t_k delta_w_t_k_ada_delta cos d_ij expt_grad_squared_k delta_w_t_k_ada_delta beta_1 * + - / *,2.55104e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k ln exp - / *,2.55166e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.55177e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.55217e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k v_t_k gradient_k / + - / *,2.55354e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k gamma sin + - / *,2.55356e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k v_t_k sin + - / *,2.55471e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k m_t_k_hat velocity_k + + - / *,2.5578e+08
+v_t_k delta_w_t_k_ada_delta cos beta_1 expt_grad_squared_k m_t_k_hat gradient_k / + - / *,2.58899e+08
+v_t_k epsilon cos beta_1 expt_grad_squared_k delta_w_t_k_ada_delta beta_1 * + - / *,2.6062e+08
