@@ -214,13 +214,14 @@ class SympyDagEvaluator:
         
 # Define the polar coordinates
 r, theta = symbols('r theta', real = True, positive = True)
-mu_equals_nu = True
+mu_equals_nu = False
 mu, nu = (1, 1) if mu_equals_nu else symbols('mu nu', real = True)
 # Define the function f as a function of r and theta
 GENERIC = False
 COMPUTE_NUMERIC = False
 COMPUTE_INIT_NUMERIC_ONLY = False
 DEBUG_NAN = True
+GET_VARIANCE_AND_NORM_F_ONLY = False
 PRINT_SH_AND_EXIT = False
 PERIODIC_IN_THETA = True
 f = None
@@ -300,38 +301,37 @@ elif mu_equals_nu:
             (((0.148475282221305 * theta) - (sin(theta) * (1.0000132758892615 * sin(r)))) - 0.0922858190550785)
 else:
     f = [\
-         -mu*(r - 1)*tanh(0.01*mu)
-         - 1.00999966255769*mu*sin(mu)
-         + 0.149911373204456*mu
-         + 1.02753406857375*nu
-         + 8.36750647973528*r
-#         - 0.0199999999175539*theta*(mu + 0.01)*(nu + cos(mu) + 10)
-#         + 1.05373485491171*theta
-         - (6.29319 - 0)*(-0.01*mu*nu + 7.20248742682568)
-         - (11.6592038398793 - 0.2*mu)*(0.0100907998593378*nu - 0.0100907998593378*r + 1.45052799763474)*(0.02*nu + 0 + cos(0.02*mu**2 + 0.01*mu - 10) - 1.37000200009001)
-         - 0.130002166764172*(-mu + r)*tanh(mu)
-         - (mu + 0.01)*tanh(mu)
-         + (4.69282041378069e-5*0 + 4.69282041378069e-5)*(sin(cos(theta)) + 125.8638)
-#         - (theta + 10)*tanh(r - 10)
-         + (1.58079649346906*0 + 0.0159515010339393)*(cos(sqrt(mu)) + 1)
-         + ((nu + 6.28319)*asin(0.01*mu) + tanh(2*mu))*(0.02*mu**2 + 0.01*r*sech(mu) + 4.01000016667417)
-         - (-0.0559725865983503*tanh(2*r - 10) - 0.0327317333341667)*(-0.0100001666741671*mu + 0.02*nu + 9.65048123121691)*(-2*0 + tanh(mu - 2) - 31.03) + 0.0100909665335049*(-0.01*mu + sin(theta) + 2.01)*(0.02*0 + (0.0001*mu + 0.001)*(2*0 + 4) - 0.0312159232024146)*cos(theta + 0.01)
-         + (9.38564082756138e-6*mu*(1000 - 100*mu) + 0.000244363708390108*tanh(0 + 0.01) + 0.332651435448151)*(-1.24850674624177*r - 2.42001867002747*0 - sech(mu) - 12.846846649608)
-         + (-4.69282041378069e-6*nu - (0.0101213400253702 - 1.66305743820599e-6*cos(theta))*(0.0201*mu + r + 0.0602917998593378) - 0.000100003333511123*tanh(nu) + 0.00753195968505202)*(-mu + nu - 3*0 - (9.07998593378172e-5*sin(theta) + 0.0100001666741671*cos(mu) + 0.998652910212759)*(tanh(r) + tanh(0 - 10) - 22.44) + tanh(0) + acos(sech(mu)) + 86.5977291892448)
-         + ((9.99950001972143e-5*r - 1.99990000394429e-6)*(6.28314617729489*0 + 0.394782012297175)*(-0.01*nu - 0.0200001666741671*0 + 5.9633881682509) + 0.00158653047117979*sin(r) + 0.0158653047117979*sech(mu) + 0.06*sech(mu - 0.01) + 0.632188968952088)*(4.69110706287247*mu + 0.989999833325833*r + 8*0 + sin(mu) + cos(mu) + sech((1 - mu)**2) + 73.3658280287198)
+         -1.02043668920688*mu
+         + 0.976265145088285*nu
+         + 8.59989931879868*r
+         - 0.0203834157158624*theta*(mu - 0.37792964035845)*(nu + cos(mu) + 20.8711034252206)
+         + 1.02373485491171*theta
+         - (6.66863975473491 - 1.12736995112076*theta)*(10.1684549022942 - 0.01*mu**2)
+         + (-mu - 10.8078598550297)*sech(mu)
+         + (0.01*mu + 1.70574681933198)*(theta + 0.419460833028891)*(cos(sqrt(mu)) + 1.48262246565637)
+         - (mu + 0.01)*(0.01*theta + 1.07153419386493)*sin(mu)
+         - (mu + 0.0126443120008097)*(r - 6.53552077810625)*sin(0.01*mu)
+         - 0.130002166764172*(-nu + r)*tanh(mu)
+         + (2.58445747306298e-5*theta + 3.52449144346226e-5)*(sin(cos(theta)) + 0.292574181673163*cos(theta))
+         - (theta + 13.3170149415013)*tanh(r - 8.08011643682698)
+         + 0.01*((0.0001*mu + 0.00147062016648684)*(-r + 2*theta + 6.83807539219667) - 0.0310159232024146)*(-0.0918464964600025*mu + sin(theta) + 2.42649277694376)*cos(theta + 0.441471131955851)
+         + ((nu - 3.38720803159771)*asin(0.01*mu) + tanh(r + 8.28319))*(0.02*mu**2 + acos(sin(theta)) + 2*sech(mu) + 2.04196555729524)
+         + (0.0001*tanh(mu) + 0.229736644002127)*(mu - 1.08049890084678*r + 2.84816074457674*theta + 6.35987497675188)
+         - (-0.0566277722928855*tanh(2*r - 8.10519982851059) - 0.0287447493517572)*(-0.01*mu*r*(mu + 42.2909621522195)*tanh(theta) - (2.74539306159939 - sin(0.01*mu))*(11.9705677807914*theta + 54.9484044192348) + 14.44606544794*(2*mu + theta - 9.4470135686607)*sin(mu))
+         - (-0.476296284520996*mu + sech(mu) + 18.4917355215373)*(0.0101001666741671*nu - 0.0102127550390257*r + 1.17863649307223)*(0.02*nu + theta + cos(0.0181619186960565*mu**2 + 0.00540115517597472*nu - 10.0382467432885) - 1.51242673800041)
+         + (8.91241641691062e-6*mu*(1047.19894466968 - 103.107145789561*mu) + 0.000249300182601612*tanh(theta + 0.0381866192361131) + 0.353063588652603)*(-1.33622595207659*r - 2.4784926602329*theta - sech(mu) - 17.0617608724563)
+         + (1.00003333511123e-6*theta - (0.0101847738826694 - 1.66305743820599e-6*cos(theta))*(0.0201003350150759*mu + r + 0.0766142017330207) - 0.000100003333511123*tanh(mu) + 4.99994167653742e-7*sech(tanh(theta)) + 0.00718179435113738)*(-mu + 0.975405044737502*nu - 3*theta - (0.0001*sin(theta) + 0.00999966667999946*cos(mu) + 0.998552911879501)*(0.01*nu + r + tanh(theta - 9.41797714882564) - 27.9497372299844) + tanh(theta) + acos(sech(mu)) + 94.5127309793458)
+         + ((9.99950001972143e-5*r - 1.99990000394429e-6)*(6.28287585358945*theta + 0.394765027345147)*(-0.01*nu - 0.0200909665335049*theta + 5.95284780272031) + 0.00168753213792146*sin(r) + 0.0168753213792146*sech(mu) + 0.07*sech(mu - 0.399619592949299) + 0.629496940343797)*(4.63734251914198*mu + 0.99*r + 8.33220171459921*theta + sin(mu) + cos(mu) + sech((0.996469636845584 - mu)*(1.03596136665519 - mu)) + 73.7463877563006)
          + 2*sin(mu)
-         + sin(mu + 10)
-         + 3.46159415595577*cos(0.0100001666741671*r*(2*r + theta + 0.01))
-         + tanh(2*mu)
-         - tanh(nu)
-#         - tanh(0.02*theta)
-#         - 0.000907998593378172*tanh(theta)
-         - 0.228351234805663*tanh(sech(nu))
-         + acos(0.0829319*r)
-#         + 1.5*sin(theta+pi) + 1.5
-         + 2*sech(mu)
-         - sech(-0.137385897666266*r + 1.79261410233373*0 + (0.01 - sin(r))*(-0 - tanh(0) + 1.03) - (0.0200003333483342*r + 0.0999966667999946)*(mu*r + 5*r + 10) + 8.48770383987927)
-         - 92.338744596324
+         + sin(mu + 1.44434977098051)
+         + sin(mu + 7.68950568510422)
+         + 3.46417227282007*cos(0.00999983333416666*r*(2*r + theta + 0.01))
+         - tanh(0.02*theta)
+         - 0.000907998593378171*tanh(theta)
+         + acos(0.0947140398686842*r)
+         + 2*acos(sin(theta))
+         - sech(-0.204245759737047*r + 1.72063673930557*theta + (0.0100909665335049 - tanh(r))*(-0.998687620305263*theta - tanh(theta) + 1.02370492421771) - (0.0154873527439205*r + 0.0998966701331946)*(mu*r + 5*r + 9.5115459200379) + 8.61038625622014)
+         - 84.0357720038456
          ][0]
 
 #
@@ -387,7 +387,7 @@ N = 50 #echo $?
 if mu_equals_nu:
     r_vals, theta_vals = np.meshgrid(np.linspace(0.01, 10, N), np.linspace(0, 2*pi, N))
 else:
-    r_vals, theta_vals, mu_vals, nu_vals = np.meshgrid(np.linspace(0.01, 10000000, N), np.linspace(0, 2*pi, N), np.linspace(0.0, 100, N), np.linspace(0.0, 10000, N))
+    r_vals, theta_vals, mu_vals, nu_vals = np.meshgrid(np.linspace(0.01, 10, N), np.linspace(0, 2*pi, N), np.linspace(0.01, 10, N), np.linspace(0.01, 10, N))
 #    print(f"r_vals.shape = {r_vals.shape}, theta_vals.shape = {theta_vals.shape}, mu_vals.shape = {mu_vals.shape}, nu_vals.shape = {nu_vals.shape}")
 #    exit()
 if not GENERIC and not COMPUTE_INIT_NUMERIC_ONLY:
@@ -419,6 +419,17 @@ if not GENERIC and not COMPUTE_INIT_NUMERIC_ONLY:
 #    print(f"Median(∂f/∂θ) = {np.median(np.sort(f_SR_theta_vals))}")
 
     # Evaluate
+    if GET_VARIANCE_AND_NORM_F_ONLY:
+        dag_f_eval = SympyDagEvaluator(f)
+        f_vals = dag_f_eval.evaluate(
+            env = ({"r": r_vals, "theta": theta_vals} if mu_equals_nu else {"r": r_vals, "theta": theta_vals, "mu": mu_vals, "nu": nu_vals}),
+            shape=r_vals.shape
+        )
+        print(f"||f|| = {LA.norm(f_vals)}")
+        print(f"Variance of f = {np.var(f_vals)}")
+        exit()
+
+    
     dag_eval = SympyDagEvaluator(swift_hohenberg)
     func_vals = dag_eval.evaluate(
         env = ({"r": r_vals, "theta": theta_vals} if mu_equals_nu else {"r": r_vals, "theta": theta_vals, "mu": mu_vals, "nu": nu_vals}),
