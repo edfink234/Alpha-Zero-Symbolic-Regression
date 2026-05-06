@@ -24,4 +24,4 @@ for idx, benchmark, nn, mse in list(zip(config_idxs, Benchmarks, NeuralNet, MSE)
 #    exit()
 
 #Kill python script by getting pid from `ps -ef | grep python`
-#pgrep NeuralNetworks_VecSR
+#Kill cpp script by getting pid from `pgrep NeuralNetworks_VecSR`

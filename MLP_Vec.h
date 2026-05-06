@@ -1,6 +1,7 @@
 #ifndef MLP_H
 #define MLP_H
 #include <algorithm>
+#include <csignal>
 #include <vector>
 #include <iostream>
 #include <random>
