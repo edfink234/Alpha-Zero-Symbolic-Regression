@@ -149,7 +149,7 @@ bool areDerivatRangesEqual(int start_idx_1, int start_idx_2, int num_steps)
 low and up: lower and upper Index bounds, respectively, for the piece of the array prefix which is to be the subject of the processing.
 dx: string representing the variable by which the derivation is to be made. (The derivative is made wrt dx)
 */
-void derivePrefixHelper(int low, int up, const std::string& dx, const std::vector<std::string>& prefix, std::vector<int>& grasp, bool setGRvar = false)
+void derivePrefixHelper(int low, int up, const std::string& dx, const std::vector<std::string>& prefix, std::vector<int>& grasp, bool setGRvar = false, bool trace_derivat = false)
 {
     if (!setGRvar)
     {
@@ -191,6 +191,12 @@ void derivePrefixHelper(int low, int up, const std::string& dx, const std::vecto
             //of prefix[up-grasp(op2)-2] are the elements [(prefix[low] = prefix[0], prefix[up-grasp(op2)-2] = prefix[9-5-2] = prefix[2]]
             //i.e., the elements {"x", "x", "*"}
 
+    if (trace_derivat)
+    {
+        std::cout << "derivat = {" << derivat << "}, low = " << low << ", up = " << up
+        << ", postfix[up] = " << postfix[up] << ", postfix[low] = " << postfix[low] << '\n';
+    }
+    
     if (prefix[low] == "+" || prefix[low] == "-")
     {
         
@@ -199,9 +205,9 @@ void derivePrefixHelper(int low, int up, const std::string& dx, const std::vecto
 
         int temp = low+1+grasp[low+1];
         int x_prime_low = derivat.size();
-        derivePrefixHelper(low+1, temp, dx, prefix, grasp, true);  /* +/- x' */
+        derivePrefixHelper(low+1, temp, dx, prefix, grasp, true, trace_derivat);  /* +/- x' */
         int x_prime_high = derivat.size();
-        derivePrefixHelper(temp+1, temp+1+grasp[temp+1], dx, prefix, grasp, true); /* +/- x' y' */
+        derivePrefixHelper(temp+1, temp+1+grasp[temp+1], dx, prefix, grasp, true, trace_derivat); /* +/- x' y' */
         int y_prime_high = derivat.size();
         int step;
         
@@ -269,7 +275,7 @@ void derivePrefixHelper(int low, int up, const std::string& dx, const std::vecto
         else
         {
             int y_prime_low = derivat.size();
-            derivePrefixHelper(temp+1, temp+1+grasp[temp+1], dx, prefix, grasp, true); /* + * x y' */
+            derivePrefixHelper(temp+1, temp+1+grasp[temp+1], dx, prefix, grasp, true, trace_derivat); /* + * x y' */
             
             if (derivat[y_prime_low] == "0") //* x 0 -> 0
             {
@@ -291,7 +297,7 @@ void derivePrefixHelper(int low, int up, const std::string& dx, const std::vecto
         }
         derivat.push_back("*"); /* + * x y' * */
         int x_prime_low = derivat.size();
-        derivePrefixHelper(low+1, temp, dx, prefix, grasp, true); /* + * x y' * x' */
+        derivePrefixHelper(low+1, temp, dx, prefix, grasp, true, trace_derivat); /* + * x y' * x' */
         if (derivat[x_prime_low] == "0") //* 0 y -> 0
         {
 //            puts("hi 240");
@@ -347,7 +353,7 @@ void derivePrefixHelper(int low, int up, const std::string& dx, const std::vecto
         int temp = low+1+grasp[low+1];
         int x_prime_low = derivat.size();
         int k;
-        derivePrefixHelper(low+1, temp, dx, prefix, grasp, true); /* / - * x' */
+        derivePrefixHelper(low+1, temp, dx, prefix, grasp, true, trace_derivat); /* / - * x' */
         if (derivat[x_prime_low] == "0") //* 0 y -> 0
         {
 //            puts("hi 297");
@@ -395,7 +401,7 @@ void derivePrefixHelper(int low, int up, const std::string& dx, const std::vecto
         else
         {
             int y_prime_low = derivat.size();
-            derivePrefixHelper(temp+1, temp+1+grasp[temp+1], dx, prefix, grasp, true); /* / - * x' y * x y' */
+            derivePrefixHelper(temp+1, temp+1+grasp[temp+1], dx, prefix, grasp, true, trace_derivat); /* / - * x' y * x y' */
             if (derivat[y_prime_low] == "0") //* x 0 -> 0
             {
 //                puts("hi 379");
@@ -533,7 +539,7 @@ void derivePrefixHelper(int low, int up, const std::string& dx, const std::vecto
         }
         setGR(prefix_temp, grasp_temp);
         int temp_term_low = derivat.size();
-        derivePrefixHelper(0, prefix_temp.size() - 1, dx, prefix_temp, grasp_temp, true); /* * ^ x y (* ln x y)' */
+        derivePrefixHelper(0, prefix_temp.size() - 1, dx, prefix_temp, grasp_temp, true, trace_derivat); /* * ^ x y (* ln x y)' */
 
         if (derivat[temp_term_low] == "0") //* ^ x y 0 -> 0
         {
@@ -555,7 +561,7 @@ void derivePrefixHelper(int low, int up, const std::string& dx, const std::vecto
         derivat.push_back("*"); /* * */
         int x_prime_low = derivat.size();
         int temp = low+1;
-        derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* * x' */
+        derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true, trace_derivat); /* * x' */
         if (derivat[x_prime_low] == "0") //* 0 ~ sin x -> 0
         {
 //            puts("hi 538");
@@ -581,7 +587,7 @@ void derivePrefixHelper(int low, int up, const std::string& dx, const std::vecto
         derivat.push_back("*"); /* * */
         int x_prime_low = derivat.size();
         int temp = low+1;
-        derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* * x' */
+        derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true, trace_derivat); /* * x' */
         if (derivat[x_prime_low] == "0") //* 0 cos x -> 0
         {
 //            puts("hi 565");
@@ -606,7 +612,7 @@ void derivePrefixHelper(int low, int up, const std::string& dx, const std::vecto
         derivat.push_back("/");         /* / */
         int temp = low+1;
         int x_prime_low = derivat.size();
-        derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* / x' */
+        derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true, trace_derivat); /* / x' */
         if (derivat[x_prime_low] == "0")
         {
 //            puts("hi 590");
@@ -628,7 +634,7 @@ void derivePrefixHelper(int low, int up, const std::string& dx, const std::vecto
         derivat.push_back("/");               /* / */
         int temp = low+1;
         int x_prime_low = derivat.size();
-        derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* / x' */
+        derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true, trace_derivat); /* / x' */
         if (derivat[x_prime_low] == "0") // / 0 x -> 0
         {
 //            puts("hi 578");
@@ -656,7 +662,7 @@ void derivePrefixHelper(int low, int up, const std::string& dx, const std::vecto
         derivat.push_back("/");   /* / */
         int temp = low+1;
         int x_prime_low = derivat.size();
-        derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* / x' */
+        derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true, trace_derivat); /* / x' */
         if (derivat[x_prime_low] == "0")
         {
 //            puts("hi 640");
@@ -684,7 +690,7 @@ void derivePrefixHelper(int low, int up, const std::string& dx, const std::vecto
         derivat.push_back("/");   /* ~ / */
         int temp = low+1;
         int x_prime_low = derivat.size();
-        derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* ~ / x' */
+        derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true, trace_derivat); /* ~ / x' */
         if (derivat[x_prime_low] == "0")
         {
 //            puts("hi 668");
@@ -711,7 +717,7 @@ void derivePrefixHelper(int low, int up, const std::string& dx, const std::vecto
         derivat.push_back("*");      //*
         int x_prime_low = derivat.size();
         int temp = low+1;
-        derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); //* x'
+        derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true, trace_derivat); //* x'
         if (derivat[x_prime_low] == "0")
         {
 //            puts("hi 696");
@@ -742,7 +748,7 @@ void derivePrefixHelper(int low, int up, const std::string& dx, const std::vecto
         derivat.push_back("*"); //*
         int x_prime_low = derivat.size();
         int temp = low+1;
-        derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); //* x'
+        derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true, trace_derivat); //* x'
         if (derivat[x_prime_low] == "0") //* 0 * ~ sech x tanh x -> 0
         {
 //            puts("hi 722");
@@ -774,7 +780,7 @@ void derivePrefixHelper(int low, int up, const std::string& dx, const std::vecto
         derivat.push_back("*");               //*
         int temp = low+1;
         int x_prime_low = derivat.size();
-        derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); //* x'
+        derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true, trace_derivat); //* x'
         if (derivat[x_prime_low] == "0") //* 0 exp x -> 0
         {
 //            puts("hi 682");
@@ -800,7 +806,7 @@ void derivePrefixHelper(int low, int up, const std::string& dx, const std::vecto
         int un_minus_idx = derivat.size();
         derivat.push_back(prefix[low]); /* ~ */
         int x_prime_low = derivat.size();
-        derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true); /* ~ x' */
+        derivePrefixHelper(temp, temp+grasp[temp], dx, prefix, grasp, true, trace_derivat); /* ~ x' */
         if (derivat[x_prime_low] == "~")
         {
 //            puts("hi 590");
@@ -821,9 +827,9 @@ void derivePrefixHelper(int low, int up, const std::string& dx, const std::vecto
     }
 }
 
-void derivePrefix(int low, int up, const std::string& dx, const std::vector<std::string>& prefix, std::vector<int>& grasp)
+void derivePrefix(int low, int up, const std::string& dx, const std::vector<std::string>& prefix, std::vector<int>& grasp, bool trace_derivat = false)
 {
-    derivePrefixHelper(low, up, dx, prefix, grasp, false);
+    derivePrefixHelper(low, up, dx, prefix, grasp, false, trace_derivat);
 }
 
 
