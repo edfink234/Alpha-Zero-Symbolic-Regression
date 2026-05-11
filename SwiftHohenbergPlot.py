@@ -212,7 +212,7 @@ show = False
 np.sech = lambda x: 1.0/np.cosh(x)
 
 PERIODIC_IN_THETA = True
-PRINT_LATEX_ONLY = True
+PRINT_LATEX_ONLY = False
 PlotType = "2D"
 N = 1000
 r_max = 10
@@ -221,7 +221,7 @@ theta_edges = np.linspace(0, 2*np.pi, N, endpoint=False)
 
 round_floats = lambda expr, ndigits: expr.xreplace({f: Float(round(float(f), ndigits)) for f in expr.atoms(Float)})
 f_per_idx = 10
-mu_equals_nu = False
+mu_equals_nu = True
 mu, nu = (1, 1) if mu_equals_nu else symbols('mu nu', real = True)
 f_eqn, r, theta = symbols('f r theta')
 f = None
@@ -381,3 +381,4 @@ else:
     filename = filename[:-4]
     system(f"open {filename}.pdf")
     system(f"sips -s format png -s dpiWidth 480 -s dpiHeight 480 -z 2400 2400 {filename}.pdf --out {filename}.png")
+
