@@ -8513,7 +8513,13 @@ printer = P(); x='((((((((((((16.805497455166623 * x0) * -0.6669369608860302) * 
             Squared-norm error for each equation: 15.9292 0.0537346
             Best expression = (((((((((((16.9166542640983 * x0) + 4.38154042026066) * ((((4 * x0) * ((((((3.0392759607765 * x0) * (x0 + 0.695906243498109)) * ((((0.0855206544759836 * x0) * tanh(sin((4 * x0)))) - (0.396460556166009 * sqrt((1 - (x0 * x0))))) + 5.40495766643892)) - ((18.9535256959506 * x0) * asin(asin(tanh(x0))))) - (6.54789810415906 * sqrt((sqrt(x0) + asin(x0))))) + 2.75749963270677)) + (((4 * x0) - 3.77375522508355) * (((-0.992922506141499 * sqrt(x0)) + (0.107736064849549 * sin((9.68863196105496 * x0)))) - 1.10136955802896))) - tanh(asin(sech((13.4039492609529 * x0)))))) + (0.0421706330441903 * sin((50.9389412016731 * x0)))) + (0.0725657196208038 * sin((58.3334014933741 * x0)))) + (0.0149375385653387 * sin((x0 * (acos(x0) - 44.2017995927063))))) + (11.8694797041842 * sin(cos(((8.41483656419485 * x0) + 3.23425263485772))))) + (0.0183016368487537 * cos((36.8184713771202 * x0)))) + (0.03233668835194 * cos((66.7332200361866 * x0)))) - (38.1956498016522 * asin(cos((acos(x0) - 0.743770532914356))))) + 25.2016463209627)
             Best expression (original format) = 16.9166542640983 x0 * 4.38154042026066 + 4 x0 * 3.0392759607765 x0 * x0 0.695906243498109 + * 0.0855206544759836 x0 * 4 x0 * sin tanh * 0.396460556166009 1 x0 x0 * - sqrt * - 5.40495766643892 + * 18.9535256959506 x0 * x0 tanh asin asin * - 6.54789810415906 x0 sqrt x0 asin + sqrt * - 2.75749963270677 + * 4 x0 * 3.77375522508355 - -0.992922506141499 x0 sqrt * 0.107736064849549 9.68863196105496 x0 * sin * + 1.10136955802896 - * + 13.4039492609529 x0 * sech asin tanh - * 0.0421706330441903 50.9389412016731 x0 * sin * + 0.0725657196208038 58.3334014933741 x0 * sin * + 0.0149375385653387 x0 x0 acos 44.2017995927063 - * sin * + 11.8694797041842 8.41483656419485 x0 * 3.23425263485772 + cos sin * + 0.0183016368487537 36.8184713771202 x0 * cos * + 0.03233668835194 66.7332200361866 x0 * cos * + 38.1956498016522 x0 acos 0.743770532914356 - cos asin * - 25.2016463209627 +
-
+        depth = 14, maxsize = 144, l1 = 1e-4, bad_ops = {"exp", "ln", "log", "^", "/"}:
+            Best score = 0.0588826, SNE = 15.9829
+            Squared-norm error for each equation: 15.9292 0.0537346
+            Best expression = (((((((((((16.9166542640983 * x0) + 4.38154042026066) * ((((4 * x0) * ((((((3.0392759607765 * x0) * (x0 + 0.695906243498109)) * ((((0.0855206544759836 * x0) * tanh(sin((4 * x0)))) - (0.396460556166009 * sqrt((1 - (x0 * x0))))) + 5.40495766643892)) - ((18.9535256959506 * x0) * asin(asin(tanh(x0))))) - (6.54789810415906 * sqrt((sqrt(x0) + asin(x0))))) + 2.75749963270677)) + (((4 * x0) - 3.77375522508355) * (((-0.992922506141499 * sqrt(x0)) + (0.107736064849549 * sin((9.68863196105496 * x0)))) - 1.10136955802896))) - tanh(asin(sech((13.4039492609529 * x0)))))) + (0.0421706330441903 * sin((50.9389412016731 * x0)))) + (0.0725657196208038 * sin((58.3334014933741 * x0)))) + (0.0149375385653387 * sin((x0 * (acos(x0) - 44.2017995927063))))) + (11.8694797041842 * sin(cos(((8.41483656419485 * x0) + 3.23425263485772))))) + (0.0183016368487537 * cos((36.8184713771202 * x0)))) + (0.03233668835194 * cos((66.7332200361866 * x0)))) - (38.1956498016522 * asin(cos((acos(x0) - 0.743770532914356))))) + 25.2016463209627)
+            Best expression (original format) = 16.9166542640983 x0 * 4.38154042026066 + 4 x0 * 3.0392759607765 x0 * x0 0.695906243498109 + * 0.0855206544759836 x0 * 4 x0 * sin tanh * 0.396460556166009 1 x0 x0 * - sqrt * - 5.40495766643892 + * 18.9535256959506 x0 * x0 tanh asin asin * - 6.54789810415906 x0 sqrt x0 asin + sqrt * - 2.75749963270677 + * 4 x0 * 3.77375522508355 - -0.992922506141499 x0 sqrt * 0.107736064849549 9.68863196105496 x0 * sin * + 1.10136955802896 - * + 13.4039492609529 x0 * sech asin tanh - * 0.0421706330441903 50.9389412016731 x0 * sin * + 0.0725657196208038 58.3334014933741 x0 * sin * + 0.0149375385653387 x0 x0 acos 44.2017995927063 - * sin * + 11.8694797041842 8.41483656419485 x0 * 3.23425263485772 + cos sin * + 0.0183016368487537 36.8184713771202 x0 * cos * + 0.03233668835194 66.7332200361866 x0 * cos * + 38.1956498016522 x0 acos 0.743770532914356 - cos asin * - 25.2016463209627 +
+    track_idx = 13:
+ 
  */
     static std::atomic<bool> added_additive{false};
     static std::once_flag additive_once;
@@ -12732,7 +12738,7 @@ namespace ExampleProblems
     {
         double threshold = 0.0;
         unsigned int num_threads = 0;
-        int track_idx = 12;
+        int track_idx = 13;
         constexpr bool homeComputer = true;
         constexpr const char* file_path[] =
         {
@@ -12750,9 +12756,10 @@ namespace ExampleProblems
             "/Users/edwardfinkelstein/SDSU_UCI/WhitesonResearch/TrackProject/stubborn_track_csvs/v20260305_002410__train5_test5__layers25_len320p0__r3p1-53p0__fd25-25__func3-3__noiseXY0p01_Z0p01event1000000010-hits_X.csv",
             "/Users/edwardfinkelstein/SDSU_UCI/WhitesonResearch/TrackProject/stubborn_track_csvs/v20260305_002410__train5_test5__layers25_len320p0__r3p1-53p0__fd25-25__func3-3__noiseXY0p01_Z0p01event100000009-hits_Y.csv",
             "/Users/edwardfinkelstein/SDSU_UCI/WhitesonResearch/TrackProject/stubborn_track_csvs/v20260305_002410__train5_test5__layers25_len320p0__r3p1-53p0__fd25-25__func3-3__noiseXY0p01_Z0p01event1000000010-hits_Z.csv",
-            "/Users/edwardfinkelstein/SDSU_UCI/WhitesonResearch/TrackProject/stubborn_track_csvs/v20260305_002410__train5_test5__layers25_len320p0__r3p1-53p0__fd25-25__func3-3__noiseXY0p01_Z0p01event100000001-hits_Y.csv"
+            "/Users/edwardfinkelstein/SDSU_UCI/WhitesonResearch/TrackProject/stubborn_track_csvs/v20260305_002410__train5_test5__layers25_len320p0__r3p1-53p0__fd25-25__func3-3__noiseXY0p01_Z0p01event100000001-hits_Y.csv",
+            "/Users/edwardfinkelstein/SDSU_UCI/WhitesonResearch/TrackProject/stubborn_track_csvs/v20260305_002410__train5_test5__layers25_len320p0__r3p1-53p0__fd25-25__func3-3__noiseXY0p01_Z0p01event1000000010-hits_Y.csv"
         };
-        constexpr int sizes[] = {61, 85, 169, 75, 37, 27, 43, 75, 37, 83, 49, 83, 27};
+        constexpr int sizes[] = {61, 85, 169, 75, 37, 27, 43, 75, 37, 83, 49, 83, 27, 83};
         std::vector<std::string> seed_exprs =
         {
             std::vector<std::string>
@@ -12970,9 +12977,13 @@ namespace ExampleProblems
             {
                 "16.9166542640983 x0 * 4.38154042026066 + 4 x0 * 3.0392759607765 x0 * x0 0.695906243498109 + * 0.0855206544759836 x0 * 4 x0 * sin tanh * 0.396460556166009 1 x0 x0 * - sqrt * - 5.40495766643892 + * 18.9535256959506 x0 * x0 tanh asin asin * - 6.54789810415906 x0 sqrt x0 asin + sqrt * - 2.75749963270677 + * 4 x0 * 3.77375522508355 - -0.992922506141499 x0 sqrt * 0.107736064849549 9.68863196105496 x0 * sin * + 1.10136955802896 - * + 13.4039492609529 x0 * sech asin tanh - * 0.0421706330441903 50.9389412016731 x0 * sin * + 0.0725657196208038 58.3334014933741 x0 * sin * + 0.0149375385653387 x0 x0 acos 44.2017995927063 - * sin * + 11.8694797041842 8.41483656419485 x0 * 3.23425263485772 + cos sin * + 0.0183016368487537 36.8184713771202 x0 * cos * + 0.03233668835194 66.7332200361866 x0 * cos * + 38.1956498016522 x0 acos 0.743770532914356 - cos asin * - 25.2016463209627 +",
                 "-0.0005326237602012483 x0 * x0 + x0 x0 + x0 x0 + + x0 x0 x0 + + * 0.0005084912733981974 * + x0 cos 0.96402913805394 - sech acos acos + 2.0039780748018825 x0 tanh sech sqrt asin * + 5.987923802621989 x0 + 4.495162241009403 + x0 2.3805466923004435 * 1.0804706401398303 x0 cos asin + x0 - * x0 x0 + x0 ~ - 0.20096180264438904 * 0.135460972874115 - 9.68908970669284 x0 * sin -0.6511984506961909 + * + -0.26163453411117393 x0 0.9213158995099909 + sin acos * 12.293475938564264 x0 * sech - x0 asin * - * x0 sqrt tanh * x0 asin -0.023312311310275648 + x0 acos * + 3 3.391495850240664 x0 ~ arcsin * * 3.865994623445838 - x0 x0 acos - sech asin * + 0.11093508332616824 x0 x0 + * x0 0.3513536758049331 + x0 x0 + + x0 + - sin acos + *"
+            }.back(),
+            std::vector<std::string>
+            {
+                "0.0454724099951441 0.0256001308652075 x0 * - 64 x0 * 64 169.094582447613 x0 * sin * - tanh * 0.253029890570951 0.474211217204333 x0 * - 85.058109977827 17.6279272378988 x0 * - x0 2 - * 14.0712466893238 - cos * - 34.4987279066568 x0 * 48.9673512296986 + 4 x0 * 6.66416583149496 x0 * x0 1.20060227775032 + * -0.0109222401143718 x0 * 4 x0 * sin tanh * 0.448270272530242 1 x0 2 ^ - sqrt * - 4.53557820086963 + * 37.8567744388539 x0 * x0 sech acos asin * - 21.7478883129227 x0 x0 asin + sqrt * - 7.66937138279154 + * 0.747225926403679 x0 * 1 - x0 sqrt x0 0.546404816836671 - * 0.505782487755271 14.9383090957755 x0 * sin * - 0.169708420775891 + * - 22.1703004201497 x0 * sech asin tanh - * + 1.31179341947381 51.4217397722113 x0 * sin * + 1.69231643877349 51.7211485099594 x0 * sin * - 0.796271209060958 x0 x0 acos 48.9066999517509 - * sin * + 41.0296663922138 8.70104260626794 x0 * 1.42453332053014 - cos sin * - 0.00661813601143922 39.6012630708907 x0 * cos * - 0.186292150701198 65.8138419917322 x0 * cos * - 48.7482290316523 x0 acos 0.687264626051908 - cos acos * +"
             }.back()
         };
-        constexpr bool read_from_file = false;
+        constexpr bool read_from_file = true;
         constexpr const char* filename = "WierdTrackFitterTestFile.txt";
         std::string pert_mode = "sub_tree";
         std::string simplify_mode = "none";
@@ -13059,8 +13070,8 @@ namespace ExampleProblems
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "WierdTrackSR.txt", // "" /*filename to save current best expression found (instead of outputting them to standard out)*/
-                std::vector<int>{60} /*optional max-sizes of each of the expressions in the generated solution*/,
-                {split(seed_exprs[track_idx])} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
+                std::vector<int>{180} /*optional max-sizes of each of the expressions in the generated solution*/,
+                {/*split(seed_exprs[track_idx])*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 eval_type /*evaluation type: can be "dag", "scalar", or "vector"*/,
                 1000000 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
@@ -13068,7 +13079,7 @@ namespace ExampleProblems
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
                 simplify_mode /*simplifyMode: "total": most algebraic simplification more comprehensively, "total": less simplifications, "none": no simplifications */,
                 43000 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
-                {/*split(seed_exprs[track_idx])*/} /*seed expressions*/,
+                {split(seed_exprs[track_idx])} /*seed expressions*/,
                 (num_threads == 1) /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
