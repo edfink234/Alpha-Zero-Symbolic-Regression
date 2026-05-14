@@ -12980,15 +12980,16 @@ namespace ExampleProblems
             }.back(),
             std::vector<std::string>
             {
-                "0.0454724099951441 0.0256001308652075 x0 * - 64 x0 * 64 169.094582447613 x0 * sin * - tanh * 0.253029890570951 0.474211217204333 x0 * - 85.058109977827 17.6279272378988 x0 * - x0 2 - * 14.0712466893238 - cos * - 34.4987279066568 x0 * 48.9673512296986 + 4 x0 * 6.66416583149496 x0 * x0 1.20060227775032 + * -0.0109222401143718 x0 * 4 x0 * sin tanh * 0.448270272530242 1 x0 2 ^ - sqrt * - 4.53557820086963 + * 37.8567744388539 x0 * x0 sech acos asin * - 21.7478883129227 x0 x0 asin + sqrt * - 7.66937138279154 + * 0.747225926403679 x0 * 1 - x0 sqrt x0 0.546404816836671 - * 0.505782487755271 14.9383090957755 x0 * sin * - 0.169708420775891 + * - 22.1703004201497 x0 * sech asin tanh - * + 1.31179341947381 51.4217397722113 x0 * sin * + 1.69231643877349 51.7211485099594 x0 * sin * - 0.796271209060958 x0 x0 acos 48.9066999517509 - * sin * + 41.0296663922138 8.70104260626794 x0 * 1.42453332053014 - cos sin * - 0.00661813601143922 39.6012630708907 x0 * cos * - 0.186292150701198 65.8138419917322 x0 * cos * - 48.7482290316523 x0 acos 0.687264626051908 - cos acos * +"
+                "0.0454724099951441 0.0256001308652075 x0 * - 64 x0 * 64 169.094582447613 x0 * sin * - tanh * 0.253029890570951 0.474211217204333 x0 * - 85.058109977827 17.6279272378988 x0 * - x0 2 - * 14.0712466893238 - cos * - 34.4987279066568 x0 * 48.9673512296986 + 4 x0 * 6.66416583149496 x0 * x0 1.20060227775032 + * -0.0109222401143718 x0 * 4 x0 * sin tanh * 0.448270272530242 1 x0 2 ^ - sqrt * - 4.53557820086963 + * 37.8567744388539 x0 * x0 sech acos asin * - 21.7478883129227 x0 x0 asin + sqrt * - 7.66937138279154 + * 0.747225926403679 x0 * 1 - x0 sqrt x0 0.546404816836671 - * 0.505782487755271 14.9383090957755 x0 * sin * - 0.169708420775891 + * - 22.1703004201497 x0 * sech asin tanh - * + 1.31179341947381 51.4217397722113 x0 * sin * + 1.69231643877349 51.7211485099594 x0 * sin * - 0.796271209060958 x0 x0 acos 48.9066999517509 - * sin * + 41.0296663922138 8.70104260626794 x0 * 1.42453332053014 - cos sin * - 0.00661813601143922 39.6012630708907 x0 * cos * - 0.186292150701198 65.8138419917322 x0 * cos * - 48.7482290316523 x0 acos 0.687264626051908 - cos acos * +",
+                "x0 acos x0 asin - 9.667076466723682 x0 - x0 sqrt x0 1.8416899695575903 - + -2.144384659876021 * 14.907621418336204 x0 * sin * 207.83525408394834 x0 * x0 0.5134932775461082 x0 * * x0 - -0.565868046800584 - * -39.74225930608495 -7.948117430149992 x0 * sech * - -4.000376530916261 * x0 * - -0.5124812202071841 15.873367204951375 x0 * 0.8534076835214026 - sin arccos * + -24.535915910508987 -22.296377271943083 x0 * sech arcsin tanh * - * - x0 arcsin sech x0 tanh -0.2056422942714498 + -127.55531334263372 * * -51.44268694664276 x0 * tanh * - 50.833885302945355 7.333794829929451 x0 * 1.1985402410876693 * sin tanh * - -15.360586988806647 0.03870676104618964 x0 5.664077998206226 - x0 x0 + * + x0 x0 + 32.91378990478939 * 2 - sech * 4 4 x0 * x0 x0 3.328925914312621 + + + * - * +"
             }.back()
         };
-        constexpr bool read_from_file = true;
+        constexpr bool read_from_file = false;
         constexpr const char* filename = "WierdTrackFitterTestFile.txt";
         std::string pert_mode = "sub_tree";
         std::string simplify_mode = "none";
         std::string eval_type = "vector";
-        int depth = 10, completeTree = 0;
+        int depth = 9, completeTree = 0;
         std::string numThreads, theDepth, theCompleteTree;
         
         assert(track_idx < static_cast<int>(seed_exprs.size()));
@@ -13070,8 +13071,8 @@ namespace ExampleProblems
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "WierdTrackSR.txt", // "" /*filename to save current best expression found (instead of outputting them to standard out)*/
-                std::vector<int>{180} /*optional max-sizes of each of the expressions in the generated solution*/,
-                {/*split(seed_exprs[track_idx])*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
+                std::vector<int>{60} /*optional max-sizes of each of the expressions in the generated solution*/,
+                {split(seed_exprs[track_idx])} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 eval_type /*evaluation type: can be "dag", "scalar", or "vector"*/,
                 1000000 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
@@ -13079,7 +13080,7 @@ namespace ExampleProblems
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
                 simplify_mode /*simplifyMode: "total": most algebraic simplification more comprehensively, "total": less simplifications, "none": no simplifications */,
                 43000 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
-                {split(seed_exprs[track_idx])} /*seed expressions*/,
+                {/*split(seed_exprs[track_idx])*/} /*seed expressions*/,
                 (num_threads == 1) /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
