@@ -6129,7 +6129,7 @@ struct Board
                         }
                         this->expression_string += ((jdx < this->pieces.size() - 1) ? ", " : "");
                     }
-
+                    //TODO: probably shouldn't bother inserting expressions that don't have parameters
                     if (!Board::expression_dict.contains(this->expression_string)) //If the generated expression has NOT been generated before...
                     {
                         //insert it into the shared dictionary of `{expressions: best_fit_params}` key-value pairs...
@@ -12984,7 +12984,7 @@ namespace ExampleProblems
                 "x0 acos x0 asin - 9.667076466723682 x0 - x0 sqrt x0 1.8416899695575903 - + -2.144384659876021 * 14.907621418336204 x0 * sin * 207.83525408394834 x0 * x0 0.5134932775461082 x0 * * x0 - -0.565868046800584 - * -39.74225930608495 -7.948117430149992 x0 * sech * - -4.000376530916261 * x0 * - -0.5124812202071841 15.873367204951375 x0 * 0.8534076835214026 - sin arccos * + -24.535915910508987 -22.296377271943083 x0 * sech arcsin tanh * - * - x0 arcsin sech x0 tanh -0.2056422942714498 + -127.55531334263372 * * -51.44268694664276 x0 * tanh * - 50.833885302945355 7.333794829929451 x0 * 1.1985402410876693 * sin tanh * - -15.360586988806647 0.03870676104618964 x0 5.664077998206226 - x0 x0 + * + x0 x0 + 32.91378990478939 * 2 - sech * 4 4 x0 * x0 x0 3.328925914312621 + + + * - * +"
             }.back()
         };
-        constexpr bool read_from_file = false;
+        constexpr bool read_from_file = true;
         constexpr const char* filename = "WierdTrackFitterTestFile.txt";
         std::string pert_mode = "sub_tree";
         std::string simplify_mode = "none";
@@ -13071,8 +13071,8 @@ namespace ExampleProblems
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "WierdTrackSR.txt", // "" /*filename to save current best expression found (instead of outputting them to standard out)*/
-                std::vector<int>{60} /*optional max-sizes of each of the expressions in the generated solution*/,
-                {split(seed_exprs[track_idx])} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
+                std::vector<int>{174} /*optional max-sizes of each of the expressions in the generated solution*/,
+                {/*split(seed_exprs[track_idx])*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 eval_type /*evaluation type: can be "dag", "scalar", or "vector"*/,
                 1000000 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
@@ -13080,7 +13080,7 @@ namespace ExampleProblems
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
                 simplify_mode /*simplifyMode: "total": most algebraic simplification more comprehensively, "total": less simplifications, "none": no simplifications */,
                 43000 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
-                {/*split(seed_exprs[track_idx])*/} /*seed expressions*/,
+                {split(seed_exprs[track_idx])} /*seed expressions*/,
                 (num_threads == 1) /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
