@@ -7,6 +7,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from math import pi
 from numpy import linalg as LA
 from pathlib import Path
+from os import system
 from matplotlib.backends.backend_pdf import PdfPages
 
 def sech_stable(x):
@@ -221,7 +222,7 @@ theta_edges = np.linspace(0, 2*np.pi, N, endpoint=False)
 
 round_floats = lambda expr, ndigits: expr.xreplace({f: Float(round(float(f), ndigits)) for f in expr.atoms(Float)})
 f_per_idx = 10
-mu_equals_nu = True
+mu_equals_nu = False
 mu, nu = (1, 1) if mu_equals_nu else symbols('mu nu', real = True)
 f_eqn, r, theta = symbols('f r theta')
 f = None
@@ -290,19 +291,36 @@ double_laplacian_f = diff(laplacian_f, r, 2) + (1/r) * diff(laplacian_f, r) + (1
 
 swift_hohenberg = mu*f + nu*f*f - f*f*f - (f + 2*laplacian_f + double_laplacian_f)
 
-r_vals, theta_vals = [None]*2
-mu_vals, nu_vals = [None]*2
+sh_eval = SympyDagEvaluator(swift_hohenberg, use_cse=False)
 
 if mu_equals_nu:
-    r_vals, theta_vals = np.meshgrid(np.linspace(0.01, r_max, N), np.linspace(0, 2*pi, N))
+    # Preserve old behavior exactly
+    r_vals, theta_vals = np.meshgrid(
+        np.linspace(0.01, r_max, N),
+        np.linspace(0, 2*pi, N)
+    )
+
+    func_vals = sh_eval.evaluate({
+        "r": r_vals,
+        "theta": theta_vals
+    })
+
+    squared_norm_error = LA.norm(func_vals.ravel())**2
+    mean_squared_error = squared_norm_error / func_vals.size
+
 else:
-    r_vals, theta_vals, mu_vals, nu_vals = np.meshgrid(np.linspace(0.01, r_max, N), np.linspace(0, 2*pi, N), np.linspace(0.01, 10, N), np.linspace(0.01, 10, N))
+    # Do not build a 4D mesh. Use scalar mu, nu per plot.
+    mu_plot_vals = np.linspace(0.01, 10, 10)
+    nu_plot_vals = np.linspace(0.01, 10, 10)
 
-sh_eval = SympyDagEvaluator(swift_hohenberg, use_cse=False)
-func_vals = sh_eval.evaluate({"r": r_vals, "theta": theta_vals})
+    # Reasonable MSE/plot mesh for the parameter sweep
+    N_sweep = 1000
+    r_vals, theta_vals = np.meshgrid(
+        np.linspace(0.01, r_max, N_sweep),
+        np.linspace(0, 2*pi, N_sweep)
+    )
 
-squared_norm_error = LA.norm(func_vals.ravel())**2
-mean_squared_error = squared_norm_error / func_vals.size
+    mean_squared_error = None
 
 print("SH DAG nodes =", len(sh_eval.nodes))
 
@@ -312,73 +330,122 @@ theta_centers = 0.5 * (theta_edges[:-1] + theta_edges[1:])
 R, Theta = np.meshgrid(r_centers, theta_centers)
 
 # Evaluate f on cell centers using the same DAG idea
+# Evaluate f on cell centers using the same DAG idea
 f_eval = SympyDagEvaluator(f, use_cse=False)
-Z = f_eval.evaluate({"r": R, "theta": Theta})
 
 print("f DAG nodes =", len(f_eval.nodes))
+
 # Convert to Cartesian
 X = R * np.cos(Theta)
 Y = R * np.sin(Theta)
 
 formula_label = r"$f(r,\theta) = " + formula_label + "$"
 
-# 3D Plot
-if PlotType == "3D":
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection="3d")
+def plot_one(mu0=None, nu0=None):
+    global mean_squared_error
 
-    surf = ax.plot_surface(X, Y, Z, cmap="viridis", edgecolor="none", alpha=0.9)
-    ax.set_xlabel("x")
-    ax.set_ylabel("y")
-    ax.set_zlabel(r"$f(r,\theta)$")
-    ax.set_title(f"Swift-Hohenberg 2D Pattern, MSE = {mean_squared_error:.3f}")
-    fig.colorbar(surf, shrink=0.5, aspect=10, label=formula_label)
+    if mu_equals_nu:
+        env_plot = {"r": R, "theta": Theta}
+        mse = mean_squared_error
+    else:
+        env_plot = {"r": R, "theta": Theta, "mu": mu0, "nu": nu0}
 
-    # Improve viewing angle
-    ax.view_init(elev=35, azim=235)
-#2D Plot
-else:
-    fig, ax = plt.subplots()
+        env_mse = {
+            "r": r_vals,
+            "theta": theta_vals,
+            "mu": mu0,
+            "nu": nu0,
+        }
 
-    # Filled contour plot
-    vmin, vmax = -1, 1
-    min_, max_ = vmin, vmax
+        func_vals = sh_eval.evaluate(env_mse)
+        squared_norm_error = LA.norm(np.nan_to_num(func_vals).ravel())**2
+        mse = squared_norm_error / func_vals.size
 
-    levels = np.linspace(vmin, vmax, 100)
+    Z = f_eval.evaluate(env_plot)
 
-    # Close the periodic seam in theta for plotting
-    Xc = np.vstack([X, X[0:1, :]])
-    Yc = np.vstack([Y, Y[0:1, :]])
-    Zc = np.vstack([Z, Z[0:1, :]])
+    if PlotType == "3D":
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection="3d")
 
-    contour = ax.contourf(
-        Xc, Yc, Zc,
-        cmap="viridis",
-        vmin=vmin, vmax=vmax,
-        levels=levels,
-        extend="both"
-    )
+        surf = ax.plot_surface(X, Y, Z, cmap="viridis", edgecolor="none", alpha=0.9)
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        ax.set_zlabel(r"$f(r,\theta)$")
 
-    ax.set_xlabel("x")
-    ax.set_ylabel("y")
-    ax.set_title(f"Swift-Hohenberg 2D Pattern, MSE = {mean_squared_error:.3f}")
+        if mu_equals_nu:
+            ax.set_title(f"Swift-Hohenberg 2D Pattern, MSE = {mse:.3f}")
+        else:
+            ax.set_title(rf"$\mu={mu0:.3g}$, $\nu={nu0:.3g}$, MSE = {mse:.3e}")
 
-    cbar = fig.colorbar(contour, ax=ax)
-    cbar.set_label(formula_label, fontsize=7)
-    cbar.set_ticks([min_, 0, max_])
+        fig.colorbar(surf, shrink=0.5, aspect=10, label=formula_label)
+        ax.view_init(elev=35, azim=235)
 
-    ax.set_aspect("equal", adjustable="box")
+    else:
+        fig, ax = plt.subplots()
 
-plt.tight_layout()
+        vmin, vmax = -1, 1
+        min_, max_ = vmin, vmax
+        levels = np.linspace(vmin, vmax, 100)
+
+        Xc = np.vstack([X, X[0:1, :]])
+        Yc = np.vstack([Y, Y[0:1, :]])
+        Zc = np.vstack([Z, Z[0:1, :]])
+
+        contour = ax.contourf(
+            Xc, Yc, Zc,
+            cmap="viridis",
+            vmin=vmin,
+            vmax=vmax,
+            levels=levels,
+            extend="both"
+        )
+
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+
+        if mu_equals_nu:
+            ax.set_title(f"Swift-Hohenberg 2D Pattern, MSE = {mse:.3f}")
+        else:
+            ax.set_title(rf"$\mu={mu0:.3g}$, $\nu={nu0:.3g}$, MSE = {mse:.3e}")
+
+        cbar = fig.colorbar(contour, ax=ax)
+        cbar.set_label(formula_label, fontsize=7)
+        cbar.set_ticks([min_, 0, max_])
+
+        ax.set_aspect("equal", adjustable="box")
+
+    plt.tight_layout()
+    return fig
+
+
+Path("SwiftHohenbergPlots").mkdir(exist_ok=True)
+
 domain_str = f"_r_{int(r_edges[0])}_{int(r_edges[-1])}_theta_{int(theta_edges[0])}_{int(theta_edges[-1])}_N_{N}"
-if show:
-    plt.show()
-else:
-    filename = f"SwiftHohenbergPlots/SwiftHohenberg2D{'Periodic'+str(f_per_idx)+domain_str if PERIODIC_IN_THETA else 'NonPeriodic'}.pdf"
-    plt.savefig(filename)
-    print(f"Saved {filename}")
-    from os import system
-    filename = filename[:-4]
-    system(f"open {filename}.pdf")
-    system(f"sips -s format png -s dpiWidth 480 -s dpiHeight 480 -z 2400 2400 {filename}.pdf --out {filename}.png")
 
+if mu_equals_nu:
+    fig = plot_one()
+
+    if show:
+        plt.show()
+    else:
+        filename = f"SwiftHohenbergPlots/SwiftHohenberg2D{'Periodic'+str(f_per_idx)+domain_str if PERIODIC_IN_THETA else 'NonPeriodic'}.pdf"
+        fig.savefig(filename)
+        print(f"Saved {filename}")
+
+        filename_no_ext = filename[:-4]
+        system(f"open {filename_no_ext}.pdf")
+        system(f"sips -s format png -s dpiWidth 480 -s dpiHeight 480 -z 2400 2400 {filename_no_ext}.pdf --out {filename_no_ext}.png")
+
+else:
+    filename = f"SwiftHohenbergPlots/SwiftHohenberg2D_mu_nu_sweep.pdf"
+
+    with PdfPages(filename) as pdf:
+        for mu0 in mu_plot_vals:
+            for nu0 in nu_plot_vals:
+                fig = plot_one(float(mu0), float(nu0))
+                pdf.savefig(fig)
+                plt.close(fig)
+                print(f"Added mu={mu0:.3g}, nu={nu0:.3g}")
+
+    print(f"Saved {filename}")
+    system(f"open {filename}")
