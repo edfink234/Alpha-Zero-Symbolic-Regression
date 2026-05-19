@@ -1,0 +1,2 @@
+theta expt_weight_squared_k t beta_2 * cos d_ij_nest theta sin - + / /,7.99535
+beta_2 epsilon m_t_k_hat tanh + cos delta_w_t_k theta beta_1 beta_2 - / * / /,8.68669
