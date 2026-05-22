@@ -648,10 +648,10 @@ def test_visualize():
             assert rpn1 == rpn2
             print(f"rpn_expr = {' '.join([i if i != 's' else 'x0' for i in rpn_expr.split()])}")
         else:
-            expression_type_to_plot = ["prefix", "postfix"][1]
+            expression_type_to_plot = ["prefix", "postfix"][0]
             completeTree = [True, False][1]
             if expression_type_to_plot == "prefix":
-                complete_pn_expr = "8.90965282330888 59.89296187462085 x0 * 17.709631503758562 31.430444972044043 x0 * tanh x0 10.752797498412956 + x0 sqrt * x0 5.872902394660459 * + ~ + + 9.880074292925372 x0 tanh tanh * + * x0 acos 0.5922290901693024 4 + * 0.7764612616244088 x0 - 76.89127635722234 11.8131780914971 x0 * sin - * * + 4 4 -29.14453478867909 * * + * x0 x0 + cos 4.004190002943048 x0 230.35684238247097 * * * - 1.3227253400099304 x0 20.226114315391563 x0 - 22.525655106586292 + * sin * - 50.44170205297188 -12.816822683581922 -10.914784548298355 x0 * - cos sech * + x0 sqrt 5.654621199258812 130.3029718242763 * - x0 arccos tanh * - -277.4668940523251 x0 sin 0.14855711697939927 - sech asin * +"
+                complete_pn_expr = "+ - + x y z + - + x y z x"
                 if completeTree:
                     complete_pn_expr = complete_tree(complete_pn_expr.split(), "prefix") #returns a list
                 else:

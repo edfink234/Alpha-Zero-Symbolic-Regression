@@ -13,7 +13,7 @@ std::vector<std::string> derivat;
 int Index = 0; //global integer variable initially equal to zero, which represents the Index of the array derivat
 
 //"cos", "exp", "sqrt", "sin", "asin", "ln", "tanh", "acos", "~", "sech"
-// ✅     ✅      ✅     ✅     ✅     ✅     ✅      ✅    ✅    ✅
+// ✅     ✅      ✅     ✅     ✅     ✅     ✅     ✅    ✅     ✅
 //"+", "-", "*", "/", "^"
 //✅   ✅   ✅   ✅   ✅
 

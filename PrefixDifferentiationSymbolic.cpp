@@ -13,7 +13,7 @@ std::vector<std::string> derivat;
 int Index = 0; //global integer variable initially equal to zero, which represents the Index of the array derivat
 
 //"cos", "exp", "sqrt", "sin", "asin", "ln", "tanh", "acos", "~", "sech"
-// ✅     ✅      ✅     ✅     ✅     ✅      ✅     ✅    ✅     ✅
+// ✅     ✅      ✅     ✅     ✅     ✅     ✅     ✅    ✅     ✅
 //"+", "-", "*", "/", "^"
 //✅   ✅   ✅   ✅   ✅
 
@@ -33,16 +33,31 @@ bool is_binary(const std::string& token)
 template<typename T>
 std::ostream& operator<<(std::ostream& out, const std::vector<T>& vec)
 {
-    for (const T& elem: vec){out << elem << ' ';}
+    for (size_t i = 0; i < vec.size(); i++)
+    {
+        out << vec[i];
+        if (i < (vec.size() - 1))
+        {
+            out <<  " ";
+        }
+    }
     return out;
 }
 
 template<typename T>
 std::stringstream& operator<<(std::stringstream& out, const std::vector<T>& vec)
 {
-    for (const T& elem: vec){out << elem << ' ';}
+    for (size_t i = 0; i < vec.size(); i++)
+    {
+        out << vec[i];
+        if (i < (vec.size() - 1))
+        {
+            out <<  " ";
+        }
+    }
     return out;
 }
+
 
 bool string_in_file(const std::string& str, const std::string& filename)
 {
@@ -194,7 +209,7 @@ void derivePrefixHelper(int low, int up, const std::string& dx, const std::vecto
     if (trace_derivat)
     {
         std::cout << "derivat = {" << derivat << "}, low = " << low << ", up = " << up
-        << ", postfix[up] = " << postfix[up] << ", postfix[low] = " << postfix[low] << '\n';
+        << ", prefix[up] = " << prefix[up] << ", prefix[low] = " << prefix[low] << '\n';
     }
     
     if (prefix[low] == "+" || prefix[low] == "-")
@@ -839,7 +854,7 @@ int main()
     std::vector<int> grasp;
     
     prefix = {"+", "-", "+", "x", "y", "z", "+", "-", "+", "x", "y", "z", "x"};
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ 1 + 1 1 (prefix) -> 1+1+1 = 3 ✅
+    derivePrefix(0, prefix.size()-1, "x", prefix, grasp, true); //+ 1 + 1 1 (prefix) -> 1+1+1 = 3 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
