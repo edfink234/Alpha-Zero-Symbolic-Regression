@@ -261,8 +261,9 @@ def plot_rpn_expression_tree(expression: list[str], save = False, filename = "",
             texcode = dot2tex.dot2tex(graph.to_string(),format='tikz',texmode='math',crop=True)
             for replacement in replace_dict:
                 texcode = texcode.replace(replacement, replace_dict[replacement])
+#            texcode = texcode.replace(r'\documentclass{article}', r'\documentclass{standalone}')
 #            texcode = texcode.replace(r"\usepackage{amsmath}", r"\usepackage{amsmath}""\n"r"\usepackage{scalerel}""\n")
-            filename = filename[:filename.find('.')]+".tex"
+#            filename = filename[:filename.find('.')]+".tex"
             with open(f"{filename}", "w") as f:
                 f.write(texcode)
             print(f"Latex file saved as {filename}")
@@ -278,7 +279,7 @@ def plot_rpn_expression_tree(expression: list[str], save = False, filename = "",
         plt.show()
 
 def test_visualize():
-    save = False
+    save = True
     if save:
 #        print(pn_to_infix(" - - + / ^ x 3 5 / ^ y 3 2 y x".split()))
 #        print(rpn_to_infix("y y x * * cos y +"))

@@ -1,0 +1,98 @@
+delta_w_t_k_ada_delta cos theta theta gamma g_t_k - expt_grad_squared_k m_t_k + / - * *,3.62882
+expt_grad_squared_k t epsilon * eta sqrt velocity_k delta_w_t_k_ada_delta v_t_k + * + - /,4.08507
+expt_grad_squared_k eta theta / eta sqrt velocity_k delta_w_t_k_ada_delta v_t_k + * + - /,4.30515
+expt_grad_squared_k t epsilon * v_t_k_hat t ~ sin + - /,4.37887
+delta_w_t_k_ada_delta cos theta theta beta_1 m_t_k_hat eta + / - * *,4.4498
+expt_grad_squared_k w_k beta_2 / eta sqrt velocity_k delta_w_t_k_ada_delta v_t_k + * + - /,4.45029
+delta_w_t_k_ada_delta cos theta beta_1 beta_2 gamma * m_t_k_hat velocity_k - / * * *,4.56021
+delta_w_t_k_ada_delta cos theta theta value d_ij - expt_grad_squared_k m_t_k + / - * *,4.8044
+expt_grad_squared_k t epsilon * gradient_k ln v_t_k_hat ln expt_grad_squared_k ~ + * - /,4.85361
+delta_w_t_k_ada_delta cos theta theta gamma asin d_ij theta - / - * *,4.86864
+expt_grad_squared_k m_t_k gamma v_t_k m_t_k eta - - + * /,4.88254
+expt_grad_squared_k delta_w_t_k epsilon * v_t_k_hat t ~ sin + - /,4.8934
+expt_grad_squared_k delta_w_t_k_ada_delta epsilon * v_t_k_hat t ~ sin + - /,4.91971
+delta_w_t_k_ada_delta cos theta delta_w_t_k_ada_delta exp d_ij_nest beta_2 delta_w_t_k ^ + / * *,5.26665
+expt_grad_squared_k t epsilon * v_t_k_hat d_ij_nest delta_w_t_k_ada_delta expt_grad_squared_k / + + - /,5.2898
+t beta_2 * theta theta gamma g_t_k - expt_grad_squared_k m_t_k + / - * *,5.50867
+expt_grad_squared_k epsilon epsilon + v_t_k_hat t ~ sin + - /,5.58125
+expt_grad_squared_k epsilon value / v_t_k_hat t ~ sin + - /,5.65085
+expt_grad_squared_k epsilon beta_2 ^ v_t_k_hat t ~ sin + - /,5.75566
+expt_grad_squared_k beta_2 epsilon * v_t_k_hat t ~ sin + - /,5.75579
+expt_grad_squared_k epsilon tanh v_t_k_hat t ~ sin + - /,5.7558
+expt_grad_squared_k m_t_k epsilon * v_t_k_hat t ~ sin + - /,5.89604
+expt_grad_squared_k expt_grad_squared_k epsilon * v_t_k_hat t ~ sin + - /,5.89604
+expt_grad_squared_k epsilon epsilon * v_t_k_hat t ~ sin + - /,5.90349
+expt_grad_squared_k v_t_k epsilon * v_t_k_hat t ~ sin + - /,5.90349
+expt_grad_squared_k theta epsilon * v_t_k_hat t ~ sin + - /,5.90349
+t delta_w_t_k + theta theta gamma g_t_k - expt_grad_squared_k m_t_k + / - * *,5.98108
+expt_grad_squared_k t epsilon * m_t_k v_t_k_hat gamma sqrt + * - /,6.06323
+delta_w_t_k_ada_delta cos theta theta epsilon epsilon ^ expt_grad_squared_k m_t_k + / - * *,6.12002
+expt_grad_squared_k t epsilon * eta sqrt v_t_k m_t_k * eta exp / + - /,6.14892
+delta_w_t_k_ada_delta gamma - v_t_k_hat sqrt theta tanh beta_2 asin t sqrt / / - /,6.15357
+expt_grad_squared_k epsilon expt_weight_squared_k / v_t_k_hat t ~ sin + - /,6.35152
+theta cos theta beta_1 beta_1 g_t_k - expt_grad_squared_k m_t_k + / - * *,6.36906
+delta_w_t_k_ada_delta cos theta theta value epsilon + expt_grad_squared_k m_t_k + / - * *,6.3792
+expt_grad_squared_k t epsilon * theta epsilon ^ velocity_k delta_w_t_k_ada_delta v_t_k + * + - /,6.4304
+expt_grad_squared_k d_ij_nest epsilon * v_t_k_hat t ~ sin + - /,6.51845
+expt_grad_squared_k epsilon gamma / v_t_k_hat t ~ sin + - /,6.5353
+expt_grad_squared_k beta_1 epsilon * v_t_k_hat t ~ sin + - /,6.5504
+expt_grad_squared_k g_t_k epsilon * v_t_k_hat t ~ sin + - /,6.55713
+expt_grad_squared_k value epsilon * v_t_k_hat t ~ sin + - /,6.57502
+expt_grad_squared_k eta epsilon * v_t_k_hat t ~ sin + - /,6.57972
+expt_grad_squared_k velocity_k epsilon * v_t_k_hat t ~ sin + - /,6.59447
+delta_w_t_k_ada_delta cos theta beta_1 gamma g_t_k - expt_grad_squared_k m_t_k + / - * *,6.60663
+expt_grad_squared_k epsilon gradient_k / v_t_k_hat t ~ sin + - /,6.612
+delta_w_t_k_ada_delta cos theta theta beta_2 velocity_k - expt_grad_squared_k m_t_k + / - * *,6.66379
+expt_grad_squared_k epsilon gamma ^ v_t_k_hat t ~ sin + - /,6.73849
+expt_grad_squared_k d_ij_nest g_t_k + eta sqrt velocity_k delta_w_t_k_ada_delta v_t_k + * + - /,6.81065
+expt_grad_squared_k epsilon m_t_k_hat / v_t_k_hat t ~ sin + - /,6.82211
+delta_w_t_k_ada_delta cos theta theta beta_1 gamma * expt_grad_squared_k m_t_k + / - * *,6.88286
+delta_w_t_k_ada_delta cos theta theta v_t_k cos expt_grad_squared_k m_t_k + / - * *,6.9346
+delta_w_t_k_ada_delta cos theta theta beta_2 sin expt_grad_squared_k m_t_k + / - * *,7.04195
+expt_weight_squared_k expt_grad_squared_k w_k v_t_k d_ij_nest d_ij_nest * - / ^ ^,7.07162
+expt_grad_squared_k w_k epsilon * v_t_k_hat t ~ sin + - /,7.09941
+delta_w_t_k_ada_delta cos theta theta theta expt_weight_squared_k ^ expt_grad_squared_k m_t_k + / - * *,7.10671
+expt_grad_squared_k expt_weight_squared_k epsilon * v_t_k_hat t ~ sin + - /,7.1374
+delta_w_t_k_ada_delta cos theta theta delta_w_t_k_ada_delta gamma + expt_grad_squared_k m_t_k + / - * *,7.14446
+expt_grad_squared_k m_t_k t ^ v_t_k_hat t ~ sin + - /,7.16717
+delta_w_t_k_ada_delta cos delta_w_t_k tanh m_t_k delta_w_t_k beta_1 velocity_k - + - / *,7.20285
+expt_grad_squared_k gradient_k epsilon * v_t_k_hat t ~ sin + - /,7.23179
+delta_w_t_k_ada_delta cos theta theta velocity_k beta_1 + expt_grad_squared_k m_t_k + / - * *,7.23741
+delta_w_t_k_ada_delta cos theta theta epsilon delta_w_t_k - expt_grad_squared_k m_t_k + / - * *,7.2567
+d_ij_nest sin velocity_k d_ij exp expt_weight_squared_k expt_grad_squared_k eta ^ + + + /,7.2851
+d_ij_nest sin velocity_k d_ij_nest exp expt_weight_squared_k expt_grad_squared_k eta ^ + + + /,7.29466
+beta_2 beta_2 * theta beta_1 beta_1 g_t_k - expt_grad_squared_k m_t_k + / - * *,7.29884
+d_ij sin velocity_k d_ij exp expt_weight_squared_k expt_grad_squared_k eta ^ + + + /,7.30087
+d_ij_nest sin m_t_k d_ij exp expt_weight_squared_k expt_grad_squared_k eta ^ + + + /,7.31
+d_ij sin velocity_k d_ij_nest exp expt_weight_squared_k expt_grad_squared_k eta ^ + + + /,7.31446
+delta_w_t_k_ada_delta cos theta theta beta_1 delta_w_t_k_ada_delta ^ expt_grad_squared_k m_t_k + / - * *,7.31516
+d_ij sin m_t_k d_ij exp expt_weight_squared_k expt_grad_squared_k eta ^ + + + /,7.33896
+expt_grad_squared_k t epsilon * velocity_k expt_grad_squared_k - velocity_k delta_w_t_k_ada_delta v_t_k + * + - /,7.3481
+expt_grad_squared_k d_ij epsilon * v_t_k_hat t ~ sin + - /,7.41588
+d_ij_nest sin t eta value - eta expt_weight_squared_k sin - / + /,7.41763
+d_ij_nest sin t d_ij_nest exp beta_1 theta - v_t_k d_ij * ^ + + /,7.41774
+d_ij_nest sin t d_ij_nest exp d_ij ~ exp + + /,7.41845
+d_ij sin t d_ij_nest exp d_ij ~ exp + + /,7.42975
+delta_w_t_k_ada_delta cos expt_weight_squared_k sqrt beta_1 tanh asin delta_w_t_k d_ij_nest delta_w_t_k_ada_delta - + ^ ^ *,7.436
+d_ij sin t d_ij_nest exp beta_1 theta - v_t_k d_ij * ^ + + /,7.44609
+d_ij sin t d_ij_nest exp beta_1 theta - t d_ij_nest * ^ + + /,7.46744
+d_ij sin t d_ij_nest exp beta_1 theta - t d_ij * ^ + + /,7.46746
+d_ij_nest sin gamma d_ij exp expt_weight_squared_k expt_grad_squared_k eta ^ + + + /,7.46768
+d_ij sin t d_ij exp beta_1 theta - t d_ij_nest * ^ + + /,7.46783
+d_ij sin t d_ij exp beta_1 theta - t d_ij * ^ + + /,7.46785
+d_ij_nest sin t d_ij exp beta_1 theta - t d_ij_nest * ^ + + /,7.4679
+d_ij_nest sin t d_ij exp beta_1 theta - t d_ij * ^ + + /,7.46802
+d_ij_nest sin t d_ij_nest exp beta_1 theta - t d_ij * ^ + + /,7.46851
+d_ij_nest sin t d_ij_nest exp beta_1 theta - t d_ij_nest * ^ + + /,7.46863
+d_ij_nest sin beta_1 d_ij_nest exp expt_weight_squared_k expt_grad_squared_k eta ^ + + + /,7.46998
+d_ij_nest sin v_t_k d_ij_nest exp beta_1 theta - t d_ij * ^ + + /,7.48987
+delta_w_t_k_ada_delta cos theta theta gamma g_t_k - epsilon d_ij_nest - / - * *,7.53429
+d_ij_nest sin eta d_ij exp expt_weight_squared_k expt_grad_squared_k eta ^ + + + /,7.53891
+d_ij_nest sin w_k d_ij_nest exp delta_w_t_k expt_grad_squared_k eta ^ + + + /,7.57691
+delta_w_t_k_ada_delta cos theta beta_1 beta_1 delta_w_t_k_ada_delta - expt_grad_squared_k m_t_k + / - * *,7.64159
+delta_w_t_k_ada_delta cos expt_weight_squared_k delta_w_t_k v_t_k v_t_k ^ tanh - * *,7.6453
+expt_grad_squared_k t epsilon * v_t_k_hat d_ij gradient_k w_k + * + - /,7.67731
+d_ij_nest sin w_k d_ij_nest exp expt_weight_squared_k expt_grad_squared_k eta ^ + + + /,7.67977
+d_ij_nest sin t d_ij_nest exp gamma d_ij_nest velocity_k - - + + /,7.70177
+expt_grad_squared_k epsilon ~ v_t_k_hat t ~ sin + - /,7.70812
+d_ij_nest sin v_t_k v_t_k d_ij_nest + d_ij * exp + /,7.71947
