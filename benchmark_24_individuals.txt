@@ -1,0 +1,2 @@
+beta_2 asin theta epsilon m_t_k t sqrt + - * *,16.8173
+theta delta_w_t_k delta_w_t_k m_t_k_hat expt_grad_squared_k delta_w_t_k_ada_delta / * + / -,21.4615
