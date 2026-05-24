@@ -1,0 +1,3 @@
+beta_1 exp gamma t eta * + gamma m_t_k beta_2 g_t_k ^ - - / *,3236.67
+t beta_2 * beta_2 delta_w_t_k cos + v_t_k m_t_k ^ expt_weight_squared_k t value + + + / *,3555.87
+beta_1 exp gamma t eta * + beta_1 m_t_k beta_1 t * - - / *,3602.69

@@ -1,0 +1,2 @@
+value expt_weight_squared_k * beta_1 m_t_k_hat tanh + m_t_k_hat t - m_t_k expt_weight_squared_k value + - + / *,3506.86
+t beta_2 * beta_2 sin sqrt m_t_k_hat t - g_t_k g_t_k m_t_k_hat + + + / *,3560.71
