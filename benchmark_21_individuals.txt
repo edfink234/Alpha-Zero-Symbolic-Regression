@@ -1,0 +1,4 @@
+beta_2 m_t_k v_t_k v_t_k_hat velocity_k delta_w_t_k_ada_delta - ^ / + /,373.307
+delta_w_t_k delta_w_t_k_ada_delta + d_ij_nest eta value velocity_k m_t_k_hat + + + - /,390.1
+delta_w_t_k delta_w_t_k_ada_delta + d_ij_nest value m_t_k_hat gamma ln * + - /,392.557
+beta_2 m_t_k v_t_k v_t_k g_t_k - gradient_k m_t_k_hat / + / + /,403.998

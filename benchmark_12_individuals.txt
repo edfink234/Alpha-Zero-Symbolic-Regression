@@ -1,0 +1,1 @@
+value expt_grad_squared_k d_ij beta_2 * eta asin delta_w_t_k d_ij + + - + /,3.29239

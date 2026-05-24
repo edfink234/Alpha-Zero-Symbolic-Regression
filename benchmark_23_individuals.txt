@@ -1,0 +1,3 @@
+m_t_k t * m_t_k + velocity_k + d_ij_nest theta * velocity_k m_t_k_hat expt_grad_squared_k gamma ^ + - + /,16.037
+theta ~ eta m_t_k delta_w_t_k_ada_delta d_ij_nest delta_w_t_k_ada_delta * - - / /,16.4232
+epsilon theta - eta m_t_k delta_w_t_k_ada_delta d_ij_nest delta_w_t_k_ada_delta * - - / /,16.5266

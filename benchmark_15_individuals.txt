@@ -1,0 +1,7 @@
+theta delta_w_t_k_ada_delta expt_weight_squared_k epsilon exp velocity_k expt_grad_squared_k - * / - *,14.1013
+velocity_k t + expt_weight_squared_k asin v_t_k_hat eta d_ij velocity_k - * + - /,14.7848
+velocity_k t + expt_weight_squared_k asin v_t_k_hat m_t_k g_t_k v_t_k_hat + + + - /,15.5748
+theta delta_w_t_k_ada_delta d_ij_nest m_t_k t m_t_k + + + - *,16.0475
+velocity_k t + expt_weight_squared_k asin v_t_k_hat velocity_k velocity_k theta - + + - /,16.0669
+theta delta_w_t_k d_ij_nest m_t_k t m_t_k + + + - *,16.1213
+t gamma value beta_2 tanh eta delta_w_t_k + ^ * / *,16.3416

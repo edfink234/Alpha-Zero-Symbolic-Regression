@@ -1,0 +1,48 @@
+delta_w_t_k t + epsilon velocity_k - gradient_k tanh gamma w_k delta_w_t_k - / / - /,0.272743
+t expt_grad_squared_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.308574
+t expt_grad_squared_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.308629
+t expt_grad_squared_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.308645
+t expt_grad_squared_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.308663
+t expt_grad_squared_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.308665
+t expt_grad_squared_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.308669
+t expt_grad_squared_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.30867
+t expt_grad_squared_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.308681
+t expt_grad_squared_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.308682
+t expt_grad_squared_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.308684
+t expt_grad_squared_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.30869
+t expt_grad_squared_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.308698
+t expt_grad_squared_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.3087
+t expt_grad_squared_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.308703
+t expt_grad_squared_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.308707
+t expt_grad_squared_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.308714
+t expt_grad_squared_k ^ eta asin beta_1 velocity_k epsilon value ^ * + - /,0.308722
+t expt_grad_squared_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.308722
+t expt_grad_squared_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.308731
+t expt_grad_squared_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.308736
+t expt_grad_squared_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.308739
+t expt_grad_squared_k ^ eta asin beta_1 velocity_k epsilon value ^ * + - /,0.308751
+t expt_grad_squared_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.308756
+t expt_grad_squared_k ^ eta asin beta_1 velocity_k epsilon value ^ * + - /,0.308763
+t expt_grad_squared_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.308765
+t expt_grad_squared_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.308808
+t expt_grad_squared_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.308831
+t expt_grad_squared_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.308836
+t expt_grad_squared_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.308837
+t expt_grad_squared_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.308897
+t expt_grad_squared_k ^ theta eta + gamma velocity_k epsilon value ^ * + - /,0.31038
+t expt_grad_squared_k ^ theta eta + gamma velocity_k epsilon value ^ * + - /,0.310396
+t expt_grad_squared_k ^ theta eta + gamma velocity_k epsilon value ^ * + - /,0.310456
+t expt_grad_squared_k ^ theta eta + gamma velocity_k epsilon value ^ * + - /,0.310484
+t v_t_k ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.310511
+t epsilon ^ eta asin gamma velocity_k epsilon value ^ * + - /,0.310531
+beta_2 v_t_k_hat ^ eta asin beta_1 velocity_k epsilon value ^ * + - /,0.310776
+t expt_grad_squared_k ^ v_t_k eta + gamma velocity_k epsilon value ^ * + - /,0.311706
+t theta ^ theta eta + gamma velocity_k epsilon value ^ * + - /,0.311731
+t v_t_k ^ v_t_k eta + gamma velocity_k epsilon value ^ * + - /,0.311881
+t theta ^ v_t_k eta + gamma velocity_k epsilon value ^ * + - /,0.31199
+t epsilon ^ theta eta + gamma velocity_k epsilon value ^ * + - /,0.312546
+t v_t_k ^ theta eta + gamma velocity_k epsilon value ^ * + - /,0.31306
+beta_2 expt_weight_squared_k + eta asin gamma velocity_k epsilon value ^ * + - /,0.313074
+delta_w_t_k t + epsilon velocity_k - eta v_t_k_hat value eta * ^ * - /,0.313436
+t epsilon ^ v_t_k eta + beta_1 velocity_k epsilon value ^ * + - /,0.314976
+expt_weight_squared_k exp eta asin gamma velocity_k epsilon value ^ * + - /,0.316302

@@ -1,0 +1,27 @@
+beta_2 beta_2 tanh acos ln beta_1 beta_2 delta_w_t_k_ada_delta v_t_k - * ^ / /,11.2288
+beta_2 beta_2 tanh acos ln gamma beta_2 eta v_t_k - * ^ / /,12.0846
+beta_2 gamma epsilon + tanh ln beta_1 beta_2 eta v_t_k - * ^ / /,12.2345
+beta_2 beta_2 tanh acos ln beta_1 gamma delta_w_t_k_ada_delta v_t_k - * ^ / /,12.2431
+beta_2 beta_1 beta_2 ^ tanh ln beta_1 beta_2 eta v_t_k - * ^ / /,12.2727
+beta_2 beta_1 beta_2 ^ tanh ln beta_1 beta_2 v_t_k eta + - ^ / /,12.2783
+beta_2 gamma beta_2 ^ tanh ln beta_1 beta_2 v_t_k eta + - ^ / /,12.3001
+beta_2 gamma beta_2 ^ tanh ln beta_1 theta exp velocity_k tanh ^ ^ / /,12.5197
+beta_2 expt_weight_squared_k eta + tanh ln beta_1 beta_2 eta v_t_k - * ^ / /,12.7429
+beta_2 eta expt_weight_squared_k ^ tanh ln beta_1 beta_2 eta v_t_k - * ^ / /,12.7688
+beta_2 beta_1 beta_2 ^ tanh ln gamma v_t_k v_t_k m_t_k * ^ ^ / /,12.8531
+beta_2 beta_1 epsilon + tanh ln beta_1 beta_1 velocity_k tanh + ^ / /,13.1794
+beta_2 gamma beta_2 ^ tanh ln beta_1 beta_2 v_t_k expt_grad_squared_k + - ^ / /,13.2673
+beta_2 beta_1 beta_2 ^ tanh ln beta_1 beta_1 cos velocity_k tanh ^ ^ / /,13.3104
+beta_2 beta_1 beta_2 ^ tanh ln beta_1 v_t_k delta_w_t_k_ada_delta - ~ ^ / /,13.5969
+beta_2 gamma beta_2 ^ tanh ln beta_1 expt_weight_squared_k w_k eta * - ^ / /,13.6099
+beta_2 beta_1 beta_2 ^ tanh ln beta_1 v_t_k gamma * ~ ^ / /,13.9067
+beta_2 gamma epsilon + tanh ln beta_1 gamma v_t_k ~ * ^ / /,13.9094
+beta_2 beta_1 epsilon + tanh ln beta_1 m_t_k delta_w_t_k_ada_delta v_t_k - + ^ / /,14.015
+beta_2 gamma beta_2 ^ tanh ln beta_1 eta beta_2 sin + ^ / /,14.6679
+beta_2 gamma beta_2 ^ tanh ln beta_1 expt_weight_squared_k v_t_k ln - ^ / /,14.6832
+beta_2 expt_weight_squared_k eta + tanh ln beta_1 beta_2 v_t_k eta + - ^ / /,14.7751
+beta_2 beta_1 beta_2 ^ tanh ln beta_1 v_t_k eta - ~ ^ / /,14.806
+beta_2 beta_1 beta_2 ^ tanh ln beta_1 beta_1 cos d_ij m_t_k - ^ ^ / /,14.8106
+beta_2 gamma beta_2 ^ tanh ln beta_1 v_t_k expt_weight_squared_k ln / ^ / /,14.8245
+beta_2 gamma theta ^ tanh ln beta_1 expt_weight_squared_k v_t_k ln - ^ / /,14.9185
+beta_2 m_t_k eta ~ eta m_t_k_hat tanh ^ + + /,17.334
