@@ -7837,11 +7837,6 @@ struct Board
     }
 };
 
-std::vector<std::vector<std::string>> BrightSolitonControl(Board& x, bool fit)
-{
-    return std::vector<std::vector<std::string>>{};
-}
-
 /*
  Infix: abs(f - x1)
  Postfix: f x1 - abs
@@ -10236,6 +10231,61 @@ std::vector<std::vector<std::string>> VortexRadialProfile(Board& x, bool fit)
     return results;
 }
 
+std::vector<std::vector<std::string>> BrightSolitonControl(Board& x, bool fit)
+{
+    // --- Parameters (match your Python defaults) ---
+    constexpr double Omega = 0.18;
+    constexpr double A = 1.0;
+    constexpr double b = 0.75;
+    constexpr double m = 1.0;
+
+    constexpr double T = 10.0;
+    constexpr double dt = 0.01;
+    constexpr int steps = static_cast<int>(T / dt);
+
+    // initial condition (approx from your script)
+    double xpos = 2.0;   // you can refine later using root solve
+    double v = 0.0;
+
+    // helper: sech
+    auto sech = [](double x)
+    {
+        return 1.0 / std::cosh(x);
+    };
+
+    // --- simulate dynamics ---
+    for (int i = 0; i < steps; i++)
+    {
+        double t = i * dt;
+
+        // evaluate candidate ξ(t)
+
+        double xi = x.expression_evaluator(x.params, x.pieces[0], t); // assumes eval() exists like other problems
+
+        // force
+        double force =
+            -(Omega * Omega * xpos)
+            + (2.0 * A * b * std::pow(sech(b * (xpos - xi)), 2.0)
+               * std::tanh(b * (xpos - xi)));
+
+        // Euler step (keep simple!)
+        v += dt * force / m;
+        xpos += dt * v;
+    }
+
+    // terminal ξ(T)
+    double xi_T = x.expression_evaluator(x.params, x.pieces[0], T);
+
+    // --- loss ---
+    double loss =
+        xpos * xpos +
+        v * v +
+        xi_T * xi_T;
+
+    // return as SR objective
+    return { { to_string_general(loss) } };
+}
+
 /*
  Infix: μ*f + ν*f*f - f*f*f - f - 2*∂^2f/∂r^2 - ∂^4f/∂r^4 - ((1/r) * ((2*(∂^3f/∂r^3)) + ((1/r)*(∂^2f/∂r^2)) - ((1/(r*r))*(∂f/∂r)) + ((1/(r*r))*(∂^3f/∂θ^2∂r)) - ((2/(r*r*r))*(∂^2f/∂θ^2)) + (2*(∂f/∂r)))) - ((1/(r*r)) * ((2*(∂^4f/∂θ^2∂r^2)) + ((1/r)*(∂^3f/∂θ^2∂r)) + ((1/(r*r))*(∂^4f/∂θ^4)) - (2*(∂^2f/∂r^2)) + (2*(∂^2f/∂θ^2)))) - ((2/(r*r*r)) * ((∂f/∂r) - (2*(∂^3f/∂θ^2∂r)) + ((3/r)*(∂^2f/∂θ^2))))
 Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -
@@ -12414,6 +12464,97 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
 
 namespace ExampleProblems
 {
+    void BrightSolitonControlTest(int random_seed, const char* algorithm, double time)
+    {
+        srand(random_seed);
+
+        constexpr int num_points = 10;
+        Eigen::MatrixXd data(num_points, 1);
+        constexpr int num_diff_eqns = 1;
+        
+        double threshold = 0.0;
+        unsigned int num_threads = 0;
+        std::vector<std::string> bad_ops = {"exp", "ln", "log", "^", "/"};
+        // input is just time t
+        for (int i = 0; i < num_points; i++)
+        {
+            data(i, 0) = (10.0 * i) / (num_points - 1);
+        }
+        
+        if (strcmp(algorithm, "RandomSearch") == 0)
+        {
+            RandomSearch(BrightSolitonControl /*differential equation to solve*/,
+                         num_diff_eqns /*number of equations in differential equation system*/,
+                         data /*data used to solve differential equation*/,
+                         std::vector<int>{5} /*fixed depths of generated solution*/,
+                         "postfix" /*expression representation*/,
+                         0 /*num_consts_diff: number of constants in differential equation*/,
+                         "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
+                         5 /*number of fit iterations*/,
+                         "naive_numerical" /*method for computing the gradient*/,
+                         true /*cache*/,
+                         time /*time to run the algorithm in seconds*/,
+                         num_threads /*num threads*/,
+                         true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                         threshold /*threshold for which solutions cannot be constant*/,
+                         false /*`use_const_pieces`: whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                         0 /*number of data columns that constitute labels and not independent variables/features*/,
+                         true /*whether or not to include ALL of the features in all of the generated expressions*/,
+                         {} /*custom features that the SR-found equations are required to contain*/,
+                         "" /*filename to save current best expression found (instead of outputting them to standard out*/,
+                         {} /*optional max-sizes of each of the expressions in the generated solution*/,
+                         {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
+                         "vector" /*evaluation type: can be "dag", "scalar", or "vector"*/,
+                         1000000 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
+                         false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
+                         std::vector<std::string>{} /*operators to restrict in the search*/,
+                         1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
+                         "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
+                         2000 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/);
+        }
+        else
+        {
+            SimulatedAnnealing(BrightSolitonControl /*differential equation to solve*/,
+                num_diff_eqns /*number of equations in differential equation system*/,
+                data /*data used to solve differential equation*/,
+                std::vector<int>{10} /*fixed depths of generated solution*/,
+                "postfix" /*expression representation*/,
+                0 /*num_consts_diff: number of constants in differential equation*/,
+                "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
+                5 /*number of fit iterations*/,
+                "naive_numerical" /*method for computing the gradient*/,
+                true /*cache*/,
+                time /*time to run the algorithm in seconds*/,
+                num_threads /*num threads*/,
+                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                threshold /*threshold for which solutions cannot be constant*/,
+                false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
+                0 /*number of data columns that constitute labels and not independent variables/features*/,
+                true /*whether or not to include ALL of the features in all of the generated expressions*/,
+                {} /*custom features that the SR-found equations are required to contain*/,
+                "BrightSolitonControlBest.txt", //"" /*filename to save current best expression found (instead of outputting them to standard out*/
+                {} /*optional max-sizes of each of the expressions in the generated solution*/,
+                {/*split("x0 -0.01 + x1 sech + 11.156528193614346 ^ 2.714063572022206e-13 * 0.010000 x0 + 6.29319 ^ 1e-08 * 0.0100003333566687 + 0.7493736126143709 + + 0.9998848754538172 x0 tanh arcsin 0.7615941559557649 x0 4 ^ / / ^ 6.283190 x1 + ~ sin 0.9171523356672744 * * 0.7827863849639187 x0 cos asin cos * * - x0 x0 + 0.003734854911714874 6.283190 x0 / ^ 7.570169558264211 + ^ 0.28580222883407974 0.010000 x0 + 10.01 + ^ 0.010000 x0 ^ 1.03 + x1 sin - * * -6.1759665127829875 -10 x1 x1 + + + x1 0.005 / 1.9195169107150692e+06 - / -0.06767485271943648 + + 0.2658022288340797 x0 + 0.9801980198019802 ^ x0 1.517923178056138 + / 0.010000 x0 + sin 0.03661899347368653 x0 + + x1 sin 10.01 0.010000 x0 + / + * ^ -0.01842414214696351 + + -")*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
+                "vector" /*evaluation type: can be "dag", "scalar", or "vector"*/,
+                1000000 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
+                false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
+                bad_ops /*operators to restrict in the search*/,
+                1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
+                "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
+                8000 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
+                {} /*seed expressions*/,
+                (num_threads == 1) /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
+                random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
+                0.0 /*T_min*/,
+                0.0 /*T_max*/,
+                [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
+                "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
+                true /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
+                "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/,
+                true /*whether or not to sync the current expression of each thread with the global current best*/);
+        }
+    }
     void SwiftHohenbergTest(int random_seed, const char* algorithm, double time)
     {
         double threshold = 1.0;
@@ -12585,8 +12726,8 @@ namespace ExampleProblems
                 bad_ops /*operators to restrict in the search*/,
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
                 "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
-                8000 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
-                {split("10.725238559706042 x3 + -0.01 * 6.277271111021734 + 0.02009565935391871 0.061491905250785184 x1 + 11.259689663013877 + * - x0 0.02 - 9.999500019721432e-05 * 0.06283190000000001 x1 + 6.282875853589447 * * * 0.016936635356256793 0.1 x0 sin * x2 sech 1.293839581114536 - + * x2 0.32731709773738815 - sech 0.07019549267975159 * 0.6480542736638855 + + + 1.9948190382100195 1.4612350914867795 x1 + 0.2570467275819641 * + 3.8390793125119687 x2 - 1.5696980434685817 x2 - * sech + 0.6197096955850923 x2 sin 0.15230753331564206 x1 + + + 0.01 53.24442052479651 x0 - * x2 cos 32.46482957658356 + + + + 9.974827996544237 x2 0.01 - * 2.0531368042727065 x1 * + 2.097653830058276 x1 * 11.232584375947836 + 10.022438518029324 x1 + + + 16.487689300594393 1.1360232793037415 x2 + + 2.0334156548108027 x1 * 0.023569675389035205 x0 + + + 6.3580116717900825 x2 * - + + * 0.05810769742610248 7.649926743070287 x0 - x0 ~ + tanh * 0.02 10 x0 - * 9.079985933781724e-05 x2 sin * * 0.028444411011531688 + - -11.178073392759867 x1 + x2 x2 + + x2 sin 16 * * 0.01 x2 * x0 * 70.27992321895847 x2 + x1 tanh * * - 3.061309901800299 0.012111325961380084 2 x3 * * - x2 cos 13.606943386591604 + 6.30319 x1 3.6446593282269353 - + * * - * 0.00024935857878393694 x3 tanh 306.17157748503917 + x1 0.03818661923611309 + tanh + * 10.665074699866132 x2 - 141.53321825992992 * 2.030321292174021 x2 * 4.692820413780688e-06 * * 0.29589386202758416 + + 6.28319 x2 - 0.0001 * -0.029901333573390493 + 12.171183791307143 x0 + 12.472948264965463 * 16.788027130577444 x1 10.750024460230328 + * + * x1 1.062143846749064 + 2.077513077814193 + 0.14948317450563298 x1 + 2.0199999999999996 + + x2 sech x0 0.25364170173368383 + + x2 0.042047565627272736 * 2.877549852527644 + + + - * - - 17.434787968868662 6.780516372143934 x1 - 32.176023277613346 + + x2 sech acos 11.701763736659867 x1 tanh + + + -1.98 3.956642127874285 x1 - - -2.65990791848232 x1 1.3764548604655846 - + + 0.01 x3 * x3 10.530804729801527 + - -7.592954179900325 -0.36737138848953454 x2 + + + + - 0.010099663346799456 0.0001 x1 sin * + x2 cos 0.007500742372470944 * 0.9884574363590056 + + 1.0506036046963765 x0 4.344082305026497 - + x1 9.173306665200817 - tanh + 0.01290956866142511 -56.412289678204324 x3 + * -24.888356551425332 + + * - x2 0.33921668090137547 * 18.60659583350097 + 0.01 x1 * x2 tanh - - -0.00010000333351112257 * x1 tanh sech 4.999941676537417e-07 * 0.008982624035929011 + + 66.13987483865941 x1 cos - 1.663057438205986e-06 * 0.010104692585782536 + 0.05047488739257775 0.02 x0 + + 0.020419497517104396 0.2247145717811554 x2 + ~ * - * - * x3 0.01 * 10.01 * 8.770156363558858 + -0.5340211108893698 x1 + x3 0.01 * 17.215783107929813 + - - x2 tanh -1.0662347238738719 x0 + + x2 x1 - x2 sech * + 5.654837408758954 x2 sin - -0.7067739903156278 x3 + -0.7753035953511047 + + - - 0.02076451544037037 x2 cos x3 17.218960609131628 + + -0.20435040142826666 x1 + -0.6739870486208204 x2 + * * * 0.99 0.07134930529491079 x1 * + x2 x2 sin * * x0 x3 + 0.02 * x0 0.01 * 145.05307144381908 + + + + + 22.65195302707608 0.005401155175974717 x3 * - 1.722863283944233 x2 * 0.01 x2 * * - cos 0.02 x3 13.583991672554578 - * x1 0.037424496049031294 - + 1.225384765735854 - + x2 sech 3.4330144887859584 + 0.10279437043092723 39.35065739261245 x2 - * + 0.4229734118603209 9.48052763428431 x2 - * x3 sech 10 + + + -0.01 0.011258836485860116 x0 * * 1.433814618921097 + 0.010100166674167112 32.35671197222282 x0 + x3 ~ + * - * * + - + 7.687928271630202 x0 - tanh 3.3287607269341617 x1 8.656330934303043 + + * 1.5507961601207294 x1 -1.4052793320887251 + -0.6399844457368307 x3 + - + - 10.01 x2 tanh + x2 x2 * -0.01 * + 3.1068609382069523 x1 - 0.18960054743854912 * x1 6.30319 - - * - 0.032133074149280905 x2 * 1.2221542303121455 + x1 -0.5240211108893698 - * x2 sqrt cos 1.6007964934690637 + * -0.0009079985933781714 x0 x2 - x1 tanh + * 0.10009079985933782 x2 sin 39.4884765761 - * + + + x1 sin acos 0.01 x2 * 3.4192956366054346 + + x3 sech 0.2485538136636337 x3 + + x2 sech -0.8214709848078965 + - + -1.1435199586512748 -0.2280456699640656 x3 + 1.2255327175378723 * + x2 sin -9.99 - x2 sin + + + 4.692820413780688e-06 3.2259385492795705 x1 1.3222117333491241 + * * x1 cos sin 0.5437581511619296 x1 cos * + * 0.010000166674167114 x0 + 7.833879558722279 * 0.02 x1 x0 - * x2 sin -4.889735395740086 + + + + + + -9.079985933781724e-05 x3 80.29551703188127 + x2 -3.70429758311424 - * * x3 ~ 0.0001 * 3.4617730713178996 + + 0.01 x0 + x0 x1 + + x0 0.00999966667999946 * * cos * 0.0002 x3 sech x2 43.07310481804047 + * * 0.2298413368225409 + x1 95.04336911268192 * x0 ~ + 0.0842155396082333 * -1.3826038170729027 x2 - 1.544758015325364 x0 + + -12.140354727167926 + - * + x2 x2 + 0.019819308900090638 x2 * * -5.203112792198768 + 2.99 0.04 x1 x3 * * + + 0.10009079985933782 x3 1 + -11.820699054347653 + * -0.7300312072389173 x1 + 7.019337200431423 + tanh + * x3 1 - 0.01 x2 * 4 + - x2 0.01 * sin 0.01 x2 + x0 3.862224661100756 - * * + 2 1 x1 + 2.2831900000000003 - - 7.025460667876429 0.01 x0 * - x2 0.01 * 12.528860981897068 + + - + - + + 0.01 x0 ~ tanh + 0.02224866203170938 x1 - 1.0039034876030588 + x1 tanh tanh - * x0 x0 + x0 x2 * + x0 x0 + x0 9.472591196244178 + + + x0 1.4440979016425568 * 0.010371539996120113 * 0.1001 + * - x0 x1 + x0 29.383397670540162 + * 0.003830347591466472 * x1 5.333229290002573 * 0.02 * x1 0.01 * 1.5495183217080055 + + + x0 0.5415180241590378 - 0.11378411496233876 * 10.096139413179667 - 0.05049182826807149 x1 1.9995630847998225 * + -0.9595337467430384 * + + - sech x0 x3 + x3 x0 + + -0.020683531529582487 * 0.02 x2 x3 * * 81.12713315666737 + + x2 x2 + 9.079985933781724e-05 * 0.13070936377675235 + x0 x3 - x2 tanh * ~ * + 0.01 x2 + 1.0550228416733798 * ~ x1 ~ 0.02 * tanh + 9.511492953011782 x0 0.01 * * arccos x2 0.01 - x2 10 + + sin + + + x1 sin 0.07576311466765111 - 2.3951007978148047 x2 0.060444564923967325 * - + 0.00999497385958568 0.5908817369408994 x1 + cos * * x2 17.441638887637982 + 0.0001 * x1 x1 + x0 -6.873681329220026 + - * -0.0001 0.01 x0 * 0.03101592320241459 + + - * -34.47918269873716 x3 + 9.079985933781724e-05 * -0.020119926155096016 + -20.57909151617389 x0 - x0 ~ + -0.949451031639856 * * 0.010000166674167114 10 x3 + * 6.29319 + x0 4.013017628761052 * 20 + 0.023734854911714873 * + - + + - - +")} /*seed expressions*/,
+                0 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
+                {split("10.725238559706042 x3 + -0.01 * 6.277271111021734 + 0.02009565935391871 0.061491905250785184 x1 + 11.259689663013877 + * - x0 0.02 - 9.999500019721432e-05 * 0.06283190000000001 x1 + 6.28319 * * * 0.016936635356256793 0.1 x0 sin * x2 sech 1.303839581114536 - + * x2 0.32731709773738815 - sech 0.07029549267975159 * 0.6480589664842993 + + + 1.9949190382100195 1.4612350914867795 x1 + 0.2570467275819641 * + 3.8390793125119687 x2 - 1.5696980434685817 x2 - * sech + 0.61980049544443 x2 sin 0.15230753331564206 x1 + + + 0.01 53.24442052479651 x0 - * x2 cos 32.46482957658356 + + + + 9.974827996544237 x2 0.01 - * 2.0531368042727065 x1 * + 2.097653830058276 x1 * 11.232584375947836 + 10.022438518029324 0.01 x1 + + + + 16.487689300594393 1.1360232793037415 x2 + + 2.0334156548108027 x1 * 0.023569675389035205 x0 + + + 6.361746526701797 x2 * - + + * 0.05830769742593581 7.649926743070287 x0 - x0 ~ + tanh * 0.02 10 x0 - * 9.079985933781724e-05 x2 sin * * 0.02834441101153169 + - -11.178073392759867 x1 + x2 x2 + + x2 sin 16 * * 0.01 x2 * x0 * 70.27992321895847 x2 + x1 tanh * * - 3.0713095684802982 0.012111325961380084 2 x3 * * - x2 cos 13.626943386591604 + 6.30319 x1 3.6446593282269353 - + * * - * 0.00024935857878393694 307.19157748091686 x1 0.03818661923611309 + tanh + * 10.665074699866132 x2 - 141.54321825992992 * 2.030321292174021 x2 * 4.692820413780688e-06 * * 0.29590294201351797 + + 6.28319 x2 - 0.0001 * -0.029901333573390493 + 12.171183791307143 x0 + 12.492948264965463 * 16.798027130577445 x1 10.750024460230328 + * + * x1 1.062143846749064 + 2.0975130778141926 + 0.14948317450563298 x1 + 2.0299999999999994 + + x2 sech x0 0.25364170173368383 + + x2 0.042047565627272736 * 2.887549852527644 + + + - * - - x1 0.01 * 17.444787968868663 + 6.780516372143934 x1 - 32.176023277613346 + + x2 sech acos 11.701763736659869 x1 tanh + + + -2 3.956642127874285 x1 - - -2.65990791848232 x1 1.3764548604655846 - + + -0.01 x3 10.530804729801527 + - -7.592954179900325 -0.36737138848953454 x2 + + + + - 0.010099663346799456 0.0001 x1 sin * + x2 cos 0.007500742372470944 * 0.9884574363590056 + + 1.0506036046963765 x0 4.344082305026497 - + x1 9.173306665200817 - tanh + 0.01290956866142511 -56.412289678204324 x3 + * -24.888356551425332 + + * - x2 0.33921668090137547 * 18.61659583350097 + 0.01 x1 * x2 tanh - - -9.999999983333334e-05 * x1 tanh sech 4.999941676537417e-07 * 0.008982624035929011 + + 66.14987483865941 x1 cos - 1.663057438205986e-06 * 0.010104692585782536 + 0.05047488739257775 0.02 x0 + + 0.020419497517104396 0.2247145717811554 x2 + ~ * - * - * x3 0.01 * x3 4 + * 8.790156363558857 + -0.5340211108893698 x1 0.01 - + 17.235783107929816 - - x2 tanh -1.0662347238738719 x0 + + x2 x1 - x2 sech * + 5.664837408758954 x2 sin - -0.7067739903156278 x3 + -0.7753035953511047 + + - - 0.020955315299874856 x2 cos x3 17.218960609131628 + + -0.20435040142826666 x1 + -0.6739870486208204 x2 + * * * 0.99 0.07134930529491079 x1 * + x2 x2 sin * * x0 0.02 * x0 0.01 * 145.05307144381908 + + + + + 28.93514302707608 0.005401155175974717 x3 * - 1.722863283944233 x2 * 0.01 x2 * * - cos 0.02 x3 13.583991672554578 - * x1 0.037424496049031294 - + 1.227013084735854 - + x2 sech 3.443014488785958 + 0.10279437043092723 39.35065739261245 x2 - * + 0.4329734118603209 9.48052763428431 x2 - * x3 sech 10.01 + + + -0.01 0.011258836485860116 x0 * * 1.433814618921097 + 0.010100166674167112 32.35671197222282 x0 + x3 ~ + * - * * + - + 7.687928271630202 x0 - tanh 2.01 x1 10 + + * 1.5707963267948966 x1 -1.4052793320887251 + -0.6399844457368307 x3 + - + - 10.01 x2 tanh + x2 x2 * -0.01 * + 3.1068609382069523 x1 - 0.18960054743854912 * 0.01 x1 + 6.30319 - - * - 0.032133074149280905 x2 * 1.2421542303121456 + x1 0.01 - -0.5340211108893698 - * x2 sqrt cos 1.5907964934690637 + * -0.0009079985933781714 x0 x3 - x1 tanh + * 0.1001 x2 sin 39.498476576099996 - * + + + x1 sin acos 3.4392958032796015 + x3 sech 0.2485538136636337 x3 + + x2 sech -0.8114709848078965 + - + x1 0.01 * -1.1335199586512748 + -0.2280456699640656 x3 + 1.2255327175378723 * + x2 sin -9.99 - 0.01 x2 + sin + + + 4.692820413780688e-06 3.2359385492795703 x1 1.3222117333491241 + * * x1 cos sin 0.5637581511619296 x1 cos * + * 0.01 0.01 x0 + + 7.833879558722279 * 0.02 x3 x0 - * x2 sin -4.889735395740086 + + + + + + -9.079985933781724e-05 x3 80.29551703188127 + x2 -3.70429758311424 - * * x3 ~ 0.0001 * 3.4617730713178996 + + 0.01 x0 + x0 x1 + + x0 0.00999966667999946 * * cos * 0.0002 x3 sech x2 43.07310481804047 + * * 0.2300368295022925 + x1 95.04336911268192 * x3 x0 - + 0.08430633946757111 * -1.3826038170729027 x2 - 1.544758015325364 x0 + + -10.989995307179587 + - * + x2 x2 + 0.019819308900090638 x2 * * -5.203112792198768 + 0.01 x3 * 3 + 0.01 x3 * x1 x3 * * + + 0.12 x2 0.01 - -11.820699054347651 + * -0.7300312072389173 x1 + 7.019337200431423 + tanh + * 0.01 x3 + 1.009950000416665 - 4 0.01 x3 * - - x2 0.01 * sin 0.01 x2 + x0 3.862224661100756 - * * + 2 1 x1 + 2.2831900000000003 - - 7.025460667876429 0.01 x0 * - 12.538960981897068 + - + - + + x0 sech 0.01 x0 - * 0.02224866203170938 x1 - 1.0039034876030588 + x1 tanh tanh - * x0 x0 + x0 x2 * + x0 x0 + x0 9.472591196244178 + + + x0 1.4440979016425568 * 0.010371539996120113 * 0.1 + * - x0 x1 + x0 29.383397670540162 + * 0.003830347591466472 * x1 5.333229290002573 * 0.02 * x1 0.01 * 1.5495183217080055 + + + x0 0.5415180241590378 - 0.11378411496233876 * 10.096139413179667 - 0.05049182826807149 x1 2 * + -0.9594429468837006 * + + - sech x3 x0 + 2 x0 + + -0.020683531529582487 * 0.02 x2 x3 * * 81.14713315666738 + + x2 x2 + 0.0001 * 0.13070936377675235 + x0 x3 - x2 tanh * ~ * + 0.01 x2 + 1.0550228416733798 * ~ x1 ~ 0.02 * tanh + 9.531492953011782 x0 0.01 * * arccos x2 0.01 - x2 10 + + sin + + + x1 sin 0.0857631146676511 - 2.3951007978148047 x2 0.060444564923967325 * - + 0.00999497385958568 0.5908817369408994 x1 + cos * * x2 17.441638887637982 + 0.0001 * x1 x1 + x0 -6.873681329220026 + - * 0.01 x0 * -0.0001 + 0.03101592320241459 + - * -0.022680118326031472 -20.57909151617389 x0 - 0.01 x0 - + -0.949451031639856 * * 0.01 x3 * 10 x2 - * x2 sech 6.30319 + + x0 4.013017628761052 * x2 20 + + 0.023734854911714873 * + - + + - - +")} /*seed expressions*/,
                 (num_threads == 1) /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
@@ -12594,7 +12735,7 @@ namespace ExampleProblems
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 true /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/,
+                "constants_only" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/,
                 true /*whether or not to sync the current expression of each thread with the global current best*/);
         }
     }
@@ -13320,6 +13461,7 @@ int get_random_seed(int argc, char *argv[])
 
 enum class ProblemOption
 {
+    BrightSolitonControl,
     SwiftHohenberg,
     VortexRadialProfile,
     SolitonWaveFengEq14and15Laser,
@@ -13397,6 +13539,9 @@ int main(int argc, char *argv[])
     ProblemOption choice = ProblemOption::SwiftHohenberg;
     switch (choice)
     {
+        case ProblemOption::BrightSolitonControl:
+            ExampleProblems::BrightSolitonControlTest(random_seed, algorithm, time);
+            break;
         case ProblemOption::SwiftHohenberg:
             ExampleProblems::SwiftHohenbergTest(random_seed, algorithm, time);
             break;
