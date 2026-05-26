@@ -648,7 +648,7 @@ def test_visualize():
             assert rpn1 == rpn2
             print(f"rpn_expr = {' '.join([i if i != 's' else 'x0' for i in rpn_expr.split()])}")
         else:
-            expression_type_to_plot = ["prefix", "postfix"][0]
+            expression_type_to_plot = ["prefix", "postfix"][1]
             completeTree = [True, False][1]
             if expression_type_to_plot == "prefix":
                 complete_pn_expr = "+ - + x y z + - + x y z x"
@@ -661,7 +661,7 @@ def test_visualize():
                 plot_pn_expression_tree(complete_pn_expr, save = save, include_expression_in_title = False)
 
             else:
-                complete_rpn_expr = 'x0 arccos sqrt 9.667663193613832 x0 - -0.8017952693841877 x0 sin + 4.214590137208391 * 14.906510133485185 x0 * sin * -208.00136666356212 x0 * 0.5101617140051913 x0 x0 * * x0 - 0.5630588813492303 + * 37.14432879410045 -7.948117430149992 x0 * sech * - 4.039617583794263 * x0 * + -0.5143877660621996 15.873367204951377 x0 * 0.8342633799173187 - sin arccos * - 23.784194487011717 -22.296377271943083 x0 * sech arcsin tanh * - * + x0 ~ acos -4.145778562368634 x0 x0 * - -3.5639214611260575 * * -51.44268694664276 x0 * tanh * - 51.38564199115339 7.333794829929451 x0 * 1.1986483955395455 * sin tanh * - 14.023919771257086 0.28050358697453875 x0 sqrt + 1.449072284299925 x0 * 32.91254998325287 * 1.5600756757415084 - sech * 4 -4.489081140155492 x0 -0.7803543388371276 - * * - * + x0 arccos x0 arcsin * x0 x0 + ~ x0 -63.6936865867503 * ~ sin x0 sqrt x0 - -22.276938160440263 * 9.500890845394574 + x0 sqrt 0.8289737164706334 - 0.6410182885181318 0.9443885867208559 x0 - 14.14501890687743 x0 -37.044730477958446 * + * x0 1 - * 2.9176188135262646 - x0 * x0 -78.55359990246922 * + - sin * * + + * + x0 0.43221903720817506 x0 4 * - 3.5988686814266173 x0 -1.5698327011634097 * x0 acos - 9.250380861054419 + * * sin x0 1.0356006102918451 - * * tanh +'
+                complete_rpn_expr = '-10.00394920949605 0.0009615554218509459 x0 + + x0 sin 4.881411772212712 x0 * + * 0.035117916693453655 *'
                 print(f"rpn_to_infix = {rpn_to_infix(complete_rpn_expr)}")
                 
                 

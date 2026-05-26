@@ -3,6 +3,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <complex>
 #include <utility>
 #include <algorithm>
 #include <future>         // std::async, std::future
@@ -18,6 +19,7 @@
 #include <random>
 #include <chrono>
 #include <fstream>
+#include <sstream>
 #include <iomanip>
 #include <cassert>
 #include <thread>
@@ -10231,59 +10233,637 @@ std::vector<std::vector<std::string>> VortexRadialProfile(Board& x, bool fit)
     return results;
 }
 
-std::vector<std::vector<std::string>> BrightSolitonControl(Board& x, bool fit)
+namespace BrightSolitonPDE
 {
-    // --- Parameters (match your Python defaults) ---
+    using cd = std::complex<double>;
+
+    // --- Python/default parameters ---
     constexpr double Omega = 0.18;
     constexpr double A = 1.0;
     constexpr double b = 0.75;
-    constexpr double m = 1.0;
+    constexpr double A_sol = 0.75;
+    constexpr double g = -1.0;
 
     constexpr double T = 10.0;
-    constexpr double dt = 0.01;
-    constexpr int steps = static_cast<int>(T / dt);
+    constexpr double dt = 0.001;
+    constexpr int num_steps = static_cast<int>(T / dt);
 
-    // initial condition (approx from your script)
-    double xpos = 2.0;   // you can refine later using root solve
-    double v = 0.0;
+    constexpr double L = -10.0;
+    constexpr double R = 10.0;
 
-    // helper: sech
-    auto sech = [](double x)
+    // Python used N = 401, then x = linspace(L,R,N)[:-1], then N -= 1.
+    constexpr int N_raw_python = 401;
+    constexpr int N = N_raw_python - 1;
+    constexpr double dx = (R - L) / static_cast<double>(N_raw_python - 1);
+
+    // Python rounded the fsolve root to 4 decimals.
+    constexpr double x_start = 2.7615;
+    constexpr double v_start = 0.0;
+    constexpr double x_star = 0.0;
+
+    // Python loss_option == "after" defaults.
+    constexpr double smoothness_penalty_factor = 1e-3;
+    constexpr double time_penalty_factor = 1e-7;
+    constexpr double velocity_penalty = 1e-3;
+    constexpr double xi_penalty = 1e-3;
+    constexpr double width_penalty = 1.0;
+
+    constexpr double lap_coeff = 0.5 / (dx * dx);
+    constexpr double bad_loss = 1e12;
+
+    constexpr const char* newton_state_csv = "/Users/edwardfinkelstein/SDSU_UCI/RCPDE/EdwardF/scripts/bright_soliton_newton_state.csv";
+
+    inline double sqr(double z)
     {
-        return 1.0 / std::cosh(x);
-    };
-
-    // --- simulate dynamics ---
-    for (int i = 0; i < steps; i++)
-    {
-        double t = i * dt;
-
-        // evaluate candidate ξ(t)
-
-        double xi = x.expression_evaluator(x.params, x.pieces[0], t); // assumes eval() exists like other problems
-
-        // force
-        double force =
-            -(Omega * Omega * xpos)
-            + (2.0 * A * b * std::pow(sech(b * (xpos - xi)), 2.0)
-               * std::tanh(b * (xpos - xi)));
-
-        // Euler step (keep simple!)
-        v += dt * force / m;
-        xpos += dt * v;
+        return z * z;
     }
 
-    // terminal ξ(T)
-    double xi_T = x.expression_evaluator(x.params, x.pieces[0], T);
+    inline double sech(double z)
+    {
+        const double az = std::fabs(z);
 
-    // --- loss ---
-    double loss =
-        xpos * xpos +
-        v * v +
-        xi_T * xi_T;
+        // Avoid overflow in cosh for terrible SR candidates.
+        if (az > 40.0)
+        {
+            return 2.0 * std::exp(-az);
+        }
 
-    // return as SR objective
-    return { { to_string_general(loss) } };
+        return 1.0 / std::cosh(z);
+    }
+
+    inline double t_value(int i)
+    {
+        // Matches np.linspace(1e-8, T, num_steps)[i].
+        return 1e-8 + (T - 1e-8) * static_cast<double>(i)
+               / static_cast<double>(num_steps - 1);
+    }
+
+    inline double delta_t()
+    {
+        return t_value(1) - t_value(0);
+    }
+
+    inline std::vector<double> make_grid()
+    {
+        std::vector<double> grid(N);
+
+        for (int i = 0; i < N; ++i)
+        {
+            grid[i] = L + dx * static_cast<double>(i);
+        }
+
+        return grid;
+    }
+
+    inline double potential(double xpos, double xi)
+    {
+        const double s = sech(b * (xpos - xi));
+        return 0.5 * Omega * Omega * xpos * xpos + A * s * s;
+    }
+
+    inline std::vector<cd> make_analytic_initial_state(const std::vector<double>& grid)
+    {
+        std::vector<cd> u(N);
+
+        for (int i = 0; i < N; ++i)
+        {
+            const double amp = A_sol * sech(A_sol * (grid[i] - x_start));
+            u[i] = cd(amp, 0.0);
+        }
+
+        return u;
+    }
+
+    inline std::vector<cd> load_newton_state_csv(
+        const std::vector<double>& grid,
+        const std::string& path)
+    {
+        std::ifstream file(path);
+
+        if (!file)
+        {
+            throw std::runtime_error(
+                "Could not open Newton state file: " + path +
+                ". Put bright_soliton_newton_state.csv in the executable "
+                "working directory, or change BrightSolitonPDE::newton_state_csv."
+            );
+        }
+
+        std::vector<cd> u;
+        u.reserve(N);
+
+        std::string line;
+        int line_no = 0;
+
+        while (std::getline(file, line))
+        {
+            ++line_no;
+
+            if (line.empty())
+            {
+                continue;
+            }
+
+            // Skip metadata comments.
+            if (line[0] == '#')
+            {
+                continue;
+            }
+
+            // Skip CSV header.
+            if (line.find("x,u_real,u_imag") != std::string::npos)
+            {
+                continue;
+            }
+
+            std::stringstream ss(line);
+
+            std::string sx;
+            std::string sre;
+            std::string sim;
+
+            if (!std::getline(ss, sx, ',') ||
+                !std::getline(ss, sre, ',') ||
+                !std::getline(ss, sim, ','))
+            {
+                throw std::runtime_error(
+                    "Malformed Newton state CSV at line " +
+                    std::to_string(line_no)
+                );
+            }
+
+            const double x_file = std::stod(sx);
+            const double u_re = std::stod(sre);
+            const double u_im = std::stod(sim);
+
+            if (!std::isfinite(x_file) ||
+                !std::isfinite(u_re) ||
+                !std::isfinite(u_im))
+            {
+                throw std::runtime_error(
+                    "Non-finite value in Newton state CSV at line " +
+                    std::to_string(line_no)
+                );
+            }
+
+            if (u.size() >= grid.size())
+            {
+                throw std::runtime_error(
+                    "Newton state CSV has more rows than the C++ grid."
+                );
+            }
+
+            const int i = static_cast<int>(u.size());
+
+            const double grid_error = std::fabs(x_file - grid[i]);
+
+            if (grid_error > 1e-9)
+            {
+                throw std::runtime_error(
+                    "Grid mismatch in Newton state CSV at row " +
+                    std::to_string(i) +
+                    ". CSV x = " + to_string_general(x_file) +
+                    ", C++ grid x = " + to_string_general(grid[i]) +
+                    ", difference = " + to_string_general(grid_error)
+                );
+            }
+
+            u.emplace_back(u_re, u_im);
+        }
+
+        if (static_cast<int>(u.size()) != N)
+        {
+            throw std::runtime_error(
+                "Newton state CSV row count mismatch. Expected N = " +
+                std::to_string(N) +
+                ", got " + std::to_string(u.size())
+            );
+        }
+
+        return u;
+    }
+
+    inline std::vector<cd> make_initial_state(const std::vector<double>& grid)
+    {
+        // Exact Newton-refined initial state exported from Python.
+        return load_newton_state_csv(grid, newton_state_csv);
+
+        // Temporary fallback, useful only for debugging:
+        //
+        // return make_analytic_initial_state(grid);
+    }
+
+    inline bool finite_complex(const cd& z)
+    {
+        return std::isfinite(z.real()) && std::isfinite(z.imag());
+    }
+
+    inline double density(const cd& z)
+    {
+        return std::norm(z);
+    }
+
+    inline double mass_trapz(
+        const std::vector<cd>& u,
+        const std::vector<double>& grid)
+    {
+        double den = 0.0;
+
+        for (int i = 0; i < N - 1; ++i)
+        {
+            const double rho0 = density(u[i]);
+            const double rho1 = density(u[i + 1]);
+            const double h = grid[i + 1] - grid[i];
+
+            den += 0.5 * (rho0 + rho1) * h;
+        }
+
+        return den;
+    }
+
+    inline double center_of_mass(
+        const std::vector<cd>& u,
+        const std::vector<double>& grid)
+    {
+        double num = 0.0;
+        double den = 0.0;
+
+        for (int i = 0; i < N - 1; ++i)
+        {
+            const double rho0 = density(u[i]);
+            const double rho1 = density(u[i + 1]);
+            const double h = grid[i + 1] - grid[i];
+
+            den += 0.5 * (rho0 + rho1) * h;
+            num += 0.5 * (grid[i] * rho0 + grid[i + 1] * rho1) * h;
+        }
+
+        if (!(den > 0.0) || !std::isfinite(den))
+        {
+            return std::numeric_limits<double>::quiet_NaN();
+        }
+
+        return num / den;
+    }
+
+    inline double width_about(
+        const std::vector<cd>& u,
+        const std::vector<double>& grid,
+        double center)
+    {
+        double num = 0.0;
+        double den = 0.0;
+
+        for (int i = 0; i < N - 1; ++i)
+        {
+            const double rho0 = density(u[i]);
+            const double rho1 = density(u[i + 1]);
+            const double h = grid[i + 1] - grid[i];
+
+            const double y0 = sqr(grid[i] - center) * rho0;
+            const double y1 = sqr(grid[i + 1] - center) * rho1;
+
+            den += 0.5 * (rho0 + rho1) * h;
+            num += 0.5 * (y0 + y1) * h;
+        }
+
+        if (!(den > 0.0) || !std::isfinite(den))
+        {
+            return std::numeric_limits<double>::quiet_NaN();
+        }
+
+        return std::sqrt(num / den);
+    }
+
+    inline bool nls_rhs(
+        const std::vector<cd>& u,
+        const std::vector<double>& grid,
+        double xi,
+        std::vector<cd>& out)
+    {
+        static const cd I(0.0, 1.0);
+
+        for (int j = 0; j < N; ++j)
+        {
+            if (!finite_complex(u[j]))
+            {
+                return false;
+            }
+
+            const cd& up = (j == 0) ? u[N - 1] : u[j - 1];
+            const cd& um = (j == N - 1) ? u[0] : u[j + 1];
+
+            const cd d2 = up - 2.0 * u[j] + um;
+            const double rho = density(u[j]);
+            const double V = potential(grid[j], xi);
+
+            if (!std::isfinite(rho) || !std::isfinite(V))
+            {
+                return false;
+            }
+
+            out[j] = I * (lap_coeff * d2 - (g * rho + V) * u[j]);
+
+            if (!finite_complex(out[j]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    inline bool rk4_step(
+        std::vector<cd>& u,
+        const std::vector<double>& grid,
+        double xi,
+        std::vector<cd>& k1,
+        std::vector<cd>& k2,
+        std::vector<cd>& k3,
+        std::vector<cd>& k4,
+        std::vector<cd>& tmp)
+    {
+        if (!nls_rhs(u, grid, xi, k1))
+        {
+            return false;
+        }
+
+        for (int i = 0; i < N; ++i)
+        {
+            tmp[i] = u[i] + 0.5 * dt * k1[i];
+        }
+
+        if (!nls_rhs(tmp, grid, xi, k2))
+        {
+            return false;
+        }
+
+        for (int i = 0; i < N; ++i)
+        {
+            tmp[i] = u[i] + 0.5 * dt * k2[i];
+        }
+
+        if (!nls_rhs(tmp, grid, xi, k3))
+        {
+            return false;
+        }
+
+        for (int i = 0; i < N; ++i)
+        {
+            tmp[i] = u[i] + dt * k3[i];
+        }
+
+        if (!nls_rhs(tmp, grid, xi, k4))
+        {
+            return false;
+        }
+
+        for (int i = 0; i < N; ++i)
+        {
+            u[i] += (dt / 6.0) * (k1[i] + 2.0 * k2[i] + 2.0 * k3[i] + k4[i]);
+
+            if (!finite_complex(u[i]) || std::norm(u[i]) > 1e12)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+}
+
+std::vector<std::vector<std::string>> BrightSolitonControlPDE(Board& x, bool fit)
+{
+    auto loss_to_expression = [](double loss) -> std::vector<std::vector<std::string>>
+    {
+        if (!std::isfinite(loss) || loss < 0.0)
+        {
+            loss = BrightSolitonPDE::bad_loss;
+        }
+
+        // Your framework scores by SNE, i.e. squaredNorm of the returned vector.
+        // Returning sqrt(loss / num_rows) makes the printed SNE approximately equal
+        // to the PDE loss rather than num_rows * loss^2.
+        const long nrows = std::max<long>(1, Board::data.num_rows);
+        const double returned_constant = std::sqrt(loss / static_cast<double>(nrows));
+
+        return { { to_string_general(returned_constant) } };
+    };
+
+    try
+    {
+        using namespace BrightSolitonPDE;
+
+        static const std::vector<double> grid = make_grid();
+        static const std::vector<cd> u_initial = make_initial_state(grid);
+
+        std::vector<cd> u = u_initial;
+
+        std::vector<cd> k1(N), k2(N), k3(N), k4(N), tmp(N);
+
+        std::vector<double> x_values;
+        std::vector<double> xi_values;
+        std::vector<double> sigma_values;
+
+        x_values.reserve(num_steps);
+        xi_values.reserve(num_steps);
+        sigma_values.reserve(num_steps - 1);
+
+        x_values.push_back(x_start);
+
+        // Python initializes xi_values_temp with 0.
+        xi_values.push_back(0.0);
+
+        const double sigma0 = width_about(u_initial, grid, x_start);
+
+        if (!std::isfinite(sigma0) || sigma0 <= 0.0)
+        {
+            return loss_to_expression(bad_loss);
+        }
+
+        // --- PDE rollout ---
+        for (int i = 1; i < num_steps; ++i)
+        {
+            const double t = t_value(i);
+
+            const double xi = x.expression_evaluator(x.params, x.pieces[0], t);
+
+            if (!std::isfinite(xi) || std::fabs(xi) > 50.0)
+            {
+                return loss_to_expression(bad_loss);
+            }
+
+            xi_values.push_back(xi);
+
+            const bool ok = rk4_step(u, grid, xi, k1, k2, k3, k4, tmp);
+
+            if (!ok)
+            {
+                return loss_to_expression(bad_loss);
+            }
+
+            const double x_cm = center_of_mass(u, grid);
+
+            if (!std::isfinite(x_cm) || std::fabs(x_cm) > 100.0)
+            {
+                return loss_to_expression(bad_loss);
+            }
+
+            x_values.push_back(x_cm);
+
+            const double sigma_t = width_about(u, grid, x_cm);
+
+            if (!std::isfinite(sigma_t) || sigma_t <= 0.0)
+            {
+                return loss_to_expression(bad_loss);
+            }
+
+            sigma_values.push_back(sigma_t);
+        }
+
+        if (x_values.size() < 3 || xi_values.size() != x_values.size())
+        {
+            return loss_to_expression(bad_loss);
+        }
+
+        // --- Match Python best-time loss ---
+        std::vector<double> abs_v_values;
+        abs_v_values.reserve(x_values.size());
+
+        abs_v_values.push_back(std::fabs(v_start));
+
+        double v = (x_values[2] - x_values[0]) / (2.0 * dt);
+        abs_v_values.push_back(std::fabs(v));
+
+        double best_loss = std::numeric_limits<double>::infinity();
+        double best_time = T;
+        int best_time_idx = 2;
+
+        for (int i = 2; i < static_cast<int>(x_values.size()); ++i)
+        {
+            if (i < static_cast<int>(x_values.size()) - 1)
+            {
+                v = (x_values[i + 1] - x_values[i - 1]) / (2.0 * dt);
+            }
+            else
+            {
+                v = (x_values[i] - x_values[i - 1]) / dt;
+            }
+
+            abs_v_values.push_back(std::fabs(v));
+
+            const double x_star_x_diff = x_star - x_values[i];
+            const double x_star_xi_diff = x_star - xi_values[i];
+
+            const double mse =
+                sqr(x_star_x_diff)
+                + sqr(v)
+                + sqr(x_star_xi_diff);
+
+            if (std::isfinite(mse) && mse < best_loss)
+            {
+                best_loss = mse;
+                best_time = t_value(i);
+                best_time_idx = i;
+            }
+        }
+
+        if (!std::isfinite(best_loss) || best_time_idx <= 0)
+        {
+            return loss_to_expression(bad_loss);
+        }
+
+        // --- Smoothness, max-velocity, max-xi penalties ---
+        double smoothness_penalty = 0.0;
+        double v_best = abs_v_values[0];
+        double xi_best = std::fabs(xi_values[0]);
+
+        const double d_t_values = delta_t();
+
+        for (int i = 1; i <= best_time_idx; ++i)
+        {
+            const double dxi = xi_values[i] - xi_values[i - 1];
+            const double deriv = dxi / d_t_values;
+
+            smoothness_penalty += deriv * deriv;
+
+            if (i < static_cast<int>(abs_v_values.size()))
+            {
+                v_best = std::max(v_best, abs_v_values[i]);
+            }
+
+            xi_best = std::max(xi_best, std::fabs(xi_values[i]));
+        }
+
+        smoothness_penalty /= static_cast<double>(best_time_idx);
+
+        // --- Shape penalty ---
+        //
+        // Python does:
+        // delta_shape = [((s - sigma0) / sigma0)^2 for s in sigma_values[:best_time_idx]]
+        // shape_penalty = trapz(delta_shape, t_values[:best_time_idx]) / best_time
+        //
+        // This keeps the same indexing convention.
+        double shape_integral = 0.0;
+
+        if (best_time_idx >= 2)
+        {
+            for (int k = 0; k < best_time_idx - 1; ++k)
+            {
+                const double s0 = sigma_values[k];
+                const double s1 = sigma_values[k + 1];
+
+                const double y0 = sqr((s0 - sigma0) / sigma0);
+                const double y1 = sqr((s1 - sigma0) / sigma0);
+
+                const double h = t_value(k + 1) - t_value(k);
+
+                shape_integral += 0.5 * (y0 + y1) * h;
+            }
+        }
+
+        const double shape_penalty =
+            (best_time > 0.0)
+                ? shape_integral / best_time
+                : bad_loss;
+
+        const double total_loss =
+            best_loss
+            + smoothness_penalty_factor * smoothness_penalty
+            + time_penalty_factor * best_time
+            + velocity_penalty * v_best
+            + xi_penalty * xi_best
+            + width_penalty * shape_penalty;
+
+        return loss_to_expression(total_loss);
+    }
+    catch (const std::exception& e)
+    {
+        static std::atomic<bool> printed_exception{false};
+
+        if (!printed_exception.exchange(true))
+        {
+            std::cerr
+                << "[BrightSolitonControlPDE] Exception: "
+                << e.what()
+                << std::endl;
+        }
+
+        return loss_to_expression(BrightSolitonPDE::bad_loss);
+    }
+    catch (...)
+    {
+        static std::atomic<bool> printed_unknown_exception{false};
+
+        if (!printed_unknown_exception.exchange(true))
+        {
+            std::cerr
+                << "[BrightSolitonControlPDE] Unknown exception."
+                << std::endl;
+        }
+
+        return loss_to_expression(BrightSolitonPDE::bad_loss);
+    }
 }
 
 /*
@@ -12474,7 +13054,7 @@ namespace ExampleProblems
         
         double threshold = 0.0;
         unsigned int num_threads = 0;
-        std::vector<std::string> bad_ops = {"exp", "ln", "log", "^", "/"};
+        std::vector<std::string> bad_ops = {"exp", "ln", "log", "^", "/", "sqrt", "asin", "acos", "arcsin", "arccos"};
         // input is just time t
         for (int i = 0; i < num_points; i++)
         {
@@ -12483,7 +13063,7 @@ namespace ExampleProblems
         
         if (strcmp(algorithm, "RandomSearch") == 0)
         {
-            RandomSearch(BrightSolitonControl /*differential equation to solve*/,
+            RandomSearch(BrightSolitonControlPDE /*differential equation to solve*/,
                          num_diff_eqns /*number of equations in differential equation system*/,
                          data /*data used to solve differential equation*/,
                          std::vector<int>{5} /*fixed depths of generated solution*/,
@@ -12514,10 +13094,10 @@ namespace ExampleProblems
         }
         else
         {
-            SimulatedAnnealing(BrightSolitonControl /*differential equation to solve*/,
+            SimulatedAnnealing(BrightSolitonControlPDE /*differential equation to solve*/,
                 num_diff_eqns /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{10} /*fixed depths of generated solution*/,
+                std::vector<int>{4} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -12535,7 +13115,7 @@ namespace ExampleProblems
                 {} /*custom features that the SR-found equations are required to contain*/,
                 "BrightSolitonControlBest.txt", //"" /*filename to save current best expression found (instead of outputting them to standard out*/
                 {} /*optional max-sizes of each of the expressions in the generated solution*/,
-                {/*split("x0 -0.01 + x1 sech + 11.156528193614346 ^ 2.714063572022206e-13 * 0.010000 x0 + 6.29319 ^ 1e-08 * 0.0100003333566687 + 0.7493736126143709 + + 0.9998848754538172 x0 tanh arcsin 0.7615941559557649 x0 4 ^ / / ^ 6.283190 x1 + ~ sin 0.9171523356672744 * * 0.7827863849639187 x0 cos asin cos * * - x0 x0 + 0.003734854911714874 6.283190 x0 / ^ 7.570169558264211 + ^ 0.28580222883407974 0.010000 x0 + 10.01 + ^ 0.010000 x0 ^ 1.03 + x1 sin - * * -6.1759665127829875 -10 x1 x1 + + + x1 0.005 / 1.9195169107150692e+06 - / -0.06767485271943648 + + 0.2658022288340797 x0 + 0.9801980198019802 ^ x0 1.517923178056138 + / 0.010000 x0 + sin 0.03661899347368653 x0 + + x1 sin 10.01 0.010000 x0 + / + * ^ -0.01842414214696351 + + -")*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
+                {/**/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 "vector" /*evaluation type: can be "dag", "scalar", or "vector"*/,
                 1000000 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
@@ -12543,7 +13123,7 @@ namespace ExampleProblems
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
                 "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
                 8000 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
-                {} /*seed expressions*/,
+                {split("-10 x0 + x0 sin 6 x0 * + * 0.035117916693453655 *")} /*seed expressions*/,
                 (num_threads == 1) /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
@@ -12551,7 +13131,7 @@ namespace ExampleProblems
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 true /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/,
+                "constants_only" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/,
                 true /*whether or not to sync the current expression of each thread with the global current best*/);
         }
     }
@@ -13461,7 +14041,7 @@ int get_random_seed(int argc, char *argv[])
 
 enum class ProblemOption
 {
-    BrightSolitonControl,
+    BrightSolitonControlPDE,
     SwiftHohenberg,
     VortexRadialProfile,
     SolitonWaveFengEq14and15Laser,
@@ -13536,10 +14116,10 @@ int main(int argc, char *argv[])
 
     }
     
-    ProblemOption choice = ProblemOption::SwiftHohenberg;
+    ProblemOption choice = ProblemOption::BrightSolitonControlPDE;
     switch (choice)
     {
-        case ProblemOption::BrightSolitonControl:
+        case ProblemOption::BrightSolitonControlPDE:
             ExampleProblems::BrightSolitonControlTest(random_seed, algorithm, time);
             break;
         case ProblemOption::SwiftHohenberg:
