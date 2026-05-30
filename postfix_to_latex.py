@@ -4,6 +4,10 @@ import re
 import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr, standard_transformations
 from pathlib import Path
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from os import system
 
 def is_operator(token):
     return is_binary_operator(token) or is_unary_operator(token)
@@ -87,6 +91,289 @@ def count_expressions_better_than(filename, best_mse):
 
     return count
 
+class SympyDagEvaluator:
+    """
+    Build a DAG from a SymPy Expr by hash-consing subexpressions,
+    then evaluate bottom-up on NumPy arrays/scalars.
+
+    Node format:
+        (op, data, children)
+
+    where:
+        op       : string like "const", "symbol", "add", "mul", ...
+        data     : constant value or symbol name or None
+        children : tuple of child node ids
+    """
+
+    def __init__(self, expr):
+        self.expr = expr
+        self.nodes = []
+        self.root = -1
+
+        # SymPy expr -> node id
+        self._intern_expr = {}
+
+        # (op, data, children) -> node id
+        self._intern_node = {}
+
+        self.root = self._build(expr)
+
+    def _intern(self, op, data, children):
+        key = (op, data, children)
+        if key in self._intern_node:
+            return self._intern_node[key]
+        idx = len(self.nodes)
+        self.nodes.append((op, data, children))
+        self._intern_node[key] = idx
+        return idx
+
+    def _build(self, expr):
+        if expr in self._intern_expr:
+            return self._intern_expr[expr]
+
+        if expr.is_Symbol:
+            node_id = self._intern("symbol", str(expr), ())
+
+        elif expr.is_Integer:
+            node_id = self._intern("const", float(int(expr)), ())
+
+        elif expr.is_Rational:
+            node_id = self._intern("const", float(expr), ())
+
+        elif expr.is_Float:
+            node_id = self._intern("const", float(expr), ())
+
+        elif expr.is_Number:
+            node_id = self._intern("const", float(expr.evalf()), ())
+
+        else:
+            args = tuple(self._build(a) for a in expr.args)
+
+            if expr.func is sp.Add:
+                node_id = self._intern("add", None, args)
+
+            elif expr.func is sp.Mul:
+                node_id = self._intern("mul", None, args)
+
+            elif expr.func is sp.Pow:
+                node_id = self._intern("pow", None, args)
+
+            elif expr.func is sp.sin:
+                node_id = self._intern("sin", None, args)
+
+            elif expr.func is sp.cos:
+                node_id = self._intern("cos", None, args)
+
+            elif expr.func is sp.exp:
+                node_id = self._intern("exp", None, args)
+
+            elif expr.func is sp.log:
+                node_id = self._intern("log", None, args)
+
+            elif expr.func is sp.sqrt:
+                node_id = self._intern("sqrt", None, args)
+
+            elif expr.func is sp.tanh:
+                node_id = self._intern("tanh", None, args)
+
+            elif expr.func.__name__ == "sech":
+                node_id = self._intern("sech", None, args)
+
+            elif expr.func is sp.asin:
+                node_id = self._intern("asin", None, args)
+
+            elif expr.func is sp.acos:
+                node_id = self._intern("acos", None, args)
+
+            elif expr.func is sp.Abs:
+                node_id = self._intern("abs", None, args)
+
+            else:
+                raise NotImplementedError(
+                    "Unsupported SymPy node: func=%r expr=%r" % (expr.func, expr)
+                )
+
+        self._intern_expr[expr] = node_id
+        return node_id
+
+    def evaluate(self, env, shape=None, dtype=np.float64):
+        """
+        env maps symbol names to numpy arrays/scalars, e.g.
+            {"r": r_vals, "theta": theta_vals}
+
+        shape is only needed if expression is constant and you want an array result.
+        """
+        values = [None] * len(self.nodes)
+
+        for i, node in enumerate(self.nodes):
+            op, data, children = node
+
+            if op == "symbol":
+                if data not in env:
+                    raise KeyError("Missing value for symbol '%s'" % data)
+                values[i] = env[data]
+
+            elif op == "const":
+                c = np.array(data, dtype=dtype)
+                if shape is None:
+                    values[i] = c
+                else:
+                    values[i] = np.full(shape, c, dtype=dtype)
+
+            else:
+                ch = [values[j] for j in children]
+
+                if op == "add":
+                    out = ch[0]
+                    for x in ch[1:]:
+                        out = out + x
+                    values[i] = out
+
+                elif op == "mul":
+                    out = ch[0]
+                    for x in ch[1:]:
+                        out = out * x
+                    values[i] = out
+
+                elif op == "pow":
+                    base, expo = ch
+                    values[i] = np.power(base, expo)
+
+                elif op == "sin":
+                    values[i] = np.sin(ch[0])
+
+                elif op == "cos":
+                    values[i] = np.cos(ch[0])
+
+                elif op == "exp":
+                    values[i] = np.exp(ch[0])
+
+                elif op == "log":
+                    values[i] = np.log(ch[0])
+
+                elif op == "sqrt":
+                    values[i] = np.sqrt(ch[0])
+
+                elif op == "tanh":
+                    values[i] = np.tanh(ch[0])
+
+                elif op == "sech":
+                    values[i] = sech_stable(ch[0])
+
+                elif op == "asin":
+                    values[i] = np.arcsin(ch[0])
+
+                elif op == "acos":
+                    values[i] = np.arccos(ch[0])
+
+                elif op == "abs":
+                    values[i] = np.abs(ch[0])
+
+                else:
+                    raise RuntimeError("Unknown op '%s'" % op)
+
+        return values[self.root]
+
+
+def canonical_node_signatures(dag, *, ignore_const_values=True, ignore_param_names=True):
+    sigs = [None] * len(dag.nodes)
+
+    def rec(i):
+        if sigs[i] is not None:
+            return sigs[i]
+
+        op, data, children = dag.nodes[i]
+        child_sigs = tuple(rec(j) for j in children)
+
+        if op == "const" and ignore_const_values:
+            data_use = "CONST"
+        elif op == "symbol" and ignore_param_names and str(data).startswith("a"):
+            data_use = "PARAM"
+        else:
+            data_use = data
+
+        sigs[i] = (op, data_use, child_sigs)
+        return sigs[i]
+
+    for i in range(len(dag.nodes)):
+        rec(i)
+
+    return set(sigs)
+
+def canonical_node_signature_map(dag, *, ignore_const_values=True, ignore_param_names=True):
+    sigs = [None] * len(dag.nodes)
+
+    def rec(i):
+        if sigs[i] is not None:
+            return sigs[i]
+
+        op, data, children = dag.nodes[i]
+        child_sigs = tuple(rec(j) for j in children)
+
+        if op == "const" and ignore_const_values:
+            data_use = "CONST"
+        elif op == "symbol" and ignore_param_names and str(data).startswith("a"):
+            data_use = "PARAM"
+        else:
+            data_use = data
+
+        sigs[i] = (op, data_use, child_sigs)
+        return sigs[i]
+
+    for i in range(len(dag.nodes)):
+        rec(i)
+
+    return {sig: i for i, sig in enumerate(sigs)}, sigs
+
+def dag_subexpr_size(sig):
+    op, data, children = sig
+    return 1 + sum(dag_subexpr_size(c) for c in children)
+
+def dag_sig_to_sympy(sig):
+    op, data, children = sig
+    args = [dag_sig_to_sympy(c) for c in children]
+
+    if op == "symbol":
+        return sp.Symbol(str(data))
+    if op == "const":
+        return sp.Symbol("C") if data == "CONST" else sp.Float(data)
+
+    if op == "add":
+        return sp.Add(*args)
+    if op == "mul":
+        return sp.Mul(*args)
+    if op == "pow":
+        return sp.Pow(*args)
+    if op == "sin":
+        return sp.sin(args[0])
+    if op == "cos":
+        return sp.cos(args[0])
+    if op == "exp":
+        return sp.exp(args[0])
+    if op == "log":
+        return sp.log(args[0])
+    if op == "sqrt":
+        return sp.sqrt(args[0])
+    if op == "tanh":
+        return sp.tanh(args[0])
+    if op == "sech":
+        return sp.sech(args[0])
+    if op == "asin":
+        return sp.asin(args[0])
+    if op == "acos":
+        return sp.acos(args[0])
+    if op == "abs":
+        return sp.Abs(args[0])
+
+    raise ValueError(f"Unknown op: {op}")
+
+
+def dag_jaccard(expr1, expr2, **kwargs):
+    A = canonical_node_signatures(SympyDagEvaluator(expr1), **kwargs)
+    B = canonical_node_signatures(SympyDagEvaluator(expr2), **kwargs)
+    return 1.0 if not A and not B else len(A & B) / len(A | B)
+
+
 def main():
     files = sorted(glob.glob("benchmark_*_individuals.txt"), key=natural_key)
     best_est_rule_mses = [
@@ -101,6 +388,8 @@ def main():
         5.56e3, 6.01e3, 3.34e3,
         5.67e3, 5.86e3, 3.77e3,
     ]
+    best_exprs = []
+    labels = []
 
     if len(files) != len(best_est_rule_mses):
         raise ValueError(
@@ -198,6 +487,8 @@ def main():
             transformations=standard_transformations,
             evaluate=False,
         )
+        best_exprs.append(expr)
+        labels.append(f"B{i}")
 
         symbol_names = {
             local_dict[name]: latex
@@ -320,6 +611,66 @@ ul {{
 </body>
 </html>
 """
+    # ---- DAG-Jaccard heatmap across best found benchmark rules ----
+    n = len(best_exprs)
+    M = np.eye(n)
+
+    for a in range(n):
+        for b in range(a + 1, n):
+            sim = dag_jaccard(
+                best_exprs[a],
+                best_exprs[b],
+                ignore_const_values=True,
+                ignore_param_names=False,
+            )
+            M[a, b] = sim
+            M[b, a] = sim
+
+    labels = [f"B{i}" for i in range(1, n + 1)]
+
+    # Sort by medoid: rule with largest total similarity to all others
+    offdiag_sums = M.sum(axis=1) - 1.0
+    medoid_pos = int(np.argmax(offdiag_sums))
+    order = np.argsort(-M[medoid_pos, :])
+
+    M_sorted = M[np.ix_(order, order)]
+    labels_sorted = [labels[i] for i in order]
+
+    df_sorted = pd.DataFrame(M_sorted, index=labels_sorted, columns=labels_sorted)
+    df_sorted.to_csv("benchmark_rule_dag_jaccard_sorted.csv")
+
+    fig, ax = plt.subplots(figsize=(16, 14))
+    im = ax.imshow(M_sorted, vmin=0, vmax=1)
+
+    ax.set_xticks(np.arange(n))
+    ax.set_yticks(np.arange(n))
+    ax.set_xticklabels(labels_sorted, rotation=90)
+    ax.set_yticklabels(labels_sorted)
+
+    for i in range(n):
+        for j in range(n):
+            ax.text(
+                j, i, f"{M_sorted[i, j]:.2f}",
+                ha="center",
+                va="center",
+                fontsize=6,
+            )
+
+    ax.set_title(
+        "DAG-Jaccard Similarity of Best Found Weight-Update Rules\n"
+        f"sorted by medoid {labels[medoid_pos]}"
+    )
+
+    fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+    plt.tight_layout()
+
+    heatmap_path = "benchmark_rule_dag_jaccard_sorted_heatmap.png"
+    plt.savefig(heatmap_path, dpi=300)
+
+    print(f"medoid = {labels[medoid_pos]}")
+    print(f"Saved sorted DAG-Jaccard matrix to: benchmark_rule_dag_jaccard_sorted.csv")
+    print(f"Saved sorted DAG-Jaccard heatmap to: {heatmap_path}")
+    system(f"open {heatmap_path}")
 
     output_path = Path("benchmark_rules.html")
 
