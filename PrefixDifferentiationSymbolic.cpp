@@ -854,42 +854,42 @@ int main()
     std::vector<int> grasp;
     
     prefix = {"+", "-", "+", "x", "y", "z", "+", "-", "+", "x", "y", "z", "x"};
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp, true); //+ 1 + 1 1 (prefix) -> 1+1+1 = 3 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp, true); //+ 1 + 1 1 (prefix) -> 1+1+1 = 3 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"+","x","x"}; // x+x
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ 1 1 (prefix) -> 1+1 = 2 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ 1 1 (prefix) -> 1+1 = 2 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"+","-","x","x","x"}; // (x-x)+x
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ - 1 1 1 (prefix) -> (1-1)+1 = 0+1 = 1 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ - 1 1 1 (prefix) -> (1-1)+1 = 0+1 = 1 ✅
                                                           //1 (prefix) -> 1 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"+","-","-","x","x","x","y"}; // (x-x)-x+y
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ - - 1 1 1 0 (prefix) -> (1-1)-1+0 = -1 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ - - 1 1 1 0 (prefix) -> (1-1)-1+0 = -1 ✅
                                                           //- - 1 1 1 (prefix) -> (1-1)-1 = -1 ✅
                                                           //~ 1 (prefix) -> -1 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"+", "+", "x", "x", "y"}; //x + x + y
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ + 1 1 0 (prefix) -> 1 + 1 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ + 1 1 0 (prefix) -> 1 + 1 ✅
                                                           //+ 1 1 (prefix) -> 1 + 1 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"-","y","x"}; //y - x
-    derivePrefix(0, prefix.size()-1, "y", prefix, grasp); //- 1 0 (prefix) -> 1 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "y", prefix, grasp); //- 1 0 (prefix) -> 1 ✅
                                                           //1 (prefix) -> 1 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"+","*","x","x","y"}; //x*x + y
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ + * x 1 * 1 x 0 (prefix) -> x + x ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ + * x 1 * 1 x 0 (prefix) -> x + x ✅
                                                           //+ * x 1 * 1 x (prefix) -> x + x ✅
                                                           //+ x * 1 x (prefix) -> x + x ✅
                                                           //+ x x (prefix) -> x + x ✅
@@ -897,59 +897,59 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"*", "0", "x"}; //0*x
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * 0 1 * 0 x (prefix) -> 0 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * 0 1 * 0 x (prefix) -> 0 ✅
                                                           //+ 0 * 0 x (prefix) -> 0 ✅
                                                           //0 (prefix) -> 0 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"*", "*", "x", "x", "1"}; //x*x*1
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ x x (prefix) -> x+x ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ x x (prefix) -> x+x ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"*", "x", "y"}; //x*y
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //y ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //y ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
 
     prefix = {"*", "x", "y"}; //x*y
-    derivePrefix(0, prefix.size()-1, "y", prefix, grasp); //x ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "y", prefix, grasp); //x ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"*", "x", "y"}; //x*y
-    derivePrefix(0, prefix.size()-1, "z", prefix, grasp); //0 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "z", prefix, grasp); //0 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"+", "x", "0"}; //x+0
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //1 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //1 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
 
     prefix = {"+", "x", "x"}; //x+x
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ 1 1 (prefix) -> 1+1 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ 1 1 (prefix) -> 1+1 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
 
     prefix = {"*", "1", "x"}; //1*x
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //1 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //1 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
 
     prefix = {"*", "x", "1"}; //x*1
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //1 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //1 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
 
     prefix = {"*", "0", "x"}; //0*x
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //0 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //0 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"+","cos","/","*","y","y","x", "y"}; // cos((y*y)/x) + y
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * ~ sin / * y y x / - * + * y 0 * 0 y x * * y y 1 * x x 0 (prefix) -> -sin(y*(y/x))*y*(-y)/(x*x)) (infix) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * ~ sin / * y y x / - * + * y 0 * 0 y x * * y y 1 * x x 0 (prefix) -> -sin(y*(y/x))*y*(-y)/(x*x)) (infix) ✅
                                                           //* ~ sin / * y y x / - * + * y 0 * 0 y x * * y y 1 * x x (prefix) -> -sin(y*(y/x))*y*(-y)/(x*x)) (infix) ✅
                                                           //* ~ sin / * y y x / - * + 0 * 0 y x * * y y 1 * x x (prefix) -> -sin(y*(y/x))*y*(-y)/(x*x)) (infix) ✅
                                                           //* ~ sin / * y y x / - * 0 x * * y y 1 * x x (prefix) -> -sin(y*(y/x))*y*(-y)/(x*x)) (infix) ✅
@@ -961,7 +961,7 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"+", "cos", "*", "*","y","x","y","y"}; // cos((y*x)*y) + y
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * ~ sin * * y x y + * * y x 0 * + * y 1 * 0 x y 0  (prefix) -> -sin((y*x)*y)*y*y (infix) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * ~ sin * * y x y + * * y x 0 * + * y 1 * 0 x y 0  (prefix) -> -sin((y*x)*y)*y*y (infix) ✅
                                                           //* ~ sin * * y x y + * * y x 0 * + * y 1 * 0 x y (prefix) -> -sin((y*x)*y)*y*y (infix) ✅
                                                           //* ~ sin * * y x y + 0 * + * y 1 * 0 x y (prefix) -> -sin((y*x)*y)*y*y (infix) ✅
                                                           //* ~ sin * * y x y + 0 * + y * 0 x y (prefix) -> -sin((y*x)*y)*y*y (infix) ✅
@@ -972,21 +972,21 @@ int main()
     
 
     prefix = {"+","+","cos","x","x","y"}; //cos(x) + x + y
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ + * ~ sin x 1 1 0 (prefix) -> 1-sin(x) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ + * ~ sin x 1 1 0 (prefix) -> 1-sin(x) ✅
                                                           //+ * ~ sin x 1 1 (prefix) -> 1-sin(x) ✅
                                                           //+ ~ sin x 1 (prefix) -> 1-sin(x) ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"-", "y", "+","cos","x","x"}; //y - (cos(x) + x)
-    derivePrefix(0, prefix.size()-1, "y", prefix, grasp);
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "y", prefix, grasp);
     std::cout << grasp << '\n'; //- 1 + * ~ sin x 0 0 (prefix) -> 1 ✅
                                 //- 1 * ~ sin x 0 (prefix) -> 1 ✅
                                 //1 (prefix) -> 1 ✅
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"*", "x", "cos", "cos", "-","y","x"}; //x * cos(cos(y-x))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * x * ~ sin cos - y x * ~ sin - y x - 0 1 * 1 cos cos - y x (prefix) -> x*(-sin(cos(y-x))*sin(y-x))+cos(cos(y-x)) = x*sin(cos(x-y))*sin(x-y)+cos(cos(x-y)) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * x * ~ sin cos - y x * ~ sin - y x - 0 1 * 1 cos cos - y x (prefix) -> x*(-sin(cos(y-x))*sin(y-x))+cos(cos(y-x)) = x*sin(cos(x-y))*sin(x-y)+cos(cos(x-y)) ✅
                                                           //+ * x * ~ sin cos - y x * ~ sin - y x ~ 1 * 1 cos cos - y x (prefix) -> x*(-sin(cos(y-x))*sin(y-x))+cos(cos(y-x)) = x*sin(cos(x-y))*sin(x-y)+cos(cos(x-y)) ✅
                                                           //+ * x * ~ sin cos - y x * ~ sin - y x ~ 1 cos cos - y x (prefix) -> x*(-sin(cos(y-x))*sin(y-x))+cos(cos(y-x)) = x*sin(cos(x-y))*sin(x-y)+cos(cos(x-y)) ✅
                                                           //+ * x * * ~ 1 ~ sin - y x ~ sin cos - y x cos cos - y x (prefix) -> x*(-sin(cos(y-x))*sin(y-x))+cos(cos(y-x)) = x*sin(cos(x-y))*sin(x-y)+cos(cos(x-y)) ✅
@@ -994,7 +994,7 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"+", "x", "/", "x", "sin", "-", "y", "x"}; // x + (x/sin(y-x))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ 1 / - * 1 sin - y x * x * cos - y x - 0 1 * sin - y x sin - y x (prefix) -> 1 + (sin(y-x) + x*cos(y-x))/(sin(x-y)*sin(x-y)) = 1 - (1/sin(x-y)) + x*cos(y-x)/(sin(x-y)*sin(x-y)) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ 1 / - * 1 sin - y x * x * cos - y x - 0 1 * sin - y x sin - y x (prefix) -> 1 + (sin(y-x) + x*cos(y-x))/(sin(x-y)*sin(x-y)) = 1 - (1/sin(x-y)) + x*cos(y-x)/(sin(x-y)*sin(x-y)) ✅
                                                           //+ 1 / - * 1 sin - y x * x * cos - y x ~ 1 * sin - y x sin - y x (prefix) -> 1 + (sin(y-x) + x*cos(y-x))/(sin(x-y)*sin(x-y)) = 1 - (1/sin(x-y)) + x*cos(y-x)/(sin(x-y)*sin(x-y)) ✅
                                                           //+ 1 / - sin - y x * x * cos - y x ~ 1 * sin - y x sin - y x (prefix) -> 1 + (sin(y-x) + x*cos(y-x))/(sin(x-y)*sin(x-y)) = 1 - (1/sin(x-y)) + x*cos(y-x)/(sin(x-y)*sin(x-y)) ✅
                                                           //+ 1 / - sin - y x * x * ~ 1 cos - y x * sin - y x sin - y x (prefix) -> 1 + (sin(y-x) + x*cos(y-x))/(sin(x-y)*sin(x-y)) = 1 - (1/sin(x-y)) + x*cos(y-x)/(sin(x-y)*sin(x-y)) ✅
@@ -1002,7 +1002,7 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"/", "x", "/", "x", "*", "y", "cos", "sin", "y"}; // x / (x / (y*cos(sin(y))))
-    derivePrefix(0, prefix.size()-1, "y", prefix, grasp); // / - * 0 / x * y cos sin y * x / - * 0 * y cos sin y * x + * y * ~ sin sin y * cos y 1 * 1 cos sin y * * y cos sin y * y cos sin y * / x * y cos sin y / x * y cos sin y (prefix) -> (x*x*(y*(-sin(sin(y))*cos(y))+cos(sin(y))))/(y*cos(sin(y))*y*cos(sin(y))) / ((x/(y*cos(sin(y))))*(x/(y*cos(sin(y))))) = (y*(-sin(sin(y))*cos(y))+cos(sin(y))) = cos(sin(y)) - y*sin(sin(y))*cos(y) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "y", prefix, grasp); // / - * 0 / x * y cos sin y * x / - * 0 * y cos sin y * x + * y * ~ sin sin y * cos y 1 * 1 cos sin y * * y cos sin y * y cos sin y * / x * y cos sin y / x * y cos sin y (prefix) -> (x*x*(y*(-sin(sin(y))*cos(y))+cos(sin(y))))/(y*cos(sin(y))*y*cos(sin(y))) / ((x/(y*cos(sin(y))))*(x/(y*cos(sin(y))))) = (y*(-sin(sin(y))*cos(y))+cos(sin(y))) = cos(sin(y)) - y*sin(sin(y))*cos(y) ✅
                                                           // / - * 0 / x * y cos sin y * x / - * 0 * y cos sin y * x + * y * ~ sin sin y * cos y 1 cos sin y * * y cos sin y * y cos sin y * / x * y cos sin y / x * y cos sin y (prefix) -> ((x*x*(y*(-sin(sin(y))*cos(y))+cos(sin(y))))/(y*cos(sin(y))*y*cos(sin(y)))) / ((x/(y*cos(sin(y))))*(x/(y*cos(sin(y))))) = (y*(-sin(sin(y))*cos(y))+cos(sin(y))) = cos(sin(y)) - y*sin(sin(y))*cos(y) ✅
                                                           // / - 0 * x / - 0 * x + * y * ~ sin sin y * cos y 1 cos sin y * * y cos sin y * y cos sin y * / x * y cos sin y / x * y cos sin y (prefix) -> (x*x*(y*(-sin(sin(y))*cos(y))+cos(sin(y))))/(y*cos(sin(y))*y*cos(sin(y))) / ((x/(y*cos(sin(y))))*(x/(y*cos(sin(y))))) = (y*(-sin(sin(y))*cos(y))+cos(sin(y))) = cos(sin(y)) - y*sin(sin(y))*cos(y) ✅
                                                           // / ~ * x / ~ * x + * y * ~ sin sin y * cos y 1 cos sin y * * y cos sin y * y cos sin y * / x * y cos sin y / x * y cos sin y (prefix) -> (x*x*(y*(-sin(sin(y))*cos(y))+cos(sin(y))))/(y*cos(sin(y))*y*cos(sin(y))) / ((x/(y*cos(sin(y))))*(x/(y*cos(sin(y))))) = (y*(-sin(sin(y))*cos(y))+cos(sin(y))) = cos(sin(y)) - y*sin(sin(y))*cos(y) ✅
@@ -1012,7 +1012,7 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"/", "sin", "~", "~", "x", "y"}; // sin(x)/y
-    derivePrefix(0, prefix.size()-1, "y", prefix, grasp); // / - * * cos ~ ~ x ~ ~ 0 y * sin ~ ~ x 1 * y y (prefix) -> -sin(x)/(y*y) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "y", prefix, grasp); // / - * * cos ~ ~ x ~ ~ 0 y * sin ~ ~ x 1 * y y (prefix) -> -sin(x)/(y*y) ✅
                                                           // / - * * cos ~ ~ x ~ ~ 0 y sin ~ ~ x * y y (prefix) -> -sin(x)/(y*y) ✅
                                                           // / - * * cos ~ ~ x 0 y sin ~ ~ x * y y (prefix) -> -sin(x)/(y*y) ✅
                                                           // / ~ sin ~ ~ x * y y (prefix) -> -sin(x)/(y*y) ✅
@@ -1020,60 +1020,60 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"sqrt", "x"}; //sqrt(x)
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / 1 * 2 sqrt x  (prefix) -> 1/(2*sqrt(x)) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / 1 * 2 sqrt x  (prefix) -> 1/(2*sqrt(x)) ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"*", "sqrt", "x", "y"}; //sqrt(x)*y
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * sqrt x 0 * / 1 * 2 sqrt x y (prefix) -> (1/(2*sqrt(x)))*y ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * sqrt x 0 * / 1 * 2 sqrt x y (prefix) -> (1/(2*sqrt(x)))*y ✅
                                                           //+ 0 * / 1 * 2 sqrt x y (prefix) -> (1/(2*sqrt(x)))*y ✅
                                                           //* / 1 * 2 sqrt x y (prefix) -> (1/(2*sqrt(x)))*y ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"*", "ln", "x", "y"}; //ln(x)*y
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * ln x 0 * / 1 x y (prefix) -> (1/x)*y ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * ln x 0 * / 1 x y (prefix) -> (1/x)*y ✅
                                                           //+ 0 * / 1 x y (prefix) -> (1/x)*y ✅
                                                           //* / 1 x y (1/x)*y ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"*", "ln", "~", "x", "x"}; //ln(-x) * x
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * ln ~ x 1 * / ~ 1 ~ x x (prefix) -> ln(-x) + 1 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * ln ~ x 1 * / ~ 1 ~ x x (prefix) -> ln(-x) + 1 ✅
                                                           //+ ln ~ x * / ~ 1 ~ x x (prefix) -> ln(-x) + 1 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
 
     prefix = {"*", "ln", "sqrt", "x", "y"}; //ln(sqrt(x)) * y
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * ln sqrt x 0 * / / 1 * 2 sqrt x sqrt x y (prefix) -> y/(2*x) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * ln sqrt x 0 * / / 1 * 2 sqrt x sqrt x y (prefix) -> y/(2*x) ✅
                                                           //+ 0 * / / 1 * 2 sqrt x sqrt x y (prefix) -> y/(2*x) ✅
                                                           //* / / 1 * 2 sqrt x sqrt x y (prefix) -> y/(2*x) ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
 
     prefix = {"asin", "*", "x", "x"}; //arcsin(x*x)
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / + * x 1 * 1 x sqrt - 1 * * x x * x x (prefix) -> (2*x)/sqrt(1-x*x*x*x) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / + * x 1 * 1 x sqrt - 1 * * x x * x x (prefix) -> (2*x)/sqrt(1-x*x*x*x) ✅
                                                           // / + x * 1 x sqrt - 1 * * x x * x x (prefix) -> (2*x)/sqrt(1-x*x*x*x) ✅
                                                           // / + x x sqrt - 1 * * x x * x x (prefix) -> (2*x)/sqrt(1-x*x*x*x) ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
 
     prefix = {"arcsin", "*", "ln", "x", "y"}; //arcsin(ln(x)*y)
-    derivePrefix(0, prefix.size()-1, "y", prefix, grasp); // / + * ln x 1 * / 0 x y sqrt - 1 * * ln x y * ln x y (prefix) -> ln(x) / sqrt(1-ln(x)*y*ln(x)*y) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "y", prefix, grasp); // / + * ln x 1 * / 0 x y sqrt - 1 * * ln x y * ln x y (prefix) -> ln(x) / sqrt(1-ln(x)*y*ln(x)*y) ✅
                                                           // / + ln x * / 0 x y sqrt - 1 * * ln x y * ln x y (prefix) -> ln(x) / sqrt(1-ln(x)*y*ln(x)*y) ✅
                                                           // / ln x sqrt - 1 * * ln x y * ln x y (prefix) -> ln(x) / sqrt(1-ln(x)*y*ln(x)*y) ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
 
     prefix = {"arcsin", "*", "ln", "x", "y"}; //arcsin(ln(x)*y)
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / + * ln x 0 * / 1 x y sqrt - 1 * * ln x y * ln x y (prefix) -> (y/x)/sqrt(1-y*ln(x)*y*ln(x)) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp, true); // / + * ln x 0 * / 1 x y sqrt - 1 * * ln x y * ln x y (prefix) -> (y/x)/sqrt(1-y*ln(x)*y*ln(x)) ✅
                                                           // / + 0 * / 1 x y sqrt - 1 * * ln x y * ln x y (prefix) -> (y/x)/sqrt(1-y*ln(x)*y*ln(x)) ✅
                                                           // / * / 1 x y sqrt - 1 * * ln x y * ln x y (prefix) -> (y/x)/sqrt(1-y*ln(x)*y*ln(x)) ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
 
     prefix = {"arcsin", "/", "acos", "x", "y"}; //arcsin(acos(x)/y)
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / / - * ~ / 1 sqrt - 1 * x x y * acos x 0 * y y sqrt - 1 * / acos x y / acos x y (prefix) -> (-y/sqrt(1-x*x))/(y*y) * (1/sqrt(1-((arcos(x)/y)*(arcos(x)/y)))) = -1/(y*sqrt(1-x*x)*sqrt(1-((arcos(x)/y)*(arcos(x)/y)))) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / / - * ~ / 1 sqrt - 1 * x x y * acos x 0 * y y sqrt - 1 * / acos x y / acos x y (prefix) -> (-y/sqrt(1-x*x))/(y*y) * (1/sqrt(1-((arcos(x)/y)*(arcos(x)/y)))) = -1/(y*sqrt(1-x*x)*sqrt(1-((arcos(x)/y)*(arcos(x)/y)))) ✅
                                                           // / / - * ~ / 1 sqrt - 1 * x x y 0 * y y sqrt - 1 * / acos x y / acos x y (prefix) -> (-y/sqrt(1-x*x))/(y*y) * (1/sqrt(1-((arcos(x)/y)*(arcos(x)/y)))) = -1/(y*sqrt(1-x*x)*sqrt(1-((arcos(x)/y)*(arcos(x)/y)))) ✅
                                                           // / / * ~ / 1 sqrt - 1 * x x y * y y sqrt - 1 * / acos x y / acos x y (prefix) -> (-y/sqrt(1-x*x))/(y*y) * (1/sqrt(1-((arcos(x)/y)*(arcos(x)/y)))) = -1/(y*sqrt(1-x*x)*sqrt(1-((arcos(x)/y)*(arcos(x)/y)))) ✅
 
@@ -1081,19 +1081,19 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
 
     prefix = {"+", "arcsin", "*", "ln", "x", "y", "acos", "y"}; //arcsin(ln(x)*y)+acos(y)
-    derivePrefix(0, prefix.size()-1, "y", prefix, grasp); //+ / + * ln x 1 * / 0 x y sqrt - 1 * * ln x y * ln x y ~ / 1 sqrt - 1 * y y (prefix) -> (ln(x)/sqrt(1-ln(x)*y*ln(x)*y)) + (-1/sqrt(1-y*y)) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "y", prefix, grasp); //+ / + * ln x 1 * / 0 x y sqrt - 1 * * ln x y * ln x y ~ / 1 sqrt - 1 * y y (prefix) -> (ln(x)/sqrt(1-ln(x)*y*ln(x)*y)) + (-1/sqrt(1-y*y)) ✅
                                                           //+ / + ln x * / 0 x y sqrt - 1 * * ln x y * ln x y ~ / 1 sqrt - 1 * y y (prefix) -> (ln(x)/sqrt(1-ln(x)*y*ln(x)*y)) + (-1/sqrt(1-y*y)) ✅
                                                           //+ / ln x sqrt - 1 * * ln x y * ln x y ~ / 1 sqrt - 1 * y y 
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
 
     prefix = {"acos", "*", "acos", "acos", "x", "~", "x"}; //arccos(arccos(arccos(x))*-x)
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //~ / + * acos acos x ~ 1 * ~ / ~ / 1 sqrt - 1 * x x sqrt - 1 * acos x acos x ~ x sqrt - 1 * * acos acos x ~ x * acos acos x ~ x (prefix) -> (arccos(arccos(x)) + (x*((1/sqrt(1-x*x))/sqrt(1-acos(x)*acos(x))))) / sqrt(1-(-x*arccos(arccos(x))*-x*arccos(arccos(x)))) = (arccos(arccos(x)) + x/(sqrt(1-x*x)*sqrt(1-acos(x)*acos(x)))) / sqrt(1-(x*arccos(arccos(x))*x*arccos(arccos(x)))) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //~ / + * acos acos x ~ 1 * ~ / ~ / 1 sqrt - 1 * x x sqrt - 1 * acos x acos x ~ x sqrt - 1 * * acos acos x ~ x * acos acos x ~ x (prefix) -> (arccos(arccos(x)) + (x*((1/sqrt(1-x*x))/sqrt(1-acos(x)*acos(x))))) / sqrt(1-(-x*arccos(arccos(x))*-x*arccos(arccos(x)))) = (arccos(arccos(x)) + x/(sqrt(1-x*x)*sqrt(1-acos(x)*acos(x)))) / sqrt(1-(x*arccos(arccos(x))*x*arccos(arccos(x)))) ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
 
     prefix = {"/", "exp", "x", "exp", "cos", "x"}; //exp(x) / exp(cos(x))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / - * * exp x 1 exp cos x * exp x * exp cos x * ~ sin x 1 * exp cos x exp cos x (prefix) -> (exp(x)*exp(cos(x)) - exp(x)*-sin(x)*exp(cos(x))) / (exp(cos(x))*exp(cos(x))) = (exp(x) - exp(x)*-sin(x)) / (exp(cos(x))) = (exp(x)*(1+sin(x))) / exp(cos(x)) = exp(x-cos(x))*(1+sin(x)) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / - * * exp x 1 exp cos x * exp x * exp cos x * ~ sin x 1 * exp cos x exp cos x (prefix) -> (exp(x)*exp(cos(x)) - exp(x)*-sin(x)*exp(cos(x))) / (exp(cos(x))*exp(cos(x))) = (exp(x) - exp(x)*-sin(x)) / (exp(cos(x))) = (exp(x)*(1+sin(x))) / exp(cos(x)) = exp(x-cos(x))*(1+sin(x)) ✅
                                                           // / - * * 1 exp x exp cos x * exp x * * ~ sin x 1 exp cos x * exp cos x exp cos x (prefix) -> (exp(x)*exp(cos(x)) - exp(x)*-sin(x)*exp(cos(x))) / (exp(cos(x))*exp(cos(x))) = (exp(x) - exp(x)*-sin(x)) / (exp(cos(x))) = (exp(x)*(1+sin(x))) / exp(cos(x)) = exp(x-cos(x))*(1+sin(x)) ✅
                                                           // / - * exp x exp cos x * exp x * * ~ sin x 1 exp cos x * exp cos x exp cos x (prefix) -> (exp(x)*exp(cos(x)) - exp(x)*-sin(x)*exp(cos(x))) / (exp(cos(x))*exp(cos(x))) = (exp(x) - exp(x)*-sin(x)) / (exp(cos(x))) = (exp(x)*(1+sin(x))) / exp(cos(x)) = exp(x-cos(x))*(1+sin(x)) ✅
                                                           // / - * exp x exp cos x * exp x * ~ sin x exp cos x * exp cos x exp cos x (prefix) -> (exp(x)*exp(cos(x)) - exp(x)*-sin(x)*exp(cos(x))) / (exp(cos(x))*exp(cos(x))) = (exp(x) - exp(x)*-sin(x)) / (exp(cos(x))) = (exp(x)*(1+sin(x))) / exp(cos(x)) = exp(x-cos(x))*(1+sin(x)) ✅
@@ -1101,7 +1101,7 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
 
     prefix = {"+", "exp", "~", "x", "*", "*", "x", "y", "x"}; //exp(-x) + x*y*x
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * exp ~ x ~ 1 + * * x y 1 * + * x 0 * 1 y x (prefix) -> -exp(-x) + x*y + x*y = -exp(-x) + 2*x*y ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * exp ~ x ~ 1 + * * x y 1 * + * x 0 * 1 y x (prefix) -> -exp(-x) + x*y + x*y = -exp(-x) + 2*x*y ✅
                                                           //+ * exp ~ x ~ 1 + * * x y 1 * + 0 * 1 y x (prefix) -> -exp(-x) + x*y + x*y = -exp(-x) + 2*x*y ✅
                                                           //+ * exp ~ x ~ 1 + * x y * + 0 * 1 y x (prefix) -> -exp(-x) + x*y + x*y = -exp(-x) + 2*x*y ✅
                                                           //+ * exp ~ x ~ 1 + * x y * y x (prefix) -> -exp(-x) + x*y + x*y = -exp(-x) + 2*x*y ✅
@@ -1110,20 +1110,20 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
 
     prefix = {"arccos", "*", "exp", "arcsin", "y", "~", "x"}; //arccos(exp(arcsin(y))*-x)
-    derivePrefix(0, prefix.size()-1, "y", prefix, grasp); //~ / + * exp arcsin y ~ 0 * * exp arcsin y / 1 sqrt - 1 * y y ~ x sqrt - 1 * * exp arcsin y ~ x * exp arcsin y ~ x (prefix) -> ((x/sqrt(1-y*y))*exp(arcsin(y))) / sqrt(1-(x*exp(arcsin(y))*x*exp(arcsin(y)))) = (x/(sqrt(1-y*y)*sqrt(1-(x*exp(arcsin(y))*x*exp(arcsin(y))))))*exp(arcsin(y)) = (x*exp(arcsin(y)))/(sqrt(1-y*y)*sqrt(1-(x*exp(arcsin(y))*x*exp(arcsin(y))))) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "y", prefix, grasp); //~ / + * exp arcsin y ~ 0 * * exp arcsin y / 1 sqrt - 1 * y y ~ x sqrt - 1 * * exp arcsin y ~ x * exp arcsin y ~ x (prefix) -> ((x/sqrt(1-y*y))*exp(arcsin(y))) / sqrt(1-(x*exp(arcsin(y))*x*exp(arcsin(y)))) = (x/(sqrt(1-y*y)*sqrt(1-(x*exp(arcsin(y))*x*exp(arcsin(y))))))*exp(arcsin(y)) = (x*exp(arcsin(y)))/(sqrt(1-y*y)*sqrt(1-(x*exp(arcsin(y))*x*exp(arcsin(y))))) ✅
                                                           //~ / + * exp arcsin y ~ 0 * * / 1 sqrt - 1 * y y exp arcsin y ~ x sqrt - 1 * * exp arcsin y ~ x * exp arcsin y ~ x  (prefix) -> ((x/sqrt(1-y*y))*exp(arcsin(y))) / sqrt(1-(x*exp(arcsin(y))*x*exp(arcsin(y)))) = (x/(sqrt(1-y*y)*sqrt(1-(x*exp(arcsin(y))*x*exp(arcsin(y))))))*exp(arcsin(y)) = (x*exp(arcsin(y)))/(sqrt(1-y*y)*sqrt(1-(x*exp(arcsin(y))*x*exp(arcsin(y))))) ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
 
     prefix = {"^", "x", "y"}; //x ^ y
-    derivePrefix(0, prefix.size()-1, "y", prefix, grasp); //* ^ x y + * ln x 1 * / 0 x y (prefix) -> (x^y)*ln(x) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "y", prefix, grasp); //* ^ x y + * ln x 1 * / 0 x y (prefix) -> (x^y)*ln(x) ✅
                                                           //* ^ x y + ln x * / 0 x y (prefix) -> (x^y)*ln(x) ✅
                                                           //* ^ x y ln x (prefix) -> (x^y)*ln(x) ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"*", "^", "cos", "x", "cos", "y", "x"}; //(cos(x)^(cos(y)))*x
-    derivePrefix(0, prefix.size()-1, "y", prefix, grasp); //+ * ^ cos x cos y 0 * * ^ cos x cos y + * ln cos x * ~ sin y 1 * / * ~ sin x 0 cos x cos y x (prefix) -> -x*(cos(x)^(cos(y)))*ln(cos(x))*sin(y) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "y", prefix, grasp, true); //+ * ^ cos x cos y 0 * * ^ cos x cos y + * ln cos x * ~ sin y 1 * / * ~ sin x 0 cos x cos y x (prefix) -> -x*(cos(x)^(cos(y)))*ln(cos(x))*sin(y) ✅
                                                           //+ 0 * * ^ cos x cos y + * ln cos x * ~ sin y 1 * / * ~ sin x 0 cos x cos y x (prefix) -> -x*(cos(x)^(cos(y)))*ln(cos(x))*sin(y) ✅
                                                           //* * ^ cos x cos y + * ln cos x * ~ sin y 1 * / * ~ sin x 0 cos x cos y x (prefix) -> -x*(cos(x)^(cos(y)))*ln(cos(x))*sin(y) ✅
                                                           //* * ^ cos x cos y * ln cos x ~ sin y x (prefix) -> -x*(cos(x)^(cos(y)))*ln(cos(x))*sin(y) ✅
@@ -1131,14 +1131,14 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"*", "^", "cos", "x", "cos", "y", "x"}; //(cos(x)^(cos(y)))*x
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * ^ cos x cos y 1 * * ^ cos x cos y + * ln cos x * ~ sin y 0 * / * ~ sin x 1 cos x cos y x (prefix) -> cos(x)^(cos(y)) + x*cos(x)^(cos(y)) * ((-sin(x)/cos(x))*cos(y)) = cos(x)^(cos(y)) - cos(y)*x*cos(x)^(cos(y)-1)*sin(x) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * ^ cos x cos y 1 * * ^ cos x cos y + * ln cos x * ~ sin y 0 * / * ~ sin x 1 cos x cos y x (prefix) -> cos(x)^(cos(y)) + x*cos(x)^(cos(y)) * ((-sin(x)/cos(x))*cos(y)) = cos(x)^(cos(y)) - cos(y)*x*cos(x)^(cos(y)-1)*sin(x) ✅
                                                           //+ ^ cos x cos y * * ^ cos x cos y + * ln cos x * ~ sin y 0 * / * ~ sin x 1 cos x cos y x (prefix) -> cos(x)^(cos(y)) + x*cos(x)^(cos(y)) * ((-sin(x)/cos(x))*cos(y)) = cos(x)^(cos(y)) - cos(y)*x*cos(x)^(cos(y)-1)*sin(x) ✅
                                                           //+ ^ cos x cos y * * ^ cos x cos y * / ~ sin x cos x cos y x (prefix) -> cos(x)^(cos(y)) + x*cos(x)^(cos(y)) * ((-sin(x)/cos(x))*cos(y)) = cos(x)^(cos(y)) - cos(y)*x*cos(x)^(cos(y)-1)*sin(x) ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"*", "^", "^", "x", "x", "x", "y"}; //((x^x)^x)*y
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * ^ ^ x x x 0 * * ^ ^ x x x + * ln ^ x x 1 * / * ^ x x + * ln x 1 * / 1 x x ^ x x x y (prefix) -> y*((x^x)^x)*(ln(x^x) + (((x^x)*(ln(x)+1))/(x^x))*x) = y*((x^x)^x)*(ln(x^x) + x*(ln(x)+1)) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * ^ ^ x x x 0 * * ^ ^ x x x + * ln ^ x x 1 * / * ^ x x + * ln x 1 * / 1 x x ^ x x x y (prefix) -> y*((x^x)^x)*(ln(x^x) + (((x^x)*(ln(x)+1))/(x^x))*x) = y*((x^x)^x)*(ln(x^x) + x*(ln(x)+1)) ✅
                                                          //+ 0 * * ^ ^ x x x + * ln ^ x x 1 * / * ^ x x + * ln x 1 * / 1 x x ^ x x x y (prefix) -> y*((x^x)^x)*(ln(x^x) + (((x^x)*(ln(x)+1))/(x^x))*x) = y*((x^x)^x)*(ln(x^x) + x*(ln(x)+1)) ✅
                                                          //+ 0 * * ^ ^ x x x + ln ^ x x * / * ^ x x + ln x * / 1 x x ^ x x x y (prefix) -> y*((x^x)^x)*(ln(x^x) + (((x^x)*(ln(x)+1))/(x^x))*x) = y*((x^x)^x)*(ln(x^x) + x*(ln(x)+1)) ✅
                                                          //* * ^ ^ x x x + ln ^ x x * / * ^ x x + ln x * / 1 x x ^ x x x y (prefix) -> y*((x^x)^x)*(ln(x^x) + (((x^x)*(ln(x)+1))/(x^x))*x) = y*((x^x)^x)*(ln(x^x) + x*(ln(x)+1)) ✅
@@ -1146,7 +1146,7 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"*", "^", "^", "x", "x", "x", "y"}; //((x^x)^x)*y
-    derivePrefix(0, prefix.size()-1, "y", prefix, grasp); //+ * ^ ^ x x x 1 * * ^ ^ x x x + * ln ^ x x 0 * / * ^ x x + * ln x 0 * / 0 x x ^ x x x y (prefix) -> ((x^x)^x) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "y", prefix, grasp); //+ * ^ ^ x x x 1 * * ^ ^ x x x + * ln ^ x x 0 * / * ^ x x + * ln x 0 * / 0 x x ^ x x x y (prefix) -> ((x^x)^x) ✅
                                                           //+ * ^ ^ x x x 1 * * ^ ^ x x x + 0 * / * ^ x x + 0 * / 0 x x ^ x x x y (prefix) -> ((x^x)^x) ✅
                                                           //+ ^ ^ x x x * * ^ ^ x x x + 0 * / * ^ x x + 0 * / 0 x x ^ x x x y (prefix) -> ((x^x)^x) ✅
                                                           //+ ^ ^ x x x * * ^ ^ x x x * / * ^ x x * / 0 x x ^ x x x y (prefix) -> ((x^x)^x) ✅
@@ -1155,7 +1155,7 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
         
     prefix = {"*", "^", "tanh", "sech", "x", "x", "y"}; //tanh(sech(x))^x * y
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * ^ tanh sech x x 0 * * ^ tanh sech x x + * ln tanh sech x 1 * / * * sech sech x sech sech x ~ * * sech x tanh x 1 tanh sech x x y (prefix) -> y*(tanh(sech(x))^x)*(ln(tanh(sech(x)))+(x*((sech(sech(x))*sech(sech(x))*-sech(x)*tanh(x))/tanh(sech(x))))) = y*(tanh(sech(x))^x)*(ln(tanh(sech(x)))-((x*sech(sech(x))*sech(sech(x))*sech(x)*tanh(x))/tanh(sech(x)))) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * ^ tanh sech x x 0 * * ^ tanh sech x x + * ln tanh sech x 1 * / * * sech sech x sech sech x ~ * * sech x tanh x 1 tanh sech x x y (prefix) -> y*(tanh(sech(x))^x)*(ln(tanh(sech(x)))+(x*((sech(sech(x))*sech(sech(x))*-sech(x)*tanh(x))/tanh(sech(x))))) = y*(tanh(sech(x))^x)*(ln(tanh(sech(x)))-((x*sech(sech(x))*sech(sech(x))*sech(x)*tanh(x))/tanh(sech(x)))) ✅
                                                           //+ 0 * * ^ tanh sech x x + * ln tanh sech x 1 * / * * sech sech x sech sech x ~ * * sech x tanh x 1 tanh sech x x y (prefix) -> y*(tanh(sech(x))^x)*(ln(tanh(sech(x)))+(x*((sech(sech(x))*sech(sech(x))*-sech(x)*tanh(x))/tanh(sech(x))))) = y*(tanh(sech(x))^x)*(ln(tanh(sech(x)))-((x*sech(sech(x))*sech(sech(x))*sech(x)*tanh(x))/tanh(sech(x)))) ✅
                                                          //+ 0 * * ^ tanh sech x x + ln tanh sech x * / * * sech sech x sech sech x ~ * * sech x tanh x 1 tanh sech x x y (prefix) -> y*(tanh(sech(x))^x)*(ln(tanh(sech(x)))+(x*((sech(sech(x))*sech(sech(x))*-sech(x)*tanh(x))/tanh(sech(x))))) = y*(tanh(sech(x))^x)*(ln(tanh(sech(x)))-((x*sech(sech(x))*sech(sech(x))*sech(x)*tanh(x))/tanh(sech(x)))) ✅
                                                          //* * ^ tanh sech x x + ln tanh sech x * / * * sech sech x sech sech x ~ * * sech x tanh x 1 tanh sech x x y (prefix) -> y*(tanh(sech(x))^x)*(ln(tanh(sech(x)))+(x*((sech(sech(x))*sech(sech(x))*-sech(x)*tanh(x))/tanh(sech(x))))) = y*(tanh(sech(x))^x)*(ln(tanh(sech(x)))-((x*sech(sech(x))*sech(sech(x))*sech(x)*tanh(x))/tanh(sech(x)))) ✅
@@ -1165,7 +1165,7 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"*", "x", "^", "tanh", "/", "x", "y", "sin", "x"}; //x*tanh(x/y)^(sin(x))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * x * ^ tanh / x y sin x + * ln tanh / x y * cos x 1 * / * * sech / x y sech / x y / - * 1 y * x 0 * y y tanh / x y sin x * 1 ^ tanh / x y sin x (prefix) -> (tanh(x/y)^(sin(x))) + x*(tanh(x/y)^(sin(x)))*(ln(tanh(x/y))*cos(x) + (sech(x/y)*sech(x/y)*(1/y)*sin(x))/(tanh(x/y))) = (tanh(x/y)^(sin(x))) + x*(tanh(x/y)^(sin(x)))*(ln(tanh(x/y))*cos(x) + (sech(x/y)*sech(x/y)*sin(x))/(tanh(x/y)*y)) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * x * ^ tanh / x y sin x + * ln tanh / x y * cos x 1 * / * * sech / x y sech / x y / - * 1 y * x 0 * y y tanh / x y sin x * 1 ^ tanh / x y sin x (prefix) -> (tanh(x/y)^(sin(x))) + x*(tanh(x/y)^(sin(x)))*(ln(tanh(x/y))*cos(x) + (sech(x/y)*sech(x/y)*(1/y)*sin(x))/(tanh(x/y))) = (tanh(x/y)^(sin(x))) + x*(tanh(x/y)^(sin(x)))*(ln(tanh(x/y))*cos(x) + (sech(x/y)*sech(x/y)*sin(x))/(tanh(x/y)*y)) ✅
                                                           //+ * x * ^ tanh / x y sin x + * ln tanh / x y * cos x 1 * / * * sech / x y sech / x y / - * 1 y * x 0 * y y tanh / x y sin x ^ tanh / x y sin x (prefix) -> (tanh(x/y)^(sin(x))) + x*(tanh(x/y)^(sin(x)))*(ln(tanh(x/y))*cos(x) + (sech(x/y)*sech(x/y)*(1/y)*sin(x))/(tanh(x/y))) = (tanh(x/y)^(sin(x))) + x*(tanh(x/y)^(sin(x)))*(ln(tanh(x/y))*cos(x) + (sech(x/y)*sech(x/y)*sin(x))/(tanh(x/y)*y)) ✅
                                                           //+ * x * ^ tanh / x y sin x + * ln tanh / x y * cos x 1 * / * * sech / x y sech / x y / - y * x 0 * y y tanh / x y sin x ^ tanh / x y sin x (prefix) -> (tanh(x/y)^(sin(x))) + x*(tanh(x/y)^(sin(x)))*(ln(tanh(x/y))*cos(x) + (sech(x/y)*sech(x/y)*(1/y)*sin(x))/(tanh(x/y))) = (tanh(x/y)^(sin(x))) + x*(tanh(x/y)^(sin(x)))*(ln(tanh(x/y))*cos(x) + (sech(x/y)*sech(x/y)*sin(x))/(tanh(x/y)*y)) ✅
                                                           //+ * x * ^ tanh / x y sin x + * ln tanh / x y * cos x 1 * / * * sech / x y sech / x y / - y 0 * y y tanh / x y sin x ^ tanh / x y sin x (prefix) -> (tanh(x/y)^(sin(x))) + x*(tanh(x/y)^(sin(x)))*(ln(tanh(x/y))*cos(x) + (sech(x/y)*sech(x/y)*(1/y)*sin(x))/(tanh(x/y))) = (tanh(x/y)^(sin(x))) + x*(tanh(x/y)^(sin(x)))*(ln(tanh(x/y))*cos(x) + (sech(x/y)*sech(x/y)*sin(x))/(tanh(x/y)*y)) ✅
@@ -1177,7 +1177,7 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"sech", "sin", "sin", "^", "sech", "sin", "x", "*", "x", "y"}; //sech(sin(sin( sech(sin(x))^(x*y))))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //~ * * sech sin sin ^ sech sin x * x y tanh sin sin ^ sech sin x * x y * cos sin ^ sech sin x * x y * cos ^ sech sin x * x y * ^ sech sin x * x y + * ln sech sin x + * x 0 * 1 y * / ~ * * sech sin x tanh sin x * cos x 1 sech sin x * x y (prefix) -> -sech(sin(sin(sech(sin(x))^(x*y)))) * tanh(sin(sin(sech(sin(x))^(x*y)))) * cos(sin(sech(sin(x))^(x*y))) * cos(sech(sin(x))^(x*y)) * sech(sin(x))^(x*y) * (ln(sech(sin(x)))*y - x*y*tanh(sin(x))*cos(x)) = -sech(sin(x))^(x*y)*(y*ln(sech(sin(x))) - y*x*tanh(sin(x))*cos(x)) * cos(sech(sin(x))^(x*y)) * cos(sin(sech(sin(x))^(x*y))) * sech(sin(sin(sech(sin(x))^(x*y)))) * tanh(sin(sin(sech(sin(x))^(x*y)))) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //~ * * sech sin sin ^ sech sin x * x y tanh sin sin ^ sech sin x * x y * cos sin ^ sech sin x * x y * cos ^ sech sin x * x y * ^ sech sin x * x y + * ln sech sin x + * x 0 * 1 y * / ~ * * sech sin x tanh sin x * cos x 1 sech sin x * x y (prefix) -> -sech(sin(sin(sech(sin(x))^(x*y)))) * tanh(sin(sin(sech(sin(x))^(x*y)))) * cos(sin(sech(sin(x))^(x*y))) * cos(sech(sin(x))^(x*y)) * sech(sin(x))^(x*y) * (ln(sech(sin(x)))*y - x*y*tanh(sin(x))*cos(x)) = -sech(sin(x))^(x*y)*(y*ln(sech(sin(x))) - y*x*tanh(sin(x))*cos(x)) * cos(sech(sin(x))^(x*y)) * cos(sin(sech(sin(x))^(x*y))) * sech(sin(sin(sech(sin(x))^(x*y)))) * tanh(sin(sin(sech(sin(x))^(x*y)))) ✅
                                                           //~ * * sech sin sin ^ sech sin x * x y tanh sin sin ^ sech sin x * x y * cos sin ^ sech sin x * x y * cos ^ sech sin x * x y * ^ sech sin x * x y + * ln sech sin x + 0 * 1 y * / ~ * * sech sin x tanh sin x * cos x 1 sech sin x * x y (prefix) -> -sech(sin(sin(sech(sin(x))^(x*y)))) * tanh(sin(sin(sech(sin(x))^(x*y)))) * cos(sin(sech(sin(x))^(x*y))) * cos(sech(sin(x))^(x*y)) * sech(sin(x))^(x*y) * (ln(sech(sin(x)))*y - x*y*tanh(sin(x))*cos(x)) = -sech(sin(x))^(x*y)*(y*ln(sech(sin(x))) - y*x*tanh(sin(x))*cos(x)) * cos(sech(sin(x))^(x*y)) * cos(sin(sech(sin(x))^(x*y))) * sech(sin(sin(sech(sin(x))^(x*y)))) * tanh(sin(sin(sech(sin(x))^(x*y)))) ✅
                                                           //~ * * sech sin sin ^ sech sin x * x y tanh sin sin ^ sech sin x * x y * cos sin ^ sech sin x * x y * cos ^ sech sin x * x y * ^ sech sin x * x y + * ln sech sin x y * / ~ * * sech sin x tanh sin x * cos x 1 sech sin x * x y (prefix) -> -sech(sin(sin(sech(sin(x))^(x*y)))) * tanh(sin(sin(sech(sin(x))^(x*y)))) * cos(sin(sech(sin(x))^(x*y))) * cos(sech(sin(x))^(x*y)) * sech(sin(x))^(x*y) * (ln(sech(sin(x)))*y - x*y*tanh(sin(x))*cos(x)) = -sech(sin(x))^(x*y)*(y*ln(sech(sin(x))) - y*x*tanh(sin(x))*cos(x)) * cos(sech(sin(x))^(x*y)) * cos(sin(sech(sin(x))^(x*y))) * sech(sin(sin(sech(sin(x))^(x*y)))) * tanh(sin(sin(sech(sin(x))^(x*y)))) ✅
                                                           //~ * * sech sin sin ^ sech sin x * x y tanh sin sin ^ sech sin x * x y * * * ^ sech sin x * x y + * ln sech sin x y * / ~ * * sech sin x tanh sin x cos x sech sin x * x y cos ^ sech sin x * x y cos sin ^ sech sin x * x y (prefix) -> -sech(sin(sin(sech(sin(x))^(x*y)))) * tanh(sin(sin(sech(sin(x))^(x*y)))) * cos(sin(sech(sin(x))^(x*y))) * cos(sech(sin(x))^(x*y)) * sech(sin(x))^(x*y) * (ln(sech(sin(x)))*y - x*y*tanh(sin(x))*cos(x)) = -sech(sin(x))^(x*y)*(y*ln(sech(sin(x))) - y*x*tanh(sin(x))*cos(x)) * cos(sech(sin(x))^(x*y)) * cos(sin(sech(sin(x))^(x*y))) * sech(sin(sin(sech(sin(x))^(x*y)))) * tanh(sin(sin(sech(sin(x))^(x*y)))) ✅
@@ -1186,7 +1186,7 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"sin", "~", "sech", "/", "arccos", "ln", "x", "*", "x", "y"}; //sin(-sech(arccos(ln(x))/(x*y)))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //* cos ~ sech / arccos ln x * x y ~ ~ * * sech / arccos ln x * x y tanh / arccos ln x * x y / - * ~ / / 1 x sqrt - 1 * ln x ln x * x y * arccos ln x + * x 0 * 1 y * * x y * x y (prefix) -> cos(-sech(arccos(ln(x))/(x*y))) * sech(arccos(ln(x))/(x*y))*tanh(arccos(ln(x))/(x*y))* ((-y/sqrt(1-ln(x)*ln(x))) - arccos(ln(x))*y)/(x*y*x*y) = ((-arccos(ln(x))/(y*x*x)) - (1/(sqrt(1-ln(x)*ln(x))*y*x*x))) * sech(arccos(ln(x))/(x*y)) * tanh(arccos(ln(x))/(x*y)) * cos(sech(arccos(ln(x))/(x*y))) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //* cos ~ sech / arccos ln x * x y ~ ~ * * sech / arccos ln x * x y tanh / arccos ln x * x y / - * ~ / / 1 x sqrt - 1 * ln x ln x * x y * arccos ln x + * x 0 * 1 y * * x y * x y (prefix) -> cos(-sech(arccos(ln(x))/(x*y))) * sech(arccos(ln(x))/(x*y))*tanh(arccos(ln(x))/(x*y))* ((-y/sqrt(1-ln(x)*ln(x))) - arccos(ln(x))*y)/(x*y*x*y) = ((-arccos(ln(x))/(y*x*x)) - (1/(sqrt(1-ln(x)*ln(x))*y*x*x))) * sech(arccos(ln(x))/(x*y)) * tanh(arccos(ln(x))/(x*y)) * cos(sech(arccos(ln(x))/(x*y))) ✅
                                                           //* cos ~ sech / arccos ln x * x y ~ ~ * * sech / arccos ln x * x y tanh / arccos ln x * x y / - * ~ / / 1 x sqrt - 1 * ln x ln x * x y * arccos ln x + 0 * 1 y * * x y * x y (prefix) -> cos(-sech(arccos(ln(x))/(x*y))) * sech(arccos(ln(x))/(x*y))*tanh(arccos(ln(x))/(x*y))* ((-y/sqrt(1-ln(x)*ln(x))) - arccos(ln(x))*y)/(x*y*x*y) = ((-arccos(ln(x))/(y*x*x)) - (1/(sqrt(1-ln(x)*ln(x))*y*x*x))) * sech(arccos(ln(x))/(x*y)) * tanh(arccos(ln(x))/(x*y)) * cos(sech(arccos(ln(x))/(x*y))) ✅
                                                           //* cos ~ sech / arccos ln x * x y ~ ~ * * sech / arccos ln x * x y tanh / arccos ln x * x y / - * ~ / / 1 x sqrt - 1 * ln x ln x * x y * arccos ln x y * * x y * x y (prefix) -> cos(-sech(arccos(ln(x))/(x*y))) * sech(arccos(ln(x))/(x*y))*tanh(arccos(ln(x))/(x*y))* ((-y/sqrt(1-ln(x)*ln(x))) - arccos(ln(x))*y)/(x*y*x*y) = ((-arccos(ln(x))/(y*x*x)) - (1/(sqrt(1-ln(x)*ln(x))*y*x*x))) * sech(arccos(ln(x))/(x*y)) * tanh(arccos(ln(x))/(x*y)) * cos(sech(arccos(ln(x))/(x*y))) ✅
                                                           //* cos ~ sech / arccos ln x * x y * * sech / arccos ln x * x y tanh / arccos ln x * x y / - * ~ / / 1 x sqrt - 1 * ln x ln x * x y * arccos ln x y * * x y * x y (prefix) -> cos(-sech(arccos(ln(x))/(x*y))) * sech(arccos(ln(x))/(x*y))*tanh(arccos(ln(x))/(x*y))* ((-y/sqrt(1-ln(x)*ln(x))) - arccos(ln(x))*y)/(x*y*x*y) = ((-arccos(ln(x))/(y*x*x)) - (1/(sqrt(1-ln(x)*ln(x))*y*x*x))) * sech(arccos(ln(x))/(x*y)) * tanh(arccos(ln(x))/(x*y)) * cos(sech(arccos(ln(x))/(x*y))) ✅
@@ -1196,7 +1196,7 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
         
     prefix = {"-", "*", "0", "x", "+", "x", "sin", "x"};  //0*x - (x+sin(x))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //- + * 0 1 * 0 x + 1 * cos x 1 (prefix) -> -1-cos(x) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //- + * 0 1 * 0 x + 1 * cos x 1 (prefix) -> -1-cos(x) ✅
                                                           //- + 0 * 0 x + 1 * cos x 1 (prefix) -> -1-cos(x) ✅
                                                           //~ + 1 * cos x 1 (prefix) -> -1-cos(x) ✅
                                                           //~ + 1 cos x (prefix) -> -1-cos(x) ✅
@@ -1204,7 +1204,7 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"+", "~", "*", "0", "x", "tanh", "x"}; //-(0*x) + tanh(x)
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ ~ + * 0 1 * 0 x * * sech x sech x 1 (prefix) -> sech(x)*sech(x) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ ~ + * 0 1 * 0 x * * sech x sech x 1 (prefix) -> sech(x)*sech(x) ✅
                                                           //+ ~ + 0 * 0 x * * sech x sech x 1 (prefix) -> sech(x)*sech(x) ✅
                                                           //+ ~ 0 * * sech x sech x 1 (prefix) -> sech(x)*sech(x) ✅
                                                           //+ ~ 0 * 1 * sech x sech x (prefix) -> sech(x)*sech(x) ✅
@@ -1213,14 +1213,14 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"*", "1", "x"}; //1*x
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * 1 1 * 0 x (prefix) -> 1 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * 1 1 * 0 x (prefix) -> 1 ✅
                                                           //+ 1 * 0 x (prefix) -> 1 ✅
                                                           //1 (prefix) -> 1 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"-", "*", "1", "x", "+", "x", "sin", "x"};  //1*x - (x+sin(x))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //- + * 1 1 * 0 x + 1 * cos x 1 (prefix) -> 1 - (1+cos(x)) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //- + * 1 1 * 0 x + 1 * cos x 1 (prefix) -> 1 - (1+cos(x)) ✅
                                                           //- + 1 * 0 x + 1 * cos x 1 (prefix) -> 1 - (1+cos(x)) ✅
                                                           //- 1 + 1 * cos x 1 (prefix) -> 1 - (1+cos(x)) ✅
                                                           //- 1 + 1 cos x (prefix) -> 1 - (1+cos(x)) ✅
@@ -1228,7 +1228,7 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"+", "~", "*", "1", "x", "tanh", "x"}; //-(1*x) + tanh(x)
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ ~ + 1 * 0 x * * sech x sech x 1 (prefix) -> -1 + sech(x)*sech(x) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ ~ + 1 * 0 x * * sech x sech x 1 (prefix) -> -1 + sech(x)*sech(x) ✅
                                                           //+ ~ 1 * * sech x sech x 1 (prefix) -> -1 + sech(x)*sech(x) ✅
                                                           //+ ~ 1 * 1 * sech x sech x (prefix) -> -1 + sech(x)*sech(x) ✅
                                                           //+ ~ 1 * sech x sech x (prefix) -> -1 + sech(x)*sech(x) ✅
@@ -1236,14 +1236,14 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"*", "x", "0"}; //x*0
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * 0 1 * 0 x (prefix) -> 0 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * 0 1 * 0 x (prefix) -> 0 ✅
                                                           //+ 0 * 0 x (prefix) -> 0 ✅
                                                           //0 (prefix) -> 0 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"-", "*", "x", "0", "+", "x", "sin", "x"}; //x*0 - (x+sin(x))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //- + * 0 1 * 0 x + 1 * cos x 1 (prefix) -> -1-cos(x) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //- + * 0 1 * 0 x + 1 * cos x 1 (prefix) -> -1-cos(x) ✅
                                                           //- + 0 * 0 x + 1 * cos x 1 (prefix) -> -1-cos(x) ✅
                                                           //~ + 1 * cos x 1 (prefix) -> -1-cos(x) ✅
                                                           //~ + 1 cos x (prefix) -> -1-cos(x) ✅
@@ -1251,7 +1251,7 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"+", "~", "*", "x", "0", "tanh", "x"}; //-(x*0) + tanh(x)
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ ~ + * 0 1 * 0 x * * sech x sech x 1 (prefix) -> sech(x)*sech(x) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ ~ + * 0 1 * 0 x * * sech x sech x 1 (prefix) -> sech(x)*sech(x) ✅
                                                           //+ ~ + 0 * 0 x * * sech x sech x 1 (prefix) -> sech(x)*sech(x) ✅
                                                           //+ ~ 0 * * sech x sech x 1 (prefix) -> sech(x)*sech(x) ✅
                                                           //+ ~ 0 * 1 * sech x sech x (prefix) -> sech(x)*sech(x) ✅
@@ -1260,27 +1260,27 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"*", "+", "sin", "x", "x", "1"}; //(sin(x)+x)*1
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * cos x 1 1 (prefix) -> cos(x)*1 + 1 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ * cos x 1 1 (prefix) -> cos(x)*1 + 1 ✅
                                                           //+ cos x 1 (prefix) -> cos(x) + 1 ✅
                                                           
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"+", "~", "tanh", "*", "x", "1", "*", "1", "1"}; //-tanh(x*1)*1 + 1
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp);      //~ * * sech * x 1 sech * x 1 1 (prefix) -> -sech(x)*sech(x) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp);      //~ * * sech * x 1 sech * x 1 1 (prefix) -> -sech(x)*sech(x) ✅
                                                                //~ * 1 * sech * x 1 sech * x 1 (prefix) -> -sech(x)*sech(x) ✅
                                                                //~ * sech * x 1 sech * x 1 (prefix) -> -sech(x)*sech(x) ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
         
     prefix = {"+", "-", "sin", "x", "sin", "x", "sin", "x"}; //sin(x) - sin(x) + sin(x)
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp);    //* cos x 1 (prefix) -> cos(x) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp);    //* cos x 1 (prefix) -> cos(x) ✅
                                                              //cos x (prefix) -> cos(x) ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"/", "x", "1"}; //x/1
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp);  // / - * 1 1 * x 0 * 1 1 (prefix) -> 1 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp);  // / - * 1 1 * x 0 * 1 1 (prefix) -> 1 ✅
                                                            // / - 1 * x 0 * 1 1 (prefix) -> 1 ✅
                                                            // / - 1 0 * 1 1 (prefix) -> 1 ✅
                                                            // - 1 0 (prefix) -> 1 ✅
@@ -1289,7 +1289,7 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"/", "*", "x", "x", "1"}; //(x*x)/1
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / - * + x x 1 * * x x 0 * 1 1 (prefix) -> 2*x ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / - * + x x 1 * * x x 0 * 1 1 (prefix) -> 2*x ✅
                                                           // / - + x x * * x x 0 * 1 1 (prefix) -> 2*x ✅
                                                           // / - + x x 0 * 1 1 (prefix) -> 2*x ✅
                                                           // - + x x 0 (prefix) -> 2*x ✅
@@ -1298,7 +1298,7 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"/", "*", "x", "cos", "x", "1"}; //(x*cos(x))/1
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / - * + * x * ~ sin x 1 cos x 1 * * x cos x 0 * 1 1 (prefix) -> (-sin(x)*x + cos(x))/1 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / - * + * x * ~ sin x 1 cos x 1 * * x cos x 0 * 1 1 (prefix) -> (-sin(x)*x + cos(x))/1 ✅
                                                           // / - + * x * ~ sin x 1 cos x * * x cos x 0 * 1 1 (prefix) -> (-sin(x)*x + cos(x))/1 ✅
                                                           // / - + * x * ~ sin x 1 cos x 0 * 1 1 (prefix) -> (-sin(x)*x + cos(x))/1 ✅
                                                           // - + * x * ~ sin x 1 cos x 0 (prefix) -> (-sin(x)*x + cos(x)) ✅
@@ -1308,7 +1308,7 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"/", "0", "*", "x", "x"}; //0/(x*x)
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / - * 0 * x x * 0 + x x * * x x * x x (prefix) -> 0 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / - * 0 * x x * 0 + x x * * x x * x x (prefix) -> 0 ✅
                                                           // / - 0 * 0 + x x * * x x * x x (prefix) -> 0 ✅
                                                           // / - 0 0 * * x x * x x (prefix) -> 0 ✅
                                                           // 0 (prefix) -> 0 ✅
@@ -1317,7 +1317,7 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"/", "0", "*", "x", "cos", "x"}; //0/(x*cos(x))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / - * 0 * x cos x * 0 + * x * ~ sin x 1 cos x * * x cos x * x cos x (prefix) -> 0/(x*cos(x)*x*cos(x)) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / - * 0 * x cos x * 0 + * x * ~ sin x 1 cos x * * x cos x * x cos x (prefix) -> 0/(x*cos(x)*x*cos(x)) ✅
                                                           // / - 0 * 0 + * x * ~ sin x 1 cos x * * x cos x * x cos x 0/(x*cos(x)*x*cos(x)) ✅
                                                           // / - 0 0 * * x cos x * x cos x (prefix) -> 0 ✅
                                                           // 0 (prefix) -> 0 ✅
@@ -1325,7 +1325,7 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"/", "0", "*", "sin", "x", "sech", "x"}; //0/(sin(x)*sech(x))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / - * 0 * sin x sech x * 0 + * sin x ~ * * sech x tanh x 1 * * cos x 1 sech x * * sin x sech x * sin x sech x (prefix) -> 0 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / - * 0 * sin x sech x * 0 + * sin x ~ * * sech x tanh x 1 * * cos x 1 sech x * * sin x sech x * sin x sech x (prefix) -> 0 ✅
                                                           // / - 0 * 0 + * sin x ~ * * sech x tanh x 1 * * cos x 1 sech x * * sin x sech x * sin x sech x (prefix) -> 0 ✅
                                                           // / - 0 0 * * sin x sech x * sin x sech x (prefix) -> 0 ✅
                                                           // 0 (prefix) -> 0 ✅
@@ -1333,7 +1333,7 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"/", "1", "*", "x", "x"}; //1/(x*x)
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / - * 0 * x x * 1 + x x * * x x * x x (prefix) -> -2/(x*x*x) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / - * 0 * x x * 1 + x x * * x x * x x (prefix) -> -2/(x*x*x) ✅
                                                           // / - 0 * 1 + x x * * x x * x x (prefix) -> -2/(x*x*x) ✅
                                                           // / - 0 + x x * * x x * x x (prefix) -> -2/(x*x*x) ✅
                                                           // / ~ + x x * * x x * x x (prefix) -> -2/(x*x*x) ✅
@@ -1341,7 +1341,7 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"/", "1", "cos", "x"}; //1/cos(x)
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / - * 0 cos x * 1 * ~ sin x 1 * cos x cos x (prefix) -> sin(x)/(cos(x)*cos(x)) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / - * 0 cos x * 1 * ~ sin x 1 * cos x cos x (prefix) -> sin(x)/(cos(x)*cos(x)) ✅
                                                           // / - 0 * 1 * ~ sin x 1 * cos x cos x (prefix) -> sin(x)/(cos(x)*cos(x)) ✅
                                                           // / - 0 * ~ sin x 1 * cos x cos x (prefix) -> sin(x)/(cos(x)*cos(x)) ✅
                                                           // / ~ * ~ sin x 1 * cos x cos x (prefix) -> sin(x)/(cos(x)*cos(x)) ✅
@@ -1350,7 +1350,7 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"/", "1", "*", "cos", "x", "sin", "x"}; //1/(cos(x)*sin(x))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / - * 0 * cos x sin x * 1 + * cos x * cos x 1 * * ~ sin x 1 sin x * * cos x sin x * cos x sin x (prefix) -> -(cos(x)*cos(x) - sin(x)*sin(x)) / ((cos(x)*sin(x))*(cos(x)*sin(x))) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / - * 0 * cos x sin x * 1 + * cos x * cos x 1 * * ~ sin x 1 sin x * * cos x sin x * cos x sin x (prefix) -> -(cos(x)*cos(x) - sin(x)*sin(x)) / ((cos(x)*sin(x))*(cos(x)*sin(x))) ✅
                                                           // / - 0 * 1 + * cos x * cos x 1 * * ~ sin x 1 sin x * * cos x sin x * cos x sin x (prefix) -> -(cos(x)*cos(x) - sin(x)*sin(x)) / ((cos(x)*sin(x))*(cos(x)*sin(x))) ✅
                                                           // / - 0 + * cos x * cos x 1 * * ~ sin x 1 sin x * * cos x sin x * cos x sin x (prefix) -> -(cos(x)*cos(x) - sin(x)*sin(x)) / ((cos(x)*sin(x))*(cos(x)*sin(x))) ✅
                                                           // / ~ + * cos x * cos x 1 * * ~ sin x 1 sin x * * cos x sin x * cos x sin x (prefix) -> -(cos(x)*cos(x) - sin(x)*sin(x)) / ((cos(x)*sin(x))*(cos(x)*sin(x))) ✅
@@ -1360,102 +1360,102 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
         
     prefix = {"+", "x", "sin", "~", "~", "x"}; //x + sin(x)
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ 1 * cos ~ ~ x 1 (prefix) -> 1 + 1*cos(x) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ 1 * cos ~ ~ x 1 (prefix) -> 1 + 1*cos(x) ✅
                                                           //+ 1 cos ~ ~ x (prefix) -> 1 + cos(x) ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"-", "tanh", "~", "~", "x", "x"}; //tanh(x) - x
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //- * * sech ~ ~ x sech ~ ~ x 1 1 (prefix) -> sech(x)*sech(x) - 1 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //- * * sech ~ ~ x sech ~ ~ x 1 1 (prefix) -> sech(x)*sech(x) - 1 ✅
                                                           //- * 1 * sech ~ ~ x sech ~ ~ x 1 (prefix) -> sech(x)*sech(x) - 1 ✅
                                                           //- * sech ~ ~ x sech ~ ~ x 1 (prefix) -> sech(x)*sech(x) - 1 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"+", "^", "0", "x", "x"}; //x + 0^x
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //1 (prefix) -> 1 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //1 (prefix) -> 1 ✅
 
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
 
     prefix = {"-", "^", "0", "x", "x"}; //0^x - x
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //~ 1 (prefix) -> -1 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //~ 1 (prefix) -> -1 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
 
     prefix = {"-", "cos", "x", "^", "0", "x"}; //cos(x) - 0^x
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //* ~ sin x 1 (prefix) -> -sin(x) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //* ~ sin x 1 (prefix) -> -sin(x) ✅
                                                           //~ sin x (prefix) -> -sin(x) ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"+", "x", "^", "x", "0"}; //x + x^0
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //1 (prefix) -> 1 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //1 (prefix) -> 1 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
 
     prefix = {"-", "^", "x", "0", "x"}; //x^0 - x
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //~ 1 (prefix) -> -1 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //~ 1 (prefix) -> -1 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
 
     prefix = {"-", "cos", "x", "^", "x", "0"}; //cos(x) - x^0
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //* ~ sin x 1 (prefix) -> -sin(x) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //* ~ sin x 1 (prefix) -> -sin(x) ✅
                                                           //~ sin x (prefix) -> -sin(x) ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"+", "x", "^", "1", "x"}; //x + 1^x
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //1 (prefix) -> 1 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //1 (prefix) -> 1 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
 
     prefix = {"-", "^", "1", "x", "x"}; //1^x - x
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //~ 1 (prefix) -> -1 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //~ 1 (prefix) -> -1 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
 
     prefix = {"-", "cos", "x", "^", "1", "x"}; //cos(x) - 1^x
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //* ~ sin x 1 (prefix) -> -sin(x) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //* ~ sin x 1 (prefix) -> -sin(x) ✅
                                                           //~ sin x
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"+", "x", "^", "x", "1"}; //x + x^1
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ 1 * ^ x 1 / 1 x  (prefix) -> 2 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //+ 1 * ^ x 1 / 1 x  (prefix) -> 2 ✅
                                                           //+ 1 * x / 1 x (prefix) -> 2 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
 
     prefix = {"-", "^", "x", "1", "x"}; //x^1 - x
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //- * ^ x 1 / 1 x 1 (prefix) -> 0 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //- * ^ x 1 / 1 x 1 (prefix) -> 0 ✅
                                                           //- * x / 1 x 1 (prefix) -> 0 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
 
     prefix = {"-", "cos", "x", "^", "x", "1"}; //cos(x) - x^1
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //- * ~ sin x 1 * ^ x 1 / 1 x (prefix) -> -sin(x) - 1 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //- * ~ sin x 1 * ^ x 1 / 1 x (prefix) -> -sin(x) - 1 ✅
                                                           //- * ~ sin x 1 * x / 1 x (prefix) -> -sin(x) - 1 ✅
                                                           //- ~ sin x * x / 1 x (prefix) -> -sin(x) - 1 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
         
     prefix = {"ln", "*", "1", "exp", "x"}; //ln(1*exp(x))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / * exp x 1 * 1 exp x (prefix) -> 1 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / * exp x 1 * 1 exp x (prefix) -> 1 ✅
                                                           // 1 (prefix) -> 1 ✅
                                                           // / exp x * 1 exp x (prefix) -> 1 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); }  sout.str("");
     
     prefix = {"-", "x", "ln", "*", "1", "exp", "x"}; //x - ln(1*exp(x))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // - 1 / * exp x 1 * 1 exp x (prefix) -> 0 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // - 1 / * exp x 1 * 1 exp x (prefix) -> 0 ✅
                                                           // 0 (prefix) -> 0 ✅
                                                           // - 1 / exp x * 1 exp x (prefix) -> 0 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"cos", "-", "x", "ln", "*", "1", "exp", "x"}; //cos(x - ln(1*exp(x)))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //* ~ sin - x ln * 1 exp x - 1 / * exp x 1 * 1 exp x (prefix) -> 0 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //* ~ sin - x ln * 1 exp x - 1 / * exp x 1 * 1 exp x (prefix) -> 0 ✅
                                                           //* ~ sin - x ln * 1 exp x 0 (prefix) -> 0 ✅
                                                           //* ~ sin - x ln * 1 exp x - 1 / exp x * 1 exp x (prefix) -> 0 ✅
                                                           //* - 1 / exp x * 1 exp x ~ sin - x ln * 1 exp x (prefix) -> 0 ✅
@@ -1463,101 +1463,101 @@ int main()
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); }  sout.str("");
     
     prefix = {"ln", "exp", "*", "y", "y"}; //ln(exp(y*y))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //0 (prefix) -> 0 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //0 (prefix) -> 0 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"*", "exp", "*", "x", "x", "ln", "y"}; //exp(x*x)*ln(y)
-    derivePrefix(0, prefix.size()-1, "y", prefix, grasp); //* exp * x x / 1 y (prefix) -> exp(x*x)*(1/y) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "y", prefix, grasp); //* exp * x x / 1 y (prefix) -> exp(x*x)*(1/y) ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"+", "exp", "exp", "-", "y", "y", "sin", "x"}; //exp(exp(y-y))+sin(x)
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //* cos x 1 (prefix) -> cos(x) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //* cos x 1 (prefix) -> cos(x) ✅
                                                           //cos x (prefix) -> cos(x) ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str("");
     
     prefix = {"/", "sin", "*", "x", "x", "y"}; // sin(x*x)/y
-    derivePrefix(0, prefix.size()-1, "y", prefix, grasp); // / - * * cos * x x 0 y sin * x x * y y (prefix) -> -sin(x*x)/(y*y) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "y", prefix, grasp); // / - * * cos * x x 0 y sin * x x * y y (prefix) -> -sin(x*x)/(y*y) ✅
                                                           // / ~ sin * x x * y y (prefix) -> -sin(x*x)/(y*y) ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"/", "sin", "cos", "x", "y"}; // sin(cos(x))/y
-    derivePrefix(0, prefix.size()-1, "y", prefix, grasp); // / - * * cos cos x 0 y sin cos x * y y (prefix) -> -sin(cos(x))/(y*y) ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "y", prefix, grasp); // / - * * cos cos x 0 y sin cos x * y y (prefix) -> -sin(cos(x))/(y*y) ✅
                                                           // / ~ sin cos x * y y (prefix) -> -sin(cos(x))/(y*y) ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"cos", "sqrt", "-", "x", "x"}; // cos(sqrt(x-x))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //* / 0 * 2 sqrt - x x ~ sin sqrt - x x (prefix) -> 0 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //* / 0 * 2 sqrt - x x ~ sin sqrt - x x (prefix) -> 0 ✅
                                                           //0 (prefix) -> 0 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"sin", "tanh", "sqrt", "-", "*", "x", "x", "*", "x", "x"}; // sin(tanh(sqrt(x*x - x*x)))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //* * * sech sqrt - * x x * x x sech sqrt - * x x * x x / 0 * 2 sqrt - * x x * x x cos tanh sqrt - * x x * x x (prefix) -> 0 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //* * * sech sqrt - * x x * x x sech sqrt - * x x * x x / 0 * 2 sqrt - * x x * x x cos tanh sqrt - * x x * x x (prefix) -> 0 ✅
                                                           //* * * sech sqrt - * x x * x x sech sqrt - * x x * x x 0 cos tanh sqrt - * x x * x x (prefix) -> 0 ✅
                                                           //0 (prefix) -> 0 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"sqrt", "sqrt", "-", "*", "x", "cos", "x", "*", "x", "cos", "x"}; // sqrt(sqrt(x*cos(x) - x*cos(x)))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / / 0 * 2 sqrt - * x cos x * x cos x * 2 sqrt sqrt - * x cos x * x cos x (prefix) -> 0 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); // / / 0 * 2 sqrt - * x cos x * x cos x * 2 sqrt sqrt - * x cos x * x cos x (prefix) -> 0 ✅
                                                           //0 (prefix) -> 0 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"cos", "arcsin", "-", "x", "x"}; // cos(arcsin(x-x))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //0 (prefix) -> 0 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //0 (prefix) -> 0 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"sin", "tanh", "asin", "-", "^", "x", "x", "^", "x", "x"}; // sin(tanh(arcsin(x^x - x^x)))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //* * * sech asin - ^ x x ^ x x sech asin - ^ x x ^ x x 0 cos tanh asin - ^ x x ^ x x (prefix) -> 0 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //* * * sech asin - ^ x x ^ x x sech asin - ^ x x ^ x x 0 cos tanh asin - ^ x x ^ x x (prefix) -> 0 ✅
                                                           //0 (prefix) -> 0 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"asin", "arcsin", "-", "*", "x", "sin", "x", "*", "x", "sin", "x"}; // arcsin(arcsin(x*sin(x) - x*sin(x)))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //0 (prefix) -> 0 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //0 (prefix) -> 0 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"exp", "acos", "-", "tanh", "x", "tanh", "x"}; // exp(acos(tanh(x)-tanh(x)))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //0 (prefix) -> 0 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //0 (prefix) -> 0 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"sech", "sech", "arccos", "-", "/", "x", "x", "/", "x", "x"}; // sech(sech(arccos(x/x - x/x)))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //~ * * sech sech arccos - / x x / x x tanh sech arccos - / x x / x x ~ * * sech arccos - / x x / x x tanh arccos - / x x / x x 0 (prefix) -> 0 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //~ * * sech sech arccos - / x x / x x tanh sech arccos - / x x / x x ~ * * sech arccos - / x x / x x tanh arccos - / x x / x x 0 (prefix) -> 0 ✅
                                                           //0 (prefix) -> 0 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"acos", "arccos", "-", "-", "x", "sech", "x", "-", "x", "sech", "x"}; // acos(arccos((x-sech(x)) - (x-sech(x))))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //0 (prefix) -> 0 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //0 (prefix) -> 0 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"acos", "tanh", "-", "*", "x", "exp", "x", "*", "x", "exp", "x"}; // acos(tanh(x*exp(x) - x*exp(x)))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //0 (prefix) -> 0 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //0 (prefix) -> 0 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"asin", "sech", "-", "*", "x", "exp", "x", "*", "x", "exp", "x"}; // asin(sech(x*exp(x) - x*exp(x)))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //0 (prefix) -> 0 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //0 (prefix) -> 0 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"acos", "sech", "-", "-", "x", "sech", "x", "-", "x", "sech", "x"}; // acos(sech((x-sech(x)) - (x-sech(x))))
-    derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //0 (prefix) -> 0 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x", prefix, grasp); //0 (prefix) -> 0 ✅
     std::cout << grasp << '\n';
     sout << derivat; std::cout << derivat << "\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PrefixDifferentiationSymbolic.cpp")); } sout.str(""); //std::vector<std::string>(derivat.begin(), derivat.begin() + Index - 1) << '\n';
     
     prefix = {"+", "cos", "+", "x1", "x2", "+", "x1", "x2"};
-    derivePrefix(0, prefix.size()-1, "x1", prefix, grasp); //0 (prefix) -> 0 ✅
+    std::cout << "prefix = " << prefix << '\n'; derivePrefix(0, prefix.size()-1, "x1", prefix, grasp); //0 (prefix) -> 0 ✅
     std::cout << "prefix = " << prefix << '\n';
     std::cout << grasp << '\n';
     std::cout << "RGBs = " << getRGBs(prefix) << '\n';
