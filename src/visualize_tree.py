@@ -279,7 +279,7 @@ def plot_rpn_expression_tree(expression: list[str], save = False, filename = "",
         plt.show()
 
 def test_visualize():
-    save = True
+    save = False
     if save:
 #        print(pn_to_infix(" - - + / ^ x 3 5 / ^ y 3 2 y x".split()))
 #        print(rpn_to_infix("y y x * * cos y +"))
@@ -316,7 +316,7 @@ def test_visualize():
             os.system(f"open -a Xcode {file_name}.tex")
             os.system(f"open -a Safari {file_name}.pdf")
     else:
-        plot_rpn_expression_tree("delta_w_t_k_ada_delta gamma * delta_w_t_k_ada_delta beta_2 sqrt beta_2 sqrt t + ^ / +".split(), save = save)
+        plot_rpn_expression_tree("0 1 +".split(), save = save)
 #        plot_pn_expression_tree("~ asin sin - d_ij_nest sqrt g_t_k".split(), save = save)
 
 if __name__ == "__main__":
