@@ -454,7 +454,7 @@ def main():
     total_est_mse_improved_cases = 0.0
     total_found_mse_improved_cases = 0.0
     num_improved_cases = 0
-
+    appendix_equations = []
     for i, filename in enumerate(files, start=1):
         best_est_mse = best_est_rule_mses[i - 1]
         num_better = count_expressions_better_than(filename, best_est_mse)
@@ -509,7 +509,13 @@ def main():
         expr = expr.evalf(4)
         latex_code = sp.latex(expr, symbol_names=symbol_names, full_prec=False)
         mse_code = f"{mse:.4f}"
-        
+        appendix_equations.append(f"""
+\\subsection*{{Benchmark {i}}}
+\\begin{{equation}}
+\\label{{eq:benchmark-{i}}}
+{latex_code}, \\quad \\text{{MSE = }} {mse_code}
+\\end{{equation}}
+""")
         if num_improved_cases > 0:
             accumulated_percent_improvement = (
                 (total_est_mse_improved_cases - total_found_mse_improved_cases)
@@ -677,7 +683,21 @@ ul {{
     with open(output_path, "w") as f:
         f.write(html)
 
-    
+    appendix_tex = r"""
+\appendix
+\section{Discovered Weight-Update Equations}
+\label{app:discovered-update-equations}
+
+This appendix lists the best discovered symbolic update equation for each benchmark experiment.
+""" + "\n".join(appendix_equations)
+
+    appendix_path = Path("../benchmark_rules_appendix.tex")
+
+    with open(appendix_path, "w") as f:
+        f.write(appendix_tex)
+
+    print(f"Wrote LaTeX appendix to: {appendix_path.resolve()}")
+        
     print("Summary")
     print("=======")
     print(f"# improved cases = {num_improved_cases}")

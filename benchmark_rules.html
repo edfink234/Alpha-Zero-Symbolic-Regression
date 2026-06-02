@@ -1,0 +1,519 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Benchmark Weight Update Rules</title>
+
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 40px;
+    line-height: 1.6;
+}
+
+h1 {
+    margin-bottom: 20px;
+}
+
+h2 {
+    margin-top: 50px;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 5px;
+}
+
+.rule-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 30px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.equation {
+    flex: 1;
+    font-size: 1.2em;
+    overflow-x: auto;
+}
+
+.mse {
+    min-width: 140px;
+    text-align: right;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+ul {
+    margin-bottom: 40px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Benchmark Weight-Update Rules</h1>
+
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#benchmark-1">Benchmark 1</a></li>
+<li><a href="#benchmark-2">Benchmark 2</a></li>
+<li><a href="#benchmark-3">Benchmark 3</a></li>
+<li><a href="#benchmark-4">Benchmark 4</a></li>
+<li><a href="#benchmark-5">Benchmark 5</a></li>
+<li><a href="#benchmark-6">Benchmark 6</a></li>
+<li><a href="#benchmark-7">Benchmark 7</a></li>
+<li><a href="#benchmark-8">Benchmark 8</a></li>
+<li><a href="#benchmark-9">Benchmark 9</a></li>
+<li><a href="#benchmark-10">Benchmark 10</a></li>
+<li><a href="#benchmark-11">Benchmark 11</a></li>
+<li><a href="#benchmark-12">Benchmark 12</a></li>
+<li><a href="#benchmark-13">Benchmark 13</a></li>
+<li><a href="#benchmark-14">Benchmark 14</a></li>
+<li><a href="#benchmark-15">Benchmark 15</a></li>
+<li><a href="#benchmark-16">Benchmark 16</a></li>
+<li><a href="#benchmark-17">Benchmark 17</a></li>
+<li><a href="#benchmark-18">Benchmark 18</a></li>
+<li><a href="#benchmark-19">Benchmark 19</a></li>
+<li><a href="#benchmark-20">Benchmark 20</a></li>
+<li><a href="#benchmark-21">Benchmark 21</a></li>
+<li><a href="#benchmark-22">Benchmark 22</a></li>
+<li><a href="#benchmark-23">Benchmark 23</a></li>
+<li><a href="#benchmark-24">Benchmark 24</a></li>
+<li><a href="#benchmark-25">Benchmark 25</a></li>
+<li><a href="#benchmark-26">Benchmark 26</a></li>
+<li><a href="#benchmark-27">Benchmark 27</a></li>
+<li><a href="#benchmark-28">Benchmark 28</a></li>
+<li><a href="#benchmark-29">Benchmark 29</a></li>
+<li><a href="#benchmark-30">Benchmark 30</a></li>
+</ul>
+
+
+<h2 id="benchmark-1">Benchmark 1</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    {0.9995}^{- t - 0.9995} \Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j, m, t=\tau} + 0.9 \Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j, m, t=\tau}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 2.4550
+    </div>
+</div>
+
+<h2 id="benchmark-2">Benchmark 2</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    \sin{\left(\frac{\mu_{j,m,t=\tau}}{- 2.0 t + \nu_{j,m,t=\tau}} \right)} + 1.0 \cdot 10^{-8}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 2.5329
+    </div>
+</div>
+
+<h2 id="benchmark-3">Benchmark 3</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    - \frac{0.02 y_{j}}{d_{j} - \frac{\widehat{\mu}_{j,m,t=\tau}}{d_{j}}} + 1.0 \cdot 10^{-8}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 2.5362
+    </div>
+</div>
+
+<h2 id="benchmark-4">Benchmark 4</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    g_{j, m, t=\tau} + e^{\frac{\Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j, m, t=\tau} \nu_{j,m,t=\tau}}{\nu_{j,m,t=\tau} \frac{1}{v_{j, m, t=\tau}}}}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 7.7460
+    </div>
+</div>
+
+<h2 id="benchmark-5">Benchmark 5</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    \frac{E\left[\Delta w_{j, m}^2\right]_{t=\tau}}{\left(\sigma_{\hspace{-.05cm}g^{2}_{j,m}}\right)^{\widehat{\mu}_{j,m,t=\tau} - v_{j, m, t=\tau}} + \tanh{\left(E\left[\Delta w_{j, m}^2\right]_{t=\tau} \right)} + 0.9001}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 9.3206
+    </div>
+</div>
+
+<h2 id="benchmark-6">Benchmark 6</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    \frac{0.01 \left(d_{j}^{\mathrm{Nesterov}} + \cos{\left(0.999 t \right)} - 0.01\right)}{E\left[\Delta w_{j, m}^2\right]_{t=\tau}}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 7.9954
+    </div>
+</div>
+
+<h2 id="benchmark-7">Benchmark 7</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    \frac{\Delta w_{j, m, t=\tau} \sigma_{\hspace{-.05cm}g^{2}_{j,m}}}{E\left[\Delta w_{j, m}^2\right]_{t=\tau} \left(- E\left[g_{j, m}^2\right]_{t=\tau} + \frac{\mu_{j,m,t=\tau}}{\Delta w_{j, m, t=\tau}}\right)}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 237418000.0000
+    </div>
+</div>
+
+<h2 id="benchmark-8">Benchmark 8</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    \frac{E\left[g_{j, m}^2\right]_{t=\tau}}{\Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j, m, t=\tau} \sigma_{\hspace{-.05cm}g^{2}_{j,m}} - \widehat{\nu}_{j,m,t=\tau} - y_{j} + v_{j, m, t=\tau} + 1.0 \cdot 10^{-8}}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 2876810.0000
+    </div>
+</div>
+
+<h2 id="benchmark-9">Benchmark 9</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    \frac{1.001 g_{j, m, t=\tau} + \nu_{j,m,t=\tau} + y_{j}}{- E\left[g_{j, m}^2\right]_{t=\tau} - g_{j, m, t=\tau} - t + \nu_{j,m,t=\tau} + y_{j}}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 245055000.0000
+    </div>
+</div>
+
+<h2 id="benchmark-10">Benchmark 10</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    \frac{{0.999}^{y_{j}^{0.25}}}{- d_{j} - E\left[g_{j, m}^2\right]_{t=\tau} + \mu_{j,m,t=\tau} - w_{j,m,t=\tau} - 0.01}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 2.7822
+    </div>
+</div>
+
+<h2 id="benchmark-11">Benchmark 11</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    0.01 \left(- \frac{0.9 - g_{j, m, t=\tau}}{E\left[g_{j, m}^2\right]_{t=\tau} + \mu_{j,m,t=\tau}} + 0.01\right) \cos{\left(\Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j, m, t=\tau} \right)}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 3.6288
+    </div>
+</div>
+
+<h2 id="benchmark-12">Benchmark 12</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    \frac{y_{j}}{- 0.001 d_{j} - \Delta w_{j, m, t=\tau} + E\left[g_{j, m}^2\right]_{t=\tau} - 0.5236}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 3.2924
+    </div>
+</div>
+
+<h2 id="benchmark-13">Benchmark 13</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    \frac{y_{j}}{0.01 E\left[\Delta w_{j, m}^2\right]_{t=\tau} + v_{j, m, t=\tau} + 1.4}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 13.6686
+    </div>
+</div>
+
+<h2 id="benchmark-14">Benchmark 14</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    \frac{d_{j}^{\mathrm{Nesterov}} t}{d_{j} + d_{j}^{\mathrm{Nesterov}} + \nu_{j,m,t=\tau} - 0.7833}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 15.4005
+    </div>
+</div>
+
+<h2 id="benchmark-15">Benchmark 15</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    0.01 \Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j, m, t=\tau} - \frac{0.01 E\left[\Delta w_{j, m}^2\right]_{t=\tau}}{- 1.0 E\left[g_{j, m}^2\right]_{t=\tau} + 1.0 v_{j, m, t=\tau}}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 14.1013
+    </div>
+</div>
+
+<h2 id="benchmark-16">Benchmark 16</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    \frac{\Delta w_{j, m, t=\tau} + t}{- v_{j, m, t=\tau} - \left(- 1.111 \Delta w_{j, m, t=\tau} + 1.111 w_{j,m,t=\tau}\right) \tanh{\left(\sigma_{\hspace{-.05cm}g^{2}_{j,m}} \right)} + 1.0 \cdot 10^{-8}}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 0.2727
+    </div>
+</div>
+
+<h2 id="benchmark-17">Benchmark 17</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    \frac{E\left[g_{j, m}^2\right]_{t=\tau}}{\left(- \mu_{j,m,t=\tau} + \tanh{\left(d_{j} \right)}\right) \left(- \widehat{\nu}_{j,m,t=\tau} - \frac{\sin{\left(w_{j,m,t=\tau} \right)}}{\sigma_{\hspace{-.05cm}g^{2}_{j,m}} \widehat{\nu}_{j,m,t=\tau}}\right)}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 0.2840
+    </div>
+</div>
+
+<h2 id="benchmark-18">Benchmark 18</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    \frac{E\left[g_{j, m}^2\right]_{t=\tau}}{\left(0.01 - \mu_{j,m,t=\tau}\right) \left(- \widehat{\nu}_{j,m,t=\tau}^{2.0 \cdot 10^{-8}} - \widehat{\nu}_{j,m,t=\tau}\right)}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 0.2688
+    </div>
+</div>
+
+<h2 id="benchmark-19">Benchmark 19</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    \frac{\Delta w_{j, m, t=\tau} - \mu_{j,m,t=\tau} - 0.9}{- \Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j, m, t=\tau} + t + v_{j, m, t=\tau}}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 379.5750
+    </div>
+</div>
+
+<h2 id="benchmark-20">Benchmark 20</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    \frac{0.999}{\frac{d_{j}}{0.01 - 0.999 g_{j, m, t=\tau}} + y_{j}}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 318.1030
+    </div>
+</div>
+
+<h2 id="benchmark-21">Benchmark 21</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    \frac{0.999}{\mu_{j,m,t=\tau} + \nu_{j,m,t=\tau} \widehat{\nu}_{j,m,t=\tau}^{\Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j, m, t=\tau} - v_{j, m, t=\tau}}}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 373.3070
+    </div>
+</div>
+
+<h2 id="benchmark-22">Benchmark 22</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    - 2.866 {0.9}^{0.999 \Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j, m, t=\tau} - 0.999 \nu_{j,m,t=\tau}}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 11.2288
+    </div>
+</div>
+
+<h2 id="benchmark-23">Benchmark 23</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    \frac{\mu_{j,m,t=\tau} t + \mu_{j,m,t=\tau} + v_{j, m, t=\tau}}{0.01 d_{j}^{\mathrm{Nesterov}} - \left(E\left[g_{j, m}^2\right]_{t=\tau}\right)^{0.9} - \widehat{\mu}_{j,m,t=\tau} + v_{j, m, t=\tau}}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 16.0370
+    </div>
+</div>
+
+<h2 id="benchmark-24">Benchmark 24</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    - 0.01526 \mu_{j,m,t=\tau} - 0.01526 t^{0.5} + 1.526 \cdot 10^{-10}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 16.8173
+    </div>
+</div>
+
+<h2 id="benchmark-25">Benchmark 25</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    - \frac{1.998 t \operatorname{acos}{\left(\sin{\left(\Delta w_{j, m, t=\tau} \right)} \right)}}{\widehat{\mu}_{j,m,t=\tau} \left(\mu_{j,m,t=\tau} - y_{j} - 0.01\right)}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 3405.0500
+    </div>
+</div>
+
+<h2 id="benchmark-26">Benchmark 26</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    \frac{0.998 t}{\left(\mu_{j,m,t=\tau} - 0.91\right) \left(d_{j}^{\mathrm{Nesterov}} E\left[\Delta w_{j, m}^2\right]_{t=\tau} + 0.9\right)}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 2938.7000
+    </div>
+</div>
+
+<h2 id="benchmark-27">Benchmark 27</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    \frac{E\left[\Delta w_{j, m}^2\right]_{t=\tau} y_{j} \left(\tanh{\left(\widehat{\mu}_{j,m,t=\tau} \right)} + 0.9\right)}{- E\left[\Delta w_{j, m}^2\right]_{t=\tau} + \mu_{j,m,t=\tau} + \widehat{\mu}_{j,m,t=\tau} - t - y_{j}}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 3506.8600
+    </div>
+</div>
+
+<h2 id="benchmark-28">Benchmark 28</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    \frac{1.449 t}{\Delta w_{j, m, t=\tau} g_{j, m, t=\tau} + t + \sin{\left(\sigma_{\hspace{-.05cm}g^{2}_{j,m}} \right)}}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 2818.0700
+    </div>
+</div>
+
+<h2 id="benchmark-29">Benchmark 29</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    \frac{0.999 t \left(\cos{\left(\Delta w_{j, m, t=\tau} \right)} + 0.9\right)}{\Delta w_{j, m, t=\tau} g_{j, m, t=\tau} + y_{j} - 0.999}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 3113.2000
+    </div>
+</div>
+
+<h2 id="benchmark-30">Benchmark 30</h2>
+
+<div class="rule-row">
+    <div class="equation">
+    \[
+    \frac{2.46 \left(0.5 t + 0.9\right)}{{0.999}^{g_{j, m, t=\tau}} - \mu_{j,m,t=\tau} + 0.9}
+    \]
+    </div>
+
+    <div class="mse">
+        MSE: 3236.6700
+    </div>
+</div>
+
+
+</body>
+</html>
