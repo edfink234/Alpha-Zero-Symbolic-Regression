@@ -10883,7 +10883,7 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
-//    print("((((tanh(x3) * 0.02466407502905897) * ~(sech(x2))) + ((sin(x2) * 0.02103963378139582) + 0.32247979147604866)) * (((sin(x0) + (x0 + 7.574525309092612)) - ((x2 + -0.08238535556485516) * (9.964794733866723 - x2))) + ((-3.0874665067931097 * ~(x3)) - (4.000124207158841 * (x0 - x1)))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu"))
+//    print("(sin((((10 - x3) * sin(x2)) - ((x1 - 10) - (6.28319 * x3)))) * (sin(~(x0)) * (-3.2431900000000007 + (6.30319 * (0.01 * x3)))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu"))
     
 //    puts("called SwiftHohenberg");
     /*
@@ -10929,10 +10929,10 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
             Best expression (original format) = x3 tanh 0.02466407502905897 * x2 sech ~ * x2 sin 0.02103963378139582 * 0.32247979147604866 + + x0 sin x0 7.574642582508127 + + x2 -0.08238535556485516 + 9.964911535750181 x2 - * - -3.0874665067931097 x3 ~ * 4.000124207158841 x0 x1 - * - + *
      mu_equals_nu_1_only == False, createMeshgridVectors(18, 4, {0.01, 0.0, 0.01, 0.01}, {10.0, 6.28319, 10, 10})), bad_ops = {"exp", "ln", "log", "^", "/", "arcsin", "asin", "acos", "arccos", "sqrt"}, l1=1e-4, ((variation <= tolerance) || (median(vec.array().abs()) <= tolerance)), period bc * 1e10:
         Depth = 5:
-            Best score = 4.45054e-12, SNE = 2.24692e+11
-            Squared-norm error for each equation: 2.24692e+11 0.000128629 0.000497538 0.287542
-            Best expression = (sin((2 * (x1 + (x3 - 10)))) * (~((0.5403023058681398 * x0)) * (cos(cos(x2)) * ((x0 * 0.01) + 4))))
-            Best expression (original format) = 2 x1 x3 10 - + * sin 0.5403023058681398 x0 * ~ x2 cos cos x0 0.01 * 4 + * * *
+            Best score = 3.57882e-08, SNE = 2.79422e+07
+            Squared-norm error for each equation: 2.79422e+07 0.000175558 0.000129524 0.919533
+            Best expression = (sin((((10 - x3) * sin(x2)) - ((x1 - 10) - (6.28319 * x3)))) * (sin(x0) * (3.3031900000000007 + (~(x3) * (0.01 * x3)))))
+            Best expression (original format) = 10 x3 - x2 sin * x1 10 - 6.28319 x3 * - - sin x0 sin 3.3031900000000007 x3 ~ 0.01 x3 * * + * *
      
      ```
 x = "- ((1e-10 + (r + 0.0675028199851666*sin(theta) + 0.315589358780667)**(sqrt(r)*(r + 2.87892339678315)*(5953.65096806617 - r)/((5953.65096806617 - r)**2 + 1e10) + 0.980141037771426)/(0.013519701745416**r*(43.687622183442*r + 8.33814060981745) + r + 0.02*sin(r) + 1.82648253593279))**(((9.2348889286512)/(r + 0.55183450665909) + sin(theta + cos(theta + 0.519039044087815) + 5.8847752990135)*(.5*(1-tanh(1.025*(r-21.2)))))*(r + sin(r - 0.01) + (1.0e-10 + cos(sin(theta)))**(r - 1.58074387559245) + 0.37384427398835 + tanh(r)/(r + 7.97723076614237))))*((.5*(1-tanh(1.775e3*(r-10.01))))) + sqrt(1 - cos(r)**2)*(1.0e-10*0.68688067225485**(8.16109249232708*r) + 0.854229974212735)*(sech(r + cos(r) + 8.39614384384391) + 0.999884853180843)**(1.58799646315658*(r + 0.0308839840501129)**4.01549520152667*(1.57*(tanh(.62*r))))*(0.0100048594945809**(2*r + 5.29438341416157) + 0.7011748940086 - 45.6560816728088/(21934.7382737552))*sin(theta + 18.8962439891879)*(1) - ((1.5707963267949)**(-18.3837681892581) + 0.285811651486423)**(r + sech(r + 0.0561717295263584) + 10.0547134992516)*(r + (r**0.999950000416665 - 0.00364405505237706)**((0.376065617272839**r + r)**0.00999966667999946) + 0.0106243230277353)**(-r**2*exp(-r)/(1 + 1358.42254658947*exp(-r)) + (0.000469282041378069*r + 0.0160184860388267)**((sin(r) + 6.78974430415452)/(r - 0.00781876960101768)) + 7.58897670822754)*(-sin(theta + cos(theta - 0.0144023112886078) + 0.105413950813453) + sin(log(r + 0.390458429297535)) + ((-tanh(0.62*r)+1.01)*(pi/2))**(0.061275433230159*r + 0.00061275433230159)) + (0.00273233753019377**(6.19641677671904 - sin(theta + 0.089280925720443)) + 2.79499001433555e-13 + (6.12323399573677e-17)/(2.19270786451049 - 6.28221254344588*r))*(0.999329299739067*r + 0.453212918064574)**(sin(sqrt(r + 9.07998593378172e-5)) + 11.4130415650481 + 0.00010001/(1.01005016708417 - cos(theta)))*((.5*(1-tanh(1.775e3*(r-10.01))))) + 0.0101001582000134*tanh(10.0327249667171*r + 11.9956250261793) + 0.863191833358681"
@@ -11268,6 +11268,9 @@ print(x.replace("r","R").replace("sqRt", "sqrt").replace("theta","Theta").replac
     }
     else if (x.expression_type == "postfix")
     {
+        //=========================
+        // sh(f)
+        //=========================
         //μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -
         result.push_back(mu); // μ
         if (fit) //need to push_back each token since eval(f) will change as the consts in f are optimized
@@ -11615,7 +11618,9 @@ print(x.replace("r","R").replace("sqRt", "sqrt").replace("theta","Theta").replac
         result.push_back("-"); // -
         results.push_back(result);
         result.clear();
+        //=========================
         //f(r, θ=2*π) f(r, θ = 0) -
+        //=========================
         for (const std::string& i: x.pieces[0]) //f(r, θ=2*π)
         {
             if (i == "x1")
@@ -11643,7 +11648,9 @@ print(x.replace("r","R").replace("sqRt", "sqrt").replace("theta","Theta").replac
         result.push_back("*");
         results.push_back(result);
         result.clear();
+        //=========================
         //∂f/∂θ(r, θ=2*π) ∂f/∂θ(r, θ = 0) -
+        //=========================
         for (const std::string& i: dfdtheta1) //∂f/∂θ(r, θ=2*π)
         {
             if (i == "x1")
@@ -13329,7 +13336,7 @@ namespace ExampleProblems
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
                 "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
                 7550 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
-                {split("2 x1 0.01 + x3 10 - + * sin 0.5403023058681398 x0 * ~ x2 cos cos x0 0.01 * 4 + * * *")} /*seed expressions*/,
+                {split("10 x3 - x2 sin * x1 10 - 6.28319 x3 * - - sin x0 sin 3.3031900000000007 x3 ~ 0.01 x3 * * + * *")} /*seed expressions*/,
                 (num_threads == 1) /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
@@ -13337,7 +13344,7 @@ namespace ExampleProblems
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 true /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                "n_random" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/,
+                "constants_only" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/,
                 true /*whether or not to sync the current expression of each thread with the global current best*/);
         }
     }
