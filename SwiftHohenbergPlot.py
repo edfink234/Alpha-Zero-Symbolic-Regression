@@ -272,8 +272,9 @@ else:
      + acos(0.0947140398686842*r)
      + 2*acos(sin(theta))
      - sech(-0.204245759737047*r + 1.72063673930557*theta + (0.0100909665335049 - tanh(r))*(-0.998687620305263*theta - tanh(theta) + 1.02370492421771) - (0.0154873527439205*r + 0.0998966701331946)*(mu*r + 5*r + 9.5115459200379) + 8.61038625622014)
-     - 84.0357720038456
-     ][0]
+     - 84.0357720038456,
+     ((((tanh(nu) * 0.02466407502905897) * -(sech(mu))) + ((sin(mu) * 0.02103963378139582) + 0.32247979147604866)) * (((sin(r) + (r + 7.574525309092612)) - ((mu + -0.08238535556485516) * (9.964794733866723 - mu))) + ((-3.0874665067931097 * -(nu)) - (4.000124207158841 * (r - theta)))))
+     ][1]
 
 formula_label = latex(f_float_rounded:=round_floats(f, 5), mul_symbol='dot')
 print(f'f = {formula_label}')
@@ -310,8 +311,8 @@ if mu_equals_nu:
 
 else:
     # Do not build a 4D mesh. Use scalar mu, nu per plot.
-    mu_plot_vals = np.linspace(0.01, 10, 10)
-    nu_plot_vals = np.linspace(0.01, 10, 10)
+    mu_plot_vals = np.linspace(0.01, 10, 3)
+    nu_plot_vals = np.linspace(0.01, 10, 3)
 
     # Reasonable MSE/plot mesh for the parameter sweep
     N_sweep = 1000
@@ -383,7 +384,7 @@ def plot_one(mu0=None, nu0=None):
     else:
         fig, ax = plt.subplots()
 
-        vmin, vmax = -1, 1
+        vmin, vmax = -10, 10
         min_, max_ = vmin, vmax
         levels = np.linspace(vmin, vmax, 100)
 
