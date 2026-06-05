@@ -331,3 +331,129 @@ Best score = 3.64054e-08, SNE = 2.74684e+07
 Squared-norm error for each equation: 2.74684e+07 0.000217552 8.57108e-05 0.900732 
 Best expression = (sin((((9.709820868669647 - x3) * sin(x2)) - ((x1 - 9.996474074820426) - (6.28319 * x3)))) * (sin(x0) * (3.2927749563616633 + (~(x3) * (0.01 * x3)))))
 Best expression (original format) = 9.709820868669647 x3 - x2 sin * x1 9.996474074820426 - 6.28319 x3 * - - sin x0 sin 3.2927749563616633 x3 ~ 0.01 x3 * * + * *
+
+Thread id = 3
+Time since start = 14525.8
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 3.64056e-08, SNE = 2.74683e+07
+Squared-norm error for each equation: 2.74683e+07 0.000217517 8.57011e-05 0.900732 
+Best expression = (sin((((9.709820868669647 - x3) * sin(x2)) - ((x1 - 9.996474074820426) - (6.28319 * x3)))) * (sin(x0) * (3.2927729119243034 + (~(x3) * (0.01 * x3)))))
+Best expression (original format) = 9.709820868669647 x3 - x2 sin * x1 9.996474074820426 - 6.28319 x3 * - - sin x0 sin 3.2927729119243034 x3 ~ 0.01 x3 * * + * *
+
+Thread id = 1
+Time since start = 15722.9
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 3.6406e-08, SNE = 2.7468e+07
+Squared-norm error for each equation: 2.7468e+07 0.000217484 8.57507e-05 0.900732 
+Best expression = (sin((((9.709820868669647 - x3) * sin(x2)) - ((x1 - 9.996474074820426) - (6.28319 * x3)))) * (sin(x0) * (3.2927650460932227 + (~(x3) * (0.01 * x3)))))
+Best expression (original format) = 9.709820868669647 x3 - x2 sin * x1 9.996474074820426 - 6.28319 x3 * - - sin x0 sin 3.2927650460932227 x3 ~ 0.01 x3 * * + * *
+
+Thread id = 1
+Time since start = 21962.3
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 3.6406e-08, SNE = 2.7468e+07
+Squared-norm error for each equation: 2.7468e+07 0.000217636 8.58261e-05 0.900732 
+Best expression = (sin((((9.709820868669647 - x3) * sin(x2)) - ((x1 - 9.996474074820426) - (6.28319 * x3)))) * (sin(x0) * (3.292764102418471 + (~(x3) * (0.01 * x3)))))
+Best expression (original format) = 9.709820868669647 x3 - x2 sin * x1 9.996474074820426 - 6.28319 x3 * - - sin x0 sin 3.292764102418471 x3 ~ 0.01 x3 * * + * *
+
+Thread id = 2
+Time since start = 0.309018
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 3.6406e-08, SNE = 2.7468e+07
+Squared-norm error for each equation: 2.7468e+07 0.000217636 8.58261e-05 0.900732 
+Best expression = (sin((((9.709820868669647 - x3) * sin(x2)) - ((x1 - 9.996474074820426) - (6.28319 * x3)))) * (sin(x0) * (3.292764102418471 + (~(x3) * (0.01 * x3)))))
+Best expression (original format) = 9.709820868669647 x3 - x2 sin * x1 9.996474074820426 - 6.28319 x3 * - - sin x0 sin 3.292764102418471 x3 ~ 0.01 x3 * * + * *
+
+Thread id = 3
+Time since start = 1610.22
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 3.6406e-08, SNE = 2.7468e+07
+Squared-norm error for each equation: 2.7468e+07 0.000217534 8.59105e-05 0.900732 
+Best expression = (sin((((9.709820868669647 - x3) * sin(x2)) - ((x1 - 9.996474074820426) - (6.28319 * x3)))) * (sin((~(x3) + (x0 + x3))) * (3.292764102418471 + (~(x3) * (0.01 * x3)))))
+Best expression (original format) = 9.709820868669647 x3 - x2 sin * x1 9.996474074820426 - 6.28319 x3 * - - sin x3 ~ x0 x3 + + sin 3.292764102418471 x3 ~ 0.01 x3 * * + * *
+
+Thread id = 2
+Time since start = 0.502795
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 3.64169e-08, SNE = 2.74598e+07
+Squared-norm error for each equation: 2.74598e+07 0.000375275 0.00017773 0.900732 
+Best expression = (sin((((9.709820868669647 - x3) * cos(x2)) - ((x1 + 9.996474074820426) + (6.28319 * x3)))) * (sin(~(x0)) * (3.292764102418471 + (~(x3) * (0.01 * x3)))))
+Best expression (original format) = 9.709820868669647 x3 - x2 cos * x1 9.996474074820426 + 6.28319 x3 * + - sin x0 ~ sin 3.292764102418471 x3 ~ 0.01 x3 * * + * *
+
+Thread id = 0
+Time since start = 0.334036
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 3.64169e-08, SNE = 2.74598e+07
+Squared-norm error for each equation: 2.74598e+07 0.000375275 0.00017773 0.900732 
+Best expression = (sin((((9.709820868669647 - x3) * cos(x2)) - ((x1 + 9.996474074820426) + (6.28319 * x3)))) * (sin(~(x0)) * (3.292764102418471 + (~(x3) * (0.01 * x3)))))
+Best expression (original format) = 9.709820868669647 x3 - x2 cos * x1 9.996474074820426 + 6.28319 x3 * + - sin x0 ~ sin 3.292764102418471 x3 ~ 0.01 x3 * * + * *
+
+Thread id = 6
+Time since start = 0.277146
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 3.64169e-08, SNE = 2.74598e+07
+Squared-norm error for each equation: 2.74598e+07 0.000375275 0.00017773 0.900732 
+Best expression = (sin((((9.709820868669647 - x3) * cos(x2)) - ((x1 + 9.996474074820426) + (6.28319 * x3)))) * (sin(~(x0)) * (3.292764102418471 + (~(x3) * (0.01 * x3)))))
+Best expression (original format) = 9.709820868669647 x3 - x2 cos * x1 9.996474074820426 + 6.28319 x3 * + - sin x0 ~ sin 3.292764102418471 x3 ~ 0.01 x3 * * + * *
+
+Thread id = 0
+Time since start = 0.307071
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 3.64169e-08, SNE = 2.74598e+07
+Squared-norm error for each equation: 2.74598e+07 0.000375275 0.00017773 0.900732 
+Best expression = (sin((((9.709820868669647 - x3) * cos(x2)) - ((x1 + 9.996474074820426) + (6.28319 * x3)))) * (sin(~(x0)) * (3.292764102418471 + (~(x3) * (0.01 * x3)))))
+Best expression (original format) = 9.709820868669647 x3 - x2 cos * x1 9.996474074820426 + 6.28319 x3 * + - sin x0 ~ sin 3.292764102418471 x3 ~ 0.01 x3 * * + * *
+
+Thread id = 7
+Time since start = 0.280497
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 3.64169e-08, SNE = 2.74598e+07
+Squared-norm error for each equation: 2.74598e+07 0.000375275 0.00017773 0.900732 
+Best expression = (sin((((9.709820868669647 - x3) * cos(x2)) - ((x1 + 9.996474074820426) + (6.28319 * x3)))) * (sin(~(x0)) * (3.292764102418471 + (~(x3) * (0.01 * x3)))))
+Best expression (original format) = 9.709820868669647 x3 - x2 cos * x1 9.996474074820426 + 6.28319 x3 * + - sin x0 ~ sin 3.292764102418471 x3 ~ 0.01 x3 * * + * *
+
+Thread id = 4
+Time since start = 51.2324
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 3.64169e-08, SNE = 2.74598e+07
+Squared-norm error for each equation: 2.74598e+07 0.000375273 0.000177603 0.900732 
+Best expression = (sin((((9.709820868669647 - x3) * cos(x2)) - ((x1 + 9.996474074820426) + (6.28319 * x3)))) * (sin(~(x0)) * ((~(x3) + (x3 + 3.292764102418471)) + (~(x3) * (0.01 * x3)))))
+Best expression (original format) = 9.709820868669647 x3 - x2 cos * x1 9.996474074820426 + 6.28319 x3 * + - sin x0 ~ sin x3 ~ x3 3.292764102418471 + + x3 ~ 0.01 x3 * * + * *
+
+Thread id = 0
+Time since start = 976.618
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 3.64169e-08, SNE = 2.74598e+07
+Squared-norm error for each equation: 2.74598e+07 0.000375189 0.000177621 0.900732 
+Best expression = (sin((((9.709820868669647 - x3) * cos(x2)) - ((x1 + 9.996474074820426) + (6.28319 * x3)))) * (sin(~(x0)) * ((~(x3) + (x3 + 3.292764102418471)) + (-0.01 * (x3 * x3)))))
+Best expression (original format) = 9.709820868669647 x3 - x2 cos * x1 9.996474074820426 + 6.28319 x3 * + - sin x0 ~ sin x3 ~ x3 3.292764102418471 + + -0.01 x3 x3 * * + * *
+
+Thread id = 7
+Time since start = 2122.65
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 3.64169e-08, SNE = 2.74598e+07
+Squared-norm error for each equation: 2.74598e+07 0.000375328 0.00017742 0.900732 
+Best expression = (sin((((9.709820868669647 - x3) * cos(x2)) - ((x1 + 9.996474074820426) + (6.28319 * x3)))) * (sin(~(x0)) * ((~(x2) + (x2 + 3.292764102418471)) + (-0.01 * (x3 * x3)))))
+Best expression (original format) = 9.709820868669647 x3 - x2 cos * x1 9.996474074820426 + 6.28319 x3 * + - sin x0 ~ sin x2 ~ x2 3.292764102418471 + + -0.01 x3 x3 * * + * *
+
+Thread id = 4
+Time since start = 2328.61
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 3.64169e-08, SNE = 2.74598e+07
+Squared-norm error for each equation: 2.74598e+07 0.000375267 0.000177422 0.900732 
+Best expression = (sin((((9.709820868669647 - x3) * cos(x2)) - ((x1 + 9.996474074820426) + (6.28319 * x3)))) * (sin(~(x0)) * ((~(x2) + (x2 + 3.292764102418471)) + (~(x3) * (0.01 * x3)))))
+Best expression (original format) = 9.709820868669647 x3 - x2 cos * x1 9.996474074820426 + 6.28319 x3 * + - sin x0 ~ sin x2 ~ x2 3.292764102418471 + + x3 ~ 0.01 x3 * * + * *

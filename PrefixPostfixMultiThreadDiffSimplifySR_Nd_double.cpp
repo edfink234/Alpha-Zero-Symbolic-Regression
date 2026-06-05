@@ -10883,7 +10883,7 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
-//    print("(sin((((10 - x3) * sin(x2)) - ((x1 - 10) - (6.28319 * x3)))) * (sin(~(x0)) * (-3.2431900000000007 + (6.30319 * (0.01 * x3)))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu"))
+//    print("(sin((((9.709820868669647 - x3) * cos(x2)) - ((x1 + 9.996474074820426) + (6.28319 * x3)))) * (sin(~(x0)) * (3.292764102418471 + (~(x3) * (0.01 * x3)))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu"))
     
 //    puts("called SwiftHohenberg");
     /*
@@ -13336,7 +13336,7 @@ namespace ExampleProblems
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
                 "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
                 7550 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
-                {split("10 x3 - x2 sin * x1 10 - 6.28319 x3 * - - sin x0 sin 3.3031900000000007 x3 ~ 0.01 x3 * * + * *")} /*seed expressions*/,
+                {split("9.709820868669647 x3 - x2 cos * x1 9.996474074820426 + 6.28319 x3 * + - sin x0 ~ sin 3.292764102418471 x3 ~ 0.01 x3 * * + * *")} /*seed expressions*/,
                 (num_threads == 1) /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
@@ -13344,7 +13344,7 @@ namespace ExampleProblems
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 true /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                "constants_only" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/,
+                "sub_array" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/,
                 true /*whether or not to sync the current expression of each thread with the global current best*/);
         }
     }
