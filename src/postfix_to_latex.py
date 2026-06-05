@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from os import system
+from collections import defaultdict
 
 def is_operator(token):
     return is_binary_operator(token) or is_unary_operator(token)
@@ -68,6 +69,69 @@ def rpn_to_infix(rpn_expression):
 
 def natural_key(filename):
     return [int(x) if x.isdigit() else x for x in re.split(r"(\d+)", filename)]
+
+def round_floats(expr, digits=8):
+    return expr.xreplace({
+        x: sp.Float(round(float(x), digits))
+        for x in expr.atoms(sp.Float)
+    })
+
+def collapse_constant_subtrees(expr):
+    C = sp.Symbol("C")
+
+    def is_const_like(e):
+        return e == C or e.is_Number
+
+    def rec(e):
+        if is_const_like(e):
+            return C
+
+        if not e.args:
+            return e
+
+        new_args = [rec(arg) for arg in e.args]
+
+        # unary_op(C) -> C
+        if len(new_args) == 1 and new_args[0] == C:
+            return C
+
+        # n-ary/binary op(C, C, ..., C) -> C
+        if all(arg == C for arg in new_args):
+            return C
+
+        # C**anything_const_like or anything_const_like**C -> C
+        if e.func is sp.Pow and all(is_const_like(arg) for arg in new_args):
+            return C
+
+        return e.func(*new_args)
+
+    return rec(expr)
+
+def update_rule_signature_expr(expr, round_digits=8):
+    constant_like_names = {
+        "beta_1", "beta_2", "eta", "theta", "gamma", "epsilon",
+    }
+
+    C = sp.Symbol("C")
+    replacements = {}
+
+    for atom in expr.atoms(sp.Number):
+        replacements[atom] = C
+
+    for sym in expr.free_symbols:
+        if str(sym) in constant_like_names:
+            replacements[sym] = C
+
+    expr = expr.xreplace(replacements)
+    expr = collapse_constant_subtrees(expr)
+    expr = sp.expand_mul(expr)
+    expr = collapse_constant_subtrees(expr)
+
+    return expr
+
+
+def update_rule_signature(expr, round_digits=8):
+    return sp.srepr(update_rule_signature_expr(expr, round_digits))
 
 def count_expressions_better_than(filename, best_mse):
     count = 0
@@ -373,6 +437,54 @@ def dag_jaccard(expr1, expr2, **kwargs):
     B = canonical_node_signatures(SympyDagEvaluator(expr2), **kwargs)
     return 1.0 if not A and not B else len(A & B) / len(A | B)
 
+def find_rules_occurring_in_multiple_files(files, local_dict):
+    sig_to_hits = defaultdict(list)
+
+    for filename in files:
+        file_label = Path(filename).name
+
+        with open(filename, "r") as f:
+            for line_num, line in enumerate(f, start=1):
+                line = line.strip()
+                if not line:
+                    continue
+
+                try:
+                    postfix_rule, mse = line.rsplit(",", 1)
+                    mse = float(mse.strip())
+                except ValueError:
+                    continue
+
+                try:
+                    infix = rpn_to_infix(postfix_rule.strip())
+                    expr = parse_expr(
+                        infix,
+                        local_dict=local_dict,
+                        transformations=standard_transformations,
+                        evaluate=True,
+                    )
+                    sig = update_rule_signature(expr)
+                    sig_expr = update_rule_signature_expr(expr)
+                except Exception as e:
+                    print(f"Skipping parse failure in {file_label}:{line_num}: {e}")
+                    continue
+
+                sig_to_hits[sig].append({
+                    "file": file_label,
+                    "line": line_num,
+                    "mse": mse,
+                    "postfix": postfix_rule.strip(),
+                    "expr": expr,
+                    "sig_expr": sig_expr,
+                })
+
+    repeated = {
+        sig: hits
+        for sig, hits in sig_to_hits.items()
+        if len({h["file"] for h in hits}) > 1
+    }
+
+    return repeated
 
 def main():
     files = sorted(glob.glob("../benchmark_results/benchmark_*_individuals.txt"), key=natural_key)
@@ -448,6 +560,38 @@ def main():
         "ln": sp.log,
         "tanh": sp.tanh,
     })
+    
+    repeated_rules = find_rules_occurring_in_multiple_files(files, local_dict)
+
+    print("\n=== Weight-update rules occurring in >1 benchmark file ===")
+    rows = []
+
+    for k, (sig, hits) in enumerate(repeated_rules.items(), start=1):
+        files_with_rule = sorted({h["file"] for h in hits})
+        example_expr = hits[0]["expr"]
+
+        print(f"\nRepeated rule {k}")
+        print(f"Appears in {len(files_with_rule)} files:")
+        for fname in files_with_rule:
+            print(f"  - {fname}")
+
+        print("LaTeX:")
+        print(*[sp.latex(hits[i]["expr"]) for i in range(len(hits))],sep='\n')
+        print("Signature LaTeX:")
+        print(sig_expr:=sp.latex(hits[0]["sig_expr"]))
+        print("Signature srepr:")
+        print(sig)
+
+        rows.append({
+            "Benchmarks": "; ".join([i.replace('_individuals.txt','').replace("_"," ") for i in files_with_rule]),
+            "signature": sig_expr,
+        })
+
+    repeated_df = pd.DataFrame(rows)
+    print("Repeated df")
+    print("===========")
+    print(repeated_df.to_latex(index=False))
+    print("===========")
 
     html_sections = []
     

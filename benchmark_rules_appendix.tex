@@ -8,208 +8,208 @@ This appendix lists the best discovered symbolic update equation for each benchm
 \subsection*{Benchmark 1}
 \begin{equation}
 \label{eq:benchmark-1}
-{0.9995}^{- t - 0.9995} \Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j, m, t=\tau} + 0.9 \Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j, m, t=\tau} \; \text{MSE =} 2.4550
+{0.9995}^{- t - 0.9995} \Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j, m, t=\tau} + 0.9 \Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j, m, t=\tau}, \quad \text{MSE = } 2.4550
 \end{equation}
 
 
 \subsection*{Benchmark 2}
 \begin{equation}
 \label{eq:benchmark-2}
-\sin{\left(\frac{\mu_{j,m,t=\tau}}{- 2.0 t + \nu_{j,m,t=\tau}} \right)} + 1.0 \cdot 10^{-8} \; \text{MSE =} 2.5329
+\sin{\left(\frac{\mu_{j,m,t=\tau}}{- 2.0 t + \nu_{j,m,t=\tau}} \right)} + 1.0 \cdot 10^{-8}, \quad \text{MSE = } 2.5329
 \end{equation}
 
 
 \subsection*{Benchmark 3}
 \begin{equation}
 \label{eq:benchmark-3}
-- \frac{0.02 y_{j}}{d_{j} - \frac{\widehat{\mu}_{j,m,t=\tau}}{d_{j}}} + 1.0 \cdot 10^{-8} \; \text{MSE =} 2.5362
+- \frac{0.02 y_{j}}{d_{j} - \frac{\widehat{\mu}_{j,m,t=\tau}}{d_{j}}} + 1.0 \cdot 10^{-8}, \quad \text{MSE = } 2.5362
 \end{equation}
 
 
 \subsection*{Benchmark 4}
 \begin{equation}
 \label{eq:benchmark-4}
-g_{j, m, t=\tau} + e^{\frac{\Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j, m, t=\tau} \nu_{j,m,t=\tau}}{\nu_{j,m,t=\tau} \frac{1}{v_{j, m, t=\tau}}}} \; \text{MSE =} 7.7460
+g_{j, m, t=\tau} + e^{\frac{\Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j, m, t=\tau} \nu_{j,m,t=\tau}}{\nu_{j,m,t=\tau} \frac{1}{v_{j, m, t=\tau}}}}, \quad \text{MSE = } 7.7460
 \end{equation}
 
 
 \subsection*{Benchmark 5}
 \begin{equation}
 \label{eq:benchmark-5}
-\frac{E\left[\Delta w_{j, m}^2\right]_{t=\tau}}{\left(\sigma_{\hspace{-.05cm}g^{2}_{j,m}}\right)^{\widehat{\mu}_{j,m,t=\tau} - v_{j, m, t=\tau}} + \tanh{\left(E\left[\Delta w_{j, m}^2\right]_{t=\tau} \right)} + 0.9001} \; \text{MSE =} 9.3206
+\frac{E\left[\Delta w_{j, m}^2\right]_{t=\tau}}{\left(\sigma_{\hspace{-.05cm}g^{2}_{j,m}}\right)^{\widehat{\mu}_{j,m,t=\tau} - v_{j, m, t=\tau}} + \tanh{\left(E\left[\Delta w_{j, m}^2\right]_{t=\tau} \right)} + 0.9001}, \quad \text{MSE = } 9.3206
 \end{equation}
 
 
 \subsection*{Benchmark 6}
 \begin{equation}
 \label{eq:benchmark-6}
-\frac{0.01 \left(d_{j}^{\mathrm{Nesterov}} + \cos{\left(0.999 t \right)} - 0.01\right)}{E\left[\Delta w_{j, m}^2\right]_{t=\tau}} \; \text{MSE =} 7.9954
+\frac{0.01 \left(d_{j}^{\mathrm{Nesterov}} + \cos{\left(0.999 t \right)} - 0.01\right)}{E\left[\Delta w_{j, m}^2\right]_{t=\tau}}, \quad \text{MSE = } 7.9954
 \end{equation}
 
 
 \subsection*{Benchmark 7}
 \begin{equation}
 \label{eq:benchmark-7}
-\frac{\Delta w_{j, m, t=\tau} \sigma_{\hspace{-.05cm}g^{2}_{j,m}}}{E\left[\Delta w_{j, m}^2\right]_{t=\tau} \left(- E\left[g_{j, m}^2\right]_{t=\tau} + \frac{\mu_{j,m,t=\tau}}{\Delta w_{j, m, t=\tau}}\right)} \; \text{MSE =} 237418000.0000
+\frac{\Delta w_{j, m, t=\tau} \sigma_{\hspace{-.05cm}g^{2}_{j,m}}}{E\left[\Delta w_{j, m}^2\right]_{t=\tau} \left(- E\left[g_{j, m}^2\right]_{t=\tau} + \frac{\mu_{j,m,t=\tau}}{\Delta w_{j, m, t=\tau}}\right)}, \quad \text{MSE = } 237418000.0000
 \end{equation}
 
 
 \subsection*{Benchmark 8}
 \begin{equation}
 \label{eq:benchmark-8}
-\frac{E\left[g_{j, m}^2\right]_{t=\tau}}{\Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j, m, t=\tau} \sigma_{\hspace{-.05cm}g^{2}_{j,m}} - \widehat{\nu}_{j,m,t=\tau} - y_{j} + v_{j, m, t=\tau} + 1.0 \cdot 10^{-8}} \; \text{MSE =} 2876810.0000
+\frac{E\left[g_{j, m}^2\right]_{t=\tau}}{\Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j, m, t=\tau} \sigma_{\hspace{-.05cm}g^{2}_{j,m}} - \widehat{\nu}_{j,m,t=\tau} - y_{j} + v_{j, m, t=\tau} + 1.0 \cdot 10^{-8}}, \quad \text{MSE = } 2876810.0000
 \end{equation}
 
 
 \subsection*{Benchmark 9}
 \begin{equation}
 \label{eq:benchmark-9}
-\frac{1.001 g_{j, m, t=\tau} + \nu_{j,m,t=\tau} + y_{j}}{- E\left[g_{j, m}^2\right]_{t=\tau} - g_{j, m, t=\tau} - t + \nu_{j,m,t=\tau} + y_{j}} \; \text{MSE =} 245055000.0000
+\frac{1.001 g_{j, m, t=\tau} + \nu_{j,m,t=\tau} + y_{j}}{- E\left[g_{j, m}^2\right]_{t=\tau} - g_{j, m, t=\tau} - t + \nu_{j,m,t=\tau} + y_{j}}, \quad \text{MSE = } 245055000.0000
 \end{equation}
 
 
 \subsection*{Benchmark 10}
 \begin{equation}
 \label{eq:benchmark-10}
-\frac{{0.999}^{y_{j}^{0.25}}}{- d_{j} - E\left[g_{j, m}^2\right]_{t=\tau} + \mu_{j,m,t=\tau} - w_{j,m,t=\tau} - 0.01} \; \text{MSE =} 2.7822
+\frac{{0.999}^{y_{j}^{0.25}}}{- d_{j} - E\left[g_{j, m}^2\right]_{t=\tau} + \mu_{j,m,t=\tau} - w_{j,m,t=\tau} - 0.01}, \quad \text{MSE = } 2.7822
 \end{equation}
 
 
 \subsection*{Benchmark 11}
 \begin{equation}
 \label{eq:benchmark-11}
-0.01 \left(- \frac{0.9 - g_{j, m, t=\tau}}{E\left[g_{j, m}^2\right]_{t=\tau} + \mu_{j,m,t=\tau}} + 0.01\right) \cos{\left(\Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j, m, t=\tau} \right)} \; \text{MSE =} 3.6288
+0.01 \left(- \frac{0.9 - g_{j, m, t=\tau}}{E\left[g_{j, m}^2\right]_{t=\tau} + \mu_{j,m,t=\tau}} + 0.01\right) \cos{\left(\Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j, m, t=\tau} \right)}, \quad \text{MSE = } 3.6288
 \end{equation}
 
 
 \subsection*{Benchmark 12}
 \begin{equation}
 \label{eq:benchmark-12}
-\frac{y_{j}}{- 0.001 d_{j} - \Delta w_{j, m, t=\tau} + E\left[g_{j, m}^2\right]_{t=\tau} - 0.5236} \; \text{MSE =} 3.2924
+\frac{y_{j}}{- 0.001 d_{j} - \Delta w_{j, m, t=\tau} + E\left[g_{j, m}^2\right]_{t=\tau} - 0.5236}, \quad \text{MSE = } 3.2924
 \end{equation}
 
 
 \subsection*{Benchmark 13}
 \begin{equation}
 \label{eq:benchmark-13}
-\frac{y_{j}}{0.01 E\left[\Delta w_{j, m}^2\right]_{t=\tau} + v_{j, m, t=\tau} + 1.4} \; \text{MSE =} 13.6686
+\frac{y_{j}}{0.01 E\left[\Delta w_{j, m}^2\right]_{t=\tau} + v_{j, m, t=\tau} + 1.4}, \quad \text{MSE = } 13.6686
 \end{equation}
 
 
 \subsection*{Benchmark 14}
 \begin{equation}
 \label{eq:benchmark-14}
-\frac{d_{j}^{\mathrm{Nesterov}} t}{d_{j} + d_{j}^{\mathrm{Nesterov}} + \nu_{j,m,t=\tau} - 0.7833} \; \text{MSE =} 15.4005
+\frac{d_{j}^{\mathrm{Nesterov}} t}{d_{j} + d_{j}^{\mathrm{Nesterov}} + \nu_{j,m,t=\tau} - 0.7833}, \quad \text{MSE = } 15.4005
 \end{equation}
 
 
 \subsection*{Benchmark 15}
 \begin{equation}
 \label{eq:benchmark-15}
-0.01 \Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j, m, t=\tau} - \frac{0.01 E\left[\Delta w_{j, m}^2\right]_{t=\tau}}{- 1.0 E\left[g_{j, m}^2\right]_{t=\tau} + 1.0 v_{j, m, t=\tau}} \; \text{MSE =} 14.1013
+0.01 \Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j, m, t=\tau} - \frac{0.01 E\left[\Delta w_{j, m}^2\right]_{t=\tau}}{- 1.0 E\left[g_{j, m}^2\right]_{t=\tau} + 1.0 v_{j, m, t=\tau}}, \quad \text{MSE = } 14.1013
 \end{equation}
 
 
 \subsection*{Benchmark 16}
 \begin{equation}
 \label{eq:benchmark-16}
-\frac{\Delta w_{j, m, t=\tau} + t}{- v_{j, m, t=\tau} - \left(- 1.111 \Delta w_{j, m, t=\tau} + 1.111 w_{j,m,t=\tau}\right) \tanh{\left(\sigma_{\hspace{-.05cm}g^{2}_{j,m}} \right)} + 1.0 \cdot 10^{-8}} \; \text{MSE =} 0.2727
+\frac{\Delta w_{j, m, t=\tau} + t}{- v_{j, m, t=\tau} - \left(- 1.111 \Delta w_{j, m, t=\tau} + 1.111 w_{j,m,t=\tau}\right) \tanh{\left(\sigma_{\hspace{-.05cm}g^{2}_{j,m}} \right)} + 1.0 \cdot 10^{-8}}, \quad \text{MSE = } 0.2727
 \end{equation}
 
 
 \subsection*{Benchmark 17}
 \begin{equation}
 \label{eq:benchmark-17}
-\frac{E\left[g_{j, m}^2\right]_{t=\tau}}{\left(- \mu_{j,m,t=\tau} + \tanh{\left(d_{j} \right)}\right) \left(- \widehat{\nu}_{j,m,t=\tau} - \frac{\sin{\left(w_{j,m,t=\tau} \right)}}{\sigma_{\hspace{-.05cm}g^{2}_{j,m}} \widehat{\nu}_{j,m,t=\tau}}\right)} \; \text{MSE =} 0.2840
+\frac{E\left[g_{j, m}^2\right]_{t=\tau}}{\left(- \mu_{j,m,t=\tau} + \tanh{\left(d_{j} \right)}\right) \left(- \widehat{\nu}_{j,m,t=\tau} - \frac{\sin{\left(w_{j,m,t=\tau} \right)}}{\sigma_{\hspace{-.05cm}g^{2}_{j,m}} \widehat{\nu}_{j,m,t=\tau}}\right)}, \quad \text{MSE = } 0.2840
 \end{equation}
 
 
 \subsection*{Benchmark 18}
 \begin{equation}
 \label{eq:benchmark-18}
-\frac{E\left[g_{j, m}^2\right]_{t=\tau}}{\left(0.01 - \mu_{j,m,t=\tau}\right) \left(- \widehat{\nu}_{j,m,t=\tau}^{2.0 \cdot 10^{-8}} - \widehat{\nu}_{j,m,t=\tau}\right)} \; \text{MSE =} 0.2688
+\frac{E\left[g_{j, m}^2\right]_{t=\tau}}{\left(0.01 - \mu_{j,m,t=\tau}\right) \left(- \widehat{\nu}_{j,m,t=\tau}^{2.0 \cdot 10^{-8}} - \widehat{\nu}_{j,m,t=\tau}\right)}, \quad \text{MSE = } 0.2688
 \end{equation}
 
 
 \subsection*{Benchmark 19}
 \begin{equation}
 \label{eq:benchmark-19}
-\frac{\Delta w_{j, m, t=\tau} - \mu_{j,m,t=\tau} - 0.9}{- \Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j, m, t=\tau} + t + v_{j, m, t=\tau}} \; \text{MSE =} 379.5750
+\frac{\Delta w_{j, m, t=\tau} - \mu_{j,m,t=\tau} - 0.9}{- \Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j, m, t=\tau} + t + v_{j, m, t=\tau}}, \quad \text{MSE = } 379.5750
 \end{equation}
 
 
 \subsection*{Benchmark 20}
 \begin{equation}
 \label{eq:benchmark-20}
-\frac{0.999}{\frac{d_{j}}{0.01 - 0.999 g_{j, m, t=\tau}} + y_{j}} \; \text{MSE =} 318.1030
+\frac{0.999}{\frac{d_{j}}{0.01 - 0.999 g_{j, m, t=\tau}} + y_{j}}, \quad \text{MSE = } 318.1030
 \end{equation}
 
 
 \subsection*{Benchmark 21}
 \begin{equation}
 \label{eq:benchmark-21}
-\frac{0.999}{\mu_{j,m,t=\tau} + \nu_{j,m,t=\tau} \widehat{\nu}_{j,m,t=\tau}^{\Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j, m, t=\tau} - v_{j, m, t=\tau}}} \; \text{MSE =} 373.3070
+\frac{0.999}{\mu_{j,m,t=\tau} + \nu_{j,m,t=\tau} \widehat{\nu}_{j,m,t=\tau}^{\Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j, m, t=\tau} - v_{j, m, t=\tau}}}, \quad \text{MSE = } 373.3070
 \end{equation}
 
 
 \subsection*{Benchmark 22}
 \begin{equation}
 \label{eq:benchmark-22}
-- 2.866 {0.9}^{0.999 \Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j, m, t=\tau} - 0.999 \nu_{j,m,t=\tau}} \; \text{MSE =} 11.2288
+- 2.866 {0.9}^{0.999 \Delta w^{\text{A}\hspace{-.018cm}\text{dadelta}}_{j, m, t=\tau} - 0.999 \nu_{j,m,t=\tau}}, \quad \text{MSE = } 11.2288
 \end{equation}
 
 
 \subsection*{Benchmark 23}
 \begin{equation}
 \label{eq:benchmark-23}
-\frac{\mu_{j,m,t=\tau} t + \mu_{j,m,t=\tau} + v_{j, m, t=\tau}}{0.01 d_{j}^{\mathrm{Nesterov}} - \left(E\left[g_{j, m}^2\right]_{t=\tau}\right)^{0.9} - \widehat{\mu}_{j,m,t=\tau} + v_{j, m, t=\tau}} \; \text{MSE =} 16.0370
+\frac{\mu_{j,m,t=\tau} t + \mu_{j,m,t=\tau} + v_{j, m, t=\tau}}{0.01 d_{j}^{\mathrm{Nesterov}} - \left(E\left[g_{j, m}^2\right]_{t=\tau}\right)^{0.9} - \widehat{\mu}_{j,m,t=\tau} + v_{j, m, t=\tau}}, \quad \text{MSE = } 16.0370
 \end{equation}
 
 
 \subsection*{Benchmark 24}
 \begin{equation}
 \label{eq:benchmark-24}
-- 0.01526 \mu_{j,m,t=\tau} - 0.01526 t^{0.5} + 1.526 \cdot 10^{-10} \; \text{MSE =} 16.8173
+- 0.01526 \mu_{j,m,t=\tau} - 0.01526 t^{0.5} + 1.526 \cdot 10^{-10}, \quad \text{MSE = } 16.8173
 \end{equation}
 
 
 \subsection*{Benchmark 25}
 \begin{equation}
 \label{eq:benchmark-25}
-- \frac{1.998 t \operatorname{acos}{\left(\sin{\left(\Delta w_{j, m, t=\tau} \right)} \right)}}{\widehat{\mu}_{j,m,t=\tau} \left(\mu_{j,m,t=\tau} - y_{j} - 0.01\right)} \; \text{MSE =} 3405.0500
+- \frac{1.998 t \operatorname{acos}{\left(\sin{\left(\Delta w_{j, m, t=\tau} \right)} \right)}}{\widehat{\mu}_{j,m,t=\tau} \left(\mu_{j,m,t=\tau} - y_{j} - 0.01\right)}, \quad \text{MSE = } 3405.0500
 \end{equation}
 
 
 \subsection*{Benchmark 26}
 \begin{equation}
 \label{eq:benchmark-26}
-\frac{0.998 t}{\left(\mu_{j,m,t=\tau} - 0.91\right) \left(d_{j}^{\mathrm{Nesterov}} E\left[\Delta w_{j, m}^2\right]_{t=\tau} + 0.9\right)} \; \text{MSE =} 2938.7000
+\frac{0.998 t}{\left(\mu_{j,m,t=\tau} - 0.91\right) \left(d_{j}^{\mathrm{Nesterov}} E\left[\Delta w_{j, m}^2\right]_{t=\tau} + 0.9\right)}, \quad \text{MSE = } 2938.7000
 \end{equation}
 
 
 \subsection*{Benchmark 27}
 \begin{equation}
 \label{eq:benchmark-27}
-\frac{E\left[\Delta w_{j, m}^2\right]_{t=\tau} y_{j} \left(\tanh{\left(\widehat{\mu}_{j,m,t=\tau} \right)} + 0.9\right)}{- E\left[\Delta w_{j, m}^2\right]_{t=\tau} + \mu_{j,m,t=\tau} + \widehat{\mu}_{j,m,t=\tau} - t - y_{j}} \; \text{MSE =} 3506.8600
+\frac{E\left[\Delta w_{j, m}^2\right]_{t=\tau} y_{j} \left(\tanh{\left(\widehat{\mu}_{j,m,t=\tau} \right)} + 0.9\right)}{- E\left[\Delta w_{j, m}^2\right]_{t=\tau} + \mu_{j,m,t=\tau} + \widehat{\mu}_{j,m,t=\tau} - t - y_{j}}, \quad \text{MSE = } 3506.8600
 \end{equation}
 
 
 \subsection*{Benchmark 28}
 \begin{equation}
 \label{eq:benchmark-28}
-\frac{1.449 t}{\Delta w_{j, m, t=\tau} g_{j, m, t=\tau} + t + \sin{\left(\sigma_{\hspace{-.05cm}g^{2}_{j,m}} \right)}} \; \text{MSE =} 2818.0700
+\frac{1.449 t}{\Delta w_{j, m, t=\tau} g_{j, m, t=\tau} + t + \sin{\left(\sigma_{\hspace{-.05cm}g^{2}_{j,m}} \right)}}, \quad \text{MSE = } 2818.0700
 \end{equation}
 
 
 \subsection*{Benchmark 29}
 \begin{equation}
 \label{eq:benchmark-29}
-\frac{0.999 t \left(\cos{\left(\Delta w_{j, m, t=\tau} \right)} + 0.9\right)}{\Delta w_{j, m, t=\tau} g_{j, m, t=\tau} + y_{j} - 0.999} \; \text{MSE =} 3113.2000
+\frac{0.999 t \left(\cos{\left(\Delta w_{j, m, t=\tau} \right)} + 0.9\right)}{\Delta w_{j, m, t=\tau} g_{j, m, t=\tau} + y_{j} - 0.999}, \quad \text{MSE = } 3113.2000
 \end{equation}
 
 
 \subsection*{Benchmark 30}
 \begin{equation}
 \label{eq:benchmark-30}
-\frac{2.46 \left(0.5 t + 0.9\right)}{{0.999}^{g_{j, m, t=\tau}} - \mu_{j,m,t=\tau} + 0.9} \; \text{MSE =} 3236.6700
+\frac{2.46 \left(0.5 t + 0.9\right)}{{0.999}^{g_{j, m, t=\tau}} - \mu_{j,m,t=\tau} + 0.9}, \quad \text{MSE = } 3236.6700
 \end{equation}
