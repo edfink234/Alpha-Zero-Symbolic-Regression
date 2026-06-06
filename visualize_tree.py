@@ -648,7 +648,7 @@ def test_visualize():
             assert rpn1 == rpn2
             print(f"rpn_expr = {' '.join([i if i != 's' else 'x0' for i in rpn_expr.split()])}")
         else:
-            expression_type_to_plot = ["prefix", "postfix"][0]
+            expression_type_to_plot = ["prefix", "postfix"][1]
             completeTree = [True, False][1]
             if expression_type_to_plot == "prefix":
                 complete_pn_expr = "/ * / 1 x y sqrt - 1 * * ln x y * ln x y"
@@ -661,7 +661,7 @@ def test_visualize():
                 plot_pn_expression_tree(complete_pn_expr, save = save, include_expression_in_title = False)
 
             else:
-                complete_rpn_expr = '-10.00394920949605 0.0009615554218509459 x0 + + x0 sin 4.881411772212712 x0 * + * 0.035117916693453655 *'
+                complete_rpn_expr = '9.737087574967243 x3 - x2 cos * x1 9.94302152812076 + 6.28319 x3 * + - sin x0 ~ sin 3.2901529156848124 x3 -0.01 x3 * * + * *'
                 print(f"rpn_to_infix = {rpn_to_infix(complete_rpn_expr)}")
                 
                 

@@ -10946,8 +10946,9 @@ print(x.replace("r","R").replace("sqRt", "sqrt").replace("theta","Theta").replac
     assert((!x.add_additive || (x.add_additive && x.num_diff_eqns == 3)) && "add_additive not supported for SwiftHohenberg 4-equation version");
     static std::vector<std::vector<std::string>> additive_results(x.num_diff_eqns);
     static std::vector<Eigen::VectorXd> f_res(x.num_diff_eqns);
-    std::vector<std::vector<std::string>> results;
-    results.reserve(x.num_diff_eqns);
+    double periodic_temp_res;
+    std::vector<std::vector<std::string>> results(x.num_diff_eqns);
+//    results.reserve(x.num_diff_eqns);
     thread_local std::vector<std::string> result, dfdr1, d2fdr2, d3fdr3, d4fdr4,
     dfdtheta1, d2fdtheta2, d3fdtheta3, d4fdtheta4, df3dtheta2dr1,
     prefac_temp;
@@ -10987,89 +10988,89 @@ print(x.replace("r","R").replace("sqRt", "sqrt").replace("theta","Theta").replac
                 else if (x.expression_type == "postfix")
                 {
                     //μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -
-                    additive_results[0].push_back(mu); // μ
+                    additive_results[2].push_back(mu); // μ
                     for (const std::string& i: x.additiveCorrections[0]) // f
                     {
-                        additive_results[0].push_back(i);
+                        additive_results[2].push_back(i);
                     }
-                    additive_results[0].push_back("*"); // *
-                    additive_results[0].push_back(nu); // ν
+                    additive_results[2].push_back("*"); // *
+                    additive_results[2].push_back(nu); // ν
                     for (const std::string& i: x.additiveCorrections[0]) // f
                     {
-                        additive_results[0].push_back(i);
+                        additive_results[2].push_back(i);
                     }
-                    additive_results[0].push_back("*"); // *
+                    additive_results[2].push_back("*"); // *
                     for (const std::string& i: x.additiveCorrections[0]) // f
                     {
-                        additive_results[0].push_back(i);
+                        additive_results[2].push_back(i);
                     }
-                    additive_results[0].push_back("*"); // *
+                    additive_results[2].push_back("*"); // *
                     for (const std::string& i: x.additiveCorrections[0]) // f
                     {
-                        additive_results[0].push_back(i);
-                    }
-                    for (const std::string& i: x.additiveCorrections[0]) // f
-                    {
-                        additive_results[0].push_back(i);
+                        additive_results[2].push_back(i);
                     }
                     for (const std::string& i: x.additiveCorrections[0]) // f
                     {
-                        additive_results[0].push_back(i);
+                        additive_results[2].push_back(i);
                     }
-                    additive_results[0].push_back("*"); // *
-                    additive_results[0].push_back("*"); // *
-                    additive_results[0].push_back("-"); // -
-                    additive_results[0].push_back("+"); // +
                     for (const std::string& i: x.additiveCorrections[0]) // f
                     {
-                        additive_results[0].push_back(i);
+                        additive_results[2].push_back(i);
                     }
-                    additive_results[0].push_back("-"); // -
-                    additive_results[0].push_back("2"); // 2
+                    additive_results[2].push_back("*"); // *
+                    additive_results[2].push_back("*"); // *
+                    additive_results[2].push_back("-"); // -
+                    additive_results[2].push_back("+"); // +
+                    for (const std::string& i: x.additiveCorrections[0]) // f
+                    {
+                        additive_results[2].push_back(i);
+                    }
+                    additive_results[2].push_back("-"); // -
+                    additive_results[2].push_back("2"); // 2
                     x.derivePostfix(0, x.additiveCorrections[0].size()-1, "x0", x.additiveCorrections[0], grasp);
                     dfdr1 = x.derivat;
                     x.derivePostfix(0, dfdr1.size()-1, "x0", dfdr1, grasp);
                     d2fdr2 = x.derivat;
                     for (const std::string& i: d2fdr2) // ∂^2f/∂r^2
                     {
-                        additive_results[0].push_back(i);
+                        additive_results[2].push_back(i);
                     }
-                    additive_results[0].push_back("*"); // *
-                    additive_results[0].push_back("-"); // -
+                    additive_results[2].push_back("*"); // *
+                    additive_results[2].push_back("-"); // -
                     x.derivePostfix(0, d2fdr2.size()-1, "x0", d2fdr2, grasp);
                     d3fdr3 = x.derivat;
                     x.derivePostfix(0, d3fdr3.size()-1, "x0", d3fdr3, grasp);
                     d4fdr4 = x.derivat;
                     for (const std::string& i: d4fdr4) // ∂^4f/∂r^4
                     {
-                        additive_results[0].push_back(i);
+                        additive_results[2].push_back(i);
                     }
-                    additive_results[0].push_back("-"); // -
-                    additive_results[0].push_back("2"); // 2
+                    additive_results[2].push_back("-"); // -
+                    additive_results[2].push_back("2"); // 2
                     for (const std::string& i: d3fdr3) // ∂^3f/∂r^3
                     {
-                        additive_results[0].push_back(i);
+                        additive_results[2].push_back(i);
                     }
-                    additive_results[0].push_back("*"); // *
+                    additive_results[2].push_back("*"); // *
                     for (const std::string& i: d2fdr2) // ∂^2f/∂r^2
                     {
-                        additive_results[0].push_back(i);
+                        additive_results[2].push_back(i);
                     }
-                    additive_results[0].push_back("x0"); // r
-                    additive_results[0].push_back("/"); // /
-                    additive_results[0].push_back("+"); // +
+                    additive_results[2].push_back("x0"); // r
+                    additive_results[2].push_back("/"); // /
+                    additive_results[2].push_back("+"); // +
                     for (const std::string& i: dfdr1) // ∂f/∂r
                     {
-                        additive_results[0].push_back(i);
+                        additive_results[2].push_back(i);
                     }
                     if (!prefactors_computed)
                     {
                         prefac_temp = {"x0", "x0", "*"};
                         x.subs_dict["r_squared"] = x.expression_evaluator(x.params, prefac_temp);
                     }
-                    additive_results[0].push_back("r_squared"); // r r *
-                    additive_results[0].push_back("/"); // /
-                    additive_results[0].push_back("-"); // -
+                    additive_results[2].push_back("r_squared"); // r r *
+                    additive_results[2].push_back("/"); // /
+                    additive_results[2].push_back("-"); // -
                     x.derivePostfix(0, x.additiveCorrections[0].size()-1, "x1", x.additiveCorrections[0], grasp);
                     dfdtheta1 = x.derivat;
                     x.derivePostfix(0, dfdtheta1.size()-1, "x1", dfdtheta1, grasp);
@@ -11078,107 +11079,131 @@ print(x.replace("r","R").replace("sqRt", "sqrt").replace("theta","Theta").replac
                     df3dtheta2dr1 = x.derivat;
                     for (const std::string& i: df3dtheta2dr1) // ∂^3f/∂θ^2∂r
                     {
-                        additive_results[0].push_back(i);
+                        additive_results[2].push_back(i);
                     }
-                    additive_results[0].push_back("r_squared"); // r r *
-                    additive_results[0].push_back("/"); // /
-                    additive_results[0].push_back("2"); // 2
+                    additive_results[2].push_back("r_squared"); // r r *
+                    additive_results[2].push_back("/"); // /
+                    additive_results[2].push_back("2"); // 2
                     for (const std::string& i: d2fdr2) // ∂^2f/∂r^2
                     {
-                        additive_results[0].push_back(i);
+                        additive_results[2].push_back(i);
                     }
-                    additive_results[0].push_back("*"); // *
+                    additive_results[2].push_back("*"); // *
                     if (!prefactors_computed)
                     {
                         prefac_temp = {"x0", "x0", "*", "x0", "*"};
                         x.subs_dict["r_cubed"] = x.expression_evaluator(x.params, prefac_temp);
                     }
-                    additive_results[0].push_back("r_cubed"); // r r * r *
-                    additive_results[0].push_back("/"); // /
-                    additive_results[0].push_back("-"); // -
-                    additive_results[0].push_back("2"); // 2
+                    additive_results[2].push_back("r_cubed"); // r r * r *
+                    additive_results[2].push_back("/"); // /
+                    additive_results[2].push_back("-"); // -
+                    additive_results[2].push_back("2"); // 2
                     for (const std::string& i: dfdr1) // ∂f/∂r
                     {
-                        additive_results[0].push_back(i);
+                        additive_results[2].push_back(i);
                     }
-                    additive_results[0].push_back("*"); // *
-                    additive_results[0].push_back("+"); // +
-                    additive_results[0].push_back("+"); // +
-                    additive_results[0].push_back("x0"); // r
-                    additive_results[0].push_back("/"); // /
-                    additive_results[0].push_back("-"); // -
-                    additive_results[0].push_back("2"); // 2
+                    additive_results[2].push_back("*"); // *
+                    additive_results[2].push_back("+"); // +
+                    additive_results[2].push_back("+"); // +
+                    additive_results[2].push_back("x0"); // r
+                    additive_results[2].push_back("/"); // /
+                    additive_results[2].push_back("-"); // -
+                    additive_results[2].push_back("2"); // 2
                     x.derivePostfix(0, df3dtheta2dr1.size()-1, "x0", df3dtheta2dr1, grasp);
                     for (const std::string& i: x.derivat) //∂^4f/∂θ^2∂r^2
                     {
-                        additive_results[0].push_back(i);
+                        additive_results[2].push_back(i);
                     }
-                    additive_results[0].push_back("*"); // *
+                    additive_results[2].push_back("*"); // *
                     for (const std::string& i: df3dtheta2dr1) // ∂^3f/∂θ^2∂r
                     {
-                        additive_results[0].push_back(i);
+                        additive_results[2].push_back(i);
                     }
-                    additive_results[0].push_back("x0"); // r
-                    additive_results[0].push_back("/"); // /
-                    additive_results[0].push_back("+"); // +
+                    additive_results[2].push_back("x0"); // r
+                    additive_results[2].push_back("/"); // /
+                    additive_results[2].push_back("+"); // +
                     x.derivePostfix(0, d2fdtheta2.size()-1, "x1", d2fdtheta2, grasp);
                     d3fdtheta3 = x.derivat;
                     x.derivePostfix(0, d3fdtheta3.size()-1, "x1", d3fdtheta3, grasp);
                     d4fdtheta4 = x.derivat;
                     for (const std::string& i: d4fdtheta4) // ∂^4f/∂θ^4
                     {
-                        additive_results[0].push_back(i);
+                        additive_results[2].push_back(i);
                     }
-                    additive_results[0].push_back("r_squared"); // r r *
-                    additive_results[0].push_back("/"); // /
-                    additive_results[0].push_back("+"); // +
-                    additive_results[0].push_back("2"); // 2
+                    additive_results[2].push_back("r_squared"); // r r *
+                    additive_results[2].push_back("/"); // /
+                    additive_results[2].push_back("+"); // +
+                    additive_results[2].push_back("2"); // 2
                     for (const std::string& i: d2fdr2) // ∂^2f/∂r^2
                     {
-                        additive_results[0].push_back(i);
+                        additive_results[2].push_back(i);
                     }
-                    additive_results[0].push_back("*"); // *
-                    additive_results[0].push_back("-"); // -
-                    additive_results[0].push_back("2"); // 2
+                    additive_results[2].push_back("*"); // *
+                    additive_results[2].push_back("-"); // -
+                    additive_results[2].push_back("2"); // 2
                     for (const std::string& i: d2fdtheta2) // ∂^2f/∂θ^2
                     {
-                        additive_results[0].push_back(i);
+                        additive_results[2].push_back(i);
                     }
-                    additive_results[0].push_back("*"); // *
-                    additive_results[0].push_back("+"); // +
-                    additive_results[0].push_back("r_squared"); // r r *
-                    additive_results[0].push_back("/"); // /
-                    additive_results[0].push_back("-"); // -
-                    additive_results[0].push_back("2"); // 2
-                    additive_results[0].push_back("r_cubed"); // r r * r *
-                    additive_results[0].push_back("/"); // /
+                    additive_results[2].push_back("*"); // *
+                    additive_results[2].push_back("+"); // +
+                    additive_results[2].push_back("r_squared"); // r r *
+                    additive_results[2].push_back("/"); // /
+                    additive_results[2].push_back("-"); // -
+                    additive_results[2].push_back("2"); // 2
+                    additive_results[2].push_back("r_cubed"); // r r * r *
+                    additive_results[2].push_back("/"); // /
                     for (const std::string& i: dfdr1) // ∂f/∂r
                     {
-                        additive_results[0].push_back(i);
+                        additive_results[2].push_back(i);
                     }
-                    additive_results[0].push_back("2"); // 2
+                    additive_results[2].push_back("2"); // 2
                     for (const std::string& i: df3dtheta2dr1) // ∂^3f/∂θ^2∂r
                     {
-                        additive_results[0].push_back(i);
+                        additive_results[2].push_back(i);
                     }
-                    additive_results[0].push_back("*"); // *
-                    additive_results[0].push_back("-"); // -
+                    additive_results[2].push_back("*"); // *
+                    additive_results[2].push_back("-"); // -
                     if (!prefactors_computed)
                     {
                         prefac_temp = {"3", "x0", "/"};
                         x.subs_dict["3_over_r"] = x.expression_evaluator(x.params, prefac_temp);
                     }
-                    additive_results[0].push_back("3_over_r"); // 3 r /
+                    additive_results[2].push_back("3_over_r"); // 3 r /
                     for (const std::string& i: d2fdtheta2) // ∂^2f/∂θ^2
                     {
-                        additive_results[0].push_back(i);
+                        additive_results[2].push_back(i);
                     }
-                    additive_results[0].push_back("*"); // *
-                    additive_results[0].push_back("+"); // +
-                    additive_results[0].push_back("*"); // *
-                    additive_results[0].push_back("-"); // -
+                    additive_results[2].push_back("*"); // *
+                    additive_results[2].push_back("+"); // +
+                    additive_results[2].push_back("*"); // *
+                    additive_results[2].push_back("-"); // -
                     //f(r, θ=2*π) f(r, θ = 0) -
                     for (const std::string& i: x.additiveCorrections[0]) //f(r, θ=2*π)
+                    {
+                        if (i == "x1")
+                        {
+                            additive_results[0].push_back("6.283185307179586");
+                        }
+                        else
+                        {
+                            additive_results[0].push_back(i);
+                        }
+                    }
+                    for (const std::string& i: x.additiveCorrections[0]) //f(r, θ = 0)
+                    {
+                        if (i == "x1")
+                        {
+                            additive_results[0].push_back("0");
+                        }
+                        else
+                        {
+                            additive_results[0].push_back(i);
+                        }
+                    }
+                    additive_results[0].push_back("-");
+                    //∂f/∂θ(r, θ=2*π) ∂f/∂θ(r, θ = 0) -
+                    for (const std::string& i: dfdtheta1) //∂f/∂θ(r, θ=2*π)
                     {
                         if (i == "x1")
                         {
@@ -11189,7 +11214,7 @@ print(x.replace("r","R").replace("sqRt", "sqrt").replace("theta","Theta").replac
                             additive_results[1].push_back(i);
                         }
                     }
-                    for (const std::string& i: x.additiveCorrections[0]) //f(r, θ = 0)
+                    for (const std::string& i: dfdtheta1) //∂f/∂θ(r, θ = 0)
                     {
                         if (i == "x1")
                         {
@@ -11201,37 +11226,13 @@ print(x.replace("r","R").replace("sqRt", "sqrt").replace("theta","Theta").replac
                         }
                     }
                     additive_results[1].push_back("-");
-                    //∂f/∂θ(r, θ=2*π) ∂f/∂θ(r, θ = 0) -
-                    for (const std::string& i: dfdtheta1) //∂f/∂θ(r, θ=2*π)
-                    {
-                        if (i == "x1")
-                        {
-                            additive_results[2].push_back("6.283185307179586");
-                        }
-                        else
-                        {
-                            additive_results[2].push_back(i);
-                        }
-                    }
-                    for (const std::string& i: dfdtheta1) //∂f/∂θ(r, θ = 0)
-                    {
-                        if (i == "x1")
-                        {
-                            additive_results[2].push_back("0");
-                        }
-                        else
-                        {
-                            additive_results[2].push_back(i);
-                        }
-                    }
-                    additive_results[2].push_back("-");
                 }
                 puts("Evaluating additive_results");
-                f_res[0] = x.expression_evaluator(x.params, additive_results[0]);
+                f_res[0] = x.expression_evaluator(x.params, additive_results[0]); //periodic bc 1
                 puts("Done evaluating additive_results[0]");
-                f_res[1] = x.expression_evaluator(x.params, additive_results[1]);
+                f_res[1] = x.expression_evaluator(x.params, additive_results[1]); //periodic bc 2
                 puts("Done evaluating additive_results[1]");
-                f_res[2] = x.expression_evaluator(x.params, additive_results[2]);
+                f_res[2] = x.expression_evaluator(x.params, additive_results[2]); //sh
                 added_additive = true;
                 puts("Done evaluating additive_results");
             }
@@ -11239,9 +11240,9 @@ print(x.replace("r","R").replace("sqRt", "sqrt").replace("theta","Theta").replac
         if (!prefactors_computed)
         {
             assert(added_additive);
-            x.subs_dict["fres0"] = f_res[0];
-            x.subs_dict["fres1"] = f_res[1];
-            x.subs_dict["fres2"] = f_res[2];
+            x.subs_dict["fres0"] = f_res[0]; //periodic bc 1
+            x.subs_dict["fres1"] = f_res[1]; //periodic bc 2
+            x.subs_dict["fres2"] = f_res[2]; //sh
             x.subs_dict["f0"] = x.expression_evaluator(x.params, x.additiveCorrections[0]);
         }
     }
@@ -11268,6 +11269,88 @@ print(x.replace("r","R").replace("sqRt", "sqrt").replace("theta","Theta").replac
     }
     else if (x.expression_type == "postfix")
     {
+        //=========================
+        //f(r, θ=2*π) f(r, θ = 0) -
+        //=========================
+        for (const std::string& i: x.pieces[0]) //f(r, θ=2*π)
+        {
+            if (i == "x1")
+            {
+                result.push_back("6.283185307179586");
+            }
+            else
+            {
+                result.push_back(i);
+            }
+        }
+        for (const std::string& i: x.pieces[0]) //f(r, θ = 0)
+        {
+            if (i == "x1")
+            {
+                result.push_back("0");
+            }
+            else
+            {
+                result.push_back(i);
+            }
+        }
+        result.push_back("-");
+        result.push_back("1e10");
+        result.push_back("*");
+        periodic_temp_res = SNE(x.expression_evaluator(x.params, result));
+        if (periodic_temp_res > 1e-1)
+        {
+            results = std::vector<std::vector<std::string>>{std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}};
+            if (x.num_diff_eqns == 4)
+            {
+                results.push_back(std::vector<std::string>{infty});
+            }
+            return results;
+        }
+        results[0] = result;
+        result.clear();
+        //=========================
+        //∂f/∂θ(r, θ=2*π) ∂f/∂θ(r, θ = 0) -
+        //=========================
+        x.derivePostfix(0, x.pieces[0].size()-1, "x1", x.pieces[0], grasp);
+        dfdtheta1 = x.derivat;
+        for (const std::string& i: dfdtheta1) //∂f/∂θ(r, θ=2*π)
+        {
+            if (i == "x1")
+            {
+                result.push_back("6.283185307179586");
+            }
+            else
+            {
+                result.push_back(i);
+            }
+        }
+        for (const std::string& i: dfdtheta1) //∂f/∂θ(r, θ = 0)
+        {
+            if (i == "x1")
+            {
+                result.push_back("0");
+            }
+            else
+            {
+                result.push_back(i);
+            }
+        }
+        result.push_back("-");
+        result.push_back("1e10");
+        result.push_back("*");
+        periodic_temp_res = SNE(x.expression_evaluator(x.params, result));
+        if (periodic_temp_res > 1e-1)
+        {
+            results = std::vector<std::vector<std::string>>{std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}};
+            if (x.num_diff_eqns == 4)
+            {
+                results.push_back(std::vector<std::string>{infty});
+            }
+            return results;
+        }
+        results[1] = result;
+        result.clear();
         //=========================
         // sh(f)
         //=========================
@@ -11422,8 +11505,8 @@ print(x.replace("r","R").replace("sqRt", "sqrt").replace("theta","Theta").replac
         result.push_back("r_squared"); // r r *
         result.push_back("/"); // /
         result.push_back("-"); // -
-        x.derivePostfix(0, x.pieces[0].size()-1, "x1", x.pieces[0], grasp);
-        dfdtheta1 = x.derivat;
+//        x.derivePostfix(0, x.pieces[0].size()-1, "x1", x.pieces[0], grasp);
+//        dfdtheta1 = x.derivat;
         x.derivePostfix(0, dfdtheta1.size()-1, "x1", dfdtheta1, grasp);
         d2fdtheta2 = x.derivat;
         x.derivePostfix(0, d2fdtheta2.size()-1, "x0", d2fdtheta2, grasp);
@@ -11616,67 +11699,7 @@ print(x.replace("r","R").replace("sqRt", "sqrt").replace("theta","Theta").replac
         result.push_back("+"); // +
         result.push_back("*"); // *
         result.push_back("-"); // -
-        results.push_back(result);
-        result.clear();
-        //=========================
-        //f(r, θ=2*π) f(r, θ = 0) -
-        //=========================
-        for (const std::string& i: x.pieces[0]) //f(r, θ=2*π)
-        {
-            if (i == "x1")
-            {
-                result.push_back("6.283185307179586");
-            }
-            else
-            {
-                result.push_back(i);
-            }
-        }
-        for (const std::string& i: x.pieces[0]) //f(r, θ = 0)
-        {
-            if (i == "x1")
-            {
-                result.push_back("0");
-            }
-            else
-            {
-                result.push_back(i);
-            }
-        }
-        result.push_back("-");
-        result.push_back("1e10");
-        result.push_back("*");
-        results.push_back(result);
-        result.clear();
-        //=========================
-        //∂f/∂θ(r, θ=2*π) ∂f/∂θ(r, θ = 0) -
-        //=========================
-        for (const std::string& i: dfdtheta1) //∂f/∂θ(r, θ=2*π)
-        {
-            if (i == "x1")
-            {
-                result.push_back("6.283185307179586");
-            }
-            else
-            {
-                result.push_back(i);
-            }
-        }
-        for (const std::string& i: dfdtheta1) //∂f/∂θ(r, θ = 0)
-        {
-            if (i == "x1")
-            {
-                result.push_back("0");
-            }
-            else
-            {
-                result.push_back(i);
-            }
-        }
-        result.push_back("-");
-        result.push_back("1e10");
-        result.push_back("*");
-        results.push_back(result);
+        results[2] = result;
         result.clear();
     }
     
@@ -11699,80 +11722,80 @@ print(x.replace("r","R").replace("sqRt", "sqrt").replace("theta","Theta").replac
         {
             
             //f0 2 ν * f * 3 f0 * f * - 3 f * f * - *
-            results[0].push_back("f0"); //f0
-            results[0].push_back("2"); //2
-            results[0].push_back(nu); //ν
-            results[0].push_back("*"); //*
+            results[2].push_back("f0"); //f0
+            results[2].push_back("2"); //2
+            results[2].push_back(nu); //ν
+            results[2].push_back("*"); //*
             if (fit)
             {
                 for (const std::string& i: x.pieces[0]) // f
                 {
-                    results[0].push_back(i);
+                    results[2].push_back(i);
                 }
             }
             else
             {
-                results[0].push_back("f"); // f
+                results[2].push_back("f"); // f
             }
-            results[0].push_back("*"); //*
-            results[0].push_back("3"); //3
-            results[0].push_back("f0"); //f0
-            results[0].push_back("*"); //*
+            results[2].push_back("*"); //*
+            results[2].push_back("3"); //3
+            results[2].push_back("f0"); //f0
+            results[2].push_back("*"); //*
             if (fit)
             {
                 for (const std::string& i: x.pieces[0]) // f
                 {
-                    results[0].push_back(i);
+                    results[2].push_back(i);
                 }
             }
             else
             {
-                results[0].push_back("f"); // f
+                results[2].push_back("f"); // f
             }
-            results[0].push_back("*"); //*
-            results[0].push_back("-"); //-
-            results[0].push_back("3"); //3
+            results[2].push_back("*"); //*
+            results[2].push_back("-"); //-
+            results[2].push_back("3"); //3
             if (fit)
             {
                 for (const std::string& i: x.pieces[0]) // f
                 {
-                    results[0].push_back(i);
+                    results[2].push_back(i);
                 }
             }
             else
             {
-                results[0].push_back("f"); // f
+                results[2].push_back("f"); // f
             }
-            results[0].push_back("*"); //*
+            results[2].push_back("*"); //*
             if (fit)
             {
                 for (const std::string& i: x.pieces[0]) // f
                 {
-                    results[0].push_back(i);
+                    results[2].push_back(i);
                 }
             }
             else
             {
-                results[0].push_back("f"); // f
+                results[2].push_back("f"); // f
             }
-            results[0].push_back("*"); //*
-            results[0].push_back("-"); //-
-            results[0].push_back("*"); //*
+            results[2].push_back("*"); //*
+            results[2].push_back("-"); //-
+            results[2].push_back("*"); //*
             
-            //Add "f0 2 ν * f * 3 f0 * f * - 3 f * f * - *" to SH(f)[0]
-            results[0].push_back("+"); //+
+            //Add "f0 2 ν * f * 3 f0 * f * - 3 f * f * - *" to SH(f)[2]
+            results[2].push_back("+"); //+
+            
+            //Add SH(f0)[2] to results[2]
+            results[2].push_back("fres2");
+            results[2].push_back("+");
             
             //Add SH(f0)[0] to results[0]
             results[0].push_back("fres0");
             results[0].push_back("+");
-            
+
             //Add SH(f0)[1] to results[1]
             results[1].push_back("fres1");
             results[1].push_back("+");
-
-            //Add SH(f0)[2] to results[2]
-            results[2].push_back("fres2");
-            results[2].push_back("+");
         }
     }
     if (x.num_diff_eqns == 4)
@@ -11867,7 +11890,7 @@ print(x.replace("r","R").replace("sqRt", "sqrt").replace("theta","Theta").replac
         {
             result.push_back("0");
         }
-        results.push_back(result);
+        results[3] = result;
         assert(x.num_diff_eqns == results.size());
     }
     
@@ -13335,8 +13358,8 @@ namespace ExampleProblems
                 bad_ops /*operators to restrict in the search*/,
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
                 "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
-                7550 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
-                {split("9.709820868669647 x3 - x2 cos * x1 9.996474074820426 + 6.28319 x3 * + - sin x0 ~ sin 3.292764102418471 x3 ~ 0.01 x3 * * + * *")} /*seed expressions*/,
+                7500 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
+                {split("9.725816343768619 x3 - x2 cos * x1 9.940809567424028 - 6.28319 x3 * - + sin x2 x2 x0 + - sin 3.696788638369571 -0.14244753430343096 x3 * + * *")} /*seed expressions*/,
                 (num_threads == 1) /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
