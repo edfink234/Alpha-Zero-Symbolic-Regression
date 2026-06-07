@@ -10883,7 +10883,7 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
-//    print("(sin((((9.709820868669647 - x3) * cos(x2)) - ((x1 + 9.996474074820426) + (6.28319 * x3)))) * (sin(~(x0)) * (3.292764102418471 + (~(x3) * (0.01 * x3)))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu"))
+//    print("(sin((((9.725816343768619 - x3) * cos(x2)) + ((x1 - 9.939958102300732) - (6.28319 * x3)))) * (sin((x2 - (x2 + x0))) * (3.696752038102206 - (0.14244753430343096 * x3))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu"))
     
 //    puts("called SwiftHohenberg");
     /*
@@ -10929,10 +10929,10 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
             Best expression (original format) = x3 tanh 0.02466407502905897 * x2 sech ~ * x2 sin 0.02103963378139582 * 0.32247979147604866 + + x0 sin x0 7.574642582508127 + + x2 -0.08238535556485516 + 9.964911535750181 x2 - * - -3.0874665067931097 x3 ~ * 4.000124207158841 x0 x1 - * - + *
      mu_equals_nu_1_only == False, createMeshgridVectors(18, 4, {0.01, 0.0, 0.01, 0.01}, {10.0, 6.28319, 10, 10})), bad_ops = {"exp", "ln", "log", "^", "/", "arcsin", "asin", "acos", "arccos", "sqrt"}, l1=1e-4, ((variation <= tolerance) || (median(vec.array().abs()) <= tolerance)), period bc * 1e10:
         Depth = 5:
-            Best score = 3.57882e-08, SNE = 2.79422e+07
-            Squared-norm error for each equation: 2.79422e+07 0.000175558 0.000129524 0.919533
-            Best expression = (sin((((10 - x3) * sin(x2)) - ((x1 - 10) - (6.28319 * x3)))) * (sin(x0) * (3.3031900000000007 + (~(x3) * (0.01 * x3)))))
-            Best expression (original format) = 10 x3 - x2 sin * x1 10 - 6.28319 x3 * - - sin x0 sin 3.3031900000000007 x3 ~ 0.01 x3 * * + * *
+            Best score = 3.81115e-08, SNE = 2.62388e+07
+            Squared-norm error for each equation: 0.000800581 0.000483551 2.62388e+07 1.34207
+            Best expression = (sin((((9.72581634376862 - x3) * cos(x2)) + ((x1 - 9.939958102300732) - (6.28319 * x3)))) * ((tanh((x2 + 5.967336286010125)) * sin(~(x0))) * (3.696752038102206 - (0.14244753430343096 * x3))))
+            Best expression (original format) = 9.72581634376862 x3 - x2 cos * x1 9.939958102300732 - 6.28319 x3 * - + sin x2 5.967336286010125 + tanh x0 ~ sin * 3.696752038102206 0.14244753430343096 x3 * - * *
      
      ```
 x = "- ((1e-10 + (r + 0.0675028199851666*sin(theta) + 0.315589358780667)**(sqrt(r)*(r + 2.87892339678315)*(5953.65096806617 - r)/((5953.65096806617 - r)**2 + 1e10) + 0.980141037771426)/(0.013519701745416**r*(43.687622183442*r + 8.33814060981745) + r + 0.02*sin(r) + 1.82648253593279))**(((9.2348889286512)/(r + 0.55183450665909) + sin(theta + cos(theta + 0.519039044087815) + 5.8847752990135)*(.5*(1-tanh(1.025*(r-21.2)))))*(r + sin(r - 0.01) + (1.0e-10 + cos(sin(theta)))**(r - 1.58074387559245) + 0.37384427398835 + tanh(r)/(r + 7.97723076614237))))*((.5*(1-tanh(1.775e3*(r-10.01))))) + sqrt(1 - cos(r)**2)*(1.0e-10*0.68688067225485**(8.16109249232708*r) + 0.854229974212735)*(sech(r + cos(r) + 8.39614384384391) + 0.999884853180843)**(1.58799646315658*(r + 0.0308839840501129)**4.01549520152667*(1.57*(tanh(.62*r))))*(0.0100048594945809**(2*r + 5.29438341416157) + 0.7011748940086 - 45.6560816728088/(21934.7382737552))*sin(theta + 18.8962439891879)*(1) - ((1.5707963267949)**(-18.3837681892581) + 0.285811651486423)**(r + sech(r + 0.0561717295263584) + 10.0547134992516)*(r + (r**0.999950000416665 - 0.00364405505237706)**((0.376065617272839**r + r)**0.00999966667999946) + 0.0106243230277353)**(-r**2*exp(-r)/(1 + 1358.42254658947*exp(-r)) + (0.000469282041378069*r + 0.0160184860388267)**((sin(r) + 6.78974430415452)/(r - 0.00781876960101768)) + 7.58897670822754)*(-sin(theta + cos(theta - 0.0144023112886078) + 0.105413950813453) + sin(log(r + 0.390458429297535)) + ((-tanh(0.62*r)+1.01)*(pi/2))**(0.061275433230159*r + 0.00061275433230159)) + (0.00273233753019377**(6.19641677671904 - sin(theta + 0.089280925720443)) + 2.79499001433555e-13 + (6.12323399573677e-17)/(2.19270786451049 - 6.28221254344588*r))*(0.999329299739067*r + 0.453212918064574)**(sin(sqrt(r + 9.07998593378172e-5)) + 11.4130415650481 + 0.00010001/(1.01005016708417 - cos(theta)))*((.5*(1-tanh(1.775e3*(r-10.01))))) + 0.0101001582000134*tanh(10.0327249667171*r + 11.9956250261793) + 0.863191833358681"
@@ -13188,9 +13188,8 @@ namespace ExampleProblems
         }
     }
     void SwiftHohenbergTest(int random_seed, const char* algorithm, double time)
-    {
+{
         double threshold = 1.0;
-        unsigned int num_threads = 0;
         bool mu_equals_nu_1_only = false;
         std::vector<std::string> bad_ops;
         if (!mu_equals_nu_1_only)
@@ -13199,110 +13198,145 @@ namespace ExampleProblems
         }
         const int num_diff_eqns = (mu_equals_nu_1_only) ? 3 : 4;
         auto data1 = ((mu_equals_nu_1_only) ?
-                     createMeshgridVectors(330, 2, {0.01, 0.0}, {10.0, 6.28319}) :
-                     createMeshgridVectors(18, 4, {0.01, 0.0, 0.01, 0.01}, {10.0, 6.28319, 10, 10}));
+                      createMeshgridVectors(330, 2, {0.01, 0.0}, {10.0, 6.28319}) :
+                      createMeshgridVectors(18, 4, {0.01, 0.0, 0.01, 0.01}, {10.0, 6.28319, 10, 10}));
         
-        #if TIME_EVAL
-            auto n = 10000;
-            Eigen::VectorXd a = Eigen::VectorXd::LinSpaced(n, 0.01, 10.0);
-            Eigen::VectorXd b = Eigen::VectorXd::LinSpaced(n, 0.1, 2.0);
-            Eigen::VectorXd out(n);
-
-            {
-                ScopedTimer TIMER("add");
-                out = a.array() + b.array();
-            }
-
-            {
-                ScopedTimer TIMER("mul");
-                out = a.array() * b.array();
-            }
-
-            {
-                ScopedTimer TIMER("sin");
-                out = a.array().sin();
-            }
-
-            {
-                ScopedTimer TIMER("pow");
-                out = a.array().pow(b.array());
-            }
-
-            {
-                ScopedTimer TIMER("const");
-                out.setConstant(3.14);
-            }
+#if TIME_EVAL
+        auto n = 10000;
+        Eigen::VectorXd a = Eigen::VectorXd::LinSpaced(n, 0.01, 10.0);
+        Eigen::VectorXd b = Eigen::VectorXd::LinSpaced(n, 0.1, 2.0);
+        Eigen::VectorXd out(n);
         
-            /*
-             Example of the above on my Macbook Pro M1
-             ```
-             [TIMER] add = 0.000169 s
-             [TIMER] mul = 0.000065 s
-             [TIMER] sin = 0.000775 s
-             [TIMER] pow = 0.002027 s
-             [TIMER] const = 0.000022 s
-             ```
-             */
+        {
+            ScopedTimer TIMER("add");
+            out = a.array() + b.array();
+        }
         
-            {
-                ScopedTimer t("Eigen sin");
-                out = a.array().sin();
-            }
+        {
+            ScopedTimer TIMER("mul");
+            out = a.array() * b.array();
+        }
         
-            #if defined(__APPLE__) && defined(USE_ACCELERATE)
-            {
-                ScopedTimer t("vForce sin");
-                int nn = static_cast<int>(n);
-                vvsin(out.data(), a.data(), &nn);
-            }
-            #endif // defined(__APPLE__) && defined(USE_ACCELERATE)
+        {
+            ScopedTimer TIMER("sin");
+            out = a.array().sin();
+        }
+        
+        {
+            ScopedTimer TIMER("pow");
+            out = a.array().pow(b.array());
+        }
+        
+        {
+            ScopedTimer TIMER("const");
+            out.setConstant(3.14);
+        }
+        
+        /*
+         Example of the above on my Macbook Pro M1
+         ```
+         [TIMER] add = 0.000169 s
+         [TIMER] mul = 0.000065 s
+         [TIMER] sin = 0.000775 s
+         [TIMER] pow = 0.002027 s
+         [TIMER] const = 0.000022 s
+         ```
+         */
+        
+        {
+            ScopedTimer t("Eigen sin");
+            out = a.array().sin();
+        }
+        
+#if defined(__APPLE__) && defined(USE_ACCELERATE)
+        {
+            ScopedTimer t("vForce sin");
+            int nn = static_cast<int>(n);
+            vvsin(out.data(), a.data(), &nn);
+        }
+#endif // defined(__APPLE__) && defined(USE_ACCELERATE)
+        
+        {
+            ScopedTimer t("Eigen cos");
+            out = a.array().cos();
+        }
+        
+#if defined(__APPLE__) && defined(USE_ACCELERATE)
+        {
+            ScopedTimer t("vForce cos");
+            int nn = static_cast<int>(n);
+            vvcos(out.data(), a.data(), &nn);
+        }
+#endif // defined(__APPLE__) && defined(USE_ACCELERATE)
+        
+        {
+            ScopedTimer t("Eigen tanh");
+            out = a.array().tanh();
+        }
+        
+#if defined(__APPLE__) && defined(USE_ACCELERATE)
+        {
+            ScopedTimer t("vForce tanh");
+            int nn = static_cast<int>(n);
+            vvtanh(out.data(), a.data(), &nn);
+        }
+#endif // defined(__APPLE__) && defined(USE_ACCELERATE)
+        /*
+         Example of the above on my Macbook Pro M1
+         ```
+         [TIMER] Eigen sin = 0.000160 s
+         [TIMER] vForce sin = 0.000046 s
+         [TIMER] Eigen cos = 0.000149 s
+         [TIMER] vForce cos = 0.000048 s
+         [TIMER] Eigen tanh = 0.000187 s
+         [TIMER] vForce tanh = 0.000058 s
+         ```
+         */
+#endif // TIME_EVAL
+        
+        constexpr bool read_from_file = true;
+        constexpr const char* filename = "SwiftHohenbergTestFile.txt";
+        std::string pert_mode = "sub_tree";
+        std::string simplify_mode = "total";
+        std::string eval_type = "dag";
+        int depth = 5, completeTree = 1, max_dag = 0;
+        unsigned int num_threads = 0;
+        std::string numThreads, theDepth, theCompleteTree, theMaxDag;
+        std::string theSeedExpr = "9.725816343768619 x3 - x2 cos * x1 9.939958102300732 - 6.28319 x3 * - + sin x2 6.28319 + tanh x0 sin ~ * 3.696752038102206 0.14244753430343096 x3 * - * *";
+        
+        if (read_from_file)
+        {
+            std::ifstream inObj(filename);
             
-            {
-                ScopedTimer t("Eigen cos");
-                out = a.array().cos();
-            }
-        
-            #if defined(__APPLE__) && defined(USE_ACCELERATE)
-            {
-                ScopedTimer t("vForce cos");
-                int nn = static_cast<int>(n);
-                vvcos(out.data(), a.data(), &nn);
-            }
-            #endif // defined(__APPLE__) && defined(USE_ACCELERATE)
-            
-            {
-                ScopedTimer t("Eigen tanh");
-                out = a.array().tanh();
-            }
-        
-            #if defined(__APPLE__) && defined(USE_ACCELERATE)
-            {
-                ScopedTimer t("vForce tanh");
-                int nn = static_cast<int>(n);
-                vvtanh(out.data(), a.data(), &nn);
-            }
-            #endif // defined(__APPLE__) && defined(USE_ACCELERATE)
-            /*
-             Example of the above on my Macbook Pro M1
-             ```
-             [TIMER] Eigen sin = 0.000160 s
-             [TIMER] vForce sin = 0.000046 s
-             [TIMER] Eigen cos = 0.000149 s
-             [TIMER] vForce cos = 0.000048 s
-             [TIMER] Eigen tanh = 0.000187 s
-             [TIMER] vForce tanh = 0.000058 s
-             ```
-             */
-        #endif // TIME_EVAL
-        
-        
+            std::getline(inObj, theSeedExpr);
+            std::getline(inObj, pert_mode);
+            std::getline(inObj, simplify_mode);
+            std::getline(inObj, theCompleteTree);
+            std::getline(inObj, theMaxDag);
+            std::getline(inObj, theDepth);
+            std::getline(inObj, eval_type);
+            std::getline(inObj, numThreads);
+
+            num_threads = std::stoi(numThreads);
+            depth = std::stoi(theDepth);
+            completeTree = std::stoi(theCompleteTree);
+            max_dag = std::stoi(theMaxDag);
+            std::cout << "theSeedExpr = " << theSeedExpr << "\n";
+            std::cout << "pert_mode = " << pert_mode << '\n';
+            std::cout << "simplify_mode = " << simplify_mode << '\n';
+            std::cout << "completeTree = " << completeTree << '\n';
+            std::cout << "max_dag = " << max_dag << '\n';
+            std::cout << "depth = " << depth << '\n';
+            std::cout << "eval_type = " << eval_type << '\n';
+            std::cout << "num_threads = " << num_threads << "\n\n";
+        }
         
         if (strcmp(algorithm, "RandomSearch") == 0)
         {
             RandomSearch(SwiftHohenberg /*differential equation to solve*/,
                          num_diff_eqns /*number of equations in differential equation system*/,
                          data1 /*data used to solve differential equation*/,
-                         std::vector<int>{5} /*fixed depths of generated solution*/,
+                         std::vector<int>{depth} /*fixed depths of generated solution*/,
                          "postfix" /*expression representation*/,
                          0 /*num_consts_diff: number of constants in differential equation*/,
                          "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -13320,20 +13354,20 @@ namespace ExampleProblems
                          "SwiftHohenbergBest.txt" /*filename to save current best expression found (instead of outputting them to standard out*/,
                          {} /*optional max-sizes of each of the expressions in the generated solution*/,
                          {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
-                         "vector" /*evaluation type: can be "dag", "scalar", or "vector"*/,
+                         eval_type /*evaluation type: can be "dag", "scalar", or "vector"*/,
                          50 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
                          false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                          bad_ops /*operators to restrict in the search*/,
                          1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
-                         "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
-                         2000 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/);
+                         simplify_mode /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
+                         max_dag /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/);
         }
         else
         {
             SimulatedAnnealing(SwiftHohenberg /*differential equation to solve*/,
                 num_diff_eqns /*number of equations in differential equation system*/,
                 data1 /*data used to solve differential equation*/,
-                std::vector<int>{5} /*fixed depths of generated solution*/,
+                std::vector<int>{depth} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
                 "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
@@ -13352,22 +13386,22 @@ namespace ExampleProblems
                 "SwiftHohenbergBest.txt", //"" /*filename to save current best expression found (instead of outputting them to standard out*/
                 {} /*optional max-sizes of each of the expressions in the generated solution*/,
                 {/*split("x0 -0.01 + x1 sech + 11.156528193614346 ^ 2.714063572022206e-13 * 0.010000 x0 + 6.29319 ^ 1e-08 * 0.0100003333566687 + 0.7493736126143709 + + 0.9998848754538172 x0 tanh arcsin 0.7615941559557649 x0 4 ^ / / ^ 6.283190 x1 + ~ sin 0.9171523356672744 * * 0.7827863849639187 x0 cos asin cos * * - x0 x0 + 0.003734854911714874 6.283190 x0 / ^ 7.570169558264211 + ^ 0.28580222883407974 0.010000 x0 + 10.01 + ^ 0.010000 x0 ^ 1.03 + x1 sin - * * -6.1759665127829875 -10 x1 x1 + + + x1 0.005 / 1.9195169107150692e+06 - / -0.06767485271943648 + + 0.2658022288340797 x0 + 0.9801980198019802 ^ x0 1.517923178056138 + / 0.010000 x0 + sin 0.03661899347368653 x0 + + x1 sin 10.01 0.010000 x0 + / + * ^ -0.01842414214696351 + + -")*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
-                "dag" /*evaluation type: can be "dag", "scalar", or "vector"*/,
+                eval_type /*evaluation type: can be "dag", "scalar", or "vector"*/,
                 50 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                 bad_ops /*operators to restrict in the search*/,
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
-                "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
-                7500 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
-                {split("9.725816343768619 x3 - x2 cos * x1 9.940809567424028 - 6.28319 x3 * - + sin x2 x2 x0 + - sin 3.696788638369571 -0.14244753430343096 x3 * + * *")} /*seed expressions*/,
+                simplify_mode /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
+                max_dag /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
+                {split(theSeedExpr)} /*seed expressions*/,
                 (num_threads == 1) /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
                 0.0 /*T_max*/,
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
-                true /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                "sub_array" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/,
+                completeTree /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
+                pert_mode /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/,
                 true /*whether or not to sync the current expression of each thread with the global current best*/);
         }
     }
