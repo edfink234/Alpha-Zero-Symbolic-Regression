@@ -5899,6 +5899,96 @@ struct Board
         Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
         return std::make_pair(improved, score_after);
     }
+    
+    std::pair<bool, double> RandomJitter()
+    {
+        std::random_device rand_dev;
+        std::vector<int> grasp;
+        std::mt19937 generator(rand_dev());
+        bool improved = false;
+        auto start_time = Clock::now();
+        
+        double sne = SNE(expression_evaluator(this->params, this->diffeq_result));
+        std::vector<std::vector<std::vector<std::string>>> derivatives(this->pieces.size());
+        for (int expr = 0; expr < derivatives.size(); expr++)
+        {
+            derivatives[expr].resize(Board::__input_vars.size());
+        }
+        
+        if (this->isConstTol > 0) //compute the derivatives wrt each of the independent variables
+        {
+            for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++) //loop over each generated symbolic expression
+            {
+                int idx = 0;
+                for (const std::string& i: Board::__input_vars)
+                {
+                    if (this->expression_type == "prefix")
+                    {
+                        this->derivePrefix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
+                    }
+                    else //postfix
+                    {
+                        this->derivePostfix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
+                    }
+                    derivatives[jdx][idx] = this->derivat;
+                    idx++;
+                }
+            }
+        }
+        bool continueFlag = false;
+//        int accepted = 0, rejected = 0;
+        for (int i = 0; i < this->num_fit_iter; i++) //number of times to jit each parameter
+        {
+            continueFlag = false;
+            for (int j = 0; j < this->params.size(); j++) //jit each parameter
+            {
+                double old_param = this->params(j);
+                this->params(j) += this->vel_dist(generator);
+                if (this->isConstTol > 0) //make sure that it didn't push toward triviality
+                {
+                    for (int k = 0; k < Board::__input_vars.size(); k++)
+                    {
+                        for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++) //loop over each generated symbolic expression
+                        {
+                            if (isZero(expression_evaluator(this->params, derivatives[jdx][k]), this->isConstTol))
+                            {
+                                this->params(j) = old_param;
+                                continueFlag = true;
+                                break;
+                            }
+                        }
+                        if (continueFlag)
+                        {
+                            break;
+                        }
+                    }
+                }
+                if (continueFlag)
+                {
+                    continueFlag = false;
+//                    rejected++;
+                    continue;
+                }
+                double temp = SNE(expression_evaluator(this->params, this->diffeq_result));
+                if (temp > sne) //reset
+                {
+                    this->params(j) = old_param;
+//                    rejected++;
+                }
+                else //keep params and update current best score
+                {
+                    improved = true;
+                    sne = temp;
+//                    accepted++;
+                }
+            }
+        }
+        
+        Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
+//        std::cout << "accepted =" << accepted << ", rejected = " << rejected << '\n';
+        
+        return std::make_pair(improved, sne);
+    }
 
     //Returns `true` if each expression in `this->pieces` with parameters `this->params`
     //has variance greater than or equal to `this->isConstTol`.
@@ -6076,6 +6166,13 @@ struct Board
                     ScopedTimer t_build("LevenbergMarquardt");
                 #endif
                 improved = LevenbergMarquardt();
+            }
+            else if (this->fit_method == "RandomJitter")
+            {
+                #if TIME_EVAL
+                    ScopedTimer t_build("RandomJitter");
+                #endif
+                improved = RandomJitter();
             }
             Eigen::VectorXd temp_vec; //need to have a back-up vector in case `improved == false` so we can get the score of the expression we just built.
 
@@ -13299,9 +13396,9 @@ namespace ExampleProblems
         std::string pert_mode = "sub_tree";
         std::string simplify_mode = "total";
         std::string eval_type = "dag";
-        int depth = 5, completeTree = 1, max_dag = 0;
+        int depth = 5, completeTree = 1, max_dag = 0, fit = 0, fitIters = 5;
         unsigned int num_threads = 0;
-        std::string numThreads, theDepth, theCompleteTree, theMaxDag;
+        std::string numThreads, theDepth, theCompleteTree, theMaxDag, theFit, theNumFitIters;
         std::string theSeedExpr = "9.725816343768619 x3 - x2 cos * x1 9.939958102300732 - 6.28319 x3 * - + sin x2 6.28319 + tanh x0 sin ~ * 3.696752038102206 0.14244753430343096 x3 * - * *";
         
         if (read_from_file)
@@ -13316,11 +13413,15 @@ namespace ExampleProblems
             std::getline(inObj, theDepth);
             std::getline(inObj, eval_type);
             std::getline(inObj, numThreads);
+            std::getline(inObj, theFit);
+            std::getline(inObj, theNumFitIters);
 
             num_threads = std::stoi(numThreads);
             depth = std::stoi(theDepth);
             completeTree = std::stoi(theCompleteTree);
             max_dag = std::stoi(theMaxDag);
+            fit = std::stoi(theFit);
+            fitIters = std::stoi(theNumFitIters);
             std::cout << "theSeedExpr = " << theSeedExpr << "\n";
             std::cout << "pert_mode = " << pert_mode << '\n';
             std::cout << "simplify_mode = " << simplify_mode << '\n';
@@ -13328,7 +13429,9 @@ namespace ExampleProblems
             std::cout << "max_dag = " << max_dag << '\n';
             std::cout << "depth = " << depth << '\n';
             std::cout << "eval_type = " << eval_type << '\n';
-            std::cout << "num_threads = " << num_threads << "\n\n";
+            std::cout << "num_threads = " << num_threads << '\n';
+            std::cout << "fit = " << fit << '\n';
+            std::cout << "fitIters = " << fitIters << "\n\n";
         }
         
         if (strcmp(algorithm, "RandomSearch") == 0)
@@ -13339,15 +13442,15 @@ namespace ExampleProblems
                          std::vector<int>{depth} /*fixed depths of generated solution*/,
                          "postfix" /*expression representation*/,
                          0 /*num_consts_diff: number of constants in differential equation*/,
-                         "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
-                         5 /*number of fit iterations*/,
+                         "RandomJitter" /*fit method if expression contains const tokens*/,
+                         fitIters /*number of fit iterations*/,
                          "naive_numerical" /*method for computing the gradient*/,
                          true /*cache*/,
                          time /*time to run the algorithm in seconds*/,
                          num_threads /*num threads*/,
                          true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
                          threshold /*threshold for which solutions cannot be constant*/,
-                         false /*`use_const_pieces`: whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                         fit /*`use_const_pieces`: whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                          0 /*number of data columns that constitute labels and not independent variables/features*/,
                          true /*whether or not to include ALL of the features in all of the generated expressions*/,
                          {} /*custom features that the SR-found equations are required to contain*/,
@@ -13370,15 +13473,15 @@ namespace ExampleProblems
                 std::vector<int>{depth} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
-                "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
-                5 /*number of fit iterations*/,
+                "RandomJitter" /*fit method if expression contains const tokens*/,
+                fitIters /*number of fit iterations*/,
                 "naive_numerical" /*method for computing the gradient*/,
                 true /*cache*/,
                 time /*time to run the algorithm in seconds*/,
                 num_threads /*num threads*/,
                 true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
-                false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                fit /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
                 0 /*number of data columns that constitute labels and not independent variables/features*/,
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
