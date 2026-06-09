@@ -5900,15 +5900,23 @@ struct Board
         return std::make_pair(improved, score_after);
     }
     
-    std::pair<bool, double> RandomJitter()
+    std::pair<bool, double> RandomJitterVec()
     {
+#define logProgress true
         std::random_device rand_dev;
         std::vector<int> grasp;
         std::mt19937 generator(rand_dev());
         bool improved = false;
         auto start_time = Clock::now();
         
-        double sne = SNE(expression_evaluator(this->params, this->diffeq_result));
+        double sne = SNE(expression_evaluator(this->params, this->diffeq_result)); //TODO: CHECK IF IT'S DECENT ENOUGH TO BOTHER FITTING?
+        if (sne > this->const_cache_thresh * Board::global_min_sne.load(std::memory_order_relaxed))
+        {
+            return std::make_pair(improved, sne);
+        }
+#ifdef logProgress
+        double before_sne = sne;
+#endif
         std::vector<std::vector<std::vector<std::string>>> derivatives(this->pieces.size());
         for (int expr = 0; expr < derivatives.size(); expr++)
         {
@@ -5936,7 +5944,121 @@ struct Board
             }
         }
         bool continueFlag = false;
-//        int accepted = 0, rejected = 0;
+#ifdef logProgress
+        int accepted = 0, rejected = 0;
+#endif
+        for (int i = 0; i < this->num_fit_iter; i++) //number of times to jit each parameter
+        {
+            continueFlag = false;
+            EigenVectorXd old_params = this->params;
+            for (int j = 0; j < this->params.size(); j++) //jit each parameter
+            {
+                this->params(j) += this->vel_dist(generator);
+            }
+            
+            if (this->isConstTol > 0) //make sure that it didn't push toward triviality
+            {
+                for (int k = 0; k < Board::__input_vars.size(); k++)
+                {
+                    for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++) //loop over each generated symbolic expression
+                    {
+                        if (isZero(expression_evaluator(this->params, derivatives[jdx][k]), this->isConstTol))
+                        {
+                            this->params = old_params;
+                            continueFlag = true;
+                            break;
+                        }
+                    }
+                    if (continueFlag)
+                    {
+                        break;
+                    }
+                }
+            }
+            if (continueFlag)
+            {
+                continueFlag = false;
+#ifdef logProgress
+                rejected++;
+#endif
+                continue;
+            }
+            double temp = SNE(expression_evaluator(this->params, this->diffeq_result));
+            if (temp >= sne) //reset
+            {
+                this->params = old_params;
+#ifdef logProgress
+                rejected++;
+#endif
+            }
+            else //keep params and update current best score
+            {
+                improved = true;
+                sne = temp;
+#ifdef logProgress
+                accepted++;
+#endif
+            }
+        }
+        
+        Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
+#ifdef logProgress
+        std::cout << "accepted =" << accepted << ", rejected = " << rejected << '\n';
+        if (sne < before_sne)
+        {
+            std::cout << "sse before = " << before_sne << ", sse after = " << sne << '\n';
+        }
+#endif // logProgress
+        return std::make_pair(improved, sne);
+    }
+    
+    std::pair<bool, double> RandomJitter()
+    {
+#define logProgress true
+        std::random_device rand_dev;
+        std::vector<int> grasp;
+        std::mt19937 generator(rand_dev());
+        bool improved = false;
+        auto start_time = Clock::now();
+        
+        double sne = SNE(expression_evaluator(this->params, this->diffeq_result)); //TODO: CHECK IF IT'S DECENT ENOUGH TO BOTHER FITTING?
+        if (sne > this->const_cache_thresh * Board::global_min_sne.load(std::memory_order_relaxed))
+        {
+            return std::make_pair(improved, sne);
+        }
+#ifdef logProgress
+        double before_sne = sne;
+#endif
+        std::vector<std::vector<std::vector<std::string>>> derivatives(this->pieces.size());
+        for (int expr = 0; expr < derivatives.size(); expr++)
+        {
+            derivatives[expr].resize(Board::__input_vars.size());
+        }
+        
+        if (this->isConstTol > 0) //compute the derivatives wrt each of the independent variables
+        {
+            for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++) //loop over each generated symbolic expression
+            {
+                int idx = 0;
+                for (const std::string& i: Board::__input_vars)
+                {
+                    if (this->expression_type == "prefix")
+                    {
+                        this->derivePrefix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
+                    }
+                    else //postfix
+                    {
+                        this->derivePostfix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
+                    }
+                    derivatives[jdx][idx] = this->derivat;
+                    idx++;
+                }
+            }
+        }
+        bool continueFlag = false;
+#ifdef logProgress
+        int accepted = 0, rejected = 0;
+#endif
         for (int i = 0; i < this->num_fit_iter; i++) //number of times to jit each parameter
         {
             continueFlag = false;
@@ -5966,27 +6088,38 @@ struct Board
                 if (continueFlag)
                 {
                     continueFlag = false;
-//                    rejected++;
+#ifdef logProgress
+                    rejected++;
+#endif
                     continue;
                 }
                 double temp = SNE(expression_evaluator(this->params, this->diffeq_result));
-                if (temp > sne) //reset
+                if (temp >= sne) //reset
                 {
                     this->params(j) = old_param;
-//                    rejected++;
+#ifdef logProgress
+                    rejected++;
+#endif
                 }
                 else //keep params and update current best score
                 {
                     improved = true;
                     sne = temp;
-//                    accepted++;
+#ifdef logProgress
+                    accepted++;
+#endif
                 }
             }
         }
         
         Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
-//        std::cout << "accepted =" << accepted << ", rejected = " << rejected << '\n';
-        
+#ifdef logProgress
+        std::cout << "accepted =" << accepted << ", rejected = " << rejected << '\n';
+        if (sne < before_sne)
+        {
+            std::cout << "sse before = " << before_sne << ", sse after = " << sne << '\n';
+        }
+#endif // logProgress
         return std::make_pair(improved, sne);
     }
 
@@ -6126,20 +6259,16 @@ struct Board
                 this->SNE_curr_vec.assign(this->diffeq_result.size(), 0); //one sne value initialized to 0 per equation in the system we're trying to solve.
             }
             assert(this->diffeq_result.size() == static_cast<decltype(this->diffeq_result.size())>(this->num_diff_eqns));
-            #if TIME_EVAL
-                {
-                    ScopedTimer t_build("simplify_diff_eq");
-                    for (decltype(this->diffeq_result.size()) jdx = 0; jdx < this->diffeq_result.size(); jdx++)
-                    {
-                        ((this->expression_type == "prefix") ? simplifyPN(this->diffeq_result[jdx]) : simplifyRPN(this->diffeq_result[jdx]));
-                    }
-                }
-            #else
+            if (this->eval_type != "dag")
+            {
+#if TIME_EVAL
+                ScopedTimer t_build("simplify_diff_eq");
+#endif
                 for (decltype(this->diffeq_result.size()) jdx = 0; jdx < this->diffeq_result.size(); jdx++)
                 {
                     ((this->expression_type == "prefix") ? simplifyPN(this->diffeq_result[jdx]) : simplifyRPN(this->diffeq_result[jdx]));
                 }
-            #endif
+            }
 
             std::pair<bool, double> improved;
             
@@ -6171,6 +6300,13 @@ struct Board
             {
                 #if TIME_EVAL
                     ScopedTimer t_build("RandomJitter");
+                #endif
+                improved = RandomJitter();
+            }
+            else if (this->fit_method == "RandomJitterVec")
+            {
+                #if TIME_EVAL
+                    ScopedTimer t_build("RandomJitterVec");
                 #endif
                 improved = RandomJitter();
             }
@@ -6366,17 +6502,21 @@ struct Board
                 {
                     this->expression_string.clear();
                     this->expression_string.reserve(8*pieces.size());
-
+                    bool expr_has_consts = false;
                     for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++)
                     {
                         for (const std::string& token: this->pieces[jdx])
                         {
                             this->expression_string += token+" ";
+                            if (token.compare(0, 5, "const") == 0)
+                            {
+                                expr_has_consts = true;
+                            }
                         }
                         this->expression_string += ((jdx < this->pieces.size() - 1) ? ", " : "");
                     }
                     //TODO: probably shouldn't bother inserting expressions that don't have parameters
-                    if (!Board::expression_dict.contains(this->expression_string)) //If the generated expression has NOT been generated before...
+                    if (expr_has_consts && !Board::expression_dict.contains(this->expression_string)) //If the generated expression has NOT been generated before...
                     {
                         //insert it into the shared dictionary of `{expressions: best_fit_params}` key-value pairs...
                         try //MARK: Might be able to remove this try-catch block itf.
@@ -10980,7 +11120,7 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
-//    print("(sin((((9.725816343768619 - x3) * cos(x2)) + ((x1 - 9.939958102300732) - (6.28319 * x3)))) * (sin((x2 - (x2 + x0))) * (3.696752038102206 - (0.14244753430343096 * x3))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu"))
+//    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("(sin((((9.71221746517301 - (0.009986312696023117 + x3)) * cos((2.489795678782283 + x2))) + (((0.002424273003875368 + x1) - 16.22428821569935) - (6.2837758300132975 * (4 + x3))))) * ((tanh(((x2 * 9.965061806672827) + -3.7909453384282488)) * (((1.8315212884296368 * x2) * 1.1011191958232304e-11) - sin(x0))) * ((((x2 * 0.01376994854395285) * cos(x3)) + 3.69245056741647) - (0.1425912833329323 * (0.025375554582084223 + (0.00028194332410969025 + x3))))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu"))); 
     
 //    puts("called SwiftHohenberg");
     /*
@@ -13493,7 +13633,7 @@ namespace ExampleProblems
                 50 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                 bad_ops /*operators to restrict in the search*/,
-                1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
+                1.1 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
                 simplify_mode /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
                 max_dag /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
                 {split(theSeedExpr)} /*seed expressions*/,
