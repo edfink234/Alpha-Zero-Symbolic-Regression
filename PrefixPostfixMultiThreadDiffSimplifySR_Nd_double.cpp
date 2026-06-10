@@ -5950,10 +5950,10 @@ struct Board
         for (int i = 0; i < this->num_fit_iter; i++) //number of times to jit each parameter
         {
             continueFlag = false;
-            EigenVectorXd old_params = this->params;
+            Eigen::VectorXd old_params = this->params;
             for (int j = 0; j < this->params.size(); j++) //jit each parameter
             {
-                this->params(j) += this->vel_dist(generator);
+                this->params(j) += 0.1*this->vel_dist(generator);
             }
             
             if (this->isConstTol > 0) //make sure that it didn't push toward triviality
@@ -6003,7 +6003,7 @@ struct Board
         
         Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
 #ifdef logProgress
-        std::cout << "accepted =" << accepted << ", rejected = " << rejected << '\n';
+        std::cout << "accepted = " << accepted << ", rejected = " << rejected << '\n';
         if (sne < before_sne)
         {
             std::cout << "sse before = " << before_sne << ", sse after = " << sne << '\n';
@@ -13538,7 +13538,7 @@ namespace ExampleProblems
         std::string eval_type = "dag";
         int depth = 5, completeTree = 1, max_dag = 0, fit = 0, fitIters = 5;
         unsigned int num_threads = 0;
-        std::string numThreads, theDepth, theCompleteTree, theMaxDag, theFit, theNumFitIters;
+        std::string numThreads, theDepth, theCompleteTree, theMaxDag, theFit, theNumFitIters, theFitType = "RandomJitter";
         std::string theSeedExpr = "9.725816343768619 x3 - x2 cos * x1 9.939958102300732 - 6.28319 x3 * - + sin x2 6.28319 + tanh x0 sin ~ * 3.696752038102206 0.14244753430343096 x3 * - * *";
         
         if (read_from_file)
@@ -13555,6 +13555,7 @@ namespace ExampleProblems
             std::getline(inObj, numThreads);
             std::getline(inObj, theFit);
             std::getline(inObj, theNumFitIters);
+            std::getline(inObj, theFitType);
 
             num_threads = std::stoi(numThreads);
             depth = std::stoi(theDepth);
@@ -13571,7 +13572,8 @@ namespace ExampleProblems
             std::cout << "eval_type = " << eval_type << '\n';
             std::cout << "num_threads = " << num_threads << '\n';
             std::cout << "fit = " << fit << '\n';
-            std::cout << "fitIters = " << fitIters << "\n\n";
+            std::cout << "fitIters = " << fitIters << '\n';
+            std::cout << "theFitType = " << theFitType << "\n\n";
         }
         
         if (strcmp(algorithm, "RandomSearch") == 0)
@@ -13582,7 +13584,7 @@ namespace ExampleProblems
                          std::vector<int>{depth} /*fixed depths of generated solution*/,
                          "postfix" /*expression representation*/,
                          0 /*num_consts_diff: number of constants in differential equation*/,
-                         "RandomJitter" /*fit method if expression contains const tokens*/,
+                         theFitType /*fit method if expression contains const tokens*/,
                          fitIters /*number of fit iterations*/,
                          "naive_numerical" /*method for computing the gradient*/,
                          true /*cache*/,
@@ -13613,7 +13615,7 @@ namespace ExampleProblems
                 std::vector<int>{depth} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
-                "RandomJitter" /*fit method if expression contains const tokens*/,
+                theFitType /*fit method if expression contains const tokens*/,
                 fitIters /*number of fit iterations*/,
                 "naive_numerical" /*method for computing the gradient*/,
                 true /*cache*/,
