@@ -5953,7 +5953,7 @@ struct Board
             Eigen::VectorXd old_params = this->params;
             for (int j = 0; j < this->params.size(); j++) //jit each parameter
             {
-                this->params(j) += 0.1*this->vel_dist(generator);
+                this->params(j) += 1.*this->vel_dist(generator);
             }
             
             if (this->isConstTol > 0) //make sure that it didn't push toward triviality
@@ -13537,9 +13537,11 @@ namespace ExampleProblems
         std::string simplify_mode = "total";
         std::string eval_type = "dag";
         int depth = 5, completeTree = 1, max_dag = 0, fit = 0, fitIters = 5;
+        double ConstCacheThresh = 1.2;
         unsigned int num_threads = 0;
         std::string numThreads, theDepth, theCompleteTree, theMaxDag, theFit, theNumFitIters, theFitType = "RandomJitter";
         std::string theSeedExpr = "9.725816343768619 x3 - x2 cos * x1 9.939958102300732 - 6.28319 x3 * - + sin x2 6.28319 + tanh x0 sin ~ * 3.696752038102206 0.14244753430343096 x3 * - * *";
+        std::string theConstCacheThresh;
         
         if (read_from_file)
         {
@@ -13556,6 +13558,7 @@ namespace ExampleProblems
             std::getline(inObj, theFit);
             std::getline(inObj, theNumFitIters);
             std::getline(inObj, theFitType);
+            std::getline(inObj, theConstCacheThresh);
 
             num_threads = std::stoi(numThreads);
             depth = std::stoi(theDepth);
@@ -13563,6 +13566,7 @@ namespace ExampleProblems
             max_dag = std::stoi(theMaxDag);
             fit = std::stoi(theFit);
             fitIters = std::stoi(theNumFitIters);
+            ConstCacheThresh = std::stod(theConstCacheThresh);
             std::cout << "theSeedExpr = " << theSeedExpr << "\n";
             std::cout << "pert_mode = " << pert_mode << '\n';
             std::cout << "simplify_mode = " << simplify_mode << '\n';
@@ -13573,7 +13577,8 @@ namespace ExampleProblems
             std::cout << "num_threads = " << num_threads << '\n';
             std::cout << "fit = " << fit << '\n';
             std::cout << "fitIters = " << fitIters << '\n';
-            std::cout << "theFitType = " << theFitType << "\n\n";
+            std::cout << "theFitType = " << theFitType << '\n';
+            std::cout << "ConstCacheThresh = " << ConstCacheThresh << "\n\n";
         }
         
         if (strcmp(algorithm, "RandomSearch") == 0)
@@ -13603,7 +13608,7 @@ namespace ExampleProblems
                          50 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
                          false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                          bad_ops /*operators to restrict in the search*/,
-                         1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
+                         ConstCacheThresh /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
                          simplify_mode /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
                          max_dag /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/);
         }
@@ -13635,7 +13640,7 @@ namespace ExampleProblems
                 50 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                 bad_ops /*operators to restrict in the search*/,
-                1.1 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
+                ConstCacheThresh /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
                 simplify_mode /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
                 max_dag /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
                 {split(theSeedExpr)} /*seed expressions*/,
