@@ -977,6 +977,7 @@ struct Board
     static inline thread_local size_t subexpr_cache_lookups = 0;
     static inline thread_local size_t subexpr_cache_hits = 0;
     static inline thread_local size_t subexpr_cache_inserts = 0;
+    static double inline random_jitter_factor = 1.0;
 
     static constexpr double K = 0.0884956;
     static constexpr double phi_1 = 2.8;
@@ -5953,7 +5954,7 @@ struct Board
             Eigen::VectorXd old_params = this->params;
             for (int j = 0; j < this->params.size(); j++) //jit each parameter
             {
-                this->params(j) += 1.*this->vel_dist(generator);
+                this->params(j) += Board::random_jitter_factor*this->vel_dist(generator);
             }
             
             if (this->isConstTol > 0) //make sure that it didn't push toward triviality
@@ -6065,7 +6066,7 @@ struct Board
             for (int j = 0; j < this->params.size(); j++) //jit each parameter
             {
                 double old_param = this->params(j);
-                this->params(j) += this->vel_dist(generator);
+                this->params(j) += Board::random_jitter_factor*this->vel_dist(generator);
                 if (this->isConstTol > 0) //make sure that it didn't push toward triviality
                 {
                     for (int k = 0; k < Board::__input_vars.size(); k++)
@@ -11120,7 +11121,7 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
-//    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("(sin((((9.71221746517301 - (0.009986312696023117 + x3)) * cos((2.489795678782283 + x2))) + (((0.002424273003875368 + x1) - 16.22428821569935) - (6.2837758300132975 * (4 + x3))))) * ((tanh(((x2 * 9.965061806672827) + -3.7909453384282488)) * (((1.8315212884296368 * x2) * 1.1011191958232304e-11) - sin(x0))) * ((((x2 * 0.01376994854395285) * cos(x3)) + 3.69245056741647) - (0.1425912833329323 * (0.025375554582084223 + (0.00028194332410969025 + x3))))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu"))); 
+//    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("(sin((((0.012059328083849344 - (x1 - -0.14414589409778866)) - sin((x2 * 10.68890272056699))) + ((x3 + 12.708129088996431) - (6.30182875076887 * (9.501130306431177 + x3))))) * ((((0.0001 * (-34.88594541763613 - x2)) - -1.0087591957576318) * (-1.0152323426382281e-10 - sin(~(x0)))) * ((((0.43915600625377327 * x2) * 0.02) - -3.659560894223668) - (0.1525912833329317 * (x3 * 1.082648042269947)))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu"))); 
     
 //    puts("called SwiftHohenberg");
     /*
@@ -12496,7 +12497,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                         const std::vector<int>& depth,
                         const std::string& expression_type = "prefix",
                         size_t num_consts_diff = 0,
-                        const std::string& method = "LevenbergMarquardt",
+                        std::string method = "LevenbergMarquardt",
                         const int num_fit_iter = 1,
                         const std::string& fit_grad_method = "naive_numerical",
                         const bool cache = true,
@@ -12527,7 +12528,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                         double (*temp_func)(const double, const double) = [](double ratio, double t) -> double {return pow(ratio, t/(t+1.0));},
                         const char* SNE_file_name = "",
                         bool completeTree = false,
-                        const std::string& pert_option = "sub_tree",
+                        std::string pert_option = "sub_tree",
                         bool sync_current = false)
 {
     assert(simplifyOriginal == false);
@@ -12556,6 +12557,31 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
         {
             throw std::runtime_error("Error, make sure `num_consts_diff = 0` when setting `exit_early=true`!");
         }
+    }
+    assert(!(method.substr(0, 12) == "RandomJitter" && use_const_pieces && pert_option.substr(0, 14) == "constants_only"));
+    if (use_const_pieces && method.substr(0, 15) == "RandomJitterVec" && method.size() > 15)
+    {
+        Board::random_jitter_factor = std::stod(method.substr(15));
+        std::cout << "Board::random_jitter_factor = " << Board::random_jitter_factor << '\n';
+        method = "RandomJitterVec";
+    }
+    else if (use_const_pieces && (method.substr(0, 12) == "RandomJitter") && (method != "RandomJitterVec") && (method.size() > 12))
+    {
+        Board::random_jitter_factor = std::stod(method.substr(12));
+        std::cout << "Board::random_jitter_factor = " << Board::random_jitter_factor << '\n';
+        method = "RandomJitter";
+    }
+    else if (pert_option.substr(0, 18) == "constants_only_vec" && pert_option.size() > 18)
+    {
+        Board::random_jitter_factor = std::stod(pert_option.substr(18));
+        std::cout << "Board::random_jitter_factor = " << Board::random_jitter_factor << '\n';
+        pert_option = "constants_only_vec";
+    }
+    else if (pert_option.substr(0, 14) == "constants_only" && (pert_option != "constants_only_vec") && pert_option.size() > 14)
+    {
+        Board::random_jitter_factor = std::stod(pert_option.substr(14));
+        std::cout << "Board::random_jitter_factor = " << Board::random_jitter_factor << '\n';
+        pert_option = "constants_only";
     }
 
 
@@ -12668,7 +12694,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                     global_current_idx++;
                     current_idx = global_current_idx;
                 }
-                if (pert_option == "constants_only")
+                if (pert_option.substr(0, 14) == "constants_only")
                 {
                     // REFRESH THE CONSTANT INDEX CACHE HERE ---
                     for (int jdx = 0; jdx < x.num_objectives; jdx++)
@@ -12742,7 +12768,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                     std::scoped_lock sync_curr_lock(Board::thread_locker);
                     current = global_current;
                     current_idx = global_current_idx;
-                    if (pert_option == "constants_only")
+                    if (pert_option.substr(0, 14) == "constants_only")
                     {
                         current_const_indices = global_current_const_indices;
                     }
@@ -12856,9 +12882,10 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                 }
                 else if (pert_option == "constants_only")
                 {
-                    #if TIME_EVAL
                     {
-                        ScopedTimer t_build("constants_only_perturbation");
+                        #if TIME_EVAL
+                            ScopedTimer t_build("constants_only_perturbation");
+                        #endif
                         const auto& const_idxs = current_const_indices[jdx];
                         if (!const_idxs.empty())
                         {
@@ -12867,21 +12894,30 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                             
                             // Directly perturb the piece in x.pieces
                             double val = Stod(x.pieces[jdx][target_idx]);
-                            x.pieces[jdx][target_idx] = to_string_general(val + x.vel_dist(generator));
+                            x.pieces[jdx][target_idx] = to_string_general(val + Board::random_jitter_factor*x.vel_dist(generator));
                         }
                     }
-                    #else
+                }
+                else if (pert_option == "constants_only_vec")
+                {
+                    {
+                        #if TIME_EVAL
+                            ScopedTimer t_build("constants_only_vec_perturbation");
+                        #endif
                         const auto& const_idxs = current_const_indices[jdx];
                         if (!const_idxs.empty())
                         {
-                            std::uniform_int_distribution<size_t> distribution(0, const_idxs.size() - 1);
-                            size_t target_idx = const_idxs[distribution(generator)];
+                            size_t target_idx;
+                            for (int constIdx = 0; constIdx < const_idxs.size(); constIdx++)
+                            {
+                                // Directly perturb the piece in x.pieces
+                                target_idx = const_idxs[constIdx];
+                                double val = Stod(x.pieces[jdx][target_idx]);
+                                x.pieces[jdx][target_idx] = to_string_general(val + Board::random_jitter_factor*x.vel_dist(generator));
+                            }
                             
-                            // Directly perturb the piece in x.pieces
-                            double val = Stod(x.pieces[jdx][target_idx]);
-                            x.pieces[jdx][target_idx] = to_string_general(val + x.vel_dist(generator));
                         }
-                    #endif
+                    }
                 }
                 //else: `pert_option == "sub_tree"`
                 //Step 1a: check for the special case of a depth-0 (i.e. 1 operand) perturbation
@@ -12970,7 +13006,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
         //Step 1: generate a random expression
         if (seed_expressions.empty())
         {
-            assert(((pert_option != "sub_array") && (pert_option != "n_random")) && "when you provide no seed-expressions you must choose pert == 'sub_tree'");
+            assert(((pert_option != "sub_array") && (pert_option != "n_random") && (pert_option.substr(0, 14) != "constants_only")) && "when you provide no seed-expressions you must choose pert == 'sub_tree'");
             for (int jdx = 0; jdx < x.num_objectives; jdx++)
             {
                 while ((score = x.complete_status(jdx)) == -1)
@@ -13016,7 +13052,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
         updateScore(1.0);
         assert(all_checks(x.pieces));
         #ifdef NDEBUG
-            if (pert_option == "constants_only")
+            if (pert_option.substr(0, 14) == "constants_only")
             {
                 for (int jdx = 0; jdx < x.num_objectives; jdx++)
                 {
@@ -13117,7 +13153,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
                   const std::vector<int>& depth,
                   const std::string& expression_type = "prefix",
                   size_t num_consts_diff = 0,
-                  const std::string& method = "LevenbergMarquardt",
+                  std::string method = "LevenbergMarquardt",
                   const int num_fit_iter = 1,
                   const std::string& fit_grad_method = "naive_numerical",
                   const bool cache = true,
@@ -13163,6 +13199,18 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
     std::vector<double> best_sne_vec;
     std::ostream* out = &std::cout;
     std::ofstream outFile;
+    if (method.substr(0, 15) == "RandomJitterVec" && method.size() > 15)
+    {
+        Board::random_jitter_factor = std::stod(method.substr(15));
+        std::cout << "Board::random_jitter_factor = " << Board::random_jitter_factor << '\n';
+        method = "RandomJitterVec";
+    }
+    else if (method.substr(0, 12) == "RandomJitter" && method.size() > 12)
+    {
+        Board::random_jitter_factor = std::stod(method.substr(12));
+        std::cout << "Board::random_jitter_factor = " << Board::random_jitter_factor << '\n';
+        method = "RandomJitter";
+    }
 
     auto start_time = Clock::now();
 
@@ -13425,7 +13473,7 @@ namespace ExampleProblems
         }
     }
     void SwiftHohenbergTest(int random_seed, const char* algorithm, double time)
-{
+    {
         double threshold = 1.0;
         bool mu_equals_nu_1_only = false;
         std::vector<std::string> bad_ops;
