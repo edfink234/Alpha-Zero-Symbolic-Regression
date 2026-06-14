@@ -636,7 +636,7 @@ def test_visualize():
             assert rpn1 == rpn2
             print(f"rpn_expr = {rpn_expr}")
             
-            infix_expr = '-(1.00527060121587 - 0.0001*mu)*(sin(r) - 1.01523234263823e-10)*(0.00878312012507547*mu - 0.165202654167857*nu + 3.65956089422367)*sin(5.30182875076887*nu + theta + sin(10.688902720567*mu) + 47.2984536068869)'.replace("**","^")
+            infix_expr = '(0.000100107819514797*x2 + -1.00527057692628)*(sin(x0 + 1.00336599430469e-8) + -6.1170215559514e-9)*(0.00878308485428595*x2 + -0.165202710477575*x3 + 3.65956084765357)*sin(x1 + 5.30182881681375*x3 + sin(10.6889027693435*x2) + 47.2984536405886)'.replace("**","^")
             
             infix_expr_subbed = rpn_to_infix(rpn_expr:=infix_to_rpn(infix_expr))
 
@@ -661,7 +661,7 @@ def test_visualize():
                 plot_pn_expression_tree(complete_pn_expr, save = save, include_expression_in_title = False)
 
             else:
-                complete_rpn_expr = '1.00527060121587 0.0001 x2 * - ~ x0 sin 1.01523234263823e-10 - * 0.00878312012507547 x2 * 0.165202654167857 x3 * - 3.65956089422367 + * 5.30182875076887 x3 * x1 + 10.688902720567 x2 * sin + 47.2984536068869 + sin *'
+                complete_rpn_expr = 'x0 sin sin sin sin x1 sin sin sin sin + x2 sin sin sin sin x3 sin sin sin sin + +'
                 print(f"rpn_to_infix = {rpn_to_infix(complete_rpn_expr)}")
                 
                 

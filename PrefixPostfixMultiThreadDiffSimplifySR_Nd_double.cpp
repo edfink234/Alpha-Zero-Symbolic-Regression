@@ -11121,7 +11121,7 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
-//    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("(sin((((0.012059328083849344 - (x1 - -0.14414589409778866)) - sin((x2 * 10.68890272056699))) + ((x3 + 12.708129088996431) - (6.30182875076887 * (9.501130306431177 + x3))))) * ((((0.0001 * (-34.88594541763613 - x2)) - -1.0087591957576318) * (-1.0152323426382281e-10 - sin(~(x0)))) * ((((0.43915600625377327 * x2) * 0.02) - -3.659560894223668) - (0.1525912833329317 * (x3 * 1.082648042269947)))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu"))); 
+//    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("(((~((1.0052705769262753 - (0.00010010781951479679 * x2))) * (sin((1.0033659943046945e-08 + x0)) - 6.117021555951396e-09)) * (((0.008783084854285946 * (-2.2248506373509127e-06 + x2)) - (0.1652027104775746 * (1.782098696228583e-08 + x3))) + 3.6595608701386926)) * sin(((((5.301828816813749 * x3) + (2.4855749433220494e-08 + x1)) + sin((10.688902769343482 * x2))) + (~(x2) + ((-6.660924490996364e-09 + x2) + 47.298453622393744)))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu"))); 
     
 //    puts("called SwiftHohenberg");
     /*
@@ -12741,7 +12741,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                     (*out) << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
                     (*out) << "Time spent fitting = " << Board::fit_time << " seconds\n";
                     (*out) << "Best score = " << score << ", SNE = " << Board::global_min_sne << '\n';
-                    (*out) << "Squared-norm error for each equation: " << best_sne_vec << '\n';
+                    (*out) << "Squared-norm error for each equation: " << std::setprecision(17) << best_sne_vec << '\n';
                     (*out) << "Best expression = " << best_expression << '\n';
                     (*out) << "Best expression (original format) = " << orig_expression << '\n';
 //                    (*out) << "Temp expression (original format) = " << x.temp_pieces << '\n';
@@ -13587,7 +13587,7 @@ namespace ExampleProblems
         int depth = 5, completeTree = 1, max_dag = 0, fit = 0, fitIters = 5;
         double ConstCacheThresh = 1.2;
         unsigned int num_threads = 0;
-        std::string numThreads, theDepth, theCompleteTree, theMaxDag, theFit, theNumFitIters, theFitType = "RandomJitter";
+        std::string numThreads, theDepth, theCompleteTree, theMaxDag, theFit, theNumFitIters, theFitType = "RandomJitter", theBadOps;
         std::string theSeedExpr = "9.725816343768619 x3 - x2 cos * x1 9.939958102300732 - 6.28319 x3 * - + sin x2 6.28319 + tanh x0 sin ~ * 3.696752038102206 0.14244753430343096 x3 * - * *";
         std::string theConstCacheThresh;
         
@@ -13607,6 +13607,7 @@ namespace ExampleProblems
             std::getline(inObj, theNumFitIters);
             std::getline(inObj, theFitType);
             std::getline(inObj, theConstCacheThresh);
+            std::getline(inObj, theBadOps);
 
             num_threads = std::stoi(numThreads);
             depth = std::stoi(theDepth);
@@ -13615,6 +13616,7 @@ namespace ExampleProblems
             fit = std::stoi(theFit);
             fitIters = std::stoi(theNumFitIters);
             ConstCacheThresh = std::stod(theConstCacheThresh);
+            bad_ops = split(theBadOps);
             std::cout << "theSeedExpr = " << theSeedExpr << "\n";
             std::cout << "pert_mode = " << pert_mode << '\n';
             std::cout << "simplify_mode = " << simplify_mode << '\n';
@@ -13626,7 +13628,8 @@ namespace ExampleProblems
             std::cout << "fit = " << fit << '\n';
             std::cout << "fitIters = " << fitIters << '\n';
             std::cout << "theFitType = " << theFitType << '\n';
-            std::cout << "ConstCacheThresh = " << ConstCacheThresh << "\n\n";
+            std::cout << "ConstCacheThresh = " << ConstCacheThresh << '\n';
+            std::cout << "bad_ops = " << bad_ops << '\n';
         }
         
         if (strcmp(algorithm, "RandomSearch") == 0)
