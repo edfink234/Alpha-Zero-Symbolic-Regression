@@ -216,7 +216,7 @@ PERIODIC_IN_THETA = True
 PRINT_LATEX_ONLY = False
 PlotType = "2D"
 N = 1000
-r_max = 10
+r_max = 10000
 r_edges = np.linspace(0.01, r_max, N)
 theta_edges = np.linspace(0, 2*np.pi, N, endpoint=False)
 
@@ -273,7 +273,7 @@ else:
      + 2*acos(sin(theta))
      - sech(-0.204245759737047*r + 1.72063673930557*theta + (0.0100909665335049 - tanh(r))*(-0.998687620305263*theta - tanh(theta) + 1.02370492421771) - (0.0154873527439205*r + 0.0998966701331946)*(mu*r + 5*r + 9.5115459200379) + 8.61038625622014)
      - 84.0357720038456,
-     (0.000100107819514797*mu - 1.00527057692628)*(sin(r + 1.00336599430469e-8) - 6.11702085775715e-9)*(0.00878308485428595*mu - 0.165202710477575*nu + 3.65956084765357)*sin(5.30182881681375*nu + theta + sin(10.6889027693435*mu) + 47.2984536405886)
+     (0.0002*mu - 1.00527057692628)*(sin(r + 1.00336599430469e-8) - 6.1170215559514e-9)*(0.00878308485428595*mu - 0.165155782284773*nu + 3.66039039922125)*sin(5.30182881681375*nu + theta + sin(10.6889027693435*mu) + 66.1480236405886)
      ][1]
 
 formula_label = latex(f_float_rounded:=round_floats(f, 5), mul_symbol='dot')
@@ -361,6 +361,7 @@ def plot_one(mu0=None, nu0=None):
         func_vals = sh_eval.evaluate(env_mse)
         squared_norm_error = LA.norm(np.nan_to_num(func_vals).ravel())**2
         mse = squared_norm_error / func_vals.size
+        print(f"mse = {mse}", end = "; ")
 
     Z = f_eval.evaluate(env_plot)
 
