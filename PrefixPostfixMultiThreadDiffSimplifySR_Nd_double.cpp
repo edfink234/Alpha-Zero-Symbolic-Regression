@@ -11121,8 +11121,8 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
-//    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("(((((0.0001 * (2 * x2)) + -1.00527057692628) * (sin((x0 + 1.00336599430469e-8)) + -6.1170215559514e-09)) * (((0.00878308485428595 * (0.28254066920933013 + x2)) + (-0.165202710477575 * (0.01 + x3))) + (((x3 * 9.999997584527438) * 4.692820413780688e-06) + 3.65956084765357))) * sin(((((6.28319 + x1) + (5.30182881681375 * x3)) + sin((10.6889027693435 * x2))) + 59.86483364058859)))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu")));
-    from sympy import *; x0, x1, x2, x3 = symbols('x0 x1 x2 x3'); print(eval("(((((0.0001 * (x2 + x2)) + -1.00527057692628) * (sin((x0 + 1.00336599430469e-8)) + -6.1170215559514e-09)) * (((0.00878308485428595 * (0.28192283751102765 + x2)) + (-0.165202710477575 * (0.01001770909741514 + x3))) + (((x3 * 9.98262248930666) * 4.692820413780688e-06) + 3.65956084765357))) * sin((((5.301802737605929 * x3) + sin((10.68890208390886 * x2))) + (x1 + 66.14801981046068))))\n".replace("^","**").replace("~", "-")));
+//    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("(((((0.00020003513055636798 * (1.017279319072713e-06 + x2)) + -1.0052702591055158) * (sin((x0 + -7.588417289441058e-10)) + 3.529513506219447e-10)) * (((0.008783053519292223 * (-1.8547637816253975e-07 + x2)) + (-0.16515607511140748 * (2.4892703171154678e-08 + x3))) + 3.660381805408552)) * sin((((8.905538099786904e-08 + (5.301802726675609 * x3)) + sin((10.688902153326723 * x2))) + ((2.2556193646638808e-10 + (6.388559958364613e-11 + x1)) + 66.14801994936482))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu")));
+//    from sympy import *; x0, x1, x2, x3 = symbols('x0 x1 x2 x3'); print(eval("(((((0.00020003513055636798 * (1.017279319072713e-06 + x2)) + -1.0052702591055158) * (sin((x0 + -7.588417289441058e-10)) + 3.529513506219447e-10)) * (((0.008783053519292223 * (-1.8547637816253975e-07 + x2)) + (-0.16515607511140748 * (2.4892703171154678e-08 + x3))) + 3.660381805408552)) * sin((((8.905538099786904e-08 + (5.301802726675609 * x3)) + sin((10.688902153326723 * x2))) + ((2.2556193646638808e-10 + (6.388559958364613e-11 + x1)) + 66.14801994936482))))\n".replace("^","**").replace("~", "-")));
     
 //    puts("called SwiftHohenberg");
     /*
@@ -12526,6 +12526,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                         const double constCacheThresh = 1.2,
                         const std::string& simplifyMode = "total",
                         size_t max_subexpr_cache_nodes = 0,
+                        bool fullPrec = false,
                         const std::vector<std::vector<std::string>>& seed_expressions = {},
                         bool exit_early = false,
                         int custom_rand_seed = -1,
@@ -12615,7 +12616,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
     /*
      Inside of thread:
      */
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &custom_features, &seed_expressions, &exit_early, &custom_rand_seed, &T_min, &T_max, &temp_func, &completeTree, &pert_option, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &evalType, &print_and_check_fit_dict_every, &printDiffEq, &bad_ops, &constCacheThresh, &simplifyMode, &sync_current, &global_current, &global_current_const_indices, &global_current_idx, &outFile, &out](int thread_idx)
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &custom_features, &seed_expressions, &exit_early, &custom_rand_seed, &T_min, &T_max, &temp_func, &completeTree, &pert_option, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &evalType, &print_and_check_fit_dict_every, &printDiffEq, &bad_ops, &constCacheThresh, &simplifyMode, &fullPrec, &sync_current, &global_current, &global_current_const_indices, &global_current_idx, &outFile, &out](int thread_idx)
     {
         std::random_device rand_dev;
         // Use a combination of the device, the index, and time for maximum entropy
@@ -12741,6 +12742,10 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                         {
                             out = &std::cout;
                         }
+                    }
+                    if (fullPrec)
+                    {
+                        (*out) << std::setprecision(std::numeric_limits<double>::digits10);
                     }
                     (*out) << "\nThread id = " << thread_idx;
                     (*out) << "\nTime since start = " << timeElapsedSince(start_time);
@@ -13180,7 +13185,8 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
                   const std::vector<std::string>& bad_ops = {},
                   const double constCacheThresh = 1.2,
                   const std::string& simplifyMode = "total",
-                  size_t max_subexpr_cache_nodes = 0)
+                  size_t max_subexpr_cache_nodes = 0,
+                  bool fullPrec = false)
 {
     for (int i: depth)
     {
@@ -13224,7 +13230,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
      Inside of thread:
      */
 
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &use_const_pieces, &numDataCols, &mustHaveAllFeatures, &custom_features, &isConstTol, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &evalType, &print_and_check_fit_dict_every, &printDiffEq, &bad_ops, &constCacheThresh, &simplifyMode, &outFile, &out](int thread_idx)
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &use_const_pieces, &numDataCols, &mustHaveAllFeatures, &custom_features, &isConstTol, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &evalType, &print_and_check_fit_dict_every, &printDiffEq, &bad_ops, &constCacheThresh, &simplifyMode, &fullPrec, &outFile, &out](int thread_idx)
     {
         std::random_device rand_dev;
         unsigned int seed = rand_dev() ^ (
@@ -13321,6 +13327,10 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
                     {
                         out = &std::cout;
                     }
+                }
+                if (fullPrec)
+                {
+                    (*out) << std::setprecision(std::numeric_limits<double>::digits10);
                 }
                 (*out) << "\nThread id = " << thread_idx;
                 (*out) << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
@@ -13433,7 +13443,8 @@ namespace ExampleProblems
                          std::vector<std::string>{} /*operators to restrict in the search*/,
                          1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
                          "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
-                         2000 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/);
+                         2000 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
+                         false /*fullPrec: whether to write output to full precision, i.e., std::numeric_limits<double>::digits10 */);
         }
         else
         {
@@ -13466,6 +13477,7 @@ namespace ExampleProblems
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
                 "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
                 8000 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
+                false /*fullPrec: whether to write output to full precision, i.e., std::numeric_limits<double>::digits10 */,
                 {split("-10 x0 + x0 sin 6 x0 * + * 0.035117916693453655 *")} /*seed expressions*/,
                 (num_threads == 1) /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -13590,10 +13602,10 @@ namespace ExampleProblems
         std::string pert_mode = "sub_tree";
         std::string simplify_mode = "total";
         std::string eval_type = "dag";
-        int depth = 5, completeTree = 1, max_dag = 0, fit = 0, fitIters = 5;
+        int depth = 5, completeTree = 1, max_dag = 0, fit = 0, fitIters = 5, fullPrec = 0;
         double ConstCacheThresh = 1.2;
         unsigned int num_threads = 0;
-        std::string numThreads, theDepth, theCompleteTree, theMaxDag, theFit, theNumFitIters, theFitType = "RandomJitter", theBadOps;
+        std::string numThreads, theDepth, theCompleteTree, theMaxDag, theFit, theNumFitIters, theFitType = "RandomJitter", theBadOps, Algorithm = algorithm, theFullPrec;
         std::string theSeedExpr = "9.725816343768619 x3 - x2 cos * x1 9.939958102300732 - 6.28319 x3 * - + sin x2 6.28319 + tanh x0 sin ~ * 3.696752038102206 0.14244753430343096 x3 * - * *";
         std::string theConstCacheThresh;
         
@@ -13601,6 +13613,7 @@ namespace ExampleProblems
         {
             std::ifstream inObj(filename);
             
+            std::getline(inObj, Algorithm);
             std::getline(inObj, theSeedExpr);
             std::getline(inObj, pert_mode);
             std::getline(inObj, simplify_mode);
@@ -13614,7 +13627,9 @@ namespace ExampleProblems
             std::getline(inObj, theFitType);
             std::getline(inObj, theConstCacheThresh);
             std::getline(inObj, theBadOps);
+            std::getline(inObj, theFullPrec);
 
+            fullPrec = std::stoi(theFullPrec);
             num_threads = std::stoi(numThreads);
             depth = std::stoi(theDepth);
             completeTree = std::stoi(theCompleteTree);
@@ -13623,6 +13638,7 @@ namespace ExampleProblems
             fitIters = std::stoi(theNumFitIters);
             ConstCacheThresh = std::stod(theConstCacheThresh);
             bad_ops = split(theBadOps);
+            std::cout << "Algorithm = " << Algorithm << "\n";
             std::cout << "theSeedExpr = " << theSeedExpr << "\n";
             std::cout << "pert_mode = " << pert_mode << '\n';
             std::cout << "simplify_mode = " << simplify_mode << '\n';
@@ -13638,7 +13654,7 @@ namespace ExampleProblems
             std::cout << "bad_ops = " << bad_ops << '\n';
         }
         
-        if (strcmp(algorithm, "RandomSearch") == 0)
+        if (Algorithm == "RandomSearch")
         {
             RandomSearch(SwiftHohenberg /*differential equation to solve*/,
                          num_diff_eqns /*number of equations in differential equation system*/,
@@ -13667,7 +13683,8 @@ namespace ExampleProblems
                          bad_ops /*operators to restrict in the search*/,
                          ConstCacheThresh /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
                          simplify_mode /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
-                         max_dag /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/);
+                         max_dag /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
+                         fullPrec /*fullPrec: whether to write output to full precision, i.e., std::numeric_limits<double>::digits10 */);
         }
         else
         {
@@ -13700,6 +13717,7 @@ namespace ExampleProblems
                 ConstCacheThresh /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
                 simplify_mode /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
                 max_dag /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
+                fullPrec /*fullPrec: whether to write output to full precision, i.e., std::numeric_limits<double>::digits10 */,
                 {split(theSeedExpr)} /*seed expressions*/,
                 (num_threads == 1) /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -13746,7 +13764,8 @@ namespace ExampleProblems
                          std::vector<std::string>{} /*operators to restrict in the search*/,
                          1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
                          "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
-                         0 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/);
+                         0 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
+                         false /*fullPrec: whether to write output to full precision, i.e., std::numeric_limits<double>::digits10 */);
         }
         else
         {
@@ -13779,6 +13798,7 @@ namespace ExampleProblems
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
                 "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
                 0 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
+                false /*fullPrec: whether to write output to full precision, i.e., std::numeric_limits<double>::digits10 */,
                 {} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -13827,7 +13847,8 @@ namespace ExampleProblems
                  std::vector<std::string>{} /*operators to restrict in the search*/,
                  1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
                  "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
-                 0 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/);
+                 0 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
+                 false /*fullPrec: whether to write output to full precision, i.e., std::numeric_limits<double>::digits10 */);
         }
         else
         {
@@ -13860,6 +13881,7 @@ namespace ExampleProblems
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
                 "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
                 0 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
+                false /*fullPrec: whether to write output to full precision, i.e., std::numeric_limits<double>::digits10 */,
                 {split("x0 sech tanh tanh 0 0 + 0 -6.4342880000000005 + + x0 tanh 0 2.61657 + / - /"), split("0 0 + 0 -3.2171440000000002 + + x0 sech 0 0.9640275800758169 + ^ * sech")} /*seed expressions*/,
                 false /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -13917,7 +13939,8 @@ namespace ExampleProblems
                  std::vector<std::string>{} /*operators to restrict in the search*/,
                  1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
                  "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
-                 0 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/);
+                 0 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
+                 false /*fullPrec: whether to write output to full precision, i.e., std::numeric_limits<double>::digits10 */);
         }
         else
         {
@@ -13950,6 +13973,7 @@ namespace ExampleProblems
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
                 "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
                 0 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
+                false /*fullPrec: whether to write output to full precision, i.e., std::numeric_limits<double>::digits10 */,
                 {split("-2.640000 0.051731 x7 sqrt x15 8.000000 - - / / -1803.016571 x21 36.293228 x0 * * x17 -843.000000 + x15 15893.000000 + + + + x6 x19 -100.000000 x8 + - / x14 -211800 / x15 + + / - x18 x24 - x2 x7 x0 1684.200012 - - + - + -7.446376466569234 -3.225653 x6 8.800000 - + -508 + -0.9081765689798138 38.000000 x16 sin / * + + x1 x0 - 0.0007699998478223693 + -16.82119949898502 + x0 x15 ^ -100 + -279.200012 -2.640000 x16 / + + + -28.995355508740936 + + -88.959518 1.000000 88.856491 x1 / / * -2118 x8 2118.000000 - x22 ~ + + + 0.00077 x5 + * 25.400000 x20 1.0021072170678698 / ^ 15893.000000 x22 x8 + + x1 -1405.000000 - 15666.000000 x24 + + + + x0 x25 + 16.000000 x23 + 9736 - / ~ / - + *")} /*seed expressions*/,
                 validation /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -14006,7 +14030,8 @@ namespace ExampleProblems
                  std::vector<std::string>{} /*operators to restrict in the search*/,
                  1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
                  "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
-                 0 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/);
+                 0 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
+                 false /*fullPrec: whether to write output to full precision, i.e., std::numeric_limits<double>::digits10 */);
         }
         else
         {
@@ -14039,6 +14064,7 @@ namespace ExampleProblems
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
                 "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
                 0 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
+                false /*fullPrec: whether to write output to full precision, i.e., std::numeric_limits<double>::digits10 */,
                 {split("/ + * + + ln cos x46 + + 0 0 + 0 -3.4799761065034414 + * + 0 x95 + 0 1.620943 + + 0 x95 ~ x48 ~ ^ + cos x41 + 0 52.64009483497598 - + 0 2.7907071011403315 cos x93 + ^ + * + 0 3.1585732538600397 ^ x12 x54 + cos x21 + 0.365382 x13 + ~ + 0 x20 + + 0 0 + 0 1.5729403267948965 * + + + 0 0 + 0 0 + + 0 0 + 0 x3 sqrt + + 0 0 + 0 x48 - + / - + + 0 0 + 0 0.9867622178470573 - - 7169.463400 x100 * x17 11181230.000000 + acos tanh x23 + + 0 0 + 0 57.67636600070402 sin + + + 0 0 + 0 -2.884980 + + 0 0 + 0 x50 - sqrt ^ ^ + 0 x17 + 0 x59 + + 0 x71 ~ x87 ^ + + + 0 0 + 0 0 + + 0 0 + 0 0.9910929232006058 * + + 0 0 + 0 -4.0405169999999995 * - x61 x101 + 0 -0.04344899097047564")} /*seed expressions*/,
                 validation /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
@@ -14366,7 +14392,8 @@ namespace ExampleProblems
                  std::vector<std::string>{"exp", "ln", "log", "^", "/"} /*operators to restrict in the search*/,
                  1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
                  "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
-                  0 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/);
+                  0 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
+                  false /*fullPrec: whether to write output to full precision, i.e., std::numeric_limits<double>::digits10 */);
         }
         else
         {
@@ -14399,6 +14426,7 @@ namespace ExampleProblems
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
                 simplify_mode /*simplifyMode: "total": most algebraic simplification more comprehensively, "total": less simplifications, "none": no simplifications */,
                 43000 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
+                false /*fullPrec: whether to write output to full precision, i.e., std::numeric_limits<double>::digits10 */,
                 {split(seed_exprs[track_idx])} /*seed expressions*/,
                 (num_threads == 1) /*whether to exit right after computing the score for the seed expression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
