@@ -11173,10 +11173,10 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
             Best expression = (sin((((9.72581634376862 - x3) * cos(x2)) + ((x1 - 9.939958102300732) - (6.28319 * x3)))) * ((tanh((x2 + 5.967336286010125)) * sin(~(x0))) * (3.696752038102206 - (0.14244753430343096 * x3))))
             Best expression (original format) = 9.72581634376862 x3 - x2 cos * x1 9.939958102300732 - 6.28319 x3 * - + sin x2 5.967336286010125 + tanh x0 ~ sin * 3.696752038102206 0.14244753430343096 x3 * - * *
         Depth = 6:
-            Best score = 4.77085e-08, SNE = 2.09606e+07
-            Squared-norm error for each equation: 0.0020253980407780705 7.7097123078482177e-05 20960627.142045248 7.9417098231800036
-            Best expression = (((((0.000200122132772143 * (2.198946988954128e-07 + x2)) + -1.0052705089894274) * (sin((x0 + 1.0497789921170652e-08)) + -6.403680778141426e-09)) * (((0.00878304153347751 * (-3.783028716308386e-08 + x2)) + (-0.16515593690596378 * (1.0175783566273509e-08 + x3))) + 3.6603819916356977)) * sin(((((1.665510467552841e-08 + x1) + (5.301802768027448 * x3)) + sin((10.688902129319038 * x2))) + 66.1480199024767)))
-            Best expression (original format) = 0.000200122132772143 2.198946988954128e-07 x2 + * -1.0052705089894274 + x0 1.0497789921170652e-08 + sin -6.403680778141426e-09 + * 0.00878304153347751 -3.783028716308386e-08 x2 + * -0.16515593690596378 1.0175783566273509e-08 x3 + * + 3.6603819916356977 + * 1.665510467552841e-08 x1 + 5.301802768027448 x3 * + 10.688902129319038 x2 * sin + 66.1480199024767 + sin *
+            Best score = 4.77086e-08, SNE = 2.09606e+07
+            Squared-norm error for each equation: 0.00189442 7.16145e-05 2.09606e+07 7.94171
+            Best expression = (((((0.00020003506868668906 * (1.017248775806831e-06 + x2)) + -1.0052702579957127) * (sin((-1.129180066614862e-12 + x0)) + ((x2 + x0) * -2.0058778908765138e-11))) * (((0.008783053924412336 * (-1.8560197257909573e-07 + x2)) + (-0.16515607557644987 * (2.4876909651974957e-08 + x3))) + 3.6603818049441084)) * sin((((8.969624803604539e-08 + (5.3018027262259215 * x3)) + sin((10.688902153455777 * x2))) + ((6.074947808955921e-10 + (2.79892501983662e-10 + x1)) + 66.14801995013538))))
+            Best expression (original format) = 0.00020003506868668906 1.017248775806831e-06 x2 + * -1.0052702579957127 + -1.129180066614862e-12 x0 + sin x2 x0 + -2.0058778908765138e-11 * + * 0.008783053924412336 -1.8560197257909573e-07 x2 + * -0.16515607557644987 2.4876909651974957e-08 x3 + * + 3.6603818049441084 + * 8.969624803604539e-08 5.3018027262259215 x3 * + 10.688902153455777 x2 * sin + 6.074947808955921e-10 2.79892501983662e-10 x1 + + 66.14801995013538 + + sin *
      
      ```
 x = "- ((1e-10 + (r + 0.0675028199851666*sin(theta) + 0.315589358780667)**(sqrt(r)*(r + 2.87892339678315)*(5953.65096806617 - r)/((5953.65096806617 - r)**2 + 1e10) + 0.980141037771426)/(0.013519701745416**r*(43.687622183442*r + 8.33814060981745) + r + 0.02*sin(r) + 1.82648253593279))**(((9.2348889286512)/(r + 0.55183450665909) + sin(theta + cos(theta + 0.519039044087815) + 5.8847752990135)*(.5*(1-tanh(1.025*(r-21.2)))))*(r + sin(r - 0.01) + (1.0e-10 + cos(sin(theta)))**(r - 1.58074387559245) + 0.37384427398835 + tanh(r)/(r + 7.97723076614237))))*((.5*(1-tanh(1.775e3*(r-10.01))))) + sqrt(1 - cos(r)**2)*(1.0e-10*0.68688067225485**(8.16109249232708*r) + 0.854229974212735)*(sech(r + cos(r) + 8.39614384384391) + 0.999884853180843)**(1.58799646315658*(r + 0.0308839840501129)**4.01549520152667*(1.57*(tanh(.62*r))))*(0.0100048594945809**(2*r + 5.29438341416157) + 0.7011748940086 - 45.6560816728088/(21934.7382737552))*sin(theta + 18.8962439891879)*(1) - ((1.5707963267949)**(-18.3837681892581) + 0.285811651486423)**(r + sech(r + 0.0561717295263584) + 10.0547134992516)*(r + (r**0.999950000416665 - 0.00364405505237706)**((0.376065617272839**r + r)**0.00999966667999946) + 0.0106243230277353)**(-r**2*exp(-r)/(1 + 1358.42254658947*exp(-r)) + (0.000469282041378069*r + 0.0160184860388267)**((sin(r) + 6.78974430415452)/(r - 0.00781876960101768)) + 7.58897670822754)*(-sin(theta + cos(theta - 0.0144023112886078) + 0.105413950813453) + sin(log(r + 0.390458429297535)) + ((-tanh(0.62*r)+1.01)*(pi/2))**(0.061275433230159*r + 0.00061275433230159)) + (0.00273233753019377**(6.19641677671904 - sin(theta + 0.089280925720443)) + 2.79499001433555e-13 + (6.12323399573677e-17)/(2.19270786451049 - 6.28221254344588*r))*(0.999329299739067*r + 0.453212918064574)**(sin(sqrt(r + 9.07998593378172e-5)) + 11.4130415650481 + 0.00010001/(1.01005016708417 - cos(theta)))*((.5*(1-tanh(1.775e3*(r-10.01))))) + 0.0101001582000134*tanh(10.0327249667171*r + 11.9956250261793) + 0.863191833358681"
@@ -12540,8 +12540,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
 {
     assert(simplifyOriginal == false);
     Board::max_subexpr_cache_nodes = max_subexpr_cache_nodes;
-    std::cout << "pert_option = " << pert_option << '\n';
-    if (pert_option != "sub_array" && pert_option != "n_random" && pert_option != "constants_only")
+    if (pert_option.substr(0, 9) != "sub_array" && pert_option.substr(0, 8) != "n_random" && pert_option.substr(0, 14) != "constants_only")
     {
         for (int i: depth)
         {
@@ -12591,7 +12590,6 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
         pert_option = "constants_only";
     }
 
-
     std::vector<std::thread> threads(num_threads);
     std::latch sync_point(num_threads);
 
@@ -12610,13 +12608,45 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
     std::vector<std::vector<std::string>> global_current(depth.size());
     std::vector<std::vector<size_t>> global_current_const_indices(depth.size());
     unsigned long long global_current_idx = 0;
+    int fixedSubSize = -1;
+    if (pert_option.substr(0, 9) == "sub_array" && pert_option.size() > 9)
+    {
+        fixedSubSize = std::stoi(pert_option.substr(9));
+        assert(fixedSubSize >= 0);
+        pert_option = "sub_array";
+        for (const auto& seed_expr: seed_expressions)
+        {
+            assert(fixedSubSize < seed_expr.size());
+        }
+    }
+    else if (pert_option.substr(0, 8) == "n_random" && pert_option.size() > 8)
+    {
+        fixedSubSize = std::stoi(pert_option.substr(8));
+        assert(fixedSubSize >= 0);
+        pert_option = "n_random";
+        for (const auto& seed_expr: seed_expressions)
+        {
+            assert(fixedSubSize < seed_expr.size());
+        }
+    }
+    else if (pert_option.substr(0, 8) == "sub_tree" && pert_option.size() > 8)
+    {
+        fixedSubSize = std::stoi(pert_option.substr(8));
+        assert(fixedSubSize >= 0);
+        pert_option = "sub_tree";
+        for (int d: depth)
+        {
+            assert(fixedSubSize <= d);
+        }
+    }
+    std::cout << "pert_option = " << pert_option << '\n';
 
     auto start_time = Clock::now();
 
     /*
      Inside of thread:
      */
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &custom_features, &seed_expressions, &exit_early, &custom_rand_seed, &T_min, &T_max, &temp_func, &completeTree, &pert_option, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &evalType, &print_and_check_fit_dict_every, &printDiffEq, &bad_ops, &constCacheThresh, &simplifyMode, &fullPrec, &sync_current, &global_current, &global_current_const_indices, &global_current_idx, &outFile, &out](int thread_idx)
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &custom_features, &seed_expressions, &exit_early, &custom_rand_seed, &T_min, &T_max, &temp_func, &completeTree, &pert_option, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &evalType, &print_and_check_fit_dict_every, &printDiffEq, &bad_ops, &constCacheThresh, &simplifyMode, &fullPrec, &sync_current, &global_current, &global_current_const_indices, &global_current_idx, &outFile, &out, &fixedSubSize](int thread_idx)
     {
         std::random_device rand_dev;
         // Use a combination of the device, the index, and time for maximum entropy
@@ -13114,7 +13144,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                  Else, `rand_depth_dists[jdx](generator)` returns
                  a random-integer from [0, x.n[jdx]] (the depth of sub-tree to swap).
                  */
-                rand_depths[jdx] = rand_depth_dists[jdx](generator);
+                rand_depths[jdx] = ((fixedSubSize < 0) ? rand_depth_dists[jdx](generator) : fixedSubSize);
             }
             assert(all_checks(x.pieces));
             Perturbation(rand_depths, i);

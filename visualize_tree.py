@@ -30,7 +30,7 @@ def is_operator(token):
 def is_binary_operator(token):
     return token in {'+', '-', '*', '/', '^', 'MYCDOT', 'MYPOW'}
 def is_unary_operator(token):
-    return token in {"cos", "exp", "sqrt", "sin", "asin", "arcsin", "log", "tanh", "acos", "arccos", "~", "ln", "MYBRACKETSQRT", "tan", "MYCOS", "MYSIN", "MYTAN", "sech"}
+    return token in {"cos", "exp", "sqrt", "sin", "asin", "arcsin", "log", "tanh", "acos", "arccos", "~", "ln", "MYBRACKETSQRT", "tan", "MYCOS", "MYSIN", "MYTAN", "sech", "abs"}
 def is_operand(token):
     return (not is_operator(token) and token not in {'(', ')'})
 
@@ -661,7 +661,7 @@ def test_visualize():
                 plot_pn_expression_tree(complete_pn_expr, save = save, include_expression_in_title = False)
 
             else:
-                complete_rpn_expr = '0.00020003512087824913 1.0172723954350644e-06 x2 + * -1.005270259114725 const * + x0 -7.659978135470688e-10 + sin 3.5713369912316485e-10 const * 0.9999629558767087 const * * + * 0.008783053508276921 const * -1.8548149831235324e-07 x2 + * -0.16515607512643063 const * 2.488598744681379e-08 x3 + * + 3.660381805394822 const * + * 8.904671289074133e-08 const * 5.301802726683501 x3 * + 10.68890215332168 x2 * sin + 2.2136955203616398e-10 const * 6.884693346645709e-11 x1 + + 66.14801994935264 const * + + sin *'
+                complete_rpn_expr = 'x sqrt z arcsin tanh 1 y sqrt ~ - ^ *'
                 print(f"rpn_to_infix = {rpn_to_infix(complete_rpn_expr)}")
                 
                 
