@@ -144,22 +144,19 @@ std::string to_string_general(double v)
     }
 }
 // https://www.geeksforgeeks.org/cpp/how-to-split-string-by-delimiter-in-cpp/
-std::vector<std::string> split(const std::string& str)
+std::vector<std::string> split(const std::string& str, char del = ' ' /* Delimiter */)
 {
     // Create a stringstream object
     // to str
     std::stringstream ss(str);
     std::vector<std::string> vec;
 
-      // Temporary object to store
-      // the splitted string
+    // Temporary object to store
+    // the splitted string
     std::string t;
 
-      // Delimiter
-    char del = ' ';
-
-       // Splitting the str string
-       // by delimiter
+    // Splitting the str string
+    // by delimiter
     while (std::getline(ss, t, del))
     {
         vec.push_back(t);
@@ -5149,7 +5146,7 @@ struct Board
                 }
                 else
                 {
-                    throw(std::runtime_error("bad token"));
+                    throw(std::runtime_error("bad token"+token));
                 }
             }
             else if (is_unary(token)) // Unary operator
@@ -8146,7 +8143,7 @@ std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fi
                 return std::vector<std::vector<std::string>>{std::vector<std::string>{infty}};
             }
             
-            // 4. Compute the matching coefficients (b_i, a_ij) for this step's geometry
+            // Compute the matching coefficients (b_i, a_ij) for this step's geometry
             double b1 = (6.*c_2_val*c_3_val - 2.*c_2_val - 2.*c_3_val + 1.) / (12.*c_2_val*c_3_val);
             double b2 = (2.*c_3_val - 1.) / (12.*c_2_val*(c_2_val - 1.)*(c_2_val - c_3_val));
             double b3 = (1. - 2.*c_2_val) / (12.*c_3_val*(c_2_val - c_3_val)*(c_3_val - 1.));
@@ -12693,6 +12690,16 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
         std::cout << "Board::random_jitter_factor = " << Board::random_jitter_factor << '\n';
         pert_option = "constants_only_vec";
     }
+    else if (pert_option.substr(0, 16) == "constants_only_N")
+    {
+        assert(pert_option.size() > 16);
+        std::vector<std::string> temp_vec = pert_option.substr(16).split('_')
+        std::cout << "temp_vec = " << temp_vec << '\n'
+        Board::random_jitter_factor = (temp_vec[0].size()) ? std::stod(temp_vec[0]) : 1.;
+        
+        std::cout << "Board::random_jitter_factor = " << Board::random_jitter_factor << '\n';
+        pert_option = "constants_only";
+    }
     else if (pert_option.substr(0, 14) == "constants_only" && (pert_option != "constants_only_vec") && pert_option.size() > 14)
     {
         Board::random_jitter_factor = std::stod(pert_option.substr(14));
@@ -13546,7 +13553,7 @@ namespace ExampleProblems
         constexpr int num_diff_eqns = 1;
         
         double threshold = 0.0;
-        unsigned int num_threads = 0;
+        unsigned int num_threads = 1;
         std::vector<std::string> bad_ops = {"exp", "ln", "log", "^", "/", "sqrt", "asin", "acos", "arcsin", "arccos"};
         // input is just time t
         for (int i = 0; i < num_points; i++)
@@ -13589,7 +13596,7 @@ namespace ExampleProblems
         }
         else
         {
-            SimulatedAnnealing(BrightSolitonControlPDE /*differential equation to solve*/,
+            SimulatedAnnealing(RK4Explicitc2c3Discovery /*differential equation to solve*/,
                 num_diff_eqns /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
                 std::vector<int>{2, 2} /*fixed depths of generated solution*/,
@@ -13620,7 +13627,7 @@ namespace ExampleProblems
                 8000 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
                 false /*fullPrec: whether to write output to full precision, i.e., std::numeric_limits<double>::digits10 */,
                 {} /*seed expressions*/,
-                (num_threads == 1) /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
+                0 /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
                 0.0 /*T_max*/,
