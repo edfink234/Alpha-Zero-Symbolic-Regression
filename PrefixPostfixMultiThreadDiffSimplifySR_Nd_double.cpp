@@ -12647,6 +12647,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
 {
     assert(simplifyOriginal == false);
     Board::max_subexpr_cache_nodes = max_subexpr_cache_nodes;
+    std::unordered_set<int> const_indices_to_perturb;
     if (pert_option.substr(0, 9) != "sub_array" && pert_option.substr(0, 8) != "n_random" && pert_option.substr(0, 14) != "constants_only")
     {
         for (int i: depth)
@@ -12693,12 +12694,33 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
     else if (pert_option.substr(0, 16) == "constants_only_N")
     {
         assert(pert_option.size() > 16);
-        std::vector<std::string> temp_vec = pert_option.substr(16).split('_')
-        std::cout << "temp_vec = " << temp_vec << '\n'
+        std::vector<std::string> temp_vec = split(pert_option.substr(16), '_');
+        std::cout << "temp_vec = " << temp_vec << '\n';
         Board::random_jitter_factor = (temp_vec[0].size()) ? std::stod(temp_vec[0]) : 1.;
-        
+        for (int i = 1; i < temp_vec.size(); i++)
+        {
+            if (temp_vec[i].size())
+            {
+                const_indices_to_perturb.emplace(std::stoi(temp_vec[i]));
+            }
+        }
+        std::cout << "constants to perturb: " << std::vector<int>(const_indices_to_perturb.begin(), const_indices_to_perturb.end()) << '\n';
         std::cout << "Board::random_jitter_factor = " << Board::random_jitter_factor << '\n';
-        pert_option = "constants_only";
+        pert_option = "constants_only_N";
+        //Loop over expressions
+        assert(seed_expressions.size());
+        for (const auto& expr: seed_expressions)
+        {
+            int num_doubles = 0;
+            for (const auto& expr_token: expr)
+            {
+                num_doubles += isdouble(expr_token);
+            }
+            for (int i: const_indices_to_perturb)
+            {
+                assert(num_doubles > i);
+            }
+        }
     }
     else if (pert_option.substr(0, 14) == "constants_only" && (pert_option != "constants_only_vec") && pert_option.size() > 14)
     {
@@ -12763,7 +12785,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
     /*
      Inside of thread:
      */
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &custom_features, &seed_expressions, &exit_early, &custom_rand_seed, &T_min, &T_max, &temp_func, &completeTree, &pert_option, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &evalType, &print_and_check_fit_dict_every, &printDiffEq, &bad_ops, &constCacheThresh, &simplifyMode, &fullPrec, &sync_current, &global_current, &global_current_const_indices, &global_current_idx, &outFile, &out, &fixedSubSize](int thread_idx)
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &custom_features, &seed_expressions, &exit_early, &custom_rand_seed, &T_min, &T_max, &temp_func, &completeTree, &pert_option, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &evalType, &print_and_check_fit_dict_every, &printDiffEq, &bad_ops, &constCacheThresh, &simplifyMode, &fullPrec, &sync_current, &global_current, &global_current_const_indices, &global_current_idx, &outFile, &out, &fixedSubSize, &const_indices_to_perturb](int thread_idx)
     {
         std::random_device rand_dev;
         // Use a combination of the device, the index, and time for maximum entropy
@@ -12861,7 +12883,15 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                                 current_const_indices[jdx].push_back(piece_idx);
                             }
                         }
+                        if (pert_option == "constants_only_N")
+                        {
+                            for (int const_index: const_indices_to_perturb)
+                            {
+                                assert(current_const_indices[jdx].size() > const_index);
+                            }
+                        }
                     }
+                    
                     if (sync_current)
                     {
                         std::scoped_lock sync_curr_lock(Board::thread_locker);
@@ -13069,6 +13099,29 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                             for (int constIdx = 0; constIdx < const_idxs.size(); constIdx++)
                             {
                                 // Directly perturb the piece in x.pieces
+                                target_idx = const_idxs[constIdx];
+                                double val = Stod(x.pieces[jdx][target_idx]);
+                                x.pieces[jdx][target_idx] = to_string_general(val + Board::random_jitter_factor*x.vel_dist(generator));
+                            }
+                            
+                        }
+                    }
+                }
+                else if (pert_option == "constants_only_N")
+                {
+                    {
+                        #if TIME_EVAL
+                            ScopedTimer t_build("constants_only_N_perturbation");
+                        #endif
+                        const auto& const_idxs = current_const_indices[jdx];
+                        if (!const_idxs.empty())
+                        {
+//                            assert(const_indices_to_perturb.size() <= const_idxs.size());
+                            size_t target_idx;
+                            for (int constIdx: const_indices_to_perturb)
+                            {
+                                // Directly perturb the piece in x.pieces
+//                                assert(constIdx < const_idxs.size());
                                 target_idx = const_idxs[constIdx];
                                 double val = Stod(x.pieces[jdx][target_idx]);
                                 x.pieces[jdx][target_idx] = to_string_general(val + Board::random_jitter_factor*x.vel_dist(generator));
