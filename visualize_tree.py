@@ -661,7 +661,7 @@ def test_visualize():
                 plot_pn_expression_tree(complete_pn_expr, save = save, include_expression_in_title = False)
 
             else:
-                complete_rpn_expr = '0.00020548479822318 x2 * 0.000200035068686689 x2 sin * + 1.00527025799571 - 0.00878305392441234 x2 * 0.16515607557645 x3 * - 0.0001364999937805 x2 sin * - 3.66041580580201 + * x0 sin * x1 ~ 5.30180272622592 x3 * + 10.6889021534558 x2 * sin + 59.8648299501354 + sin *'
+                complete_rpn_expr = '0.00020548479822318 x2 * 0.000200035068686689 x2 sin * + -1.00527025799571 + 0.00878305392441234 x2 * -0.16515607557645 x3 * + -0.0001364999937805 x2 sin * + 3.66041580580201 + * x0 sin * x1 ~ 5.30180272622592 x3 * + 10.6889021534558 x2 * sin + 59.8648299501354 + sin *'
                 print(f"rpn_to_infix = {rpn_to_infix(complete_rpn_expr)}")
                 
                 

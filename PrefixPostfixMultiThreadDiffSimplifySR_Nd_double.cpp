@@ -1121,10 +1121,10 @@ struct Board
         {
             std::call_once(initialization_flag, [&]()
             {
-                if (use_const_pieces)
-                {
-                    assert(const_tokens);
-                }
+//                if (use_const_pieces)
+//                {
+//                    assert(const_tokens);
+//                }
                 Board::data = theData;
                 assert((Board::data.num_rows > 0));
                 Board::__num_features = Board::data[0].size() - numDataCols;
@@ -11228,8 +11228,8 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
-//    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("(((((0.00020003513055636798 * (1.017279319072713e-06 + x2)) + -1.0052702591055158) * (sin((x0 + -7.588417289441058e-10)) + 3.529513506219447e-10)) * (((0.008783053519292223 * (-1.8547637816253975e-07 + x2)) + (-0.16515607511140748 * (2.4892703171154678e-08 + x3))) + 3.660381805408552)) * sin((((8.905538099786904e-08 + (5.301802726675609 * x3)) + sin((10.688902153326723 * x2))) + ((2.2556193646638808e-10 + (6.388559958364613e-11 + x1)) + 66.14801994936482))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu")));
-//    from sympy import *; x0, x1, x2, x3 = symbols('x0 x1 x2 x3'); print(eval("(((((0.00020003513055636798 * (1.017279319072713e-06 + x2)) + -1.0052702591055158) * (sin((x0 + -7.588417289441058e-10)) + 3.529513506219447e-10)) * (((0.008783053519292223 * (-1.8547637816253975e-07 + x2)) + (-0.16515607511140748 * (2.4892703171154678e-08 + x3))) + 3.660381805408552)) * sin((((8.905538099786904e-08 + (5.301802726675609 * x3)) + sin((10.688902153326723 * x2))) + ((2.2556193646638808e-10 + (6.388559958364613e-11 + x1)) + 66.14801994936482))))\n".replace("^","**").replace("~", "-")));
+//    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("(((((0.00020761302887044612 * (sin(x2) + (1.0272442241645563 * x2))) + ((1.3304563988558432e-06 * (x3 + x2)) + -1.0052629302733438)) * sin((~((1.4269067710318464e-07 + x2)) + ((-8.427410561791095e-08 + x0) + (2.2679423250655768e-07 + x2))))) * (((0.008782524861544684 * (0.27587744389610325 + (0.009993495877091307 + x2))) + (-0.1651571745075183 * ((-1.911228719809616e-07 + x3) + 0.010002284668230988))) + (((0.010151823903466778 * sin(x2)) * (-0.06438380401024771 * sin(x2))) + (((x2 * 0.03852998867113262) * -8.436444206719193e-05) + 3.659791130722469)))) * sin((((5.301797186958442 * (-2.4089452401052685e-07 + (2.2542565388059674e-07 + x3))) + sin((10.688904984949698 * (1.1264219683053926e-08 + x2)))) + (~(((x0 + -2.9955080762796076e-07) + (5.8232400879963024e-08 + x1))) + ((3.570015447645774e-12 + (1.081329657641461e-11 + x0)) + 72.43120897235498)))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu")));
+//    from sympy import *; x0, x1, x2, x3 = symbols('x0 x1 x2 x3'); print(eval("(((((0.00020761302887044612 * (sin(x2) + (1.0272442241645563 * x2))) + ((1.3304563988558432e-06 * (x3 + x2)) + -1.0052629302733438)) * sin((~((1.4269067710318464e-07 + x2)) + ((-8.427410561791095e-08 + x0) + (2.2679423250655768e-07 + x2))))) * (((0.008782524861544684 * (0.27587744389610325 + (0.009993495877091307 + x2))) + (-0.1651571745075183 * ((-1.911228719809616e-07 + x3) + 0.010002284668230988))) + (((0.010151823903466778 * sin(x2)) * (-0.06438380401024771 * sin(x2))) + (((x2 * 0.03852998867113262) * -8.436444206719193e-05) + 3.659791130722469)))) * sin((((5.301797186958442 * (-2.4089452401052685e-07 + (2.2542565388059674e-07 + x3))) + sin((10.688904984949698 * (1.1264219683053926e-08 + x2)))) + (~(((x0 + -2.9955080762796076e-07) + (5.8232400879963024e-08 + x1))) + ((3.570015447645774e-12 + (1.081329657641461e-11 + x0)) + 72.43120897235498)))))\n".replace("^","**").replace("~", "-")));
     
 //    puts("called SwiftHohenberg");
     /*
@@ -11284,6 +11284,18 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
             Squared-norm error for each equation: 0.00189442 7.16145e-05 2.09606e+07 7.94171
             Best expression = (((((0.00020003506868668906 * (1.017248775806831e-06 + x2)) + -1.0052702579957127) * (sin((-1.129180066614862e-12 + x0)) + ((x2 + x0) * -2.0058778908765138e-11))) * (((0.008783053924412336 * (-1.8560197257909573e-07 + x2)) + (-0.16515607557644987 * (2.4876909651974957e-08 + x3))) + 3.6603818049441084)) * sin((((8.969624803604539e-08 + (5.3018027262259215 * x3)) + sin((10.688902153455777 * x2))) + ((6.074947808955921e-10 + (2.79892501983662e-10 + x1)) + 66.14801995013538))))
             Best expression (original format) = 0.00020003506868668906 1.017248775806831e-06 x2 + * -1.0052702579957127 + -1.129180066614862e-12 x0 + sin x2 x0 + -2.0058778908765138e-11 * + * 0.008783053924412336 -1.8560197257909573e-07 x2 + * -0.16515607557644987 2.4876909651974957e-08 x3 + * + 3.6603818049441084 + * 8.969624803604539e-08 5.3018027262259215 x3 * + 10.688902153455777 x2 * sin + 6.074947808955921e-10 2.79892501983662e-10 x1 + + 66.14801995013538 + + sin *
+        Depth = 7:
+            Best score = 4.77353042106008e-08, SNE = 20948854.7062118
+            Squared-norm error for each equation: 0.00268331045673534 8.46775100266622e-05 20948845.2896147 9.41382911334905
+            Best expression = (((((0.0002076113249690373 * (sin(x2) + (1.0272442253841871 * x2))) + ((1.3339778841456036e-06 * (x3 + x2)) + -1.0052629309672976)) * sin((~((1.4249149657541886e-07 + x2)) + ((-8.303330711814892e-08 + x0) + (2.25353382361004e-07 + x2))))) * (((0.008782523545569815 * (0.2758774368778397 + (0.009993495889607374 + x2))) + (-0.16515717655760057 * ((-1.909589106015035e-07 + x3) + 0.010002284100925707))) + (((0.01015182297609662 * sin(x2)) * (-0.06441584548046464 * sin(x2))) + (((x2 * 0.03852998894175148) * -8.436435367126794e-05) + 3.6597911303779354)))) * sin((((5.301797189458077 * (-2.415323947713632e-07 + (-5.898382429766482e-07 + x3))) + sin((10.688904992600593 * (9.749083273233584e-09 + x2)))) + (~(((x0 + -2.996661574861018e-07) + (5.7686102795442715e-08 + x1))) + ((4.407776972814328e-06 + (6.515574564543654e-11 + x0)) + 72.43120897293875)))))
+            Best expression (original format) = 0.0002076113249690373 x2 sin 1.0272442253841871 x2 * + * 1.3339778841456036e-06 x3 x2 + * -1.0052629309672976 + + 1.4249149657541886e-07 x2 + ~ -8.303330711814892e-08 x0 + 2.25353382361004e-07 x2 + + + sin * 0.008782523545569815 0.2758774368778397 0.009993495889607374 x2 + + * -0.16515717655760057 -1.909589106015035e-07 x3 + 0.010002284100925707 + * + 0.01015182297609662 x2 sin * -0.06441584548046464 x2 sin * * x2 0.03852998894175148 * -8.436435367126794e-05 * 3.6597911303779354 + + + * 5.301797189458077 -2.415323947713632e-07 -5.898382429766482e-07 x3 + + * 10.688904992600593 9.749083273233584e-09 x2 + * sin + x0 -2.996661574861018e-07 + 5.7686102795442715e-08 x1 + + ~ 4.407776972814328e-06 6.515574564543654e-11 x0 + + 72.43120897293875 + + + sin *
+     mu_equals_nu_1_only == False, createMeshgridVectors(6, 4, {0.01, 0.0, 0.01, 0.01}, {10.0, 6.28319, 10, 10})), bad_ops = {"exp", "ln", "log", "^", "/", "arcsin", "asin", "acos", "arccos", "sqrt"}, l1=1e-4, ((variation <= tolerance) || (median(vec.array().abs()) <= tolerance)), period bc * 1e10:
+        Depth = 7:
+            Best score = 3.7651302184943e-06, SNE = 265594.063641626
+            Squared-norm error for each equation: 0.000165207509900296 6.85929228952891e-05 265593.328421863 0.734985962374831
+            Best expression = (((((0.01 * (5.593019606597998 + (x3 + x3))) + -0.9748798932123488) * sin(((x0 + (x2 + x1)) + ~((x2 + x1))))) * ((((6.348672216816466 + x3) * 0.01) + (-0.16505717655760058 * (0.01 + x3))) + (-0.0435217889589052 + ((0.0001 * (x3 * x2)) + 4.335737065593876)))) * sin((((x0 + 77.94723806531135) + (x2 * (0.06283190000000001 + (1.0935769466145617 * x3)))) + (~(((x3 + x0) + (6.283190000000001 + x0))) + (0.0016283190000000005 + ((x3 + x1) + (x0 + 135.26310897293877)))))))
+            Best expression (original format) = 0.01 5.593019606597998 x3 x3 + + * -0.9748798932123488 + x0 x2 x1 + + x2 x1 + ~ + sin * 6.348672216816466 x3 + 0.01 * -0.16505717655760058 0.01 x3 + * + -0.0435217889589052 0.0001 x3 x2 * * 4.335737065593876 + + + * x0 77.94723806531135 + x2 0.06283190000000001 1.0935769466145617 x3 * + * + x3 x0 + 6.283190000000001 x0 + + ~ 0.0016283190000000005 x3 x1 + x0 135.26310897293877 + + + + + sin *
+
      
      ```
 x = "- ((1e-10 + (r + 0.0675028199851666*sin(theta) + 0.315589358780667)**(sqrt(r)*(r + 2.87892339678315)*(5953.65096806617 - r)/((5953.65096806617 - r)**2 + 1e10) + 0.980141037771426)/(0.013519701745416**r*(43.687622183442*r + 8.33814060981745) + r + 0.02*sin(r) + 1.82648253593279))**(((9.2348889286512)/(r + 0.55183450665909) + sin(theta + cos(theta + 0.519039044087815) + 5.8847752990135)*(.5*(1-tanh(1.025*(r-21.2)))))*(r + sin(r - 0.01) + (1.0e-10 + cos(sin(theta)))**(r - 1.58074387559245) + 0.37384427398835 + tanh(r)/(r + 7.97723076614237))))*((.5*(1-tanh(1.775e3*(r-10.01))))) + sqrt(1 - cos(r)**2)*(1.0e-10*0.68688067225485**(8.16109249232708*r) + 0.854229974212735)*(sech(r + cos(r) + 8.39614384384391) + 0.999884853180843)**(1.58799646315658*(r + 0.0308839840501129)**4.01549520152667*(1.57*(tanh(.62*r))))*(0.0100048594945809**(2*r + 5.29438341416157) + 0.7011748940086 - 45.6560816728088/(21934.7382737552))*sin(theta + 18.8962439891879)*(1) - ((1.5707963267949)**(-18.3837681892581) + 0.285811651486423)**(r + sech(r + 0.0561717295263584) + 10.0547134992516)*(r + (r**0.999950000416665 - 0.00364405505237706)**((0.376065617272839**r + r)**0.00999966667999946) + 0.0106243230277353)**(-r**2*exp(-r)/(1 + 1358.42254658947*exp(-r)) + (0.000469282041378069*r + 0.0160184860388267)**((sin(r) + 6.78974430415452)/(r - 0.00781876960101768)) + 7.58897670822754)*(-sin(theta + cos(theta - 0.0144023112886078) + 0.105413950813453) + sin(log(r + 0.390458429297535)) + ((-tanh(0.62*r)+1.01)*(pi/2))**(0.061275433230159*r + 0.00061275433230159)) + (0.00273233753019377**(6.19641677671904 - sin(theta + 0.089280925720443)) + 2.79499001433555e-13 + (6.12323399573677e-17)/(2.19270786451049 - 6.28221254344588*r))*(0.999329299739067*r + 0.453212918064574)**(sin(sqrt(r + 9.07998593378172e-5)) + 11.4130415650481 + 0.00010001/(1.01005016708417 - cos(theta)))*((.5*(1-tanh(1.775e3*(r-10.01))))) + 0.0101001582000134*tanh(10.0327249667171*r + 11.9956250261793) + 0.863191833358681"
@@ -13629,7 +13641,7 @@ namespace ExampleProblems
                          true /*cache*/,
                          time /*time to run the algorithm in seconds*/,
                          num_threads /*num threads*/,
-                         true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                         true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
                          threshold /*threshold for which solutions cannot be constant*/,
                          false /*`use_const_pieces`: whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                          0 /*number of data columns that constitute labels and not independent variables/features*/,
@@ -13661,7 +13673,7 @@ namespace ExampleProblems
                 true /*cache*/,
                 time /*time to run the algorithm in seconds*/,
                 num_threads /*num threads*/,
-                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
                 false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
@@ -13722,7 +13734,7 @@ namespace ExampleProblems
                          true /*cache*/,
                          time /*time to run the algorithm in seconds*/,
                          num_threads /*num threads*/,
-                         true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                         true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
                          threshold /*threshold for which solutions cannot be constant*/,
                          false /*`use_const_pieces`: whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                          0 /*number of data columns that constitute labels and not independent variables/features*/,
@@ -13754,7 +13766,7 @@ namespace ExampleProblems
                 true /*cache*/,
                 time /*time to run the algorithm in seconds*/,
                 num_threads /*num threads*/,
-                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
                 false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
@@ -13794,9 +13806,6 @@ namespace ExampleProblems
             bad_ops = {"exp", "ln", "log", "^", "/", "arcsin", "asin", "acos", "arccos", "sqrt"};
         }
         const int num_diff_eqns = (mu_equals_nu_1_only) ? 3 : 4;
-        auto data1 = ((mu_equals_nu_1_only) ?
-                      createMeshgridVectors(330, 2, {0.01, 0.0}, {10.0, 6.28319}) :
-                      createMeshgridVectors(18, 4, {0.01, 0.0, 0.01, 0.01}, {10.0, 6.28319, 10, 10}));
         
 #if TIME_EVAL
         auto n = 10000;
@@ -13902,6 +13911,10 @@ namespace ExampleProblems
         std::string numThreads, theDepth, theCompleteTree, theMaxDag, theFit, theNumFitIters, theFitType = "RandomJitter", theBadOps, Algorithm = algorithm, theFullPrec;
         std::string theSeedExpr = "9.725816343768619 x3 - x2 cos * x1 9.939958102300732 - 6.28319 x3 * - + sin x2 6.28319 + tanh x0 sin ~ * 3.696752038102206 0.14244753430343096 x3 * - * *";
         std::string theConstCacheThresh;
+        int NumPoints = 18;
+        std::string theNumPoints;
+        int const_tokens = 1;
+        std::string theConstTokens;
         
         if (read_from_file)
         {
@@ -13922,6 +13935,8 @@ namespace ExampleProblems
             std::getline(inObj, theConstCacheThresh);
             std::getline(inObj, theBadOps);
             std::getline(inObj, theFullPrec);
+            std::getline(inObj, theNumPoints);
+            std::getline(inObj, theConstTokens);
 
             fullPrec = std::stoi(theFullPrec);
             num_threads = std::stoi(numThreads);
@@ -13932,6 +13947,9 @@ namespace ExampleProblems
             fitIters = std::stoi(theNumFitIters);
             ConstCacheThresh = std::stod(theConstCacheThresh);
             bad_ops = split(theBadOps);
+            NumPoints = std::stod(theNumPoints);
+            const_tokens = std::stoi(theConstTokens);
+            
             std::cout << "Algorithm = " << Algorithm << "\n";
             std::cout << "theSeedExpr = " << theSeedExpr << "\n";
             std::cout << "pert_mode = " << pert_mode << '\n';
@@ -13946,7 +13964,13 @@ namespace ExampleProblems
             std::cout << "theFitType = " << theFitType << '\n';
             std::cout << "ConstCacheThresh = " << ConstCacheThresh << '\n';
             std::cout << "bad_ops = " << bad_ops << '\n';
+            std::cout << "NumPoints = " << NumPoints << '\n';
+            std::cout << "const_tokens = " << const_tokens << '\n';
         }
+        
+        auto data1 = ((mu_equals_nu_1_only) ?
+                      createMeshgridVectors(330, 2, {0.01, 0.0}, {10.0, 6.28319}) :
+                      createMeshgridVectors(NumPoints, 4, {0.01, 0.0, 0.01, 0.01}, {10.0, 6.28319, 10, 10}));
         
         if (Algorithm == "RandomSearch")
         {
@@ -13962,7 +13986,7 @@ namespace ExampleProblems
                          true /*cache*/,
                          time /*time to run the algorithm in seconds*/,
                          num_threads /*num threads*/,
-                         true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                         const_tokens /*`const_tokens`: whether to include const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
                          threshold /*threshold for which solutions cannot be constant*/,
                          fit /*`use_const_pieces`: whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                          0 /*number of data columns that constitute labels and not independent variables/features*/,
@@ -13994,7 +14018,7 @@ namespace ExampleProblems
                 true /*cache*/,
                 time /*time to run the algorithm in seconds*/,
                 num_threads /*num threads*/,
-                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                const_tokens /*`const_tokens`: whether to include const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
                 fit /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
@@ -14043,7 +14067,7 @@ namespace ExampleProblems
                          true /*cache*/,
                          time /*time to run the algorithm in seconds*/,
                          0 /*num threads*/,
-                         true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                         true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
                          threshold /*threshold for which solutions cannot be constant*/,
                          false /*`use_const_pieces`: whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                          0 /*number of data columns that constitute labels and not independent variables/features*/,
@@ -14075,7 +14099,7 @@ namespace ExampleProblems
                 true /*cache*/,
                 time /*time to run the algorithm in seconds*/,
                 0 /*num threads*/,
-                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
                 true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
@@ -14126,7 +14150,7 @@ namespace ExampleProblems
                 true /*cache*/,
                 time /*time to run the algorithm in seconds*/,
                 0 /*num threads*/,
-                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
                 true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                  2 /*number of data columns that constitute labels and not independent variables/features*/,
@@ -14158,7 +14182,7 @@ namespace ExampleProblems
                 true /*cache*/,
                 time /*time to run the algorithm in seconds*/,
                 0 /*num threads*/,
-                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
                 false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the ORIGINAL expression on every iteration (perturbation) of the seed expression vector; if false a copy is maintained so that simplification on this->pieces can still happen*/
@@ -14218,7 +14242,7 @@ namespace ExampleProblems
                 true /*cache*/,
                 time /*time to run the algorithm in seconds*/,
                 0 /*num threads*/,
-                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
                 false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                  1 /*number of data columns that constitute labels and not independent variables/features*/,
@@ -14250,7 +14274,7 @@ namespace ExampleProblems
                 true /*cache*/,
                 time /*time to run the algorithm in seconds*/,
                 ((validation) ? 1 : 0) /*num threads*/,
-                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
                 false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the ORIGINAL expression on every iteration (perturbation) of the seed expression vector; if false a copy is maintained so that simplification on this->pieces can still happen*/
@@ -14309,7 +14333,7 @@ namespace ExampleProblems
                 true /*cache*/,
                 time /*time to run the algorithm in seconds*/,
                 0 /*num threads*/,
-                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
                 false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                  1 /*number of data columns that constitute labels and not independent variables/features*/,
@@ -14341,7 +14365,7 @@ namespace ExampleProblems
                 true /*cache*/,
                 time /*time to run the algorithm in seconds*/,
                 ((validation) ? 1 : 0) /*num threads*/,
-                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
                 false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the ORIGINAL expression on every iteration (perturbation) of the seed expression vector; if false a copy is maintained so that simplification on this->pieces can still happen*/
@@ -14671,7 +14695,7 @@ namespace ExampleProblems
                 true /*cache*/,
                 time /*time to run the algorithm in seconds*/,
                 num_threads /*num threads*/,
-                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
                 true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                  1 /*number of data columns that constitute labels and not independent variables/features*/,
@@ -14703,7 +14727,7 @@ namespace ExampleProblems
                 true /*cache*/,
                 time /*time to run the algorithm in seconds*/,
                 num_threads /*num threads*/,
-                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4}*/,
+                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
                 true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the ORIGINAL expression on every iteration (perturbation) of the seed expression vector; if false a copy is maintained so that simplification on this->pieces can still happen*/
