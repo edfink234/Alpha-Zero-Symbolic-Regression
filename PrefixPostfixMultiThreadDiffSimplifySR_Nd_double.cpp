@@ -8083,21 +8083,27 @@ struct Board
 std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fit)
 {
     constexpr int func_idx = 0;
-    constexpr double h = 1.0;
-    constexpr double T_final = 10.;
+    constexpr double h = 0.5;
+    const double T_final = std::vector<double>{100., 100., 1., 100.}[func_idx];
 
     double res = 0.0;
     std::string infty = to_string_general(DBL_MAX);
 
     std::vector<std::string> example_y = std::vector<std::vector<std::string>> //solutions for the corresponding example_dy_dt ODEs
     {
-        std::vector<std::string>{"x0", "sin"}
+        std::vector<std::string>{"x0", "sin"},
+        std::vector<std::string>{"x0", "tanh"},
+        std::vector<std::string>{"x0", "exp", "5.", "+", "6", "x0", "x0", "exp", "*", "-", "/", "1.", "3.", "/", "^"},
+        std::vector<std::string>{"x0", "2.", "x0", "~", "exp", "*", "1.", "-", "+"}
     }[func_idx];
     std::vector<std::string> example_dy_dt = std::vector<std::vector<std::string>> //The ODE to solve with RK4 optimally st it matches the exact solution as much as possible at each t+ih time-step
     {
-        std::vector<std::string>{"y_n", "y_n", "*", "x0", "cos", "*", "y_n", "+", "x0", "sin", "x0", "sin", "*", "x0", "cos", "*", "-", "x0", "sin", "-", "x0", "cos", "+"}
+        std::vector<std::string>{"y_n", "y_n", "*", "x0", "cos", "*", "y_n", "+", "x0", "sin", "x0", "sin", "*", "x0", "cos", "*", "-", "x0", "sin", "-", "x0", "cos", "+"},
+        std::vector<std::string>{"1.", "y_n", "y_n", "*", "-"},
+        std::vector<std::string>{"x0", "exp", "y_n", "y_n", "*", "y_n", "*", "x0", "1.", "+", "*", "1.", "+", "*", "3.", "y_n", "*", "y_n", "*", "x0", "x0", "exp", "*", "6", "-", "*", "/", "~"},
+        std::vector<std::string>{"x0", "y_n", "-"}
     }[func_idx];
-    double y_0 = std::vector<double>{0.}[func_idx]; //IC for the ODE solve
+    double y_0 = std::vector<double>{0., 0., 1., 1.}[func_idx]; //IC for the ODE solve
     if (x.expression_type == "prefix")
     {
         throw std::invalid_argument("Prefix not implemented yet for this RK4Explicitc2c3Discovery function!");
@@ -13618,7 +13624,7 @@ namespace ExampleProblems
         constexpr int num_diff_eqns = 1;
         
         double threshold = 0.0;
-        unsigned int num_threads = 1;
+        unsigned int num_threads = 0;
         std::vector<std::string> bad_ops = {"exp", "ln", "log", "^", "/", "sqrt", "asin", "acos", "arcsin", "arccos"};
         // input is just time t
         for (int i = 0; i < num_points; i++)
@@ -13667,13 +13673,13 @@ namespace ExampleProblems
                 std::vector<int>{2, 2} /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
-                "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
+                "RandomJitterVec1e-1" /*fit method if expression contains const tokens*/,
                 5 /*number of fit iterations*/,
                 "naive_numerical" /*method for computing the gradient*/,
                 true /*cache*/,
                 time /*time to run the algorithm in seconds*/,
                 num_threads /*num threads*/,
-                true /*`const_tokens`: whether to include const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
+                false /*`const_tokens`: whether to include const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
                 false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
@@ -13684,22 +13690,22 @@ namespace ExampleProblems
                 {} /*optional max-sizes of each of the expressions in the generated solution*/,
                 {/**/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 "vector" /*evaluation type: can be "dag", "scalar", or "vector"*/,
-                1000000 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
+                1000 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                 bad_ops /*operators to restrict in the search*/,
                 1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
                 "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
                 8000 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
                 false /*fullPrec: whether to write output to full precision, i.e., std::numeric_limits<double>::digits10 */,
-                {} /*seed expressions*/,
+                {split("0.0261948728217265 0 + 0 0 + +"), split("23.56295196291743 0 + 0 0 + +")} /*seed expressions*/,
                 0 /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
                 0.0 /*T_max*/,
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
-                true /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/,
+                false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
+                "constants_only1e-1" /*perturbation option: either "sub_array", "n_random", "constants_only", or (default) "sub_tree"*/,
                 true /*whether or not to sync the current expression of each thread with the global current best*/);
         }
     }

@@ -1,351 +1,657 @@
 
-Thread id = 5
-Time since start = 0.00207
+Thread id = 6
+Time since start = 18.7946
 Unique expressions = 0
 Time spent fitting = 0 seconds
-Best score = 1e-12, SNE = 1e+12
-Squared-norm error for each equation: 1e+12 
-Best expression = sin(x1), 9.073895984846668e-05
-Best expression (original format) = x1 sin, 9.073895984846668e-05
-
-Thread id = 1
-Time since start = 0.593759
-Unique expressions = 0
-Time spent fitting = 0 seconds
-Best score = 0.023339, SNE = 41.8467
-Squared-norm error for each equation: 41.8467 
-Best expression = 6, 3
-Best expression (original format) = 6, 3
-
-Thread id = 0
-Time since start = 0.667252
-Unique expressions = 0
-Time spent fitting = 0 seconds
-Best score = 0.0963314, SNE = 9.38083
-Squared-norm error for each equation: 9.38083 
-Best expression = (x0 + -0.5440211108893698), 0
-Best expression (original format) = x0 -0.5440211108893698 +, 0
-
-Thread id = 0
-Time since start = 1.25832
-Unique expressions = 0
-Time spent fitting = 0 seconds
-Best score = 0.187703, SNE = 4.32758
-Squared-norm error for each equation: 4.32758 
-Best expression = (sin(x0) - 0.9092974268256817), 0
-Best expression (original format) = x0 sin 0.9092974268256817 -, 0
+Best score = 6.58532e-06, SNE = 151852
+Squared-norm error for each equation: 151852 
+Best expression = 0.6480542736638855, 400
+Best expression (original format) = 0.6480542736638855, 400
 
 Thread id = 7
-Time since start = 2.38581
+Time since start = 33.3772
 Unique expressions = 0
 Time spent fitting = 0 seconds
-Best score = 0.204557, SNE = 3.88861
-Squared-norm error for each equation: 3.88861 
-Best expression = (sin(x0) - 1), 0
-Best expression (original format) = x0 sin 1 -, 0
+Best score = 6.65717e-06, SNE = 150213
+Squared-norm error for each equation: 150213 
+Best expression = 0.6143002821164822, 400
+Best expression (original format) = 0.6143002821164822, 400
 
-Thread id = 4
-Time since start = 3.5723
+Thread id = 2
+Time since start = 46.2875
 Unique expressions = 0
 Time spent fitting = 0 seconds
-Best score = 0.212486, SNE = 3.7062
-Squared-norm error for each equation: 3.7062 
-Best expression = -1, 0
-Best expression (original format) = -1, 0
+Best score = 8.28455e-06, SNE = 120706
+Squared-norm error for each equation: 120706 
+Best expression = 0.6420149920119997, 400
+Best expression (original format) = 0.6420149920119997, 400
 
-Thread id = 5
-Time since start = 0.000949416
+Thread id = 0
+Time since start = 142.352
 Unique expressions = 0
 Time spent fitting = 0 seconds
-Best score = 1e-12, SNE = 1e+12
-Squared-norm error for each equation: 1e+12 
-Best expression = x1, 0
-Best expression (original format) = x1, 0
+Best score = 9.17461e-06, SNE = 108995
+Squared-norm error for each equation: 108995 
+Best expression = 0.6350114269468982, 400
+Best expression (original format) = 0.6350114269468982, 400
 
-Thread id = 4
-Time since start = 0.625372
+Thread id = 2
+Time since start = 9.18022
 Unique expressions = 0
 Time spent fitting = 0 seconds
-Best score = 0.100923, SNE = 8.90856
-Squared-norm error for each equation: 8.90856 
-Best expression = x0, (1 + x0)
-Best expression (original format) = x0, 1 x0 +
+Best score = 8.71522e-05, SNE = 11473.2
+Squared-norm error for each equation: 11473.2 
+Best expression = -9.079985933781724e-05, 24
+Best expression (original format) = -9.079985933781724e-05, 24
+
+Thread id = 3
+Time since start = 9.74796
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 8.99814e-05, SNE = 11112.4
+Squared-norm error for each equation: 11112.4 
+Best expression = -0.00018159971867563447, 24
+Best expression (original format) = -0.00018159971867563447, 24
 
 Thread id = 6
-Time since start = 0.903625
+Time since start = 9.89179
 Unique expressions = 0
 Time spent fitting = 0 seconds
-Best score = 0.100924, SNE = 8.90848
-Squared-norm error for each equation: 8.90848 
-Best expression = 0, 0
-Best expression (original format) = 0, 0
+Best score = 9.02474e-05, SNE = 11079.6
+Squared-norm error for each equation: 11079.6 
+Best expression = 0.004957473893560379, 24
+Best expression (original format) = 0.004957473893560379, 24
 
-Thread id = 2
-Time since start = 1.29853
+Thread id = 3
+Time since start = 9.89979
 Unique expressions = 0
 Time spent fitting = 0 seconds
-Best score = 0.17495, SNE = 4.71592
-Squared-norm error for each equation: 4.71592 
-Best expression = -2, (1 + x0)
-Best expression (original format) = -2, 1 x0 +
+Best score = 0.000123366, SNE = 8104.96
+Squared-norm error for each equation: 8104.96 
+Best expression = -0.0041596752002263015, 24
+Best expression (original format) = -0.0041596752002263015, 24
 
-Thread id = 1
-Time since start = 2.53181
+Thread id = 5
+Time since start = 9.94655
 Unique expressions = 0
 Time spent fitting = 0 seconds
-Best score = 0.212486, SNE = 3.7062
-Squared-norm error for each equation: 3.7062 
-Best expression = -1, (1 + x0)
-Best expression (original format) = -1, 1 x0 +
-
-Thread id = 1
-Time since start = 0.00155175
-Unique expressions = 0
-Time spent fitting = 0 seconds
-Best score = 1e-12, SNE = 1e+12
-Squared-norm error for each equation: 1e+12 
-Best expression = (tanh(x1) - (x0 - 10)), ~(tanh(x0))
-Best expression (original format) = x1 tanh x0 10 - -, x0 tanh ~
-
-Thread id = 0
-Time since start = 0.599223
-Unique expressions = 0
-Time spent fitting = 0 seconds
-Best score = 0.0220766, SNE = 44.2968
-Squared-norm error for each equation: 44.2968 
-Best expression = 0.2658022288340797, ((4 - x0) - x1)
-Best expression (original format) = 0.2658022288340797, 4 x0 - x1 -
-
-Thread id = 2
-Time since start = 0.624721
-Unique expressions = 0
-Time spent fitting = 0 seconds
-Best score = 0.100924, SNE = 8.90848
-Squared-norm error for each equation: 8.90848 
-Best expression = 0, (10 - tanh(x0))
-Best expression (original format) = 0, 10 x0 tanh -
-
-Thread id = 4
-Time since start = 1.24216
-Unique expressions = 0
-Time spent fitting = 0 seconds
-Best score = 0.100933, SNE = 8.90756
-Squared-norm error for each equation: 8.90756 
-Best expression = 9.079985933781725e-05, ((4 - x0) - x1)
-Best expression (original format) = 9.079985933781725e-05, 4 x0 - x1 -
+Best score = 0.000143963, SNE = 6945.22
+Squared-norm error for each equation: 6945.22 
+Best expression = -0.0032404211861236346, 24
+Best expression (original format) = -0.0032404211861236346, 24
 
 Thread id = 7
-Time since start = 4.29818
+Time since start = 10.1066
 Unique expressions = 0
 Time spent fitting = 0 seconds
-Best score = 0.197548, SNE = 4.06206
-Squared-norm error for each equation: 4.06206 
-Best expression = -0.8390715290764524, ((4 - x0) - x1)
-Best expression (original format) = -0.8390715290764524, 4 x0 - x1 -
+Best score = 0.000154664, SNE = 6464.63
+Squared-norm error for each equation: 6464.63 
+Best expression = -0.009914947787120758, 24
+Best expression (original format) = -0.009914947787120758, 24
+
+Thread id = 5
+Time since start = 11.1263
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000163827, SNE = 6103
+Squared-norm error for each equation: 6103 
+Best expression = -0.0012056452804899732, 24
+Best expression (original format) = -0.0012056452804899732, 24
+
+Thread id = 3
+Time since start = 16.2983
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000164631, SNE = 6073.19
+Squared-norm error for each equation: 6073.19 
+Best expression = -0.002004005051977545, 24
+Best expression (original format) = -0.002004005051977545, 24
+
+Thread id = 4
+Time since start = 21.1865
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000170947, SNE = 5848.77
+Squared-norm error for each equation: 5848.77 
+Best expression = (cos((4 * x0)) * 0.004957473893560379), 24
+Best expression (original format) = 4 x0 * cos 0.004957473893560379 *, 24
+
+Thread id = 3
+Time since start = 43.4471
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000196741, SNE = 5081.82
+Squared-norm error for each equation: 5081.82 
+Best expression = (cos((4 * x0)) * (0.03661899347368653 * sech(x1))), 24
+Best expression (original format) = 4 x0 * cos 0.03661899347368653 x1 sech * *, 24
+
+Thread id = 5
+Time since start = 43.5652
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000207893, SNE = 4809.18
+Squared-norm error for each equation: 4809.18 
+Best expression = (cos((4 * x0)) * (0.03661899347368653 * sech(x1))), 24.000544799156028
+Best expression (original format) = 4 x0 * cos 0.03661899347368653 x1 sech * *, 24.000544799156028
+
+Thread id = 2
+Time since start = 43.651
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000212236, SNE = 4710.73
+Squared-norm error for each equation: 4710.73 
+Best expression = (cos((4 * x0)) * (0.03661899347368653 * cos(x1))), 24.000544799156028
+Best expression (original format) = 4 x0 * cos 0.03661899347368653 x1 cos * *, 24.000544799156028
+
+Thread id = 3
+Time since start = 69.7369
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.00021224, SNE = 4710.64
+Squared-norm error for each equation: 4710.64 
+Best expression = (cos((4 * x0)) * (0.03661899347368653 * cos(x1))), 24.00054470021841
+Best expression (original format) = 4 x0 * cos 0.03661899347368653 x1 cos * *, 24.00054470021841
+
+Thread id = 7
+Time since start = 80.956
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000215387, SNE = 4641.8
+Squared-norm error for each equation: 4641.8 
+Best expression = (cos((4 * x0)) * (0.03661899347368653 * cos(x1))), ((tanh(x0) + 3) * 5.999999975266157)
+Best expression (original format) = 4 x0 * cos 0.03661899347368653 x1 cos * *, x0 tanh 3 + 5.999999975266157 *
+
+Thread id = 6
+Time since start = 80.9706
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000215931, SNE = 4630.11
+Squared-norm error for each equation: 4630.11 
+Best expression = (cos((4 * x0)) * (0.03661899347368653 * cos(x1))), ((tanh(x0) + 3) * 6)
+Best expression (original format) = 4 x0 * cos 0.03661899347368653 x1 cos * *, x0 tanh 3 + 6 *
 
 Thread id = 0
-Time since start = 0.00152137
+Time since start = 81.0052
 Unique expressions = 0
 Time spent fitting = 0 seconds
-Best score = 1e-12, SNE = 1e+12
-Squared-norm error for each equation: 1e+12 
-Best expression = (10 - (10 + x1)), (0.999329299739067 - x0)
-Best expression (original format) = 10 10 x1 + -, 0.999329299739067 x0 -
+Best score = 0.000284671, SNE = 3511.83
+Squared-norm error for each equation: 3511.83 
+Best expression = (cos((4 * x0)) * (0.03661899347368653 * cos(x1))), 23.9959757984344
+Best expression (original format) = 4 x0 * cos 0.03661899347368653 x1 cos * *, 23.9959757984344
 
 Thread id = 0
-Time since start = 0.26652
+Time since start = 268.439
 Unique expressions = 0
 Time spent fitting = 0 seconds
-Best score = 0.00195768, SNE = 509.809
-Squared-norm error for each equation: 509.809 
-Best expression = tanh((x0 + 10)), x1
-Best expression (original format) = x0 10 + tanh, x1
+Best score = 0.000296128, SNE = 3375.91
+Squared-norm error for each equation: 3375.91 
+Best expression = (cos((4 * x0)) * (0.9092974268256817 - sech(x1))), 23.9959757984344
+Best expression (original format) = 4 x0 * cos 0.9092974268256817 x1 sech - *, 23.9959757984344
+
+Thread id = 6
+Time since start = 268.443
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000308457, SNE = 3240.95
+Squared-norm error for each equation: 3240.95 
+Best expression = (cos((4 * x0)) * (0.9092974268256817 - sech(x1))), 24
+Best expression (original format) = 4 x0 * cos 0.9092974268256817 x1 sech - *, 24
+
+Thread id = 6
+Time since start = 268.495
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000388378, SNE = 2573.81
+Squared-norm error for each equation: 2573.81 
+Best expression = (cos((4 * x0)) * (0.9092974268256817 - cos(x1))), 24
+Best expression (original format) = 4 x0 * cos 0.9092974268256817 x1 cos - *, 24
+
+Thread id = 4
+Time since start = 268.693
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000402763, SNE = 2481.85
+Squared-norm error for each equation: 2481.85 
+Best expression = (cos((4 * x0)) * (0.9092974268256817 - cos(x1))), 23.98390319373761
+Best expression (original format) = 4 x0 * cos 0.9092974268256817 x1 cos - *, 23.98390319373761
+
+Thread id = 1
+Time since start = 270.911
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000402763, SNE = 2481.85
+Squared-norm error for each equation: 2481.85 
+Best expression = (cos((4 * x0)) * (0.9092974268256817 - cos(x1))), 23.983903094868595
+Best expression (original format) = 4 x0 * cos 0.9092974268256817 x1 cos - *, 23.983903094868595
 
 Thread id = 0
-Time since start = 0.273266
+Time since start = 270.959
 Unique expressions = 0
 Time spent fitting = 0 seconds
-Best score = 0.0109011, SNE = 90.7338
-Squared-norm error for each equation: 90.7338 
-Best expression = 9, ~(tanh(x0))
-Best expression (original format) = 9, x0 tanh ~
+Best score = 0.000424643, SNE = 2353.92
+Squared-norm error for each equation: 2353.92 
+Best expression = (cos((4 * x0)) * (0.9092974268256817 - cos(x1))), 23.96781718360738
+Best expression (original format) = 4 x0 * cos 0.9092974268256817 x1 cos - *, 23.96781718360738
+
+Thread id = 6
+Time since start = 288.39
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000502432, SNE = 1989.32
+Squared-norm error for each equation: 1989.32 
+Best expression = (cos((4 * x0)) * (0.9092974268256817 - cos(x1))), 23.562861163058095
+Best expression (original format) = 4 x0 * cos 0.9092974268256817 x1 cos - *, 23.562861163058095
+
+Thread id = 3
+Time since start = 289.067
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000662757, SNE = 1507.85
+Squared-norm error for each equation: 1507.85 
+Best expression = 0.03661899347368653, 23.562861163058095
+Best expression (original format) = 0.03661899347368653, 23.562861163058095
+
+Thread id = 7
+Time since start = 289.494
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000697089, SNE = 1433.54
+Squared-norm error for each equation: 1433.54 
+Best expression = 0.0261948728217265, 23.562861163058095
+Best expression (original format) = 0.0261948728217265, 23.562861163058095
+
+Thread id = 6
+Time since start = 299.448
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000697871, SNE = 1431.93
+Squared-norm error for each equation: 1431.93 
+Best expression = 0.0261948728217265, 23.56295196291743
+Best expression (original format) = 0.0261948728217265, 23.56295196291743
+
+Thread id = 7
+Time since start = 0.00413717
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000697871, SNE = 1431.93
+Squared-norm error for each equation: 1431.93 
+Best expression = 0.0261948728217265, 23.56295196291743
+Best expression (original format) = 0.0261948728217265, 23.56295196291743
+
+Thread id = 6
+Time since start = 0.00506287
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000697871, SNE = 1431.93
+Squared-norm error for each equation: 1431.93 
+Best expression = 0.0261948728217265, 23.56295196291743
+Best expression (original format) = 0.0261948728217265, 23.56295196291743
+
+Thread id = 7
+Time since start = 0.00584671
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000697871, SNE = 1431.93
+Squared-norm error for each equation: 1431.93 
+Best expression = 0.0261948728217265, 23.56295196291743
+Best expression (original format) = 0.0261948728217265, 23.56295196291743
+
+Thread id = 4
+Time since start = 0.00478358
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000697871, SNE = 1431.93
+Squared-norm error for each equation: 1431.93 
+Best expression = 0.0261948728217265, 23.56295196291743
+Best expression (original format) = 0.0261948728217265, 23.56295196291743
+
+Thread id = 1
+Time since start = 0.00609933
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000697871, SNE = 1431.93
+Squared-norm error for each equation: 1431.93 
+Best expression = 0.0261948728217265, 23.56295196291743
+Best expression (original format) = 0.0261948728217265, 23.56295196291743
 
 Thread id = 0
-Time since start = 0.258947
+Time since start = 0.0185547
 Unique expressions = 0
 Time spent fitting = 0 seconds
-Best score = 0.00885935, SNE = 111.875
-Squared-norm error for each equation: 111.875 
-Best expression = 10, -4
-Best expression (original format) = 10, -4
+Best score = 0.000699363, SNE = 1428.87
+Squared-norm error for each equation: 1428.87 
+Best expression = 0.0261948728217265, 23.57676243417348
+Best expression (original format) = 0.0261948728217265, 23.57676243417348
+
+Thread id = 4
+Time since start = 0.0231366
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000705039, SNE = 1417.36
+Squared-norm error for each equation: 1417.36 
+Best expression = 0.0261948728217265, 23.571794126428646
+Best expression (original format) = 0.0261948728217265, 23.571794126428646
+
+Thread id = 6
+Time since start = 0.0304164
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000725272, SNE = 1377.79
+Squared-norm error for each equation: 1377.79 
+Best expression = 0.017880574178814168, 23.571794126428646
+Best expression (original format) = 0.017880574178814168, 23.571794126428646
+
+Thread id = 4
+Time since start = 0.0441703
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000725448, SNE = 1377.46
+Squared-norm error for each equation: 1377.46 
+Best expression = 0.018928875457651338, 23.571794126428646
+Best expression (original format) = 0.018928875457651338, 23.571794126428646
+
+Thread id = 1
+Time since start = 0.157215
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.00072545, SNE = 1377.46
+Squared-norm error for each equation: 1377.46 
+Best expression = 0.018928875457651338, 23.571807633004394
+Best expression (original format) = 0.018928875457651338, 23.571807633004394
+
+Thread id = 7
+Time since start = 0.205719
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.00072561, SNE = 1377.15
+Squared-norm error for each equation: 1377.15 
+Best expression = 0.018681651153338096, 23.571807633004394
+Best expression (original format) = 0.018681651153338096, 23.571807633004394
 
 Thread id = 0
-Time since start = 0.259783
+Time since start = 0.638026
 Unique expressions = 0
 Time spent fitting = 0 seconds
-Best score = 0.0104931, SNE = 94.301
-Squared-norm error for each equation: 94.301 
-Best expression = (-10 + sin(x0)), ((10 * x1) - sin(x0))
-Best expression (original format) = -10 x0 sin +, 10 x1 * x0 sin -
+Best score = 0.00072566, SNE = 1377.06
+Squared-norm error for each equation: 1377.06 
+Best expression = 0.018681651153338096, 23.57210926260892
+Best expression (original format) = 0.018681651153338096, 23.57210926260892
+
+Thread id = 4
+Time since start = 0.840872
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.00072573, SNE = 1376.92
+Squared-norm error for each equation: 1376.92 
+Best expression = 0.018563196716082375, 23.57210926260892
+Best expression (original format) = 0.018563196716082375, 23.57210926260892
+
+Thread id = 4
+Time since start = 0.878361
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.00072584, SNE = 1376.71
+Squared-norm error for each equation: 1376.71 
+Best expression = 0.01816101312478504, 23.57210926260892
+Best expression (original format) = 0.01816101312478504, 23.57210926260892
 
 Thread id = 0
-Time since start = 0.256386
+Time since start = 0.902547
 Unique expressions = 0
 Time spent fitting = 0 seconds
-Best score = 0.00195768, SNE = 509.809
-Squared-norm error for each equation: 509.809 
-Best expression = 1, sin((x0 + x1))
-Best expression (original format) = 1, x0 x1 + sin
+Best score = 0.000726018, SNE = 1376.38
+Squared-norm error for each equation: 1376.38 
+Best expression = 0.01816101312478504, 23.573206519839513
+Best expression (original format) = 0.01816101312478504, 23.573206519839513
 
 Thread id = 0
-Time since start = 0.00159837
+Time since start = 1.00127
 Unique expressions = 0
 Time spent fitting = 0 seconds
-Best score = 1e-12, SNE = 1e+12
-Squared-norm error for each equation: 1e+12 
-Best expression = tanh(x1), (tanh(x1) * 40)
-Best expression (original format) = x1 tanh, x1 tanh 40 *
+Best score = 0.000726152, SNE = 1376.12
+Squared-norm error for each equation: 1376.12 
+Best expression = 0.017812128541232056, 23.573206519839513
+Best expression (original format) = 0.017812128541232056, 23.573206519839513
+
+Thread id = 1
+Time since start = 1.87517
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000726154, SNE = 1376.12
+Squared-norm error for each equation: 1376.12 
+Best expression = 0.01753085883129947, 23.573206519839513
+Best expression (original format) = 0.01753085883129947, 23.573206519839513
+
+Thread id = 3
+Time since start = 1.88943
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000726172, SNE = 1376.08
+Squared-norm error for each equation: 1376.08 
+Best expression = 0.01764748815915166, 23.573206519839513
+Best expression (original format) = 0.01764748815915166, 23.573206519839513
+
+Thread id = 6
+Time since start = 2.511
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000726185, SNE = 1376.06
+Squared-norm error for each equation: 1376.06 
+Best expression = 0.01764748815915166, 23.573279964878623
+Best expression (original format) = 0.01764748815915166, 23.573279964878623
+
+Thread id = 5
+Time since start = 2.66842
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000726193, SNE = 1376.04
+Squared-norm error for each equation: 1376.04 
+Best expression = 0.01764748815915166, 23.57381389164833
+Best expression (original format) = 0.01764748815915166, 23.57381389164833
+
+Thread id = 5
+Time since start = 2.8301
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000726216, SNE = 1376
+Squared-norm error for each equation: 1376 
+Best expression = 0.01756532292996789, 23.57381389164833
+Best expression (original format) = 0.01756532292996789, 23.57381389164833
 
 Thread id = 0
-Time since start = 0.266599
+Time since start = 3.03814
 Unique expressions = 0
 Time spent fitting = 0 seconds
-Best score = 0.00195768, SNE = 509.809
-Squared-norm error for each equation: 509.809 
-Best expression = 1, (tanh(x1) * 40)
-Best expression (original format) = 1, x1 tanh 40 *
+Best score = 0.000726221, SNE = 1375.99
+Squared-norm error for each equation: 1375.99 
+Best expression = 0.01756532292996789, 23.573713054432282
+Best expression (original format) = 0.01756532292996789, 23.573713054432282
+
+Thread id = 5
+Time since start = 3.20388
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000726236, SNE = 1375.96
+Squared-norm error for each equation: 1375.96 
+Best expression = 0.01747696149836834, 23.573713054432282
+Best expression (original format) = 0.01747696149836834, 23.573713054432282
+
+Thread id = 3
+Time since start = 4.04031
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000726239, SNE = 1375.96
+Squared-norm error for each equation: 1375.96 
+Best expression = 0.017444169322700775, 23.573713054432282
+Best expression (original format) = 0.017444169322700775, 23.573713054432282
+
+Thread id = 4
+Time since start = 4.07295
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000726241, SNE = 1375.95
+Squared-norm error for each equation: 1375.95 
+Best expression = 0.017444169322700775, 23.573768309913564
+Best expression (original format) = 0.017444169322700775, 23.573768309913564
+
+Thread id = 5
+Time since start = 4.7535
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000726241, SNE = 1375.95
+Squared-norm error for each equation: 1375.95 
+Best expression = 0.017444169322700775, 23.57379034435668
+Best expression (original format) = 0.017444169322700775, 23.57379034435668
+
+Thread id = 3
+Time since start = 5.23025
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000726241, SNE = 1375.95
+Squared-norm error for each equation: 1375.95 
+Best expression = 0.017293461140177133, 23.57379034435668
+Best expression (original format) = 0.017293461140177133, 23.57379034435668
+
+Thread id = 2
+Time since start = 5.57319
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000726254, SNE = 1375.93
+Squared-norm error for each equation: 1375.93 
+Best expression = 0.017293461140177133, 23.57396093292639
+Best expression (original format) = 0.017293461140177133, 23.57396093292639
+
+Thread id = 1
+Time since start = 7.02336
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000726254, SNE = 1375.93
+Squared-norm error for each equation: 1375.93 
+Best expression = 0.017293461140177133, 23.573961733875993
+Best expression (original format) = 0.017293461140177133, 23.573961733875993
+
+Thread id = 5
+Time since start = 15.7391
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000726254, SNE = 1375.93
+Squared-norm error for each equation: 1375.93 
+Best expression = 0.017293461140177133, 23.573987670340813
+Best expression (original format) = 0.017293461140177133, 23.573987670340813
 
 Thread id = 0
-Time since start = 0.780973
+Time since start = 16.9441
 Unique expressions = 0
 Time spent fitting = 0 seconds
-Best score = 0.0594116, SNE = 15.8317
-Squared-norm error for each equation: 15.8317 
-Best expression = ~((x0 - 10)), (tanh(x1) * 40)
-Best expression (original format) = x0 10 - ~, x1 tanh 40 *
+Best score = 0.000726254, SNE = 1375.93
+Squared-norm error for each equation: 1375.93 
+Best expression = 0.01727006644755695, 23.573987670340813
+Best expression (original format) = 0.01727006644755695, 23.573987670340813
+
+Thread id = 7
+Time since start = 24.41
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000726254, SNE = 1375.93
+Squared-norm error for each equation: 1375.93 
+Best expression = 0.017267814505898857, 23.573987670340813
+Best expression (original format) = 0.017267814505898857, 23.573987670340813
+
+Thread id = 4
+Time since start = 24.4336
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000726255, SNE = 1375.93
+Squared-norm error for each equation: 1375.93 
+Best expression = 0.017267814505898857, 23.574002204208607
+Best expression (original format) = 0.017267814505898857, 23.574002204208607
+
+Thread id = 6
+Time since start = 30.0724
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000726255, SNE = 1375.93
+Squared-norm error for each equation: 1375.93 
+Best expression = 0.017247668733325703, 23.574002204208607
+Best expression (original format) = 0.017247668733325703, 23.574002204208607
+
+Thread id = 7
+Time since start = 30.3851
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000726255, SNE = 1375.93
+Squared-norm error for each equation: 1375.93 
+Best expression = 0.017247668733325703, 23.574065917895865
+Best expression (original format) = 0.017247668733325703, 23.574065917895865
+
+Thread id = 4
+Time since start = 30.5111
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000726255, SNE = 1375.93
+Squared-norm error for each equation: 1375.93 
+Best expression = 0.017247668733325703, 23.57401218322408
+Best expression (original format) = 0.017247668733325703, 23.57401218322408
+
+Thread id = 6
+Time since start = 35.1542
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000726255, SNE = 1375.93
+Squared-norm error for each equation: 1375.93 
+Best expression = 0.017247668733325703, 23.5740448606361
+Best expression (original format) = 0.017247668733325703, 23.5740448606361
+
+Thread id = 3
+Time since start = 36.3089
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000726255, SNE = 1375.93
+Squared-norm error for each equation: 1375.93 
+Best expression = 0.017247668733325703, 23.574030944130214
+Best expression (original format) = 0.017247668733325703, 23.574030944130214
+
+Thread id = 6
+Time since start = 45.1357
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000726255, SNE = 1375.93
+Squared-norm error for each equation: 1375.93 
+Best expression = 0.017242131503583613, 23.574030944130214
+Best expression (original format) = 0.017242131503583613, 23.574030944130214
+
+Thread id = 3
+Time since start = 50.1573
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000726255, SNE = 1375.93
+Squared-norm error for each equation: 1375.93 
+Best expression = 0.017242131503583613, 23.574033990491895
+Best expression (original format) = 0.017242131503583613, 23.574033990491895
+
+Thread id = 4
+Time since start = 54.993
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000726255, SNE = 1375.93
+Squared-norm error for each equation: 1375.93 
+Best expression = 0.017242131503583613, 23.574046454313333
+Best expression (original format) = 0.017242131503583613, 23.574046454313333
+
+Thread id = 2
+Time since start = 57.1208
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 0.000726255, SNE = 1375.93
+Squared-norm error for each equation: 1375.93 
+Best expression = 0.01723177009469743, 23.574046454313333
+Best expression (original format) = 0.01723177009469743, 23.574046454313333
 
 Thread id = 0
-Time since start = 1.29595
+Time since start = 61.2797
 Unique expressions = 0
 Time spent fitting = 0 seconds
-Best score = 0.212486, SNE = 3.7062
-Squared-norm error for each equation: 3.7062 
-Best expression = -1, (tanh(x1) * 40)
-Best expression (original format) = -1, x1 tanh 40 *
-
-Thread id = 0
-Time since start = 0.00150629
-Unique expressions = 0
-Time spent fitting = 0 seconds
-Best score = 0.0725922, SNE = 12.7756
-Squared-norm error for each equation: 12.7756 
-Best expression = (9.079985933781725e-05 + (x1 + 10)), 2
-Best expression (original format) = 9.079985933781725e-05 x1 10 + +, 2
-
-Thread id = 0
-Time since start = 0.217063
-Unique expressions = 0
-Time spent fitting = 0 seconds
-Best score = 0.0725925, SNE = 12.7755
-Squared-norm error for each equation: 12.7755 
-Best expression = (9.079985933781725e-05 + (x1 + 10)), 1.9999999958776928
-Best expression (original format) = 9.079985933781725e-05 x1 10 + +, 1.9999999958776928
-
-Thread id = 0
-Time since start = 0.278274
-Unique expressions = 0
-Time spent fitting = 0 seconds
-Best score = 0.0725928, SNE = 12.7755
-Squared-norm error for each equation: 12.7755 
-Best expression = (9.079985933781725e-05 + (x1 + 10)), 1.9999999917553857
-Best expression (original format) = 9.079985933781725e-05 x1 10 + +, 1.9999999917553857
-
-Thread id = 0
-Time since start = 1.52626
-Unique expressions = 0
-Time spent fitting = 0 seconds
-Best score = 0.0801142, SNE = 11.4822
-Squared-norm error for each equation: 11.4822 
-Best expression = (9.079985933781725e-05 + (x1 + 10)), 1.9999092001406622
-Best expression (original format) = 9.079985933781725e-05 x1 10 + +, 1.9999092001406622
-
-Thread id = 0
-Time since start = 7.97327
-Unique expressions = 0
-Time spent fitting = 0 seconds
-Best score = 0.214431, SNE = 3.6635
-Squared-norm error for each equation: 3.6635 
-Best expression = (-0.6536436208636119 + tanh(x1)), 1.9999092001406622
-Best expression (original format) = -0.6536436208636119 x1 tanh +, 1.9999092001406622
-
-Thread id = 0
-Time since start = 11.4499
-Unique expressions = 0
-Time spent fitting = 0 seconds
-Best score = 0.318552, SNE = 2.13921
-Squared-norm error for each equation: 2.13921 
-Best expression = (-0.6536436208636119 + tanh(x1)), sin((x0 + 4))
-Best expression (original format) = -0.6536436208636119 x1 tanh +, x0 4 + sin
-
-Thread id = 0
-Time since start = 0.002794
-Unique expressions = 0
-Time spent fitting = 0 seconds
-Best score = 0.000513098, SNE = 1947.94
-Squared-norm error for each equation: 1947.94 
-Best expression = (x1 + (x0 + 10)), 1.9999999958776928
-Best expression (original format) = x1 x0 10 + +, 1.9999999958776928
-
-Thread id = 0
-Time since start = 0.0137628
-Unique expressions = 0
-Time spent fitting = 0 seconds
-Best score = 0.0724396, SNE = 12.8046
-Squared-norm error for each equation: 12.8046 
-Best expression = (x1 + 10), 1.9999999958776928
-Best expression (original format) = x1 10 +, 1.9999999958776928
-
-Thread id = 0
-Time since start = 0.0302311
-Unique expressions = 0
-Time spent fitting = 0 seconds
-Best score = 0.0724399, SNE = 12.8045
-Squared-norm error for each equation: 12.8045 
-Best expression = (x1 + 10), 1.9999999917553857
-Best expression (original format) = x1 10 +, 1.9999999917553857
-
-Thread id = 0
-Time since start = 0.314745
-Unique expressions = 0
-Time spent fitting = 0 seconds
-Best score = 0.0799168, SNE = 11.513
-Squared-norm error for each equation: 11.513 
-Best expression = (x1 + 10), 1.9999092001406622
-Best expression (original format) = x1 10 +, 1.9999092001406622
-
-Thread id = 0
-Time since start = 4.10543
-Unique expressions = 0
-Time spent fitting = 0 seconds
-Best score = 0.0801142, SNE = 11.4822
-Squared-norm error for each equation: 11.4822 
-Best expression = (9.079985933781725e-05 + (10 + x1)), 1.9999092001406622
-Best expression (original format) = 9.079985933781725e-05 10 x1 + +, 1.9999092001406622
-
-Thread id = 0
-Time since start = 8.12269
-Unique expressions = 0
-Time spent fitting = 0 seconds
-Best score = 0.214431, SNE = 3.6635
-Squared-norm error for each equation: 3.6635 
-Best expression = (-0.6536436208636119 + tanh(x1)), 1.9999092001406622
-Best expression (original format) = -0.6536436208636119 x1 tanh +, 1.9999092001406622
-
-Thread id = 0
-Time since start = 9.91486
-Unique expressions = 0
-Time spent fitting = 0 seconds
-Best score = 0.318552, SNE = 2.13921
-Squared-norm error for each equation: 2.13921 
-Best expression = (-0.6536436208636119 + tanh(x1)), sin((4 + x0))
-Best expression (original format) = -0.6536436208636119 x1 tanh +, 4 x0 + sin
+Best score = 0.000726255, SNE = 1375.93
+Squared-norm error for each equation: 1375.93 
+Best expression = 0.01723177009469743, 23.57405729547054
+Best expression (original format) = 0.01723177009469743, 23.57405729547054
