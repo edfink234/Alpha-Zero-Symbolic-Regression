@@ -274,10 +274,26 @@ else:
      - sech(-0.204245759737047*r + 1.72063673930557*theta + (0.0100909665335049 - tanh(r))*(-0.998687620305263*theta - tanh(theta) + 1.02370492421771) - (0.0154873527439205*r + 0.0998966701331946)*(mu*r + 5*r + 9.5115459200379) + 8.61038625622014)
      - 84.0357720038456,
      (0.000214601556558127*mu + 1.34828171950016e-6*nu + 0.000207597442231019*sin(mu) - 1.00526293689344)*(0.00877926734854302*mu - 0.16515718756188*nu - 0.000653938060863869*sin(mu)**2 + 3.66064988347847)*sin(r - 1.70585404191244e-10)*sin(5.30179718552688*nu - theta + sin(10.6889050130482*mu + 7.33505942049553e-8) + 72.4312091689447),
-     -1.00526293689344*(-0.00982457832153368*mu*(mu*sin(nu) + 2*mu + 3.65979113490899)*sin(mu) + 2.25358925601765)*sin(r - 1.70585404191244e-10)*sin(0.000207410181763234*mu*nu + nu**2*(mu - 5.93918060635909e-7) - nu + theta + sin(mu*nu + 10.6889050130482)),
-     0.974475588570396*(4.11055744340491 - 0.165157187629355*nu)*sin(r - 1.711772988771e-10)*sin(1.03431638481827*mu**2 - 19.37781002612*mu + 1.91681490612811*nu + theta + sin(mu) - 2.72930422723075e-9)
+     -(0.0100000249223089*nu - 0.852354395503058)*(-0.165057185695183*nu - 0.165057185695183*sin(mu) + 4.0792426600352)*sin(r)*sin(mu*nu + 0.0503322423527055*nu + theta + 137.263108969405),
+      -1.00526293689344*(-0.00982457832153368*mu*(mu*sin(nu) + 2*mu + 3.65979113490899)*sin(mu) + 2.25358925601765)*sin(r - 1.70585404191244e-10)*sin(0.000207410181763234*mu*nu + nu**2*(mu - 5.93918060635909e-7) - nu + theta + sin(mu*nu + 10.6889050130482)),
      ][2]
-
+'''
+best result for mu_equals_nu == False
+=====================================
+f = \left(0.86322 - 0.01 \cdot \nu\right) \cdot \left(- 0.01732 \cdot \mu - 0.18238 \cdot \nu + 4.23664\right) \cdot \sin{\left(r \right)} \cdot \sin{\left(\mu \cdot \nu + 0.05033 \cdot \nu + \theta + 130.97992 \right)}
+SH DAG nodes = 88
+f DAG nodes = 22
+mse = 218.6430061206957; Added mu=0.01, nu=0.01
+mse = 213.19952195116238; Added mu=0.01, nu=5
+mse = 156.24335118293612; Added mu=0.01, nu=10
+mse = 51.81448226072274; Added mu=5, nu=0.01
+mse = 168.06877497506633; Added mu=5, nu=5
+mse = 140.55527229864572; Added mu=5, nu=10
+mse = 62.9062082915746; Added mu=10, nu=0.01
+mse = 211.81758453457297; Added mu=10, nu=5
+mse = 162.94956407482636; Added mu=10, nu=10
+Average mse = 154.02197396557813
+'''
 formula_label = latex(f_float_rounded:=round_floats(f, 5), mul_symbol='dot')
 print(f'f = {formula_label}')
 
@@ -346,7 +362,7 @@ formula_label = r"$f(r,\theta) = " + formula_label + "$"
 
 def plot_one(mu0=None, nu0=None):
     global mean_squared_error
-
+    mse = 0
     if mu_equals_nu:
         env_plot = {"r": R, "theta": Theta}
         mse = mean_squared_error
@@ -419,7 +435,7 @@ def plot_one(mu0=None, nu0=None):
         ax.set_aspect("equal", adjustable="box")
 
     plt.tight_layout()
-    return fig
+    return fig, mse
 
 
 Path("SwiftHohenbergPlots").mkdir(exist_ok=True)
@@ -427,7 +443,7 @@ Path("SwiftHohenbergPlots").mkdir(exist_ok=True)
 domain_str = f"_r_{int(r_edges[0])}_{int(r_edges[-1])}_theta_{int(theta_edges[0])}_{int(theta_edges[-1])}_N_{N}"
 
 if mu_equals_nu:
-    fig = plot_one()
+    fig, mse = plot_one()
 
     if show:
         plt.show()
@@ -442,14 +458,18 @@ if mu_equals_nu:
 
 else:
     filename = f"SwiftHohenbergPlots/SwiftHohenberg2D_mu_nu_sweep.pdf"
-
+    total_mse = 0
+    count = 0
     with PdfPages(filename) as pdf:
         for mu0 in mu_plot_vals:
             for nu0 in nu_plot_vals:
-                fig = plot_one(float(mu0), float(nu0))
+                fig, mse = plot_one(float(mu0), float(nu0))
+                count += 1
+                total_mse += mse
                 pdf.savefig(fig)
                 plt.close(fig)
                 print(f"Added mu={mu0:.3g}, nu={nu0:.3g}")
 
+    print(f"Average mse = {total_mse/count}")
     print(f"Saved {filename}")
     system(f"open {filename}")
