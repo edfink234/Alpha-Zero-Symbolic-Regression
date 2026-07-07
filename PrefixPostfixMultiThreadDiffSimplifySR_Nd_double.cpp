@@ -37,8 +37,6 @@
 #include <boost/unordered/concurrent_flat_map.hpp>
 #include <boost/spirit/include/qi.hpp> //For fast string-to-double conversion!
 
-//#define logRandomJitterProgress true
-
 #define USE_ACCELERATE true
 #if defined(__APPLE__) && defined(USE_ACCELERATE)
     #include <Accelerate/Accelerate.h>
@@ -49,6 +47,8 @@
     #define DBL_MAX std::numeric_limits<double>::max()
 #endif
 #define RANDOM_SEED -1
+
+//#define logProgress true //for RandomJitter and RandomJitterVec
 
 //TODO: Need to make this robust againt -Wnarrow
 
@@ -5935,7 +5935,7 @@ struct Board
         {
             return std::make_pair(improved, sne);
         }
-#ifdef logRandomJitterProgress
+#ifdef logProgress
         double before_sne = sne;
 #endif
         std::vector<std::vector<std::vector<std::string>>> derivatives(this->pieces.size());
@@ -5965,7 +5965,7 @@ struct Board
             }
         }
         bool continueFlag = false;
-#ifdef logRandomJitterProgress
+#ifdef logProgress
         int accepted = 0, rejected = 0;
 #endif
         for (int i = 0; i < this->num_fit_iter; i++) //number of times to jit each parameter
@@ -5999,7 +5999,7 @@ struct Board
             if (continueFlag)
             {
                 continueFlag = false;
-#ifdef logRandomJitterProgress
+#ifdef logProgress
                 rejected++;
 #endif
                 continue;
@@ -6008,7 +6008,7 @@ struct Board
             if (temp >= sne) //reset
             {
                 this->params = old_params;
-#ifdef logRandomJitterProgress
+#ifdef logProgress
                 rejected++;
 #endif
             }
@@ -6016,20 +6016,20 @@ struct Board
             {
                 improved = true;
                 sne = temp;
-#ifdef logRandomJitterProgress
+#ifdef logProgress
                 accepted++;
 #endif
             }
         }
         
         Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
-#ifdef logRandomJitterProgress
+#ifdef logProgress
         std::cout << "accepted = " << accepted << ", rejected = " << rejected << '\n';
         if (sne < before_sne)
         {
             std::cout << "sse before = " << before_sne << ", sse after = " << sne << '\n';
         }
-#endif // logRandomJitterProgress
+#endif // logProgress
         return std::make_pair(improved, sne);
     }
     
@@ -6046,7 +6046,7 @@ struct Board
         {
             return std::make_pair(improved, sne);
         }
-#ifdef logRandomJitterProgress
+#ifdef logProgress
         double before_sne = sne;
 #endif
         std::vector<std::vector<std::vector<std::string>>> derivatives(this->pieces.size());
@@ -6076,7 +6076,7 @@ struct Board
             }
         }
         bool continueFlag = false;
-#ifdef logRandomJitterProgress
+#ifdef logProgress
         int accepted = 0, rejected = 0;
 #endif
         for (int i = 0; i < this->num_fit_iter; i++) //number of times to jit each parameter
@@ -6108,7 +6108,7 @@ struct Board
                 if (continueFlag)
                 {
                     continueFlag = false;
-#ifdef logRandomJitterProgress
+#ifdef logProgress
                     rejected++;
 #endif
                     continue;
@@ -6117,7 +6117,7 @@ struct Board
                 if (temp >= sne) //reset
                 {
                     this->params(j) = old_param;
-#ifdef logRandomJitterProgress
+#ifdef logProgress
                     rejected++;
 #endif
                 }
@@ -6125,7 +6125,7 @@ struct Board
                 {
                     improved = true;
                     sne = temp;
-#ifdef logRandomJitterProgress
+#ifdef logProgress
                     accepted++;
 #endif
                 }
@@ -6133,13 +6133,13 @@ struct Board
         }
         
         Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
-#ifdef logRandomJitterProgress
+#ifdef logProgress
         std::cout << "accepted =" << accepted << ", rejected = " << rejected << '\n';
         if (sne < before_sne)
         {
             std::cout << "sse before = " << before_sne << ", sse after = " << sne << '\n';
         }
-#endif // logRandomJitterProgress
+#endif // logProgress
         return std::make_pair(improved, sne);
     }
 
@@ -8132,30 +8132,34 @@ struct Board
 
 std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fit)
 {
-    constexpr int func_idx = 0;
     constexpr double h = 0.5;
-    const double T_final = std::vector<double>{100., 100., 1., 100.}[func_idx];
 
-    double res = 0.0;
+    double res = 0.0; //MAYBE: Return num_ode res vals instead of 1
     std::string infty = to_string_general(DBL_MAX);
-
-    std::vector<std::string> example_y = std::vector<std::vector<std::string>> //solutions for the corresponding example_dy_dt ODEs
+    const std::vector<double> T_finals = {10., 10., 1., 10., 10.};
+    const std::vector<std::vector<std::string>> example_ys = std::vector<std::vector<std::string>> //solutions for the corresponding example_dy_dt ODEs
     {
         std::vector<std::string>{"x0", "sin"},
         std::vector<std::string>{"x0", "tanh"},
         std::vector<std::string>{"x0", "exp", "5.", "+", "6", "x0", "x0", "exp", "*", "-", "/", "1.", "3.", "/", "^"},
-        std::vector<std::string>{"x0", "2.", "x0", "~", "exp", "*", "1.", "-", "+"}
-    }[func_idx];
-    std::vector<std::string> example_dy_dt = std::vector<std::vector<std::string>> //The ODE to solve with RK4 optimally st it matches the exact solution as much as possible at each t+ih time-step
+        std::vector<std::string>{"x0", "2.", "x0", "~", "exp", "*", "1.", "-", "+"},
+        std::vector<std::string>{"x0", "exp", "cos", "~"}
+    };
+    const std::vector<std::vector<std::string>> example_dy_dts = std::vector<std::vector<std::string>> //The ODE to solve with RK4 optimally st it matches the exact solution as much as possible at each t+ih time-step
     {
         std::vector<std::string>{"y_n", "y_n", "*", "x0", "cos", "*", "y_n", "+", "x0", "sin", "x0", "sin", "*", "x0", "cos", "*", "-", "x0", "sin", "-", "x0", "cos", "+"},
         std::vector<std::string>{"1.", "y_n", "y_n", "*", "-"},
         std::vector<std::string>{"x0", "exp", "y_n", "y_n", "*", "y_n", "*", "x0", "1.", "+", "*", "1.", "+", "*", "3.", "y_n", "*", "y_n", "*", "x0", "x0", "exp", "*", "6", "-", "*", "/", "~"},
-        std::vector<std::string>{"x0", "y_n", "-"}
-    }[func_idx];
-    
+        std::vector<std::string>{"x0", "y_n", "-"},
+        std::vector<std::string>{"x0", "exp", "x0", "exp", "sin", "*"}
+    };
+    const std::vector<double> y_0s = {0., 0., 1., 1., -0.5403023058681398}; //ICs for the ODE solve
+    const int numFuncs = example_dy_dts.size();
+    assert((numFuncs == example_ys.size()) && (y_0s.size() == numFuncs));
+    std::vector<std::string> example_y, example_dy_dt, c_2_func, c_3_func;
     auto expand_c_post = [&](std::vector<std::string> c, int D)
     {
+        assert(example_dy_dt.size());
         for (std::string& i: c)
         {
             if (i == "x0")
@@ -8182,21 +8186,9 @@ std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fi
                     assert(c[idx].size() == 7 || c[idx].size() == 8);
                     dx = c[idx].substr(5);
                 }
-                // for (int idx = sub_expr.first; idx <= sub_expr.second; idx++)
-                // {
-                //     if (c[idx].substr(0, 4) == "diff")
-                //     {
-                //         diff_idx = idx;
-                //         assert(c[idx].size() == 6);
-                //         dx = c[idx].substr(5);
-                //         break;
-                //     }
-                // }
+                
                 if (diff_idx != -1) //if diff is in sub_expr
                 {
-                    // int start = diff_idx;
-                    // int& ptr_lgb = start;
-                    // x.GB(1, ptr_lgb, temp);
                     std::vector<std::string> temp_vec;
                     for (int i = sub_expr.first; i <= diff_idx; i++)
                     {
@@ -8256,77 +8248,91 @@ std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fi
         }
         return c;
     };
+    const auto& is_close = [&](double val_1, double val_2, double tol = 1e-8)
+    {
+        return (std::abs(val_1 - val_2) <= tol);
+    };
     
-    double y_0 = std::vector<double>{0., 0., 1., 1.}[func_idx]; //IC for the ODE solve
     if (x.expression_type == "prefix")
     {
         throw std::invalid_argument("Prefix not implemented yet for this RK4Explicitc2c3Discovery function!");
     }
+
     else if (x.expression_type == "postfix")
     {
-        //First, set the integrated solution at t = 0 to y(0), and the time to 0
-        double y_n = y_0;
-        std::vector<std::string> c_2_func = expand_c_post(x.pieces[0], x.n[0]),
-                                 c_3_func = expand_c_post(x.pieces[1], x.n[1]);
-        
-        for (double t = 0.0; t < T_final; t+=h)
+        for (int func_idx = 0; func_idx < numFuncs; func_idx++)
         {
-//            printf("t = %lf\n", t);
-            x.subs_dict_scalar["y_n"] = y_n;
-            double f_current = x.expression_evaluator(x.params, example_dy_dt, t);
+            const double T_final = T_finals[func_idx];
+            example_y = example_ys[func_idx];
+            example_dy_dt = example_dy_dts[func_idx];
+            double y_0 = y_0s[func_idx]; //IC for the ODE solve
+            //Set the integrated solution at t = 0 to y(0), and the time to 0
+            double y_n = y_0;
+            c_2_func = expand_c_post(x.pieces[0], x.n[0]);
+            c_3_func = expand_c_post(x.pieces[1], x.n[1]);
             
-            x.subs_dict_scalar["f_cur"] = f_current;
-            double c_2_val = x.expression_evaluator(x.params, c_2_func, t);
-            double c_3_val = x.expression_evaluator(x.params, c_3_func, t);
-            const auto& is_close = [&](double val_1, double val_2, double tol = 1e-8)
+            for (double t = 0.0; t < T_final; t+=h)
             {
-                return (std::abs(val_1 - val_2) <= tol);
-            };
-            
-            if (is_close(c_2_val, 1) || is_close(c_3_val, 1) || is_close(c_2_val, c_3_val) || is_close(c_2_val, 0) || is_close(c_3_val, 0) || is_close(c_2_val, 0.5))
-            {
-                return std::vector<std::vector<std::string>>{std::vector<std::string>{infty}};
-            }
-            if (is_close((6. * c_2_val * c_3_val - 4. * c_2_val - 4. * c_3_val + 3.), 0))
-            {
-                return std::vector<std::vector<std::string>>{std::vector<std::string>{infty}};
-            }
-            
-            // Compute the matching coefficients (b_i, a_ij) for this step's geometry
-            double b1 = (6.*c_2_val*c_3_val - 2.*c_2_val - 2.*c_3_val + 1.) / (12.*c_2_val*c_3_val);
-            double b2 = (2.*c_3_val - 1.) / (12.*c_2_val*(c_2_val - 1.)*(c_2_val - c_3_val));
-            double b3 = (1. - 2.*c_2_val) / (12.*c_3_val*(c_2_val - c_3_val)*(c_3_val - 1.));
-            double b4 = (6.*c_2_val*c_3_val - 4.*c_2_val - 4.*c_3_val + 3.) / (12.*(c_2_val - 1.)*(c_3_val - 1.));
-            
-            double a21 = c_2_val;
-            double a32 = (c_3_val*(c_2_val - c_3_val)) / (2.*c_2_val*(2.*c_2_val - 1.));
-            double a31 = c_3_val - a32;
-            double a42 = ((c_2_val - 1.)*(c_2_val - 4.*c_3_val*c_3_val + 5.*c_3_val - 2.)) / (2.*c_2_val*(c_2_val - c_3_val)*(6.*c_2_val*c_3_val - 4.*c_2_val - 4.*c_3_val + 3.));
-            double a43 = ((c_2_val - 1.)*(2*c_2_val - 1.)*(c_3_val - 1.)) / (c_3_val*(c_2_val - c_3_val)*(6.*c_2_val*c_3_val - 4.*c_2_val - 4.*c_3_val + 3.));
-            double a41 = 1. - a42 - a43;
-            
-            std::vector<double> c = {0., c_2_val, c_3_val, 1.};
-            std::vector<double> b = {b1, b2, b3, b4};
-            std::vector<std::vector<double>> a = {{}, {a21}, {a31, a32}, {a41, a42, a43}};
-            
-            std::vector<double> k = {0., 0., 0., 0.};
-            
-            for (int i = 1; i <= 4; i++)
-            {
-                double temp_sum = 0.;
-                for (int j = 1; j <= i-1; j++)
+                x.subs_dict_scalar["y_n"] = y_n;
+                double f_current = x.expression_evaluator(x.params, example_dy_dt, t);
+                
+                x.subs_dict_scalar["f_cur"] = f_current;
+                double c_2_val = x.expression_evaluator(x.params, c_2_func, t);
+                double c_3_val = x.expression_evaluator(x.params, c_3_func, t);
+                
+                if (is_close(c_2_val, 1) || is_close(c_3_val, 1) || is_close(c_2_val, c_3_val) || is_close(c_2_val, 0) || is_close(c_3_val, 0) || is_close(c_2_val, 0.5))
                 {
-                    temp_sum += a[i-1][j-1] * k[j-1];
+                    return std::vector<std::vector<std::string>>{std::vector<std::string>{infty}};
                 }
-                x.subs_dict_scalar["y_n"] = y_n + temp_sum * h;
-    
-                k[i-1] = x.expression_evaluator(x.params, example_dy_dt, t + c[i-1]*h);
+                if (is_close((6. * c_2_val * c_3_val - 4. * c_2_val - 4. * c_3_val + 3.), 0))
+                {
+                    return std::vector<std::vector<std::string>>{std::vector<std::string>{infty}};
+                }
+                
+                // Compute the matching coefficients (b_i, a_ij) for this step's geometry
+                double b1 = (6.*c_2_val*c_3_val - 2.*c_2_val - 2.*c_3_val + 1.) / (12.*c_2_val*c_3_val);
+                double b2 = (2.*c_3_val - 1.) / (12.*c_2_val*(c_2_val - 1.)*(c_2_val - c_3_val));
+                double b3 = (1. - 2.*c_2_val) / (12.*c_3_val*(c_2_val - c_3_val)*(c_3_val - 1.));
+                double b4 = (6.*c_2_val*c_3_val - 4.*c_2_val - 4.*c_3_val + 3.) / (12.*(c_2_val - 1.)*(c_3_val - 1.));
+                
+                double a21 = c_2_val;
+                double a32 = (c_3_val*(c_2_val - c_3_val)) / (2.*c_2_val*(2.*c_2_val - 1.));
+                double a31 = c_3_val - a32;
+                double a42 = ((c_2_val - 1.)*(c_2_val - 4.*c_3_val*c_3_val + 5.*c_3_val - 2.)) / (2.*c_2_val*(c_2_val - c_3_val)*(6.*c_2_val*c_3_val - 4.*c_2_val - 4.*c_3_val + 3.));
+                double a43 = ((c_2_val - 1.)*(2*c_2_val - 1.)*(c_3_val - 1.)) / (c_3_val*(c_2_val - c_3_val)*(6.*c_2_val*c_3_val - 4.*c_2_val - 4.*c_3_val + 3.));
+                double a41 = 1. - a42 - a43;
+                
+                std::vector<double> c = {0., c_2_val, c_3_val, 1.};
+                std::vector<double> b = {b1, b2, b3, b4};
+                std::vector<std::vector<double>> a = {{}, {a21}, {a31, a32}, {a41, a42, a43}};
+                
+                std::vector<double> k = {0., 0., 0., 0.};
+                
+                for (int i = 1; i <= 4; i++)
+                {
+                    double temp_sum = 0.;
+                    for (int j = 1; j <= i-1; j++)
+                    {
+                        temp_sum += a[i-1][j-1] * k[j-1];
+                    }
+                    x.subs_dict_scalar["y_n"] = y_n + temp_sum * h;
+        
+                    k[i-1] = x.expression_evaluator(x.params, example_dy_dt, t + c[i-1]*h);
+                }
+                
+                y_n += h*(b1*k[0] + b2*k[1] + b3*k[2] + b4*k[3]);
+                
+                res += abs(y_n - x.expression_evaluator(x.params, example_y, t+h));
+                //MAYBE: Add a criterion that breaks and returns inf if res exceeds the current best
+                /* MAYBE: Stability:
+                    y_n = x.expression_evaluator(x.params, example_y, t)
+                    Recompute \vec{b}\cdot\vec{k}
+                    y_n += h*\vec{b}\cdot\vec{k}
+                    e_n = abs(y_n - x.expression_evaluator(x.params, example_y, t+h))
+                    Stable if |e_n - e_ns.back()| <= 1, where e_ns would store the previous e_n values with e_0 = 0
+                
+                */
             }
-            
-            y_n += h*(b1*k[0] + b2*k[1] + b3*k[2] + b4*k[3]);
-            
-            res += abs(y_n - x.expression_evaluator(x.params, example_y, t+h));
-            
         }
         return std::vector<std::vector<std::string>>{std::vector<std::string>{to_string_general(res)}};
     }
@@ -11377,7 +11383,7 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
-//    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("(((((-0.00010230434758457212 * (~(x2) * sin(x2))) + -0.7804815046555963) * ~((0.9999354401527438 * sin(x0)))) * ((-0.1650571856951833 * ((x3 * ~(x3)) + ((x3 + 1.9443450107399352) + (x3 * x3)))) + ((0.000830020832200755 * (-3.970546234122872 + (x2 + -2.3425860773362723))) + 4.356194490192345))) * sin((((2.570796326794897 * (0.7853981633974483 * (x2 * x3))) + (((1.0013031694795569 + x0) + ~(x3)) + ((1.0306073751213345 + x3) + (x2 * x3)))) + ((-1 + (~(x1) + ~(x0))) + 4.306539570051129))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu")));
+//    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("(((((0.00020761302887044612 * (sin(x2) + (1.0272442241645563 * x2))) + ((1.3304563988558432e-06 * (x3 + x2)) + -1.0052629302733438)) * sin((~((1.4269067710318464e-07 + x2)) + ((-8.427410561791095e-08 + x0) + (2.2679423250655768e-07 + x2))))) * (((0.008782524861544684 * (0.27587744389610325 + (0.009993495877091307 + x2))) + (-0.1651571745075183 * ((-1.911228719809616e-07 + x3) + 0.010002284668230988))) + (((0.010151823903466778 * sin(x2)) * (-0.06438380401024771 * sin(x2))) + (((x2 * 0.03852998867113262) * -8.436444206719193e-05) + 3.659791130722469)))) * sin((((5.301797186958442 * (-2.4089452401052685e-07 + (2.2542565388059674e-07 + x3))) + sin((10.688904984949698 * (1.1264219683053926e-08 + x2)))) + (~(((x0 + -2.9955080762796076e-07) + (5.8232400879963024e-08 + x1))) + ((3.570015447645774e-12 + (1.081329657641461e-11 + x0)) + 72.43120897235498)))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu")));
 //    from sympy import *; x0, x1, x2, x3 = symbols('x0 x1 x2 x3'); print(eval("(((((0.00020761302887044612 * (sin(x2) + (1.0272442241645563 * x2))) + ((1.3304563988558432e-06 * (x3 + x2)) + -1.0052629302733438)) * sin((~((1.4269067710318464e-07 + x2)) + ((-8.427410561791095e-08 + x0) + (2.2679423250655768e-07 + x2))))) * (((0.008782524861544684 * (0.27587744389610325 + (0.009993495877091307 + x2))) + (-0.1651571745075183 * ((-1.911228719809616e-07 + x3) + 0.010002284668230988))) + (((0.010151823903466778 * sin(x2)) * (-0.06438380401024771 * sin(x2))) + (((x2 * 0.03852998867113262) * -8.436444206719193e-05) + 3.659791130722469)))) * sin((((5.301797186958442 * (-2.4089452401052685e-07 + (2.2542565388059674e-07 + x3))) + sin((10.688904984949698 * (1.1264219683053926e-08 + x2)))) + (~(((x0 + -2.9955080762796076e-07) + (5.8232400879963024e-08 + x1))) + ((3.570015447645774e-12 + (1.081329657641461e-11 + x0)) + 72.43120897235498)))))\n".replace("^","**").replace("~", "-")));
     
 //    puts("called SwiftHohenberg");
@@ -13783,7 +13789,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
 
 namespace ExampleProblems
 {
-    void RK4Explicitc2c3DiscoveryTest(int random_seed, const char* algorithm, double time)
+        void RK4Explicitc2c3DiscoveryTest(int random_seed, const char* algorithm, double time)
     {
         srand(random_seed);
 
@@ -13793,11 +13799,87 @@ namespace ExampleProblems
         
         double threshold = 0.0;
         unsigned int num_threads = 0;
-        std::vector<std::string> bad_ops = {"exp", "ln", "log", "^", "/", "sqrt", "asin", "acos", "arcsin", "arccos", "sech", "tanh", "sin", "cos"};
+        std::vector<std::string> bad_ops = {"exp", "ln", "log", "^", "/", "sqrt", "asin", "acos", "arcsin", "arccos"};
         // input is just time t
         for (int i = 0; i < num_points; i++)
         {
             data(i, 0) = (10.0 * i) / (num_points - 1);
+        }
+        
+        constexpr bool read_from_file = true;
+        constexpr const char* filename = "RK4Explicitc2c3DiscoveryTestFile.txt";
+        std::string pert_mode = "sub_tree";
+        std::string simplify_mode = "total";
+        std::string eval_type = "dag";
+        std::vector<int> depth = {2, 2};
+        int completeTree = 1, max_dag = 0, fit = 0, fitIters = 5, fullPrec = 0;
+        double ConstCacheThresh = 1.2;
+        std::string numThreads, theDepth, theCompleteTree, theMaxDag, theFit, theNumFitIters, theFitType = "RandomJitter", theBadOps, Algorithm = algorithm, theFullPrec;
+        std::string theSeedExprs;
+        std::vector<std::vector<std::string>> theTrueSeedExprs(2);
+        std::vector<std::string> theTrueSeedExprStrings;
+        std::string theConstCacheThresh;
+        std::string theConstTokens = "default";
+        
+        if (read_from_file)
+        {
+            std::ifstream inObj(filename);
+            
+            std::getline(inObj, Algorithm);
+            std::getline(inObj, theSeedExprs);
+            std::getline(inObj, pert_mode);
+            std::getline(inObj, simplify_mode);
+            std::getline(inObj, theCompleteTree);
+            std::getline(inObj, theMaxDag);
+            std::getline(inObj, theDepth);
+            std::getline(inObj, eval_type);
+            std::getline(inObj, numThreads);
+            std::getline(inObj, theFit);
+            std::getline(inObj, theNumFitIters);
+            std::getline(inObj, theFitType);
+            std::getline(inObj, theConstCacheThresh);
+            std::getline(inObj, theBadOps);
+            std::getline(inObj, theFullPrec);
+            std::getline(inObj, theConstTokens);
+
+            std::cout << "Algorithm = " << Algorithm << ";\n" << Algorithm.size() << '\n';
+            std::cout << theSeedExprs.size() << '\n' << (int)theSeedExprs[0] << '\n';
+            puts("here");
+            theTrueSeedExprStrings = split(theSeedExprs, ',');
+            
+            assert((theTrueSeedExprStrings.size() == 2) || (theTrueSeedExprStrings.size() == 0));
+            // exit(1);
+            fullPrec = std::stoi(theFullPrec);
+            num_threads = std::stoi(numThreads);
+            auto temp_depth = split(theDepth);
+            assert(temp_depth.size() == 2);
+            depth = {std::stoi(temp_depth[0]), std::stoi(temp_depth[1])};
+            completeTree = std::stoi(theCompleteTree);
+            max_dag = std::stoi(theMaxDag);
+            fit = std::stoi(theFit);
+            fitIters = std::stoi(theNumFitIters);
+            ConstCacheThresh = std::stod(theConstCacheThresh);
+            bad_ops = split(theBadOps);
+            if (theTrueSeedExprStrings.size() == 2)
+            {
+                theTrueSeedExprs[0] = split(theTrueSeedExprStrings[0]);
+                theTrueSeedExprs[1] = split(theTrueSeedExprStrings[1]);
+            }
+            std::cout << "Algorithm = " << Algorithm << "\n";
+            std::cout << "theTrueSeedExprs = " << theTrueSeedExprs << '\n';
+            std::cout << "pert_mode = " << pert_mode << '\n';
+            std::cout << "simplify_mode = " << simplify_mode << '\n';
+            std::cout << "completeTree = " << completeTree << '\n';
+            std::cout << "max_dag = " << max_dag << '\n';
+            std::cout << "depth = " << depth << '\n';
+            std::cout << "eval_type = " << eval_type << '\n';
+            std::cout << "num_threads = " << num_threads << '\n';
+            std::cout << "fit = " << fit << '\n';
+            std::cout << "fitIters = " << fitIters << '\n';
+            std::cout << "theFitType = " << theFitType << '\n';
+            std::cout << "ConstCacheThresh = " << ConstCacheThresh << '\n';
+            std::cout << "bad_ops = " << bad_ops << '\n';
+            std::cout << "theConstTokens = " << theConstTokens << '\n';
         }
         
         if (strcmp(algorithm, "RandomSearch") == 0)
@@ -13805,32 +13887,32 @@ namespace ExampleProblems
             RandomSearch(RK4Explicitc2c3Discovery /*differential equation to solve*/,
                          num_diff_eqns /*number of equations in differential equation system*/,
                          data /*data used to solve differential equation*/,
-                         std::vector<int>{2, 2} /*fixed depths of generated solution*/,
+                         depth /*fixed depths of generated solution*/,
                          "postfix" /*expression representation*/,
                          0 /*num_consts_diff: number of constants in differential equation*/,
-                         "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
-                         5 /*number of fit iterations*/,
+                         theFitType /*fit method if expression contains const tokens*/,
+                         fitIters /*number of fit iterations*/,
                          "naive_numerical" /*method for computing the gradient*/,
                          true /*cache*/,
                          time /*time to run the algorithm in seconds*/,
                          num_threads /*num threads*/,
-                         std::vector<std::string>{"default"}  /*`const_tokens`: numerical constants to include, std::vector<std::string>{"default"} includes const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
+                         split(theConstTokens)  /*`const_tokens`: numerical constants to include, std::vector<std::string>{"default"} includes const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
                          threshold /*threshold for which solutions cannot be constant*/,
-                         false /*`use_const_pieces`: whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                         fit /*`use_const_pieces`: whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                          0 /*number of data columns that constitute labels and not independent variables/features*/,
                          true /*whether or not to include ALL of the features in all of the generated expressions*/,
                          {} /*custom features that the SR-found equations are required to contain*/,
                          "RK4Best.txt" /*filename to save current best expression found (instead of outputting them to standard out*/,
                          {} /*optional max-sizes of each of the expressions in the generated solution*/,
                          {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
-                         "vector" /*evaluation type: can be "dag", "scalar", or "vector"*/,
+                         eval_type /*evaluation type: can be "dag", "scalar", or "vector"*/,
                          1000000 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
                          false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
-                         std::vector<std::string>{} /*operators to restrict in the search*/,
-                         1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
-                         "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
-                         2000 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
-                         false /*fullPrec: whether to write output to full precision, i.e., std::numeric_limits<double>::digits10 */,
+                         bad_ops /*operators to restrict in the search*/,
+                         ConstCacheThresh /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
+                         simplify_mode /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
+                         max_dag /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
+                         fullPrec /*fullPrec: whether to write output to full precision, i.e., std::numeric_limits<double>::digits10 */,
                          std::vector<std::string>{"diff_x0", "diff_y_n"} /*custom_unaries: logic must be implemented in the std::vector<std::vector<std::string>> differential equation the user passes in*/);
         }
         else
@@ -13838,18 +13920,18 @@ namespace ExampleProblems
             SimulatedAnnealing(RK4Explicitc2c3Discovery /*differential equation to solve*/,
                 num_diff_eqns /*number of equations in differential equation system*/,
                 data /*data used to solve differential equation*/,
-                std::vector<int>{2, 2} /*fixed depths of generated solution*/,
+                depth /*fixed depths of generated solution*/,
                 "postfix" /*expression representation*/,
                 0 /*num_consts_diff: number of constants in differential equation*/,
-                "RandomJitterVec1e-1" /*fit method if expression contains const tokens*/,
-                5 /*number of fit iterations*/,
+                theFitType /*fit method if expression contains const tokens*/,
+                fitIters /*number of fit iterations*/,
                 "naive_numerical" /*method for computing the gradient*/,
                 true /*cache*/,
                 time /*time to run the algorithm in seconds*/,
                 num_threads /*num threads*/,
-                std::vector<std::string>{"default"} /*`const_tokens`: numerical constants to include, std::vector<std::string>{"default"} includes const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
+                split(theConstTokens) /*`const_tokens`: numerical constants to include, std::vector<std::string>{"default"} includes const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
                 threshold /*threshold for which solutions cannot be constant*/,
-                false /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                fit /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
                 false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
                 0 /*number of data columns that constitute labels and not independent variables/features*/,
                 false /*whether or not to include ALL of the features in all of the generated expressions*/,
@@ -13857,24 +13939,24 @@ namespace ExampleProblems
                 "RK4Best.txt", //"" /*filename to save current best expression found (instead of outputting them to standard out*/
                 {} /*optional max-sizes of each of the expressions in the generated solution*/,
                 {/**/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
-                "vector" /*evaluation type: can be "dag", "scalar", or "vector"*/,
-                1000000 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
+                eval_type /*evaluation type: can be "dag", "scalar", or "vector"*/,
+                1000 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                 bad_ops /*operators to restrict in the search*/,
-                1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
-                "none" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
-                8000 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
-                false /*fullPrec: whether to write output to full precision, i.e., std::numeric_limits<double>::digits10 */,
+                ConstCacheThresh /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
+                simplify_mode /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
+                max_dag /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
+                fullPrec /*fullPrec: whether to write output to full precision, i.e., std::numeric_limits<double>::digits10 */,
                 std::vector<std::string>{"diff_x0", "diff_y_n"} /*custom_unaries: logic must be implemented in the std::vector<std::vector<std::string>> differential equation the user passes in*/,
-                {split("0.2658022288340797 x0 diff_y_n -"), split("-14.756802495307928 0 + 0 0 + +")} /*seed expressions*/,
+                theTrueSeedExprs /*seed expressions*/,
                 0 /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
                 0.0 /*T_max*/,
                 [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
-                false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
-                "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", "constants_only_vec", "constants_only_N", or (default) "sub_tree"*/,
+                completeTree /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
+                pert_mode /*perturbation option: either "sub_array", "n_random", "constants_only", "constants_only_vec", "constants_only_N", or (default) "sub_tree"*/,
                 true /*whether or not to sync the current expression of each thread with the global current best*/);
         }
     }
@@ -15121,4 +15203,5 @@ To run caffeinated (system won't idle until done running executable):
 
 /*
 
- */
+*/
+//rapfom-Novmuj-herqo2
