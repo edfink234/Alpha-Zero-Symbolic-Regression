@@ -15125,7 +15125,7 @@ int main(int argc, char *argv[])
 
     }
     
-    ProblemOption choice = ProblemOption::SwiftHohenberg;
+    ProblemOption choice = ProblemOption::RK4Explicitc2c3Discovery;
     switch (choice)
     {
         case ProblemOption::BrightSolitonControlPDE:
