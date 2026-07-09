@@ -1,16 +1,17 @@
 SimulatedAnnealing
-1.3253040010122443 x0 ~ 3.2273889642497435 * cos +,x0 sin -0.4161478459077637 * 0.11396913150445104 + -0.0023891574575723453 +
-sub_tree
+0.38511558004563157,0.6035715471159382
+constants_only1e-2
 total
 0
 1000
-4 4
+0 0
 vector
 0
-1
+0
 200
 RandomJitterVec1e-1
 1.2
 exp ln log - / ^ arcsin asin acos arccos sqrt
 1
+
 

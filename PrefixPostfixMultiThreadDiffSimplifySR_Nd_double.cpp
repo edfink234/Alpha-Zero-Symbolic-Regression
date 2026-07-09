@@ -8132,9 +8132,6 @@ struct Board
 
 std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fit)
 {
-    constexpr double h = 0.5;
-
-    double res = 0.0; //MAYBE: Return num_ode res vals instead of 1
     std::string infty = to_string_general(DBL_MAX);
     const std::vector<double> T_finals = {10., 10., 1., 10., 10.};
     const std::vector<std::vector<std::string>> example_ys = std::vector<std::vector<std::string>> //solutions for the corresponding example_dy_dt ODEs
@@ -8252,6 +8249,8 @@ std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fi
     {
         return (std::abs(val_1 - val_2) <= tol);
     };
+    const std::vector<double> h_vals = {0.5, 0.1};
+    double total_res = 0.0;
     
     if (x.expression_type == "prefix")
     {
@@ -8265,76 +8264,90 @@ std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fi
             const double T_final = T_finals[func_idx];
             example_y = example_ys[func_idx];
             example_dy_dt = example_dy_dts[func_idx];
-            double y_0 = y_0s[func_idx]; //IC for the ODE solve
-            //Set the integrated solution at t = 0 to y(0), and the time to 0
-            double y_n = y_0;
             c_2_func = expand_c_post(x.pieces[0], x.n[0]);
             c_3_func = expand_c_post(x.pieces[1], x.n[1]);
-            
-            for (double t = 0.0; t < T_final; t+=h)
+            double y_0 = y_0s[func_idx]; //IC for the ODE solve
+            //Set the integrated solution at t = 0 to y(0), and the time to 0
+            std::vector<double> res = {0.0, 0.0};
+
+            for (int step = 0; step < h_vals.size(); step++)
             {
-                x.subs_dict_scalar["y_n"] = y_n;
-                double f_current = x.expression_evaluator(x.params, example_dy_dt, t);
-                
-                x.subs_dict_scalar["f_cur"] = f_current;
-                double c_2_val = x.expression_evaluator(x.params, c_2_func, t);
-                double c_3_val = x.expression_evaluator(x.params, c_3_func, t);
-                
-                if (is_close(c_2_val, 1) || is_close(c_3_val, 1) || is_close(c_2_val, c_3_val) || is_close(c_2_val, 0) || is_close(c_3_val, 0) || is_close(c_2_val, 0.5))
+                double y_n = y_0;
+                double h = h_vals[step];
+                for (double t = 0.0; t < T_final; t+=h)
                 {
-                    return std::vector<std::vector<std::string>>{std::vector<std::string>{infty}};
-                }
-                if (is_close((6. * c_2_val * c_3_val - 4. * c_2_val - 4. * c_3_val + 3.), 0))
-                {
-                    return std::vector<std::vector<std::string>>{std::vector<std::string>{infty}};
-                }
-                
-                // Compute the matching coefficients (b_i, a_ij) for this step's geometry
-                double b1 = (6.*c_2_val*c_3_val - 2.*c_2_val - 2.*c_3_val + 1.) / (12.*c_2_val*c_3_val);
-                double b2 = (2.*c_3_val - 1.) / (12.*c_2_val*(c_2_val - 1.)*(c_2_val - c_3_val));
-                double b3 = (1. - 2.*c_2_val) / (12.*c_3_val*(c_2_val - c_3_val)*(c_3_val - 1.));
-                double b4 = (6.*c_2_val*c_3_val - 4.*c_2_val - 4.*c_3_val + 3.) / (12.*(c_2_val - 1.)*(c_3_val - 1.));
-                
-                double a21 = c_2_val;
-                double a32 = (c_3_val*(c_2_val - c_3_val)) / (2.*c_2_val*(2.*c_2_val - 1.));
-                double a31 = c_3_val - a32;
-                double a42 = ((c_2_val - 1.)*(c_2_val - 4.*c_3_val*c_3_val + 5.*c_3_val - 2.)) / (2.*c_2_val*(c_2_val - c_3_val)*(6.*c_2_val*c_3_val - 4.*c_2_val - 4.*c_3_val + 3.));
-                double a43 = ((c_2_val - 1.)*(2*c_2_val - 1.)*(c_3_val - 1.)) / (c_3_val*(c_2_val - c_3_val)*(6.*c_2_val*c_3_val - 4.*c_2_val - 4.*c_3_val + 3.));
-                double a41 = 1. - a42 - a43;
-                
-                std::vector<double> c = {0., c_2_val, c_3_val, 1.};
-                std::vector<double> b = {b1, b2, b3, b4};
-                std::vector<std::vector<double>> a = {{}, {a21}, {a31, a32}, {a41, a42, a43}};
-                
-                std::vector<double> k = {0., 0., 0., 0.};
-                
-                for (int i = 1; i <= 4; i++)
-                {
-                    double temp_sum = 0.;
-                    for (int j = 1; j <= i-1; j++)
+                    x.subs_dict_scalar["y_n"] = y_n;
+                    double f_current = x.expression_evaluator(x.params, example_dy_dt, t);
+                    
+                    x.subs_dict_scalar["f_cur"] = f_current;
+                    double c_2_val = x.expression_evaluator(x.params, c_2_func, t);
+                    double c_3_val = x.expression_evaluator(x.params, c_3_func, t);
+                    
+                    if (is_close(c_2_val, 1) || is_close(c_3_val, 1) || is_close(c_2_val, c_3_val) || is_close(c_2_val, 0) /*|| is_close(c_3_val, 0)*/ || is_close(c_2_val, 0.5))
                     {
-                        temp_sum += a[i-1][j-1] * k[j-1];
+//                        puts("(is_close(c_2_val, 1) || is_close(c_3_val, 1) || is_close(c_2_val, c_3_val) || is_close(c_2_val, 0) /*|| is_close(c_3_val, 0)*/ || is_close(c_2_val, 0.5))");
+                        return std::vector<std::vector<std::string>>{std::vector<std::string>{infty}};
                     }
-                    x.subs_dict_scalar["y_n"] = y_n + temp_sum * h;
-        
-                    k[i-1] = x.expression_evaluator(x.params, example_dy_dt, t + c[i-1]*h);
+                    if (is_close((6. * c_2_val * c_3_val - 4. * c_2_val - 4. * c_3_val + 3.), 0))
+                    {
+//                        puts("(is_close((6. * c_2_val * c_3_val - 4. * c_2_val - 4. * c_3_val + 3.), 0))");
+                        return std::vector<std::vector<std::string>>{std::vector<std::string>{infty}};
+                    }
+                    
+                    // Compute the matching coefficients (b_i, a_ij) for this step's geometry
+                    double b2 = (2.*c_3_val - 1.) / (12.*c_2_val*(c_2_val - 1.)*(c_2_val - c_3_val));
+                    double b3 = (1. - 2.*c_2_val) / (12.*c_3_val*(c_2_val - c_3_val)*(c_3_val - 1.));
+                    double b4 = (6.*c_2_val*c_3_val - 4.*c_2_val - 4.*c_3_val + 3.) / (12.*(c_2_val - 1.)*(c_3_val - 1.));
+                    double b1 = 1.-b2-b3-b4;//(6.*c_2_val*c_3_val - 2.*c_2_val - 2.*c_3_val + 1.) / (12.*c_2_val*c_3_val);
+    
+                    double a21 = c_2_val;
+                    double a32 = (c_3_val*(c_2_val - c_3_val)) / (2.*c_2_val*(2.*c_2_val - 1.));
+                    double a31 = c_3_val - a32;
+                    double a42 = ((c_2_val - 1.)*(c_2_val - 4.*c_3_val*c_3_val + 5.*c_3_val - 2.)) / (2.*c_2_val*(c_2_val - c_3_val)*(6.*c_2_val*c_3_val - 4.*c_2_val - 4.*c_3_val + 3.));
+                    double a43 = ((c_2_val - 1.)*(2*c_2_val - 1.)*(c_3_val - 1.)) / (c_3_val*(c_2_val - c_3_val)*(6.*c_2_val*c_3_val - 4.*c_2_val - 4.*c_3_val + 3.));
+                    double a41 = 1. - a42 - a43;
+                    
+                    std::vector<double> c = {0., c_2_val, c_3_val, 1.};
+                    std::vector<double> b = {b1, b2, b3, b4};
+                    std::vector<std::vector<double>> a = {{}, {a21}, {a31, a32}, {a41, a42, a43}};
+                    
+                    std::vector<double> k = {0., 0., 0., 0.};
+                    
+                    for (int i = 1; i <= 4; i++)
+                    {
+                        double temp_sum = 0.;
+                        for (int j = 1; j <= i-1; j++)
+                        {
+                            temp_sum += a[i-1][j-1] * k[j-1];
+                        }
+                        x.subs_dict_scalar["y_n"] = y_n + temp_sum * h;
+            
+                        k[i-1] = x.expression_evaluator(x.params, example_dy_dt, t + c[i-1]*h);
+                    }
+                    
+                    y_n += h*(b1*k[0] + b2*k[1] + b3*k[2] + b4*k[3]);
+                    
+                    res[step] += abs(y_n - x.expression_evaluator(x.params, example_y, t+h));
+                    //MAYBE: Add a criterion that breaks and returns inf if res exceeds the current best
+                    /* MAYBE: Stability:
+                        y_n = x.expression_evaluator(x.params, example_y, t)
+                        Recompute \vec{b}\cdot\vec{k}
+                        y_n += h*\vec{b}\cdot\vec{k}
+                        e_n = abs(y_n - x.expression_evaluator(x.params, example_y, t+h))
+                        Stable if |e_n - e_ns.back()| <= 1, where e_ns would store the previous e_n values with e_0 = 0
+                    
+                    */
                 }
-                
-                y_n += h*(b1*k[0] + b2*k[1] + b3*k[2] + b4*k[3]);
-                
-                res += abs(y_n - x.expression_evaluator(x.params, example_y, t+h));
-                //MAYBE: Add a criterion that breaks and returns inf if res exceeds the current best
-                /* MAYBE: Stability:
-                    y_n = x.expression_evaluator(x.params, example_y, t)
-                    Recompute \vec{b}\cdot\vec{k}
-                    y_n += h*\vec{b}\cdot\vec{k}
-                    e_n = abs(y_n - x.expression_evaluator(x.params, example_y, t+h))
-                    Stable if |e_n - e_ns.back()| <= 1, where e_ns would store the previous e_n values with e_0 = 0
-                
-                */
+                res[step] *= (h / T_final);
             }
+            if (res[1] > res[0])
+            {
+//                puts("res[1] > res[0]");
+                return std::vector<std::vector<std::string>>{std::vector<std::string>{infty}};
+            }
+            total_res += (res[0] + res[1]);
         }
-        return std::vector<std::vector<std::string>>{std::vector<std::string>{to_string_general(res)}};
+        return std::vector<std::vector<std::string>>{std::vector<std::string>{to_string_general(total_res)}};
     }
     return std::vector<std::vector<std::string>>{std::vector<std::string>{infty}};
 }
@@ -13789,7 +13802,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
 
 namespace ExampleProblems
 {
-        void RK4Explicitc2c3DiscoveryTest(int random_seed, const char* algorithm, double time)
+    void RK4Explicitc2c3DiscoveryTest(int random_seed, const char* algorithm, double time)
     {
         srand(random_seed);
 
@@ -13882,7 +13895,7 @@ namespace ExampleProblems
             std::cout << "theConstTokens = " << theConstTokens << '\n';
         }
         
-        if (strcmp(algorithm, "RandomSearch") == 0)
+        if (Algorithm == "RandomSearch")
         {
             RandomSearch(RK4Explicitc2c3Discovery /*differential equation to solve*/,
                          num_diff_eqns /*number of equations in differential equation system*/,
