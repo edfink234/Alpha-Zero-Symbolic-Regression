@@ -274,55 +274,55 @@ else:
      - sech(-0.204245759737047*r + 1.72063673930557*theta + (0.0100909665335049 - tanh(r))*(-0.998687620305263*theta - tanh(theta) + 1.02370492421771) - (0.0154873527439205*r + 0.0998966701331946)*(mu*r + 5*r + 9.5115459200379) + 8.61038625622014)
      - 84.0357720038456,
      (0.000214601556558127*mu + 1.34828171950016e-6*nu + 0.000207597442231019*sin(mu) - 1.00526293689344)*(0.00877926734854302*mu - 0.16515718756188*nu - 0.000653938060863869*sin(mu)**2 + 3.66064988347847)*sin(r - 1.70585404191244e-10)*sin(5.30179718552688*nu - theta + sin(10.6889050130482*mu + 7.33505942049553e-8) + 72.4312091689447),
-     -0.999935440152744*(0.000102304347584572*mu*sin(mu) - 0.780481504655596)*(0.000830020832200755*mu - 0.165057185695183*nu + 4.03002634467628)*sin(r)*sin(3.01909871353362*mu*nu - theta + 5.33845011465202),
+     -0.0705442573691576*mu - 0.99960666184216*(0.000100791898028392*mu*sin(mu) - 0.780466368170428)*(0.000821529937797671*mu - 0.165060037719984*nu + 4.03086884584505)*sin(r - 1.65804762787468e-10)*sin(3.01909748198293*mu*nu - theta + 11.6215977433636) + 0.239163783589117*sin(0.705888724801265*nu - 1.02285134710757) + 0.239163783589117*sin(0.620690882837162*sin(nu)) + 0.421230863381873,
       -1.00526293689344*(-0.00982457832153368*mu*(mu*sin(nu) + 2*mu + 3.65979113490899)*sin(mu) + 2.25358925601765)*sin(r - 1.70585404191244e-10)*sin(0.000207410181763234*mu*nu + nu**2*(mu - 5.93918060635909e-7) - nu + theta + sin(mu*nu + 10.6889050130482)),
      ][2]
 '''
 best result for mu_equals_nu == False
 =====================================
-f = \left(0.00017 \cdot \mu - 0.12882 \cdot \nu + 3.14826\right) \cdot \sin{\left(r \right)} \cdot \sin{\left(3.0191 \cdot \mu \cdot \nu + \theta + 5.33845 \right)}
-SH DAG nodes = 65
-f DAG nodes = 17
-mse = 88.93088051539827; Added mu=0.01, nu=0.01
-mse = 153.26107672701585; Added mu=0.01, nu=5
-mse = 162.78757174329883; Added mu=0.01, nu=10
-mse = 18.158372565817565; Added mu=5, nu=0.01
-mse = 138.84889816284715; Added mu=5, nu=5
-mse = 167.9307026674244; Added mu=5, nu=10
-mse = 65.2815038894853; Added mu=10, nu=0.01
-mse = 199.09405138099305; Added mu=10, nu=5
-mse = 214.31813142186442; Added mu=10, nu=10
-Average mse = 134.2901321193494
+f = - 0.00015 \cdot \mu^{2} - 0.06838 \cdot \mu - \left(0.0001 \cdot \mu \cdot \sin{\left(\mu \right)} - 0.78016\right) \cdot \left(0.00082 \cdot \mu - 0.16506 \cdot \nu + 4.03087\right) \cdot \sin{\left(r \right)} \cdot \sin{\left(3.0191 \cdot \mu \cdot \nu - \theta + 11.6216 \right)} + 0.13617 \cdot \sin{\left(0.57776 \cdot \nu - 0.35512 \right)} + 0.39998
+SH DAG nodes = 83
+f DAG nodes = 41
+mse = 114.44447125968186; Added mu=0.01, nu=0.01
+mse = 77.62168070402394; Added mu=0.01, nu=5
+mse = 152.2029612340795; Added mu=0.01, nu=10
+mse = 18.19161047898228; Added mu=5, nu=0.01
+mse = 136.0937384659847; Added mu=5, nu=5
+mse = 165.73659957396467; Added mu=5, nu=10
+mse = 66.36198067162152; Added mu=10, nu=0.01
+mse = 172.80321995925752; Added mu=10, nu=5
+mse = 170.3507748355595; Added mu=10, nu=10
+Average mse = 119.31189302035061
 
-f = \left(- 0.0001 \cdot \mu \cdot \sin{\left(\mu \right)} + 0.78043\right) \cdot \left(0.00083 \cdot \mu - 0.16506 \cdot \nu + 4.03003\right) \cdot \sin{\left(r \right)} \cdot \sin{\left(3.0191 \cdot \mu \cdot \nu - \theta + 5.33845 \right)}
+f = - 0.07054 \cdot \mu - \left(0.0001 \cdot \mu \cdot \sin{\left(\mu \right)} - 0.78016\right) \cdot \left(0.00082 \cdot \mu - 0.16506 \cdot \nu + 4.03087\right) \cdot \sin{\left(r \right)} \cdot \sin{\left(3.0191 \cdot \mu \cdot \nu - \theta + 11.6216 \right)} + 0.23916 \cdot \sin{\left(0.70589 \cdot \nu - 1.02285 \right)} + 0.23916 \cdot \sin{\left(0.62069 \cdot \sin{\left(\nu \right)} \right)} + 0.42123
 SH DAG nodes = 84
-f DAG nodes = 24
-mse = 88.40635863715156; Added mu=0.01, nu=0.01
-mse = 99.22745923905933; Added mu=0.01, nu=2.51
-mse = 152.45970479473164; Added mu=0.01, nu=5
-mse = 178.27852359740064; Added mu=0.01, nu=7.5
-mse = 161.72343930652917; Added mu=0.01, nu=10
-mse = 38.568273133882165; Added mu=2.51, nu=0.01
-mse = 69.26069425203978; Added mu=2.51, nu=2.51
-mse = 136.195269538288; Added mu=2.51, nu=5
-mse = 170.85969171817564; Added mu=2.51, nu=7.5
-mse = 159.46766277219933; Added mu=2.51, nu=10
-mse = 18.212895702107947; Added mu=5, nu=0.01
-mse = 63.20442359433392; Added mu=5, nu=2.51
-mse = 139.0437419178581; Added mu=5, nu=5
-mse = 178.24156604660882; Added mu=5, nu=7.5
-mse = 168.1245479583777; Added mu=5, nu=10
-mse = 26.96610003705889; Added mu=7.5, nu=0.01
-mse = 80.27015857235813; Added mu=7.5, nu=2.51
-mse = 159.27255099566145; Added mu=7.5, nu=5
-mse = 198.1777541251163; Added mu=7.5, nu=7.5
-mse = 185.56713948104746; Added mu=7.5, nu=10
-mse = 65.23910083843414; Added mu=10, nu=0.01
-mse = 121.76337132518267; Added mu=10, nu=2.51
-mse = 199.86347563431977; Added mu=10, nu=5
-mse = 234.55405065746774; Added mu=10, nu=7.5
-mse = 215.4979463008953; Added mu=10, nu=10
-Average mse = 132.33783600705144
+f DAG nodes = 42
+mse = 98.12538178226588; Added mu=0.01, nu=0.01
+mse = 22.522293760241215; Added mu=0.01, nu=2.51
+mse = 81.22399161508854; Added mu=0.01, nu=5
+mse = 140.32710511219102; Added mu=0.01, nu=7.5
+mse = 150.96673060598016; Added mu=0.01, nu=10
+mse = 38.73648001899261; Added mu=2.51, nu=0.01
+mse = 24.471299438719477; Added mu=2.51, nu=2.51
+mse = 110.25849971891151; Added mu=2.51, nu=5
+mse = 162.35769565016082; Added mu=2.51, nu=7.5
+mse = 159.59682007148973; Added mu=2.51, nu=10
+mse = 19.785100541833764; Added mu=5, nu=0.01
+mse = 47.386543395215; Added mu=5, nu=2.51
+mse = 136.40811441602946; Added mu=5, nu=5
+mse = 178.07874429026543; Added mu=5, nu=7.5
+mse = 165.46732502854934; Added mu=5, nu=10
+mse = 30.996232930460444; Added mu=7.5, nu=0.01
+mse = 80.76421280663534; Added mu=7.5, nu=2.51
+mse = 155.38304472159894; Added mu=7.5, nu=5
+mse = 185.51667804566478; Added mu=7.5, nu=7.5
+mse = 167.92479377417214; Added mu=7.5, nu=10
+mse = 67.97827157556898; Added mu=10, nu=0.01
+mse = 119.51769771207539; Added mu=10, nu=2.51
+mse = 169.84551022652568; Added mu=10, nu=5
+mse = 190.2101732721; Added mu=10, nu=7.5
+mse = 172.7869016289377; Added mu=10, nu=10
+Average mse = 115.06542568558694
 '''
 formula_label = latex(f_float_rounded:=round_floats(f, 5), mul_symbol='dot')
 print(f'f = {formula_label}')
@@ -358,7 +358,7 @@ if mu_equals_nu:
     mean_squared_error = squared_norm_error / func_vals.size
 
 else:
-    N_vals = 3
+    N_vals = 5
     # Do not build a 4D mesh. Use scalar mu, nu per plot.
     mu_plot_vals = np.linspace(0.01, 10, N_vals)
     nu_plot_vals = np.linspace(0.01, 10, N_vals)

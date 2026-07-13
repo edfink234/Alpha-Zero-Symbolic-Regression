@@ -554,7 +554,7 @@ Eigen::MatrixXd deg2rad(const Eigen::VectorXd& vec)
 {
     // Define the conversion factor from degrees to radians
     // Conversion: radians = degrees * (M_PI / 180.0)
-    const double deg_to_rad = M_PI / 180.0;
+    const double deg_to_rad = 3.141592653589793 / 180.0;
     
     // Perform element-wise multiplication on the vector
     // The result is an Eigen::VectorXd (which is also a type of Eigen::MatrixXd
@@ -690,16 +690,19 @@ bool isZero(const Eigen::Vector<Eigen::AutoDiffScalar<Eigen::VectorXd>, Eigen::D
 
 bool isConstant(const Eigen::VectorXd& vec, double tolerance = 1e-5)
 {
+    //puts("here 693?");
     if (vec.size() <= 1)
     {
         return true; // A vector with 0 or 1 element is trivially constant
     }
+    //puts("here 698?");
     if (vec.array().isNaN().any() || vec.array().isInf().any())
     {
         return true; // Return true if any NaN is present so it'll be weeded out
     }
     for (decltype(vec.size()) i = 0; i < vec.size(); ++i)
     {
+    //puts("here 705?");
         if (isInvalid(vec[i]))
         {
             return true; // Return true if any NaN is present in values
@@ -1017,7 +1020,7 @@ struct Board
     std::unordered_map<std::string, Eigen::VectorXd> subs_dict;
     std::unordered_map<std::string, double> subs_dict_scalar;
     
-
+    bool recompute_diff_eq_each_fit_iter = false;
     bool cache;
     bool use_const_pieces;
     std::vector<std::vector<int>> stack;
@@ -5924,6 +5927,7 @@ struct Board
     
     std::pair<bool, double> RandomJitterVec()
     {
+    //puts("RandomJitterVec called");
         std::random_device rand_dev;
         std::vector<int> grasp;
         std::mt19937 generator(rand_dev());
@@ -5931,7 +5935,7 @@ struct Board
         auto start_time = Clock::now();
         
         double sne = SNE(expression_evaluator(this->params, this->diffeq_result)); //TODO: CHECK IF IT'S DECENT ENOUGH TO BOTHER FITTING?
-        if (sne > this->const_cache_thresh * Board::global_min_sne.load(std::memory_order_relaxed))
+        if (std::isnan(sne) || (sne > this->const_cache_thresh * Board::global_min_sne.load(std::memory_order_relaxed)))
         {
             return std::make_pair(improved, sne);
         }
@@ -6004,8 +6008,12 @@ struct Board
 #endif
                 continue;
             }
+            if (this->recompute_diff_eq_each_fit_iter)
+            {
+                this->diffeq_result = diffeq(*this, true);
+            }
             double temp = SNE(expression_evaluator(this->params, this->diffeq_result));
-            if (temp >= sne) //reset
+            if ((temp >= sne) || (std::isnan(temp))) //reset
             {
                 this->params = old_params;
 #ifdef logProgress
@@ -6035,6 +6043,7 @@ struct Board
     
     std::pair<bool, double> RandomJitter()
     {
+    //puts("RandomJitter called");
         std::random_device rand_dev;
         std::vector<int> grasp;
         std::mt19937 generator(rand_dev());
@@ -6042,7 +6051,7 @@ struct Board
         auto start_time = Clock::now();
         
         double sne = SNE(expression_evaluator(this->params, this->diffeq_result)); //TODO: CHECK IF IT'S DECENT ENOUGH TO BOTHER FITTING?
-        if (sne > this->const_cache_thresh * Board::global_min_sne.load(std::memory_order_relaxed))
+        if (std::isnan(sne) || (sne > this->const_cache_thresh * Board::global_min_sne.load(std::memory_order_relaxed)))
         {
             return std::make_pair(improved, sne);
         }
@@ -6113,8 +6122,12 @@ struct Board
 #endif
                     continue;
                 }
+                if (this->recompute_diff_eq_each_fit_iter)
+                {
+                    this->diffeq_result = diffeq(*this, true);
+                }
                 double temp = SNE(expression_evaluator(this->params, this->diffeq_result));
-                if (temp >= sne) //reset
+                if ((temp >= sne) || (std::isnan(temp))) //reset
                 {
                     this->params(j) = old_param;
 #ifdef logProgress
@@ -6134,7 +6147,7 @@ struct Board
         
         Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
 #ifdef logProgress
-        std::cout << "accepted =" << accepted << ", rejected = " << rejected << '\n';
+        std::cout << "accepted = " << accepted << ", rejected = " << rejected << '\n';
         if (sne < before_sne)
         {
             std::cout << "sse before = " << before_sne << ", sse after = " << sne << '\n';
@@ -6148,6 +6161,7 @@ struct Board
     //Otherwise it returns `false`.
     bool passesConstantThreshold()
     {
+    if (this->isConstTol <= 0){return true;}
         for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++) //loops over each generated symbolic expression
         {
             if (isConstant(expression_evaluator(this->params, this->pieces[jdx]), this->isConstTol))
@@ -6322,22 +6336,26 @@ struct Board
                     ScopedTimer t_build("RandomJitter");
                 #endif
                 improved = RandomJitter();
+        //puts("here 6335?");
             }
             else if (this->fit_method == "RandomJitterVec")
             {
                 #if TIME_EVAL
                     ScopedTimer t_build("RandomJitterVec");
                 #endif
-                improved = RandomJitter();
+                improved = RandomJitterVec();
+        //puts("here 6342?");
             }
             Eigen::VectorXd temp_vec; //need to have a back-up vector in case `improved == false` so we can get the score of the expression we just built.
 
             //If improved and good enough to bother caching, update the expression_dict with this->params
             if (improved.first && (improved.second <= this->const_cache_thresh * Board::global_min_sne.load(std::memory_order_relaxed)) && this->passesConstantThreshold())
             {
+        //puts("here 6348?");
                 //If the `Board::max_expression_dict_sz` hasn't been exceeded, add it to `Board::expression_dict`
                 if (Board::expression_dict.contains(this->expression_string)) //If the expression has been visited before (it's already in `Board::expression_dict`)
                 {
+            //puts("here 6352?");
                     Board::expression_dict.visit(this->expression_string, [&](auto& x) //simply update the corresponding parameter vector with
                     {
                         x.second = this->params;
@@ -6345,11 +6363,13 @@ struct Board
                 }
                 else if (Board::expression_dict.size() < Board::max_expression_dict_sz) //Else if there's capacity to add the new expression-params pair to `Board::expression_dict`
                 {
+            //puts("here 6360?");
                     Board::expression_dict.insert_or_assign(this->expression_string, this->params);
                 }
             }
             if (Board::expression_dict.contains(this->expression_string))
             {
+        //puts("here 6366?");
                 Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
                 {
                     temp_vec = x.second;
@@ -6357,11 +6377,13 @@ struct Board
             }
             else //Once `Board::expression_dict.size() >= Board::max_expression_dict_sz`, this can happen
             {
+        //puts("here 6374?");
                 temp_vec.setOnes(this->params.size());
             }
             auto expected = this->__num_consts();
             if (temp_vec.size() != expected)
             {
+        //puts("here 6375?");
                 #ifndef NDEBUG
                     std::cerr
                         << "[SR DEBUG] Param size mismatch — "
@@ -8130,8 +8152,25 @@ struct Board
     }
 };
 
+/*
+Best score = 4.20463443818804e-06, SNE = 237831.804421148
+Squared-norm error for each equation: 237831.804421148
+Best expression = (0.7050690813475843 * cos(tanh(x0))), (diff_x0(cos(x0)) + 0.6688364457666556)
+Best expression (original format) = 0.7050690813475843 x0 tanh cos *, x0 cos diff_x0 0.6688364457666556 +
+
+ - Linear: https://anvaka.github.io/fieldplay/?cx=0.0016000000000002679&cy=0&w=8.543&h=8.543&fo=0.998&dp=0.009&dt=0.01&cm=3&vf=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%201.%2F%281.%2Bp.x*p.x*p.x%29%3B%0A%20%20%20%20%0A%20%20return%20v%3B%0A%7D&code=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%201.%2F%281.%2Bp.x*p.x*p.x%29%3B%0A%20%20%20%20%0A%20%20return%20v%3B%0A%7D
+ - Kormilitsin: https://anvaka.github.io/fieldplay/?cx=0.0016000000000002679&cy=0&w=8.543&h=8.543&fo=0.998&dp=0.009&dt=0.01&cm=3&vf=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%20%28-1.%2F%288.*pow%28p.x%2C%201.5%29%29%29%3B%0A%0A%20%20return%20v%3B%0A%7D&code=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%200.5*%28-1.%2F%288.*pow%28p.x%2C%201.5%29%29%29%3B%0A%0A%20%20return%20v%3B%0A%7D
+ - Waveguide: https://anvaka.github.io/fieldplay/?cx=0.0016000000000002679&cy=0&w=8.543&h=8.543&fo=0.998&dp=0.009&dt=0.01&cm=3&vf=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%20-0.5%2F%28pow%28%281.-p.x*p.x%29%2C%201.5%29%29%3B%0A%20%20%20%20%0A%20%20return%20v%3B%0A%7D&code=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%20-0.5%2F%28pow%281.-p.x*p.x%2C%201.5%29%29%3B%0A%20%20%20%20%0A%20%20return%20v%3B%0A%7D
+ - Fisheye: https://anvaka.github.io/fieldplay/?cx=0.0016000000000002679&cy=0&w=8.543&h=8.543&fo=0.998&dp=0.009&dt=0.01&cm=3&vf=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%20%28exp%28p.x%29%20*%20%28exp%284.%20*%20p.x%29%20-%206.%20*%20exp%282.%20*%20p.x%29%20%2B%201.%29%29%20%0A%20%20%20%20%09%2F%20pow%28%28exp%282.%20*%20p.x%29%20%2B%201.%29%2C3.%29%3B%0A%20%20%20%20%0A%20%20return%20v%3B%0A%7D&code=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%20%28exp%28p.x%29%20*%20%28exp%284.%20*%20p.x%29%20-%206.%20*%20exp%282.%20*%20p.x%29%20%2B%201.%29%29%20%0A%20%20%20%20%2F%20pow%28%28exp%282.%20*%20p.x%29%20%2B%201.%29%2C3.%29%3B%0A%20%20%20%20%0A%20%20return%20v%3B%0A%7D
+ - Exponential: https://anvaka.github.io/fieldplay/?cx=0.0016000000000002679&cy=0&w=8.543&h=8.543&fo=0.998&dp=0.009&dt=0.01&cm=3&vf=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%200.5*exp%28-p.x%29%3B%0A%20%20%20%20%0A%20%20return%20v%3B%0A%7D&code=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%20%28exp%28p.x%29%20*%20%28exp%284.%20*%20p.x%29%20-%206.%20*%20exp%282.%20*%20p.x%29%20%2B%201.%29%29%20%0A%20%20%20%20%09%2F%20pow%28%28exp%282.%20*%20p.x%29%20%2B%201.%29%2C3.%29%3B%0A%20%20%20%20%0A%20%20return%20v%3B%0A%7D
+ - Square root: https://anvaka.github.io/fieldplay/?cx=0.0016000000000002679&cy=0&w=8.543&h=8.543&fo=0.998&dp=0.009&dt=0.01&cm=3&vf=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%203.%2F%288.*pow%28p.x%2B1.%2C%202.5%29%29%3B%0A%20%20%20%20%0A%20%20return%20v%3B%0A%7D&code=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%200.5*exp%28-p.x%29%3B%0A%20%20%20%20%0A%20%20return%20v%3B%0A%7D
+*/
 std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fit)
 {
+    if (fit)
+    {
+        x.recompute_diff_eq_each_fit_iter = true;
+    }
     std::string infty = to_string_general(DBL_MAX);
     const std::vector<double> T_finals = {10., 10., 1., 10., 10.};
     const std::vector<std::vector<std::string>> example_ys = std::vector<std::vector<std::string>> //solutions for the corresponding example_dy_dt ODEs
@@ -11396,7 +11435,7 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
-//    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("(((((0.00020761302887044612 * (sin(x2) + (1.0272442241645563 * x2))) + ((1.3304563988558432e-06 * (x3 + x2)) + -1.0052629302733438)) * sin((~((1.4269067710318464e-07 + x2)) + ((-8.427410561791095e-08 + x0) + (2.2679423250655768e-07 + x2))))) * (((0.008782524861544684 * (0.27587744389610325 + (0.009993495877091307 + x2))) + (-0.1651571745075183 * ((-1.911228719809616e-07 + x3) + 0.010002284668230988))) + (((0.010151823903466778 * sin(x2)) * (-0.06438380401024771 * sin(x2))) + (((x2 * 0.03852998867113262) * -8.436444206719193e-05) + 3.659791130722469)))) * sin((((5.301797186958442 * (-2.4089452401052685e-07 + (2.2542565388059674e-07 + x3))) + sin((10.688904984949698 * (1.1264219683053926e-08 + x2)))) + (~(((x0 + -2.9955080762796076e-07) + (5.8232400879963024e-08 + x1))) + ((3.570015447645774e-12 + (1.081329657641461e-11 + x0)) + 72.43120897235498)))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu")));
+//    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("((((((-0.00010079189802839168 * (~(x2) * sin(x2))) + -0.7804663681704281) * ~((0.9996066618421596 * sin((-1.6580476278746822e-10 + x0))))) * ((-0.16506006253932867 * ((1.0000001708490658 * ~(x3)) + ((x3 + 1.9443453240794613) + (1.0000000204835315 * x3)))) + ((0.0008215299377976706 * ((x2 + -2.673233331705679) + -2.66882081624132)) + 4.356191264047536))) * sin((((2.570795856958231 * (0.7853978278819566 * (x2 * x3))) + (((7.962535533078856e-08 + x0) + ~(x0)) + (2.0306079827743746 + (x2 * x3)))) + ((3.1428563968022543 + (~(x1) + -0.9999993900320638)) + 7.44813267419371)))) + ((-0.23916378358911747 * (sin((1.0228513471075729 + ~((x3 * 0.705888724801265)))) + sin((-0.6206908828371621 * sin(x3))))) + (((-0.06798386621331609 + (0.9965292172742912 + x2)) * -0.07054425736915758) + 0.48673440560605347)))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu")));
 //    from sympy import *; x0, x1, x2, x3 = symbols('x0 x1 x2 x3'); print(eval("(((((0.00020761302887044612 * (sin(x2) + (1.0272442241645563 * x2))) + ((1.3304563988558432e-06 * (x3 + x2)) + -1.0052629302733438)) * sin((~((1.4269067710318464e-07 + x2)) + ((-8.427410561791095e-08 + x0) + (2.2679423250655768e-07 + x2))))) * (((0.008782524861544684 * (0.27587744389610325 + (0.009993495877091307 + x2))) + (-0.1651571745075183 * ((-1.911228719809616e-07 + x3) + 0.010002284668230988))) + (((0.010151823903466778 * sin(x2)) * (-0.06438380401024771 * sin(x2))) + (((x2 * 0.03852998867113262) * -8.436444206719193e-05) + 3.659791130722469)))) * sin((((5.301797186958442 * (-2.4089452401052685e-07 + (2.2542565388059674e-07 + x3))) + sin((10.688904984949698 * (1.1264219683053926e-08 + x2)))) + (~(((x0 + -2.9955080762796076e-07) + (5.8232400879963024e-08 + x1))) + ((3.570015447645774e-12 + (1.081329657641461e-11 + x0)) + 72.43120897235498)))))\n".replace("^","**").replace("~", "-")));
     
 //    puts("called SwiftHohenberg");
@@ -11483,11 +11522,13 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
                 Best expression (original format) = 0.13750612121053352 ~ 1.1946601060939863 x3 * + x2 ~ x2 0.990617954031555 * + * x3 sin 5.472769285913408 + + x3 x2 + ~ x3 x0 x2 + + + sin * 1.1297980903229046 x2 * x3 x2 + * sin x1 + sin *
         mu_equals_nu_1_only == False, createMeshgridVectors(9, 4, {0.01, 0.0, 0.01, 0.01}, {10.0, 6.28319, 10, 10})), bad_ops = {"exp", "ln", "log", "^", "/", "arcsin", "asin", "acos", "arccos", "sqrt"}, l1=1e-4, ((variation <= tolerance) || (median(vec.array().abs()) <= tolerance)), period bc * 1e10:
             Depth = 7:
-                Best score = 1.31254999230111e-06, SNE = 761874.74253598
-                Squared-norm error for each equation: 9.86295829604344e-05 6.61315573394108e-05 761874.700525093 0.0418461254069244
-                Best expression = (((((-0.00010230434758457212 * (~(x2) * sin(x2))) + -0.7804815046555963) * ~((0.9999354401527438 * sin(x0)))) * ((-0.1650571856951833 * ((x3 * ~(x3)) + ((x3 + 1.9443450107399352) + (x3 * x3)))) + ((0.000830020832200755 * (-3.970546234122872 + (x2 + -2.3425860773362723))) + 4.356194490192345))) * sin((((2.570796326794897 * (0.7853981633974483 * (x2 * x3))) + (((1.0013031694795569 + x0) + ~(x3)) + ((1.0306073751213345 + x3) + (x2 * x3)))) + ((-1 + (~(x1) + ~(x0))) + 4.306539570051129))))
-                Best expression (original format) = -0.00010230434758457212 x2 ~ x2 sin * * -0.7804815046555963 + 0.9999354401527438 x0 sin * ~ * -0.1650571856951833 x3 x3 ~ * x3 1.9443450107399352 + x3 x3 * + + * 0.000830020832200755 -3.970546234122872 x2 -2.3425860773362723 + + * 4.356194490192345 + + * 2.570796326794897 0.7853981633974483 x2 x3 * * * 1.0013031694795569 x0 + x3 ~ + 1.0306073751213345 x3 + x2 x3 * + + + -1 x1 ~ x0 ~ + + 4.306539570051129 + + sin *
+                Best score = 1.31292901298421e-06, SNE = 761654.801730711
+                Squared-norm error for each equation: 3.84486248409334e-05 2.78113397355661e-05 761654.732080304 0.0695841461533792
+                Best expression = (((((-0.00010073299379351394 * (~(x2) * sin(x2))) + -0.7804661776783551) * ~((0.9996066310468781 * sin((-1.666400970883007e-10 + x0))))) * ((-0.16506007381497523 * ((1.0000001664613705 * ~(x3)) + ((x3 + 1.9443453318548538) + (1.0000000224764336 * x3)))) + ((0.0008213738353625553 * ((x2 + -2.6732297290035216) + -2.668816692762891)) + 4.356191253219946))) * sin((((2.570795864453484 * (0.7853978264169053 * (x2 * x3))) + (((7.07902601158324e-08 + x0) + ~(x0)) + (2.030607997435978 + (x2 * x3)))) + ((3.1428564040563813 + (~(x1) + -0.999999387601382)) + 7.448132724292712))))
+                Best expression (original format) = -0.00010073299379351394 x2 ~ x2 sin * * -0.7804661776783551 + 0.9996066310468781 -1.666400970883007e-10 x0 + sin * ~ * -0.16506007381497523 1.0000001664613705 x3 ~ * x3 1.9443453318548538 + 1.0000000224764336 x3 * + + * 0.0008213738353625553 x2 -2.6732297290035216 + -2.668816692762891 + * 4.356191253219946 + + * 2.570795864453484 0.7853978264169053 x2 x3 * * * 7.07902601158324e-08 x0 + x0 ~ + 2.030607997435978 x2 x3 * + + + 3.1428564040563813 x1 ~ -0.999999387601382 + + 7.448132724292712 + + sin *
+            Depth = 8:
      
+             
      ```
 x = "- ((1e-10 + (r + 0.0675028199851666*sin(theta) + 0.315589358780667)**(sqrt(r)*(r + 2.87892339678315)*(5953.65096806617 - r)/((5953.65096806617 - r)**2 + 1e10) + 0.980141037771426)/(0.013519701745416**r*(43.687622183442*r + 8.33814060981745) + r + 0.02*sin(r) + 1.82648253593279))**(((9.2348889286512)/(r + 0.55183450665909) + sin(theta + cos(theta + 0.519039044087815) + 5.8847752990135)*(.5*(1-tanh(1.025*(r-21.2)))))*(r + sin(r - 0.01) + (1.0e-10 + cos(sin(theta)))**(r - 1.58074387559245) + 0.37384427398835 + tanh(r)/(r + 7.97723076614237))))*((.5*(1-tanh(1.775e3*(r-10.01))))) + sqrt(1 - cos(r)**2)*(1.0e-10*0.68688067225485**(8.16109249232708*r) + 0.854229974212735)*(sech(r + cos(r) + 8.39614384384391) + 0.999884853180843)**(1.58799646315658*(r + 0.0308839840501129)**4.01549520152667*(1.57*(tanh(.62*r))))*(0.0100048594945809**(2*r + 5.29438341416157) + 0.7011748940086 - 45.6560816728088/(21934.7382737552))*sin(theta + 18.8962439891879)*(1) - ((1.5707963267949)**(-18.3837681892581) + 0.285811651486423)**(r + sech(r + 0.0561717295263584) + 10.0547134992516)*(r + (r**0.999950000416665 - 0.00364405505237706)**((0.376065617272839**r + r)**0.00999966667999946) + 0.0106243230277353)**(-r**2*exp(-r)/(1 + 1358.42254658947*exp(-r)) + (0.000469282041378069*r + 0.0160184860388267)**((sin(r) + 6.78974430415452)/(r - 0.00781876960101768)) + 7.58897670822754)*(-sin(theta + cos(theta - 0.0144023112886078) + 0.105413950813453) + sin(log(r + 0.390458429297535)) + ((-tanh(0.62*r)+1.01)*(pi/2))**(0.061275433230159*r + 0.00061275433230159)) + (0.00273233753019377**(6.19641677671904 - sin(theta + 0.089280925720443)) + 2.79499001433555e-13 + (6.12323399573677e-17)/(2.19270786451049 - 6.28221254344588*r))*(0.999329299739067*r + 0.453212918064574)**(sin(sqrt(r + 9.07998593378172e-5)) + 11.4130415650481 + 0.00010001/(1.01005016708417 - cos(theta)))*((.5*(1-tanh(1.775e3*(r-10.01))))) + 0.0101001582000134*tanh(10.0327249667171*r + 11.9956250261793) + 0.863191833358681"
 print(x.replace("r","R").replace("sqRt", "sqrt").replace("theta","Theta").replace("^","**").replace("~","-"))
@@ -12882,12 +12923,14 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
         Board::random_jitter_factor = std::stod(method.substr(15));
         std::cout << "Board::random_jitter_factor = " << Board::random_jitter_factor << '\n';
         method = "RandomJitterVec";
+    std::cout << "method = " << method << '\n';
     }
     else if (use_const_pieces && (method.substr(0, 12) == "RandomJitter") && (method != "RandomJitterVec") && (method.size() > 12))
     {
         Board::random_jitter_factor = std::stod(method.substr(12));
         std::cout << "Board::random_jitter_factor = " << Board::random_jitter_factor << '\n';
         method = "RandomJitter";
+    std::cout << "method = " << method << '\n';
     }
     else if (pert_option.substr(0, 18) == "constants_only_vec" && pert_option.size() > 18)
     {
@@ -13621,12 +13664,14 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
         Board::random_jitter_factor = std::stod(method.substr(15));
         std::cout << "Board::random_jitter_factor = " << Board::random_jitter_factor << '\n';
         method = "RandomJitterVec";
+    std::cout << "method = " << method << '\n';
     }
     else if (method.substr(0, 12) == "RandomJitter" && method.size() > 12)
     {
         Board::random_jitter_factor = std::stod(method.substr(12));
         std::cout << "Board::random_jitter_factor = " << Board::random_jitter_factor << '\n';
         method = "RandomJitter";
+    std::cout << "method = " << method << '\n';
     }
 
     auto start_time = Clock::now();
@@ -15181,8 +15226,14 @@ Case 1:
 
 Case 2:
     Compile: Make sure you did $env:Path += ";C:\msys64\ucrt64\bin\" by inspecting $env:Path, then do the two lines below
-    g++.exe -O2 -std=c++1z -IC:\Users\finkelsteine\test_codes\LBFGSpp\include -IC:\Users\finkelsteine\test_codes\boost_1_88_0 -IC:\Users\finkelsteine\test_codes\eigen\unsupported -IC:\Users\finkelsteine\test_codes\eigen\ -c C:\Users\finkelsteine\test_codes\hello_with_numbers_double.cpp -o C:\Users\finkelsteine\test_codes\hello_with_numbers_double.o -Wall
-    g++.exe  -o C:\Users\finkelsteine\test_codes\hello_with_numbers_double.exe C:\Users\finkelsteine\test_codes\hello_with_numbers_double.o  -O2
+    
+        g++.exe -O2 -std=c++1z -IC:\Users\finkelsteine\test_codes\LBFGSpp\include -IC:\Users\finkelsteine\test_codes\boost_1_88_0 -IC:\Users\finkelsteine\test_codes\eigen\unsupported -IC:\Users\finkelsteine\test_codes\eigen\ -c C:\Users\finkelsteine\test_codes\hello_with_numbers_double.cpp -o C:\Users\finkelsteine\test_codes\hello_with_numbers_double.o -Wall
+        g++.exe  -o C:\Users\finkelsteine\test_codes\hello_with_numbers_double.exe C:\Users\finkelsteine\test_codes\hello_with_numbers_double.o  -O2
+        
+        or
+        
+        g++.exe -O2 -std=c++20 -IS:\5310\5314\EdwardFinkelstein\test_codes\LBFGSpp\include\ -IS:\5310\5314\EdwardFinkelstein\test_codes\boost_1_88_0\ -IS:\5310\5314\EdwardFinkelstein\test_codes\eigen\unsupported\ -IS:\5310\5314\EdwardFinkelstein\test_codes\eigen\ -c .\PrefixPostfixMultiThreadDiffSimplifySR_Nd_double.cpp -o .\PrefixPostfixMultiThreadDiffSimplifySR_Nd_double.o -Wall
+        g++.exe  -o C:\Users\finkelsteine\hello_with_numbers_double.exe C:\Users\finkelsteine\PrefixPostfixMultiThreadDiffSimplifySR_Nd_double.o  -O2
 
     To run this file in Windows PowerShell, MAKE SURE ";C:\msys64\ucrt64\bin\" is in $env:Path
     (by doing $env:Path, and, if it's not there, do $env:Path += ";C:\msys64\ucrt64\bin\"),
