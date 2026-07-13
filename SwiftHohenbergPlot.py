@@ -274,25 +274,25 @@ else:
      - sech(-0.204245759737047*r + 1.72063673930557*theta + (0.0100909665335049 - tanh(r))*(-0.998687620305263*theta - tanh(theta) + 1.02370492421771) - (0.0154873527439205*r + 0.0998966701331946)*(mu*r + 5*r + 9.5115459200379) + 8.61038625622014)
      - 84.0357720038456,
      (0.000214601556558127*mu + 1.34828171950016e-6*nu + 0.000207597442231019*sin(mu) - 1.00526293689344)*(0.00877926734854302*mu - 0.16515718756188*nu - 0.000653938060863869*sin(mu)**2 + 3.66064988347847)*sin(r - 1.70585404191244e-10)*sin(5.30179718552688*nu - theta + sin(10.6889050130482*mu + 7.33505942049553e-8) + 72.4312091689447),
-     -0.0705442573691576*mu - 0.99960666184216*(0.000100791898028392*mu*sin(mu) - 0.780466368170428)*(0.000821529937797671*mu - 0.165060037719984*nu + 4.03086884584505)*sin(r - 1.65804762787468e-10)*sin(3.01909748198293*mu*nu - theta + 11.6215977433636) + 0.239163783589117*sin(0.705888724801265*nu - 1.02285134710757) + 0.239163783589117*sin(0.620690882837162*sin(nu)) + 0.421230863381873,
+     -0.0705466431355269*mu - 0.99960666184216*(0.000100791898028392*mu*sin(mu) - 0.780466368170428)*(0.000821529937797671*mu - 0.165060037719984*nu + 4.03086884584505)*sin(r - 1.65804762787468e-10)*sin(3.01909748198293*mu*nu - theta + 11.6215977433636) - 0.0705466431355269*sin(nu) + 0.240909902853721*sin(0.709042260929229*nu - 1.03802026794018) + 0.240605250112681*sin(sin(nu)) + 0.422054305538938,
       -1.00526293689344*(-0.00982457832153368*mu*(mu*sin(nu) + 2*mu + 3.65979113490899)*sin(mu) + 2.25358925601765)*sin(r - 1.70585404191244e-10)*sin(0.000207410181763234*mu*nu + nu**2*(mu - 5.93918060635909e-7) - nu + theta + sin(mu*nu + 10.6889050130482)),
      ][2]
 '''
 best result for mu_equals_nu == False
 =====================================
-f = - 0.00015 \cdot \mu^{2} - 0.06838 \cdot \mu - \left(0.0001 \cdot \mu \cdot \sin{\left(\mu \right)} - 0.78016\right) \cdot \left(0.00082 \cdot \mu - 0.16506 \cdot \nu + 4.03087\right) \cdot \sin{\left(r \right)} \cdot \sin{\left(3.0191 \cdot \mu \cdot \nu - \theta + 11.6216 \right)} + 0.13617 \cdot \sin{\left(0.57776 \cdot \nu - 0.35512 \right)} + 0.39998
-SH DAG nodes = 83
-f DAG nodes = 41
-mse = 114.44447125968186; Added mu=0.01, nu=0.01
-mse = 77.62168070402394; Added mu=0.01, nu=5
-mse = 152.2029612340795; Added mu=0.01, nu=10
-mse = 18.19161047898228; Added mu=5, nu=0.01
-mse = 136.0937384659847; Added mu=5, nu=5
-mse = 165.73659957396467; Added mu=5, nu=10
-mse = 66.36198067162152; Added mu=10, nu=0.01
-mse = 172.80321995925752; Added mu=10, nu=5
-mse = 170.3507748355595; Added mu=10, nu=10
-Average mse = 119.31189302035061
+f = - 0.07055 \cdot \mu - \left(0.0001 \cdot \mu \cdot \sin{\left(\mu \right)} - 0.78016\right) \cdot \left(0.00082 \cdot \mu - 0.16506 \cdot \nu + 4.03087\right) \cdot \sin{\left(r \right)} \cdot \sin{\left(3.0191 \cdot \mu \cdot \nu - \theta + 11.6216 \right)} - 0.07055 \cdot \sin{\left(\nu \right)} + 0.24091 \cdot \sin{\left(0.70904 \cdot \nu - 1.03802 \right)} + 0.24061 \cdot \sin{\left(\sin{\left(\nu \right)} \right)} + 0.42205
+SH DAG nodes = 86
+f DAG nodes = 42
+mse = 97.91174682698944; Added mu=0.01, nu=0.01
+mse = 80.7089062828196; Added mu=0.01, nu=5
+mse = 150.73350844969278; Added mu=0.01, nu=10
+mse = 19.840561858365863; Added mu=5, nu=0.01
+mse = 136.30530247792808; Added mu=5, nu=5
+mse = 165.4635979865741; Added mu=5, nu=10
+mse = 68.01517429665844; Added mu=10, nu=0.01
+mse = 170.09737879865915; Added mu=10, nu=5
+mse = 173.15072599378897; Added mu=10, nu=10
+Average mse = 118.02521144127516
 
 f = - 0.07054 \cdot \mu - \left(0.0001 \cdot \mu \cdot \sin{\left(\mu \right)} - 0.78016\right) \cdot \left(0.00082 \cdot \mu - 0.16506 \cdot \nu + 4.03087\right) \cdot \sin{\left(r \right)} \cdot \sin{\left(3.0191 \cdot \mu \cdot \nu - \theta + 11.6216 \right)} + 0.23916 \cdot \sin{\left(0.70589 \cdot \nu - 1.02285 \right)} + 0.23916 \cdot \sin{\left(0.62069 \cdot \sin{\left(\nu \right)} \right)} + 0.42123
 SH DAG nodes = 84
@@ -358,7 +358,7 @@ if mu_equals_nu:
     mean_squared_error = squared_norm_error / func_vals.size
 
 else:
-    N_vals = 5
+    N_vals = 3
     # Do not build a 4D mesh. Use scalar mu, nu per plot.
     mu_plot_vals = np.linspace(0.01, 10, N_vals)
     nu_plot_vals = np.linspace(0.01, 10, N_vals)
