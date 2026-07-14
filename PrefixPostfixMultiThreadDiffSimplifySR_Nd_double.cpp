@@ -3536,6 +3536,11 @@ struct Board
                     i -= 1;
                     continue;
                 }
+        else //can't simplify so just push-back this unary
+        {
+            temp.push_back(expression[i]);
+            continue;
+        }
             }
             
             else if (is_unary(expression[i]))
@@ -8153,10 +8158,10 @@ struct Board
 };
 
 /*
-Best score = 4.20463443818804e-06, SNE = 237831.804421148
-Squared-norm error for each equation: 237831.804421148
-Best expression = (0.7050690813475843 * cos(tanh(x0))), (diff_x0(cos(x0)) + 0.6688364457666556)
-Best expression (original format) = 0.7050690813475843 x0 tanh cos *, x0 cos diff_x0 0.6688364457666556 +
+Best score = 4.45278465240232e-06, SNE = 224577.567809357
+Squared-norm error for each equation: 224577.567809357
+Best expression = ((diff_x0(0.96838214836311) + 0.7050690813475843) * cos(1.0003233121224848)), (diff_x0(cos(x0)) + 0.6688364457666556)
+Best expression (original format) = 0.96838214836311 diff_x0 0.7050690813475843 + 1.0003233121224848 cos *, x0 cos diff_x0 0.6688364457666556 +
 
  - Linear: https://anvaka.github.io/fieldplay/?cx=0.0016000000000002679&cy=0&w=8.543&h=8.543&fo=0.998&dp=0.009&dt=0.01&cm=3&vf=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%201.%2F%281.%2Bp.x*p.x*p.x%29%3B%0A%20%20%20%20%0A%20%20return%20v%3B%0A%7D&code=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%201.%2F%281.%2Bp.x*p.x*p.x%29%3B%0A%20%20%20%20%0A%20%20return%20v%3B%0A%7D
  - Kormilitsin: https://anvaka.github.io/fieldplay/?cx=0.0016000000000002679&cy=0&w=8.543&h=8.543&fo=0.998&dp=0.009&dt=0.01&cm=3&vf=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%20%28-1.%2F%288.*pow%28p.x%2C%201.5%29%29%29%3B%0A%0A%20%20return%20v%3B%0A%7D&code=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%200.5*%28-1.%2F%288.*pow%28p.x%2C%201.5%29%29%29%3B%0A%0A%20%20return%20v%3B%0A%7D
@@ -8221,12 +8226,13 @@ std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fi
                     diff_idx = idx;
                     assert(c[idx].size() == 7 || c[idx].size() == 8);
                     dx = c[idx].substr(5);
+            assert((dx == "x0") || (dx == "y_n"));
                 }
                 
                 if (diff_idx != -1) //if diff is in sub_expr
                 {
                     std::vector<std::string> temp_vec;
-                    for (int i = sub_expr.first; i <= diff_idx; i++)
+                    for (int i = sub_expr.first; i < diff_idx; i++)
                     {
                         if (c[i] == "f_cur") //c_i should only depend on f ("f_cur")
                         {
@@ -8241,9 +8247,11 @@ std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fi
                         }
                     }
                     assert(temp_vec.size());
+            //std::cout << "temp_vec = " << temp_vec << '\n';
                     std::vector<int> grasp;
                     x.derivePostfix(0, temp_vec.size() - 1, dx, temp_vec, grasp);
                     derivats.push_back(x.derivat);
+            //std::cout << "x.derivat = " << x.derivat << '\n';
                     diff_sub_exprs.push_back(sub_expr); //this is a sub_expr that has a diff in it
                 }
             }
@@ -8305,6 +8313,8 @@ std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fi
             example_dy_dt = example_dy_dts[func_idx];
             c_2_func = expand_c_post(x.pieces[0], x.n[0]);
             c_3_func = expand_c_post(x.pieces[1], x.n[1]);
+        //std::cout << "c_2_func = " << c_2_func << '\n';
+        //std::cout << "c_3_func = " << c_3_func << '\n';
             double y_0 = y_0s[func_idx]; //IC for the ODE solve
             //Set the integrated solution at t = 0 to y(0), and the time to 0
             std::vector<double> res = {0.0, 0.0};
@@ -11527,7 +11537,10 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
                 Best expression = (((((-0.00010073299379351394 * (~(x2) * sin(x2))) + -0.7804661776783551) * ~((0.9996066310468781 * sin((-1.666400970883007e-10 + x0))))) * ((-0.16506007381497523 * ((1.0000001664613705 * ~(x3)) + ((x3 + 1.9443453318548538) + (1.0000000224764336 * x3)))) + ((0.0008213738353625553 * ((x2 + -2.6732297290035216) + -2.668816692762891)) + 4.356191253219946))) * sin((((2.570795864453484 * (0.7853978264169053 * (x2 * x3))) + (((7.07902601158324e-08 + x0) + ~(x0)) + (2.030607997435978 + (x2 * x3)))) + ((3.1428564040563813 + (~(x1) + -0.999999387601382)) + 7.448132724292712))))
                 Best expression (original format) = -0.00010073299379351394 x2 ~ x2 sin * * -0.7804661776783551 + 0.9996066310468781 -1.666400970883007e-10 x0 + sin * ~ * -0.16506007381497523 1.0000001664613705 x3 ~ * x3 1.9443453318548538 + 1.0000000224764336 x3 * + + * 0.0008213738353625553 x2 -2.6732297290035216 + -2.668816692762891 + * 4.356191253219946 + + * 2.570795864453484 0.7853978264169053 x2 x3 * * * 7.07902601158324e-08 x0 + x0 ~ + 2.030607997435978 x2 x3 * + + + 3.1428564040563813 x1 ~ -0.999999387601382 + + 7.448132724292712 + + sin *
             Depth = 8:
-     
+                Best score = 1.53679939756258e-06, SNE = 650702.014060284
+                Squared-norm error for each equation: 3.28512766878752e-05 2.21713796115144e-05 650701.841879538 0.172125722566548
+                Best expression = ((((((-0.00010079189802839168 * (~(x2) * sin(x2))) + -0.7804663681704281) * ~((0.9996066618421596 * sin((-1.6580476278746822e-10 + x0))))) * ((-0.16506006253932867 * ((1.0000001708490658 * ~(x3)) + ((x3 + 1.9443453240794613) + (1.0000000204835315 * x3)))) + ((0.0008215299377976706 * ((x2 + -2.673233331705679) + -2.66882081624132)) + 4.356191264047536))) * sin((((2.570795856958231 * (0.7853978278819566 * (x2 * x3))) + (((7.962535533078856e-08 + x0) + ~(x0)) + (2.0306079827743746 + (x2 * x3)))) + ((3.1428563968022543 + (~(x1) + -0.9999993900320638)) + 7.44813267419371)))) + (((((((x3 * -0.258435178190104) + (1.344852129501477 * x2)) * -0.6432255753325254) + ((sin(x3) * sin(x3)) + 7.4962322956945036)) * (((sin(x2) + (x3 * 3.4807494841766224e-06)) * (x0 + ~(x0))) + -0.08134333787380357)) * (sin((((0.036551667887438966 * x2) + 1.7892884453203495) + (x3 * 0.730990709927977))) + sin((-0.06389833731195498 + (-0.5109906448904722 * sin(x3)))))) + ((((-0.0207554966896999 + (0.991390068980581 * x2)) + sin((-1.2047343227197793 + (0.6941709009440433 * x3)))) * ((((2.1976580345476933 * x3) + (x0 * 0.0001886930336709864)) * -0.0005162449629552146) + -0.08082414336434048)) + 0.5073126791610137)))
+                Best expression (original format) = -0.00010079189802839168 x2 ~ x2 sin * * -0.7804663681704281 + 0.9996066618421596 -1.6580476278746822e-10 x0 + sin * ~ * -0.16506006253932867 1.0000001708490658 x3 ~ * x3 1.9443453240794613 + 1.0000000204835315 x3 * + + * 0.0008215299377976706 x2 -2.673233331705679 + -2.66882081624132 + * 4.356191264047536 + + * 2.570795856958231 0.7853978278819566 x2 x3 * * * 7.962535533078856e-08 x0 + x0 ~ + 2.0306079827743746 x2 x3 * + + + 3.1428563968022543 x1 ~ -0.9999993900320638 + + 7.44813267419371 + + sin * x3 -0.258435178190104 * 1.344852129501477 x2 * + -0.6432255753325254 * x3 sin x3 sin * 7.4962322956945036 + + x2 sin x3 3.4807494841766224e-06 * + x0 x0 ~ + * -0.08134333787380357 + * 0.036551667887438966 x2 * 1.7892884453203495 + x3 0.730990709927977 * + sin -0.06389833731195498 -0.5109906448904722 x3 sin * + sin + * -0.0207554966896999 0.991390068980581 x2 * + -1.2047343227197793 0.6941709009440433 x3 * + sin + 2.1976580345476933 x3 * x0 0.0001886930336709864 * + -0.0005162449629552146 * -0.08082414336434048 + * 0.5073126791610137 + + +
              
      ```
 x = "- ((1e-10 + (r + 0.0675028199851666*sin(theta) + 0.315589358780667)**(sqrt(r)*(r + 2.87892339678315)*(5953.65096806617 - r)/((5953.65096806617 - r)**2 + 1e10) + 0.980141037771426)/(0.013519701745416**r*(43.687622183442*r + 8.33814060981745) + r + 0.02*sin(r) + 1.82648253593279))**(((9.2348889286512)/(r + 0.55183450665909) + sin(theta + cos(theta + 0.519039044087815) + 5.8847752990135)*(.5*(1-tanh(1.025*(r-21.2)))))*(r + sin(r - 0.01) + (1.0e-10 + cos(sin(theta)))**(r - 1.58074387559245) + 0.37384427398835 + tanh(r)/(r + 7.97723076614237))))*((.5*(1-tanh(1.775e3*(r-10.01))))) + sqrt(1 - cos(r)**2)*(1.0e-10*0.68688067225485**(8.16109249232708*r) + 0.854229974212735)*(sech(r + cos(r) + 8.39614384384391) + 0.999884853180843)**(1.58799646315658*(r + 0.0308839840501129)**4.01549520152667*(1.57*(tanh(.62*r))))*(0.0100048594945809**(2*r + 5.29438341416157) + 0.7011748940086 - 45.6560816728088/(21934.7382737552))*sin(theta + 18.8962439891879)*(1) - ((1.5707963267949)**(-18.3837681892581) + 0.285811651486423)**(r + sech(r + 0.0561717295263584) + 10.0547134992516)*(r + (r**0.999950000416665 - 0.00364405505237706)**((0.376065617272839**r + r)**0.00999966667999946) + 0.0106243230277353)**(-r**2*exp(-r)/(1 + 1358.42254658947*exp(-r)) + (0.000469282041378069*r + 0.0160184860388267)**((sin(r) + 6.78974430415452)/(r - 0.00781876960101768)) + 7.58897670822754)*(-sin(theta + cos(theta - 0.0144023112886078) + 0.105413950813453) + sin(log(r + 0.390458429297535)) + ((-tanh(0.62*r)+1.01)*(pi/2))**(0.061275433230159*r + 0.00061275433230159)) + (0.00273233753019377**(6.19641677671904 - sin(theta + 0.089280925720443)) + 2.79499001433555e-13 + (6.12323399573677e-17)/(2.19270786451049 - 6.28221254344588*r))*(0.999329299739067*r + 0.453212918064574)**(sin(sqrt(r + 9.07998593378172e-5)) + 11.4130415650481 + 0.00010001/(1.01005016708417 - cos(theta)))*((.5*(1-tanh(1.775e3*(r-10.01))))) + 0.0101001582000134*tanh(10.0327249667171*r + 11.9956250261793) + 0.863191833358681"
@@ -14007,7 +14020,7 @@ namespace ExampleProblems
                 fullPrec /*fullPrec: whether to write output to full precision, i.e., std::numeric_limits<double>::digits10 */,
                 std::vector<std::string>{"diff_x0", "diff_y_n"} /*custom_unaries: logic must be implemented in the std::vector<std::vector<std::string>> differential equation the user passes in*/,
                 theTrueSeedExprs /*seed expressions*/,
-                0 /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
+                (num_threads==1) /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
                 random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
                 0.0 /*T_min*/,
                 0.0 /*T_max*/,
@@ -15228,12 +15241,17 @@ Case 2:
     Compile: Make sure you did $env:Path += ";C:\msys64\ucrt64\bin\" by inspecting $env:Path, then do the two lines below
     
         g++.exe -O2 -std=c++1z -IC:\Users\finkelsteine\test_codes\LBFGSpp\include -IC:\Users\finkelsteine\test_codes\boost_1_88_0 -IC:\Users\finkelsteine\test_codes\eigen\unsupported -IC:\Users\finkelsteine\test_codes\eigen\ -c C:\Users\finkelsteine\test_codes\hello_with_numbers_double.cpp -o C:\Users\finkelsteine\test_codes\hello_with_numbers_double.o -Wall
-        g++.exe  -o C:\Users\finkelsteine\test_codes\hello_with_numbers_double.exe C:\Users\finkelsteine\test_codes\hello_with_numbers_double.o  -O2
+        g++.exe -o C:\Users\finkelsteine\test_codes\hello_with_numbers_double.exe C:\Users\finkelsteine\test_codes\hello_with_numbers_double.o  -O2
         
         or
         
         g++.exe -O2 -std=c++20 -IS:\5310\5314\EdwardFinkelstein\test_codes\LBFGSpp\include\ -IS:\5310\5314\EdwardFinkelstein\test_codes\boost_1_88_0\ -IS:\5310\5314\EdwardFinkelstein\test_codes\eigen\unsupported\ -IS:\5310\5314\EdwardFinkelstein\test_codes\eigen\ -c .\PrefixPostfixMultiThreadDiffSimplifySR_Nd_double.cpp -o .\PrefixPostfixMultiThreadDiffSimplifySR_Nd_double.o -Wall
-        g++.exe  -o C:\Users\finkelsteine\hello_with_numbers_double.exe C:\Users\finkelsteine\PrefixPostfixMultiThreadDiffSimplifySR_Nd_double.o  -O2
+        g++.exe -o C:\Users\finkelsteine\hello_with_numbers_double.exe C:\Users\finkelsteine\PrefixPostfixMultiThreadDiffSimplifySR_Nd_double.o  -O2
+
+    or
+
+    g++.exe -O2 -std=c++20 -IS:\5310\5314\EdwardFinkelstein\test_codes\LBFGSpp\include\ -IS:\5310\5314\EdwardFinkelstein\test_codes\boost_1_88_0\ -IS:\5310\5314\EdwardFinkelstein\test_codes\eigen\unsupported\ -IS:\5310\5314\EdwardFinkelstein\test_codes\eigen\ -c .\PrefixPostfixMultiThreadDiffSimplifySR_Nd_double.cpp -o .\PrefixPostfixMultiThreadDiffSimplifySR_Nd_double.o -Wall
+    g++.exe  -o C:\Users\finkelsteine\hello_with_numbers_double.exe C:\Users\finkelsteine\PrefixPostfixMultiThreadDiffSimplifySR_Nd_double.o  -O2
 
     To run this file in Windows PowerShell, MAKE SURE ";C:\msys64\ucrt64\bin\" is in $env:Path
     (by doing $env:Path, and, if it's not there, do $env:Path += ";C:\msys64\ucrt64\bin\"),
