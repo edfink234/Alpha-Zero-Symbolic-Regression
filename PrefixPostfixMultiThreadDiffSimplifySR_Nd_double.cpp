@@ -170,6 +170,7 @@ std::vector<std::string> split(const std::string& str, char del = ' ' /* Delimit
 Eigen::MatrixXd load_csv(const std::string& path, int rows, int cols, bool header = true)
 {
     std::ifstream file(path);
+    assert(file.is_open());
     Eigen::MatrixXd data(rows, cols);
     std::string line;
     int i = 0;
@@ -11445,7 +11446,7 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
-//    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("((((((-0.00010079189802839168 * (~(x2) * sin(x2))) + -0.7804663681704281) * ~((0.9996066618421596 * sin((-1.6580476278746822e-10 + x0))))) * ((-0.16506006253932867 * ((1.0000001708490658 * ~(x3)) + ((x3 + 1.9443453240794613) + (1.0000000204835315 * x3)))) + ((0.0008215299377976706 * ((x2 + -2.6732333975048483) + -2.66882081624132)) + 4.356191264047536))) * sin((((2.570795856958231 * (0.7853978278819566 * (x2 * x3))) + (((7.962535533078856e-08 + x0) + ~(x0)) + (2.0306079827743746 + (x2 * x3)))) + ((3.1428563968022543 + (~(x1) + -0.9999993900320638)) + 7.44813267419371)))) + (((((((x3 * -0.4483795386521851) + (1.3615667449389772 * x2)) * -0.6821847160592451) + ((sin(x3) * sin(x3)) + 7.181550158003518)) * ((-0.002207282670967037 * (-0.1678705394179034 + x2)) + -0.08232542573241464)) * (sin((((0.03334614232088707 * x2) + 1.7586962836199502) + ((1.0019189940591233 * x3) * 0.7367034925575929))) + sin((-0.5698115316992082 * sin(x3))))) + ((((-2.828511979335622 + (0.9751444160905578 * x2)) + sin((-0.8162857117281346 + (0.6242590818119086 * x3)))) * ((((4.2247112598246135 * x3) + sin(x2)) * -0.0005177166053987881) + -0.0807076327837492)) + ((((-0.015788746641768808 * (1.6115112975311547 + x2)) * ((x2 * -0.00020822904961706338) + 0.0013116457808711726)) * (((x2 * x3) + (x3 + x0)) + (~(x0) * 1.0160529629820547))) + 0.3056467818589764))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu")));
+//    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("simplify((((((-0.00010079189802839168 * (sin(x3) + (-0.4312254109170446 * x2))) + -0.7804663681704281) * ~((0.9996066618421596 * sin((-1.6580476278746822e-10 + x0))))) * ((-0.16506006253932867 * ((1.0000001708490658 * ~(x3)) + ((x3 + 1.944345768084329) + (1.0000000204835315 * x3)))) + ((-0.010052578926046574 * ((x2 + -2.557280324757583) + -2.620054381663751)) + 4.356191264047536))) * sin((((2.570795856958231 * (0.7853978278819566 * (x2 * x3))) + (((1.1801333411542321e-05 + x0) + ~(x0)) + (2.0314514917486703 + (x2 * x3)))) + ((3.142940864629233 + (~(x1) + -0.9999993900320638)) + 7.44813267419371)))) + (((((((x3 * -0.08718604684395846) + (x2 * 1.1839918039933375)) * -0.5131038195385265) + ((sin(x3) * sin(x3)) + 7.096242098059948)) * ((-0.0003526198935120516 * (-1.521349585989885 * (x2 * x2))) + -0.07496623753707322)) * (sin((((0.12767145215467857 * x2) + 1.7526359446483284) + ((x3 + 0.01558044459115681) * 0.7328975920154968))) + sin((-0.5916249288320259 * sin((x3 * 0.9704743438982792)))))) + ((((-2.2383714221018574 + (1.0974059842260995 * (0.03287405225726156 + x2))) + sin((0.2694467413730534 + (x3 * 0.7480117938586788)))) * ((((x2 * 2.156718349992665) + (6.867660967337741 * x3)) * -0.0005177166053987881) + -0.06933314797745964)) + ((((~(x2) * 0.610120101049466) * ((x2 * -0.00020908110679617597) + 0.001321462472061584)) * (((x3 * x3) + (x3 + x0)) + (~(x0) * 1.000637689809976))) + ((sin((0.3712521046869059 * x2)) * 0.1197638268478698) + 0.34526491757331423)))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu")));
 //    from sympy import *; x0, x1, x2, x3 = symbols('x0 x1 x2 x3'); print(eval("(((((0.00020761302887044612 * (sin(x2) + (1.0272442241645563 * x2))) + ((1.3304563988558432e-06 * (x3 + x2)) + -1.0052629302733438)) * sin((~((1.4269067710318464e-07 + x2)) + ((-8.427410561791095e-08 + x0) + (2.2679423250655768e-07 + x2))))) * (((0.008782524861544684 * (0.27587744389610325 + (0.009993495877091307 + x2))) + (-0.1651571745075183 * ((-1.911228719809616e-07 + x3) + 0.010002284668230988))) + (((0.010151823903466778 * sin(x2)) * (-0.06438380401024771 * sin(x2))) + (((x2 * 0.03852998867113262) * -8.436444206719193e-05) + 3.659791130722469)))) * sin((((5.301797186958442 * (-2.4089452401052685e-07 + (2.2542565388059674e-07 + x3))) + sin((10.688904984949698 * (1.1264219683053926e-08 + x2)))) + (~(((x0 + -2.9955080762796076e-07) + (5.8232400879963024e-08 + x1))) + ((3.570015447645774e-12 + (1.081329657641461e-11 + x0)) + 72.43120897235498)))))\n".replace("^","**").replace("~", "-")));
     
 //    puts("called SwiftHohenberg");
@@ -14243,6 +14244,7 @@ namespace ExampleProblems
         std::string theConstCacheThresh;
         int NumPoints = 18;
         std::string theNumPoints;
+        bool linspace_spaced = true;
         std::string theConstTokens = "default";
         
         if (read_from_file)
@@ -14276,8 +14278,15 @@ namespace ExampleProblems
             fitIters = std::stoi(theNumFitIters);
             ConstCacheThresh = std::stod(theConstCacheThresh);
             bad_ops = split(theBadOps);
-            NumPoints = std::stod(theNumPoints);
-
+            try
+            {
+                NumPoints = std::stoi(theNumPoints);
+            }
+            catch (std::invalid_argument& e)
+            {
+                linspace_spaced = false;
+                std::cout << e.what() << '\n';
+            }
             std::cout << "Algorithm = " << Algorithm << "\n";
             std::cout << "theSeedExpr = " << theSeedExpr << "\n";
             std::cout << "pert_mode = " << pert_mode << '\n';
@@ -14296,9 +14305,36 @@ namespace ExampleProblems
             std::cout << "theConstTokens = " << theConstTokens << '\n';
         }
         
-        auto data1 = ((mu_equals_nu_1_only) ?
+        //collocation points
+        Eigen::MatrixXd data1;
+        
+        if (linspace_spaced)
+        {
+            data1 = ((mu_equals_nu_1_only) ?
                       createMeshgridVectors(330, 2, {0.01, 0.0}, {10.0, 6.28319}) :
                       createMeshgridVectors(NumPoints, 4, {0.01, 0.0, 0.01, 0.01}, {10.0, 6.28319, 10, 10}));
+        }
+        else
+        {
+            //sh_data_sobol_1000.txt
+            try
+            {
+                int startIdx = 0;
+                while ((theNumPoints[startIdx] < 48) || (theNumPoints[startIdx] > 57))
+                {
+                    startIdx++;
+                }
+                int numRows = std::stoi(theNumPoints.substr(startIdx, theNumPoints.find(".txt")-14));
+                std::cout << "num sobol rows = " << numRows << '\n';
+                data1 = load_csv(theNumPoints, numRows, 4, true);
+                std::cout << "data = " << data1 << '\n';
+            }
+            catch (std::invalid_argument& e)
+            {
+                std::cout << e.what() << '\n';
+                exit(1);
+            }
+        }
         
         if (Algorithm == "RandomSearch")
         {
@@ -15196,7 +15232,7 @@ int main(int argc, char *argv[])
 
     }
     
-    ProblemOption choice = ProblemOption::RK4Explicitc2c3Discovery;
+    ProblemOption choice = ProblemOption::SwiftHohenberg;
     switch (choice)
     {
         case ProblemOption::BrightSolitonControlPDE:

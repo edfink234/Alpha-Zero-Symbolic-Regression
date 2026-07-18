@@ -648,10 +648,10 @@ def test_visualize():
             assert rpn1 == rpn2
             print(f"rpn_expr = {' '.join([i if i != 's' else 'x0' for i in rpn_expr.split()])}")
         else:
-            expression_type_to_plot = ["prefix", "postfix"][1]
+            expression_type_to_plot = ["prefix", "postfix"][0]
             completeTree = [True, False][1]
             if expression_type_to_plot == "prefix":
-                complete_pn_expr = "/ * / 1 x y sqrt - 1 * * ln x y * ln x y"
+                complete_pn_expr = "* * ^ cos x cos y * ln cos x ~ sin y x"
                 if completeTree:
                     complete_pn_expr = complete_tree(complete_pn_expr.split(), "prefix") #returns a list
                 else:

@@ -1,0 +1,9 @@
+
+Thread id = 0
+Time since start = 0.00498825
+Unique expressions = 0
+Time spent fitting = 0 seconds
+Best score = 4.00461044432772e-06, SNE = 249711.17897522
+Squared-norm error for each equation: 249711.17897522 
+Best expression = 0.38511558004563157, 0.6035715471159382
+Best expression (original format) = 0.38511558004563157, 0.6035715471159382
