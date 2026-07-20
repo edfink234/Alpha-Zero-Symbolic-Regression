@@ -216,7 +216,7 @@ PERIODIC_IN_THETA = True
 PRINT_LATEX_ONLY = False
 PlotType = "2D"
 N = 1000
-r_max = 10
+r_max = 100
 r_edges = np.linspace(0.01, r_max, N)
 theta_edges = np.linspace(0, 2*np.pi, N, endpoint=False)
 
@@ -274,7 +274,7 @@ else:
      - sech(-0.204245759737047*r + 1.72063673930557*theta + (0.0100909665335049 - tanh(r))*(-0.998687620305263*theta - tanh(theta) + 1.02370492421771) - (0.0154873527439205*r + 0.0998966701331946)*(mu*r + 5*r + 9.5115459200379) + 8.61038625622014)
      - 84.0357720038456,
      (0.000214601556558127*mu + 1.34828171950016e-6*nu + 0.000207597442231019*sin(mu) - 1.00526293689344)*(0.00877926734854302*mu - 0.16515718756188*nu - 0.000653938060863869*sin(mu)**2 + 3.66064988347847)*sin(r - 1.70585404191244e-10)*sin(5.30179718552688*nu - theta + sin(10.6889050130482*mu + 7.33505942049553e-8) + 72.4312091689447),
-     -0.475197750675198*mu*(0.00132036133242482 - 0.000209081106796176*mu)*(nu**2 + nu - 0.000872843629587283*r) + (0.000386602148893137*mu**2 - 0.0792720134081186)*(sin(0.0988309667090737*mu + 0.735349658166403*nu + 1.74233672948571) - sin(0.612506807304801*sin(0.96439905276705*nu)))*(-0.624569137439662*mu + 0.1824517009125*nu + sin(nu)**2 + 6.88394596425969) - 0.99960666184216*(-0.0100514971087765*mu - 0.165060037719984*nu + 4.0872979861502)*(4.34071945481605e-5*mu - 0.000100791898028392*sin(nu) - 0.780466368170428)*sin(r - 1.65804762787468e-10)*sin(3.01909748198293*mu*nu - theta + 11.622537441873) + (-0.00499293301287504*mu - 0.00341360852865945*nu - 0.0646770901191684)*(0.914756052495741*mu + sin(0.801494266368078*nu - 0.318037317904848) - 2.92484690089335) + 0.0228873588875556*sin(0.489033895948721*mu) + 0.307475096330795,
+     (0.00120254360769512 - 0.00021007088613938*mu)*(-0.241906378791118*mu - 3.06725096327013)*(nu**2 + nu - 0.000427828464782065*r) + (0.000173935950288096*mu**2 - 0.0171805387300162)*(sin(0.23098135879634*mu + 0.769419364495789*nu + 1.83804769069684) + sin(0.0820052282196033*sin(1.7017343020113*nu)))*(-0.154652100226439*mu - 3.43631621803746*nu - 1.40741619453668*sin(nu) + 34.6635197440474) - 0.999606656812098*(-0.0100528044397102*mu - 0.165060037506519*nu + 4.08730414630806)*(4.34848706596219e-5*mu - 0.000100795063637185*sin(nu) - 0.780466373592344)*sin(r - 1.71406081782945e-10)*sin(3.01909748188619*mu*nu - theta + 11.6225374341579) + (0.00110837006003467*mu - 0.00194398002086585*nu - 0.0750927300083484)*(1.6840455209611*mu + sin(0.667715780797335*nu + 1.49961133146446) - 0.972306753452381) + 0.121229385077551*sin(0.335246071477538*mu) + 0.602440114628542,
       -1.00526293689344*(-0.00982457832153368*mu*(mu*sin(nu) + 2*mu + 3.65979113490899)*sin(mu) + 2.25358925601765)*sin(r - 1.70585404191244e-10)*sin(0.000207410181763234*mu*nu + nu**2*(mu - 5.93918060635909e-7) - nu + theta + sin(mu*nu + 10.6889050130482)),
      ][2]
 '''
@@ -294,35 +294,64 @@ mse = 158.44693932500385; Added mu=10, nu=5
 mse = 149.82025603452774; Added mu=10, nu=10
 Average mse = 113.6896723011565
 
-f = - 0.07054 \cdot \mu - \left(0.0001 \cdot \mu \cdot \sin{\left(\mu \right)} - 0.78016\right) \cdot \left(0.00082 \cdot \mu - 0.16506 \cdot \nu + 4.03087\right) \cdot \sin{\left(r \right)} \cdot \sin{\left(3.0191 \cdot \mu \cdot \nu - \theta + 11.6216 \right)} + 0.23916 \cdot \sin{\left(0.70589 \cdot \nu - 1.02285 \right)} + 0.23916 \cdot \sin{\left(0.62069 \cdot \sin{\left(\nu \right)} \right)} + 0.42123
-SH DAG nodes = 84
-f DAG nodes = 42
-mse = 98.12538178226588; Added mu=0.01, nu=0.01
-mse = 22.522293760241215; Added mu=0.01, nu=2.51
-mse = 81.22399161508854; Added mu=0.01, nu=5
-mse = 140.32710511219102; Added mu=0.01, nu=7.5
-mse = 150.96673060598016; Added mu=0.01, nu=10
-mse = 38.73648001899261; Added mu=2.51, nu=0.01
-mse = 24.471299438719477; Added mu=2.51, nu=2.51
-mse = 110.25849971891151; Added mu=2.51, nu=5
-mse = 162.35769565016082; Added mu=2.51, nu=7.5
-mse = 159.59682007148973; Added mu=2.51, nu=10
-mse = 19.785100541833764; Added mu=5, nu=0.01
-mse = 47.386543395215; Added mu=5, nu=2.51
-mse = 136.40811441602946; Added mu=5, nu=5
-mse = 178.07874429026543; Added mu=5, nu=7.5
-mse = 165.46732502854934; Added mu=5, nu=10
-mse = 30.996232930460444; Added mu=7.5, nu=0.01
-mse = 80.76421280663534; Added mu=7.5, nu=2.51
-mse = 155.38304472159894; Added mu=7.5, nu=5
-mse = 185.51667804566478; Added mu=7.5, nu=7.5
-mse = 167.92479377417214; Added mu=7.5, nu=10
-mse = 67.97827157556898; Added mu=10, nu=0.01
-mse = 119.51769771207539; Added mu=10, nu=2.51
-mse = 169.84551022652568; Added mu=10, nu=5
-mse = 190.2101732721; Added mu=10, nu=7.5
-mse = 172.7869016289377; Added mu=10, nu=10
-Average mse = 115.06542568558694
+0.01 <= r <= 10, N = 25:
+    f = - 0.07054 \cdot \mu - \left(0.0001 \cdot \mu \cdot \sin{\left(\mu \right)} - 0.78016\right) \cdot \left(0.00082 \cdot \mu - 0.16506 \cdot \nu + 4.03087\right) \cdot \sin{\left(r \right)} \cdot \sin{\left(3.0191 \cdot \mu \cdot \nu - \theta + 11.6216 \right)} + 0.23916 \cdot \sin{\left(0.70589 \cdot \nu - 1.02285 \right)} + 0.23916 \cdot \sin{\left(0.62069 \cdot \sin{\left(\nu \right)} \right)} + 0.42123
+    SH DAG nodes = 84
+    f DAG nodes = 42
+    mse = 98.12538178226588; Added mu=0.01, nu=0.01
+    mse = 22.522293760241215; Added mu=0.01, nu=2.51
+    mse = 81.22399161508854; Added mu=0.01, nu=5
+    mse = 140.32710511219102; Added mu=0.01, nu=7.5
+    mse = 150.96673060598016; Added mu=0.01, nu=10
+    mse = 38.73648001899261; Added mu=2.51, nu=0.01
+    mse = 24.471299438719477; Added mu=2.51, nu=2.51
+    mse = 110.25849971891151; Added mu=2.51, nu=5
+    mse = 162.35769565016082; Added mu=2.51, nu=7.5
+    mse = 159.59682007148973; Added mu=2.51, nu=10
+    mse = 19.785100541833764; Added mu=5, nu=0.01
+    mse = 47.386543395215; Added mu=5, nu=2.51
+    mse = 136.40811441602946; Added mu=5, nu=5
+    mse = 178.07874429026543; Added mu=5, nu=7.5
+    mse = 165.46732502854934; Added mu=5, nu=10
+    mse = 30.996232930460444; Added mu=7.5, nu=0.01
+    mse = 80.76421280663534; Added mu=7.5, nu=2.51
+    mse = 155.38304472159894; Added mu=7.5, nu=5
+    mse = 185.51667804566478; Added mu=7.5, nu=7.5
+    mse = 167.92479377417214; Added mu=7.5, nu=10
+    mse = 67.97827157556898; Added mu=10, nu=0.01
+    mse = 119.51769771207539; Added mu=10, nu=2.51
+    mse = 169.84551022652568; Added mu=10, nu=5
+    mse = 190.2101732721; Added mu=10, nu=7.5
+    mse = 172.7869016289377; Added mu=10, nu=10
+    Average mse = 115.06542568558694
+
+0.01 <= r <= 100, N = 25:
+    mse = 102.68106920584698; Added mu=0.01, nu=0.01
+    mse = 24.17203670754807; Added mu=0.01, nu=2.51
+    mse = 74.54126445644005; Added mu=0.01, nu=5
+    mse = 160.81073019760402; Added mu=0.01, nu=7.5
+    mse = 170.1600175505508; Added mu=0.01, nu=10
+    mse = 43.61180546328635; Added mu=2.51, nu=0.01
+    mse = 15.911908542327453; Added mu=2.51, nu=2.51
+    mse = 115.28675275445602; Added mu=2.51, nu=5
+    mse = 179.59912126133844; Added mu=2.51, nu=7.5
+    mse = 176.1063753876366; Added mu=2.51, nu=10
+    mse = 19.313163235857107; Added mu=5, nu=0.01
+    mse = 45.392964908595; Added mu=5, nu=2.51
+    mse = 144.68918188944625; Added mu=5, nu=5
+    mse = 188.8406489104171; Added mu=5, nu=7.5
+    mse = 175.83592257535815; Added mu=5, nu=10
+    mse = 27.411428647265545; Added mu=7.5, nu=0.01
+    mse = 82.78765568516435; Added mu=7.5, nu=2.51
+    mse = 161.7131179618374; Added mu=7.5, nu=5
+    mse = 190.27708036958947; Added mu=7.5, nu=7.5
+    mse = 169.75091393838093; Added mu=7.5, nu=10
+    mse = 69.08771910418783; Added mu=10, nu=0.01
+    mse = 110.80935721815818; Added mu=10, nu=2.51
+    mse = 166.40482161979367; Added mu=10, nu=5
+    mse = 185.64180045466856; Added mu=10, nu=7.5
+    mse = 159.47381378407906; Added mu=10, nu=10
+    Average mse = 118.41242687319334
 '''
 formula_label = latex(f_float_rounded:=round_floats(f, 5), mul_symbol='dot')
 print(f'f = {formula_label}')
@@ -358,7 +387,7 @@ if mu_equals_nu:
     mean_squared_error = squared_norm_error / func_vals.size
 
 else:
-    N_vals = 3
+    N_vals = 5
     # Do not build a 4D mesh. Use scalar mu, nu per plot.
     mu_plot_vals = np.linspace(0.01, 10, N_vals)
     nu_plot_vals = np.linspace(0.01, 10, N_vals)
@@ -379,7 +408,6 @@ r_centers = 0.5 * (r_edges[:-1] + r_edges[1:])
 theta_centers = 0.5 * (theta_edges[:-1] + theta_edges[1:])
 R, Theta = np.meshgrid(r_centers, theta_centers)
 
-# Evaluate f on cell centers using the same DAG idea
 # Evaluate f on cell centers using the same DAG idea
 f_eval = SympyDagEvaluator(f, use_cse=False)
 
@@ -442,7 +470,17 @@ def plot_one(mu0=None, nu0=None):
         Yc = np.vstack([Y, Y[0:1, :]])
         Zc = np.vstack([Z, Z[0:1, :]])
 
-        contour = ax.contourf(
+        pcolormesh = 1
+        plot = ax.pcolormesh(
+            X,
+            Y,
+            Z,
+            cmap="viridis",
+            vmin=-1,
+            vmax=1,
+            shading="nearest",
+            rasterized=True
+        ) if pcolormesh else ax.contourf(
             Xc, Yc, Zc,
             cmap="viridis",
             vmin=vmin,
@@ -459,7 +497,7 @@ def plot_one(mu0=None, nu0=None):
         else:
             ax.set_title(rf"$\mu={mu0:.3g}$, $\nu={nu0:.3g}$, MSE = {mse:.3e}")
 
-        cbar = fig.colorbar(contour, ax=ax)
+        cbar = fig.colorbar(plot, ax=ax, extend = "both" if pcolormesh else "neither")
         cbar.set_label(formula_label, fontsize=7)
         cbar.set_ticks([min_, 0, max_])
 
