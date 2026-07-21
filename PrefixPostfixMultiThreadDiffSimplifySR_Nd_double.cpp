@@ -170,7 +170,6 @@ std::vector<std::string> split(const std::string& str, char del = ' ' /* Delimit
 Eigen::MatrixXd load_csv(const std::string& path, int rows, int cols, bool header = true)
 {
     std::ifstream file(path);
-    assert(file.is_open());
     Eigen::MatrixXd data(rows, cols);
     std::string line;
     int i = 0;
@@ -1404,7 +1403,11 @@ struct Board
 
     bool is_unary(const std::string& token) const
     {
-        return ((Board::__unary_operators_uset.find(token) != Board::__unary_operators_uset.end()) || (token == "abs"));
+        return ((Board::__unary_operators_uset.find(token) != Board::__unary_operators_uset.end())
+        || (token == "abs")
+        || (token == "sinh")
+        || (token == "asinh")
+        || (token == "arcsinh"));
     }
 
     bool is_binary(const std::string& token) const
@@ -5244,6 +5247,22 @@ struct Board
                     stack.pop();
                     stack.push(abs(temp));
                 }
+        else if (token == "sinh") //unary sinh
+        {
+            double temp = stack.top();
+                    stack.pop();
+                    stack.push(sinh(temp));
+        }
+        else if (token == "arcsinh" || token == "asinh") //unary arcsinh
+        {
+            double temp = stack.top();
+                    stack.pop();
+                    stack.push(asinh(temp));
+        }
+        else
+        {
+            throw(std::runtime_error("bad token"+token));
+        }
             }
             else // binary operator
             {
@@ -5271,6 +5290,10 @@ struct Board
                 {
                     stack.push((expression_type == "postfix") ? (std::pow(right_operand, left_operand)) : (std::pow(left_operand, right_operand)));
                 }
+        else
+        {
+            throw(std::runtime_error("bad token"+token));
+        }
             }
 
         }
@@ -6563,7 +6586,6 @@ struct Board
                         }
                         this->expression_string += ((jdx < this->pieces.size() - 1) ? ", " : "");
                     }
-                    //TODO: probably shouldn't bother inserting expressions that don't have parameters
                     if (expr_has_consts && !Board::expression_dict.contains(this->expression_string)) //If the generated expression has NOT been generated before...
                     {
                         //insert it into the shared dictionary of `{expressions: best_fit_params}` key-value pairs...
@@ -8159,10 +8181,10 @@ struct Board
 };
 
 /*
-Best score = 4.45278465240232e-06, SNE = 224577.567809357
-Squared-norm error for each equation: 224577.567809357
-Best expression = ((diff_x0(0.96838214836311) + 0.7050690813475843) * cos(1.0003233121224848)), (diff_x0(cos(x0)) + 0.6688364457666556)
-Best expression (original format) = 0.96838214836311 diff_x0 0.7050690813475843 + 1.0003233121224848 cos *, x0 cos diff_x0 0.6688364457666556 +
+Best score = 8.66247302040757e-06, SNE = 115439.474982622
+Squared-norm error for each equation: 115439.474982622
+Best expression = (0.38072050706045546 + (0.24989843184440375 * diff_y_n(x0))), ((sech(x0) * -0.6) + 0.6375683515609794)
+Best expression (original format) = 0.38072050706045546 0.24989843184440375 x0 diff_y_n * +, x0 sech -0.6 * 0.6375683515609794 +
 
  - Linear: https://anvaka.github.io/fieldplay/?cx=0.0016000000000002679&cy=0&w=8.543&h=8.543&fo=0.998&dp=0.009&dt=0.01&cm=3&vf=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%201.%2F%281.%2Bp.x*p.x*p.x%29%3B%0A%20%20%20%20%0A%20%20return%20v%3B%0A%7D&code=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%201.%2F%281.%2Bp.x*p.x*p.x%29%3B%0A%20%20%20%20%0A%20%20return%20v%3B%0A%7D
  - Kormilitsin: https://anvaka.github.io/fieldplay/?cx=0.0016000000000002679&cy=0&w=8.543&h=8.543&fo=0.998&dp=0.009&dt=0.01&cm=3&vf=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%20%28-1.%2F%288.*pow%28p.x%2C%201.5%29%29%29%3B%0A%0A%20%20return%20v%3B%0A%7D&code=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%200.5*%28-1.%2F%288.*pow%28p.x%2C%201.5%29%29%29%3B%0A%0A%20%20return%20v%3B%0A%7D
@@ -8179,6 +8201,9 @@ std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fi
     }
     std::string infty = to_string_general(DBL_MAX);
     const std::vector<double> T_finals = {10., 10., 1., 10., 10.};
+    const std::vector<double> T_finals_ho = {10., 20., 5.};
+    const std::string z0 = "0.0", pz0 = "1.1";
+
     const std::vector<std::vector<std::string>> example_ys = std::vector<std::vector<std::string>> //solutions for the corresponding example_dy_dt ODEs
     {
         std::vector<std::string>{"x0", "sin"},
@@ -8187,6 +8212,51 @@ std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fi
         std::vector<std::string>{"x0", "2.", "x0", "~", "exp", "*", "1.", "-", "+"},
         std::vector<std::string>{"x0", "exp", "cos", "~"}
     };
+    const std::vector<std::vector<std::vector<std::string>>> example_ys_ho = std::vector<std::vector<std::vector<std::string>>> //solutions for the corresponding example_dy_dt ODEs
+    {
+        std::vector<std::vector<std::string>>
+    {
+        std::vector<std::string>{"1.7320508075688772", "x0", "*", "exp", "-1.7320508075688772", "x0", "*", "exp", "+", "0.5", "*"},
+        std::vector<std::string>{"1.7320508075688772", "x0", "*", "exp", "-1.7320508075688772", "x0", "*", "exp", "-", "0.8660254037844386", "*"}
+    },
+    std::vector<std::vector<std::string>>
+    {
+        std::vector<std::string>{"10", "x0", "cos", "*", "10", "x0", "sin", "*", "+"},
+        std::vector<std::string>{"10", "x0", "cos", "*", "10", "x0", "sin", "*", "-"}
+    },
+    std::vector<std::vector<std::string>>
+    {
+        std::vector<std::string>{pz0, pz0, "*", "-2", z0, "*", "exp", "-", "sqrt", "x0", "*", pz0, pz0, "*", "-2", z0, "*", "exp", "-", "sqrt", z0, "exp", "*", "arcsinh", "+", "sinh", pz0, pz0, "*", "-2", z0, "*", "exp", "-", "sqrt", "/", "log"},
+        std::vector<std::string>{pz0, pz0, "*", "-2", z0, "*", "exp", "-", "sqrt", "1", pz0, pz0, "*", "-2", z0, "*", "exp", "-", "sqrt", "x0", "*", pz0, pz0, "*", "-2", z0, "*", "exp", "-", "sqrt", z0, "exp", "*", "arcsinh", "+", "tanh", "/", "*"}
+    }
+    };
+    const std::vector<std::vector<double>> scale_factors = std::vector<std::vector<double>>
+    {
+    std::vector<double>{1.501551127371771, 4047.306837958033, 4721.901667236961, 6766.999949834502, 0.0028200928660001776}, //h = 0.5
+    std::vector<double>{444.0326794526895, 4225931.55744282, 3683148.889100823, 5582226.796923376, 0.006987155462674924}, //h = 0.1
+    std::vector<double>{6904.652363549688, 71686892.08640076, 65174601.951207526, 92604801.08541735, 0.010081646787655883} //h=0.05
+    };
+    const std::vector<std::vector<std::vector<double>>> scale_factors_ho = std::vector<std::vector<std::vector<double>>>
+    {
+    std::vector<std::vector<double>> //h = 0.5
+    {
+        std::vector<double>{1.9431173075356595e-05, 21.875570775236163, 276.3363542794327}, // y
+        std::vector<double>{1.1218592895619236e-05, 21.203885083537056, 657.0621553663979} // v
+    },
+
+    std::vector<std::vector<double>> //h = 0.1
+    {
+        std::vector<double>{0.009061349832937535, 13677.976692876602, 210059.56578547714}, // y
+        std::vector<double>{0.00523157274184527, 13084.555877064196, 512242.20827205153} // v
+    },
+
+    std::vector<std::vector<double>> //h = 0.05
+    {
+        std::vector<double>{0.14040684671927509, 218983.05635617938, 3487666.3743087724}, // y
+        std::vector<double>{0.08106393041923145, 209197.68586678602, 8515286.403830718} // v
+    },
+    };
+
     const std::vector<std::vector<std::string>> example_dy_dts = std::vector<std::vector<std::string>> //The ODE to solve with RK4 optimally st it matches the exact solution as much as possible at each t+ih time-step
     {
         std::vector<std::string>{"y_n", "y_n", "*", "x0", "cos", "*", "y_n", "+", "x0", "sin", "x0", "sin", "*", "x0", "cos", "*", "-", "x0", "sin", "-", "x0", "cos", "+"},
@@ -8195,10 +8265,40 @@ std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fi
         std::vector<std::string>{"x0", "y_n", "-"},
         std::vector<std::string>{"x0", "exp", "x0", "exp", "sin", "*"}
     };
+
+    const std::vector<std::vector<std::vector<std::string>>> example_dy_dts_ho = std::vector<std::vector<std::vector<std::string>>> //The ODE systems to solve with RK4 optimally st it matches the exact solution as much as possible at each t+ih time-step
+    {
+        std::vector<std::vector<std::string>> //d^2y/dt^2 = 0.5 * d^2/dy^2(n(y)) -> dy/dt = v, dv/dt = 0.5 * d^2/dy^2(n(y))
+        { //n(y) = y^3
+            std::vector<std::string>{"v_n"}, // v
+            std::vector<std::string>{"3", "y_n", "*"} // 0.5 * n'' = 0.5 * 6*y = 3*y
+        },
+        std::vector<std::vector<std::string>>
+        {
+            std::vector<std::string>{"v_n"},
+            std::vector<std::string>{"y_n", "~"}
+        },
+        std::vector<std::vector<std::string>>
+        {
+            std::vector<std::string>{"v_n"},
+            std::vector<std::string>{"y_n", "-2.", "*", "exp", "~"}
+        }
+    };
+
     const std::vector<double> y_0s = {0., 0., 1., 1., -0.5403023058681398}; //ICs for the ODE solve
+    const std::vector<std::vector<double>> y_0s_ho = std::vector<std::vector<double>>
+    {
+        std::vector<double>{1., 0.},
+        std::vector<double>{10., 10.},
+        std::vector<double>{Stod(z0), Stod(pz0)}
+    }; //ICs for the ODE solve
+
     const int numFuncs = example_dy_dts.size();
     assert((numFuncs == example_ys.size()) && (y_0s.size() == numFuncs));
+    const int numFuncsHo = example_dy_dts_ho.size();
+    assert((numFuncsHo == example_ys_ho.size()) && (y_0s_ho.size() == numFuncsHo));
     std::vector<std::string> example_y, example_dy_dt, c_2_func, c_3_func;
+    std::vector<std::vector<std::string>> c_2_func_vec(2), c_3_func_vec(2);
     auto expand_c_post = [&](std::vector<std::string> c, int D)
     {
         assert(example_dy_dt.size());
@@ -8210,86 +8310,63 @@ std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fi
             }
         }
         
-        for (int d = 1; d <= D; d++)
+        auto getFirstDiffIdx = [](const std::vector<std::string>& c)
         {
-            std::vector<std::pair<int, int>> sub_exprs, diff_sub_exprs;
-            x.get_other_indices(sub_exprs, c, d); //get all starting and stopping indices of depth-d sub_expressions in expression c
-            std::vector<std::vector<std::string>> derivats;
-            
-            for (const auto& sub_expr: sub_exprs) //for each depth-d sub_expression
+            for (int i = 0; i < c.size(); i++)
             {
-                int diff_idx = -1;
-                std::string dx;
-                
-                int idx = sub_expr.second;
-                if (c[idx].substr(0, 4) == "diff")
-                {
-                    diff_idx = idx;
-                    assert(c[idx].size() == 7 || c[idx].size() == 8);
-                    dx = c[idx].substr(5);
+            if (c[i].substr(0, 4) == "diff")
+            {
+                return i;
+            }
+            }
+            return -1;
+        };
+            //for (int d = 1; d <= D; d++)
+        int first_diff_idx = getFirstDiffIdx(c);
+        std::string dx;
+        while (first_diff_idx >= 0)
+        {
+            assert(c[first_diff_idx].size() == 7 || c[first_diff_idx].size() == 8);
+            dx = c[first_diff_idx].substr(5);
             assert((dx == "x0") || (dx == "y_n"));
-                }
-                
-                if (diff_idx != -1) //if diff is in sub_expr
-                {
-                    std::vector<std::string> temp_vec;
-                    for (int i = sub_expr.first; i < diff_idx; i++)
-                    {
-                        if (c[i] == "f_cur") //c_i should only depend on f ("f_cur")
-                        {
-                            for (const std::string& example_dy_dt_token: example_dy_dt)
-                            {
-                                temp_vec.push_back(example_dy_dt_token);
-                            }
-                        }
-                        else
-                        {
-                            temp_vec.push_back(c[i]);
-                        }
-                    }
-                    assert(temp_vec.size());
-            //std::cout << "temp_vec = " << temp_vec << '\n';
-                    std::vector<int> grasp;
-                    x.derivePostfix(0, temp_vec.size() - 1, dx, temp_vec, grasp);
-                    derivats.push_back(x.derivat);
-            //std::cout << "x.derivat = " << x.derivat << '\n';
-                    diff_sub_exprs.push_back(sub_expr); //this is a sub_expr that has a diff in it
-                }
-            }
-            if (diff_sub_exprs.size())
+
+            int start = first_diff_idx;
+            int& ptr_lgb = start;
+            x.GB(1, ptr_lgb, c);
+            std::vector<std::string> temp_vec;
+            for (int i = ptr_lgb; i < first_diff_idx; i++)
             {
-                std::vector<std::string> temp_vec;
-                // push_back elements before the beginning of the first differential sub_expr
-                for (int i = 0; i < diff_sub_exprs[0].first; i++)
+                if (c[i] == "f_cur") //c_i should only depend on f ("f_cur")
                 {
-                    temp_vec.push_back(c[i]);
-                }
-                for (int j = 0; j < diff_sub_exprs.size(); j++)
-                {
-                    for (const std::string& i: derivats[j])
+                    for (const std::string& example_dy_dt_token: example_dy_dt)
                     {
-                        temp_vec.push_back(i);
-                    }
-                    if (j < diff_sub_exprs.size() - 1)
-                    {
-                        //push_back tokens in c between the end of the derivative we just pushed back and right before the next derivative
-                        for (int i = diff_sub_exprs[j].second + 1; i < diff_sub_exprs[j+1].first; i++)
-                        {
-                            temp_vec.push_back(c[i]);
-                        }
+                        temp_vec.push_back(example_dy_dt_token);
                     }
                 }
-                // push_back the elements from the after the end of the last diff sub_expr to the end of c
-                for (int j = diff_sub_exprs.back().second + 1; j < c.size(); j++)
+                else
                 {
-                    temp_vec.push_back(c[j]);
+                        temp_vec.push_back(c[i]);
                 }
-                c = temp_vec;
-                auto temp_depth = x.getRPNdepth(c, 0);
-                assert(temp_depth.second);
-                D = temp_depth.first;
-                d = 1;
             }
+            assert(temp_vec.size());
+            //std::cout << "temp_vec = " << temp_vec << '\n';
+            std::vector<int> grasp;
+            x.derivePostfix(0, temp_vec.size() - 1, dx, temp_vec, grasp);
+            std::vector<std::string> temp_c_vec;
+            for (int i = 0; i < ptr_lgb; i++)
+            {
+                temp_c_vec.push_back(c[i]);
+            }
+            for (const std::string& i: x.derivat)
+            {
+                temp_c_vec.push_back(i);
+            }
+            for (int i = first_diff_idx + 1; i < c.size(); i++)
+            {
+                temp_c_vec.push_back(c[i]);
+            }
+            c = temp_c_vec;
+            first_diff_idx = getFirstDiffIdx(c);
         }
         return c;
     };
@@ -8297,7 +8374,7 @@ std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fi
     {
         return (std::abs(val_1 - val_2) <= tol);
     };
-    const std::vector<double> h_vals = {0.5, 0.1};
+    const std::vector<double> h_vals = {0.5, 0.1, 0.05};
     double total_res = 0.0;
     
     if (x.expression_type == "prefix")
@@ -8307,6 +8384,7 @@ std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fi
 
     else if (x.expression_type == "postfix")
     {
+        std::vector<double> res = {0.0, 0.0, 0.0}, res_v = {0.0, 0.0, 0.0};
         for (int func_idx = 0; func_idx < numFuncs; func_idx++)
         {
             const double T_final = T_finals[func_idx];
@@ -8318,12 +8396,12 @@ std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fi
         //std::cout << "c_3_func = " << c_3_func << '\n';
             double y_0 = y_0s[func_idx]; //IC for the ODE solve
             //Set the integrated solution at t = 0 to y(0), and the time to 0
-            std::vector<double> res = {0.0, 0.0};
 
             for (int step = 0; step < h_vals.size(); step++)
             {
                 double y_n = y_0;
                 double h = h_vals[step];
+                double scale_temp = (h / T_final);
                 for (double t = 0.0; t < T_final; t+=h)
                 {
                     x.subs_dict_scalar["y_n"] = y_n;
@@ -8333,6 +8411,10 @@ std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fi
                     double c_2_val = x.expression_evaluator(x.params, c_2_func, t);
                     double c_3_val = x.expression_evaluator(x.params, c_3_func, t);
                     
+                    if ((c_2_val < 0) || (c_2_val > 1) || (c_3_val < 0) || (c_3_val > 1))
+                    {
+                        return std::vector<std::vector<std::string>>{std::vector<std::string>{infty}};
+                    }
                     if (is_close(c_2_val, 1) || is_close(c_3_val, 1) || is_close(c_2_val, c_3_val) || is_close(c_2_val, 0) /*|| is_close(c_3_val, 0)*/ || is_close(c_2_val, 0.5))
                     {
 //                        puts("(is_close(c_2_val, 1) || is_close(c_3_val, 1) || is_close(c_2_val, c_3_val) || is_close(c_2_val, 0) /*|| is_close(c_3_val, 0)*/ || is_close(c_2_val, 0.5))");
@@ -8388,14 +8470,126 @@ std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fi
                     
                     */
                 }
-                res[step] *= (h / T_final);
+                res[step] *= scale_temp;
             }
-            if (res[1] > res[0])
+            if (res[1] > res[0] || res[2] > res[1])
             {
 //                puts("res[1] > res[0]");
                 return std::vector<std::vector<std::string>>{std::vector<std::string>{infty}};
             }
-            total_res += (res[0] + res[1]);
+            total_res += (res[0]*scale_factors[0][func_idx] + res[1]*scale_factors[1][func_idx] + res[2]*scale_factors[2][func_idx]);
+        }
+        res[0]=0.;
+        res[1]=0.;
+        res[2]=0.;
+        for (int func_idx = 0; func_idx < numFuncsHo; func_idx++)
+        {
+            const double T_final = T_finals_ho[func_idx];
+            //example_y = example_ys[func_idx];
+            example_dy_dt = example_dy_dts_ho[func_idx].back(); //for the moment, assume the last ode is the only important one for computing c_2 and c_3
+        /*
+            c_2_func_vec[0] = expand_c_post(x.pieces[0], x.n[0]);
+            c_3_func_vec[0] = expand_c_post(x.pieces[1], x.n[1]);
+            example_dy_dt = example_dy_dts_ho[func_idx][1];
+            c_2_func_vec[1] = expand_c_post(x.pieces[0], x.n[0]);
+            c_3_func_vec[1] = expand_c_post(x.pieces[1], x.n[1]);
+        */
+            c_2_func = expand_c_post(x.pieces[0], x.n[0]);
+            c_3_func = expand_c_post(x.pieces[1], x.n[1]);
+            //std::cout << "c_2_func = " << c_2_func << '\n';
+            //std::cout << "c_3_func = " << c_3_func << '\n';
+            double y_0 = y_0s_ho[func_idx][0], v_0 = y_0s_ho[func_idx][1]; //IC for the ODE solve
+            //Set the integrated solution at t = 0 to y(0), and the time to 0
+
+            for (int step = 0; step < h_vals.size(); step++)
+            {
+                double y_n = y_0, v_n = v_0;
+                double h = h_vals[step];
+                const double scale_fac = (h / T_final);
+            
+                for (double t = 0.0; t < T_final; t+=h)
+                {
+                    x.subs_dict_scalar["y_n"] = y_n;
+                    double f_current = x.expression_evaluator(x.params, example_dy_dt, t);
+                    
+                    x.subs_dict_scalar["f_cur"] = f_current;
+                    double c_2_val = x.expression_evaluator(x.params, c_2_func, t);
+                    double c_3_val = x.expression_evaluator(x.params, c_3_func, t);
+                    
+                    if (is_close(c_2_val, 1) || is_close(c_3_val, 1) || is_close(c_2_val, c_3_val) || is_close(c_2_val, 0) /*|| is_close(c_3_val, 0)*/ || is_close(c_2_val, 0.5))
+                    {
+//                        puts("(is_close(c_2_val, 1) || is_close(c_3_val, 1) || is_close(c_2_val, c_3_val) || is_close(c_2_val, 0) /*|| is_close(c_3_val, 0)*/ || is_close(c_2_val, 0.5))");
+                        return std::vector<std::vector<std::string>>{std::vector<std::string>{infty}};
+                    }
+                    if (is_close((6. * c_2_val * c_3_val - 4. * c_2_val - 4. * c_3_val + 3.), 0))
+                    {
+//                        puts("(is_close((6. * c_2_val * c_3_val - 4. * c_2_val - 4. * c_3_val + 3.), 0))");
+                        return std::vector<std::vector<std::string>>{std::vector<std::string>{infty}};
+                    }
+                    
+                    // Compute the matching coefficients (b_i, a_ij) for this step's geometry
+                    double b2 = (2.*c_3_val - 1.) / (12.*c_2_val*(c_2_val - 1.)*(c_2_val - c_3_val));
+                    double b3 = (1. - 2.*c_2_val) / (12.*c_3_val*(c_2_val - c_3_val)*(c_3_val - 1.));
+                    double b4 = (6.*c_2_val*c_3_val - 4.*c_2_val - 4.*c_3_val + 3.) / (12.*(c_2_val - 1.)*(c_3_val - 1.));
+                    double b1 = 1.-b2-b3-b4;//(6.*c_2_val*c_3_val - 2.*c_2_val - 2.*c_3_val + 1.) / (12.*c_2_val*c_3_val);
+    
+                    double a21 = c_2_val;
+                    double a32 = (c_3_val*(c_2_val - c_3_val)) / (2.*c_2_val*(2.*c_2_val - 1.));
+                    double a31 = c_3_val - a32;
+                    double a42 = ((c_2_val - 1.)*(c_2_val - 4.*c_3_val*c_3_val + 5.*c_3_val - 2.)) / (2.*c_2_val*(c_2_val - c_3_val)*(6.*c_2_val*c_3_val - 4.*c_2_val - 4.*c_3_val + 3.));
+                    double a43 = ((c_2_val - 1.)*(2*c_2_val - 1.)*(c_3_val - 1.)) / (c_3_val*(c_2_val - c_3_val)*(6.*c_2_val*c_3_val - 4.*c_2_val - 4.*c_3_val + 3.));
+                    double a41 = 1. - a42 - a43;
+                    
+                    std::vector<double> c = {0., c_2_val, c_3_val, 1.};
+                    std::vector<double> b = {b1, b2, b3, b4};
+                    std::vector<std::vector<double>> a = {{}, {a21}, {a31, a32}, {a41, a42, a43}};
+                    
+                    std::vector<double> k_y = {0., 0., 0., 0.}, k_v = {0., 0., 0., 0.};
+                    
+                    for (int i = 1; i <= 4; i++)
+                    {
+                        double temp_sum_y = 0., temp_sum_v = 0.;
+                        for (int j = 1; j <= i-1; j++)
+                        {
+                            temp_sum_y += a[i-1][j-1] * k_y[j-1];
+                            temp_sum_v += a[i-1][j-1] * k_v[j-1];
+                        }
+                        x.subs_dict_scalar["y_n"] = y_n + temp_sum_y * h;
+                        x.subs_dict_scalar["v_n"] = v_n + temp_sum_v * h;
+            
+                        k_y[i-1] = x.expression_evaluator(x.params, example_dy_dts_ho[func_idx][0], t + c[i-1]*h);
+                        k_v[i-1] = x.expression_evaluator(x.params, example_dy_dt, t + c[i-1]*h);
+            
+                    }
+                    
+                    y_n += h*(b1*k_y[0] + b2*k_y[1] + b3*k_y[2] + b4*k_y[3]);
+                    v_n += h*(b1*k_v[0] + b2*k_v[1] + b3*k_v[2] + b4*k_v[3]);
+                    res[step] += abs(y_n - x.expression_evaluator(x.params, example_ys_ho[func_idx][0], t+h));
+                    res_v[step] += abs(v_n - x.expression_evaluator(x.params, example_ys_ho[func_idx][1], t+h));
+                    //MAYBE: Add a criterion that breaks and returns inf if res exceeds the current best
+                    /* MAYBE: Stability:
+                        y_n = x.expression_evaluator(x.params, example_y, t)
+                        Recompute \vec{b}\cdot\vec{k}
+                        y_n += h*\vec{b}\cdot\vec{k}
+                        e_n = abs(y_n - x.expression_evaluator(x.params, example_y, t+h))
+                        Stable if |e_n - e_ns.back()| <= 1, where e_ns would store the previous e_n values with e_0 = 0
+                    
+                    */
+                }
+                res[step] *= scale_fac;
+                res_v[step] *= scale_fac;
+            }
+            if ((res[1] > res[0]) || (res_v[1] > res_v[0]) || (res[2] > res[1]) || (res_v[2] > res_v[1]))
+            {
+//                puts("res[1] > res[0]");
+                return std::vector<std::vector<std::string>>{std::vector<std::string>{infty}};
+            }
+            total_res += (res[0]*scale_factors_ho[0][0][func_idx] //h = 0.5, y
+                + res[1]*scale_factors_ho[1][0][func_idx] //h = 0.1, y
+                + res[2]*scale_factors_ho[2][0][func_idx] //h = 0.05, y
+                + res_v[0]*scale_factors_ho[0][1][func_idx] //h = 0.5, v
+                + res_v[1]*scale_factors_ho[1][1][func_idx] //h = 0.1, v
+                + res_v[2]*scale_factors_ho[2][1][func_idx]); //h = 0.05, v
         }
         return std::vector<std::vector<std::string>>{std::vector<std::string>{to_string_general(total_res)}};
     }
@@ -11446,7 +11640,7 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
-//    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("((((((-0.00010079506363718452 * (sin(x3) + (-0.4314186537561724 * x2))) + -0.7804663735923442) * ~((0.9996066568120984 * sin((-1.7140608178294533e-10 + x0))))) * ((-0.16506006177535087 * ((1.0000001697861274 * ~(x3)) + ((x3 + 1.9443457703585603) + (1.0000000227558188 * x3)))) + ((-0.010052804439710166 * ((x2 + -2.557279354877625) + -2.620054308251899)) + 4.356191256441515))) * sin((((2.5707958563359714 * (0.7853978280344313 * (x2 * x3))) + (((1.180233233194594e-05 + x0) + ~(x0)) + (2.031451489537237 + (x2 * x3)))) + ((3.1429408584748235 + (~(x1) + -0.9999993870274804)) + 7.448132670841008)))) + (((((((2.250331470301028 * x3) + (x2 * 0.10127661891560806)) * -1.5270266906847207) + ((-1.4074161945366834 * sin(x3)) + 34.66351974404744)) * ((-0.00035171318936946534 * (-0.4945391743764867 * (x2 * x2))) + -0.017180538730016164)) * (sin((((0.23098135879634005 * x2) + 1.7590576144188206) + ((x3 + 0.10266192914157603) * 0.7694193644957893))) + sin((0.08200522821960327 * sin((x3 * 1.7017343020113014)))))) + ((((-0.9723067534523809 + (1.6172766233081328 * (1.0412847726175565 * x2))) + sin((1.4996113314644617 + (0.6677157807973353 * x3)))) * ((((x2 * -2.130653318547896) + (3.7369716415103245 * x3)) * -0.0005202019729751494) + -0.07509273000834836)) + ((((-0.24190637879111765 * (12.679496004190337 + x2)) * ((x2 * -0.0002100708861393803) + 0.0012025436076951181)) * (((x3 * x3) + (x3 + x0)) + (~(x0) * 1.000427828464782))) + ((sin((0.33524607147753777 * x2)) * 0.12122938507755142) + 0.6024401146285422)))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu")));
+//    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("((((((-0.00010079189802839168 * (~(x2) * sin(x2))) + -0.7804663681704281) * ~((0.9996066618421596 * sin((-1.6580476278746822e-10 + x0))))) * ((-0.16506006253932867 * ((1.0000001708490658 * ~(x3)) + ((x3 + 1.9443453240794613) + (1.0000000204835315 * x3)))) + ((0.0008215299377976706 * ((x2 + -2.673233331705679) + -2.66882081624132)) + 4.356191264047536))) * sin((((2.570795856958231 * (0.7853978278819566 * (x2 * x3))) + (((7.962535533078856e-08 + x0) + ~(x0)) + (2.0306079827743746 + (x2 * x3)))) + ((3.1428563968022543 + (~(x1) + -0.9999993900320638)) + 7.44813267419371)))) + ((-0.24090990285372088 * (sin((1.038020267940177 + ~((x3 * 0.7090422609292288)))) + (-0.9987354079785399 * sin(sin(x3))))) + ((((x2 + 0.917085775676431) + sin(x3)) * -0.0705466431355269) + 0.48675162848025144)))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu")));
 //    from sympy import *; x0, x1, x2, x3 = symbols('x0 x1 x2 x3'); print(eval("(((((0.00020761302887044612 * (sin(x2) + (1.0272442241645563 * x2))) + ((1.3304563988558432e-06 * (x3 + x2)) + -1.0052629302733438)) * sin((~((1.4269067710318464e-07 + x2)) + ((-8.427410561791095e-08 + x0) + (2.2679423250655768e-07 + x2))))) * (((0.008782524861544684 * (0.27587744389610325 + (0.009993495877091307 + x2))) + (-0.1651571745075183 * ((-1.911228719809616e-07 + x3) + 0.010002284668230988))) + (((0.010151823903466778 * sin(x2)) * (-0.06438380401024771 * sin(x2))) + (((x2 * 0.03852998867113262) * -8.436444206719193e-05) + 3.659791130722469)))) * sin((((5.301797186958442 * (-2.4089452401052685e-07 + (2.2542565388059674e-07 + x3))) + sin((10.688904984949698 * (1.1264219683053926e-08 + x2)))) + (~(((x0 + -2.9955080762796076e-07) + (5.8232400879963024e-08 + x1))) + ((3.570015447645774e-12 + (1.081329657641461e-11 + x0)) + 72.43120897235498)))))\n".replace("^","**").replace("~", "-")));
     
 //    puts("called SwiftHohenberg");
@@ -11538,7 +11732,7 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
                 Best expression = (((((-0.00010073299379351394 * (~(x2) * sin(x2))) + -0.7804661776783551) * ~((0.9996066310468781 * sin((-1.666400970883007e-10 + x0))))) * ((-0.16506007381497523 * ((1.0000001664613705 * ~(x3)) + ((x3 + 1.9443453318548538) + (1.0000000224764336 * x3)))) + ((0.0008213738353625553 * ((x2 + -2.6732297290035216) + -2.668816692762891)) + 4.356191253219946))) * sin((((2.570795864453484 * (0.7853978264169053 * (x2 * x3))) + (((7.07902601158324e-08 + x0) + ~(x0)) + (2.030607997435978 + (x2 * x3)))) + ((3.1428564040563813 + (~(x1) + -0.999999387601382)) + 7.448132724292712))))
                 Best expression (original format) = -0.00010073299379351394 x2 ~ x2 sin * * -0.7804661776783551 + 0.9996066310468781 -1.666400970883007e-10 x0 + sin * ~ * -0.16506007381497523 1.0000001664613705 x3 ~ * x3 1.9443453318548538 + 1.0000000224764336 x3 * + + * 0.0008213738353625553 x2 -2.6732297290035216 + -2.668816692762891 + * 4.356191253219946 + + * 2.570795864453484 0.7853978264169053 x2 x3 * * * 7.07902601158324e-08 x0 + x0 ~ + 2.030607997435978 x2 x3 * + + + 3.1428564040563813 x1 ~ -0.999999387601382 + + 7.448132724292712 + + sin *
             Depth = 8:
-                Best score = 1.53679939756258e-06, SNE = 650702.014060284
+             Best score = 1.53679939756258e-06, SNE = 650702.014060284
                 Squared-norm error for each equation: 3.28512766878752e-05 2.21713796115144e-05 650701.841879538 0.172125722566548
                 Best expression = ((((((-0.00010079189802839168 * (~(x2) * sin(x2))) + -0.7804663681704281) * ~((0.9996066618421596 * sin((-1.6580476278746822e-10 + x0))))) * ((-0.16506006253932867 * ((1.0000001708490658 * ~(x3)) + ((x3 + 1.9443453240794613) + (1.0000000204835315 * x3)))) + ((0.0008215299377976706 * ((x2 + -2.673233331705679) + -2.66882081624132)) + 4.356191264047536))) * sin((((2.570795856958231 * (0.7853978278819566 * (x2 * x3))) + (((7.962535533078856e-08 + x0) + ~(x0)) + (2.0306079827743746 + (x2 * x3)))) + ((3.1428563968022543 + (~(x1) + -0.9999993900320638)) + 7.44813267419371)))) + (((((((x3 * -0.258435178190104) + (1.344852129501477 * x2)) * -0.6432255753325254) + ((sin(x3) * sin(x3)) + 7.4962322956945036)) * (((sin(x2) + (x3 * 3.4807494841766224e-06)) * (x0 + ~(x0))) + -0.08134333787380357)) * (sin((((0.036551667887438966 * x2) + 1.7892884453203495) + (x3 * 0.730990709927977))) + sin((-0.06389833731195498 + (-0.5109906448904722 * sin(x3)))))) + ((((-0.0207554966896999 + (0.991390068980581 * x2)) + sin((-1.2047343227197793 + (0.6941709009440433 * x3)))) * ((((2.1976580345476933 * x3) + (x0 * 0.0001886930336709864)) * -0.0005162449629552146) + -0.08082414336434048)) + 0.5073126791610137)))
                 Best expression (original format) = -0.00010079189802839168 x2 ~ x2 sin * * -0.7804663681704281 + 0.9996066618421596 -1.6580476278746822e-10 x0 + sin * ~ * -0.16506006253932867 1.0000001708490658 x3 ~ * x3 1.9443453240794613 + 1.0000000204835315 x3 * + + * 0.0008215299377976706 x2 -2.673233331705679 + -2.66882081624132 + * 4.356191264047536 + + * 2.570795856958231 0.7853978278819566 x2 x3 * * * 7.962535533078856e-08 x0 + x0 ~ + 2.0306079827743746 x2 x3 * + + + 3.1428563968022543 x1 ~ -0.9999993900320638 + + 7.44813267419371 + + sin * x3 -0.258435178190104 * 1.344852129501477 x2 * + -0.6432255753325254 * x3 sin x3 sin * 7.4962322956945036 + + x2 sin x3 3.4807494841766224e-06 * + x0 x0 ~ + * -0.08134333787380357 + * 0.036551667887438966 x2 * 1.7892884453203495 + x3 0.730990709927977 * + sin -0.06389833731195498 -0.5109906448904722 x3 sin * + sin + * -0.0207554966896999 0.991390068980581 x2 * + -1.2047343227197793 0.6941709009440433 x3 * + sin + 2.1976580345476933 x3 * x0 0.0001886930336709864 * + -0.0005162449629552146 * -0.08082414336434048 + * 0.5073126791610137 + + +
@@ -12902,7 +13096,8 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                         const char* SNE_file_name = "",
                         bool completeTree = false,
                         std::string pert_option = "sub_tree",
-                        bool sync_current = false)
+                        bool sync_current = false,
+            bool pert_all = false)
 {
     assert(simplifyOriginal == false);
     Board::max_subexpr_cache_nodes = max_subexpr_cache_nodes;
@@ -13046,7 +13241,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
     /*
      Inside of thread:
      */
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &custom_features, &seed_expressions, &exit_early, &custom_rand_seed, &T_min, &T_max, &temp_func, &completeTree, &pert_option, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &evalType, &print_and_check_fit_dict_every, &printDiffEq, &bad_ops, &constCacheThresh, &simplifyMode, &fullPrec, &custom_unaries, &sync_current, &global_current, &global_current_const_indices, &global_current_idx, &outFile, &out, &fixedSubSize, &const_indices_to_perturb](int thread_idx)
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &custom_features, &seed_expressions, &exit_early, &custom_rand_seed, &T_min, &T_max, &temp_func, &completeTree, &pert_option, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &evalType, &print_and_check_fit_dict_every, &printDiffEq, &bad_ops, &constCacheThresh, &simplifyMode, &fullPrec, &custom_unaries, &sync_current, &pert_all, &global_current, &global_current_const_indices, &global_current_idx, &outFile, &out, &fixedSubSize, &const_indices_to_perturb](int thread_idx)
     {
         std::random_device rand_dev;
         // Use a combination of the device, the index, and time for maximum entropy
@@ -13464,14 +13659,18 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                 {
                     reset_const_token_labels();
                 }
-                //Step 6: Evaluate the new mutated `x.pieces` and update score if needed
-                score = x.complete_status(x.pieces.size() - 1, false);
+                //Step 6: Evaluate the new mutated `x.pieces` and update score if needed if it's time
+        if ((!pert_all) || (jdx == x.pieces.size() - 1))
+        {
+                    score = x.complete_status(x.pieces.size() - 1, false);
+            assert(score >= 0.0);
+                    updateScore(temp_func(ratio, i));
+        }
 //                if (score < 0.0)
 //                {
 //                    throw(std::runtime_error("score = "+to_string_general(score)));
 //                }
-                assert(score >= 0.0);
-                updateScore(temp_func(ratio, i));
+                
             }
         };
 
@@ -13892,6 +14091,8 @@ namespace ExampleProblems
         std::vector<std::string> theTrueSeedExprStrings;
         std::string theConstCacheThresh;
         std::string theConstTokens = "default";
+    std::string pertAll = "0";
+    int pert_all = 0;
         
         if (read_from_file)
         {
@@ -13913,6 +14114,7 @@ namespace ExampleProblems
             std::getline(inObj, theBadOps);
             std::getline(inObj, theFullPrec);
             std::getline(inObj, theConstTokens);
+        std::getline(inObj, pertAll);
 
             std::cout << "Algorithm = " << Algorithm << ";\n" << Algorithm.size() << '\n';
             std::cout << theSeedExprs.size() << '\n' << (int)theSeedExprs[0] << '\n';
@@ -13932,6 +14134,7 @@ namespace ExampleProblems
             fitIters = std::stoi(theNumFitIters);
             ConstCacheThresh = std::stod(theConstCacheThresh);
             bad_ops = split(theBadOps);
+        pert_all = std::stoi(pertAll);
             if (theTrueSeedExprStrings.size() == 2)
             {
                 theTrueSeedExprs[0] = split(theTrueSeedExprStrings[0]);
@@ -13952,6 +14155,7 @@ namespace ExampleProblems
             std::cout << "ConstCacheThresh = " << ConstCacheThresh << '\n';
             std::cout << "bad_ops = " << bad_ops << '\n';
             std::cout << "theConstTokens = " << theConstTokens << '\n';
+        std::cout << "pert_all = " << pert_all << '\n';
         }
         
         if (Algorithm == "RandomSearch")
@@ -14029,7 +14233,8 @@ namespace ExampleProblems
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 completeTree /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
                 pert_mode /*perturbation option: either "sub_array", "n_random", "constants_only", "constants_only_vec", "constants_only_N", or (default) "sub_tree"*/,
-                true /*whether or not to sync the current expression of each thread with the global current best*/);
+                true /*whether or not to sync the current expression of each thread with the global current best*/,
+        pert_all /*In the case x.pieces.size() > 1, whether to perturb all expressions before checking the score or not*/);
         }
     }
     void BrightSolitonControlTest(int random_seed, const char* algorithm, double time)
@@ -14124,7 +14329,8 @@ namespace ExampleProblems
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 true /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
                 "constants_only" /*perturbation option: either "sub_array", "n_random", "constants_only", "constants_only_vec", "constants_only_N", or (default) "sub_tree"*/,
-                true /*whether or not to sync the current expression of each thread with the global current best*/);
+                true /*whether or not to sync the current expression of each thread with the global current best*/,
+        false /*In the case x.pieces.size() > 1, whether to perturb all expressions before checking the score or not*/);
         }
     }
     void SwiftHohenbergTest(int random_seed, const char* algorithm, double time)
@@ -14494,7 +14700,8 @@ namespace ExampleProblems
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
                 "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", "constants_only_vec", "constants_only_N", or (default) "sub_tree"*/,
-                false /*whether or not to sync the current expression of each thread with the global current best*/);
+                false /*whether or not to sync the current expression of each thread with the global current best*/,
+        false /*In the case x.pieces.size() > 1, whether to perturb all expressions before checking the score or not*/);
         }
     }
 
@@ -14579,7 +14786,8 @@ namespace ExampleProblems
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
                 "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", "constants_only_vec", "constants_only_N", or (default) "sub_tree"*/,
-                false /*whether or not to sync the current expression of each thread with the global current best*/);
+                false /*whether or not to sync the current expression of each thread with the global current best*/,
+        false /*In the case x.pieces.size() > 1, whether to perturb all expressions before checking the score or not*/);
         }
     }
     void WildfireSpreadTSTest(int random_seed, const char* algorithm, double time)
@@ -14673,7 +14881,8 @@ namespace ExampleProblems
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
                 "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", "constants_only_vec", "constants_only_N", or (default) "sub_tree"*/,
-                false /*whether or not to sync the current expression of each thread with the global current best*/);
+                false /*whether or not to sync the current expression of each thread with the global current best*/,
+        false /*In the case x.pieces.size() > 1, whether to perturb all expressions before checking the score or not*/);
         }
     }
     void InPaintWildfireSpreadTSTest(int random_seed, const char* algorithm, double time)
@@ -14766,7 +14975,8 @@ namespace ExampleProblems
                 "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
                 "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", "constants_only_vec", "constants_only_N", or (default) "sub_tree"*/,
-                false /*whether or not to sync the current expression of each thread with the global current best*/);
+                false /*whether or not to sync the current expression of each thread with the global current best*/,
+        false /*In the case x.pieces.size() > 1, whether to perturb all expressions before checking the score or not*/);
         }
     }
 
@@ -15130,7 +15340,8 @@ namespace ExampleProblems
                 "WierdTrackSR.txt" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
                 completeTree /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
                 pert_mode /*perturbation option: either "sub_array", "n_random", "constants_only", "constants_only_vec", "constants_only_N", or (default) "sub_tree"*/,
-                true /*whether or not to sync the current expression of each thread with the global current best*/);
+                true /*whether or not to sync the current expression of each thread with the global current best*/,
+        false /*In the case x.pieces.size() > 1, whether to perturb all expressions before checking the score or not*/);
         }
     }
 };
