@@ -209,7 +209,7 @@ void derivePrefixHelper(int low, int up, const std::string& dx, const std::vecto
     if (trace_derivat)
     {
         std::cout << "derivat = {" << derivat << "}, low = " << low << ", up = " << up
-        << ", prefix[up] = " << prefix[up] << ", prefix[low] = " << prefix[low] << '\n';
+        << ", prefix[up] = " << prefix[up] << ", prefix[low] = " << prefix[low] << ", prefix = " << prefix << '\n';
     }
     
     if (prefix[low] == "+" || prefix[low] == "-")
