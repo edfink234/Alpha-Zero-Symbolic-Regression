@@ -8181,10 +8181,10 @@ struct Board
 };
 
 /*
-Best score = 8.66247302040757e-06, SNE = 115439.474982622
-Squared-norm error for each equation: 115439.474982622
-Best expression = (0.38072050706045546 + (0.24989843184440375 * diff_y_n(x0))), ((sech(x0) * -0.6) + 0.6375683515609794)
-Best expression (original format) = 0.38072050706045546 0.24989843184440375 x0 diff_y_n * +, x0 sech -0.6 * 0.6375683515609794 +
+Best score = 1.27371276259595e-05, SNE = 78509.6367280096
+Squared-norm error for each equation: 78509.6367280096
+Best expression = (tanh(sech(sech(diff_y_n(diff_y_n(x0))))) + (diff_y_n(sech(x0)) * -0.031725821976310686)), sin(sech(((-1.031105710979717 * sech(x0)) + 0.6007465006071183)))
+Best expression (original format) = x0 diff_y_n diff_y_n sech sech tanh x0 sech diff_y_n -0.031725821976310686 * +, -1.031105710979717 x0 sech * 0.6007465006071183 + sech sin
 
  - Linear: https://anvaka.github.io/fieldplay/?cx=0.0016000000000002679&cy=0&w=8.543&h=8.543&fo=0.998&dp=0.009&dt=0.01&cm=3&vf=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%201.%2F%281.%2Bp.x*p.x*p.x%29%3B%0A%20%20%20%20%0A%20%20return%20v%3B%0A%7D&code=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%201.%2F%281.%2Bp.x*p.x*p.x%29%3B%0A%20%20%20%20%0A%20%20return%20v%3B%0A%7D
  - Kormilitsin: https://anvaka.github.io/fieldplay/?cx=0.0016000000000002679&cy=0&w=8.543&h=8.543&fo=0.998&dp=0.009&dt=0.01&cm=3&vf=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%20%28-1.%2F%288.*pow%28p.x%2C%201.5%29%29%29%3B%0A%0A%20%20return%20v%3B%0A%7D&code=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%200.5*%28-1.%2F%288.*pow%28p.x%2C%201.5%29%29%29%3B%0A%0A%20%20return%20v%3B%0A%7D
@@ -8200,61 +8200,85 @@ std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fi
         x.recompute_diff_eq_each_fit_iter = true;
     }
     std::string infty = to_string_general(DBL_MAX);
-    const std::vector<double> T_finals = {10., 10., 1., 10., 10.};
-    const std::vector<double> T_finals_ho = {10., 20., 5.};
-    const std::string z0 = "0.0", pz0 = "1.1";
+    const std::vector<double> T_finals = {10., 10., 1., /*10.,*/ 10.};
+    const std::vector<double> T_finals_ho = {/*10., 20.,*/ 5., 5., 5., 5., 10.};
+    const std::string z0 = "0.0",   pz0 = "1.1",
+              z01 = "1.0",   pz01 = "0.5",
+              z02 = "-1.0", pz02 = "3.0",
+              z03 = "0.0",  pz03 = "5.0",
+              F0 = "20.0", w="20.0", w0 = "1.0";
 
     const std::vector<std::vector<std::string>> example_ys = std::vector<std::vector<std::string>> //solutions for the corresponding example_dy_dt ODEs
     {
         std::vector<std::string>{"x0", "sin"},
         std::vector<std::string>{"x0", "tanh"},
         std::vector<std::string>{"x0", "exp", "5.", "+", "6", "x0", "x0", "exp", "*", "-", "/", "1.", "3.", "/", "^"},
-        std::vector<std::string>{"x0", "2.", "x0", "~", "exp", "*", "1.", "-", "+"},
-        std::vector<std::string>{"x0", "exp", "cos", "~"}
+        // std::vector<std::string>{"x0", "2.", "x0", "~", "exp", "*", "1.", "-", "+"},
+        // std::vector<std::string>{"x0", "exp", "cos", "~"}
     };
     const std::vector<std::vector<std::vector<std::string>>> example_ys_ho = std::vector<std::vector<std::vector<std::string>>> //solutions for the corresponding example_dy_dt ODEs
     {
+        // std::vector<std::vector<std::string>>
+        // {
+        //     std::vector<std::string>{"1.7320508075688772", "x0", "*", "exp", "-1.7320508075688772", "x0", "*", "exp", "+", "0.5", "*"},
+        //     std::vector<std::string>{"1.7320508075688772", "x0", "*", "exp", "-1.7320508075688772", "x0", "*", "exp", "-", "0.8660254037844386", "*"}
+        // },
+        // std::vector<std::vector<std::string>>
+        // {
+        //     std::vector<std::string>{"10", "x0", "cos", "*", "10", "x0", "sin", "*", "+"},
+        //     std::vector<std::string>{"10", "x0", "cos", "*", "10", "x0", "sin", "*", "-"}
+        // },
         std::vector<std::vector<std::string>>
-    {
-        std::vector<std::string>{"1.7320508075688772", "x0", "*", "exp", "-1.7320508075688772", "x0", "*", "exp", "+", "0.5", "*"},
-        std::vector<std::string>{"1.7320508075688772", "x0", "*", "exp", "-1.7320508075688772", "x0", "*", "exp", "-", "0.8660254037844386", "*"}
-    },
-    std::vector<std::vector<std::string>>
-    {
-        std::vector<std::string>{"10", "x0", "cos", "*", "10", "x0", "sin", "*", "+"},
-        std::vector<std::string>{"10", "x0", "cos", "*", "10", "x0", "sin", "*", "-"}
-    },
-    std::vector<std::vector<std::string>>
-    {
-        std::vector<std::string>{pz0, pz0, "*", "-2", z0, "*", "exp", "-", "sqrt", "x0", "*", pz0, pz0, "*", "-2", z0, "*", "exp", "-", "sqrt", z0, "exp", "*", "arcsinh", "+", "sinh", pz0, pz0, "*", "-2", z0, "*", "exp", "-", "sqrt", "/", "log"},
-        std::vector<std::string>{pz0, pz0, "*", "-2", z0, "*", "exp", "-", "sqrt", "1", pz0, pz0, "*", "-2", z0, "*", "exp", "-", "sqrt", "x0", "*", pz0, pz0, "*", "-2", z0, "*", "exp", "-", "sqrt", z0, "exp", "*", "arcsinh", "+", "tanh", "/", "*"}
-    }
+        {
+            std::vector<std::string>{pz0, pz0, "*", "-2", z0, "*", "exp", "-", "sqrt", "x0", "*", pz0, pz0, "*", "-2", z0, "*", "exp", "-", "sqrt", z0, "exp", "*", "arcsinh", "+", "sinh", pz0, pz0, "*", "-2", z0, "*", "exp", "-", "sqrt", "/", "log"},
+            std::vector<std::string>{pz0, pz0, "*", "-2", z0, "*", "exp", "-", "sqrt", "1", pz0, pz0, "*", "-2", z0, "*", "exp", "-", "sqrt", "x0", "*", pz0, pz0, "*", "-2", z0, "*", "exp", "-", "sqrt", z0, "exp", "*", "arcsinh", "+", "tanh", "/", "*"}
+        },
+        std::vector<std::vector<std::string>>
+        {
+            std::vector<std::string>{pz01, pz01, "*", "-2", z01, "*", "exp", "-", "sqrt", "x0", "*", pz01, pz01, "*", "-2", z01, "*", "exp", "-", "sqrt", z01, "exp", "*", "arcsinh", "+", "sinh", pz01, pz01, "*", "-2", z01, "*", "exp", "-", "sqrt", "/", "log"},
+            std::vector<std::string>{pz01, pz01, "*", "-2", z01, "*", "exp", "-", "sqrt", "1", pz01, pz01, "*", "-2", z01, "*", "exp", "-", "sqrt", "x0", "*", pz01, pz01, "*", "-2", z01, "*", "exp", "-", "sqrt", z01, "exp", "*", "arcsinh", "+", "tanh", "/", "*"}
+        },
+        std::vector<std::vector<std::string>>
+        {
+            std::vector<std::string>{pz02, pz02, "*", "-2", z02, "*", "exp", "-", "sqrt", "x0", "*", pz02, pz02, "*", "-2", z02, "*", "exp", "-", "sqrt", z02, "exp", "*", "arcsinh", "+", "sinh", pz02, pz02, "*", "-2", z02, "*", "exp", "-", "sqrt", "/", "log"},
+            std::vector<std::string>{pz02, pz02, "*", "-2", z02, "*", "exp", "-", "sqrt", "1", pz02, pz02, "*", "-2", z02, "*", "exp", "-", "sqrt", "x0", "*", pz02, pz02, "*", "-2", z02, "*", "exp", "-", "sqrt", z02, "exp", "*", "arcsinh", "+", "tanh", "/", "*"}
+        },
+        std::vector<std::vector<std::string>>
+        {
+            std::vector<std::string>{pz03, pz03, "*", "-2", z03, "*", "exp", "-", "sqrt", "x0", "*", pz03, pz03, "*", "-2", z03, "*", "exp", "-", "sqrt", z03, "exp", "*", "arcsinh", "+", "sinh", pz03, pz03, "*", "-2", z03, "*", "exp", "-", "sqrt", "/", "log"},
+            std::vector<std::string>{pz03, pz03, "*", "-2", z03, "*", "exp", "-", "sqrt", "1", pz03, pz03, "*", "-2", z03, "*", "exp", "-", "sqrt", "x0", "*", pz03, pz03, "*", "-2", z03, "*", "exp", "-", "sqrt", z03, "exp", "*", "arcsinh", "+", "tanh", "/", "*"}
+        },
+        std::vector<std::vector<std::string>>
+        {
+            std::vector<std::string>{"x0", w, "*", "cos", "x0", w0, "*", "cos", "-", w0, w0, "*", w, w, "*", "-", "/", F0, "*"},
+            std::vector<std::string>{"x0", w0, "*", "sin", w0, "*", "x0", w, "*", "sin", w, "*", "-", w0, w0, "*", w, w, "*", "-", "/", F0, "*"}
+        },
     };
     const std::vector<std::vector<double>> scale_factors = std::vector<std::vector<double>>
     {
-    std::vector<double>{1.501551127371771, 4047.306837958033, 4721.901667236961, 6766.999949834502, 0.0028200928660001776}, //h = 0.5
-    std::vector<double>{444.0326794526895, 4225931.55744282, 3683148.889100823, 5582226.796923376, 0.006987155462674924}, //h = 0.1
-    std::vector<double>{6904.652363549688, 71686892.08640076, 65174601.951207526, 92604801.08541735, 0.010081646787655883} //h=0.05
+        std::vector<double>{1.501551127371771, 4047.306837958033, 4721.901667236961/*, 6766.999949834502, 0.0028200928660001776*/}, //h = 0.5
+        std::vector<double>{444.0326794526895, 4225931.55744282, 3683148.889100823/*, 5582226.796923376, 0.006987155462674924*/}, //h = 0.1
+        std::vector<double>{6904.652363549688, 71686892.08640076, 65174601.951207526/*, 92604801.08541735, 0.010081646787655883*/} //h=0.05
     };
     const std::vector<std::vector<std::vector<double>>> scale_factors_ho = std::vector<std::vector<std::vector<double>>>
     {
-    std::vector<std::vector<double>> //h = 0.5
-    {
-        std::vector<double>{1.9431173075356595e-05, 21.875570775236163, 276.3363542794327}, // y
-        std::vector<double>{1.1218592895619236e-05, 21.203885083537056, 657.0621553663979} // v
-    },
+        std::vector<std::vector<double>> //h = 0.5
+        {
+            std::vector<double>{/*1.9431173075356595e-05, 21.875570775236163,*/ 276.3363542794327, 41906.50212747102, 1.542470024833186, 63.3268779557414, 9.527968611788639}, // y
+            std::vector<double>{/*1.1218592895619236e-05, 21.203885083537056,*/ 657.0621553663979, 135938.75716608638, 3.586324106892044, 185.96261286442754, 1.5869320781987137} // v
+        },
 
-    std::vector<std::vector<double>> //h = 0.1
-    {
-        std::vector<double>{0.009061349832937535, 13677.976692876602, 210059.56578547714}, // y
-        std::vector<double>{0.00523157274184527, 13084.555877064196, 512242.20827205153} // v
-    },
+        std::vector<std::vector<double>> //h = 0.1
+        {
+            std::vector<double>{/*0.009061349832937535, 13677.976692876602,*/ 210059.56578547714, 26595732.970508575, 1037.262751255679, 18397.040987224555, 2783.395203991753}, // y
+            std::vector<double>{/*0.00523157274184527, 13084.555877064196,*/ 512242.20827205153, 88786516.73294874, 2480.384412165452, 51204.563299441485, 580.5241643599476} // v
+        },
 
-    std::vector<std::vector<double>> //h = 0.05
-    {
-        std::vector<double>{0.14040684671927509, 218983.05635617938, 3487666.3743087724}, // y
-        std::vector<double>{0.08106393041923145, 209197.68586678602, 8515286.403830718} // v
-    },
+        std::vector<std::vector<double>> //h = 0.05
+        {
+            std::vector<double>{/*0.14040684671927509, 218983.05635617938,*/ 3487666.3743087724, 427384406.6851389, 18169.2464584513, 280855.1152995857, 48378.796003230964}, // y
+            std::vector<double>{/*0.08106393041923145, 209197.68586678602,*/ 8515286.403830718, 1430021529.904676, 43461.59056043559, 778772.7771280183, 10128.419550146935} // v
+        },
     };
 
     const std::vector<std::vector<std::string>> example_dy_dts = std::vector<std::vector<std::string>> //The ODE to solve with RK4 optimally st it matches the exact solution as much as possible at each t+ih time-step
@@ -8262,35 +8286,59 @@ std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fi
         std::vector<std::string>{"y_n", "y_n", "*", "x0", "cos", "*", "y_n", "+", "x0", "sin", "x0", "sin", "*", "x0", "cos", "*", "-", "x0", "sin", "-", "x0", "cos", "+"},
         std::vector<std::string>{"1.", "y_n", "y_n", "*", "-"},
         std::vector<std::string>{"x0", "exp", "y_n", "y_n", "*", "y_n", "*", "x0", "1.", "+", "*", "1.", "+", "*", "3.", "y_n", "*", "y_n", "*", "x0", "x0", "exp", "*", "6", "-", "*", "/", "~"},
-        std::vector<std::string>{"x0", "y_n", "-"},
-        std::vector<std::string>{"x0", "exp", "x0", "exp", "sin", "*"}
+        // std::vector<std::string>{"x0", "y_n", "-"},
+        //std::vector<std::string>{"x0", "exp", "x0", "exp", "sin", "*"}
     };
 
     const std::vector<std::vector<std::vector<std::string>>> example_dy_dts_ho = std::vector<std::vector<std::vector<std::string>>> //The ODE systems to solve with RK4 optimally st it matches the exact solution as much as possible at each t+ih time-step
     {
-        std::vector<std::vector<std::string>> //d^2y/dt^2 = 0.5 * d^2/dy^2(n(y)) -> dy/dt = v, dv/dt = 0.5 * d^2/dy^2(n(y))
-        { //n(y) = y^3
-            std::vector<std::string>{"v_n"}, // v
-            std::vector<std::string>{"3", "y_n", "*"} // 0.5 * n'' = 0.5 * 6*y = 3*y
-        },
+        // std::vector<std::vector<std::string>> //d^2y/dt^2 = 0.5 * d^2/dy^2(n(y)) -> dy/dt = v, dv/dt = 0.5 * d^2/dy^2(n(y))
+        // { //n(y) = y^3
+        //     std::vector<std::string>{"v_n"}, // v
+        //     std::vector<std::string>{"3", "y_n", "*"} // 0.5 * n'' = 0.5 * 6*y = 3*y
+        // },
+        // std::vector<std::vector<std::string>>
+        // {
+        //     std::vector<std::string>{"v_n"},
+        //     std::vector<std::string>{"y_n", "~"}
+        // },
         std::vector<std::vector<std::string>>
         {
             std::vector<std::string>{"v_n"},
-            std::vector<std::string>{"y_n", "~"}
+            std::vector<std::string>{"y_n", "-2.", "*", "exp", "~"}
         },
         std::vector<std::vector<std::string>>
         {
             std::vector<std::string>{"v_n"},
             std::vector<std::string>{"y_n", "-2.", "*", "exp", "~"}
+        },
+        std::vector<std::vector<std::string>>
+        {
+            std::vector<std::string>{"v_n"},
+            std::vector<std::string>{"y_n", "-2.", "*", "exp", "~"}
+        },
+        std::vector<std::vector<std::string>>
+        {
+            std::vector<std::string>{"v_n"},
+            std::vector<std::string>{"y_n", "-2.", "*", "exp", "~"}
+        },
+        std::vector<std::vector<std::string>>
+        {
+            std::vector<std::string>{"v_n"},
+            std::vector<std::string>{F0, "x0", w, "*", "cos", "*", w0, w0, "y_n", "*", "*", "-"}
         }
     };
 
-    const std::vector<double> y_0s = {0., 0., 1., 1., -0.5403023058681398}; //ICs for the ODE solve
+    const std::vector<double> y_0s = {0., 0., 1./*, 1., -0.5403023058681398*/}; //ICs for the ODE solve
     const std::vector<std::vector<double>> y_0s_ho = std::vector<std::vector<double>>
     {
-        std::vector<double>{1., 0.},
-        std::vector<double>{10., 10.},
-        std::vector<double>{Stod(z0), Stod(pz0)}
+        // std::vector<double>{1., 0.},
+        // std::vector<double>{10., 10.},
+        std::vector<double>{Stod(z0), Stod(pz0)},
+        std::vector<double>{Stod(z01), Stod(pz01)},
+        std::vector<double>{Stod(z02), Stod(pz02)},
+        std::vector<double>{Stod(z03), Stod(pz03)},
+        std::vector<double>{0., 0.}
     }; //ICs for the ODE solve
 
     const int numFuncs = example_dy_dts.size();
@@ -8345,7 +8393,7 @@ std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fi
                 }
                 else
                 {
-                        temp_vec.push_back(c[i]);
+                    temp_vec.push_back(c[i]);
                 }
             }
             assert(temp_vec.size());
@@ -11640,7 +11688,7 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
-//    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("((((((-0.00010079189802839168 * (~(x2) * sin(x2))) + -0.7804663681704281) * ~((0.9996066618421596 * sin((-1.6580476278746822e-10 + x0))))) * ((-0.16506006253932867 * ((1.0000001708490658 * ~(x3)) + ((x3 + 1.9443453240794613) + (1.0000000204835315 * x3)))) + ((0.0008215299377976706 * ((x2 + -2.673233331705679) + -2.66882081624132)) + 4.356191264047536))) * sin((((2.570795856958231 * (0.7853978278819566 * (x2 * x3))) + (((7.962535533078856e-08 + x0) + ~(x0)) + (2.0306079827743746 + (x2 * x3)))) + ((3.1428563968022543 + (~(x1) + -0.9999993900320638)) + 7.44813267419371)))) + ((-0.24090990285372088 * (sin((1.038020267940177 + ~((x3 * 0.7090422609292288)))) + (-0.9987354079785399 * sin(sin(x3))))) + ((((x2 + 0.917085775676431) + sin(x3)) * -0.0705466431355269) + 0.48675162848025144)))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu")));
+//    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("((((((-0.000100791315410173 * (sin(x3) + (-0.4314186657656249 * x2))) + -0.7804663737709057) * ~((0.9996066571884268 * sin((-2.1800323765729803e-10 + x0))))) * ((-0.16506007257280858 * ((1.0000001690945002 * ~(x3)) + ((x3 + 1.9443457701816629) + (1.0000000242997562 * x3)))) + ((-0.010052807626991568 * ((x2 + -2.557279356185078) + -2.6200543093088995)) + 4.3561912541265535))) * sin((((2.5707958554135955 * (0.7853978286006916 * (x2 * x3))) + (((1.1801175501287325e-05 + x0) + ~(x0)) + (2.0314514898049403 + (x2 * x3)))) + ((3.142940855410066 + (~(x1) + -0.999999393152779)) + ((x3 + ~(x3)) + 7.448132664310183))))) + (((((((0.9888670035757141 * x3) + (-0.18482394225573848 * x2)) * -1.0437484073146115) + ((sin(x3) * (-4.2972858937567615 + x2)) + (~(x3) + 19.718022317140463))) * ((-0.0003489234414567007 * ((34.14770537757878 + x2) * (-0.1565808173818133 * x2))) + ((~(x1) + x1) + -0.029307354058529623))) * (sin((((0.2798556403684562 * x2) + 1.6769462695830424) + ((0.037515657264346566 + x3) * 0.802136676176333))) + sin((((-0.028715252442451992 * x2) + 0.2326296354892239) * sin((x3 * 1.6407594188421604)))))) + (((((0.9726446349248232 * (x2 + -0.01915493518430451)) + (0.12904954054321094 * sin(x3))) + sin((2.3797631628016584 + (x3 * 0.5801881141186406)))) * (((11.384159388177787 + (x3 * 3.477275363360471)) * -0.0005217069377446043) + -0.10998486115752908)) + ((((-0.1897632143964218 * (16.509911552072047 + x2)) * ((x2 * -0.00021055994058814524) + 0.0011311292534280865)) * (((x3 * x3) + (x3 + x0)) + (~(x0) * 1.0004383670936476))) + ((sin((0.4311646779170546 * x2)) * 0.0666709319375412) + 0.6603421426092441)))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu")));
 //    from sympy import *; x0, x1, x2, x3 = symbols('x0 x1 x2 x3'); print(eval("(((((0.00020761302887044612 * (sin(x2) + (1.0272442241645563 * x2))) + ((1.3304563988558432e-06 * (x3 + x2)) + -1.0052629302733438)) * sin((~((1.4269067710318464e-07 + x2)) + ((-8.427410561791095e-08 + x0) + (2.2679423250655768e-07 + x2))))) * (((0.008782524861544684 * (0.27587744389610325 + (0.009993495877091307 + x2))) + (-0.1651571745075183 * ((-1.911228719809616e-07 + x3) + 0.010002284668230988))) + (((0.010151823903466778 * sin(x2)) * (-0.06438380401024771 * sin(x2))) + (((x2 * 0.03852998867113262) * -8.436444206719193e-05) + 3.659791130722469)))) * sin((((5.301797186958442 * (-2.4089452401052685e-07 + (2.2542565388059674e-07 + x3))) + sin((10.688904984949698 * (1.1264219683053926e-08 + x2)))) + (~(((x0 + -2.9955080762796076e-07) + (5.8232400879963024e-08 + x1))) + ((3.570015447645774e-12 + (1.081329657641461e-11 + x0)) + 72.43120897235498)))))\n".replace("^","**").replace("~", "-")));
     
 //    puts("called SwiftHohenberg");
@@ -14114,7 +14162,7 @@ namespace ExampleProblems
             std::getline(inObj, theBadOps);
             std::getline(inObj, theFullPrec);
             std::getline(inObj, theConstTokens);
-        std::getline(inObj, pertAll);
+            std::getline(inObj, pertAll);
 
             std::cout << "Algorithm = " << Algorithm << ";\n" << Algorithm.size() << '\n';
             std::cout << theSeedExprs.size() << '\n' << (int)theSeedExprs[0] << '\n';
