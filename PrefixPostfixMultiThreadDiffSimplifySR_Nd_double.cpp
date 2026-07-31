@@ -1143,6 +1143,18 @@ struct Board
                 {
                     Board::__input_vars.push_back("x"+to_string_general(i));
                 }
+
+                for (const auto& customFeatureVec: customFeatures)
+                {
+                    for (const auto& i: customFeatureVec)
+                    {
+                        if (std::find(Board::__input_vars.begin(), Board::__input_vars.end(), i) == Board::__input_vars.end())
+                        {
+                            std::cerr << "CORE ADVISORY: Adding variable " + i << " to input variables not in Board::data. Make sure you substitute it in your diffeq!\n";
+                            Board::__input_vars.push_back(i);
+                        }
+                    }
+                }
                 Board::__unary_operators = {"~", "log", "ln", "exp", "cos", "sin", "sqrt", "asin", "arcsin", "acos", "arccos", "tanh", "sech"};
                 if (custom_unaries.size())
                 {
@@ -8180,11 +8192,509 @@ struct Board
     }
 };
 
+namespace Bubble
+{
+    constexpr int BubbleEnvIdx = 0;
+    const double x0 = std::vector<double>{-3.0}[BubbleEnvIdx];
+    const double y0 = std::vector<double>{-3.0}[BubbleEnvIdx];
+    //n(x0,y0)*cos(pi/4)
+    const double vx0 = std::vector<double>{0.7070369769400162}[BubbleEnvIdx];
+    //n(x0,y0)*sin(pi/4)
+    const double vy0 = std::vector<double>{0.7070369769400162}[BubbleEnvIdx];
+    
+    const std::vector<double> bubble_xns = std::vector<std::vector<double>>
+    {
+        std::vector<double>{0, 2, -1.5},
+    }[BubbleEnvIdx];
+    
+    const std::vector<double> bubble_yns = std::vector<std::vector<double>>
+    {
+        std::vector<double>{0, 1.5, 2},
+    }[BubbleEnvIdx];
+    
+    const std::vector<double> bubble_eps = std::vector<std::vector<double>>
+    {
+        std::vector<double>{0.8, -0.4, 0.5},
+    }[BubbleEnvIdx];
+    
+    const std::vector<double> bubble_vars = std::vector<std::vector<double>>
+    {
+        std::vector<double>{1.0*1.0, 0.5*0.5, 0.75*0.75},
+    }[BubbleEnvIdx];
+    
+    const std::unordered_map<std::string, std::string> bubble_params = std::vector<std::unordered_map<std::string, std::string>>
+    {
+        std::unordered_map<std::string, std::string>
+        {
+            {"x_0", to_string_general(x0)},
+            {"y_0", to_string_general(y0)},
+            {"vx_0", to_string_general(vx0)},
+            {"vy_0", to_string_general(vy0)},
+            {"bx0", to_string_general(bubble_xns[0])},
+            {"by0", to_string_general(bubble_yns[0])},
+            {"beps0", to_string_general(bubble_eps[0])},
+            {"bvar0", to_string_general(bubble_vars[0])},
+            {"bx1", to_string_general(bubble_xns[1])},
+            {"by1", to_string_general(bubble_yns[1])},
+            {"beps1", to_string_general(bubble_eps[1])},
+            {"bvar1", to_string_general(bubble_vars[1])},
+            {"bx2", to_string_general(bubble_xns[2])},
+            {"by2", to_string_general(bubble_yns[2])},
+            {"beps2", to_string_general(bubble_eps[2])},
+            {"bvar2", to_string_general(bubble_vars[2])}
+        }
+    }[BubbleEnvIdx];
+    const int numBubbles = bubble_vars.size();
+    double IC_Temp_Loss;
+
+    std::vector<std::vector<std::string>> RandomBubble(Board& x, bool fit)
+    {
+        assert((numBubbles == bubble_eps.size()) && (numBubbles == bubble_yns.size()) && (numBubbles == bubble_xns.size()));
+        assert(x.expression_type == "postfix" && "Only postfix supported for RandomBubble, sorry!");
+        if (fit)
+        {
+            x.recompute_diff_eq_each_fit_iter = true;
+        }
+        std::string infty = to_string_general(DBL_MAX);
+        std::vector<std::vector<std::string>> results(x.num_diff_eqns);
+        assert(x.num_diff_eqns == 7);
+
+        // x(0)
+        // x
+        for (const std::string& j: x.pieces[0])
+        {
+            if (bubble_params.count(j))
+            {
+                results[0].push_back(bubble_params.at(j));
+            }
+            else if (j == "x0") //t
+            {
+                results[0].push_back("0"); //-> t = 0
+            }
+            else
+            {
+                results[0].push_back(j);
+            }
+        }
+        // x(0)
+        results[0].push_back(bubble_params.at("x_0"));
+        // -
+        results[0].push_back("-");
+        results[0].push_back("1e2");
+        results[0].push_back("*");
+        /*
+        IC_Temp_Loss = SNE(x.expression_evaluator(x.params, results[0]));
+        if (IC_Temp_Loss > 1e-1)
+        {
+            results = std::vector<std::vector<std::string>>{std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}};
+            return results;
+        }
+        */
+        // y(0)
+        // y
+        for (const std::string& j: x.pieces[1])
+        {
+            if (bubble_params.count(j))
+            {
+                results[1].push_back(bubble_params.at(j));
+            }
+            else if (j == "x0") //t
+            {
+                results[1].push_back("0"); //-> t = 0
+            }
+            else
+            {
+                results[1].push_back(j);
+            }
+        }
+        // y(0)
+        results[1].push_back(bubble_params.at("y_0"));
+        // -
+        results[1].push_back("-");
+        results[1].push_back("1e2");
+        results[1].push_back("*");
+        /*
+        IC_Temp_Loss = SNE(x.expression_evaluator(x.params, results[1]));
+        if (IC_Temp_Loss > 1e-1)
+        {
+            results = std::vector<std::vector<std::string>>{std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}};
+            return results;
+        }
+        */
+        std::vector<std::string> exp_term, exp_x_term, exp_y_term;
+        exp_term.reserve(numBubbles*100);
+        exp_x_term.reserve(numBubbles*100);
+        exp_y_term.reserve(numBubbles*100);
+        for (int i = 0; i < numBubbles; i++)
+        {
+            // x
+            for (const std::string& j: x.pieces[0])
+            {
+                if (bubble_params.count(j))
+                {
+                    exp_term.push_back(bubble_params.at(j));
+                    exp_x_term.push_back(bubble_params.at(j));
+                    exp_y_term.push_back(bubble_params.at(j));
+                }
+                else
+                {
+                    exp_term.push_back(j);
+                    exp_x_term.push_back(j);
+                    exp_y_term.push_back(j);
+                }
+            }
+            // x_n
+            exp_term.push_back(to_string_general(bubble_xns[i]));
+            exp_x_term.push_back(to_string_general(bubble_xns[i]));
+            exp_y_term.push_back(to_string_general(bubble_xns[i]));
+            // -
+            exp_term.push_back("-");
+            exp_x_term.push_back("-");
+            exp_y_term.push_back("-");
+            // 2
+            exp_term.push_back("2");
+            exp_x_term.push_back("2");
+            exp_y_term.push_back("2");
+            // ^
+            exp_term.push_back("^");
+            exp_x_term.push_back("^");
+            exp_y_term.push_back("^");
+
+            // y
+            for (const std::string& j: x.pieces[1])
+            {
+                if (bubble_params.count(j))
+                {
+                    exp_term.push_back(bubble_params.at(j));
+                    exp_x_term.push_back(bubble_params.at(j));
+                    exp_y_term.push_back(bubble_params.at(j));
+                }
+                else
+                {
+                    exp_term.push_back(j);
+                    exp_x_term.push_back(j);
+                    exp_y_term.push_back(j);
+                }
+            }
+            // y_n
+            exp_term.push_back(to_string_general(bubble_yns[i]));
+            exp_x_term.push_back(to_string_general(bubble_yns[i]));
+            exp_y_term.push_back(to_string_general(bubble_yns[i]));
+            // -
+            exp_term.push_back("-");
+            exp_x_term.push_back("-");
+            exp_y_term.push_back("-");
+            // 2
+            exp_term.push_back("2");
+            exp_x_term.push_back("2");
+            exp_y_term.push_back("2");
+            // ^
+            exp_term.push_back("^");
+            exp_x_term.push_back("^");
+            exp_y_term.push_back("^");
+
+            // +
+            exp_term.push_back("+");
+            exp_x_term.push_back("+");
+            exp_y_term.push_back("+");
+            // -2
+            exp_term.push_back("-2");
+            exp_x_term.push_back("-2");
+            exp_y_term.push_back("-2");
+            // var_n
+            exp_term.push_back(to_string_general(bubble_vars[i]));
+            exp_x_term.push_back(to_string_general(bubble_vars[i]));
+            exp_y_term.push_back(to_string_general(bubble_vars[i]));
+            // *
+            exp_term.push_back("*");
+            exp_x_term.push_back("*");
+            exp_y_term.push_back("*");
+            // /
+            exp_term.push_back("/");
+            exp_x_term.push_back("/");
+            exp_y_term.push_back("/");
+            // exp
+            exp_term.push_back("exp");
+            exp_x_term.push_back("exp");
+            exp_y_term.push_back("exp");
+            // eps_n
+            exp_term.push_back(to_string_general(bubble_eps[i]));
+            exp_x_term.push_back(to_string_general(bubble_eps[i]));
+            exp_y_term.push_back(to_string_general(bubble_eps[i]));
+            // *
+            exp_term.push_back("*");
+            exp_x_term.push_back("*");
+            exp_y_term.push_back("*");
+
+            //FOR exp_x_term ONLY
+            // x
+            for (const std::string& j: x.pieces[0])
+            {
+                if (bubble_params.count(j))
+                {
+                    exp_x_term.push_back(bubble_params.at(j));
+                }
+                else
+                {
+                    exp_x_term.push_back(j);
+                }
+            }
+            // x_n
+            exp_x_term.push_back(to_string_general(bubble_xns[i]));
+            // -
+            exp_x_term.push_back("-");
+            // *
+            exp_x_term.push_back("*");
+
+            //FOR exp_y_term ONLY
+            // y
+            for (const std::string& j: x.pieces[1])
+            {
+                if (bubble_params.count(j))
+                {
+                    exp_y_term.push_back(bubble_params.at(j));
+                }
+                else
+                {
+                    exp_y_term.push_back(j);
+                }
+            }
+            // y_n
+            exp_y_term.push_back(to_string_general(bubble_yns[i]));
+            // -
+            exp_y_term.push_back("-");
+            // *
+            exp_y_term.push_back("*");
+
+            //FOR exp_x_term and exp_y_term ONLY
+            // var_n
+            exp_x_term.push_back(to_string_general(bubble_vars[i]));
+            exp_y_term.push_back(to_string_general(bubble_vars[i]));
+            // /
+            exp_x_term.push_back("/");
+            exp_y_term.push_back("/");
+
+            if (i>0)
+            {
+                exp_term.push_back("+");
+                exp_x_term.push_back("+");
+                exp_y_term.push_back("+");
+            }
+        }
+    
+        x.subs_dict["f_exp_term"] = x.expression_evaluator(x.params, exp_term);
+        x.subs_dict["f_exp_x_term"] = x.expression_evaluator(x.params, exp_x_term);
+        x.subs_dict["f_exp_y_term"] = x.expression_evaluator(x.params, exp_y_term);
+        
+        std::vector<int> grasp;
+        x.derivePostfix(0, x.pieces[0].size()-1, "x0", x.pieces[0], grasp);
+        const std::vector<std::string> v_x = x.derivat;
+        x.derivePostfix(0, x.pieces[1].size()-1, "x0", x.pieces[1], grasp);
+        const std::vector<std::string> v_y = x.derivat;
+
+        // v_x(0)
+        // v_x
+        for (const std::string& j: v_x)
+        {
+            if (bubble_params.count(j))
+            {
+                results[2].push_back(bubble_params.at(j));
+            }
+            else if (j == "x0") //t
+            {
+                results[2].push_back("0"); //-> t = 0
+            }
+            else
+            {
+                results[2].push_back(j);
+            }
+        }
+        // v_x(0)
+        results[2].push_back(bubble_params.at("vx_0"));
+        // -
+        results[2].push_back("-");
+        results[2].push_back("1e2");
+        results[2].push_back("*");
+        /*
+        IC_Temp_Loss = SNE(x.expression_evaluator(x.params, results[2]));
+        if (IC_Temp_Loss > 1e-1)
+        {
+            results = std::vector<std::vector<std::string>>{std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}};
+            return results;
+        }
+        */
+        // v_y(0)
+        // v_y
+        for (const std::string& j: v_y)
+        {
+            if (bubble_params.count(j))
+            {
+                results[3].push_back(bubble_params.at(j));
+            }
+            else if (j == "x0") //t
+            {
+                results[3].push_back("0"); //-> t = 0
+            }
+            else
+            {
+                results[3].push_back(j);
+            }
+        }
+        // v_y(0)
+        results[3].push_back(bubble_params.at("vy_0"));
+        // -
+        results[3].push_back("-");
+        results[3].push_back("1e2");
+        results[3].push_back("*");
+        /*
+        IC_Temp_Loss = SNE(x.expression_evaluator(x.params, results[3]));
+        if (IC_Temp_Loss > 1e-1)
+        {
+            results = std::vector<std::vector<std::string>>{std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}};
+            return results;
+        }
+        */
+        //v_x^2 + v_y^2 - n^2(x,y)
+        // v_x
+        for (const std::string& j: v_x)
+        {
+            if (bubble_params.count(j))
+            {
+                results[4].push_back(bubble_params.at(j));
+            }
+            else
+            {
+                results[4].push_back(j);
+            }
+        }
+        // 2
+        results[4].push_back("2");
+        // ^
+        results[4].push_back("^");
+        // v_y
+        for (const std::string& j: v_y)
+        {
+            if (bubble_params.count(j))
+            {
+                results[4].push_back(bubble_params.at(j));
+            }
+            else
+            {
+                results[4].push_back(j);
+            }
+        }
+        // 2
+        results[4].push_back("2");
+        // ^
+        results[4].push_back("^");
+        // +
+        results[4].push_back("+");
+
+        // n^2: 1 / (1+f_exp_term)^2
+        // 1
+        results[4].push_back("1");
+        // 1
+        results[4].push_back("1");
+        // f_exp_term
+        results[4].push_back("f_exp_term");
+        // +
+        results[4].push_back("+");
+        // 2
+        results[4].push_back("2");
+        // ^
+        results[4].push_back("^");
+        // /
+        results[4].push_back("/");
+
+        // -
+        results[4].push_back("-");
+
+        x.derivePostfix(0, v_x.size()-1, "x0", v_x, grasp);
+        const std::vector<std::string> a_x = x.derivat;
+        x.derivePostfix(0, v_y.size()-1, "x0", v_y, grasp);
+        const std::vector<std::string> a_y = x.derivat;
+
+        // a_x
+        for (const std::string& j: a_x)
+        {
+            if (bubble_params.count(j))
+            {
+                results[5].push_back(bubble_params.at(j));
+            }
+            else
+            {
+                results[5].push_back(j);
+            }
+        }
+        // ∂(n^2)/∂x
+        // 2
+        results[5].push_back("2");
+        // 1
+        results[5].push_back("1");
+        // f_exp_term
+        results[5].push_back("f_exp_term");
+        // +
+        results[5].push_back("+");
+        // -3
+        results[5].push_back("-3");
+        // ^
+        results[5].push_back("^");
+        // *
+        results[5].push_back("*");
+        // f_exp_x_term
+        results[5].push_back("f_exp_x_term");
+        // *
+        results[5].push_back("*");
+
+        // -
+        results[5].push_back("-");
+
+        // a_y
+        for (const std::string& j: a_y)
+        {
+            if (bubble_params.count(j))
+            {
+                results[6].push_back(bubble_params.at(j));
+            }
+            else
+            {
+                results[6].push_back(j);
+            }
+        }
+        // ∂(n^2)/∂y
+        // 2
+        results[6].push_back("2");
+        // 1
+        results[6].push_back("1");
+        // f_exp_term
+        results[6].push_back("f_exp_term");
+        // +
+        results[6].push_back("+");
+        // -3
+        results[6].push_back("-3");
+        // ^
+        results[6].push_back("^");
+        // *
+        results[6].push_back("*");
+        // f_exp_y_term
+        results[6].push_back("f_exp_y_term");
+        // *
+        results[6].push_back("*");
+
+        // -
+        results[6].push_back("-");
+
+        return results;
+
+    }
+};
+
 /*
-Best score = 1.27371276259595e-05, SNE = 78509.6367280096
-Squared-norm error for each equation: 78509.6367280096
-Best expression = (tanh(sech(sech(diff_y_n(diff_y_n(x0))))) + (diff_y_n(sech(x0)) * -0.031725821976310686)), sin(sech(((-1.031105710979717 * sech(x0)) + 0.6007465006071183)))
-Best expression (original format) = x0 diff_y_n diff_y_n sech sech tanh x0 sech diff_y_n -0.031725821976310686 * +, -1.031105710979717 x0 sech * 0.6007465006071183 + sech sin
+
+Best score = 5.84395710792595e-09, SNE = 171116929.10952
+Squared-norm error for each equation: 171116929.10952
+Best expression = (((((7.279999682931835 * (diff_x0(x0) + diff_x0(x0))) * ((-4.71 + (x0 + x0)) * 5.458712835257326e-09)) + (((39.4384 * tanh(x0)) * 5.458712835257326e-09) + 0.680218537899342)) + ((diff_x0(tanh(diff_x0(x0))) * (0.5002826459631367 * cos((0.8570119510043014 + x0)))) * diff_x0(sin(sech(diff_y_n(x0)))))) + (((((1.57 * sin(x0)) + (sin(x0) + x0)) * (~((x0 + x0)) + (6.28 + tanh(x0)))) + (((diff_x0(3.14) + 0.9170257613966083) + diff_y_n(cos(x0))) * ((3.14 + sin(x0)) * (39.4384 + (x0 * 3.14))))) * (cos((diff_y_n(-0.9999987317275395) + -3.14)) + (sech((sech(x0) * 0.0015926529164868282)) + (diff_x0(1.57) * diff_x0(0.9999949269133752)))))), ((((((diff_x0(3.14) + x0) + (x0 * -0.9999987317275395)) + (-5.073080190731944e-06 + (diff_x0(3.14) + 0.0055623389570254415))) + (((0.0015926529164868282 * sech(x0)) + (0.0015926529164868282 * sech(x0))) + (-1.193465065787948e-05 + (diff_x0(1.57) + 0.5798421504112582)))) + (~(tanh(cos(diff_y_n(x0)))) * (((~(x0) * 0.0015926529164868282) * diff_y_n(sech(x0))) + ((diff_y_n(x0) * diff_x0(1.57)) + 0.5573043696577454)))) + (sin(((2.9836673945978054e-06 + (diff_x0(6.28) + 12.56)) + ((0.0015926529164868282 * sech(x0)) + (diff_y_n(6.28) + 12.56)))) * (sin(tanh(cos(cos(x0)))) + (((cos(x0) * 0.0007963267107332633) + 0.062430309982326876) + (0.0025004650788843204 * ~(tanh(x0)))))))
+Best expression (original format) = 7.279999682931835 x0 diff_x0 x0 diff_x0 + * -4.71 x0 x0 + + 5.458712835257326e-09 * * 39.4384 x0 tanh * 5.458712835257326e-09 * 0.680218537899342 + + x0 diff_x0 tanh diff_x0 0.5002826459631367 0.8570119510043014 x0 + cos * * x0 diff_y_n sech sin diff_x0 * + 1.57 x0 sin * x0 sin x0 + + x0 x0 + ~ 6.28 x0 tanh + + * 3.14 diff_x0 0.9170257613966083 + x0 cos diff_y_n + 3.14 x0 sin + 39.4384 x0 3.14 * + * * + -0.9999987317275395 diff_y_n -3.14 + cos x0 sech 0.0015926529164868282 * sech 1.57 diff_x0 0.9999949269133752 diff_x0 * + + * +, 3.14 diff_x0 x0 + x0 -0.9999987317275395 * + -5.073080190731944e-06 3.14 diff_x0 0.0055623389570254415 + + + 0.0015926529164868282 x0 sech * 0.0015926529164868282 x0 sech * + -1.193465065787948e-05 1.57 diff_x0 0.5798421504112582 + + + + x0 diff_y_n cos tanh ~ x0 ~ 0.0015926529164868282 * x0 sech diff_y_n * x0 diff_y_n 1.57 diff_x0 * 0.5573043696577454 + + * + 2.9836673945978054e-06 6.28 diff_x0 12.56 + + 0.0015926529164868282 x0 sech * 6.28 diff_y_n 12.56 + + + sin x0 cos cos tanh sin x0 cos 0.0007963267107332633 * 0.062430309982326876 + 0.0025004650788843204 x0 tanh ~ * + + * +
 
  - Linear: https://anvaka.github.io/fieldplay/?cx=0.0016000000000002679&cy=0&w=8.543&h=8.543&fo=0.998&dp=0.009&dt=0.01&cm=3&vf=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%201.%2F%281.%2Bp.x*p.x*p.x%29%3B%0A%20%20%20%20%0A%20%20return%20v%3B%0A%7D&code=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%201.%2F%281.%2Bp.x*p.x*p.x%29%3B%0A%20%20%20%20%0A%20%20return%20v%3B%0A%7D
  - Kormilitsin: https://anvaka.github.io/fieldplay/?cx=0.0016000000000002679&cy=0&w=8.543&h=8.543&fo=0.998&dp=0.009&dt=0.01&cm=3&vf=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%20%28-1.%2F%288.*pow%28p.x%2C%201.5%29%29%29%3B%0A%0A%20%20return%20v%3B%0A%7D&code=%2F%2F%20p.x%20and%20p.y%20are%20current%20coordinates%0A%2F%2F%20v.x%20and%20v.y%20is%20a%20velocity%20at%20point%20p%0Avec2%20get_velocity%28vec2%20p%29%20%7B%0A%20%20vec2%20v%20%3D%20vec2%280.%2C%200.%29%3B%0A%0A%20%20%2F%2F%20change%20this%20to%20get%20a%20new%20vector%20field%0A%20%20v.x%20%3D%20p.y%3B%0A%20%20v.y%20%3D%200.5*%28-1.%2F%288.*pow%28p.x%2C%201.5%29%29%29%3B%0A%0A%20%20return%20v%3B%0A%7D
@@ -8200,8 +8710,8 @@ std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fi
         x.recompute_diff_eq_each_fit_iter = true;
     }
     std::string infty = to_string_general(DBL_MAX);
-    const std::vector<double> T_finals = {10., 10., 1., /*10.,*/ 10.};
-    const std::vector<double> T_finals_ho = {/*10., 20.,*/ 5., 5., 5., 5., 10.};
+    const std::vector<double> T_finals = {10., 10., 1., /*10., 10.*/};
+    const std::vector<double> T_finals_ho = {/*10., 20.,*/ 5., 5., 5., 5., 10., 10.};
     const std::string z0 = "0.0",   pz0 = "1.1",
               z01 = "1.0",   pz01 = "0.5",
               z02 = "-1.0", pz02 = "3.0",
@@ -8253,6 +8763,11 @@ std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fi
             std::vector<std::string>{"x0", w, "*", "cos", "x0", w0, "*", "cos", "-", w0, w0, "*", w, w, "*", "-", "/", F0, "*"},
             std::vector<std::string>{"x0", w0, "*", "sin", w0, "*", "x0", w, "*", "sin", w, "*", "-", w0, w0, "*", w, w, "*", "-", "/", F0, "*"}
         },
+        std::vector<std::vector<std::string>>
+        {
+            std::vector<std::string>{"4", "143", "sqrt", "*", "20449", "256", "/", "x0", "192", "143", "/", "+", "x0", "192", "143", "/", "+", "*", "*", "1", "-", "sqrt", "143", "/", "*", "1", "-"},
+            std::vector<std::string>{"4", "143", "sqrt", "*", "20449", "x0", "*", "256", "/", "429", "4", "/", "+", "*", "143", "20449", "x0", "192", "143", "/", "+", "x0", "192", "143", "/", "+", "*", "*", "256", "/", "1", "-", "sqrt", "*", "/"},
+        }
     };
     const std::vector<std::vector<double>> scale_factors = std::vector<std::vector<double>>
     {
@@ -8264,20 +8779,20 @@ std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fi
     {
         std::vector<std::vector<double>> //h = 0.5
         {
-            std::vector<double>{/*1.9431173075356595e-05, 21.875570775236163,*/ 276.3363542794327, 41906.50212747102, 1.542470024833186, 63.3268779557414, 9.527968611788639}, // y
-            std::vector<double>{/*1.1218592895619236e-05, 21.203885083537056,*/ 657.0621553663979, 135938.75716608638, 3.586324106892044, 185.96261286442754, 1.5869320781987137} // v
+            std::vector<double>{/*1.9431173075356595e-05, 21.875570775236163,*/ 276.3363542794327, 41906.50212747102, 1.542470024833186, 63.3268779557414, 9.527968611788639, 51802.36510637897}, // y
+            std::vector<double>{/*1.1218592895619236e-05, 21.203885083537056,*/ 657.0621553663979, 135938.75716608638, 3.586324106892044, 185.96261286442754, 1.5869320781987137, 314246.4162680149} // v
         },
 
         std::vector<std::vector<double>> //h = 0.1
         {
-            std::vector<double>{/*0.009061349832937535, 13677.976692876602,*/ 210059.56578547714, 26595732.970508575, 1037.262751255679, 18397.040987224555, 2783.395203991753}, // y
-            std::vector<double>{/*0.00523157274184527, 13084.555877064196,*/ 512242.20827205153, 88786516.73294874, 2480.384412165452, 51204.563299441485, 580.5241643599476} // v
+            std::vector<double>{/*0.009061349832937535, 13677.976692876602,*/ 210059.56578547714, 26595732.970508575, 1037.262751255679, 18397.040987224555, 2783.395203991753, 28157852.107838906}, // y
+            std::vector<double>{/*0.00523157274184527, 13084.555877064196,*/ 512242.20827205153, 88786516.73294874, 2480.384412165452, 51204.563299441485, 580.5241643599476, 167274454.57669485} // v
         },
 
         std::vector<std::vector<double>> //h = 0.05
         {
-            std::vector<double>{/*0.14040684671927509, 218983.05635617938,*/ 3487666.3743087724, 427384406.6851389, 18169.2464584513, 280855.1152995857, 48378.796003230964}, // y
-            std::vector<double>{/*0.08106393041923145, 209197.68586678602,*/ 8515286.403830718, 1430021529.904676, 43461.59056043559, 778772.7771280183, 10128.419550146935} // v
+            std::vector<double>{/*0.14040684671927509, 218983.05635617938,*/ 3487666.3743087724, 427384406.6851389, 18169.2464584513, 280855.1152995857, 48378.796003230964, 448092935.7333616}, // y
+            std::vector<double>{/*0.08106393041923145, 209197.68586678602,*/ 8515286.403830718, 1430021529.904676, 43461.59056043559, 778772.7771280183, 10128.419550146935, 2655940559.686343} // v
         },
     };
 
@@ -8326,6 +8841,11 @@ std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fi
         {
             std::vector<std::string>{"v_n"},
             std::vector<std::string>{F0, "x0", w, "*", "cos", "*", w0, w0, "y_n", "*", "*", "-"}
+        },
+        std::vector<std::vector<std::string>>
+        {
+            std::vector<std::string>{"v_n"},
+            std::vector<std::string>{"-1", "y_n", "1", "+", "y_n", "1", "+", "*", "y_n", "1", "+", "*", "/"}
         }
     };
 
@@ -8338,13 +8858,14 @@ std::vector<std::vector<std::string>> RK4Explicitc2c3Discovery(Board& x, bool fi
         std::vector<double>{Stod(z01), Stod(pz01)},
         std::vector<double>{Stod(z02), Stod(pz02)},
         std::vector<double>{Stod(z03), Stod(pz03)},
-        std::vector<double>{0., 0.}
+        std::vector<double>{0., 0.},
+        std::vector<double>{3., 3.}
     }; //ICs for the ODE solve
 
     const int numFuncs = example_dy_dts.size();
-    assert((numFuncs == example_ys.size()) && (y_0s.size() == numFuncs));
+    assert((numFuncs == example_ys.size()) && (y_0s.size() == numFuncs) && (numFuncs == T_finals.size()));
     const int numFuncsHo = example_dy_dts_ho.size();
-    assert((numFuncsHo == example_ys_ho.size()) && (y_0s_ho.size() == numFuncsHo));
+    assert((numFuncsHo == example_ys_ho.size()) && (y_0s_ho.size() == numFuncsHo) && (numFuncsHo == T_finals_ho.size()));
     std::vector<std::string> example_y, example_dy_dt, c_2_func, c_3_func;
     std::vector<std::vector<std::string>> c_2_func_vec(2), c_3_func_vec(2);
     auto expand_c_post = [&](std::vector<std::string> c, int D)
@@ -11688,7 +12209,7 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
-//    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("((((((-0.000100791315410173 * (sin(x3) + (-0.4314186657656249 * x2))) + -0.7804663737709057) * ~((0.9996066571884268 * sin((-2.1800323765729803e-10 + x0))))) * ((-0.16506007257280858 * ((1.0000001690945002 * ~(x3)) + ((x3 + 1.9443457701816629) + (1.0000000242997562 * x3)))) + ((-0.010052807626991568 * ((x2 + -2.557279356185078) + -2.6200543093088995)) + 4.3561912541265535))) * sin((((2.5707958554135955 * (0.7853978286006916 * (x2 * x3))) + (((1.1801175501287325e-05 + x0) + ~(x0)) + (2.0314514898049403 + (x2 * x3)))) + ((3.142940855410066 + (~(x1) + -0.999999393152779)) + ((x3 + ~(x3)) + 7.448132664310183))))) + (((((((0.9888670035757141 * x3) + (-0.18482394225573848 * x2)) * -1.0437484073146115) + ((sin(x3) * (-4.2972858937567615 + x2)) + (~(x3) + 19.718022317140463))) * ((-0.0003489234414567007 * ((34.14770537757878 + x2) * (-0.1565808173818133 * x2))) + ((~(x1) + x1) + -0.029307354058529623))) * (sin((((0.2798556403684562 * x2) + 1.6769462695830424) + ((0.037515657264346566 + x3) * 0.802136676176333))) + sin((((-0.028715252442451992 * x2) + 0.2326296354892239) * sin((x3 * 1.6407594188421604)))))) + (((((0.9726446349248232 * (x2 + -0.01915493518430451)) + (0.12904954054321094 * sin(x3))) + sin((2.3797631628016584 + (x3 * 0.5801881141186406)))) * (((11.384159388177787 + (x3 * 3.477275363360471)) * -0.0005217069377446043) + -0.10998486115752908)) + ((((-0.1897632143964218 * (16.509911552072047 + x2)) * ((x2 * -0.00021055994058814524) + 0.0011311292534280865)) * (((x3 * x3) + (x3 + x0)) + (~(x0) * 1.0004383670936476))) + ((sin((0.4311646779170546 * x2)) * 0.0666709319375412) + 0.6603421426092441)))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu")));
+//    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("((((((-0.00010079189802839168 * (~(x2) * sin(x2))) + -0.7804663681704281) * ~((0.9996066618421596 * sin((-1.6580476278746822e-10 + x0))))) * ((-0.16506006253932867 * ((1.0000001708490658 * ~(x3)) + ((x3 + 1.9443453240794613) + (1.0000000204835315 * x3)))) + ((0.0008215299377976706 * ((x2 + -2.673233331705679) + -2.66882081624132)) + 4.356191264047536))) * sin((((2.570795856958231 * (0.7853978278819566 * (x2 * x3))) + (((7.962535533078856e-08 + x0) + ~(x0)) + (2.0306079827743746 + (x2 * x3)))) + ((3.1428563968022543 + (~(x1) + -0.9999993900320638)) + 7.44813267419371)))) + ((-0.24090990285372088 * (sin((1.038020267940177 + ~((x3 * 0.7090422609292288)))) + (-0.9987354079785399 * sin(sin(x3))))) + ((((x2 + 0.917085775676431) + sin(x3)) * -0.0705466431355269) + 0.48675162848025144)))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu")));
 //    from sympy import *; x0, x1, x2, x3 = symbols('x0 x1 x2 x3'); print(eval("(((((0.00020761302887044612 * (sin(x2) + (1.0272442241645563 * x2))) + ((1.3304563988558432e-06 * (x3 + x2)) + -1.0052629302733438)) * sin((~((1.4269067710318464e-07 + x2)) + ((-8.427410561791095e-08 + x0) + (2.2679423250655768e-07 + x2))))) * (((0.008782524861544684 * (0.27587744389610325 + (0.009993495877091307 + x2))) + (-0.1651571745075183 * ((-1.911228719809616e-07 + x3) + 0.010002284668230988))) + (((0.010151823903466778 * sin(x2)) * (-0.06438380401024771 * sin(x2))) + (((x2 * 0.03852998867113262) * -8.436444206719193e-05) + 3.659791130722469)))) * sin((((5.301797186958442 * (-2.4089452401052685e-07 + (2.2542565388059674e-07 + x3))) + sin((10.688904984949698 * (1.1264219683053926e-08 + x2)))) + (~(((x0 + -2.9955080762796076e-07) + (5.8232400879963024e-08 + x1))) + ((3.570015447645774e-12 + (1.081329657641461e-11 + x0)) + 72.43120897235498)))))\n".replace("^","**").replace("~", "-")));
     
 //    puts("called SwiftHohenberg");
@@ -14108,25 +14629,18 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
 
 namespace ExampleProblems
 {
-    void RK4Explicitc2c3DiscoveryTest(int random_seed, const char* algorithm, double time)
+    void RandomBubbleTest(int random_seed, const char* algorithm, double time)
     {
         srand(random_seed);
+        constexpr int numPoints = 10000;
+        constexpr int num_diff_eqns = 7;
+        Eigen::MatrixXd data = createMeshgridVectors(numPoints, 1, {0.0}, {15.});
 
-        constexpr int num_points = 10;
-        Eigen::MatrixXd data(num_points, 1); //c_2 and c_3 just depend on f
-        constexpr int num_diff_eqns = 1;
-        
         double threshold = 0.0;
         unsigned int num_threads = 0;
         std::vector<std::string> bad_ops = {"exp", "ln", "log", "^", "/", "sqrt", "asin", "acos", "arcsin", "arccos"};
-        // input is just time t
-        for (int i = 0; i < num_points; i++)
-        {
-            data(i, 0) = (10.0 * i) / (num_points - 1);
-        }
-        
         constexpr bool read_from_file = true;
-        constexpr const char* filename = "RK4Explicitc2c3DiscoveryTestFile.txt";
+        constexpr const char* filename = "RandomBubbleTestFile.txt";
         std::string pert_mode = "sub_tree";
         std::string simplify_mode = "total";
         std::string eval_type = "dag";
@@ -14139,8 +14653,25 @@ namespace ExampleProblems
         std::vector<std::string> theTrueSeedExprStrings;
         std::string theConstCacheThresh;
         std::string theConstTokens = "default";
-    std::string pertAll = "0";
-    int pert_all = 0;
+        std::string pertAll = "0";
+        int pert_all = 0;
+        std::vector<std::string> custom_features = {"x0"};
+        using namespace Bubble;
+        for (int i = 0; i < numBubbles; i++) //Add bubble parameters to custom_features
+        {
+            //add the necessary custom features
+            custom_features.push_back("bx"+to_string_general(i));
+            custom_features.push_back("by"+to_string_general(i));
+            custom_features.push_back("beps"+to_string_general(i));
+            custom_features.push_back("bvar"+to_string_general(i));
+        }
+        // Lastly, add initial conditions to custom_features
+        custom_features.push_back("x_0");
+        custom_features.push_back("y_0");
+        custom_features.push_back("vx_0");
+        custom_features.push_back("vy_0");
+        std::vector<std::vector<std::string>> custom_features_vec{custom_features, custom_features};
+        assert((custom_features_vec.size() == 2) && (custom_features_vec[0].size() == (5+4*numBubbles)) && (custom_features_vec[0].size() == custom_features_vec[1].size()));
         
         if (read_from_file)
         {
@@ -14182,7 +14713,7 @@ namespace ExampleProblems
             fitIters = std::stoi(theNumFitIters);
             ConstCacheThresh = std::stod(theConstCacheThresh);
             bad_ops = split(theBadOps);
-        pert_all = std::stoi(pertAll);
+            pert_all = std::stoi(pertAll);
             if (theTrueSeedExprStrings.size() == 2)
             {
                 theTrueSeedExprs[0] = split(theTrueSeedExprStrings[0]);
@@ -14203,7 +14734,184 @@ namespace ExampleProblems
             std::cout << "ConstCacheThresh = " << ConstCacheThresh << '\n';
             std::cout << "bad_ops = " << bad_ops << '\n';
             std::cout << "theConstTokens = " << theConstTokens << '\n';
-        std::cout << "pert_all = " << pert_all << '\n';
+            std::cout << "pert_all = " << pert_all << '\n';
+        }
+        
+        if (Algorithm == "RandomSearch")
+        {
+            RandomSearch(RandomBubble /*differential equation to solve*/,
+                         num_diff_eqns /*number of equations in differential equation system*/,
+                         data /*data used to solve differential equation*/,
+                         depth /*fixed depths of generated solution*/,
+                         "postfix" /*expression representation*/,
+                         0 /*num_consts_diff: number of constants in differential equation*/,
+                         theFitType /*fit method if expression contains const tokens*/,
+                         fitIters /*number of fit iterations*/,
+                         "naive_numerical" /*method for computing the gradient*/,
+                         true /*cache*/,
+                         time /*time to run the algorithm in seconds*/,
+                         num_threads /*num threads*/,
+                         split(theConstTokens)  /*`const_tokens`: numerical constants to include, std::vector<std::string>{"default"} includes const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
+                         threshold /*threshold for which solutions cannot be constant*/,
+                         fit /*`use_const_pieces`: whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                         0 /*number of data columns that constitute labels and not independent variables/features*/,
+                         true /*whether or not to include ALL of the features in all of the generated expressions*/,
+                         custom_features_vec /*custom features that the SR-found equations are required to contain*/,
+                         "BubbleBest.txt" /*filename to save current best expression found (instead of outputting them to standard out*/,
+                         {} /*optional max-sizes of each of the expressions in the generated solution*/,
+                         {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
+                         eval_type /*evaluation type: can be "dag", "scalar", or "vector"*/,
+                         1000000 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
+                         false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
+                         bad_ops /*operators to restrict in the search*/,
+                         ConstCacheThresh /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
+                         simplify_mode /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
+                         max_dag /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
+                         fullPrec /*fullPrec: whether to write output to full precision, i.e., std::numeric_limits<double>::digits10 */,
+                         std::vector<std::string>{} /*custom_unaries: logic must be implemented in the std::vector<std::vector<std::string>> differential equation the user passes in*/);
+        }
+        else
+        {
+            SimulatedAnnealing(RandomBubble /*differential equation to solve*/,
+                num_diff_eqns /*number of equations in differential equation system*/,
+                data /*data used to solve differential equation*/,
+                depth /*fixed depths of generated solution*/,
+                "postfix" /*expression representation*/,
+                0 /*num_consts_diff: number of constants in differential equation*/,
+                theFitType /*fit method if expression contains const tokens*/,
+                fitIters /*number of fit iterations*/,
+                "naive_numerical" /*method for computing the gradient*/,
+                true /*cache*/,
+                time /*time to run the algorithm in seconds*/,
+                num_threads /*num threads*/,
+                split(theConstTokens) /*`const_tokens`: numerical constants to include, std::vector<std::string>{"default"} includes const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
+                threshold /*threshold for which solutions cannot be constant*/,
+                fit /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
+                0 /*number of data columns that constitute labels and not independent variables/features*/,
+                false /*whether or not to include ALL of the features in all of the generated expressions*/,
+                custom_features_vec /*custom features that the SR-found equations are required to contain*/,
+                "BubbleBest.txt", //"" /*filename to save current best expression found (instead of outputting them to standard out*/
+                {} /*optional max-sizes of each of the expressions in the generated solution*/,
+                {/**/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
+                eval_type /*evaluation type: can be "dag", "scalar", or "vector"*/,
+                1000 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
+                false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
+                bad_ops /*operators to restrict in the search*/,
+                ConstCacheThresh /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
+                simplify_mode /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
+                max_dag /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
+                fullPrec /*fullPrec: whether to write output to full precision, i.e., std::numeric_limits<double>::digits10 */,
+                std::vector<std::string>{} /*custom_unaries: logic must be implemented in the std::vector<std::vector<std::string>> differential equation the user passes in*/,
+                theTrueSeedExprs /*seed expressions*/,
+                (num_threads==1) /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
+                random_seed /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
+                0.0 /*T_min*/,
+                0.0 /*T_max*/,
+                [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
+                "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
+                completeTree /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
+                pert_mode /*perturbation option: either "sub_array", "n_random", "constants_only", "constants_only_vec", "constants_only_N", or (default) "sub_tree"*/,
+                true /*whether or not to sync the current expression of each thread with the global current best*/,
+                pert_all /*In the case x.pieces.size() > 1, whether to perturb all expressions before checking the score or not*/);
+        }
+    }
+    void RK4Explicitc2c3DiscoveryTest(int random_seed, const char* algorithm, double time)
+    {
+        srand(random_seed);
+
+        constexpr int num_points = 10;
+        Eigen::MatrixXd data(num_points, 1); //c_2 and c_3 just depend on f
+        constexpr int num_diff_eqns = 1;
+        
+        double threshold = 0.0;
+        unsigned int num_threads = 0;
+        std::vector<std::string> bad_ops = {"exp", "ln", "log", "^", "/", "sqrt", "asin", "acos", "arcsin", "arccos"};
+        // input is just time t
+        for (int i = 0; i < num_points; i++)
+        {
+            data(i, 0) = (10.0 * i) / (num_points - 1);
+        }
+        
+        constexpr bool read_from_file = true;
+        constexpr const char* filename = "RK4Explicitc2c3DiscoveryTestFile.txt";
+        std::string pert_mode = "sub_tree";
+        std::string simplify_mode = "total";
+        std::string eval_type = "dag";
+        std::vector<int> depth = {2, 2};
+        int completeTree = 1, max_dag = 0, fit = 0, fitIters = 5, fullPrec = 0;
+        double ConstCacheThresh = 1.2;
+        std::string numThreads, theDepth, theCompleteTree, theMaxDag, theFit, theNumFitIters, theFitType = "RandomJitter", theBadOps, Algorithm = algorithm, theFullPrec;
+        std::string theSeedExprs;
+        std::vector<std::vector<std::string>> theTrueSeedExprs(2);
+        std::vector<std::string> theTrueSeedExprStrings;
+        std::string theConstCacheThresh;
+        std::string theConstTokens = "default";
+        std::string pertAll = "0";
+        int pert_all = 0;
+        
+        if (read_from_file)
+        {
+            std::ifstream inObj(filename);
+            
+            std::getline(inObj, Algorithm);
+            std::getline(inObj, theSeedExprs);
+            std::getline(inObj, pert_mode);
+            std::getline(inObj, simplify_mode);
+            std::getline(inObj, theCompleteTree);
+            std::getline(inObj, theMaxDag);
+            std::getline(inObj, theDepth);
+            std::getline(inObj, eval_type);
+            std::getline(inObj, numThreads);
+            std::getline(inObj, theFit);
+            std::getline(inObj, theNumFitIters);
+            std::getline(inObj, theFitType);
+            std::getline(inObj, theConstCacheThresh);
+            std::getline(inObj, theBadOps);
+            std::getline(inObj, theFullPrec);
+            std::getline(inObj, theConstTokens);
+            std::getline(inObj, pertAll);
+
+            std::cout << "Algorithm = " << Algorithm << ";\n" << Algorithm.size() << '\n';
+            std::cout << theSeedExprs.size() << '\n' << (int)theSeedExprs[0] << '\n';
+            puts("here");
+            theTrueSeedExprStrings = split(theSeedExprs, ',');
+            
+            assert((theTrueSeedExprStrings.size() == 2) || (theTrueSeedExprStrings.size() == 0));
+            // exit(1);
+            fullPrec = std::stoi(theFullPrec);
+            num_threads = std::stoi(numThreads);
+            auto temp_depth = split(theDepth);
+            assert(temp_depth.size() == 2);
+            depth = {std::stoi(temp_depth[0]), std::stoi(temp_depth[1])};
+            completeTree = std::stoi(theCompleteTree);
+            max_dag = std::stoi(theMaxDag);
+            fit = std::stoi(theFit);
+            fitIters = std::stoi(theNumFitIters);
+            ConstCacheThresh = std::stod(theConstCacheThresh);
+            bad_ops = split(theBadOps);
+            pert_all = std::stoi(pertAll);
+            if (theTrueSeedExprStrings.size() == 2)
+            {
+                theTrueSeedExprs[0] = split(theTrueSeedExprStrings[0]);
+                theTrueSeedExprs[1] = split(theTrueSeedExprStrings[1]);
+            }
+            std::cout << "Algorithm = " << Algorithm << "\n";
+            std::cout << "theTrueSeedExprs = " << theTrueSeedExprs << '\n';
+            std::cout << "pert_mode = " << pert_mode << '\n';
+            std::cout << "simplify_mode = " << simplify_mode << '\n';
+            std::cout << "completeTree = " << completeTree << '\n';
+            std::cout << "max_dag = " << max_dag << '\n';
+            std::cout << "depth = " << depth << '\n';
+            std::cout << "eval_type = " << eval_type << '\n';
+            std::cout << "num_threads = " << num_threads << '\n';
+            std::cout << "fit = " << fit << '\n';
+            std::cout << "fitIters = " << fitIters << '\n';
+            std::cout << "theFitType = " << theFitType << '\n';
+            std::cout << "ConstCacheThresh = " << ConstCacheThresh << '\n';
+            std::cout << "bad_ops = " << bad_ops << '\n';
+            std::cout << "theConstTokens = " << theConstTokens << '\n';
+            std::cout << "pert_all = " << pert_all << '\n';
         }
         
         if (Algorithm == "RandomSearch")
@@ -15422,7 +16130,8 @@ enum class ProblemOption
     WildfireSpreadTS,
     InPaintWildfireSpreadTS,
     WierdTrackFitter,
-    RK4Explicitc2c3Discovery
+    RK4Explicitc2c3Discovery,
+    RandomBubbleEnvironment
 };
 
 
@@ -15491,7 +16200,7 @@ int main(int argc, char *argv[])
 
     }
     
-    ProblemOption choice = ProblemOption::SwiftHohenberg;
+    ProblemOption choice = ProblemOption::RandomBubbleEnvironment;
     switch (choice)
     {
         case ProblemOption::BrightSolitonControlPDE:
@@ -15517,6 +16226,9 @@ int main(int argc, char *argv[])
             break;
         case ProblemOption::RK4Explicitc2c3Discovery:
             ExampleProblems::RK4Explicitc2c3DiscoveryTest(random_seed, algorithm, time);
+            break;
+        case ProblemOption::RandomBubbleEnvironment:
+            ExampleProblems::RandomBubbleTest(random_seed, algorithm, time);
             break;
         default:
             break;
