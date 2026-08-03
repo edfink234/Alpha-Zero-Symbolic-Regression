@@ -449,8 +449,11 @@ Eigen::MatrixXd addColumnWithLambda(const Eigen::MatrixXd& matrix, const std::fu
 
 /*
     In the function below, `min_vec` and `max_vec` are the min and max vals for each attribute,
-    `num_cols` is the number of attributes, and `rows` is the number of linearly-spaced data-points
+    `cols` is the number of attributes, and `rows` is the number of linearly-spaced data-points
+    Number of rows = rows*cols
+    Number of cols = cols
 */
+
 Eigen::MatrixXd createMeshgridVectors(int rows, int cols, std::vector<double> min_vec, std::vector<double> max_vec)
 {
     assert((min_vec.size() < INT_MAX) && (max_vec.size() < INT_MAX));
@@ -497,6 +500,148 @@ Eigen::MatrixXd createMeshgridVectors(int rows, int cols, std::vector<double> mi
     }
 
     return matrix;
+}
+
+//Adapated from https://web.maths.unsw.edu.au/~fkuo/sobol/
+//N is the number of sobol points (rows)
+//D is the number columns (dimensions)
+//min_vec is a vector of lower bounds for each dimension's values
+//max_vec is a vector of upper bounds for each dimension's values
+Eigen::MatrixXd createSobolMesh(int N, int D, std::vector<double> min_vec, std::vector<double> max_vec)
+{
+    assert((min_vec.size() < INT_MAX) && (max_vec.size() < INT_MAX));
+    assert( (D == static_cast<int>(min_vec.size())) && (D == static_cast<int>(max_vec.size())) );
+    
+    std::ifstream infile("new-joe-kuo-6.21201", std::ios::in);
+    if (!infile)
+    {
+      std::cout << "Input file containing direction numbers cannot be found!\n";
+      exit(1);
+    }
+    char buffer[1000];
+    infile.getline(buffer,1000,'\n'); //read in first line which is the header `d       s       a       m_i`
+    
+    // L = max number of bits needed
+    unsigned L = (unsigned)ceil(log((double)N)/log(2.0));
+
+    // C[i] = index from the right of the first zero bit of i
+    unsigned *C = new unsigned [N];
+    C[0] = 1;
+    for (unsigned i=1;i<=N-1;i++)
+    {
+        C[i] = 1;
+        unsigned value = i;
+        while (value & 1)
+        {
+            value >>= 1;
+            C[i]++;
+        }
+    }
+    
+    // POINTS[i][j] = the jth component of the ith point
+    //                with i indexed from 0 to N-1 and j indexed from 0 to D-1
+    Eigen::MatrixXd POINTS(N, D);
+    
+    /*
+    # Source - https://stackoverflow.com/a/929107
+    # Posted by jerryjvl, modified by community. See post 'Timeline' for change history
+    # Retrieved 2026-08-01, License - CC BY-SA 3.0
+
+    OldRange = (OldMax - OldMin) = 1
+    NewRange = (NewMax - NewMin)
+    NewValue = (((OldValue - OldMin) * NewRange) / OldRange) + NewMin
+             = OldValue*NewRange + NewMin
+    */
+
+    for (unsigned j=0;j<D;j++)
+    {
+        POINTS(0,j) = min_vec[j]; //first row is min_vec[j]
+    }
+    
+    // ----- Compute the first dimension -----
+    
+    // Compute direction numbers V[1] to V[L], scaled by pow(2,32)
+    unsigned *V = new unsigned [L+1];
+    for (unsigned i=1;i<=L;i++)
+    {
+        V[i] = 1 << (32-i); // all m's = 1
+    }
+
+    // Evalulate X[0] to X[N-1], scaled by pow(2,32)
+    unsigned *X = new unsigned [N];
+    X[0] = 0;
+    double NewRange = max_vec[0]-min_vec[0];
+    for (unsigned i=1;i<=N-1;i++)
+    {
+        X[i] = X[i-1] ^ V[C[i-1]];
+        POINTS(i,0) = (double)X[i]/pow(2.0,32); // *** the actual points
+        //        ^ 0 for first dimension
+        POINTS(i,0) = (POINTS(i,0)*NewRange + min_vec[0]);
+    }
+    
+    // Clean up
+    delete [] V;
+    delete [] X;
+    
+    // ----- Compute the remaining dimensions -----
+    for (unsigned j=1;j<=D-1;j++)
+    {
+      
+        // Read in parameters from file
+        unsigned d, s;
+        unsigned a;
+        infile >> d >> s >> a;
+        unsigned *m = new unsigned [s+1];
+        for (unsigned i=1;i<=s;i++)
+        {
+            infile >> m[i];
+        }
+
+        // Compute direction numbers V[1] to V[L], scaled by pow(2,32)
+        unsigned *V = new unsigned [L+1];
+        if (L <= s)
+        {
+            for (unsigned i=1;i<=L;i++)
+            {
+                V[i] = m[i] << (32-i);
+            }
+        }
+        else
+        {
+            for (unsigned i=1;i<=s;i++)
+            {
+                V[i] = m[i] << (32-i);
+            }
+            for (unsigned i=s+1;i<=L;i++)
+            {
+                V[i] = V[i-s] ^ (V[i-s] >> s);
+                for (unsigned k=1;k<=s-1;k++)
+                {
+                    V[i] ^= (((a >> (s-1-k)) & 1) * V[i-k]);
+                }
+            }
+        }
+
+        // Evalulate X[0] to X[N-1], scaled by pow(2,32)
+        unsigned *X = new unsigned [N];
+        X[0] = 0;
+        NewRange = max_vec[j]-min_vec[j];
+        for (unsigned i=1;i<=N-1;i++)
+        {
+            X[i] = X[i-1] ^ V[C[i-1]];
+            POINTS(i,j) = (double)X[i]/pow(2.0,32); // *** the actual points
+            //        ^ j for dimension (j+1)
+            POINTS(i,j) = POINTS(i,j)*NewRange + min_vec[j];
+        }
+
+        // Clean up
+        delete [] m;
+        delete [] V;
+        delete [] X;
+    }
+    delete [] C;
+    
+    return POINTS;
 }
 
 Eigen::MatrixXd hstack(const Eigen::MatrixXd& mat1, const Eigen::MatrixXd& mat2)
@@ -14229,12 +14374,12 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                     reset_const_token_labels();
                 }
                 //Step 6: Evaluate the new mutated `x.pieces` and update score if needed if it's time
-        if ((!pert_all) || (jdx == x.pieces.size() - 1))
-        {
+                if ((!pert_all) || (jdx == x.pieces.size() - 1))
+                {
                     score = x.complete_status(x.pieces.size() - 1, false);
-            assert(score >= 0.0);
+                    assert(score >= 0.0);
                     updateScore(temp_func(ratio, i));
-        }
+                }
 //                if (score < 0.0)
 //                {
 //                    throw(std::runtime_error("score = "+to_string_general(score)));
@@ -15101,6 +15246,14 @@ namespace ExampleProblems
         const int num_diff_eqns = (mu_equals_nu_1_only) ? 3 : 4;
         
 #if TIME_EVAL
+        auto sobolDataExample = createSobolMesh(1000, 4, {0.01, 1.2, 0.01, 0.01}, {10.0, 6.28319, 10, 10});
+        std::cout << "Example sobol mesh first 10 rows = " << sobolDataExample.topRows(10) << '\n';
+        
+        Eigen::VectorXd maxs = sobolDataExample.colwise().maxCoeff();
+        Eigen::VectorXd mins = sobolDataExample.colwise().minCoeff();
+
+        std::cout << "Max: " << maxs.transpose() << std::endl;
+        std::cout << "Min: " << mins.transpose() << std::endl;
         auto n = 10000;
         Eigen::VectorXd a = Eigen::VectorXd::LinSpaced(n, 0.01, 10.0);
         Eigen::VectorXd b = Eigen::VectorXd::LinSpaced(n, 0.1, 2.0);
@@ -15352,7 +15505,7 @@ namespace ExampleProblems
                 0 /*number of data columns that constitute labels and not independent variables/features*/,
                 true /*whether or not to include ALL of the features in all of the generated expressions*/,
                 {} /*custom features that the SR-found equations are required to contain*/,
-                "SwiftHohenbergBest.txt", //"" /*filename to save current best expression found (instead of outputting them to standard out*/
+                "SwiftHohenbergBestTemp.txt", //"" /*filename to save current best expression found (instead of outputting them to standard out*/
                 {} /*optional max-sizes of each of the expressions in the generated solution*/,
                 {/*split("x0 -0.01 + x1 sech + 11.156528193614346 ^ 2.714063572022206e-13 * 0.010000 x0 + 6.29319 ^ 1e-08 * 0.0100003333566687 + 0.7493736126143709 + + 0.9998848754538172 x0 tanh arcsin 0.7615941559557649 x0 4 ^ / / ^ 6.283190 x1 + ~ sin 0.9171523356672744 * * 0.7827863849639187 x0 cos asin cos * * - x0 x0 + 0.003734854911714874 6.283190 x0 / ^ 7.570169558264211 + ^ 0.28580222883407974 0.010000 x0 + 10.01 + ^ 0.010000 x0 ^ 1.03 + x1 sin - * * -6.1759665127829875 -10 x1 x1 + + + x1 0.005 / 1.9195169107150692e+06 - / -0.06767485271943648 + + 0.2658022288340797 x0 + 0.9801980198019802 ^ x0 1.517923178056138 + / 0.010000 x0 + sin 0.03661899347368653 x0 + + x1 sin 10.01 0.010000 x0 + / + * ^ -0.01842414214696351 + + -")*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 eval_type /*evaluation type: can be "dag", "scalar", or "vector"*/,
@@ -16200,7 +16353,7 @@ int main(int argc, char *argv[])
 
     }
     
-    ProblemOption choice = ProblemOption::RandomBubbleEnvironment;
+    ProblemOption choice = ProblemOption::SwiftHohenberg;
     switch (choice)
     {
         case ProblemOption::BrightSolitonControlPDE:
