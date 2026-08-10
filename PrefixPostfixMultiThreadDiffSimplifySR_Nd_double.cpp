@@ -6092,12 +6092,12 @@ struct Board
         return Board::data.numRows()*(this->num_diff_eqns + (this->isConstTol ? this->num_objectives*Board::__num_features : 0));
     }
 
-    int df(Eigen::VectorXd &x, Eigen::MatrixXd &fjac)
+    int df(Eigen::VectorXd &x, Eigen::MatrixXd &fjac) //fjac has shape (values(), x.params.size())
     {
         double temp;
         constexpr double epsilon = 1e-5;
 
-        for (int i = 0; i < x.size(); i++)
+        for (int i = 0; i < x.size(); i++) //loop over each parameter to be fitted
         {
             //Eigen::VectorXd xPlus(x);
             //xPlus(i) += epsilon;
@@ -6189,7 +6189,7 @@ struct Board
                     }
                 }
             }
-            printf("score_before = %f -> score_after = %f\n", score_before, score_after);
+            //printf("score_before = %f -> score_after = %f\n", score_before, score_after);
 //            std::cout << "LevenbergMarquardt this->params = " << this->params << '\n';
             improved = true;
         }
@@ -14386,11 +14386,32 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                     x.pieces = x.complete_tree(x.pieces);
 //                    std::cout << "x.pieces after complete_tree = " << x.pieces << '\n';
                 }
+                //MARK: Maybe substitute const tokens with values when assigning to global_current
                 current = x.pieces; //update current expression
                 if (sync_current)
                 {
                     std::scoped_lock sync_curr_lock(Board::thread_locker);
                     global_current = current;
+//                    global_current.resize(current.size());
+//                    for (int jdx = 0; jdx < current.size(); jdx++)
+//                    {
+//                        global_current[jdx].resize(current[jdx].size());
+//                        for (int kdx = 0; kdx < global_current[jdx].size(); kdx++)
+//                        {
+//                            if (current[kdx].substr(0,5)=="const")
+//                            {
+//                                assert(current[jdx][kdx].size() > 5);
+//                                int _param_num = std::stoi(current[kdx].substr(5));
+//                                assert(_param_num < x.params.size());
+//                                global_current[jdx][kdx] = x.params(_param_num);
+//                                
+//                            }
+//                            else
+//                            {
+//                                global_current[jdx][kdx] = current[jdx][kdx];
+//                            }
+//                        }
+//                    }
                     global_current_idx++;
                     current_idx = global_current_idx;
                 }

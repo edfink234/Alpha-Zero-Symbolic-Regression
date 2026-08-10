@@ -1339,6 +1339,7 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
     bool isdouble1, isdouble2, isConst1, isConst2;
     thread_local std::vector<std::string> temp;
     temp.clear();
+    //TODO: Seems like you can change this to temp.resize(expression.size()) and below temp[counter++] = (simplifyString(...)); benchmark it.
     temp.reserve(expression.size());
 //    printf("expression before = ");for (const auto& i: expression){std::cout << i << ' ';}puts("");
     for (int i = static_cast<int>(expression.size()) - 1; i >= 0; i--)
