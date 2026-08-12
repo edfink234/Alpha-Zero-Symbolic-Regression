@@ -5962,7 +5962,7 @@ struct Board
                             this->derivePostfix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
                         }
                         //derivatives[jdx][idx] = this->derivat;
-                        expr_eval_var[jdx*Board::__num_features+idx] = this->expression_evaluator(this->params, this->derivat);
+                        expr_eval_var[jdx*Board::__num_features+idx] = this->expression_evaluator(x, this->derivat);
                         idx++;
                     }
                 }
