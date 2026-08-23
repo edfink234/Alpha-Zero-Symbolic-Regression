@@ -1,0 +1,40 @@
+
+Thread id = 6
+Unique expressions = 453
+Time spent fitting = 0.272934254 seconds
+Best score = 2.09223994999599e-21, SNE = 4.77956651196683e+20
+Squared-norm error for each equation: 1.18745654341108e-05 1.9338461859074e-06 4.77956651196683e+20 0.427412150930917 
+Best expression = (((x0 + 133.4219710647532) + x0) + (x3 * (~(sin((x0 + x1))) + ((x2 * ~(sin(x3))) + x2))))
+Best expression (original format) = x0 133.4219710647532 + x0 + x3 x0 x1 + sin ~ x2 x3 sin ~ * x2 + + * +
+
+Thread id = 7
+Unique expressions = 1375
+Time spent fitting = 0.571768962 seconds
+Best score = 1.2191882176734e-20, SNE = 8.20217900324136e+19
+Squared-norm error for each equation: 7.08233462798906e-05 8.27200488920424e-07 8.20217900324136e+19 0.140643319862071 
+Best expression = (x0 * (~(76.53559707903584) + (x2 * (x3 + (x3 + sin(sin(x1)))))))
+Best expression (original format) = x0 76.53559707903584 ~ x2 x3 x3 x1 sin sin + + * + *
+
+Thread id = 3
+Unique expressions = 1816
+Time spent fitting = 1.072364254 seconds
+Best score = 5.11176805969166e-20, SNE = 1.95627029302327e+19
+Squared-norm error for each equation: 1.10243796437519e-05 5.30505053819677e-06 1.95627029302327e+19 0.0230100168646196 
+Best expression = (~((x3 + sin(x1))) * (0.037058431339652184 + (x0 * (sin(~(sin(x0))) + (~(x2) + (x0 * (-14.980862977660138 + 15.939329593204576)))))))
+Best expression (original format) = x3 x1 sin + ~ 0.037058431339652184 x0 x0 sin ~ sin x2 ~ x0 -14.980862977660138 15.939329593204576 + * + + * + *
+
+Thread id = 1
+Unique expressions = 2064
+Time spent fitting = 1.288888254 seconds
+Best score = 5.13458774675109e-16, SNE = 1.94757602620142e+15
+Squared-norm error for each equation: 1.69310514573616e-05 1.1743209625968e-05 1.94757602620142e+15 1.62653621600148e-05 
+Best expression = ((x2 * ((x3 * -0.7030561140808834) + sin((~((x0 * 0.12001202172899103)) * (sin(x1) * x2))))) + x0)
+Best expression (original format) = x2 x3 -0.7030561140808834 * x0 0.12001202172899103 * ~ x1 sin x2 * * sin + * x0 +
+
+Thread id = 0
+Unique expressions = 15573
+Time spent fitting = 3.714513545 seconds
+Best score = 2.89729808919571e-15, SNE = 345149159394088
+Squared-norm error for each equation: 4.07639435430365e-06 1.87268676658893e-06 345149159394088 0.0556116221329088 
+Best expression = (sin(x2) + (((x0 + x3) + x2) + (sin(x0) * (sin(x1) * (sin(x2) * (-48.126768484588986 + (x3 * x3)))))))
+Best expression (original format) = x2 sin x0 x3 + x2 + x0 sin x1 sin x2 sin -48.126768484588986 x3 x3 * + * * * + +
