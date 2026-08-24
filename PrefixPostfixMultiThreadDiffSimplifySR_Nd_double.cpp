@@ -1134,6 +1134,7 @@ struct Board
     static inline double ftol = 1.49e-8; //for LevenbergMarquardt
     static inline double xtol = 1.49e-8; //for LevenbergMarquardt
     static inline double epsilon = 1e-5; //for LevenbergMarquardt
+    static inline double alpha_bt = 0.0; //for LevenbergMarquardt
     
     static inline std::atomic<double> global_min_sne{DBL_MAX};
     static inline thread_local std::unordered_map<std::string, Eigen::VectorXd> subexpr_cache;
@@ -6238,30 +6239,64 @@ struct Board
 #ifdef logProgress
         std::cout << "score_after = " << score_after << '\n';
 #endif
+        auto testTriviality = [&]()
+        {
+            for (int k = 0; k < Board::__input_vars.size(); k++)
+            {
+                for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++) //loop over each generated symbolic expression
+                {
+                    if (isZero(expression_evaluator(this->params, derivatives[jdx][k]), this->isConstTol))
+                    {
+#ifdef logProgress
+                        puts("too trivial");
+#endif
+                        improved = false;
+                        this->params = temp_params;
+                        Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
+                        return std::make_pair(improved, score_after);
+                    }
+                }
+            }
+            improved = true;
+            return std::make_pair(improved, score_after);
+        };
         if (score_after < score_before)
         {
             if (this->isConstTol > 0) //make sure that it didn't push toward triviality
             {
-                for (int k = 0; k < Board::__input_vars.size(); k++)
+                Eigen::VectorXd lm_params;
+                if (Board::alpha_bt > 0.) //backtracking enabled
                 {
-                    for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++) //loop over each generated symbolic expression
+                    lm_params = this->params; //caching the parameters LevenbergMarquardt proposed
+                }
+                auto trivResult = testTriviality();
+                if (!trivResult.first) //if it did not improve
+                {
+                    if (Board::alpha_bt == 0.)
                     {
-                        if (isZero(expression_evaluator(this->params, derivatives[jdx][k]), this->isConstTol))
-                        {
-#ifdef logProgress
-                            puts("too trivial");
-#endif
-                            improved = false;
-                            this->params = temp_params;
-                            Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
-                            return std::make_pair(improved, score_after);
-                        }
+                        return trivResult;
                     }
+                    //else: backtracking has been enabled
+                    double temp_alpha = Board::alpha_bt;
+                    while (!trivResult.first)
+                    {
+                        this->params = temp_params + temp_alpha * (lm_params - temp_params);
+#ifdef logProgress
+                        printf("lm step failed, trying again with alpha = %lf\n", temp_alpha);
+#endif
+                        trivResult = testTriviality();
+                        temp_alpha *= Board::alpha_bt;
+                    }
+                    score_after = SNE(expression_evaluator(this->params, this->diffeq_result));
+                    improved = (score_after < score_before);
                 }
             }
 #ifdef logProgress
-            printf("score_before = %f -> score_after = %f\n", score_before, score_after);
-#endif
+            if (improved)
+            {
+                printf("score_before = %f -> score_after = %f\n", score_before, score_after);
+            }
+#endif // logProgress
 //            std::cout << "LevenbergMarquardt this->params = " << this->params << '\n';
             improved = true;
         }
@@ -14447,12 +14482,19 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
         assert(pert_option.size() > 10);
         std::vector<std::string> temp_vec = split(pert_option.substr(10), '_');
         std::cout << "temp_vec = " << temp_vec << '\n';
-
-        for (int i = 0; i < temp_vec.size(); i++)
+        int lm_idx = 0;
+        if (temp_vec.size() && (temp_vec[0] == "bt"))
         {
-            if (temp_vec[i].size())
+            Board::alpha_bt = Stod(temp_vec[1]);
+            assert((Board::alpha_bt >= 0. && Board::alpha_bt < 1.));
+            lm_idx = 2;
+        }
+
+        for (;lm_idx < temp_vec.size(); lm_idx++)
+        {
+            if (temp_vec[lm_idx].size())
             {
-                const_indices_to_perturb.emplace(std::stoi(temp_vec[i]));
+                const_indices_to_perturb.emplace(std::stoi(temp_vec[lm_idx]));
             }
         }
         std::cout << "constants to perturb: " << std::vector<int>(const_indices_to_perturb.begin(), const_indices_to_perturb.end()) << '\n';
