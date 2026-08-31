@@ -272,6 +272,7 @@ void print_container(const std::vector<std::string>& c, int low, int up)
 
 void setPostfixGR(const std::vector<std::string>& postfix, std::vector<int>& grasp)
 {
+    //TODO: Change to grasp.resize(...), grasp[i]=...
     grasp.reserve(postfix.size()); //grasp[k] = GR( postfix[k]), k = 1, ... ,i.
     //In the paper they do `k = 1;` instead of `k = 0;`, presumably because GR(postfix[0]) always is 0, but it works
     //if you set k = 0 too.
@@ -1339,7 +1340,7 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
     bool isdouble1, isdouble2, isConst1, isConst2;
     thread_local std::vector<std::string> temp;
     temp.clear();
-    //TODO: Seems like you can change this to temp.resize(expression.size()) and below temp[counter++] = (simplifyString(...)); benchmark it.
+    //TODO: Seems like you can change this to temp.resize(expression.size()) and below temp[counter++] = (simplifyString(...)) then after temp.resize(counter); benchmark it.
     temp.reserve(expression.size());
 //    printf("expression before = ");for (const auto& i: expression){std::cout << i << ' ';}puts("");
     for (int i = static_cast<int>(expression.size()) - 1; i >= 0; i--)
@@ -1709,6 +1710,7 @@ void simplifyRPN(std::vector<std::string>& expression)
         size_before = expression.size();
         simplifyRPN_Helper(expression);
         grasp.reserve(expression.size());
+        //TODO: Make it so the grasp is computed once only and not every iteration of this do-while loop
         graspSimplifyPostfix(expression, 0, expression.size() - 1, grasp);
         simplifyRPN_Helper(expression);
         size_after = expression.size();
