@@ -49,6 +49,20 @@ bool is_binary(const std::string& token)
     return (binary_operators.find(token) != binary_operators.end());
 }
 
+template<typename T>
+std::ostream& operator<<(std::ostream& out, const std::vector<T>& vec)
+{
+    for (size_t i = 0; i < vec.size(); i++)
+    {
+        out << vec[i];
+        if (i < (vec.size() - 1))
+        {
+            out <<  " ";
+        }
+    }
+    return out;
+}
+
 bool is_const(const std::string& token)
 {
     return ((!is_unary(token)) && (!is_binary(token)));
@@ -284,20 +298,26 @@ void setPostfixGR(const std::vector<std::string>& postfix, std::vector<int>& gra
 
 //0 x x tanh sin cos + * -> 0 * (cos(sin(tanh(x)+x)
 //e.g. 0*x, 1*x, x*0, x*1, x-x, x+0, 0+x, 0-x, x-0, ...
-void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, int up, std::vector<int>& grasp, std::vector<std::string>& new_expression, bool setGRvar = false)
+void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, int up, std::vector<int>& grasp, std::vector<std::string>& new_expression, bool setGRvar = false, bool traceNewExpression = false)
 {
     if (!setGRvar)
     {
         grasp.clear();
         setPostfixGR(expression, grasp);
     }
+    
+    if (traceNewExpression)
+    {
+        std::cout << "new_expression = {" << new_expression << "}, low = " << low << ", up = " << up
+        << ", expression[up] = " << expression[up] << ", expression[low] = " << expression[low] << '\n';
+    }
 //    print_container(expression, low, up);
     if (expression[up] == "+" || expression[up] == "-") // x y +/-
     {
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true);
+        graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true, traceNewExpression);
         int first_arg_idx_high = new_expression.size();
-        graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true);
+        graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true, traceNewExpression);
         int second_arg_idx_high = new_expression.size();
         int step;
         
@@ -341,9 +361,9 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
     else if (expression[up] == "*") //x y *
     {
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true); //x
+        graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true, traceNewExpression); //x
         int first_arg_idx_high = new_expression.size();
-        graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
+        graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true, traceNewExpression); //y
         //int second_arg_idx_high = new_expression.size();
         //int step;
         
@@ -395,9 +415,9 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
     else if (expression[up] == "/") //x y /
     {
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true); //x
+        graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true, traceNewExpression); //x
         int first_arg_idx_high = new_expression.size();
-        graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
+        graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true, traceNewExpression); //y
         int second_arg_idx_high = new_expression.size();
         int step;
         
@@ -463,9 +483,9 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
     else if (expression[up] == "^") //x y ^
     {
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true); //x
+        graspSimplifyPostfixHelper(expression, low, up-2-grasp[up-1], grasp, new_expression, true, traceNewExpression); //x
         int first_arg_idx_high = new_expression.size();
-        graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true); //y
+        graspSimplifyPostfixHelper(expression, up-1-grasp[up-1], up-1, grasp, new_expression, true, traceNewExpression); //y
         //int second_arg_idx_high = new_expression.size();
         //int step;
         
@@ -508,7 +528,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
     else if (expression[up] == "cos") //x cos
     {
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
+        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true, traceNewExpression); //x
         
         if (new_expression.back() == "nan") // nan cos -> nan (because, since postfix operators come at the end, if the end of the argument of 'cos' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan cos, which is nan)
         {
@@ -542,7 +562,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
     else if (expression[up] == "sin") //x sin
     {
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
+        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true, traceNewExpression); //x
         
         if (new_expression.back() == "nan") // nan sin -> nan (because, since postfix operators come at the end, if the end of the argument of 'sin' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan sin, which is nan)
         {
@@ -576,7 +596,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
     else if (expression[up] == "tanh") //x tanh
     {
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
+        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true, traceNewExpression); //x
         
         if (new_expression.back() == "nan") // nan tanh -> nan (because, since postfix operators come at the end, if the end of the argument of 'tanh' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan tanh, which is nan)
         {
@@ -616,7 +636,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
     else if (expression[up] == "sech") //x sech
     {
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
+        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true, traceNewExpression); //x
         
         if (new_expression.back() == "nan") // nan sech -> nan (because, since postfix operators come at the end, if the end of the argument of 'sech' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan sech, which is nan)
         {
@@ -656,7 +676,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
     else if (expression[up] == "~") //x ~
     {
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
+        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true, traceNewExpression); //x
         
         if (new_expression.back() == "nan") // nan ~ -> nan (because, since postfix operators come at the end, if the end of the argument of '~' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan ~, which is nan)
         {
@@ -709,7 +729,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
     else if (expression[up] == "exp") //x exp
     {
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
+        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true, traceNewExpression); //x
         
         if (new_expression.back() == "nan") // nan exp -> nan (because, since postfix operators come at the end, if the end of the argument of 'exp' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan exp, which is nan)
         {
@@ -749,7 +769,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
     else if ((expression[up] == "ln") || (expression[up] == "log")) //x ln
     {
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
+        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true, traceNewExpression); //x
         
         if (new_expression.back() == "nan") // nan ln -> nan (because, since postfix operators come at the end, if the end of the argument of 'ln' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan ln, which is nan)
         {
@@ -789,7 +809,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
     else if ((expression[up] == "asin") || (expression[up] == "arcsin")) //x asin
     {
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
+        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true, traceNewExpression); //x
         
         if (new_expression.back() == "nan") // nan asin -> nan (because, since postfix operators come at the end, if the end of the argument of 'asin' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan asin, which is nan)
         {
@@ -829,7 +849,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
     else if ((expression[up] == "acos") || (expression[up] == "arccos")) //x acos
     {
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
+        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true, traceNewExpression); //x
         
         if (new_expression.back() == "nan") // nan acos -> nan (because, since postfix operators come at the end, if the end of the argument of 'acos' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan acos, which is nan)
         {
@@ -869,7 +889,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
     else if (expression[up] == "sqrt") //x sqrt
     {
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
+        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true, traceNewExpression); //x
         
         if (new_expression.back() == "nan") // nan sqrt -> nan (because, since postfix operators come at the end, if the end of the argument of 'sqrt' is nan, then the whole argument MUST be nan, therefore the expression reduces to nan sqrt, which is nan)
         {
@@ -920,7 +940,7 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
     }
     else if (expression[up] == "abs") //x abs
     {
-        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true); //x
+        graspSimplifyPostfixHelper(expression, low, up-1, grasp, new_expression, true, traceNewExpression); //x
         new_expression.push_back(expression[up]); //abs
     }
     else
@@ -933,11 +953,11 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
     }
 }
 
-void graspSimplifyPostfix(std::vector<std::string>& expression, int low, int up, std::vector<int>& grasp)
+void graspSimplifyPostfix(std::vector<std::string>& expression, int low, int up, std::vector<int>& grasp, bool traceNewExpression = false)
 {
     std::vector<std::string> new_expression;
     new_expression.reserve(expression.size());
-    graspSimplifyPostfixHelper(expression, low, up, grasp, new_expression, false);
+    graspSimplifyPostfixHelper(expression, low, up, grasp, new_expression, false, traceNewExpression);
     expression = new_expression;
 }
 
@@ -1702,7 +1722,7 @@ void simplifyRPN_Helper(std::vector<std::string>& expression)
 
 }
 
-void simplifyRPN(std::vector<std::string>& expression)
+void simplifyRPN(std::vector<std::string>& expression, bool traceNewExpression = false)
 {
     size_t size_before, size_after;
     do
@@ -1711,7 +1731,7 @@ void simplifyRPN(std::vector<std::string>& expression)
         simplifyRPN_Helper(expression);
         grasp.reserve(expression.size());
         //TODO: Make it so the grasp is computed once only and not every iteration of this do-while loop
-        graspSimplifyPostfix(expression, 0, expression.size() - 1, grasp);
+        graspSimplifyPostfix(expression, 0, expression.size() - 1, grasp, traceNewExpression);
         simplifyRPN_Helper(expression);
         size_after = expression.size();
     } while (size_before != size_after);
@@ -3832,6 +3852,3 @@ int main()
 //https://stackoverflow.com/questions/20153412/simplification-algorithm-for-reverse-polish-notation
 //https://dl.acm.org/
 //simplification of polish notation expressions articles
-/*
- str("x0 x0 sqrt sin + 0.13599420224810638 * sin 3.515131761100482 x0 8.47504690566225e-07 * x0 x0 * * - * 0.04406708630289533 x0 * 1.0907206056425518 x0 sqrt * sin tanh * - 0.30785371408906004 x0 0.18450196567500599 * cos + - 3.358801877927361 * -2.3184609050959892 x0 -0.36787944117144233 * sin * - -1.7585482027075627 x0 x0 x0 + + -0.0431435752765961 x0 sech sqrt + * * - 0.025056657156018 x0 * x0 0.2627831798005332 * sin * - x0 0.5175124998053154 * 0.618994534922096 + sin arccos + 0.4515827052894548 x0 0.5281978670874795 - * sin + 1.3663002378053992 * -0.5949327780232085 x0 * cos arcsin + x0 -0.25 * cos arcsin + x0 0.2658022288340797 * cos tanh + 0.7137316379600931 x0 * sin + x0 sqrt x0 sqrt sin 0.6493956251867049 * * sin + 0.8592381559136553 x0 * cos ~ - x0 0.6878740893544188 - -0.956994426515978 * sin + 1.7215552704345891 * x0 0.5918065235376672 1.005169382760542 x0 - + * cos + 0.9831589122020371 x0 sqrt x0 + * cos arcsin + x0 x0 -0.013698528180101527 * sech cos * sin + x0 2 x0 cos asin + * cos + x0 tanh -0.36787944117144233 + -0.5375019640235179 x0 - * sin + x0 -0.27450007703406004 x0 sin acos + * sin + x0 0.25801227546559596 x0 x0 + + * cos + 1.0164802314655146 x0 sqrt x0 + * sin ~ +".split()).replace("'",'"')
- */
