@@ -304,6 +304,10 @@ void graspSimplifyPostfixHelper(std::vector<std::string>& expression, int low, i
     {
         grasp.clear();
         setPostfixGR(expression, grasp);
+        if (traceNewExpression)
+        {
+            std::cout << "grasp = " << grasp << '\n';
+        }
     }
     
     if (traceNewExpression)
@@ -1729,10 +1733,24 @@ void simplifyRPN(std::vector<std::string>& expression, bool traceNewExpression =
     {
         size_before = expression.size();
         simplifyRPN_Helper(expression);
+        if (traceNewExpression)
+        {
+            printf("expression after simplifyRPN_Helper = ");
+            print_container(expression);
+        }
         grasp.reserve(expression.size());
-        //TODO: Make it so the grasp is computed once only and not every iteration of this do-while loop
         graspSimplifyPostfix(expression, 0, expression.size() - 1, grasp, traceNewExpression);
+        if (traceNewExpression)
+        {
+            printf("expression after graspSimplifyPostfix = ");
+            print_container(expression);
+        }
         simplifyRPN_Helper(expression);
+        if (traceNewExpression)
+        {
+            printf("expression after simplifyRPN_Helper = ");
+            print_container(expression);
+        }
         size_after = expression.size();
     } while (size_before != size_after);
 }
@@ -1744,7 +1762,7 @@ int main()
     #endif
     std::vector<std::string> test_expr = {"x1", "x1", "-", "0", "-", "x1", "x1", "+", "-"};
     printf("before: ");print_container(test_expr);
-    simplifyRPN(test_expr);
+    simplifyRPN(test_expr, true);
     printf("after: ");print_container(test_expr);
     puts("");
     
