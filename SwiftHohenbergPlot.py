@@ -216,6 +216,11 @@ np.sech = lambda x: 1.0/np.cosh(x)
 
 PERIODIC_IN_THETA = True
 PRINT_LATEX_ONLY = False
+SAVE_HIGH_RESIDUAL_POINTS = False
+N_HIGH_RESIDUAL_POINTS = 512
+HIGH_RESIDUAL_FILE = "highest_residual_points.csv"
+
+high_residual_candidates = []
 PlotType = "2D"
 N = 1000
 r_max = 10
@@ -276,7 +281,7 @@ else:
      - sech(-0.204245759737047*r + 1.72063673930557*theta + (0.0100909665335049 - tanh(r))*(-0.998687620305263*theta - tanh(theta) + 1.02370492421771) - (0.0154873527439205*r + 0.0998966701331946)*(mu*r + 5*r + 9.5115459200379) + 8.61038625622014)
      - 84.0357720038456,
      (0.000214601556558127*mu + 1.34828171950016e-6*nu + 0.000207597442231019*sin(mu) - 1.00526293689344)*(0.00877926734854302*mu - 0.16515718756188*nu - 0.000653938060863869*sin(mu)**2 + 3.66064988347847)*sin(r - 1.70585404191244e-10)*sin(5.30179718552688*nu - theta + sin(10.6889050130482*mu + 7.33505942049553e-8) + 72.4312091689447),
-     1.1509733532234e-6*nu**3*(mu - 6.74697290543725)*(mu - 2.27614220534699)*(nu - 1.67620498949872)*(nu + sin(mu) - 8.9733559895778)*sin(nu) + 5.74335275049024e-7*nu*(mu**2 + sin(r))*sin(mu) + 1.26181962607138e-5*r*(sin(mu) + 1.36247232073411) + (1.99046792925386 - 2.57995000911719*mu)*(0.067478347019041*mu*nu + 1.81996994324009*nu + 0.0431915960344995) + 0.00124959990372582*(mu + 14.2640291645925)*(r + 0.000140404074920142)*sin(1.85685682506746*r) + 2.87167637524512e-7*(0.0233112665123919*mu*sin(nu) + 28.2384634151434*sin(theta))*(sin(mu) + sin(nu))*sin(r + theta) + (-0.367358500271255*nu*(-mu - 26.9675376050826)*(mu - 0.769200281352821) - (nu + 0.671540797366525)*sech(nu))*(-0.00029322977521884*sech(mu) + 0.00326603256350093*sech(nu) + 0.474240897321276) + 2.87167637524512e-7*(tanh(mu) - 1.51624354930571)*(0.11676152445679*mu - 0.0905975582451429*nu + 4.5933892349381*r + sin(nu))*sech(sin(theta)) + 0.978336191182551*(-0.00254315751075186*mu - 0.168360096468398*nu + 3.55865229499745)*(-1.00040345067059*tanh(r) + tanh(1.00051588607569*r) - 0.743257667800217)*sin(r)*sin(0.36106503807167*mu*nu*(nu + 5.58479364099674) + 0.9068208922429*mu + 0.981370485907805*nu - 0.817111818258758*r*sin(theta) - theta + sin(mu) + tanh(mu)) + (mu - tanh(2.67946605803359*sin(mu)) + 14.8140836291082*sech(nu))*((1.07494633128091e-6*r - 0.00550462531321903)*(nu**2*(nu - 2.9075774749301)*sech(nu**2) + sin(sin(mu)) + tanh(mu) - 0.578675567311728) + tanh(sech(nu) + sech(sin(mu)) + 1.6581351872247) - 0.98532841937598)*((tanh(mu) - 1.65998417790609)*tanh(sin(nu)) + tanh(mu) + sech(tanh(r)) - 0.595594770663995)*sin(1.58597661467278*nu + 1.1040092418382*sin(mu) - 0.175824581040716) + sech((sech(tanh(nu) + 2.73670871213068) + 0.183162503601328*sech(sin(r)))*(nu + (2.63427540064966 - 0.442163696331195*nu)*(0.54539110964949*mu - 4.67141388878326) - 0.482149776742994*sin(nu) + tanh(nu) + 3.59802061207497))
+     (1.90051630392298 - 2.46455872726028*mu)*(0.0674793172933804*mu*nu + 1.81832390118113*nu + 0.0444467526228002) + 0.00123577697095556*(mu + 14.4873904259163)*(r + 0.000273906795864062)*sin(1.86189453554508*r) + (-0.367755470302955*nu*(-mu - 26.9637342987813)*(mu - 0.769073400891499) - (nu + 0.737457825544966)*sech(nu))*(0.00419531568857535*sech(nu) + 0.00018221121437935*sech(r) + 0.452245311653744) + (1.39514848579679e-9*nu*r*(nu + r)*(mu + 31.8714485239987*r - sin(r) + 2*sech(mu) - 0.527187963678749) + 2.87167637803145e-7)*(9.5288147514232*nu - r*(sech(mu) - 2.10363105054814)*(mu + nu - 6.85047481389133) + (-8.58899564309605*nu + r**2)*sech(1.40502018300086*mu) - (0.730199345948452*mu + nu + sin(nu))*(mu + 2.60853113507736*nu + 2*r - tanh(mu) + tanh(r - 3.26129200454529) - 13.6127783652958)*tanh(sin(r)) - 31.4664860941263) + 0.978324177192643*(-0.00254339592760878*mu - 0.166124986649854*nu + 3.68177029752435)*(-1.00032974449029*tanh(r) + tanh(1.0003167733849*r) - 0.736516372524282)*sin(r)*sin(0.36106503807167*mu*nu*(nu + 5.56112202664207) + 0.930745473071644*mu + 0.97007911234114*nu - 0.757875782714389*r*sin(theta) - theta + sin(mu) + tanh(mu)) + (-5.07333136211753e-7*mu*tanh(r) + (1.75453939199599e-6*r - 0.00629795248533886)*(-2.21146787722191*nu*(nu + 0.433830329048975)*sech(nu**2) + tanh(mu) + tanh(sin(mu)) + 1.05571307625925) + tanh(sech(nu) + sech(sin(mu)) + 1.95091894859416) - 0.980876122857585)*((tanh(mu) - 2.36528834753129)*tanh(sin(nu)) + tanh(mu) + sech(tanh(r)) - 0.288268042293606)*(mu + sin(mu + 2*nu - 0.200977263794263) + sech(mu) + 20.7041478568931*sech(nu) - 3.34454503514904)*sin(0.618048801565385*nu + (nu - 0.217149215453518)*tanh(nu) + tanh(sin(mu)) - 0.0386579680439259) + sech((sech(tanh(nu) + 2.69450556568548) + 0.18044413421814*sech(sin(r)))*(nu + (2.71015489984935 - 0.413150743741442*nu)*(0.563070852505604*mu - 4.64027697211279) - 0.387254759122996*sin(nu) + tanh(nu) + 3.91259036168374))
      ][2]
 '''
 best result for mu_equals_nu == False, depth = 8
@@ -668,6 +673,41 @@ def plot_one(mu0=None, nu0=None):
         }
 
         func_vals = sh_eval.evaluate(env_mse)
+        if SAVE_HIGH_RESIDUAL_POINTS:
+            abs_residual = np.abs(func_vals.ravel())
+
+            print(
+                "quantiles:",
+                np.quantile(abs_residual, [0.5, 0.9, 0.99, 0.999, 1.0])
+            )
+
+            squared = abs_residual**2
+            order = np.sort(squared)[::-1]
+
+            print(
+                "SSE fractions from top 512, 1%, 5%:",
+                order[:512].sum() / squared.sum(),
+                order[:10_000].sum() / squared.sum(),
+                order[:50_000].sum() / squared.sum(),
+            )
+            residual_flat = np.asarray(func_vals, dtype=np.float64).ravel()
+            finite_idx = np.flatnonzero(np.isfinite(residual_flat))
+
+            k = min(N_HIGH_RESIDUAL_POINTS, finite_idx.size)
+            if k:
+                finite_abs = np.abs(residual_flat[finite_idx])
+                local = np.argpartition(finite_abs, -k)[-k:]
+                idx = finite_idx[local]
+
+                high_residual_candidates.append(
+                    np.column_stack((
+                        r_vals.ravel()[idx],
+                        theta_vals.ravel()[idx],
+                        np.full(k, float(mu0)),
+                        np.full(k, float(nu0)),
+                        residual_flat[idx],
+                    ))
+                )
         squared_norm_error = LA.norm(np.nan_to_num(func_vals).ravel())**2
         mse = squared_norm_error / func_vals.size
         print(f"mse = {mse}", end = "; ")
@@ -865,6 +905,35 @@ else:
                 pdf.savefig(fig)
                 plt.close(fig)
                 print(f"Added mu={mu0:.3g}, nu={nu0:.3g}")
+    if SAVE_HIGH_RESIDUAL_POINTS and high_residual_candidates:
+        candidates = np.vstack(high_residual_candidates)
+
+        k = min(N_HIGH_RESIDUAL_POINTS, len(candidates))
+        idx = np.argpartition(np.abs(candidates[:, 4]), -k)[-k:]
+        highest = candidates[idx]
+
+        # Save in descending |residual| order.
+        highest = highest[
+            np.argsort(np.abs(highest[:, 4]))[::-1]
+        ]
+
+        np.savetxt(
+            f'{HIGH_RESIDUAL_FILE.replace(".csv","")}_with_res.csv',
+            highest,
+            delimiter=",",
+            header="r,theta,mu,nu,residual",
+            comments="",
+        )
+        
+        np.savetxt(
+            HIGH_RESIDUAL_FILE,
+            highest[:,:-1],
+            delimiter=",",
+            header="r,theta,mu,nu",
+            comments="",
+        )
+
+        print(f"Saved {k} highest-residual points to {HIGH_RESIDUAL_FILE}")
 
     print(f"Average mse = {total_mse/count}")
     print(f"Saved {filename}")

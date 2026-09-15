@@ -2346,7 +2346,7 @@ int main()
     
     test_expr = {"x", "x", "exp", "*", "x", "x", "exp", "*", "-", "sech", "asin"};
     printf("before: ");print_container(test_expr);
-    simplifyRPN(test_expr);
+    simplifyRPN(test_expr, true);
     printf("after: ");print_container(test_expr);
     puts("");
     

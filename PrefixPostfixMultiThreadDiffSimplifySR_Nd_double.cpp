@@ -53,7 +53,7 @@
 #endif
 #define RANDOM_SEED -1
 
-//#define logProgress true //for RandomJitter and RandomJitterVec and LevenbergMarquardt
+#define logProgress true //for RandomJitter and RandomJitterVec and LevenbergMarquardt
 
 //TODO: Need to make this robust againt -Wnarrow
 
@@ -5916,19 +5916,45 @@ struct Board
         if (this->fit_method == "LBFGS" || this->fit_method == "LBFGSB")
         {
             assert(grad.size() == x.size());
-            double grad_piece_prefactor = (this->isConstTol) ? (this->isConstTol/(Board::data.numRows()*this->num_objectives)) : 0.0;
+//            double grad_piece_prefactor = (this->isConstTol) ? (this->isConstTol/(Board::data.numRows()*this->num_objectives)) : 0.0;
             double sne = SNE(expression_evaluator(x, this->diffeq_result));
+            
             if (this->fit_grad_method == "naive_numerical")
             {
-                double low_b, temp, low_inv_var_b;
+                double low_b, temp, non_triv_penalty;
+                //number of elements = number of expressions being generated
+                //each element is a vector of partial-derivatives, and each partial-derivative is a vector of strings
+                std::vector<std::vector<std::vector<std::string>>> derivatives(this->pieces.size());
+            
+                if (this->isConstTol > 0) //compute the derivatives wrt each of the independent variables
+                {
+                    std::vector<int> grasp;
+                    for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++) //loop over each generated symbolic expression
+                    {
+                        int idx = 0;
+                        for (const std::string& i: Board::__input_vars)
+                        {
+                            if (this->expression_type == "prefix")
+                            {
+                                this->derivePrefix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
+                            }
+                            else //postfix
+                            {
+                                this->derivePostfix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
+                            }
+                            derivatives[jdx][idx] = this->derivat;
+                            idx++;
+                        }
+                    }
+                }
                 
                 for (int i = 0; i < x.size(); i++) //finite differences wrt x evaluated at the current values x(i)
                 {
                     //https://stackoverflow.com/a/38855586/18255427
                     temp = x(i);
                     x(i) -= 0.00001;
-                    low_inv_var_b = grad_piece_prefactor;
-                    if (low_inv_var_b)
+                    non_triv_penalty = 0;
+                    if (this->isConstTol)
                     {
                         /*
                          total_triviality_penalty = 0
@@ -5937,16 +5963,38 @@ struct Board
                                 total_triviality_penalty += max(this->isConstTol - median(abs(∂f_i/x_i)), 0)
                          
                          */
-                        low_inv_var_b /= VarianceSum(this->expression_evaluator(x, this->pieces)); //larger variance in SR expressions -> smaller penalty
+                        for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++) //loop over each generated symbolic expression
+                        {
+                            for (int idx = 0; idx < Board::__input_vars.size(); idx++)
+                            {
+                                printf("here? idx = %d\n", idx);
+                                non_triv_penalty += Board::nontrivialityPrefactor*((Board::constTolFactor*this->isConstTol - this->expression_evaluator(x, derivatives[jdx][idx]).array().cwiseAbs()).cwiseMax(0.).sum());
+                            }
+                        }
                     }
-                    low_b = SNE(expression_evaluator(x, this->diffeq_result)) + low_inv_var_b;
+                    low_b = SNE(expression_evaluator(x, this->diffeq_result)) + non_triv_penalty;
                     x(i) = temp + 0.00001;
-                    low_inv_var_b = grad_piece_prefactor;
-                    if (low_inv_var_b)
+                    non_triv_penalty = 0.;
+                    if (this->isConstTol)
                     {
-                        low_inv_var_b /= VarianceSum(this->expression_evaluator(x, this->pieces)); //larger variance in SR expressions -> smaller penalty
+                        /*
+                         total_triviality_penalty = 0
+                         For each expression f_i:
+                            For each input variable x_i:
+                                total_triviality_penalty += max(this->isConstTol - median(abs(∂f_i/x_i)), 0)
+                         
+                         */
+                        for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++) //loop over each generated symbolic expression
+                        {
+                            for (int idx = 0; idx < Board::__input_vars.size(); idx++)
+                            {
+                                printf("here? idx = %d\n", idx);
+                                non_triv_penalty += Board::nontrivialityPrefactor*((Board::constTolFactor*this->isConstTol - this->expression_evaluator(x, derivatives[jdx][idx]).array().cwiseAbs()).cwiseMax(0.).sum());
+                            }
+                        }
                     }
-                    grad(i) = ((SNE(expression_evaluator(x, this->diffeq_result)) + low_inv_var_b) - low_b) / 0.00002;
+                    printf("here? grad\n");
+                    grad(i) = ((SNE(expression_evaluator(x, this->diffeq_result)) + non_triv_penalty) - low_b) / 0.00002;
                     x(i) = temp;
                 }
             }
@@ -6071,32 +6119,141 @@ struct Board
     std::pair<bool, double> LBFGS()
     {
         bool improved = false;
+        std::vector<int> grasp;
         auto start_time = Clock::now();
+#ifdef logProgress
+        std::cout << "this->params = " << this->params << '\n';
+        std::cout << "this->params.size() = " << this->params.size() << '\n';
+#endif
+        double score_before = SNE(expression_evaluator(this->params, this->diffeq_result));
+#ifdef logProgress
+        std::cout << "score_before = " << score_before << '\n';
+#endif
+        if (std::isnan(score_before) || (score_before > this->const_cache_thresh * Board::global_min_sne.load(std::memory_order_relaxed)))
+        {
+            return std::make_pair(improved, score_before);
+        }
+        std::vector<std::vector<std::vector<std::string>>> derivatives(this->pieces.size());
+        
+        if (this->isConstTol > 0) //compute the derivatives wrt each of the independent variables
+        {
+            for (int expr = 0; expr < derivatives.size(); expr++)
+            {
+                derivatives[expr].resize(Board::__input_vars.size());
+            }
+            for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++) //loop over each generated symbolic expression
+            {
+                int idx = 0;
+                for (const std::string& i: Board::__input_vars)
+                {
+                    if (this->expression_type == "prefix")
+                    {
+                        this->derivePrefix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
+                    }
+                    else //postfix
+                    {
+                        this->derivePostfix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
+                    }
+                    derivatives[jdx][idx] = this->derivat;
+                    idx++;
+                }
+            }
+        }
         LBFGSpp::LBFGSParam<double> param;
         param.epsilon = 1e-6;
         param.max_iterations = this->num_fit_iter;
         //https://lbfgspp.statr.me/doc/LineSearchBacktracking_8h_source.html
         LBFGSpp::LBFGSSolver<double, LBFGSpp::LineSearchMoreThuente> solver(param); //LineSearchBacktracking, LineSearchBracketing, LineSearchMoreThuente, LineSearchNocedalWright
-        double fx;
-
+        double score_after;
+        auto temp_params = this->params;
         Eigen::VectorXd eigenVec = this->params;
-        double sne = SNE(expression_evaluator(this->params, this->diffeq_result));
         try
         {
-            solver.minimize((*this), eigenVec, fx);
+            solver.minimize((*this), eigenVec, score_after);
         }
         catch (std::runtime_error& e){}
         catch (std::invalid_argument& e){}
+        
+        if (this->recompute_diff_eq_each_fit_iter)
+        {
+            this->diffeq_result = diffeq(*this, true);
+        }
+
+//        double score_after = SNE(expression_evaluator(this->params, this->diffeq_result));
+#ifdef logProgress
+        std::cout << "score_after = " << score_after << '\n';
+#endif
+        auto testTriviality = [&]()
+        {
+            for (int k = 0; k < Board::__input_vars.size(); k++)
+            {
+                for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++) //loop over each generated symbolic expression
+                {
+                    if (isZero(expression_evaluator(this->params, derivatives[jdx][k]), this->isConstTol))
+                    {
+#ifdef logProgress
+                        puts("too trivial");
+#endif
+                        improved = false;
+                        this->params = temp_params;
+                        Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
+                        return std::make_pair(improved, score_after);
+                    }
+                }
+            }
+            improved = true;
+            return std::make_pair(improved, score_after);
+        };
+        if (score_after < score_before)
+        {
+            if (this->isConstTol > 0) //make sure that it didn't push toward triviality
+            {
+                Eigen::VectorXd lm_params;
+                if (Board::alpha_bt > 0.) //backtracking enabled
+                {
+                    lm_params = this->params; //caching the parameters LevenbergMarquardt proposed
+                }
+                auto trivResult = testTriviality();
+                if (!trivResult.first) //if it did not improve
+                {
+                    if (Board::alpha_bt == 0.)
+                    {
+                        return trivResult;
+                    }
+                    //else: backtracking has been enabled
+                    double temp_alpha = Board::alpha_bt;
+                    while (!trivResult.first)
+                    {
+                        this->params = temp_params + temp_alpha * (lm_params - temp_params);
+#ifdef logProgress
+                        printf("lm step failed, trying again with alpha = %lf\n", temp_alpha);
+#endif
+                        trivResult = testTriviality();
+                        temp_alpha *= Board::alpha_bt;
+                    }
+                    score_after = SNE(expression_evaluator(this->params, this->diffeq_result));
+                    improved = (score_after < score_before);
+                }
+            }
+#ifdef logProgress
+            if (improved)
+            {
+                printf("score_before = %f -> score_after = %f\n", score_before, score_after);
+            }
+#endif // logProgress
+//            std::cout << "LevenbergMarquardt this->params = " << this->params << '\n';
+            improved = true;
+        }
 
         //printf("sne = %f -> fx = %f\n", sne, fx);
-        if (fx < sne)
+        if (score_after < score_before)
         {
             //printf("sne = %f -> fx = %f\n", sne, fx);
-            this->params = eigenVec;
+            this->params = eigenVec; //set the current parameters (this->params) to the optimizes ones (eigenVec)
             improved = true;
         }
         Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
-        return std::make_pair(improved, fx);
+        return std::make_pair(improved, score_after);
     }
 
     std::pair<bool, double> LBFGSB()
@@ -6250,7 +6407,6 @@ struct Board
             this->diffeq_result = diffeq(*this, true);
         }
 
-        //TODO: Implement a back-tracking line search option
         double score_after = SNE(expression_evaluator(this->params, this->diffeq_result));
 #ifdef logProgress
         std::cout << "score_after = " << score_after << '\n';
@@ -8620,16 +8776,21 @@ FileIdx = 0, useChi2 = False:
         Best expression (original format) = 9.307266349781928 x1 * 280.2262337789087 * x1 ~ 0.9999979604670792 + * sech x0 x1 * 4966.631299583267 x0 0.02399541276765608 * + * x0 -2.6308549186448325 + -5002.748600610229 * + * 9.485793171573263 x0 -0.008176709554572593 * + x1 x0 + * 351.9564709425447 x1 -353.319972715793 * + sech * + x0 1.5571419605179806 * 156.77438463705553 -0.46916161512140514 x1 + * -0.9846017163746954 x1 + * sech * + 718.2966881971124 x0 + 3.769569715984195 * 0.9990628227824695 x1 ~ + 1288.7055143485961 x1 x1 * * * sech * +
 
 FileIdx = 0, useChi2 = True:
-    Depth = 8, maxsize = 68:
-        Best score = 0.0518925023258272, SNE = 18.270606642191
-        Squared-norm error for each equation: 18.0800370654607 0.190569576730311
-        Best expression = ((((sech(((~(x1) + 2064.9948231147773) * (x1 + -0.9998155248728674))) * (((tanh(x0) + (8049.350568208429 - x0)) + tanh(x0)) + (~((x1 * x0)) / cos(-130.67568763098146)))) + (((7.226361952437289 + (x0 * -0.005183036188503846)) * x0) * sech((294.7000165354854 + (x1 * -296.2267279513621))))) + (x0 * sech((~(59.86895996042913) * tanh(tanh((-0.9810130478847282 + x1))))))) + ((x0 * 7.274289265100043) * sech(((0.9983739370711672 + ~(x1)) * (x0 / -0.2670487469997458)))))
-        Best expression (original format) = x1 ~ 2064.9948231147773 + x1 -0.9998155248728674 + * sech x0 tanh 8049.350568208429 x0 - + x0 tanh + x1 x0 * ~ -130.67568763098146 cos / + * 7.226361952437289 x0 -0.005183036188503846 * + x0 * 294.7000165354854 x1 -296.2267279513621 * + sech * + x0 59.86895996042913 ~ -0.9810130478847282 x1 + tanh tanh * sech * + x0 7.274289265100043 * 0.9983739370711672 x1 ~ + x0 -0.2670487469997458 / * sech * +
+    Depth = 8, maxsize = 66, penalty for being nonzero at f(x=\pm 25, -5):
+        Best score = 0.0524240978570559, SNE = 18.0751971111966
+        Squared-norm error for each equation: 18.0751971111965 5.28001462914482e-29 8.13859837522186e-14
+        Best expression = ((((sech(((cos(x1) + 2100.6775987502606) * (x1 + -0.9998203229474364))) * (((tanh(x0) + (8289.992935467795 - x0)) + tanh(x0)) + (~((x1 * x0)) / 0.2673259371883743))) + (((7.248101076164459 + (x0 * -0.005193279712022623)) * x0) * sech((295.01746193421883 + (x1 * -296.54044706105094))))) + (x0 * sech((-59.87155968473268 * tanh(tanh((-0.981012499585949 + x1))))))) + ((x0 * 7.3404307879400905) * sech(((0.9983822351109278 + ~(x1)) * (x0 / -0.2654562139703522)))))
+        Best expression (original format) = x1 cos 2100.6775987502606 + x1 -0.9998203229474364 + * sech x0 tanh 8289.992935467795 x0 - + x0 tanh + x1 x0 * ~ 0.2673259371883743 / + * 7.248101076164459 x0 -0.005193279712022623 * + x0 * 295.01746193421883 x1 -296.54044706105094 * + sech * + x0 -59.87155968473268 -0.981012499585949 x1 + tanh tanh * sech * + x0 7.3404307879400905 * 0.9983822351109278 x1 ~ + x0 -0.2654562139703522 / * sech * +
     Depth = 8, maxsize = 78:
         Best score = 0.0356403961280204, SNE = 27.0580495348031
         Squared-norm error for each equation: 26.7814200402047 0.276629494598358
         Best expression = ((((sech((((9.307266349781928 * x1) * 280.2262337789087) * (~(x1) + 0.9999979604670792))) * (((x0 * x1) * (4966.631299583267 + (x0 * 0.02399541276765608))) + ((x0 + -2.6308549186448325) * -5002.748600610229))) + (((9.485793171573263 + (x0 * -0.008176709554572593)) * (x1 + x0)) * sech((351.9564709425447 + (x1 * -353.319972715793))))) + ((x0 * 1.5571419605179806) * sech(((156.77438463705553 * (-0.46916161512140514 + x1)) * (-0.9846017163746954 + x1))))) + (((718.2966881971124 + x0) * 3.769569715984195) * sech(((0.9990628227824695 + ~(x1)) * (1288.7055143485961 * (x1 * x1))))))
         Best expression (original format) = 9.307266349781928 x1 * 280.2262337789087 * x1 ~ 0.9999979604670792 + * sech x0 x1 * 4966.631299583267 x0 0.02399541276765608 * + * x0 -2.6308549186448325 + -5002.748600610229 * + * 9.485793171573263 x0 -0.008176709554572593 * + x1 x0 + * 351.9564709425447 x1 -353.319972715793 * + sech * + x0 1.5571419605179806 * 156.77438463705553 -0.46916161512140514 x1 + * -0.9846017163746954 x1 + * sech * + 718.2966881971124 x0 + 3.769569715984195 * 0.9990628227824695 x1 ~ + 1288.7055143485961 x1 x1 * * * sech * +
+    Depth = 9, maxsize = 187, penalty for being nonzero at f(x=\pm 25, -5):
+        Best score = 0.0542461079778557, SNE = 17.4345022578987
+        Squared-norm error for each equation: 17.4345022578987 3.30704338150798e-35 1.36275753285098e-77
+        Best expression = (((((sech(((sin(x1) + (x1 + 2080.3450980078383)) * (x1 + -0.9998102934945354))) * (((cos(x0) + (8226.824571932335 - x0)) + arccos(sin(x0))) + (~((x1 * x0)) / (0.2079676328274299 / tanh(x1))))) + ((((~(x1) + (4.3897872263474484 + x0)) + (~(x0) * 1.0024231629659823)) * (x0 + (sin(x0) + x0))) * sech((269.4209003342972 + (x1 * -270.90024042610565))))) + ((tanh((((x1 - x0) - x1) - ((x1 + x1) - sech(x0)))) + (tanh(x0) * (x0 - 28.07914421437817))) * sech((((x0 * -0.0120215709382941) + (sech(x0) + 66.25120857934373)) * ((sech(x0) - 0.9789987195190365) + x1))))) + (((sin(tanh((x0 * exp(x0)))) + (sech((sech(x1) + ~(x0))) + ((x1 * (x1 + x0)) * tanh((x0 + x0))))) * ((sin(sech(x0)) + 3.9993449211177543) / arccos(sin(sech(sech(x0)))))) * sech(((0.9983021294707369 + ~(x1)) * ((exp(x1) + (~(x1) + x0)) / 0.3138608315628099))))) + tanh(sech((((~(exp(~(x1))) - exp(sin(cos(x1)))) / sin(cos(tanh(tanh(x0))))) - ~(((x1 + x1) + sin(x1)))))))
+        Best expression (original format) = x1 sin x1 2080.3450980078383 + + x1 -0.9998102934945354 + * sech x0 cos 8226.824571932335 x0 - + x0 sin arccos + x1 x0 * ~ 0.2079676328274299 x1 tanh / / + * x1 ~ 4.3897872263474484 x0 + + x0 ~ 1.0024231629659823 * + x0 x0 sin x0 + + * 269.4209003342972 x1 -270.90024042610565 * + sech * + x1 x0 - x1 - x1 x1 + x0 sech - - tanh x0 tanh x0 28.07914421437817 - * + x0 -0.0120215709382941 * x0 sech 66.25120857934373 + + x0 sech 0.9789987195190365 - x1 + * sech * + x0 x0 exp * tanh sin x1 sech x0 ~ + sech x1 x1 x0 + * x0 x0 + tanh * + + x0 sech sin 3.9993449211177543 + x0 sech sech sin arccos / * 0.9983021294707369 x1 ~ + x1 exp x1 ~ x0 + + 0.3138608315628099 / * sech * + x1 ~ exp ~ x1 cos sin exp - x0 tanh tanh cos sin / x1 x1 + x1 sin + ~ - sech tanh +
 
 FileIdx = 2, useChi2 = False:
     Depth = 9, maxsize = 71:
@@ -8644,11 +8805,33 @@ FileIdx = 2, useChi2 = True:
         Squared-norm error for each equation: 15.2414920889819 9.27446633554497e-05
         Best expression = (sech(((x1 + (x1 + x1)) / (cos((sech(x1) / -0.23102254186596793)) + (~((~((x0 * 1.0010119462475875)) + x0)) + cos(tanh((sech(x1) + x0))))))) * ((sech((((-238.00748951863906 + x0) + x0) * 0.002526252772745538)) + (sech((-0.6018937147342686 + (x0 * 0.005054643488537006))) + 0.586831694338885)) * ((sech((x1 / ~(sech(x1)))) + (tanh((x0 * x0)) + x0)) + ((sech(x1) + x0) * ~(sech((0.3242465220379984 / ~(x1))))))))
         Best expression (original format) = x1 x1 x1 + + x1 sech -0.23102254186596793 / cos x0 1.0010119462475875 * ~ x0 + ~ x1 sech x0 + tanh cos + + / sech -238.00748951863906 x0 + x0 + 0.002526252772745538 * sech -0.6018937147342686 x0 0.005054643488537006 * + sech 0.586831694338885 + + x1 x1 sech ~ / sech x0 x0 * tanh x0 + + x1 sech x0 + 0.3242465220379984 x1 ~ / sech ~ * + * *
+    Depth = 9, maxsize = 71, penalty for being nonzero at f(x=\pm 25, -5):
+        Best score = 0.056877606813758, SNE = 16.5816117452767
+        Squared-norm error for each equation: 16.5815677301112 2.53415854032997e-65 4.40151655366474e-05
+        Best expression = (sech((((sin(x1) + x1) + (x1 + x1)) / (-0.37153220495441347 + (sin((~((x0 / 1.0007535073617326)) + x0)) + cos(exp(tanh(sech(x0)))))))) * ((sech((((-300.51625218069006 + x0) + x0) * 0.002626558436373956)) + (sech((-0.7916579026197461 + (x0 * 0.005334709484180097))) + sin((0.6430438606294593 * cos(x1))))) * ((tanh(x0) + (x1 + (x0 + 18.20952695674221))) + ((cos(sech(x0)) + (85.53250965458851 + x0)) * ~(sech((0.44942107094426564 / ~(x1))))))))
+        Best expression (original format) = x1 sin x1 + x1 x1 + + -0.37153220495441347 x0 1.0007535073617326 / ~ x0 + sin x0 sech tanh exp cos + + / sech -300.51625218069006 x0 + x0 + 0.002626558436373956 * sech -0.7916579026197461 x0 0.005334709484180097 * + sech 0.6430438606294593 x1 cos * sin + + x0 tanh x1 x0 18.20952695674221 + + + x0 sech cos 85.53250965458851 x0 + + 0.44942107094426564 x1 ~ / sech ~ * + * *
+    Depth = 10, maxsize = 87, penalty for being nonzero at f(x=\pm 25, -5):
+        Best score = 0.0573234133253224, SNE = 16.4448788372875
+        Squared-norm error for each equation: 16.4448298900749 3.36597719352668e-65 4.89472126050746e-05
+        Best expression = (sech((((sin(x1) + x1) + (x1 + x1)) / (-0.372680140608889 + (sin((~((x0 / 1.0007538009286905)) + x0)) + cos(exp(tanh(sech(x0)))))))) * ((sech((((-295.52275709469495 + x0) + (sin(~(x1)) + x0)) * 0.0026358223181525108)) + (sech((-0.7783735764010864 + (x0 * 0.005268246183030844))) + sin((0.6440938186875236 * cos(x1))))) * ((tanh((~(exp(sech(x1))) + (tanh(x1) + x0))) + (x1 + ((x0 - sin(sech(x0))) + 18.62775372634764))) + ((cos(sech(x0)) + (86.53250965458851 + x0)) * ~(sech((0.4494210709442656 / ~(x1))))))))
+        Best expression (original format) = x1 sin x1 + x1 x1 + + -0.372680140608889 x0 1.0007538009286905 / ~ x0 + sin x0 sech tanh exp cos + + / sech -295.52275709469495 x0 + x1 ~ sin x0 + + 0.0026358223181525108 * sech -0.7783735764010864 x0 0.005268246183030844 * + sech 0.6440938186875236 x1 cos * sin + + x1 sech exp ~ x1 tanh x0 + + tanh x1 x0 x0 sech sin - 18.62775372634764 + + + x0 sech cos 86.53250965458851 x0 + + 0.4494210709442656 x1 ~ / sech ~ * + * *
+    Depth = 9, maxsize = 187, penalty for being nonzero at f(x=\pm 25, -5):
+        Best score = 0.101662729359878, SNE = 8.83644651581288
+        Squared-norm error for each equation: 8.83644651581288 0 0
+        Best expression = (sech((((sin((sech((x0 + x0)) + x1)) + (sech((x1 + x0)) + x1)) + (((x1 * (x1 * (x1 + x1))) + x1) + (sech((tanh(x0) + x0)) + (((x1 / x0) + x1) / sech(x1))))) / ((tanh((0.5760545166676845 - x0)) + 0.5319576747747394) + (sin((~((x0 / 1.0009044164194776)) + x0)) + cos(exp(tanh(sech(x0)))))))) * ((sech((((~((427.57368947632284 - x1)) + ((11657.877454576048 / x0) + (x0 + x0))) + (~(x1) + x0)) * 0.003872546136986909)) + (sech((-0.5364314881255501 + (((2801.715071361176 / x0) + x0) * 0.003913421822077359))) + sin((0.4472184158302701 * cos((x1 / exp(x0))))))) * ((tanh((~(exp(sech(x1))) + (tanh(~(x0)) + (x0 - cos(x1))))) + ((tanh(((x0 * x0) / x1)) - -185.2264517153563) + (((cos(x1) + x0) - ~(cos(x1))) + exp(sech(cos(x0)))))) + ((((exp(tanh(x0)) + (exp(x1) - sin(x1))) - (~((x1 * x1)) - (x0 * 0.26561986879925137))) + ((exp(~(x1)) + (sech(x1) * 319.60156627616874)) + ((tanh(x0) / sech(x1)) + (exp(x1) + x0)))) * ~(sech((0.6310331983099907 / ~(x1))))))))
+        Best expression (original format) = x0 x0 + sech x1 + sin x1 x0 + sech x1 + + x1 x1 x1 x1 + * * x1 + x0 tanh x0 + sech x1 x0 / x1 + x1 sech / + + + 0.5760545166676845 x0 - tanh 0.5319576747747394 + x0 1.0009044164194776 / ~ x0 + sin x0 sech tanh exp cos + + / sech 427.57368947632284 x1 - ~ 11657.877454576048 x0 / x0 x0 + + + x1 ~ x0 + + 0.003872546136986909 * sech -0.5364314881255501 2801.715071361176 x0 / x0 + 0.003913421822077359 * + sech 0.4472184158302701 x1 x0 exp / cos * sin + + x1 sech exp ~ x0 ~ tanh x0 x1 cos - + + tanh x0 x0 * x1 / tanh -185.2264517153563 - x1 cos x0 + x1 cos ~ - x0 cos sech exp + + + x0 tanh exp x1 exp x1 sin - + x1 x1 * ~ x0 0.26561986879925137 * - - x1 ~ exp x1 sech 319.60156627616874 * + x0 tanh x1 sech / x1 exp x0 + + + + 0.6310331983099907 x1 ~ / sech ~ * + * *
     Depth = 10, maxsize = 198:
         Best score = 0.10675846468617, SNE = 8.36693875225373
         Squared-norm error for each equation: 7.93189865392568 0.435040098328051
         Best expression = ((sech((((x1 - sech((x0 - ~(x1)))) + ((x1 + x1) + (x1 * 1.345898763561846))) / (cos((sech(x1) / -0.2336824463175476)) + (~((~((x0 * 1.001214717981251)) + x0)) + tanh(sin(sech(tanh(x0)))))))) * ((sech(((((sech(x1) + 17.22073966883482) - cos((x0 * x0))) + (x0 + (sech(x1) - sin(x0)))) * (x1 / (~((-0.13764632586685882 + x1)) - (tanh(x1) + x1))))) + (sech((0.6416723745659465 + (((15724.223780036938 / x0) + x0) * 0.0013069140018989087))) + (cos((~(x0) - (x1 - x0))) + -0.9623302837807124))) * ((cos(((x1 + x1) + (x0 * x1))) + ((tanh((x0 * x1)) - (cos(x1) * -742.4206847724521)) + (x1 - (x0 * (cos(x1) * -0.8331344938214136))))) + ((((~(cos(x1)) / x1) + (x1 + x1)) + ((sin(x0) + (x0 - tanh(x0))) - x1)) * ~(sech((-0.3703011357461167 / tanh(x1)))))))) + ((sin(tanh(~(cos(cos(x1))))) + sech((((((~(x1) - (x0 / x1)) + sech(x1)) / tanh(tanh(~(x1)))) * sech((~(x0) - (x1 / ~(x1))))) + (sin(x1) / sech(x1))))) + tanh(~(sech(((cos(x1) * tanh(x1)) * (x0 * cos(tanh((x0 * x1))))))))))
         Best expression (original format) = x1 x0 x1 ~ - sech - x1 x1 + x1 1.345898763561846 * + + x1 sech -0.2336824463175476 / cos x0 1.001214717981251 * ~ x0 + ~ x0 tanh sech sin tanh + + / sech x1 sech 17.22073966883482 + x0 x0 * cos - x0 x1 sech x0 sin - + + x1 -0.13764632586685882 x1 + ~ x1 tanh x1 + - / * sech 0.6416723745659465 15724.223780036938 x0 / x0 + 0.0013069140018989087 * + sech x0 ~ x1 x0 - - cos -0.9623302837807124 + + + x1 x1 + x0 x1 * + cos x0 x1 * tanh x1 cos -742.4206847724521 * - x1 x0 x1 cos -0.8331344938214136 * * - + + x1 cos ~ x1 / x1 x1 + + x0 sin x0 x0 tanh - + x1 - + -0.3703011357461167 x1 tanh / sech ~ * + * * x1 cos cos ~ tanh sin x1 ~ x0 x1 / - x1 sech + x1 ~ tanh tanh / x0 ~ x1 x1 ~ / - sech * x1 sin x1 sech / + sech + x1 cos x1 tanh * x0 x0 x1 * tanh cos * * sech ~ tanh + +
+
+FileIdx = 3, useChi2 = True:
+    Depth = 10, maxsize = 87, penalty for being nonzero at f(x=\pm 25, -5):
+        Best score = 0.0511487632785264, SNE = 18.5508148369997
+        Squared-norm error for each equation: 18.5508148369997 9.96048386827329e-107 5.08162962547243e-21
+        Best expression = (sech(((x1 + (tanh(x1) + x1)) / (0.4940553677290369 + (tanh((~((x0 / 1.0008298596636567)) + x0)) + sin(~(exp(sech(x1)))))))) * ((sech((((-402.3526173147518 + x0) + (x0 + x0)) * 0.0026358223181525108)) + (tanh(((x1 + x0) - (x1 + 0.673571001618471))) + (x0 * -0.0005662305452397874))) * ((sin(exp(exp(exp(tanh(x1))))) + (sech((x0 * x1)) + ((x0 - sin((x0 + x0))) + (exp(cos(x0)) + (201.3741006653128 + cos(x0)))))) + ((~(exp(x1)) + x0) * ~(sech((0.47307584295975863 / x1)))))))
+        Best expression (original format) = x1 x1 tanh x1 + + 0.4940553677290369 x0 1.0008298596636567 / ~ x0 + tanh x1 sech exp ~ sin + + / sech -402.3526173147518 x0 + x0 x0 + + 0.0026358223181525108 * sech x1 x0 + x1 0.673571001618471 + - tanh x0 -0.0005662305452397874 * + + x1 tanh exp exp exp sin x0 x1 * sech x0 x0 x0 + sin - x0 cos exp 201.3741006653128 x0 cos + + + + + x1 exp ~ x0 + 0.47307584295975863 x1 / sech ~ * + * *
 
 
 FileIdx = 4, useChi2 = False:
@@ -8689,6 +8872,16 @@ FileIdx = 4, useChi2 = True:
         Squared-norm error for each equation: 90.6856697878244
         Best expression = ((((((x0 - x1) + (x0 / x1)) * ((x0 - x1) / (x1 + 310.3272568831777))) + (((x0 - x1) + (x0 - x1)) * sech((x1 + -11.267179472308422)))) * sech((((x0 / x1) - 48.9897374566277) / (0.20854343568850436 + sech(x1))))) + ((sech((x1 * x1)) + (tanh(x0) / x1)) + sech(tanh(tanh(x1)))))
         Best expression (original format) = x0 x1 - x0 x1 / + x0 x1 - x1 310.3272568831777 + / * x0 x1 - x0 x1 - + x1 -11.267179472308422 + sech * + x0 x1 / 48.9897374566277 - 0.20854343568850436 x1 sech + / sech * x1 x1 * sech x0 tanh x1 / + x1 tanh tanh sech + +
+    Depth = 6, maxsize = 55, penalty for being nonzero at f(x=\pm 25):
+        Best score = 0.0108662945267805, SNE = 91.0276914577874
+        Squared-norm error for each equation: 91.0276914577422 2.2595765971532e-11 2.25957659959674e-11
+        Best expression = ((((((x0 - x1) + (x0 / x1)) * ((x0 - x1) / (x1 + 311.1822073069866))) + (((x0 - x1) + (x0 - x1)) * sech((11.261975946153955 - x1)))) * sech((((x0 / x1) - 48.99030822431664) / (0.20953351832138753 + sech(x1))))) + (sech((x1 * tanh(cos(x1)))) + sech((cos((x1 + x1)) * x1))))
+        Best expression (original format) = x0 x1 - x0 x1 / + x0 x1 - x1 311.1822073069866 + / * x0 x1 - x0 x1 - + 11.261975946153955 x1 - sech * + x0 x1 / 48.99030822431664 - 0.20953351832138753 x1 sech + / sech * x1 x1 cos tanh * sech x1 x1 + cos x1 * sech + +
+    Depth = 7, maxsize = 69, penalty for being nonzero at f(x=\pm 25, -5):
+        Best score = 0.0108883587524125, SNE = 90.8412060751058
+        Squared-norm error for each equation: 90.8412051951213 1.0996837777763e-10 8.79874508523873e-07
+        Best expression = (((((((x0 - x1) + (x0 / x1)) * ((x0 - x1) / (x1 + 311.9626987519569))) + (((x0 - x1) + (x0 - x1)) * sech((11.259492268807234 - x1)))) * sech((((x0 / x1) - 48.990682903826) / (0.21009419188525105 + sech(x1))))) + (~(tanh(sech(x1))) + sech((cos(exp(x1)) * x1)))) + ((sech((x1 * (x1 * x1))) + sech((x1 * x1))) * arccos(~(tanh(x0)))))
+        Best expression (original format) = x0 x1 - x0 x1 / + x0 x1 - x1 311.9626987519569 + / * x0 x1 - x0 x1 - + 11.259492268807234 x1 - sech * + x0 x1 / 48.990682903826 - 0.21009419188525105 x1 sech + / sech * x1 sech tanh ~ x1 exp cos x1 * sech + + x1 x1 x1 * * sech x1 x1 * sech + x0 tanh ~ arccos * +
     Depth = 7, maxsize = 74:
         Best score = 0.0109106307658254, SNE = 90.6537294188558
         Squared-norm error for each equation: 90.6537294188558
@@ -8714,6 +8907,11 @@ FileIdx = 4, useChi2 = True:
         Squared-norm error for each equation: 89.5363732354948 2.17310007197586e-22
         Best expression = ((((((((x0 - x1) + (x0 / x1)) * ((x0 - x1) / (x1 + 308.0350119713559))) + (((x0 + x0) + ~(x1)) * sech((11.305595663566658 - x1)))) * sech((((x0 / x1) - 48.989552990997545) / (0.2058003039517824 + sech(x1))))) + (((sin((x1 + x1)) / (sech(x0) + (x1 * x1))) + (((x0 + x0) + (x0 - x1)) / (sech(x0) + (x1 * x0)))) + sech((sin((x0 / x1)) + (x1 - sech(x0)))))) + ~(sin(sech(((sech(x1) / (x1 * x1)) / ((x1 * x1) * (x1 * x1))))))) + (sech((sech((((x1 + x1) + (x1 * x1)) / ((x1 - x0) + (x1 * x1)))) / (((sin(x1) + sin(x1)) / (~(x1) + (x0 - x1))) + ~(((x1 * x1) / (x0 - x1)))))) * ((sin((((x0 + x0) / ~(x1)) - (x0 / x1))) + ((((x0 - x1) / (x1 + x1)) + (sech(x0) - (x1 + x1))) * sin(((x0 + x0) / ~(x1))))) + (((((x1 * x1) + (x1 * x1)) + ((x0 + x0) - (x0 / x1))) * (sech(x1) * ((x1 * x1) + (x0 + x0)))) + (sin((sin(x1) + (x0 / x1))) + (sin((x0 / x1)) + (x1 + x1)))))))
         Best expression (original format) = x0 x1 - x0 x1 / + x0 x1 - x1 308.0350119713559 + / * x0 x0 + x1 ~ + 11.305595663566658 x1 - sech * + x0 x1 / 48.989552990997545 - 0.2058003039517824 x1 sech + / sech * x1 x1 + sin x0 sech x1 x1 * + / x0 x0 + x0 x1 - + x0 sech x1 x0 * + / + x0 x1 / sin x1 x0 sech - + sech + + x1 sech x1 x1 * / x1 x1 * x1 x1 * * / sech sin ~ + x1 x1 + x1 x1 * + x1 x0 - x1 x1 * + / sech x1 sin x1 sin + x1 ~ x0 x1 - + / x1 x1 * x0 x1 - / ~ + / sech x0 x0 + x1 ~ / x0 x1 / - sin x0 x1 - x1 x1 + / x0 sech x1 x1 + - + x0 x0 + x1 ~ / sin * + x1 x1 * x1 x1 * + x0 x0 + x0 x1 / - + x1 sech x1 x1 * x0 x0 + + * * x1 sin x0 x1 / + sin x0 x1 / sin x1 x1 + + + + + * +
+    Depth = 8, maxsize = 187, penalty for being nonzero at f(x=\pm 25, -5):
+        Best score = 0.0108951149590481, SNE = 90.784254113769
+        Squared-norm error for each equation: 90.7840943061778 1.09968377776887e-10 0.000159807481208488
+        Best expression = ((((((((x0 - x1) + (x0 / x1)) * ((x0 - x1) / (x1 + 311.66115297299103))) + (((x0 - x1) + (x0 - x1)) * sech((11.260025048987028 - x1)))) * sech((((x0 / x1) - 48.990692509474215) / (0.21003083457145771 + sech(x1))))) + (~(tanh(tanh(sech(x1)))) + sech((cos(exp(x1)) * x1)))) + ((sech(((x1 * (x1 * x1)) * ((x1 * x1) * x1))) + sech(((sin(x1) + x1) * (x1 * (x1 * x1))))) * arccos(~(tanh(((x0 * x0) - cos(x0))))))) + sin(sin((sech(((tanh(x1) + (x1 * x1)) * ((x1 * x1) + (x1 * x1)))) * arccos(sech(((x0 * x0) + ~(x0))))))))
+        Best expression (original format) = x0 x1 - x0 x1 / + x0 x1 - x1 311.66115297299103 + / * x0 x1 - x0 x1 - + 11.260025048987028 x1 - sech * + x0 x1 / 48.990692509474215 - 0.21003083457145771 x1 sech + / sech * x1 sech tanh tanh ~ x1 exp cos x1 * sech + + x1 x1 x1 * * x1 x1 * x1 * * sech x1 sin x1 + x1 x1 x1 * * * sech + x0 x0 * x0 cos - tanh ~ arccos * + x1 tanh x1 x1 * + x1 x1 * x1 x1 * + * sech x0 x0 * x0 ~ + sech arccos * sin sin +
 
 FileIdx = 5, useChi2 = True:
     Depth = 5, maxsize = 50:
@@ -8738,17 +8936,37 @@ FileIdx = 6, useChi2 = False:
         Best expression = ((((((sech((x1 * 0.78384183694358056)) * ((x0 - 8.7083569224855211) - 191.14809557346848)) - (sech((x1 * -3124.8426744085218)) * x0)) + (tanh(sech((x1 * 4.0795399751623984))) * 374.84439246067416)) + (sech((7.8541928681439988 * tanh((x1 * x0)))) * (8.3173782729877122 * x0))) + (tanh(x0) * (3328.7671525243909 * sech((x1 * 6095.4244977777835))))) + (sech(((-0.24424449190094999 * x1) * (-302.0827669021985 + x0))) * 248.33164128536836))
         Best expression (original format) = x1 0.78384183694358056 * sech x0 8.7083569224855211 - 191.14809557346848 - * x1 -3124.8426744085218 * sech x0 * - x1 4.0795399751623984 * sech tanh 374.84439246067416 * + 7.8541928681439988 x1 x0 * tanh * sech 8.3173782729877122 x0 * * + x0 tanh 3328.7671525243909 x1 6095.4244977777835 * sech * * + -0.24424449190094999 x1 * -302.0827669021985 x0 + * sech 248.33164128536836 * +
     Depth = 9, maxsize = 69:
-        Best score = 2.14555222045155e-10, SNE = 4660804758.11017
-        Squared-norm error for each equation: 4660804757.45407 0.656109227422227
-        Best expression = (((((((sech((x1 * 0.77622051370830536)) * ((x0 * 1.0723119830317476) - 224.06892406799466)) - (sech((x1 * -941.47364098050889)) * x0)) + (tanh(sech((x1 * 14.538003145869483))) * 416.03206212549497)) + ~(sech(x1))) + (tanh(x0) * (3572.8155987436226 * sech((x1 * -10745.06589341379))))) + (sech((-1355.1070335044321 * (x1 + tanh(sech(x0))))) * 2810.2958536337123)) + (sech((sech((6.3268702752888002 * sech(x1))) * (x0 + (-93.267322970361477 + x1)))) * (-14.271706909022379 + (55.030955725165803 + x0))))
-        Best expression (original format) = x1 0.77622051370830536 * sech x0 1.0723119830317476 * 224.06892406799466 - * x1 -941.47364098050889 * sech x0 * - x1 14.538003145869483 * sech tanh 416.03206212549497 * + x1 sech ~ + x0 tanh 3572.8155987436226 x1 -10745.06589341379 * sech * * + -1355.1070335044321 x1 x0 sech tanh + * sech 2810.2958536337123 * + 6.3268702752888002 x1 sech * sech x0 -93.267322970361477 x1 + + * sech -14.271706909022379 55.030955725165803 x0 + + * +
+        Best score = 2.14801014488003e-10, SNE = 4655471493.78594
+        Squared-norm error for each equation: 4655471493.00809 0.777855673530492
+        Best expression = (((((((sech((x1 * 0.77622051370830536)) * ((x0 * 1.0723119830317476) - 224.06892406799463)) - (sech((x1 * -1019.2617403637474)) * x0)) + (tanh(sech((x1 * 14.551727832056727))) * 422.01699542346216)) + ~(sech(x1))) + (tanh(x0) * (3648.2406225917603 * sech((x1 * 11917.461018933378))))) + (sech((1553.0045635466558 * (x1 + tanh(sech(x0))))) * 3079.68065194265)) + (sech((sech((6.3268702752888002 * sech(x1))) * (x0 + (-93.267322970361477 + x1)))) * (-14.271706909022379 + (55.030955725165803 + x0))))
+        Best expression (original format) = x1 0.77622051370830536 * sech x0 1.0723119830317476 * 224.06892406799463 - * x1 -1019.2617403637474 * sech x0 * - x1 14.551727832056727 * sech tanh 422.01699542346216 * + x1 sech ~ + x0 tanh 3648.2406225917603 x1 11917.461018933378 * sech * * + 1553.0045635466558 x1 x0 sech tanh + * sech 3079.68065194265 * + 6.3268702752888002 x1 sech * sech x0 -93.267322970361477 x1 + + * sech -14.271706909022379 55.030955725165803 x0 + + * +
 
 FileIdx = 6, useChi2 = True:
     Depth = 4, maxsize = 15:
-        Best score = 3.11519066534942e-05, SNE = 32099.7638833508
-        Squared-norm error for each equation: 1877.05062778368 30222.7132555671
-        Best expression = ((sech(x1) * (82.269820155334557 + (x0 * 0.8188326428792857))) - (sech((-4179116.9780704682 * x1)) * -166970.17668932423))
-        Best expression (original format) = x1 sech 82.269820155334557 x0 0.8188326428792857 * + * -4179116.9780704682 x1 * sech -166970.17668932423 * -
+        Best score = 0.0103671854857469, SNE = 95.4581950785803
+        Squared-norm error for each equation: 95.4581950784966 4.44420657863469e-11 3.92162525225827e-11
+        Best expression = ((exp(cos(x1)) * ((0.000483437 * x0) * (x0 - x1))) * sech(x1))
+        Best expression (original format) = x1 cos exp 0.000483437 x0 * x0 x1 - * * x1 sech *
+    Depth = 5, maxsize = 30, penalty for being nonzero at f(x=\pm 25, -5):
+        Best score = 0.013580857199821, SNE = 72.6330546214106
+        Squared-norm error for each equation: 72.6330546213921 9.24850338879301e-12 9.24850338879301e-12
+        Best expression = (((tanh(sech(x1)) * ((0.000637335 * x0) * (-286.928 + x0))) * exp(cos((0.204735 * x1)))) + ((x0 * sech(sech(x1))) * sech(((x1 + x1) * 1.42441))))
+        Best expression (original format) = x1 sech tanh 0.000637335 x0 * -286.928 x0 + * * 0.204735 x1 * cos exp * x0 x1 sech sech * x1 x1 + 1.42441 * sech * +
+    Depth = 6, maxsize = 42, penalty for being nonzero at f(x=\pm 25, -5):
+        Best score = 0.0137644640828031, SNE = 71.650848880442
+        Squared-norm error for each equation: 71.650848880411 1.69331734754473e-11 1.40807129614863e-11
+        Best expression = ((((tanh(sech(x1)) * ((0.000637335 * x0) * (-286.928 + x0))) * exp(sech(cos(x1)))) + (((sech(x0) + x0) * sech(sech(x1))) * sech(((x1 + x1) * 1.42441)))) + ~(((x1 + sin(tanh(x0))) * sech(x1))))
+        Best expression (original format) = x1 sech tanh 0.000637335 x0 * -286.928 x0 + * * x1 cos sech exp * x0 sech x0 + x1 sech sech * x1 x1 + 1.42441 * sech * + x1 x0 tanh sin + x1 sech * ~ +
+    Depth = 6, maxsize = 69:
+        Best score = 0.0142669755428493, SNE = 69.0919404394162
+        Squared-norm error for each equation: 69.0919404393618 2.7203069500161e-11 2.72030694976599e-11
+        Best expression = (tanh((~(sech(((sech(x1) + x1) - ~(x1)))) * ((x0 * ~(x1)) * (cos(exp(x1)) - x1)))) + (((sech((x1 * exp(exp(exp(x1))))) * ((exp(x1) + x0) * sech(sech(exp(x1))))) - (~((sech(tanh(x1)) * x0)) - (cos(x1) - ((((x1 * x1) - ~(x0)) + arccos(sech(x0))) - (0.00129516 * (x0 * x0)))))) * sech(x1)))
+        Best expression (original format) = x1 sech x1 + x1 ~ - sech ~ x0 x1 ~ * x1 exp cos x1 - * * tanh x1 x1 exp exp exp * sech x1 exp x0 + x1 exp sech sech * * x1 tanh sech x0 * ~ x1 cos x1 x1 * x0 ~ - x0 sech arccos + 0.00129516 x0 x0 * * - - - - x1 sech * +
+     Depth = 9, maxsize = 187, penalty for being nonzero at f(x=\pm 25, -5):
+        Best score = 0.118419980863566, SNE = 7.44452087145763
+        Squared-norm error for each equation: 7.44452080518825 7.23011223971983e-18 6.62693774837301e-08
+        Best expression = (sech(((((exp(exp(tanh(x0))) * (tanh(sin(x1)) + (tanh(x1) + x1))) / (((x0 / sech(x0)) - 0.0923846) * 0.0732506)) + ((x1 * (sech((x1 * 27.3576)) + 0.994096)) + ((x1 + ((x1 + x1) - tanh(x1))) / ((cos(x1) + x0) / 21.2555)))) / (-0.123633 + (sin((~((x0 / 1.0007538009286905)) + x0)) + 0.11879)))) * ((((((~((x0 - x1)) + (x1 + (x1 + -1193.86))) - exp(tanh((x0 * x1)))) * sin(cos(sech(x1)))) + (exp(sech(tanh(x1))) + ((sech((x1 * x0)) + (exp(x1) + x0)) + (-8316.47 / sech(cos(x1)))))) - (((arccos(sin(x1)) + 1362.82) - ((x0 - exp(tanh(x0))) / cos(cos(x1)))) * ~(sech(((1191.68 - (x1 + x0)) * x1))))) + ((exp(~(tanh(~(sech(x1))))) * ((((x0 + 6640.59) + ((x0 + x1) + x0)) + ((cos(x1) + x0) * cos(x1))) + ((exp(x1) + (exp(x1) + x0)) + (sech(x1) * x0)))) - (exp(exp(sin(sin(tanh(x1))))) - (13.4844 * ~(((x1 * (-269.556 * x1)) + x0)))))))
+        Best expression (original format) = x0 tanh exp exp x1 sin tanh x1 tanh x1 + + * x0 x0 sech / 0.0923846 - 0.0732506 * / x1 x1 27.3576 * sech 0.994096 + * x1 x1 x1 + x1 tanh - + x1 cos x0 + 21.2555 / / + + -0.123633 x0 1.0007538009286905 / ~ x0 + sin 0.11879 + + / sech x0 x1 - ~ x1 x1 -1193.86 + + + x0 x1 * tanh exp - x1 sech cos sin * x1 tanh sech exp x1 x0 * sech x1 exp x0 + + -8316.47 x1 cos sech / + + + x1 sin arccos 1362.82 + x0 x0 tanh exp - x1 cos cos / - 1191.68 x1 x0 + - x1 * sech ~ * - x1 sech ~ tanh ~ exp x0 6640.59 + x0 x1 + x0 + + x1 cos x0 + x1 cos * + x1 exp x1 exp x0 + + x1 sech x0 * + + * x1 tanh sin sin exp exp 13.4844 x1 -269.556 x1 * * x0 + ~ * - - + *
 
 FileIdx = 7, useChi2 = False:
     Depth = 4, maxsize = 15:
@@ -8772,7 +8990,7 @@ namespace RTS
         {
             x.recompute_diff_eq_each_fit_iter = true;
         }
-        assert(x.num_diff_eqns > 0 && x.num_diff_eqns < 3);
+        assert(x.num_diff_eqns == 1 || x.num_diff_eqns == 2 || x.num_diff_eqns == 3);
         assert(x.expression_type=="postfix");
         assert(x.pieces.size() == 1);
         static std::atomic<bool> added_additive{false};
@@ -8841,10 +9059,21 @@ namespace RTS
                 if (i < 0.0)
                 {
                     //printf("broke on call %d\n", countCalls);
-                    
-                    return ((x.num_diff_eqns == 2) ?
-                           std::vector<std::vector<std::string>>{std::vector<std::string>{infty}, std::vector<std::string>{infty}} :
-                           std::vector<std::vector<std::string>>{std::vector<std::string>{infty}});
+                    auto temp_break = std::vector<std::vector<std::string>>{std::vector<std::string>{infty}};
+                    if (x.num_diff_eqns == 1)
+                    {
+                        return temp_break;
+                    }
+                    temp_break.push_back(std::vector<std::string>{infty});
+                    if (x.num_diff_eqns == 2)
+                    {
+                        return temp_break;
+                    }
+                    temp_break.push_back(std::vector<std::string>{infty});
+                    if (x.num_diff_eqns == 3)
+                    {
+                        return temp_break;
+                    }
                 }
             }
         }
@@ -8907,6 +9136,32 @@ namespace RTS
             double normFac = sqrtNumTimeStepsInv/sqrt((numBins - numConsts));
             results[0].push_back(to_string_general(normFac));
             results[0].push_back("*");
+        }
+        if (x.num_diff_eqns == 3)
+        {
+            constexpr int checkPoints[] = {-25, 25, -5};
+            constexpr size_t numCheckPoints = sizeof(checkPoints)/sizeof(checkPoints[0]);
+            for (int ncp = 0; ncp < numCheckPoints; ncp++)
+            {
+                for (const std::string& i: x.pieces[0])
+                {
+                    if (i == "x1") //x
+                    {
+                        results[(ncp%2) ? 1 : 2].push_back(to_string_general(checkPoints[ncp]));
+                    }
+                    else
+                    {
+                        results[(ncp%2) ? 1 : 2].push_back(i);
+                    }
+                }
+                if (ncp > 1)
+                {
+                    results[(ncp%2) ? 1 : 2].push_back("+");
+                }
+            }
+            results[2].push_back("10");
+            results[2].push_back("*");
+        //std::cout << "results = " << results << '\n';
         }
         assert(results.size() == x.num_diff_eqns);
         return results;
@@ -13220,7 +13475,7 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
-//    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("(((((((tanh((x0 * 1.000515886075688)) + (-1.000403450670587 * tanh(x0))) + -0.7432576678002174) * ~((0.978336191182551 * sin(~(x0))))) * ((-0.1652923646570943 * ((~(x3) + 1.0599966401638248) + ((x3 + 2.080082929033131) + (1.0011250648193641 * x3)))) + ((0.00010135683188158724 * (~(x3) + ~(x3))) + (((6.489378526439195 + x3) * -0.0026790535231554953) + ((x2 * -0.0025431575107518574) + 4.095068864605789))))) * sin((((((x3 + 1.0078702376429256) + 4.576923403353813) * (0.3610650380716696 * (x2 * x3))) + ((x0 * 0.8171118182587584) * ~(sin(x1)))) + (((tanh(x2) + (x3 * 0.9813704859078054)) + (~(x1) + sin(x2))) + (x2 * 0.9068208922429004))))) + (sech(((sech((2.7367087121306826 + tanh(x3))) + (0.18316250360132844 * sech(sin(x0)))) * (((2.6342754006496643 + (x3 * -0.44216369633119523)) * ((x2 + -4.6714138887832615) + (-0.4546088903505104 * x2))) + ((-0.48214977674299364 * sin(x3)) + (tanh(x3) + (3.5980206120749716 + x3)))))) + ((((~((x2 + 26.967537605082576)) * ((x2 + -0.7692002813528213) * (x3 * -0.3673585002712551))) + ~(((0.6715407973665254 + x3) * sech(x3)))) * ((0.38670853587496273 + (sech(x3) * 0.0032660325635009346)) + ((-0.00029322977521883964 * sech(x2)) + 0.08753236144631288))) + (((((0.00014040407492014228 + x0) * (x2 + 14.264029164592477)) * -0.0012495999037258224) * sin((~(x0) * 1.856856825067456))) + (~((2.5799500091171867 * (x2 + -0.7715141464833897))) * (((x3 * 1.8199699432400873) + 0.043191596034499485) + ((x2 * x3) * 0.06747834701904097))))))) + ((2.871676375245118e-07 * ((((((0.11676152445678974 * x2) + sin(x3)) + ((-0.09059755824514287 * x3) + (x0 * 4.593389234938096))) * ((-1.5162435493057076 + tanh(x2)) * sech(sin(x1)))) + ((((4.008019020336718 * x3) * (-2.276142205346987 + x2)) * ((-1.6762049894987203 + x3) * (-6.7469729054372465 + x2))) * (((x3 + -8.973355989577799) + sin(x2)) * ((x3 * x3) * sin(x3))))) + (((sin((x1 + x0)) * (sin(x2) + sin(x3))) * ((sin(x3) * (0.023311266512391935 * x2)) + (28.238463415143393 * sin(x1)))) + (((sin(x2) * (x3 + x3)) * (sin(x0) + (x2 * x2))) + ((sin(x2) + 1.362472320734109) * ((1.431613233542707 * x0) * 30.692769539752064)))))) + (((tanh(((sech(x3) + 1.6581351872246999) + sech(sin(x2)))) + -0.9853284193759805) + (((~(x0) + (1.0000010749463313 * x0)) + -0.005504625313219025) * ((sin(sin(x2)) + (-0.5786755673117281 + tanh(x2))) + (sech((x3 * x3)) * ((x3 * x3) * (-2.9075774749301018 + x3)))))) * (((((14.814083629108222 * sech(x3)) + x2) + tanh((-2.6794660580335856 * sin(x2)))) * (((tanh(x2) + -1.659984177906094) * tanh(sin(x3))) + ((-0.5955947706639946 + tanh(x2)) + sech(tanh(x0))))) * sin((((1.1838676614555403 + x3) * 0.585976614672783) + ((1.104009241838198 * sin(x2)) + (x3 + -0.8695433455210179))))))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu")));
+//    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("(((((((tanh((1.0003167733849012 * x0)) + (-1.000329744490292 * tanh(x0))) + -0.7365163725242818) * ~((0.9783241771926432 * sin(~(x0))))) * ((-0.16531504574153175 * ((~(x3) * 1.0590166597679258) + ((x3 + 2.1938589900172816) + (1.0626898114876313 * x3)))) + ((0.00010135683188158724 * (~(x3) + ~(x3))) + (-0.044993247676072455 + ((x2 * -0.002543395927608778) + 4.0894414444855975))))) * sin((((((x3 + 1.0082379720083774) + 4.5528840546336955) * (0.3610650380716696 * (x2 * x3))) + ((x0 * 0.7578757827143889) * ~(sin(x1)))) + (((tanh(x2) + (x3 * 0.9700791123411397)) + (~(x1) + sin(x2))) + (x2 * 0.9307454730716437))))) + (sech(((sech((2.6945055656854766 + tanh(x3))) + (0.18044413421814 * sech(sin(x0)))) * (((2.7101548998493534 + (x3 * -0.41315074374144156)) * ((x2 + -4.6402769721127894) + (-0.4369291474943965 * x2))) + ((-0.38725475912299573 * sin(x3)) + (tanh(x3) + (3.912590361683736 + x3)))))) + ((((~((x2 + 26.963734298781265)) * ((x2 + -0.7690734008914989) * (x3 * -0.36775547030295497))) + ~(((0.7374578255449655 + x3) * sech(x3)))) * ((0.3887452265909889 + (sech(x3) * 0.0041953156885753485)) + ((0.0001822112143793503 * sech(x0)) + 0.06350008506275526))) + (((((0.0002739067958640624 + x0) * (x2 + 14.487390425916272)) * -0.0012357769709555584) * sin((~(x0) * 1.8618945355450818))) + (~((2.464558727260278 * (x2 + -0.7711385745859993))) * (((x3 * 1.8183239011811307) + 0.04444675262280025) + ((x2 * x3) * 0.06747931729338036))))))) + (((((((sech(x2) + x2) + (sech(x2) + (0.04210976678179935 + x0))) + (~(sin(x0)) + (30.871448523998673 * (-0.018440914102815464 + x0)))) * (((-25.737519050491766 * (x0 * 3.3585736185545514)) * ((2.0122449839886962 * x3) * (x3 + x0))) * -8.020806241404443e-12)) + 2.8716763780314505e-07) * (((((x2 * 0.7301993459484523) + (sin(x3) + x3)) * ~(tanh(sin(x0)))) * ((tanh((-3.2612920045452913 + x0)) + ((x0 + x2) + -13.612778365295783)) + (~(tanh(x2)) + (x0 + (2.6085311350773632 * x3))))) + ((((sech(x2) + -2.1036310505481417) * ~(x0)) * ((0.6646378877661012 + x3) + (-7.515112701657434 + x2))) + (((x3 + -3.302245548369644) * 9.528814751423203) + (sech((x2 * 1.4050201830008562)) * ((x0 * x0) + (-8.58899564309605 * x3))))))) + (((tanh(((sech(x3) + 1.950918948594157) + sech(sin(x2)))) + ((-1.5546292417176614e-07 * (tanh(x0) * (3.2633706005119025 * x2))) + -0.9808761228575852)) + (((~(x0) + (1.000001754539392 * x0)) + -0.0062979524853388575) * ((tanh(sin(x2)) + (1.055713076259249 + tanh(x2))) + (sech((x3 * x3)) * ((-2.211467877221908 * x3) * (0.43383032904897467 + x3)))))) * (((((20.70414785689312 * sech(x3)) + (sech(x2) + (x2 + -3.3445450351490353))) + sin(((x3 + -0.20097726379426314) + (x3 + x2)))) * (((tanh(x2) + -2.365288347531295) * tanh(sin(x3))) + ((-0.2882680422936063 + tanh(x2)) + sech(tanh(x0))))) * sin((((-0.06254840709344243 + x3) * 0.6180488015653848) + (tanh(sin(x2)) + (tanh(x3) * (x3 + -0.21714921545351812)))))))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu")));
 //    from sympy import *; x0, x1, x2, x3 = symbols('x0 x1 x2 x3'); print(eval("(((((0.00020761302887044612 * (sin(x2) + (1.0272442241645563 * x2))) + ((1.3304563988558432e-06 * (x3 + x2)) + -1.0052629302733438)) * sin((~((1.4269067710318464e-07 + x2)) + ((-8.427410561791095e-08 + x0) + (2.2679423250655768e-07 + x2))))) * (((0.008782524861544684 * (0.27587744389610325 + (0.009993495877091307 + x2))) + (-0.1651571745075183 * ((-1.911228719809616e-07 + x3) + 0.010002284668230988))) + (((0.010151823903466778 * sin(x2)) * (-0.06438380401024771 * sin(x2))) + (((x2 * 0.03852998867113262) * -8.436444206719193e-05) + 3.659791130722469)))) * sin((((5.301797186958442 * (-2.4089452401052685e-07 + (2.2542565388059674e-07 + x3))) + sin((10.688904984949698 * (1.1264219683053926e-08 + x2)))) + (~(((x0 + -2.9955080762796076e-07) + (5.8232400879963024e-08 + x1))) + ((3.570015447645774e-12 + (1.081329657641461e-11 + x0)) + 72.43120897235498)))))\n".replace("^","**").replace("~", "-")));
     
 //    puts("called SwiftHohenberg");
@@ -13345,10 +13600,10 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
             Best expression = ((((-0.7436740549017838 * ~((0.978671998154779 * sin(~(x0))))) * ((-0.16506032676208263 * ((~(x3) + 1.0104431706538877) + ((x3 + 2.0263672556177212) + (1.0000646104502637 * x3)))) + (((sech(x0) + -5.473839588831971) * (0.1083127930965594 * sech(x0))) + (sech((9.652723259830397 + x0)) + 4.097279145889173)))) * sin((((((x3 + 1.001172964549485) + 4.577301942736834) * (0.3610683671842316 * (x2 * x3))) + ((x0 * 0.8208158476442583) * ~(sin(x1)))) + (((0.9767300657756708 + (0.09612247077537389 + x3)) + (~(x1) + sin(x2))) + ((tanh(x3) * sin(x2)) + 8.526793547415789))))) + (sech(((sech((2.1689512610804926 + (x2 * x3))) + ((tanh(x3) * (x0 * -5.5798800126698765e-06)) + ((x0 * 4.6978252484540345e-06) + 0.4959806288224722))) * (((0.5175438054051975 + (x3 * 0.05150525110875713)) * (sech(x0) + (0.33890390798614684 * x2))) + (-3.864297673121919 + (tanh(x2) + (-0.15121589912254246 + x3)))))) + ((((~((x2 + 19.362945351934766)) * ((x2 + -1.8698253354989) * (x3 * -0.36531301346742867))) + tanh(((-45.439790319012225 + x2) * sech(x3)))) * ((0.35521176975406565 + (sech(x3) * -0.013130259680975259)) + (((x2 + -4.8963906527907834) * (-1.3913554470541605 * x3)) * 7.304541025780904e-06))) + (((((6.306657492666961e-05 + x0) * 25.52309028528328) * -0.001353459086497593) * sin((~(x0) * 1.84206969073419))) + (~((1.5966936626265833 * (x2 + -1.8680438343255314))) * ((0.045854542094754036 + (x3 * 1.5706635772362287)) + ((x2 * x3) * 0.0811264974545793)))))))
             Best expression (original format) = -0.7436740549017838 0.978671998154779 x0 ~ sin * ~ * -0.16506032676208263 x3 ~ 1.0104431706538877 + x3 2.0263672556177212 + 1.0000646104502637 x3 * + + * x0 sech -5.473839588831971 + 0.1083127930965594 x0 sech * * 9.652723259830397 x0 + sech 4.097279145889173 + + + * x3 1.001172964549485 + 4.577301942736834 + 0.3610683671842316 x2 x3 * * * x0 0.8208158476442583 * x1 sin ~ * + 0.9767300657756708 0.09612247077537389 x3 + + x1 ~ x2 sin + + x3 tanh x2 sin * 8.526793547415789 + + + sin * 2.1689512610804926 x2 x3 * + sech x3 tanh x0 -5.5798800126698765e-06 * * x0 4.6978252484540345e-06 * 0.4959806288224722 + + + 0.5175438054051975 x3 0.05150525110875713 * + x0 sech 0.33890390798614684 x2 * + * -3.864297673121919 x2 tanh -0.15121589912254246 x3 + + + + * sech x2 19.362945351934766 + ~ x2 -1.8698253354989 + x3 -0.36531301346742867 * * * -45.439790319012225 x2 + x3 sech * tanh + 0.35521176975406565 x3 sech -0.013130259680975259 * + x2 -4.8963906527907834 + -1.3913554470541605 x3 * * 7.304541025780904e-06 * + * 6.306657492666961e-05 x0 + 25.52309028528328 * -0.001353459086497593 * x0 ~ 1.84206969073419 * sin * 1.5966936626265833 x2 -1.8680438343255314 + * ~ 0.045854542094754036 x3 1.5706635772362287 * + x2 x3 * 0.0811264974545793 * + * + + + +
         Depth = 9:
-            Best score = 3.01881250483361e-06, SNE = 331255.08112423
-            Squared-norm error for each equation: 7.90739082839837e-05 0.0025763593688448 331249.567952417 5.51051637890857
-            Best expression = (((((-0.7436740471467694 * ~((0.978671998154779 * sin(~(x0))))) * ((-0.16506032676208263 * ((~(x3) + 1.010456957412517) + ((x3 + 2.0263746737565596) + (1.0000646793660275 * x3)))) + (((sech(x0) + -5.473999233830173) * (0.10831285618782358 * sech(x0))) + (sech((9.654623497190132 + x0)) + 4.097279052922934)))) * sin((((((x3 + 1.0011741087177937) + 4.57730301242006) * (0.3610683671842316 * (x2 * x3))) + ((x0 * 0.8208158476442583) * ~(sin(x1)))) + (((0.9767300657756708 + (0.09612233922487028 + x3)) + (~(x1) + sin(x2))) + ((tanh(x3) * sin(x2)) + 8.526793547415789))))) + (sech(((sech((2.2455304184013527 + (x2 * x3))) + ((tanh(x3) * (x0 * -5.735704672825112e-06)) + ((x0 * 9.487240520707886e-06) + 0.4959575604538478))) * (((0.50905174094428 + (x3 * 0.05138575124885192)) * (sech(x0) + (0.33795814658795104 * x2))) + (-3.867464930153579 + (tanh(x2) + (-0.1543675047249827 + x3)))))) + ((((~((x2 + 19.369910856846325)) * ((x2 + -1.869690641909552) * (x3 * -0.3653136662527083))) + tanh(((-48.52488566230737 + x2) * sech(x3)))) * (0.35521314174443697 + (((x2 + -1.323837791557501) * (-1.2175023070012798 * x3)) * 5.19366681091939e-06))) + (((((0.00011040702091827525 + x0) * 25.52273999086811) * -0.0013534590786823033) * sin((~(x0) * 1.842069681795347))) + (~((1.598826364231599 * (x2 + -1.8728738626482626))) * ((0.00821950070253034 + (x3 * 1.568603345513188)) + ((x2 * x3) * 0.08095201888371616))))))) + (((((-0.06926151532988069 * (sin(sin(x3)) + ~((-0.9196451189961826 + x3)))) + (sin((sech(0.9462984760977906) * (x2 * x2))) * (((x3 * 0.23029724296593718) + ~(0.868588795753119)) * ((0.12770613566703057 * x2) * tanh(0.08271816301465641))))) + (sin(((~(0.04995723542636606) + tanh(x3)) + (sin(x2) + sin(x3)))) * (tanh(((x2 * x3) * sin(x3))) * (0.12583596623685328 * sech(tanh(x2)))))) + (((tanh(sech(x3)) * (-0.0007222943708356282 + -0.02591945311883497)) * ((((x3 * 1.2053944650071666) + 1.2698690761328464) * ((0.5910351730459155 + x3) + sech(x2))) * ((-2.7131090286060475 * x3) + (3.3534360737543047 + x2)))) + ((-0.6207049640041887 + ((sin(x3) + (x3 + -0.6704634847297483)) * sech((2.5928378732518045 * x3)))) + sech((((x3 * x3) * -38.493287597848905) * ~((0.8706300613517834 + x3))))))) + (((((0.10101201240302084 + (x3 * -0.0026730802091601527)) * (((x2 * -0.0008235937122255167) + 0.994853343536652) + tanh((-6.350352222304098 * x2)))) + (sin((1.0011431900864203 * (0.4147096065282426 + x2))) * 0.0018519523279394968)) * ((((2.13288038786399 * (0.1059589757534973 + x2)) + sin((1.1277723034010334 * x3))) + ((x3 * (-0.8667323421817599 + x2)) * sin((x3 * x2)))) + (((sin(x2) * (x3 + -8.581962471954943)) * 4.292343507185708) * (((-0.12678977850620907 * x3) + sin(x3)) * -3.9838446923109996)))) + ((((0.01111829135085147 * sin((x3 * 1.3595915779314212))) * sin((~(1.694210025267798) * (-4.5254347560412675 + x2)))) + 0.0752456754084435) * (~((sech(x2) + ((x2 + -10.977527025341795) + x3))) + ~(sech(tanh(sin(x3)))))))))
-            Best expression (original format) = -0.7436740471467694 0.978671998154779 x0 ~ sin * ~ * -0.16506032676208263 x3 ~ 1.010456957412517 + x3 2.0263746737565596 + 1.0000646793660275 x3 * + + * x0 sech -5.473999233830173 + 0.10831285618782358 x0 sech * * 9.654623497190132 x0 + sech 4.097279052922934 + + + * x3 1.0011741087177937 + 4.57730301242006 + 0.3610683671842316 x2 x3 * * * x0 0.8208158476442583 * x1 sin ~ * + 0.9767300657756708 0.09612233922487028 x3 + + x1 ~ x2 sin + + x3 tanh x2 sin * 8.526793547415789 + + + sin * 2.2455304184013527 x2 x3 * + sech x3 tanh x0 -5.735704672825112e-06 * * x0 9.487240520707886e-06 * 0.4959575604538478 + + + 0.50905174094428 x3 0.05138575124885192 * + x0 sech 0.33795814658795104 x2 * + * -3.867464930153579 x2 tanh -0.1543675047249827 x3 + + + + * sech x2 19.369910856846325 + ~ x2 -1.869690641909552 + x3 -0.3653136662527083 * * * -48.52488566230737 x2 + x3 sech * tanh + 0.35521314174443697 x2 -1.323837791557501 + -1.2175023070012798 x3 * * 5.19366681091939e-06 * + * 0.00011040702091827525 x0 + 25.52273999086811 * -0.0013534590786823033 * x0 ~ 1.842069681795347 * sin * 1.598826364231599 x2 -1.8728738626482626 + * ~ 0.00821950070253034 x3 1.568603345513188 * + x2 x3 * 0.08095201888371616 * + * + + + + -0.06926151532988069 x3 sin sin -0.9196451189961826 x3 + ~ + * 0.9462984760977906 sech x2 x2 * * sin x3 0.23029724296593718 * 0.868588795753119 ~ + 0.12770613566703057 x2 * 0.08271816301465641 tanh * * * + 0.04995723542636606 ~ x3 tanh + x2 sin x3 sin + + sin x2 x3 * x3 sin * tanh 0.12583596623685328 x2 tanh sech * * * + x3 sech tanh -0.0007222943708356282 -0.02591945311883497 + * x3 1.2053944650071666 * 1.2698690761328464 + 0.5910351730459155 x3 + x2 sech + * -2.7131090286060475 x3 * 3.3534360737543047 x2 + + * * -0.6207049640041887 x3 sin x3 -0.6704634847297483 + + 2.5928378732518045 x3 * sech * + x3 x3 * -38.493287597848905 * 0.8706300613517834 x3 + ~ * sech + + + 0.10101201240302084 x3 -0.0026730802091601527 * + x2 -0.0008235937122255167 * 0.994853343536652 + -6.350352222304098 x2 * tanh + * 1.0011431900864203 0.4147096065282426 x2 + * sin 0.0018519523279394968 * + 2.13288038786399 0.1059589757534973 x2 + * 1.1277723034010334 x3 * sin + x3 -0.8667323421817599 x2 + * x3 x2 * sin * + x2 sin x3 -8.581962471954943 + * 4.292343507185708 * -0.12678977850620907 x3 * x3 sin + -3.9838446923109996 * * + * 0.01111829135085147 x3 1.3595915779314212 * sin * 1.694210025267798 ~ -4.5254347560412675 x2 + * sin * 0.0752456754084435 + x2 sech x2 -10.977527025341795 + x3 + + ~ x3 sin tanh sech ~ + * + + +
+            Best score = 3.04928233977798e-06, SNE = 327945.017643224
+            Squared-norm error for each equation: 7.71122778865889e-05 0.00255119582772825 327932.983879927 12.0311349891713
+            Best expression = (((((-0.7436245329332318 * ~((0.9785258601095392 * sin(~(x0))))) * ((-0.1651077232419793 * ((~(x3) + 1.0114732131476505) + ((x3 + 2.0277117301421006) + (1.0004434754535174 * x3)))) + (((sech(x0) + -5.484318249399928) * (0.10871033955902794 * sech(x0))) + (sech((9.478548702028977 + x0)) + 4.097008224862809)))) * sin((((((x3 + 1.0012023582391936) + 4.577367626684488) * (0.3610685185292716 * (x2 * x3))) + ((x0 * 0.8206100577378382) * ~(sin(x1)))) + (((0.9762792957999558 + (0.09554666881828054 + x3)) + (~(x1) + sin(x2))) + ((tanh(x3) * sin(x2)) + 8.526113757444886))))) + (sech(((sech((2.263707714941893 + (x2 * x3))) + ((tanh(x3) * (x0 * -2.1120027938582072e-05)) + ((x0 * 2.3400805607350343e-05) + 0.47904399708695783))) * (((0.4840346281738964 + (x3 * 0.0530188325655222)) * (sech(x0) + (0.3651855148719038 * x2))) + (-3.870003880627503 + (tanh(x2) + (-0.16143818384159492 + x3)))))) + ((((~((x2 + 19.304683141944917)) * ((x2 + -1.8668290952606674) * (x3 * -0.3635805662582919))) + tanh(((-46.95338367176662 + x2) * sech(x3)))) * (0.39215181455444936 + (((x2 + 3.16207104251519) * (-1.5293703436270822 * x3)) * 5.19675443653836e-06))) + (((((0.00015050098948154417 + x0) * 25.466970547525065) * -0.0013513534503840437) * sin((~(x0) * 1.8412772037212524))) + (~((1.70279671986542 * (x2 + -1.8779750461893743))) * ((0.04942972344976178 + (x3 * 1.611350675973412)) + ((x2 * x3) * 0.08335835520594857))))))) + (((((-0.06056335774272485 * (tanh(sin(x3)) + ~((x2 + x3)))) + (sin((0.6746334491156816 * (x2 * x2))) * (((x3 * 0.15439081220028586) + -0.7034760318729587) * ((0.09684801278903256 * x2) * (x3 * 0.023683056241637843))))) + (sin(((4.253537882396207 * tanh(x3)) + (sin(x2) + sin(x3)))) * (tanh(((x2 * x3) * sin(x3))) * ((-0.1173403105074968 + (-0.006068667513670668 * x2)) * sech(tanh(x2)))))) + (((sin(sech((x3 + -0.7043595136458836))) * (0.11268548905119229 + (-0.013115229182795538 * (-0.12503941134882526 + x3)))) * ((((x2 * -0.0821864632189842) + 1.7560438486969716) * ((-1.5253158504063358 * x3) + tanh(x2))) * ((-2.0925717065025973 * (-2.1099108443254444 + x3)) + (-0.6822993532348717 + (0.40371790746088015 * x2))))) + (((((x2 * -2.3373826178378128e-07) * (x0 + x0)) + -0.5944837000886365) + ((tanh(x3) + (x3 + -1.2309118478070722)) * sech((3.0850530616331895 * x3)))) + sech((((x3 * x3) * (x3 + -13.717691667601066)) * (0.9661771733618436 * (x3 + -3.4909468242653037))))))) + ((((0.10929150212155526 * (((x2 * -0.0010958194915809052) + 0.9972685333160236) + tanh((-6.392431699768104 * x2)))) + (sin((tanh(x2) * (0.3909844620801692 + x2))) * 0.0019190723215798376)) * (((((x2 * 3.855426803838378) + sech(x0)) + sin((10.216777305936443 * x3))) + (((0.7048958744703272 * x3) * (-0.7345776292122647 + x2)) * sin((x3 * x2)))) + (((sin(x2) * (x3 + -7.221695543289889)) * (tanh(x3) * 141.83136860431165)) * (((-0.06740885122822705 * x2) + sin(x3)) * (tanh(x3) + -1.1764299380315004))))) + ((((0.011416208015768835 * sin((x3 * 1.3512698952991606))) * sin((-1.8458193265205465 * (x2 + 2.0383216701739655)))) + ((sech((x0 * 0.8917042500037494)) * (sech(x3) * 0.14409545983062488)) + ((0.004546564033320769 * sin(x3)) + 0.08653679460609363))) * (~((sech((-0.02708291405179961 + x2)) + ((x2 + -3.374063738255626) + (-3.818401908333577 + x3)))) + ~(sech((1.814211846944989 * sin(x3)))))))))
+            Best expression (original format) = -0.7436245329332318 0.9785258601095392 x0 ~ sin * ~ * -0.1651077232419793 x3 ~ 1.0114732131476505 + x3 2.0277117301421006 + 1.0004434754535174 x3 * + + * x0 sech -5.484318249399928 + 0.10871033955902794 x0 sech * * 9.478548702028977 x0 + sech 4.097008224862809 + + + * x3 1.0012023582391936 + 4.577367626684488 + 0.3610685185292716 x2 x3 * * * x0 0.8206100577378382 * x1 sin ~ * + 0.9762792957999558 0.09554666881828054 x3 + + x1 ~ x2 sin + + x3 tanh x2 sin * 8.526113757444886 + + + sin * 2.263707714941893 x2 x3 * + sech x3 tanh x0 -2.1120027938582072e-05 * * x0 2.3400805607350343e-05 * 0.47904399708695783 + + + 0.4840346281738964 x3 0.0530188325655222 * + x0 sech 0.3651855148719038 x2 * + * -3.870003880627503 x2 tanh -0.16143818384159492 x3 + + + + * sech x2 19.304683141944917 + ~ x2 -1.8668290952606674 + x3 -0.3635805662582919 * * * -46.95338367176662 x2 + x3 sech * tanh + 0.39215181455444936 x2 3.16207104251519 + -1.5293703436270822 x3 * * 5.19675443653836e-06 * + * 0.00015050098948154417 x0 + 25.466970547525065 * -0.0013513534503840437 * x0 ~ 1.8412772037212524 * sin * 1.70279671986542 x2 -1.8779750461893743 + * ~ 0.04942972344976178 x3 1.611350675973412 * + x2 x3 * 0.08335835520594857 * + * + + + + -0.06056335774272485 x3 sin tanh x2 x3 + ~ + * 0.6746334491156816 x2 x2 * * sin x3 0.15439081220028586 * -0.7034760318729587 + 0.09684801278903256 x2 * x3 0.023683056241637843 * * * * + 4.253537882396207 x3 tanh * x2 sin x3 sin + + sin x2 x3 * x3 sin * tanh -0.1173403105074968 -0.006068667513670668 x2 * + x2 tanh sech * * * + x3 -0.7043595136458836 + sech sin 0.11268548905119229 -0.013115229182795538 -0.12503941134882526 x3 + * + * x2 -0.0821864632189842 * 1.7560438486969716 + -1.5253158504063358 x3 * x2 tanh + * -2.0925717065025973 -2.1099108443254444 x3 + * -0.6822993532348717 0.40371790746088015 x2 * + + * * x2 -2.3373826178378128e-07 * x0 x0 + * -0.5944837000886365 + x3 tanh x3 -1.2309118478070722 + + 3.0850530616331895 x3 * sech * + x3 x3 * x3 -13.717691667601066 + * 0.9661771733618436 x3 -3.4909468242653037 + * * sech + + + 0.10929150212155526 x2 -0.0010958194915809052 * 0.9972685333160236 + -6.392431699768104 x2 * tanh + * x2 tanh 0.3909844620801692 x2 + * sin 0.0019190723215798376 * + x2 3.855426803838378 * x0 sech + 10.216777305936443 x3 * sin + 0.7048958744703272 x3 * -0.7345776292122647 x2 + * x3 x2 * sin * + x2 sin x3 -7.221695543289889 + * x3 tanh 141.83136860431165 * * -0.06740885122822705 x2 * x3 sin + x3 tanh -1.1764299380315004 + * * + * 0.011416208015768835 x3 1.3512698952991606 * sin * -1.8458193265205465 x2 2.0383216701739655 + * sin * x0 0.8917042500037494 * sech x3 sech 0.14409545983062488 * * 0.004546564033320769 x3 sin * 0.08653679460609363 + + + -0.02708291405179961 x2 + sech x2 -3.374063738255626 + -3.818401908333577 x3 + + + ~ 1.814211846944989 x3 sin * sech ~ + * + + +
      mu_equals_nu_1_only == false, createSobolMesh(16384, 4, {0.01, 0.0, 0.01, 0.01}, {10.0, 6.28319, 10, 10})), bad_ops = {"exp", "ln", "log", "^", "/", "arcsin", "asin", "acos", "arccos", "sqrt"}, l1=1e-4, ((variation <= tolerance) || (median(vec.array().abs()) <= tolerance)), period bc * 1e10:
         Depth = 8:
             Best score = 1.47963894353957e-06, SNE = 675839.55175502
@@ -13356,10 +13611,15 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
             Best expression = ((((((tanh((x0 * 1.000498139731853)) + (-1.000403450670587 * tanh(x0))) + -0.7432576678002174) * ~((0.9783396179561396 * sin(~(x0))))) * ((-0.1652923646570943 * ((~(x3) + 1.0598023855134269) + ((x3 + 2.080063491721098) + (1.001124041169633 * x3)))) + ((0.00010135683188158724 * (~(x3) + ~(x3))) + (((6.4870025253611505 + x3) * -0.0026790535231554953) + ((x2 * -0.0025426715139105958) + 4.095069203253207))))) * sin((((((x3 + 1.00787791294801) + 4.57692350555604) * (0.3610650380716696 * (x2 * x3))) + ((x0 * 0.817122516078049) * ~(sin(x1)))) + (((tanh(x2) + (x3 * 0.9813694043426956)) + (~(x1) + sin(x2))) + (x2 * 0.9068128961347662))))) + (sech(((sech((2.736548520600808 + tanh(x3))) + (0.1831576637587592 * sech(sin(x0)))) * (((2.634446849408179 + (x3 * -0.44222652904967374)) * ((x2 + -4.672203101909981) + (-0.455096355794846 * x2))) + ((-0.482772070277832 * sin(x3)) + (tanh(x3) + (3.597450755958241 + x3)))))) + ((((~((x2 + 26.973194687201055)) * ((x2 + -0.7692912056571433) * (x3 * -0.3661788917852299))) + ~(((0.6094528987905319 + x3) * sech(x3)))) * ((0.3879629181630369 + (sech(x3) * 0.003766053913628551)) + ((-0.00024785727569127567 * sech(x2)) + 0.0877925795294678))) + (((((0.0001530375372035204 + x0) * (x2 + 14.263547823918568)) * -0.0012495991520312388) * sin((~(x0) * 1.856662020023483))) + (~((2.5802903027171564 * (x2 + -0.7713866519042927))) * (((x3 * 1.8195358708008056) + 0.04353161976370474) + ((x2 * x3) * 0.06752371247290184)))))))
             Best expression (original format) = x0 1.000498139731853 * tanh -1.000403450670587 x0 tanh * + -0.7432576678002174 + 0.9783396179561396 x0 ~ sin * ~ * -0.1652923646570943 x3 ~ 1.0598023855134269 + x3 2.080063491721098 + 1.001124041169633 x3 * + + * 0.00010135683188158724 x3 ~ x3 ~ + * 6.4870025253611505 x3 + -0.0026790535231554953 * x2 -0.0025426715139105958 * 4.095069203253207 + + + + * x3 1.00787791294801 + 4.57692350555604 + 0.3610650380716696 x2 x3 * * * x0 0.817122516078049 * x1 sin ~ * + x2 tanh x3 0.9813694043426956 * + x1 ~ x2 sin + + x2 0.9068128961347662 * + + sin * 2.736548520600808 x3 tanh + sech 0.1831576637587592 x0 sin sech * + 2.634446849408179 x3 -0.44222652904967374 * + x2 -4.672203101909981 + -0.455096355794846 x2 * + * -0.482772070277832 x3 sin * x3 tanh 3.597450755958241 x3 + + + + * sech x2 26.973194687201055 + ~ x2 -0.7692912056571433 + x3 -0.3661788917852299 * * * 0.6094528987905319 x3 + x3 sech * ~ + 0.3879629181630369 x3 sech 0.003766053913628551 * + -0.00024785727569127567 x2 sech * 0.0877925795294678 + + * 0.0001530375372035204 x0 + x2 14.263547823918568 + * -0.0012495991520312388 * x0 ~ 1.856662020023483 * sin * 2.5802903027171564 x2 -0.7713866519042927 + * ~ x3 1.8195358708008056 * 0.04353161976370474 + x2 x3 * 0.06752371247290184 * + * + + + +
         Depth = 9:
-            Best score = 1.48818265863488e-06, SNE = 671959.524602071
-            Squared-norm error for each equation: 0.000162501857026697 0.00469916102960225 671951.90997095 7.6097694577957
-            Best expression = (((((((tanh((x0 * 1.0005160446648753)) + (-1.000403450670587 * tanh(x0))) + -0.7432576678002174) * ~((0.978336191182551 * sin(~(x0))))) * ((-0.1652923646570943 * ((~(x3) + 1.0599966401638248) + ((x3 + 2.080082929033131) + (1.0011250648193641 * x3)))) + ((0.00010135683188158724 * (~(x3) + ~(x3))) + (((6.489379886701422 + x3) * -0.0026790535231554953) + ((x2 * -0.0025431575107518574) + 4.095068864605789))))) * sin((((((x3 + 1.0078702376429256) + 4.576923403353813) * (0.3610650380716696 * (x2 * x3))) + ((x0 * 0.8171118182587584) * ~(sin(x1)))) + (((tanh(x2) + (x3 * 0.9813704859078054)) + (~(x1) + sin(x2))) + (x2 * 0.9068208922429004))))) + (sech(((sech((2.7367092425547934 + tanh(x3))) + (0.18316250764833078 * sech(sin(x0)))) * (((2.6342754006496643 + (x3 * -0.4421636565624635)) * ((x2 + -4.671413832996526) + (-0.4546088903505104 * x2))) + ((-0.48214900310685194 * sin(x3)) + (tanh(x3) + (3.598020824305705 + x3)))))) + ((((~((x2 + 26.9671870759731)) * ((x2 + -0.7691914554363761) * (x3 * -0.3673585002712551))) + ~(((0.6718930212368533 + x3) * sech(x3)))) * ((0.3867087105869888 + (sech(x3) * 0.0032593590544716614)) + ((-0.00028674016136157846 * sech(x2)) + 0.08753254195607636))) + (((((0.00013991616973685683 + x0) * (x2 + 14.264029164592477)) * -0.0012495999037258224) * sin((~(x0) * 1.856856825067456))) + (~((2.579946002244173 * (x2 + -0.7715154407126913))) * (((x3 * 1.8199722978671378) + 0.04317589353267782) + ((x2 * x3) * 0.06747645734436712))))))) + ((2.871676375245118e-07 * ((((((0.11667321163780803 * x2) + sin(x3)) + ((-0.09056701248398827 * x3) + (x0 * 4.5954673240386095))) * ((-1.5133862021507005 + tanh(x2)) * sech(sin(x1)))) + ((((4.010709644492969 * x3) * (-2.2731109399660343 + x2)) * ((-1.6737023127984967 + x3) * (-6.74970809929017 + x2))) * (((x3 + -8.97626207767631) + sin(x2)) * ((x3 * x3) * sin(x3))))) + (((sin((x1 + x0)) * (sin(x2) + sin(x3))) * ((sin(x3) * (0.023262712693135665 * x2)) + (28.236058730432845 * sin(x1)))) + (((sin(x2) * (x3 + x3)) * (sin(x0) + (x2 * x2))) + ((sin(x2) + 1.360225576065938) * ((1.433859065977473 * x0) * 30.694891379549112)))))) + (((tanh(((sech(x3) + 1.6581779405309696) + sech(sin(x2)))) + -0.9853293674166026) + (((~(x0) + (1.0000010749463313 * x0)) + -0.005504871184406809) * ((sin(sin(x2)) + (-0.5789155706512433 + tanh(x2))) + (sech((x3 * x3)) * ((x3 * x3) * (-2.910867549491223 + x3)))))) * (((((14.816551546219404 * sech(x3)) + x2) + tanh((-2.681958518927622 * sin(x2)))) * (((tanh(x2) + -1.6623516285540982) * tanh(sin(x3))) + ((-0.5928986612408182 + tanh(x2)) + sech(tanh(x0))))) * sin((((1.1839459689714449 + x3) * 0.5859772859488148) + ((1.1040580340282093 * sin(x2)) + (x3 + -0.8694957138293983))))))))
-            Best expression (original format) = x0 1.0005160446648753 * tanh -1.000403450670587 x0 tanh * + -0.7432576678002174 + 0.978336191182551 x0 ~ sin * ~ * -0.1652923646570943 x3 ~ 1.0599966401638248 + x3 2.080082929033131 + 1.0011250648193641 x3 * + + * 0.00010135683188158724 x3 ~ x3 ~ + * 6.489379886701422 x3 + -0.0026790535231554953 * x2 -0.0025431575107518574 * 4.095068864605789 + + + + * x3 1.0078702376429256 + 4.576923403353813 + 0.3610650380716696 x2 x3 * * * x0 0.8171118182587584 * x1 sin ~ * + x2 tanh x3 0.9813704859078054 * + x1 ~ x2 sin + + x2 0.9068208922429004 * + + sin * 2.7367092425547934 x3 tanh + sech 0.18316250764833078 x0 sin sech * + 2.6342754006496643 x3 -0.4421636565624635 * + x2 -4.671413832996526 + -0.4546088903505104 x2 * + * -0.48214900310685194 x3 sin * x3 tanh 3.598020824305705 x3 + + + + * sech x2 26.9671870759731 + ~ x2 -0.7691914554363761 + x3 -0.3673585002712551 * * * 0.6718930212368533 x3 + x3 sech * ~ + 0.3867087105869888 x3 sech 0.0032593590544716614 * + -0.00028674016136157846 x2 sech * 0.08753254195607636 + + * 0.00013991616973685683 x0 + x2 14.264029164592477 + * -0.0012495999037258224 * x0 ~ 1.856856825067456 * sin * 2.579946002244173 x2 -0.7715154407126913 + * ~ x3 1.8199722978671378 * 0.04317589353267782 + x2 x3 * 0.06747645734436712 * + * + + + + 2.871676375245118e-07 0.11667321163780803 x2 * x3 sin + -0.09056701248398827 x3 * x0 4.5954673240386095 * + + -1.5133862021507005 x2 tanh + x1 sin sech * * 4.010709644492969 x3 * -2.2731109399660343 x2 + * -1.6737023127984967 x3 + -6.74970809929017 x2 + * * x3 -8.97626207767631 + x2 sin + x3 x3 * x3 sin * * * + x1 x0 + sin x2 sin x3 sin + * x3 sin 0.023262712693135665 x2 * * 28.236058730432845 x1 sin * + * x2 sin x3 x3 + * x0 sin x2 x2 * + * x2 sin 1.360225576065938 + 1.433859065977473 x0 * 30.694891379549112 * * + + + * x3 sech 1.6581779405309696 + x2 sin sech + tanh -0.9853293674166026 + x0 ~ 1.0000010749463313 x0 * + -0.005504871184406809 + x2 sin sin -0.5789155706512433 x2 tanh + + x3 x3 * sech x3 x3 * -2.910867549491223 x3 + * * + * + 14.816551546219404 x3 sech * x2 + -2.681958518927622 x2 sin * tanh + x2 tanh -1.6623516285540982 + x3 sin tanh * -0.5928986612408182 x2 tanh + x0 tanh sech + + * 1.1839459689714449 x3 + 0.5859772859488148 * 1.1040580340282093 x2 sin * x3 -0.8694957138293983 + + + sin * * + +
+            Best score = 1.48826847796117e-06, SNE = 671920.776754912
+            Squared-norm error for each equation: 0.000157045433615741 0.00465473454097267 671912.739517677 8.03242545481766
+            Best expression = (((((((tanh((x0 * 1.000523943509499)) + (-1.000403450670587 * tanh(x0))) + -0.7432576678002174) * ~((0.978336191182551 * sin(~(x0))))) * ((-0.1652923646570943 * ((~(x3) + 1.0599980596321659) + ((x3 + 2.0800883230622342) + (1.0011250648193641 * x3)))) + ((0.00010135683188158724 * (~(x3) + ~(x3))) + (((6.489524034526465 + x3) * -0.0026790535231554953) + ((x2 * -0.0025431575107518574) + 4.095068864605789))))) * sin((((((x3 + 1.0078701323552717) + 4.576923403353813) * (0.3610650380716696 * (x2 * x3))) + ((x0 * 0.8171118168651982) * ~(sin(x1)))) + (((tanh(x2) + (x3 * 0.9813704859078998)) + (~(x1) + sin(x2))) + (x2 * 0.9068208922429004))))) + (sech(((sech((2.7367269370265537 + tanh(x3))) + (0.18316250786440905 * sech(sin(x0)))) * (((2.6342557563330686 + (x3 * -0.4421426704043126)) * ((x2 + -4.671413832381561) + (-0.4546055799214967 * x2))) + ((-0.4821427200674758 * sin(x3)) + (tanh(x3) + (3.5980253905265314 + x3)))))) + ((((~((x2 + 26.964582548825938)) * ((x2 + -0.7691999008389249) * (x3 * -0.3677928884997735))) + ~(((x3 + 0.6795350824618809) * sech(x3)))) * ((0.38618901807242884 + (sech(x3) * 0.003234830197327066)) + ((-0.00026573214089904045 * sech(x2)) + 0.08753283242507932))) + (((((0.00012598079856787346 + x0) * (x2 + 14.264043412625751)) * -0.0012495999037385067) * sin((~(x0) * 1.8568589454839142))) + (~((2.5799857404864612 * (x2 + -0.7715437246388094))) * (((x3 * 1.8199973065504955) + 0.04310948019165084) + ((x2 * x3) * 0.06747402877252054))))))) + ((((((((x0 + x3) * tanh(x0)) + (-2.314184191124636 + (x3 + 1.3141791640159282))) * 0.012659318246484764) * (((tanh(x2) * (x0 * 3.0580824960800124)) * ((1.5802228217382979 * x2) * (x3 + x0))) * -8.020806241404443e-12)) + 2.871676375245118e-07) * ((((((0.11790270301910782 * x2) + sin(x3)) + ((-0.08790765810323257 * x3) + (x0 * 4.520466990558037))) * ((-1.5047077151620725 + tanh(x2)) * sech(sin(x1)))) + ((((x3 * 4.290567913976489) * (-2.158721098089377 + x2)) * ((-2.0086668466827717 + x3) * (-6.776591815072595 + x2))) * (((-9.011362437871636 + x3) + sin(x2)) * ((x3 * x3) * sin(x3))))) + (((sin((x1 + x0)) * (sin(x2) + sin(x3))) * ((sin(x3) * (0.018243225346894938 * x2)) + (27.520038800655577 * sin(x1)))) + (((sin(x2) * (x3 + x3)) * (sin(x0) + (x2 * x2))) + ((sin(x2) + 1.3100568187941732) * ((1.490896059470703 * x0) * 30.67700374433498)))))) + (((tanh(((sech(x3) + 1.6608435727378508) + sech(sin(x2)))) + ((-1.3516580211404018e-07 * ((x2 + x0) * sech(x0))) + -0.985344091302733)) + (((~(x0) + (1.0000010749513404 * x0)) + -0.005511556028438374) * ((sin(sin(x2)) + (-0.5688925680367527 + tanh(x2))) + (sech((x3 * x3)) * ((x3 * x3) * (-2.9264352286228936 + x3)))))) * (((((15.360861944970893 * sech(x3)) + x2) + tanh((~(x3) * sin(x2)))) * (((tanh(x2) + -1.6547887257842253) * tanh(sin(x3))) + ((-0.5965119604945851 + tanh(x2)) + sech(tanh(x0))))) * sin((((1.1863669076129848 + (0.00687146269608688 + x3)) * 0.5860638546418004) + ((1.1032608970814233 * sin(x2)) + (x3 + -0.8687179906558261))))))))
+            Best expression (original format) = x0 1.000523943509499 * tanh -1.000403450670587 x0 tanh * + -0.7432576678002174 + 0.978336191182551 x0 ~ sin * ~ * -0.1652923646570943 x3 ~ 1.0599980596321659 + x3 2.0800883230622342 + 1.0011250648193641 x3 * + + * 0.00010135683188158724 x3 ~ x3 ~ + * 6.489524034526465 x3 + -0.0026790535231554953 * x2 -0.0025431575107518574 * 4.095068864605789 + + + + * x3 1.0078701323552717 + 4.576923403353813 + 0.3610650380716696 x2 x3 * * * x0 0.8171118168651982 * x1 sin ~ * + x2 tanh x3 0.9813704859078998 * + x1 ~ x2 sin + + x2 0.9068208922429004 * + + sin * 2.7367269370265537 x3 tanh + sech 0.18316250786440905 x0 sin sech * + 2.6342557563330686 x3 -0.4421426704043126 * + x2 -4.671413832381561 + -0.4546055799214967 x2 * + * -0.4821427200674758 x3 sin * x3 tanh 3.5980253905265314 x3 + + + + * sech x2 26.964582548825938 + ~ x2 -0.7691999008389249 + x3 -0.3677928884997735 * * * x3 0.6795350824618809 + x3 sech * ~ + 0.38618901807242884 x3 sech 0.003234830197327066 * + -0.00026573214089904045 x2 sech * 0.08753283242507932 + + * 0.00012598079856787346 x0 + x2 14.264043412625751 + * -0.0012495999037385067 * x0 ~ 1.8568589454839142 * sin * 2.5799857404864612 x2 -0.7715437246388094 + * ~ x3 1.8199973065504955 * 0.04310948019165084 + x2 x3 * 0.06747402877252054 * + * + + + + x0 x3 + x0 tanh * -2.314184191124636 x3 1.3141791640159282 + + + 0.012659318246484764 * x2 tanh x0 3.0580824960800124 * * 1.5802228217382979 x2 * x3 x0 + * * -8.020806241404443e-12 * * 2.871676375245118e-07 + 0.11790270301910782 x2 * x3 sin + -0.08790765810323257 x3 * x0 4.520466990558037 * + + -1.5047077151620725 x2 tanh + x1 sin sech * * x3 4.290567913976489 * -2.158721098089377 x2 + * -2.0086668466827717 x3 + -6.776591815072595 x2 + * * -9.011362437871636 x3 + x2 sin + x3 x3 * x3 sin * * * + x1 x0 + sin x2 sin x3 sin + * x3 sin 0.018243225346894938 x2 * * 27.520038800655577 x1 sin * + * x2 sin x3 x3 + * x0 sin x2 x2 * + * x2 sin 1.3100568187941732 + 1.490896059470703 x0 * 30.67700374433498 * * + + + * x3 sech 1.6608435727378508 + x2 sin sech + tanh -1.3516580211404018e-07 x2 x0 + x0 sech * * -0.985344091302733 + + x0 ~ 1.0000010749513404 x0 * + -0.005511556028438374 + x2 sin sin -0.5688925680367527 x2 tanh + + x3 x3 * sech x3 x3 * -2.9264352286228936 x3 + * * + * + 15.360861944970893 x3 sech * x2 + x3 ~ x2 sin * tanh + x2 tanh -1.6547887257842253 + x3 sin tanh * -0.5965119604945851 x2 tanh + x0 tanh sech + + * 1.1863669076129848 0.00687146269608688 x3 + + 0.5860638546418004 * 1.1032608970814233 x2 sin * x3 -0.8687179906558261 + + + sin * * + +
+     mu_equals_nu_1_only == false, createSobolMesh(32768, 4, {0.01, 0.0, 0.01, 0.01}, {10.0, 6.28319, 10, 10})), bad_ops = {"exp", "ln", "log", "^", "/", "arcsin", "asin", "acos", "arccos", "sqrt"}, l1=1e-4, ((variation <= tolerance) || (median(vec.array().abs()) <= tolerance)), period bc * 1e10:
+            Best score = 6.45368263159982e-07, SNE = 1549501.90722943
+            Squared-norm error for each equation: 0.000351795242579641 0.00842262212244597 1549482.84026016 19.058194855412
+            Best expression = (((((((tanh((1.0003167733849012 * x0)) + (-1.000329744490292 * tanh(x0))) + -0.7365163725242818) * ~((0.9783241771926432 * sin(~(x0))))) * ((-0.16531504574153175 * ((~(x3) * 1.0590166597679258) + ((x3 + 2.1938589900172816) + (1.0626898114876313 * x3)))) + ((0.00010135683188158724 * (~(x3) + ~(x3))) + (-0.044993247676072455 + ((x2 * -0.002543395927608778) + 4.0894414444855975))))) * sin((((((x3 + 1.0082379720083774) + 4.5528840546336955) * (0.3610650380716696 * (x2 * x3))) + ((x0 * 0.7578757827143889) * ~(sin(x1)))) + (((tanh(x2) + (x3 * 0.9700791123411397)) + (~(x1) + sin(x2))) + (x2 * 0.9307454730716437))))) + (sech(((sech((2.6945055656854766 + tanh(x3))) + (0.18044413421814 * sech(sin(x0)))) * (((2.7101548998493534 + (x3 * -0.41315074374144156)) * ((x2 + -4.640276986237867) + (-0.4369291474943965 * x2))) + ((-0.38725475912299573 * sin(x3)) + (tanh(x3) + (3.912590361683736 + x3)))))) + ((((~((x2 + 26.96373398959518)) * ((x2 + -0.7690730900504477) * (x3 * -0.36775547030295497))) + ~(((0.7374515431340752 + x3) * sech(x3)))) * ((0.3887452265909889 + (sech(x3) * 0.004197079287224814)) + ((0.0001822112143793503 * sech(x0)) + 0.06350008506275526))) + (((((0.0002739067958640624 + x0) * (x2 + 14.48739034764628)) * -0.0012357769709555584) * sin((~(x0) * 1.8618945355450818))) + (~((2.4645587239498186 * (x2 + -0.7711387917406309))) * (((x3 * 1.8183239011811307) + 0.04445143250370634) + ((x2 * x3) * 0.06747926003637987))))))) + (((((((sech(x2) + x2) + (sech(x2) + (0.04210932115467901 + x0))) + (~(sin(x0)) + (30.871448523998673 * (-0.018440914102815464 + x0)))) * (((-25.737519050491766 * (x0 * 3.3585736185545514)) * ((2.0122449839886962 * x3) * (x3 + x0))) * -8.020806241404443e-12)) + 2.8716763780314505e-07) * (((((x2 * 0.7301993459484523) + (sin(x3) + x3)) * ~(tanh(sin(x0)))) * ((tanh((-3.2613642581306315 + x0)) + ((x0 + x2) + -13.612778365295783)) + (~(tanh(x2)) + (x0 + (2.6085311350773632 * x3))))) + ((((sech(x2) + -2.1036310505481417) * ~(x0)) * ((0.6646353164493233 + x3) + (-7.515113051526901 + x2))) + (((x3 + -3.3022361225511965) * 9.528807221387982) + (sech((x2 * 1.4050637598491413)) * ((x0 * x0) + (-8.588719208999208 * x3))))))) + (((tanh(((sech(x3) + 1.9506121695519247) + sech(sin(x2)))) + ((-1.5546292417176614e-07 * (tanh(x0) * (3.2635325038929164 * x2))) + -0.9808811827381183)) + (((~(x0) + (1.000001754539392 * x0)) + -0.00629371897969963) * ((tanh(sin(x2)) + (1.0559188085679443 + tanh(x2))) + (sech((x3 * x3)) * ((-2.2116241147149025 * x3) * (0.43391171264921014 + x3)))))) * (((((20.704038147747838 * sech(x3)) + (sech(x2) + (x2 + -3.3442141249302115))) + sin(((x3 + -0.20146684277811178) + (x3 + x2)))) * (((tanh(x2) + -2.3650246733270444) * tanh(sin(x3))) + ((-0.2885341275157263 + tanh(x2)) + sech(tanh(x0))))) * sin((((-0.06271778886925589 + x3) * 0.6180071713931192) + (tanh(sin(x2)) + (tanh(x3) * (x3 + -0.21668675626039063)))))))))
+            Best expression (original format) = 1.0003167733849012 x0 * tanh -1.000329744490292 x0 tanh * + -0.7365163725242818 + 0.9783241771926432 x0 ~ sin * ~ * -0.16531504574153175 x3 ~ 1.0590166597679258 * x3 2.1938589900172816 + 1.0626898114876313 x3 * + + * 0.00010135683188158724 x3 ~ x3 ~ + * -0.044993247676072455 x2 -0.002543395927608778 * 4.0894414444855975 + + + + * x3 1.0082379720083774 + 4.5528840546336955 + 0.3610650380716696 x2 x3 * * * x0 0.7578757827143889 * x1 sin ~ * + x2 tanh x3 0.9700791123411397 * + x1 ~ x2 sin + + x2 0.9307454730716437 * + + sin * 2.6945055656854766 x3 tanh + sech 0.18044413421814 x0 sin sech * + 2.7101548998493534 x3 -0.41315074374144156 * + x2 -4.640276986237867 + -0.4369291474943965 x2 * + * -0.38725475912299573 x3 sin * x3 tanh 3.912590361683736 x3 + + + + * sech x2 26.96373398959518 + ~ x2 -0.7690730900504477 + x3 -0.36775547030295497 * * * 0.7374515431340752 x3 + x3 sech * ~ + 0.3887452265909889 x3 sech 0.004197079287224814 * + 0.0001822112143793503 x0 sech * 0.06350008506275526 + + * 0.0002739067958640624 x0 + x2 14.48739034764628 + * -0.0012357769709555584 * x0 ~ 1.8618945355450818 * sin * 2.4645587239498186 x2 -0.7711387917406309 + * ~ x3 1.8183239011811307 * 0.04445143250370634 + x2 x3 * 0.06747926003637987 * + * + + + + x2 sech x2 + x2 sech 0.04210932115467901 x0 + + + x0 sin ~ 30.871448523998673 -0.018440914102815464 x0 + * + + -25.737519050491766 x0 3.3585736185545514 * * 2.0122449839886962 x3 * x3 x0 + * * -8.020806241404443e-12 * * 2.8716763780314505e-07 + x2 0.7301993459484523 * x3 sin x3 + + x0 sin tanh ~ * -3.2613642581306315 x0 + tanh x0 x2 + -13.612778365295783 + + x2 tanh ~ x0 2.6085311350773632 x3 * + + + * x2 sech -2.1036310505481417 + x0 ~ * 0.6646353164493233 x3 + -7.515113051526901 x2 + + * x3 -3.3022361225511965 + 9.528807221387982 * x2 1.4050637598491413 * sech x0 x0 * -8.588719208999208 x3 * + * + + + * x3 sech 1.9506121695519247 + x2 sin sech + tanh -1.5546292417176614e-07 x0 tanh 3.2635325038929164 x2 * * * -0.9808811827381183 + + x0 ~ 1.000001754539392 x0 * + -0.00629371897969963 + x2 sin tanh 1.0559188085679443 x2 tanh + + x3 x3 * sech -2.2116241147149025 x3 * 0.43391171264921014 x3 + * * + * + 20.704038147747838 x3 sech * x2 sech x2 -3.3442141249302115 + + + x3 -0.20146684277811178 + x3 x2 + + sin + x2 tanh -2.3650246733270444 + x3 sin tanh * -0.2885341275157263 x2 tanh + x0 tanh sech + + * -0.06271778886925589 x3 + 0.6180071713931192 * x2 sin tanh x3 tanh x3 -0.21668675626039063 + * + + sin * * + +
      */
     if (fit)
     {
@@ -15904,8 +16164,7 @@ namespace ExampleProblems
         std::string theData;
         int fileIdx = 0;
         int addAdditive;
-        std::string useNorm;
-        int use_norm;
+        std::string num_eqns;
 
         if (read_from_file)
         {
@@ -15932,7 +16191,7 @@ namespace ExampleProblems
             std::getline(inObj, AddAdditive);
             std::getline(inObj, theData);
             std::getline(inObj, useChi2);
-            std::getline(inObj, useNorm);
+            std::getline(inObj, num_eqns);
 
             std::cout << "Algorithm = " << Algorithm << ";\n" << Algorithm.size() << '\n';
             std::cout << theSeedExprs.size() << '\n' << theSeedExprs << '\n';
@@ -15951,7 +16210,6 @@ namespace ExampleProblems
             addAdditive = std::stoi(AddAdditive);
             fileIdx = std::stoi(theData);
             RTS::useChi2 = static_cast<bool>(std::stoi(useChi2));
-            use_norm = std::stoi(useNorm);
 
             std::cout << "Algorithm = " << Algorithm << "\n";
             std::cout << "theTrueSeedExprs = " << theTrueSeedExprs << '\n';
@@ -15973,10 +16231,10 @@ namespace ExampleProblems
             std::cout << "addAdditive = " << addAdditive << '\n';
             std::cout << "fileIdx = " << fileIdx << '\n';
             std::cout << "RTS::useChi2 = " << RTS::useChi2 << '\n';
-            std::cout << "use_norm = " << use_norm << '\n';
+            std::cout << "num_eqns = " << num_eqns << '\n';
 
         }
-        const int num_diff_eqns = (use_norm) ? 2 : 1;
+        const int num_diff_eqns = std::stoi(num_eqns);
         using namespace RTS;
         num_points = ((fileIdx%2) ? 1760 : 160000);
         sqrtNumTimeStepsInv = 1./sqrt(((fileIdx%2) ? 11 : 1000));
@@ -17823,7 +18081,7 @@ int main(int argc, char *argv[])
 
     }
     
-    ProblemOption choice = ProblemOption::RTSData;
+    ProblemOption choice = ProblemOption::SwiftHohenberg;
     switch (choice)
     {
         case ProblemOption::BrightSolitonControlPDE:
