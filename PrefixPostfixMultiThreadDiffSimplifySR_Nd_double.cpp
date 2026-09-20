@@ -46,14 +46,14 @@
 #elif defined(_WIN32) && defined(USE_MKL)
     #include <mkl.h>
 #endif
-//#define TIME_EVAL false
+//#define TIME_EVAL true
 
 #ifndef DBL_MAX
     #define DBL_MAX std::numeric_limits<double>::max()
 #endif
 #define RANDOM_SEED -1
 
-#define logProgress true //for RandomJitter and RandomJitterVec and LevenbergMarquardt
+//#define logProgress true //for RandomJitter and RandomJitterVec and LevenbergMarquardt
 
 //TODO: Need to make this robust againt -Wnarrow
 
@@ -172,35 +172,105 @@ std::vector<std::string> split(const std::string& str, char del = ' ' /* Delimit
     return vec;
 }
 
-Eigen::MatrixXd load_csv(const std::string& path, int rows, int cols, bool header = true)
+Eigen::MatrixXd load_csv(
+    const std::string& path,
+    int rows = -1,
+    int cols = -1,
+    bool header = true)
 {
     std::ifstream file(path);
-    Eigen::MatrixXd data(rows, cols);
+
+    if (!file.is_open())
+    {
+        throw std::runtime_error("Could not open file: " + path);
+    }
+
     std::string line;
-    int i = 0;
+
     if (header)
     {
-        std::getline(file, line); //header row
+        std::getline(file, line);
     }
-    while (std::getline(file, line) && (i < rows))
+
+    // Existing fixed-size behavior when dimensions are supplied.
+    if (rows >= 0 && cols >= 0)
+    {
+        Eigen::MatrixXd data(rows, cols);
+        int i = 0;
+
+        while (std::getline(file, line) && i < rows)
+        {
+            std::stringstream ss(line);
+            std::string cell;
+            int j = 0;
+
+            while (std::getline(ss, cell, ',') && j < cols)
+            {
+                try
+                {
+                    data(i, j++) = std::stod(cell);
+                }
+                catch (const std::invalid_argument&)
+                {
+                    std::cout << "Error caught at element ("
+                              << i << ',' << j << ")\n";
+                    ++j;
+                }
+            }
+
+            ++i;
+        }
+
+        return data;
+    }
+
+    // Default behavior: determine the number of rows and columns.
+    std::vector<std::vector<double>> values;
+    std::size_t num_cols = 0;
+
+    while (std::getline(file, line))
     {
         std::stringstream ss(line);
         std::string cell;
-        int j = 0;
+        std::vector<double> row;
+
         while (std::getline(ss, cell, ','))
         {
             try
             {
-                data(i, j++) = std::stod(cell);
+                row.push_back(std::stod(cell));
             }
-            catch (const std::invalid_argument& e)
+            catch (const std::invalid_argument&)
             {
-                std::cout << "Error caught at element (" << i << ',' << j << ")\n";
+                throw std::runtime_error(
+                    "Invalid value at row " +
+                    std::to_string(values.size()) +
+                    ", column " + std::to_string(row.size()));
             }
-            
         }
-        i++;
+
+        if (values.empty())
+        {
+            num_cols = row.size();
+        }
+        else if (row.size() != num_cols)
+        {
+            throw std::runtime_error("CSV rows have inconsistent column counts");
+        }
+
+        values.push_back(std::move(row));
     }
+
+    Eigen::MatrixXd data(values.size(), num_cols);
+
+    for (Eigen::Index i = 0; i < data.rows(); ++i)
+    {
+        for (Eigen::Index j = 0; j < data.cols(); ++j)
+        {
+            data(i, j) = values[i][j];
+        }
+    }
+
     return data;
 }
 
@@ -5916,87 +5986,82 @@ struct Board
         if (this->fit_method == "LBFGS" || this->fit_method == "LBFGSB")
         {
             assert(grad.size() == x.size());
+            //number of elements = number of expressions being generated
+            //each element is a vector of partial-derivatives, and each partial-derivative is a vector of strings
+            
+            std::vector<std::vector<std::vector<std::string>>> derivatives(
+                this->pieces.size(),
+                std::vector<std::vector<std::string>>(Board::__input_vars.size())
+            );
+        
+            if (this->isConstTol > 0) //compute the derivatives wrt each of the independent variables
+            {
+                std::vector<int> grasp;
+                for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++) //loop over each generated symbolic expression
+                {
+                    int idx = 0;
+                    for (const std::string& i: Board::__input_vars)
+                    {
+                        if (this->expression_type == "prefix")
+                        {
+                            this->derivePrefix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
+                        }
+                        else //postfix
+                        {
+                            this->derivePostfix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
+                        }
+                        derivatives.at(jdx).at(idx) = this->derivat;
+                        idx++;
+                    }
+                }
+            }
+            auto objective_at = [&](const Eigen::VectorXd& p)
+            {
+                double value =
+                    SNE(expression_evaluator(p, this->diffeq_result));
+
+                if (this->isConstTol > 0)
+                {
+                    for (std::size_t jdx = 0; jdx < this->pieces.size(); ++jdx)
+                    {
+                        for (std::size_t idx = 0;
+                             idx < Board::__input_vars.size();
+                             ++idx)
+                        {
+                            value += Board::nontrivialityPrefactor *
+                                ((Board::constTolFactor * this->isConstTol
+                                  - expression_evaluator(
+                                        p, derivatives[jdx][idx]
+                                    ).array().abs())
+                                 .cwiseMax(0.0)
+                                 .sum());
+                        }
+                    }
+                }
+
+                return value;
+            };
 //            double grad_piece_prefactor = (this->isConstTol) ? (this->isConstTol/(Board::data.numRows()*this->num_objectives)) : 0.0;
-            double sne = SNE(expression_evaluator(x, this->diffeq_result));
+            double sne = objective_at(x);
             
             if (this->fit_grad_method == "naive_numerical")
             {
-                double low_b, temp, non_triv_penalty;
-                //number of elements = number of expressions being generated
-                //each element is a vector of partial-derivatives, and each partial-derivative is a vector of strings
-                std::vector<std::vector<std::vector<std::string>>> derivatives(this->pieces.size());
-            
-                if (this->isConstTol > 0) //compute the derivatives wrt each of the independent variables
-                {
-                    std::vector<int> grasp;
-                    for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++) //loop over each generated symbolic expression
-                    {
-                        int idx = 0;
-                        for (const std::string& i: Board::__input_vars)
-                        {
-                            if (this->expression_type == "prefix")
-                            {
-                                this->derivePrefix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
-                            }
-                            else //postfix
-                            {
-                                this->derivePostfix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
-                            }
-                            derivatives[jdx][idx] = this->derivat;
-                            idx++;
-                        }
-                    }
-                }
                 
-                for (int i = 0; i < x.size(); i++) //finite differences wrt x evaluated at the current values x(i)
+                for (Eigen::Index i = 0; i < x.size(); ++i)
                 {
-                    //https://stackoverflow.com/a/38855586/18255427
-                    temp = x(i);
-                    x(i) -= 0.00001;
-                    non_triv_penalty = 0;
-                    if (this->isConstTol)
-                    {
-                        /*
-                         total_triviality_penalty = 0
-                         For each expression f_i:
-                            For each input variable x_i:
-                                total_triviality_penalty += max(this->isConstTol - median(abs(∂f_i/x_i)), 0)
-                         
-                         */
-                        for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++) //loop over each generated symbolic expression
-                        {
-                            for (int idx = 0; idx < Board::__input_vars.size(); idx++)
-                            {
-                                printf("here? idx = %d\n", idx);
-                                non_triv_penalty += Board::nontrivialityPrefactor*((Board::constTolFactor*this->isConstTol - this->expression_evaluator(x, derivatives[jdx][idx]).array().cwiseAbs()).cwiseMax(0.).sum());
-                            }
-                        }
-                    }
-                    low_b = SNE(expression_evaluator(x, this->diffeq_result)) + non_triv_penalty;
-                    x(i) = temp + 0.00001;
-                    non_triv_penalty = 0.;
-                    if (this->isConstTol)
-                    {
-                        /*
-                         total_triviality_penalty = 0
-                         For each expression f_i:
-                            For each input variable x_i:
-                                total_triviality_penalty += max(this->isConstTol - median(abs(∂f_i/x_i)), 0)
-                         
-                         */
-                        for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++) //loop over each generated symbolic expression
-                        {
-                            for (int idx = 0; idx < Board::__input_vars.size(); idx++)
-                            {
-                                printf("here? idx = %d\n", idx);
-                                non_triv_penalty += Board::nontrivialityPrefactor*((Board::constTolFactor*this->isConstTol - this->expression_evaluator(x, derivatives[jdx][idx]).array().cwiseAbs()).cwiseMax(0.).sum());
-                            }
-                        }
-                    }
-                    printf("here? grad\n");
-                    grad(i) = ((SNE(expression_evaluator(x, this->diffeq_result)) + non_triv_penalty) - low_b) / 0.00002;
-                    x(i) = temp;
+                    const double original = x(i);
+                    const double h = 1e-5;
+
+                    x(i) = original - h;
+                    const double low = objective_at(x);
+
+                    x(i) = original + h;
+                    const double high = objective_at(x);
+
+                    x(i) = original;
+                    grad(i) = (high - low) / (2.0 * h);
                 }
+
             }
 
             else if (this->fit_grad_method == "autodiff")
@@ -6133,7 +6198,10 @@ struct Board
         {
             return std::make_pair(improved, score_before);
         }
-        std::vector<std::vector<std::vector<std::string>>> derivatives(this->pieces.size());
+        std::vector<std::vector<std::vector<std::string>>> derivatives(
+            this->pieces.size(),
+            std::vector<std::vector<std::string>>(Board::__input_vars.size())
+        );
         
         if (this->isConstTol > 0) //compute the derivatives wrt each of the independent variables
         {
@@ -6154,7 +6222,7 @@ struct Board
                     {
                         this->derivePostfix(0, this->pieces[jdx].size() - 1, i, this->pieces[jdx], grasp);
                     }
-                    derivatives[jdx][idx] = this->derivat;
+                    derivatives.at(jdx).at(idx) = this->derivat;
                     idx++;
                 }
             }
@@ -6171,13 +6239,32 @@ struct Board
         {
             solver.minimize((*this), eigenVec, score_after);
         }
-        catch (std::runtime_error& e){}
-        catch (std::invalid_argument& e){}
+        catch (std::runtime_error& e)
+        {
+            #ifdef logProgress
+                    std::cout << e.what() << '\n';
+            #endif
+            return std::make_pair(false, score_before);
+        }
+        catch (std::invalid_argument& e)
+        {
+            #ifdef logProgress
+                    std::cout << e.what() << '\n';
+            #endif
+            return std::make_pair(false, score_before);
+        }
+        
+        // Install LBFGS's proposal before recomputation or testing.
+        this->params = eigenVec;
         
         if (this->recompute_diff_eq_each_fit_iter)
         {
             this->diffeq_result = diffeq(*this, true);
         }
+        
+        score_after = SNE(
+            expression_evaluator(this->params, this->diffeq_result)
+        );
 
 //        double score_after = SNE(expression_evaluator(this->params, this->diffeq_result));
 #ifdef logProgress
@@ -6206,6 +6293,7 @@ struct Board
         };
         if (score_after < score_before)
         {
+            improved = true;
             if (this->isConstTol > 0) //make sure that it didn't push toward triviality
             {
                 Eigen::VectorXd lm_params;
@@ -6241,17 +6329,14 @@ struct Board
                 printf("score_before = %f -> score_after = %f\n", score_before, score_after);
             }
 #endif // logProgress
-//            std::cout << "LevenbergMarquardt this->params = " << this->params << '\n';
-            improved = true;
+        }
+        else
+        {
+            this->params = temp_params;
         }
 
         //printf("sne = %f -> fx = %f\n", sne, fx);
-        if (score_after < score_before)
-        {
-            //printf("sne = %f -> fx = %f\n", sne, fx);
-            this->params = eigenVec; //set the current parameters (this->params) to the optimizes ones (eigenVec)
-            improved = true;
-        }
+        
         Board::fit_time = Board::fit_time + (timeElapsedSince(start_time));
         return std::make_pair(improved, score_after);
     }
@@ -6323,6 +6408,7 @@ struct Board
             //std::cout << "x(i) = " << x(i) << ", f = " << fvecMinus << '\n';
 #endif
 
+            //starts at (0, i), ends at (values(), i+1)
             fjac.block(0, i, values(), 1) = std::move((fvecPlus - fvecMinus) / (2.0 * epsilon));
 
             x(i) = temp;
@@ -6840,7 +6926,12 @@ struct Board
         if (this->params.size()) //fit and evaluate
         {
             assert(this->num_consts_diff || this->use_const_pieces);
-            this->diffeq_result = diffeq(*this, true);
+            {
+                #if TIME_EVAL
+                    ScopedTimer t_build("diffeq");
+                #endif
+                this->diffeq_result = diffeq(*this, true);
+            }
             //std::cout << "this->diffeq_result.size() = " << this->diffeq_result.size() << ", this->num_diff_eqns = " << this->num_diff_eqns << '\n';
 
             if (this->SNE_curr_vec.size() != this->diffeq_result.size())
@@ -6995,7 +7086,12 @@ struct Board
         {
             //std::cout << "this->diffeq_result.size() = " << this->diffeq_result.size() << ", this->num_diff_eqns = " << this->num_diff_eqns << '\n';
 
-            this->diffeq_result = diffeq(*this, false);
+            {
+                #if TIME_EVAL
+                    ScopedTimer t_build("diffeq");
+                #endif
+                this->diffeq_result = diffeq(*this, false);
+            }
             //std::cout << "this->diffeq_result = " << this->diffeq_result << '\n'; //exit(1);
             assert(all_checks(this->diffeq_result));
             if (this->SNE_curr_vec.size() != this->diffeq_result.size())
@@ -13475,7 +13571,7 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
-//    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("(((((((tanh((x0 * 1.0005239436040532)) + (-1.000403450670587 * tanh(x0))) + -0.7432576678002174) * ~((0.978336191182551 * sin(~(x0))))) * ((-0.1652923646570943 * ((~(x3) + 1.059998059632166) + ((x3 + 2.0800883230622342) + (1.0011250648193641 * x3)))) + ((0.00010135683188158724 * (~(x3) + ~(x3))) + (((6.489524165737395 + x3) * -0.0026790535231554953) + ((x2 * -0.0025431575107518574) + 4.095068864605788))))) * sin((((((x3 + 1.0078701323552715) + 4.576923403353813) * (0.3610650380716689 * (x2 * x3))) + ((x0 * 0.8171118168648491) * ~(sin(x1)))) + (((tanh(x2) + (x3 * 0.9813704859078998)) + (~(x1) + sin(x2))) + (x2 * 0.9068208922429004))))) + (sech(((sech((2.736726937108222 + tanh(x3))) + (0.18316250786440905 * sech(sin(x0)))) * (((2.6342557562414832 + (x3 * -0.44214267035774824)) * ((x2 + -4.671413588361356) + (-0.45460556368757754 * x2))) + ((-0.4821427200674747 * sin(x3)) + (tanh(x3) + (3.598025390526549 + x3)))))) + ((((~((x2 + 26.964582409305965)) * ((x2 + -0.7692005757917212) * (x3 * -0.3677928884997735))) + ~(((x3 + 0.6992661344742352) * sech(x3)))) * ((0.38618901527447 + sech((x3 + 5.771388376683196))) + ((-0.0002667686617948664 * sech(x2)) + 0.08753282103891148))) + (((((0.00012598079857017937 + x0) * (x2 + 14.264043412625751)) * -0.0012495999037385069) * sin((~(x0) * 1.8568589454839144))) + (~((2.57998575900186 * (x2 + -0.7715441684719583))) * (((x3 * 1.8199973108833372) + (-1.8979005270483407e-05 + 0.04310802604070869)) + ((x2 * x3) * 0.06747403058959182))))))) + ((((((((x0 + x3) * tanh(x0)) + (-2.314050386638924 + (x3 + 1.314265121032174))) * 0.012659318246484764) * (((tanh(x2) * (x0 * 3.0580830847683456)) * ((1.5802228733972232 * x2) * (x3 + x0))) * -8.020806241404443e-12)) + 2.871676375245118e-07) * ((((((0.11606300835424699 * x2) + sin(x3)) + ((-0.08646636531250886 * x3) + (x0 * 4.519167467955755))) * ((-1.5027846798853617 + tanh(x2)) * sech(sin(x1)))) + ((((x3 * 4.2905699656011524) * (-2.158698164839115 + x2)) * ((-2.0086595826575526 + x3) * (-6.776588381788828 + x2))) * (((-9.01136328938673 + x3) + sin(x2)) * ((x3 * x3) * sin(x3))))) + (((sin((x1 + x0)) * (sin(x2) + sin(x3))) * ((sin(x3) * (0.01779927230279355 * x2)) + (27.518750799505348 * sin(x1)))) + (((sin(x2) * (x3 + x3)) * (sin(x0) + (x2 * x2))) + ((sin(x2) + 1.3105170571796707) * ((1.4919466137392057 * x0) * 30.676832871715956)))))) + (((tanh(((sech(x3) + 1.6608540924676962) + sech(sin(x2)))) + ((-1.3516580211404018e-07 * ((x2 + x0) * sech(x0))) + -0.98534409130279)) + (((~(x0) + (1.0000010749514268 * x0)) + -0.005511556036006969) * ((sin(sin(x2)) + (-0.5688305184373327 + tanh(x2))) + (sech((x3 * x3)) * ((x3 * x3) * (-2.9314206018289095 + x3)))))) * (((((15.361937930179534 * sech(x3)) + x2) + tanh((~(x3) * sin(x2)))) * (((tanh(x2) + -1.6555800831955672) * tanh(sin(x3))) + ((-0.5962799404766637 + tanh(x2)) + sech(tanh(x0))))) * sin((((1.1863723362938412 + (0.00687347146197648 + x3)) * 0.5860639512933545) + ((1.1032615765425584 * sin(x2)) + (x3 + -0.8687166247576585))))))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu")));
+//    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("(((((-0.743624523894555 * ~((0.9785258159791556 * sin(~(x0))))) * ((-0.1651077232419793 * ((~(x3) + 1.0115456851815985) + ((x3 + 2.027891608955779) + (1.0004440277083668 * x3)))) + (((sech(x0) + -5.486683571081379) * (0.10871149270146614 * sech(x0))) + (sech((9.320152627419978 + x0)) + 4.0969770359084885)))) * sin((((((x3 + 1.0012024191577695) + 4.57736825614923) * (0.361068519008264 * (x2 * x3))) + ((x0 * 0.8206100536844328) * ~(sin(x1)))) + (((0.976277459561026 + (0.09554637572157305 + x3)) + (~(x1) + sin(x2))) + ((tanh(x3) * sin(x2)) + 8.526111877929447))))) + (sech(((sech((1.7429603968884986 + (x2 * x3))) + ((tanh(x3) * (x0 * -2.340345019720028e-05)) + ((x0 * 2.4699495207846946e-05) + 0.4777277149687891))) * (((0.46892633658440086 + (x3 * 0.05143816663899782)) * (sech(x0) + (0.3882425247701548 * x2))) + (-3.9058629720062035 + (tanh(x2) + (-0.19007186411784233 + x3)))))) + ((((~((x2 + 19.31481152017715)) * ((x2 + -1.868720034802565) * (x3 * -0.3635918567685629))) + tanh(((-47.85758855204054 + x2) * sech(x3)))) * (0.3921773839995005 + (((x2 + 3.8209547124048364) * (-1.3843936216001436 * x3)) * 5.151434586126642e-06))) + (((((0.0001642074193658044 + x0) * 25.465916084529713) * -0.0013513534293751813) * sin((~(x0) * 1.8412770259753153))) + (~((1.7030327661242082 * (x2 + -1.8730876107260035))) * ((0.06370189348933859 + (x3 * 1.610260462599176)) + ((x2 * x3) * 0.08354554184216131))))))) + (((((-0.08108773622019178 * (tanh(sin(x3)) + ~((x2 + x3)))) + (sin((0.6741727836664723 * (x2 * x2))) * (((x3 * 0.1473599171625484) + -0.7056688466624) * ((0.09945843736924852 * x2) * (x3 * 0.025567253711957744))))) + (sin(((3.2501305448099465 * tanh(x3)) + (sin(x2) + 1.0566448594360578))) * (tanh(((x2 * x3) * sin(x3))) * ((-0.10614905271473651 + (-0.009960183717563723 * x2)) * sech(tanh(x2)))))) + (((sin(sech((x3 * 1.5338332214797947))) * (0.08643448664229653 + (x3 * 0.0605705525499452))) * ((((x2 * -0.13868471498139404) + (2.2762368379188818 + x3)) * ((-1.394732864881626 * x3) + tanh(x2))) * ((-1.0420806898369344 * (x3 + x3)) + (3.645951595001077 + (0.4161022177620232 * x2))))) + (((((x2 * -2.240990986322727e-07) * (x0 + x0)) + ((-2.334455039104956e-06 * x0) + -0.6485304378644695)) + ((tanh(x3) + (x3 + -1.1877190097620123)) * sech((2.2887248511054166 * x3)))) + sech((((x3 * x3) * (16.813814666209748 + x2)) * (0.6345120395476233 * (x3 + -3.492098002890332))))))) + ((((0.13004313396563408 * (((x2 * -0.0008255077419485611) + 0.9968720316494114) + tanh((-6.316337301540571 * x2)))) + (sin((tanh(x2) * (x2 + 0.4482459883663402))) * ((~(x0) + (x0 * 0.9999999472407418)) + 0.001974702033047662))) * (((((x2 * 5.097623994403247) + sech(x0)) * sin((-16.439189121975193 * x3))) + (((x3 * 0.6472205214053096) * (-0.5990917288985527 + x2)) * sin((x3 * x2)))) + (((sin(x2) * (x3 + -8.163804404077396)) * (tanh(x3) * (x2 + 145.14420202283577))) * (((-0.08054167452208853 * x2) + sin(x3)) * (tanh(x3) + -1.114587385977945))))) + ((((-0.011063091869858007 * sin((x3 * 1.3503588504381323))) * sin((-1.817029824879277 * (x2 + 0.496295424207957)))) + ((sech((x0 * 0.8689304489317383)) * (sech(x3) * 0.13779924707861727)) + ((0.009505700728273666 * sin(x3)) + 0.08648907411070371))) * (~((sech((-0.9508378149265131 + x2)) + ((x2 + -3.4868822376811193) + (-3.904545590812361 + x3)))) + ~(sech((2.0214921816040383 * sin(x3)))))))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu")));
 //    from sympy import *; x0, x1, x2, x3 = symbols('x0 x1 x2 x3'); print(eval("(((((0.00020761302887044612 * (sin(x2) + (1.0272442241645563 * x2))) + ((1.3304563988558432e-06 * (x3 + x2)) + -1.0052629302733438)) * sin((~((1.4269067710318464e-07 + x2)) + ((-8.427410561791095e-08 + x0) + (2.2679423250655768e-07 + x2))))) * (((0.008782524861544684 * (0.27587744389610325 + (0.009993495877091307 + x2))) + (-0.1651571745075183 * ((-1.911228719809616e-07 + x3) + 0.010002284668230988))) + (((0.010151823903466778 * sin(x2)) * (-0.06438380401024771 * sin(x2))) + (((x2 * 0.03852998867113262) * -8.436444206719193e-05) + 3.659791130722469)))) * sin((((5.301797186958442 * (-2.4089452401052685e-07 + (2.2542565388059674e-07 + x3))) + sin((10.688904984949698 * (1.1264219683053926e-08 + x2)))) + (~(((x0 + -2.9955080762796076e-07) + (5.8232400879963024e-08 + x1))) + ((3.570015447645774e-12 + (1.081329657641461e-11 + x0)) + 72.43120897235498)))))\n".replace("^","**").replace("~", "-")));
     
 //    puts("called SwiftHohenberg");
@@ -13600,27 +13696,46 @@ std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
             Best expression = ((((-0.7436740549017838 * ~((0.978671998154779 * sin(~(x0))))) * ((-0.16506032676208263 * ((~(x3) + 1.0104431706538877) + ((x3 + 2.0263672556177212) + (1.0000646104502637 * x3)))) + (((sech(x0) + -5.473839588831971) * (0.1083127930965594 * sech(x0))) + (sech((9.652723259830397 + x0)) + 4.097279145889173)))) * sin((((((x3 + 1.001172964549485) + 4.577301942736834) * (0.3610683671842316 * (x2 * x3))) + ((x0 * 0.8208158476442583) * ~(sin(x1)))) + (((0.9767300657756708 + (0.09612247077537389 + x3)) + (~(x1) + sin(x2))) + ((tanh(x3) * sin(x2)) + 8.526793547415789))))) + (sech(((sech((2.1689512610804926 + (x2 * x3))) + ((tanh(x3) * (x0 * -5.5798800126698765e-06)) + ((x0 * 4.6978252484540345e-06) + 0.4959806288224722))) * (((0.5175438054051975 + (x3 * 0.05150525110875713)) * (sech(x0) + (0.33890390798614684 * x2))) + (-3.864297673121919 + (tanh(x2) + (-0.15121589912254246 + x3)))))) + ((((~((x2 + 19.362945351934766)) * ((x2 + -1.8698253354989) * (x3 * -0.36531301346742867))) + tanh(((-45.439790319012225 + x2) * sech(x3)))) * ((0.35521176975406565 + (sech(x3) * -0.013130259680975259)) + (((x2 + -4.8963906527907834) * (-1.3913554470541605 * x3)) * 7.304541025780904e-06))) + (((((6.306657492666961e-05 + x0) * 25.52309028528328) * -0.001353459086497593) * sin((~(x0) * 1.84206969073419))) + (~((1.5966936626265833 * (x2 + -1.8680438343255314))) * ((0.045854542094754036 + (x3 * 1.5706635772362287)) + ((x2 * x3) * 0.0811264974545793)))))))
             Best expression (original format) = -0.7436740549017838 0.978671998154779 x0 ~ sin * ~ * -0.16506032676208263 x3 ~ 1.0104431706538877 + x3 2.0263672556177212 + 1.0000646104502637 x3 * + + * x0 sech -5.473839588831971 + 0.1083127930965594 x0 sech * * 9.652723259830397 x0 + sech 4.097279145889173 + + + * x3 1.001172964549485 + 4.577301942736834 + 0.3610683671842316 x2 x3 * * * x0 0.8208158476442583 * x1 sin ~ * + 0.9767300657756708 0.09612247077537389 x3 + + x1 ~ x2 sin + + x3 tanh x2 sin * 8.526793547415789 + + + sin * 2.1689512610804926 x2 x3 * + sech x3 tanh x0 -5.5798800126698765e-06 * * x0 4.6978252484540345e-06 * 0.4959806288224722 + + + 0.5175438054051975 x3 0.05150525110875713 * + x0 sech 0.33890390798614684 x2 * + * -3.864297673121919 x2 tanh -0.15121589912254246 x3 + + + + * sech x2 19.362945351934766 + ~ x2 -1.8698253354989 + x3 -0.36531301346742867 * * * -45.439790319012225 x2 + x3 sech * tanh + 0.35521176975406565 x3 sech -0.013130259680975259 * + x2 -4.8963906527907834 + -1.3913554470541605 x3 * * 7.304541025780904e-06 * + * 6.306657492666961e-05 x0 + 25.52309028528328 * -0.001353459086497593 * x0 ~ 1.84206969073419 * sin * 1.5966936626265833 x2 -1.8680438343255314 + * ~ 0.045854542094754036 x3 1.5706635772362287 * + x2 x3 * 0.0811264974545793 * + * + + + +
         Depth = 9:
-            Best score = 3.06071283092566e-06, SNE = 326720.275480643
-            Squared-norm error for each equation: 7.76170991336043e-05 0.00248942935199371 326707.570315478 12.7025981185501
-            Best expression = (((((-0.743624523894555 * ~((0.9785258159791556 * sin(~(x0))))) * ((-0.1651077232419793 * ((~(x3) + 1.0115453108822523) + ((x3 + 2.0278835609450185) + (1.0004438932239565 * x3)))) + (((sech(x0) + -5.485794642327871) * (0.10871135592285576 * sech(x0))) + (sech((9.375858497859591 + x0)) + 4.096977042061041)))) * sin((((((x3 + 1.0012024191577695) + 4.57736825614923) * (0.361068519008264 * (x2 * x3))) + ((x0 * 0.8206100536844328) * ~(sin(x1)))) + (((0.976277459561026 + (0.09554637572157305 + x3)) + (~(x1) + sin(x2))) + ((tanh(x3) * sin(x2)) + 8.526111877929447))))) + (sech(((sech((1.9589104088230629 + (x2 * x3))) + ((tanh(x3) * (x0 * -2.2367941966427234e-05)) + ((x0 * 2.3788315166202194e-05) + 0.4779046215946767))) * (((0.4809117222659029 + (x3 * 0.0514750384916628)) * (sech(x0) + (0.3770041415280619 * x2))) + (-3.879321332065599 + (tanh(x2) + (-0.1713002428031658 + x3)))))) + ((((~((x2 + 19.316260466968725)) * ((x2 + -1.8685023761570823) * (x3 * -0.3635943949063131))) + tanh(((-46.48890209250172 + x2) * sech(x3)))) * (0.3921809743570718 + (((x2 + 3.433931039484979) * (-1.446038291965682 * x3)) * 5.15450002239276e-06))) + (((((0.00017604280366558396 + x0) * 25.466106100863037) * -0.0013513534293751813) * sin((~(x0) * 1.8412770689745428))) + (~((1.7029713646828146 * (x2 + -1.876247284070776))) * ((0.05832443086165661 + (x3 * 1.610636167963115)) + ((x2 * x3) * 0.08352251848853619))))))) + (((((-0.08193860154813773 * (tanh(sin(x3)) + ~((x2 + x3)))) + (sin((0.6743102119292743 * (x2 * x2))) * (((x3 * 0.14755635093743993) + -0.7098855582993266) * ((0.0995097135694153 * x2) * (x3 * 0.025502621607559124))))) + (sin(((3.2367329275832595 * tanh(x3)) + (sin(x2) + 1.099270055075681))) * (tanh(((x2 * x3) * sin(x3))) * ((-0.10717152141839154 + (-0.009883749978425093 * x2)) * sech(tanh(x2)))))) + (((sin(sech((x3 + -0.7388885264151671))) * (0.12163558471605497 + (-0.06828377544052526 * (0.2178179243848848 * x3)))) * ((((x2 * -0.0789806669035411) + 1.942178969888127) * ((-1.3635595800281048 * x3) + tanh(x2))) * ((-1.036510358697982 * (x3 + x3)) + (3.766650697602522 + (0.3801135000939043 * x2))))) + (((((x2 * -2.9408036455845485e-07) * (x0 + x0)) + ((-2.12144783546227e-06 * x0) + -0.6818272893536959)) + ((tanh(x3) + (x3 + -1.3148422249113059)) * sech((2.8177796064911766 * x3)))) + sech((((x3 * x3) * (17.734896039950033 + x2)) * (0.5724399707885697 * (x3 + -3.49194879785262))))))) + ((((0.12804723926850997 * (((x2 * -0.0008400160771821114) + 0.9969862133530972) + tanh((-6.2927172077546025 * x2)))) + (sin((tanh(x2) * (x2 + 0.4503322983688138))) * 0.0019187810234631176)) * (((((x2 * 5.235618978489723) + sech(x0)) * sin((-16.440797773303416 * x3))) + (((x3 * 0.6404265817017947) * (-0.3718134956478053 + x2)) * sin((x3 * x2)))) + (((sin(x2) * (x3 + -7.9568686470380845)) * (tanh(x3) * (x2 + 142.88386191721244))) * (((-0.07320735689642993 * x2) + sin(x3)) * (tanh(x3) + -1.1264802676872805))))) + ((((-0.011244334349025793 * sin((x3 * 1.3480960765967427))) * sin((-1.8233893901152871 * (x2 + 0.4574374362124963)))) + ((sech((x0 * 0.8882167897901709)) * (sech(x3) * 0.1414164431114867)) + ((0.009284067940954124 * sin(x3)) + 0.09960238067668575))) * (~((sech((-0.13628155331160288 + x2)) + ((x2 + -3.409042267245774) + (-3.855746306060848 + x3)))) + ~(sech((1.778522460337137 * sin(x3)))))))))
-            Best expression (original format) = -0.743624523894555 0.9785258159791556 x0 ~ sin * ~ * -0.1651077232419793 x3 ~ 1.0115453108822523 + x3 2.0278835609450185 + 1.0004438932239565 x3 * + + * x0 sech -5.485794642327871 + 0.10871135592285576 x0 sech * * 9.375858497859591 x0 + sech 4.096977042061041 + + + * x3 1.0012024191577695 + 4.57736825614923 + 0.361068519008264 x2 x3 * * * x0 0.8206100536844328 * x1 sin ~ * + 0.976277459561026 0.09554637572157305 x3 + + x1 ~ x2 sin + + x3 tanh x2 sin * 8.526111877929447 + + + sin * 1.9589104088230629 x2 x3 * + sech x3 tanh x0 -2.2367941966427234e-05 * * x0 2.3788315166202194e-05 * 0.4779046215946767 + + + 0.4809117222659029 x3 0.0514750384916628 * + x0 sech 0.3770041415280619 x2 * + * -3.879321332065599 x2 tanh -0.1713002428031658 x3 + + + + * sech x2 19.316260466968725 + ~ x2 -1.8685023761570823 + x3 -0.3635943949063131 * * * -46.48890209250172 x2 + x3 sech * tanh + 0.3921809743570718 x2 3.433931039484979 + -1.446038291965682 x3 * * 5.15450002239276e-06 * + * 0.00017604280366558396 x0 + 25.466106100863037 * -0.0013513534293751813 * x0 ~ 1.8412770689745428 * sin * 1.7029713646828146 x2 -1.876247284070776 + * ~ 0.05832443086165661 x3 1.610636167963115 * + x2 x3 * 0.08352251848853619 * + * + + + + -0.08193860154813773 x3 sin tanh x2 x3 + ~ + * 0.6743102119292743 x2 x2 * * sin x3 0.14755635093743993 * -0.7098855582993266 + 0.0995097135694153 x2 * x3 0.025502621607559124 * * * * + 3.2367329275832595 x3 tanh * x2 sin 1.099270055075681 + + sin x2 x3 * x3 sin * tanh -0.10717152141839154 -0.009883749978425093 x2 * + x2 tanh sech * * * + x3 -0.7388885264151671 + sech sin 0.12163558471605497 -0.06828377544052526 0.2178179243848848 x3 * * + * x2 -0.0789806669035411 * 1.942178969888127 + -1.3635595800281048 x3 * x2 tanh + * -1.036510358697982 x3 x3 + * 3.766650697602522 0.3801135000939043 x2 * + + * * x2 -2.9408036455845485e-07 * x0 x0 + * -2.12144783546227e-06 x0 * -0.6818272893536959 + + x3 tanh x3 -1.3148422249113059 + + 2.8177796064911766 x3 * sech * + x3 x3 * 17.734896039950033 x2 + * 0.5724399707885697 x3 -3.49194879785262 + * * sech + + + 0.12804723926850997 x2 -0.0008400160771821114 * 0.9969862133530972 + -6.2927172077546025 x2 * tanh + * x2 tanh x2 0.4503322983688138 + * sin 0.0019187810234631176 * + x2 5.235618978489723 * x0 sech + -16.440797773303416 x3 * sin * x3 0.6404265817017947 * -0.3718134956478053 x2 + * x3 x2 * sin * + x2 sin x3 -7.9568686470380845 + * x3 tanh x2 142.88386191721244 + * * -0.07320735689642993 x2 * x3 sin + x3 tanh -1.1264802676872805 + * * + * -0.011244334349025793 x3 1.3480960765967427 * sin * -1.8233893901152871 x2 0.4574374362124963 + * sin * x0 0.8882167897901709 * sech x3 sech 0.1414164431114867 * * 0.009284067940954124 x3 sin * 0.09960238067668575 + + + -0.13628155331160288 x2 + sech x2 -3.409042267245774 + -3.855746306060848 x3 + + + ~ 1.778522460337137 x3 sin * sech ~ + * + + +
-     mu_equals_nu_1_only == false, createSobolMesh(16384, 4, {0.01, 0.0, 0.01, 0.01}, {10.0, 6.28319, 10, 10})), bad_ops = {"exp", "ln", "log", "^", "/", "arcsin", "asin", "acos", "arccos", "sqrt"}, l1=1e-4, ((variation <= tolerance) || (median(vec.array().abs()) <= tolerance)), period bc * 1e10:
+            Best score = 3.0611255475565e-06, SNE = 326676.225244236
+            Squared-norm error for each equation: 7.76315110936749e-05 0.00249726085576495 326663.395163426 12.8275059180957
+            Best expression = (((((-0.743624523894555 * ~((0.9785258159791556 * sin(~(x0))))) * ((-0.1651077232419793 * ((~(x3) + 1.0115456851815985) + ((x3 + 2.027891608955779) + (1.0004440277083668 * x3)))) + (((sech(x0) + -5.485934830190668) * (0.10871149270146614 * sech(x0))) + (sech((9.36414853053871 + x0)) + 4.0969770359084885)))) * sin((((((x3 + 1.0012024191577695) + 4.57736825614923) * (0.361068519008264 * (x2 * x3))) + ((x0 * 0.8206100536844328) * ~(sin(x1)))) + (((0.976277459561026 + (0.09554637572157305 + x3)) + (~(x1) + sin(x2))) + ((tanh(x3) * sin(x2)) + 8.526111877929447))))) + (sech(((sech((1.8598451026637046 + (x2 * x3))) + ((tanh(x3) * (x0 * -2.340345019720028e-05)) + ((x0 * 2.4699495207846946e-05) + 0.4777277149687891))) * (((0.4802879363546795 + (x3 * 0.05143816663899782)) * (sech(x0) + (0.3781108996980024 * x2))) + (-3.881273117694772 + (tanh(x2) + (-0.17325187615766996 + x3)))))) + ((((~((x2 + 19.315114121737267)) * ((x2 + -1.868720034802565) * (x3 * -0.3635918567685629))) + tanh(((-46.549597825605936 + x2) * sech(x3)))) * (0.3921773839995005 + (((x2 + 3.398248256086653) * (-1.4130873624457647 * x3)) * 5.151434586126642e-06))) + (((((0.0001642074193658044 + x0) * 25.46599737681564) * -0.0013513534293751813) * sin((~(x0) * 1.8412770259753153))) + (~((1.7030327661242082 * (x2 + -1.8730876107260035))) * ((0.06362504682267889 + (x3 * 1.6102460209077623)) + ((x2 * x3) * 0.08354554184216131))))))) + (((((-0.08108773622019178 * (tanh(sin(x3)) + ~((x2 + x3)))) + (sin((0.6742208468998704 * (x2 * x2))) * (((x3 * 0.14735634203172887) + -0.7098005245016511) * ((0.0996990257633834 * x2) * (x3 * 0.02556353684215363))))) + (sin(((3.2548394824564064 * tanh(x3)) + (sin(x2) + 1.0733259917653584))) * (tanh(((x2 * x3) * sin(x3))) * ((-0.10456723743569919 + (-0.009925025072221148 * x2)) * sech(tanh(x2)))))) + (((sin(sech((x3 * 1.5188954973124464))) * (0.08572531883110061 + (x3 * 0.05835235660082619))) * ((((x2 * -0.12619077739654103) + (2.2544791139439524 + x3)) * ((-1.3683885824560755 * x3) + tanh(x2))) * ((-1.0504632489171712 * (x3 + x3)) + (3.698348410058481 + (0.385845704321439 * x2))))) + (((((x2 * -2.240990986322727e-07) * (x0 + x0)) + ((-2.334455039104956e-06 * x0) + -0.6489470943951638)) + ((tanh(x3) + (x3 + -1.2301941341569287)) * sech((2.3890368146696677 * x3)))) + sech((((x3 * x3) * (17.573388812160815 + x2)) * (0.6030845798936676 * (x3 + -3.4920820024715504))))))) + ((((0.13349420232889195 * (((x2 * -0.0007971603892828515) + 0.9968720316494114) + tanh((-6.179285174864243 * x2)))) + (sin((tanh(x2) * (x2 + 0.4593503953209493))) * ((~(x0) + (x0 * 0.9999999472407418)) + 0.001974702033047662))) * (((((x2 * 5.112163378098707) + sech(x0)) * sin((-16.439699142472577 * x3))) + (((x3 * 0.624984989617177) * (-0.37777170411002314 + x2)) * sin((x3 * x2)))) + (((sin(x2) * (x3 + -8.107290730670035)) * (tanh(x3) * (x2 + 143.73483405908794))) * (((-0.07792662697496235 * x2) + sin(x3)) * (tanh(x3) + -1.1128493583639394))))) + ((((-0.011143916166881786 * sin((x3 * 1.348535028915087))) * sin((-1.8142973003160314 * (x2 + 0.5048559632142119)))) + ((sech((x0 * 0.8887027307863656)) * (sech(x3) * 0.14099874643776497)) + ((0.008676713075501248 * sin(x3)) + 0.08637920823659113))) * (~((sech((-0.2036981858288354 + x2)) + ((x2 + -3.418646010070029) + (-3.8656090959670055 + x3)))) + ~(sech((1.8085978707545494 * sin(x3)))))))))
+            Best expression (original format) = -0.743624523894555 0.9785258159791556 x0 ~ sin * ~ * -0.1651077232419793 x3 ~ 1.0115456851815985 + x3 2.027891608955779 + 1.0004440277083668 x3 * + + * x0 sech -5.485934830190668 + 0.10871149270146614 x0 sech * * 9.36414853053871 x0 + sech 4.0969770359084885 + + + * x3 1.0012024191577695 + 4.57736825614923 + 0.361068519008264 x2 x3 * * * x0 0.8206100536844328 * x1 sin ~ * + 0.976277459561026 0.09554637572157305 x3 + + x1 ~ x2 sin + + x3 tanh x2 sin * 8.526111877929447 + + + sin * 1.8598451026637046 x2 x3 * + sech x3 tanh x0 -2.340345019720028e-05 * * x0 2.4699495207846946e-05 * 0.4777277149687891 + + + 0.4802879363546795 x3 0.05143816663899782 * + x0 sech 0.3781108996980024 x2 * + * -3.881273117694772 x2 tanh -0.17325187615766996 x3 + + + + * sech x2 19.315114121737267 + ~ x2 -1.868720034802565 + x3 -0.3635918567685629 * * * -46.549597825605936 x2 + x3 sech * tanh + 0.3921773839995005 x2 3.398248256086653 + -1.4130873624457647 x3 * * 5.151434586126642e-06 * + * 0.0001642074193658044 x0 + 25.46599737681564 * -0.0013513534293751813 * x0 ~ 1.8412770259753153 * sin * 1.7030327661242082 x2 -1.8730876107260035 + * ~ 0.06362504682267889 x3 1.6102460209077623 * + x2 x3 * 0.08354554184216131 * + * + + + + -0.08108773622019178 x3 sin tanh x2 x3 + ~ + * 0.6742208468998704 x2 x2 * * sin x3 0.14735634203172887 * -0.7098005245016511 + 0.0996990257633834 x2 * x3 0.02556353684215363 * * * * + 3.2548394824564064 x3 tanh * x2 sin 1.0733259917653584 + + sin x2 x3 * x3 sin * tanh -0.10456723743569919 -0.009925025072221148 x2 * + x2 tanh sech * * * + x3 1.5188954973124464 * sech sin 0.08572531883110061 x3 0.05835235660082619 * + * x2 -0.12619077739654103 * 2.2544791139439524 x3 + + -1.3683885824560755 x3 * x2 tanh + * -1.0504632489171712 x3 x3 + * 3.698348410058481 0.385845704321439 x2 * + + * * x2 -2.240990986322727e-07 * x0 x0 + * -2.334455039104956e-06 x0 * -0.6489470943951638 + + x3 tanh x3 -1.2301941341569287 + + 2.3890368146696677 x3 * sech * + x3 x3 * 17.573388812160815 x2 + * 0.6030845798936676 x3 -3.4920820024715504 + * * sech + + + 0.13349420232889195 x2 -0.0007971603892828515 * 0.9968720316494114 + -6.179285174864243 x2 * tanh + * x2 tanh x2 0.4593503953209493 + * sin x0 ~ x0 0.9999999472407418 * + 0.001974702033047662 + * + x2 5.112163378098707 * x0 sech + -16.439699142472577 x3 * sin * x3 0.624984989617177 * -0.37777170411002314 x2 + * x3 x2 * sin * + x2 sin x3 -8.107290730670035 + * x3 tanh x2 143.73483405908794 + * * -0.07792662697496235 x2 * x3 sin + x3 tanh -1.1128493583639394 + * * + * -0.011143916166881786 x3 1.348535028915087 * sin * -1.8142973003160314 x2 0.5048559632142119 + * sin * x0 0.8887027307863656 * sech x3 sech 0.14099874643776497 * * 0.008676713075501248 x3 sin * 0.08637920823659113 + + + -0.2036981858288354 x2 + sech x2 -3.418646010070029 + -3.8656090959670055 x3 + + + ~ 1.8085978707545494 x3 sin * sech ~ + * + + +
+            mu_equals_nu_1_only == false, createSobolMesh(16384, 4, {0.01, 0.0, 0.01, 0.01}, {10.0, 6.28319, 10, 10})), bad_ops = {"exp", "ln", "log", "^", "/", "arcsin", "asin", "acos", "arccos", "sqrt"}, l1=1e-4, ((variation <= tolerance) || (median(vec.array().abs()) <= tolerance)), period bc * 1e10:
         Depth = 8:
             Best score = 1.47963894353957e-06, SNE = 675839.55175502
             Squared-norm error for each equation: 0.000153425748422996 0.00438449614972687 675838.127938933 1.4192781656085
             Best expression = ((((((tanh((x0 * 1.000498139731853)) + (-1.000403450670587 * tanh(x0))) + -0.7432576678002174) * ~((0.9783396179561396 * sin(~(x0))))) * ((-0.1652923646570943 * ((~(x3) + 1.0598023855134269) + ((x3 + 2.080063491721098) + (1.001124041169633 * x3)))) + ((0.00010135683188158724 * (~(x3) + ~(x3))) + (((6.4870025253611505 + x3) * -0.0026790535231554953) + ((x2 * -0.0025426715139105958) + 4.095069203253207))))) * sin((((((x3 + 1.00787791294801) + 4.57692350555604) * (0.3610650380716696 * (x2 * x3))) + ((x0 * 0.817122516078049) * ~(sin(x1)))) + (((tanh(x2) + (x3 * 0.9813694043426956)) + (~(x1) + sin(x2))) + (x2 * 0.9068128961347662))))) + (sech(((sech((2.736548520600808 + tanh(x3))) + (0.1831576637587592 * sech(sin(x0)))) * (((2.634446849408179 + (x3 * -0.44222652904967374)) * ((x2 + -4.672203101909981) + (-0.455096355794846 * x2))) + ((-0.482772070277832 * sin(x3)) + (tanh(x3) + (3.597450755958241 + x3)))))) + ((((~((x2 + 26.973194687201055)) * ((x2 + -0.7692912056571433) * (x3 * -0.3661788917852299))) + ~(((0.6094528987905319 + x3) * sech(x3)))) * ((0.3879629181630369 + (sech(x3) * 0.003766053913628551)) + ((-0.00024785727569127567 * sech(x2)) + 0.0877925795294678))) + (((((0.0001530375372035204 + x0) * (x2 + 14.263547823918568)) * -0.0012495991520312388) * sin((~(x0) * 1.856662020023483))) + (~((2.5802903027171564 * (x2 + -0.7713866519042927))) * (((x3 * 1.8195358708008056) + 0.04353161976370474) + ((x2 * x3) * 0.06752371247290184)))))))
             Best expression (original format) = x0 1.000498139731853 * tanh -1.000403450670587 x0 tanh * + -0.7432576678002174 + 0.9783396179561396 x0 ~ sin * ~ * -0.1652923646570943 x3 ~ 1.0598023855134269 + x3 2.080063491721098 + 1.001124041169633 x3 * + + * 0.00010135683188158724 x3 ~ x3 ~ + * 6.4870025253611505 x3 + -0.0026790535231554953 * x2 -0.0025426715139105958 * 4.095069203253207 + + + + * x3 1.00787791294801 + 4.57692350555604 + 0.3610650380716696 x2 x3 * * * x0 0.817122516078049 * x1 sin ~ * + x2 tanh x3 0.9813694043426956 * + x1 ~ x2 sin + + x2 0.9068128961347662 * + + sin * 2.736548520600808 x3 tanh + sech 0.1831576637587592 x0 sin sech * + 2.634446849408179 x3 -0.44222652904967374 * + x2 -4.672203101909981 + -0.455096355794846 x2 * + * -0.482772070277832 x3 sin * x3 tanh 3.597450755958241 x3 + + + + * sech x2 26.973194687201055 + ~ x2 -0.7692912056571433 + x3 -0.3661788917852299 * * * 0.6094528987905319 x3 + x3 sech * ~ + 0.3879629181630369 x3 sech 0.003766053913628551 * + -0.00024785727569127567 x2 sech * 0.0877925795294678 + + * 0.0001530375372035204 x0 + x2 14.263547823918568 + * -0.0012495991520312388 * x0 ~ 1.856662020023483 * sin * 2.5802903027171564 x2 -0.7713866519042927 + * ~ x3 1.8195358708008056 * 0.04353161976370474 + x2 x3 * 0.06752371247290184 * + * + + + +
-        Depth = 9:
-            Best score = 1.48834748972772e-06, SNE = 671885.106505238
-            Squared-norm error for each equation: 0.000156442181977464 0.00455034251085101 671876.644362705 8.45743574834729
-            Best expression = (((((((tanh((x0 * 1.000525242837613)) + (-1.000403450670587 * tanh(x0))) + -0.7432576678002174) * ~((0.978336191182551 * sin(~(x0))))) * ((-0.1652923646570943 * ((~(x3) + 1.059998059632166) + ((x3 + 2.0800883230622342) + (1.0011250648193641 * x3)))) + ((0.00010135683188158724 * (~(x3) + ~(x3))) + (((6.489585553756931 + x3) * -0.0026790535231554953) + ((x2 * -0.0025431575107518574) + 4.095068864605788))))) * sin((((((x3 + 1.0078701332672464) + 4.576923403353813) * (0.3610650380716689 * (x2 * x3))) + ((x0 * 0.8171118168648491) * ~(sin(x1)))) + (((tanh(x2) + (x3 * 0.981370605602189)) + (~(x1) + sin(x2))) + (x2 * 0.9068208922429004))))) + (sech(((sech((2.7367281253076943 + tanh(x3))) + (0.18316250786440905 * sech(sin(x0)))) * (((2.634254282142352 + (x3 * -0.44214253449687185)) * ((x2 + -4.6714132105531725) + (-0.45460554011646653 * x2))) + ((-0.482140547848588 * sin(x3)) + (tanh(x3) + (3.5980262023359897 + x3)))))) + ((((~((x2 + 26.964555933563606)) * ((x2 + -0.7692009635477656) * (x3 * -0.3677929039968923))) + ~(((x3 + 0.694054229725587) * sech(x3)))) * ((0.38618902163996394 + sech((x3 + 5.772512898341597))) + ((-0.00026782573874454196 * sech(x2)) + 0.08753281966909965))) + (((((0.00012611956774728409 + x0) * (x2 + 14.264046709943532)) * -0.0012495999037385069) * sin((~(x0) * 1.8568589454839144))) + (~((2.5799848972837434 * (x2 + -0.7715468501378003))) * (((x3 * 1.8199978028074826) + 0.04309706930651161) + ((x2 * x3) * 0.06747385638826074))))))) + ((((((((x0 + x3) * tanh(x0)) + (-2.313545557586341 + (x3 + 1.3147383116654416))) * 0.012660778667510012) * (((tanh(x2) * (x0 * 3.0581987889157145)) * ((1.5803388042711393 * x2) * (x3 + x0))) * -8.020806241404443e-12)) + 2.871676375245118e-07) * ((((((0.11672574368436772 * x2) + sin(x3)) + ((-0.08670383756072711 * x3) + (x0 * 4.514987549863009))) * ((-1.4986543463251218 + tanh(x2)) * sech(sin(x1)))) + ((((x3 * 4.290860714008585) * (-2.158312013760099 + x2)) * ((-2.008312049148106 + x3) * (-6.776359473774233 + x2))) * (((-9.01168690985349 + x3) + sin(x2)) * ((x3 * x3) * sin(x3))))) + (((sin((x1 + x0)) * (sin(x2) + sin(x3))) * ((sin(x3) * (0.017795507349376214 * x2)) + (27.514214190734855 * sin(x1)))) + (((sin(x2) * (x3 + x3)) * (sin(x0) + (x2 * x2))) + ((sin(x2) + 1.3110959270503448) * ((1.491871895684783 * x0) * 30.674681369389646)))))) + (((tanh(((sech(x3) + 1.6696302676279213) + sech(sin(x2)))) + ((-1.3834313655158095e-07 * ((x2 + x0) * sech(x0))) + -0.9854886613174224)) + (((~(x0) + (1.0000010749514268 * x0)) + -0.005548887742517245) * ((sin(sin(x2)) + (-0.5580394410278869 + tanh(x2))) + (sech((x3 * x3)) * ((x3 * x3) * (-2.940962066910255 + x3)))))) * (((((15.35477157162709 * sech(x3)) + x2) + tanh((~(x3) * sin(x2)))) * (((tanh(x2) + -1.6604574458830634) * tanh(sin(x3))) + ((-0.5983569750253624 + tanh(x2)) + sech(tanh(x0))))) * sin((((1.1771502602054442 + (-0.0021777509528580767 + x3)) * 0.5878023907861117) + ((1.1102419113642754 * sin(x2)) + (x3 + -0.8790523604538907))))))))
-            Best expression (original format) = x0 1.000525242837613 * tanh -1.000403450670587 x0 tanh * + -0.7432576678002174 + 0.978336191182551 x0 ~ sin * ~ * -0.1652923646570943 x3 ~ 1.059998059632166 + x3 2.0800883230622342 + 1.0011250648193641 x3 * + + * 0.00010135683188158724 x3 ~ x3 ~ + * 6.489585553756931 x3 + -0.0026790535231554953 * x2 -0.0025431575107518574 * 4.095068864605788 + + + + * x3 1.0078701332672464 + 4.576923403353813 + 0.3610650380716689 x2 x3 * * * x0 0.8171118168648491 * x1 sin ~ * + x2 tanh x3 0.981370605602189 * + x1 ~ x2 sin + + x2 0.9068208922429004 * + + sin * 2.7367281253076943 x3 tanh + sech 0.18316250786440905 x0 sin sech * + 2.634254282142352 x3 -0.44214253449687185 * + x2 -4.6714132105531725 + -0.45460554011646653 x2 * + * -0.482140547848588 x3 sin * x3 tanh 3.5980262023359897 x3 + + + + * sech x2 26.964555933563606 + ~ x2 -0.7692009635477656 + x3 -0.3677929039968923 * * * x3 0.694054229725587 + x3 sech * ~ + 0.38618902163996394 x3 5.772512898341597 + sech + -0.00026782573874454196 x2 sech * 0.08753281966909965 + + * 0.00012611956774728409 x0 + x2 14.264046709943532 + * -0.0012495999037385069 * x0 ~ 1.8568589454839144 * sin * 2.5799848972837434 x2 -0.7715468501378003 + * ~ x3 1.8199978028074826 * 0.04309706930651161 + x2 x3 * 0.06747385638826074 * + * + + + + x0 x3 + x0 tanh * -2.313545557586341 x3 1.3147383116654416 + + + 0.012660778667510012 * x2 tanh x0 3.0581987889157145 * * 1.5803388042711393 x2 * x3 x0 + * * -8.020806241404443e-12 * * 2.871676375245118e-07 + 0.11672574368436772 x2 * x3 sin + -0.08670383756072711 x3 * x0 4.514987549863009 * + + -1.4986543463251218 x2 tanh + x1 sin sech * * x3 4.290860714008585 * -2.158312013760099 x2 + * -2.008312049148106 x3 + -6.776359473774233 x2 + * * -9.01168690985349 x3 + x2 sin + x3 x3 * x3 sin * * * + x1 x0 + sin x2 sin x3 sin + * x3 sin 0.017795507349376214 x2 * * 27.514214190734855 x1 sin * + * x2 sin x3 x3 + * x0 sin x2 x2 * + * x2 sin 1.3110959270503448 + 1.491871895684783 x0 * 30.674681369389646 * * + + + * x3 sech 1.6696302676279213 + x2 sin sech + tanh -1.3834313655158095e-07 x2 x0 + x0 sech * * -0.9854886613174224 + + x0 ~ 1.0000010749514268 x0 * + -0.005548887742517245 + x2 sin sin -0.5580394410278869 x2 tanh + + x3 x3 * sech x3 x3 * -2.940962066910255 x3 + * * + * + 15.35477157162709 x3 sech * x2 + x3 ~ x2 sin * tanh + x2 tanh -1.6604574458830634 + x3 sin tanh * -0.5983569750253624 x2 tanh + x0 tanh sech + + * 1.1771502602054442 -0.0021777509528580767 x3 + + 0.5878023907861117 * 1.1102419113642754 x2 sin * x3 -0.8790523604538907 + + + sin * * + +
+        Depth = 9: (Validation Exceeded 20% of best: ❌)
+            Best score = 1.4886163941941e-06, SNE = 671763.736637458
+            Squared-norm error for each equation: 0.000161623897401844 0.00465504082428804 671755.972120099 7.75970069434312
+            Best expression = (((((((tanh((x0 * 1.0005351505564615)) + (-1.0004034484114284 * tanh(x0))) + -0.7432576484595644) * ~((0.9783361823478842 * sin(~(x0))))) * ((-0.165292370486449 * ((~(x3) + 1.0600351500277172) + ((x3 + 2.08012449142906) + (1.0011339981482283 * x3)))) + ((0.00010135696367090247 * (~(x3) + ~(x3))) + (((6.493427065127789 + x3) * -0.002679055170707923) + ((x2 * -0.002544502295549416) + 4.095065805788352))))) * sin((((((x3 + 1.0078645509849187) + 4.576922820268366) * (0.3610643958093025 * (x2 * x3))) + ((x0 * 0.8171092546825038) * ~(sin(x1)))) + (((tanh(x2) + (x3 * 0.9813708448822472)) + (~(x1) + sin(x2))) + (x2 * 0.9068304970955168))))) + (sech(((sech((2.736968349936527 + tanh(x3))) + (0.18312433839858128 * sech(sin(x0)))) * (((2.6337932826683 + (x3 * -0.4420762951094443)) * ((x2 + -4.671229580351714) + (-0.4545548184832338 * x2))) + ((-0.48180031820944946 * sin(x3)) + (tanh(x3) + (3.5983746686484177 + x3)))))) + ((((~((x2 + 26.963788718299597)) * ((x2 + -0.7692078203349069) * (x3 * -0.36779301112878093))) + ~(((x3 + 0.6842611455581278) * sech(x3)))) * ((0.38618917707308237 + sech((x3 + 5.789849000330495))) + ((-0.00024313219785735045 * sech(x2)) + 0.08753277333936373))) + (((((0.00012880862572390057 + x0) * (x2 + 14.264390797428776)) * -0.0012495999037385069) * sin((~(x0) * 1.8568784263267353))) + (~((2.57998019876631 * (x2 + -0.7715470579326031))) * (((x3 * 1.8200020281205656) + 0.042968746646743286) + ((x2 * x3) * 0.06747010381710002))))))) + ((((((((x0 * x3) * sin(x2)) + (1.663197264048763 + x0)) * 0.02183035637972951) * (((tanh(x0) + (x0 * x3)) * ((1.2785489862217831 * x2) * (x3 + x3))) * -8.020806241404443e-12)) + 2.8738373964028277e-07) * ((((((0.12200751496172682 * x2) + sin(x3)) + ((-0.08966521798633886 * x3) + (0.05716915049804123 + x0))) * (((x0 + -1.4796166505723731) + tanh(x2)) * sech(sin(x1)))) + ((((x3 * 4.3054803375203905) * (-2.1378760641395114 + x2)) * ((-1.9259990247731809 + x3) * (-6.745885188242594 + x2))) * (((-8.988829463030923 + x3) + sin(x2)) * ((x3 * x3) * sin(x3))))) + (((sin((x1 + x0)) * (sin(x2) + sin(x3))) * ((sin(x3) * (0.014179082598942041 * x2)) + (27.7962767780305 * sin(x1)))) + (((sin(x2) * (x3 + x3)) * (sin(x0) + (x2 * x2))) + ((sin(x2) + 1.3027895190496914) * ((1.490722475218392 * x0) * 30.671940025913393)))))) + (((tanh(((sech(x3) + 1.700359540717335) + sech(sin(x2)))) + ((-1.5625114275403826e-07 * ((x2 + x0) * sech(x0))) + -0.9859001939705999)) + (((~(x0) + (1.0000011750495705 * x0)) + -0.005861523724165202) * ((sin(sin(x2)) + (-0.5412728869119998 + tanh(x2))) + (sech((x3 * x3)) * ((x3 * x3) * (-2.9588959619598065 + x3)))))) * (((((15.362326124731803 * sech(x3)) + x2) + tanh((~(x3) * sin(x2)))) * (((tanh(x2) + -1.6701030290430348) * tanh(sin(x3))) + ((-0.6059693186492489 + tanh(x2)) + sech(tanh(x0))))) * sin((((1.1588684264865847 + (-0.020184319815853773 + x3)) * 0.5977926104783503) + ((1.095557468524113 * sin(x2)) + (x3 + -0.9022628314845506))))))))
+            Best expression (original format) = x0 1.0005351505564615 * tanh -1.0004034484114284 x0 tanh * + -0.7432576484595644 + 0.9783361823478842 x0 ~ sin * ~ * -0.165292370486449 x3 ~ 1.0600351500277172 + x3 2.08012449142906 + 1.0011339981482283 x3 * + + * 0.00010135696367090247 x3 ~ x3 ~ + * 6.493427065127789 x3 + -0.002679055170707923 * x2 -0.002544502295549416 * 4.095065805788352 + + + + * x3 1.0078645509849187 + 4.576922820268366 + 0.3610643958093025 x2 x3 * * * x0 0.8171092546825038 * x1 sin ~ * + x2 tanh x3 0.9813708448822472 * + x1 ~ x2 sin + + x2 0.9068304970955168 * + + sin * 2.736968349936527 x3 tanh + sech 0.18312433839858128 x0 sin sech * + 2.6337932826683 x3 -0.4420762951094443 * + x2 -4.671229580351714 + -0.4545548184832338 x2 * + * -0.48180031820944946 x3 sin * x3 tanh 3.5983746686484177 x3 + + + + * sech x2 26.963788718299597 + ~ x2 -0.7692078203349069 + x3 -0.36779301112878093 * * * x3 0.6842611455581278 + x3 sech * ~ + 0.38618917707308237 x3 5.789849000330495 + sech + -0.00024313219785735045 x2 sech * 0.08753277333936373 + + * 0.00012880862572390057 x0 + x2 14.264390797428776 + * -0.0012495999037385069 * x0 ~ 1.8568784263267353 * sin * 2.57998019876631 x2 -0.7715470579326031 + * ~ x3 1.8200020281205656 * 0.042968746646743286 + x2 x3 * 0.06747010381710002 * + * + + + + x0 x3 * x2 sin * 1.663197264048763 x0 + + 0.02183035637972951 * x0 tanh x0 x3 * + 1.2785489862217831 x2 * x3 x3 + * * -8.020806241404443e-12 * * 2.8738373964028277e-07 + 0.12200751496172682 x2 * x3 sin + -0.08966521798633886 x3 * 0.05716915049804123 x0 + + + x0 -1.4796166505723731 + x2 tanh + x1 sin sech * * x3 4.3054803375203905 * -2.1378760641395114 x2 + * -1.9259990247731809 x3 + -6.745885188242594 x2 + * * -8.988829463030923 x3 + x2 sin + x3 x3 * x3 sin * * * + x1 x0 + sin x2 sin x3 sin + * x3 sin 0.014179082598942041 x2 * * 27.7962767780305 x1 sin * + * x2 sin x3 x3 + * x0 sin x2 x2 * + * x2 sin 1.3027895190496914 + 1.490722475218392 x0 * 30.671940025913393 * * + + + * x3 sech 1.700359540717335 + x2 sin sech + tanh -1.5625114275403826e-07 x2 x0 + x0 sech * * -0.9859001939705999 + + x0 ~ 1.0000011750495705 x0 * + -0.005861523724165202 + x2 sin sin -0.5412728869119998 x2 tanh + + x3 x3 * sech x3 x3 * -2.9588959619598065 x3 + * * + * + 15.362326124731803 x3 sech * x2 + x3 ~ x2 sin * tanh + x2 tanh -1.6701030290430348 + x3 sin tanh * -0.6059693186492489 x2 tanh + x0 tanh sech + + * 1.1588684264865847 -0.020184319815853773 x3 + + 0.5977926104783503 * 1.095557468524113 x2 sin * x3 -0.9022628314845506 + + + sin * * + +
      mu_equals_nu_1_only == false, createSobolMesh(32768, 4, {0.01, 0.0, 0.01, 0.01}, {10.0, 6.28319, 10, 10})), bad_ops = {"exp", "ln", "log", "^", "/", "arcsin", "asin", "acos", "arccos", "sqrt"}, l1=1e-4, ((variation <= tolerance) || (median(vec.array().abs()) <= tolerance)), period bc * 1e10:
         Depth = 9:
-            Best score = 6.45375156031148e-07, SNE = 1549485.35790333
-            Squared-norm error for each equation: 0.000350368786918751 0.00831717721074283 1549466.29898906 19.0502467307377
-            Best expression = (((((((tanh((1.0003163718333925 * x0)) + (-1.000329744490292 * tanh(x0))) + -0.7365163725242818) * ~((0.9783241771926432 * sin(~(x0))))) * ((-0.16531504574153175 * ((~(x3) * 1.0590166597679258) + ((x3 + 2.1938589900172816) + (1.0626898114876313 * x3)))) + ((0.00010135683188158724 * (~(x3) + ~(x3))) + (-0.044993247676072455 + ((x2 * -0.002543395927608778) + 4.0894414444855975))))) * sin((((((x3 + 1.0082379720083774) + 4.552884059499939) * (0.3610650380716696 * (x2 * x3))) + ((x0 * 0.7578757827143889) * ~(sin(x1)))) + (((tanh(x2) + (x3 * 0.9700791123411397)) + (~(x1) + sin(x2))) + (x2 * 0.9307454730716436))))) + (sech(((sech((2.694505749085142 + tanh(x3))) + (0.18044413421814 * sech(sin(x0)))) * (((2.7101548657902685 + (x3 * -0.41315074374144156)) * ((x2 + -4.640276877553022) + (-0.43692903350128015 * x2))) + ((-0.3872808452653873 * sin(x3)) + (tanh(x3) + (3.9125907954234385 + x3)))))) + ((((~((x2 + 26.96375006959435)) * ((x2 + -0.7690750744381124) * (x3 * -0.367755431605369))) + ~(((0.738141183535185 + x3) * sech(x3)))) * ((0.3887451603410452 + (sech(x3) * 0.004179143748580165)) + ((0.00018220612651941042 * sech(x0)) + 0.06350006401891191))) + (((((0.00027400840869226776 + x0) * (x2 + 14.487391681956442)) * -0.0012357769709555584) * sin((~(x0) * 1.86189452428076))) + (~((2.4645599128331264 * (x2 + -0.7711385879683424))) * (((x3 * 1.8183237212150867) + 0.044413674533505705) + ((x2 * x3) * 0.06747977458761023))))))) + (((((((sech(x2) + x2) + (sech(x2) + (0.04224339052771489 + x0))) + (~(sin(x0)) + (30.871457802911852 * (-0.0184406461411258 + x0)))) * (((-25.73751969572981 * (x0 * 3.3585736185545514)) * ((2.0122449846950823 * x3) * (x3 + x0))) * -8.020806241404443e-12)) + 2.8716763780314505e-07) * (((((x2 * 0.7301993459484523) + (sin(x3) + x3)) * ~(tanh(sin(x0)))) * ((tanh((-3.257257312513018 + x0)) + ((x0 + x2) + -13.612770830835721)) + (~(tanh(x2)) + (x0 + (2.6085311350773632 * x3))))) + ((((sech(x2) + -2.103633438560731) * ~(x0)) * ((0.6646697691693073 + x3) + (-7.5150508041494914 + x2))) + (((x3 + -3.3028676062387974) * 9.529405978910273) + (sech((x2 * 1.3995926686107252)) * ((x0 * x0) + (-8.612531093727403 * x3))))))) + (((tanh(((sech(x3) + 1.968882535237087) + sech(sin(x2)))) + ((-1.552779817710967e-07 * (tanh(x0) * (3.2403593665249413 * x2))) + -0.9808227282688394)) + (((~(x0) + (1.0000017557219636 * x0)) + -0.006455567382608767) * ((tanh(sin(x2)) + (1.0427328130348839 + tanh(x2))) + (sech((x3 * x3)) * ((-2.08420436280791 * x3) * (0.5019285411986834 + x3)))))) * (((((20.71419091354655 * sech(x3)) + (sech(x2) + (x2 + -3.3656506778145494))) + sin(((x3 + -0.16462256347420431) + (x3 + x2)))) * (((tanh(x2) + -2.3882607600251027) * tanh(sin(x3))) + ((-0.267116849420531 + tanh(x2)) + sech(tanh(x0))))) * sin((((-0.046322603406269716 + x3) * 0.6208889885982073) + (tanh(sin(x2)) + (tanh(x3) * (x3 + -0.24447526255186514)))))))))
-            Best expression (original format) = 1.0003163718333925 x0 * tanh -1.000329744490292 x0 tanh * + -0.7365163725242818 + 0.9783241771926432 x0 ~ sin * ~ * -0.16531504574153175 x3 ~ 1.0590166597679258 * x3 2.1938589900172816 + 1.0626898114876313 x3 * + + * 0.00010135683188158724 x3 ~ x3 ~ + * -0.044993247676072455 x2 -0.002543395927608778 * 4.0894414444855975 + + + + * x3 1.0082379720083774 + 4.552884059499939 + 0.3610650380716696 x2 x3 * * * x0 0.7578757827143889 * x1 sin ~ * + x2 tanh x3 0.9700791123411397 * + x1 ~ x2 sin + + x2 0.9307454730716436 * + + sin * 2.694505749085142 x3 tanh + sech 0.18044413421814 x0 sin sech * + 2.7101548657902685 x3 -0.41315074374144156 * + x2 -4.640276877553022 + -0.43692903350128015 x2 * + * -0.3872808452653873 x3 sin * x3 tanh 3.9125907954234385 x3 + + + + * sech x2 26.96375006959435 + ~ x2 -0.7690750744381124 + x3 -0.367755431605369 * * * 0.738141183535185 x3 + x3 sech * ~ + 0.3887451603410452 x3 sech 0.004179143748580165 * + 0.00018220612651941042 x0 sech * 0.06350006401891191 + + * 0.00027400840869226776 x0 + x2 14.487391681956442 + * -0.0012357769709555584 * x0 ~ 1.86189452428076 * sin * 2.4645599128331264 x2 -0.7711385879683424 + * ~ x3 1.8183237212150867 * 0.044413674533505705 + x2 x3 * 0.06747977458761023 * + * + + + + x2 sech x2 + x2 sech 0.04224339052771489 x0 + + + x0 sin ~ 30.871457802911852 -0.0184406461411258 x0 + * + + -25.73751969572981 x0 3.3585736185545514 * * 2.0122449846950823 x3 * x3 x0 + * * -8.020806241404443e-12 * * 2.8716763780314505e-07 + x2 0.7301993459484523 * x3 sin x3 + + x0 sin tanh ~ * -3.257257312513018 x0 + tanh x0 x2 + -13.612770830835721 + + x2 tanh ~ x0 2.6085311350773632 x3 * + + + * x2 sech -2.103633438560731 + x0 ~ * 0.6646697691693073 x3 + -7.5150508041494914 x2 + + * x3 -3.3028676062387974 + 9.529405978910273 * x2 1.3995926686107252 * sech x0 x0 * -8.612531093727403 x3 * + * + + + * x3 sech 1.968882535237087 + x2 sin sech + tanh -1.552779817710967e-07 x0 tanh 3.2403593665249413 x2 * * * -0.9808227282688394 + + x0 ~ 1.0000017557219636 x0 * + -0.006455567382608767 + x2 sin tanh 1.0427328130348839 x2 tanh + + x3 x3 * sech -2.08420436280791 x3 * 0.5019285411986834 x3 + * * + * + 20.71419091354655 x3 sech * x2 sech x2 -3.3656506778145494 + + + x3 -0.16462256347420431 + x3 x2 + + sin + x2 tanh -2.3882607600251027 + x3 sin tanh * -0.267116849420531 x2 tanh + x0 tanh sech + + * -0.046322603406269716 x3 + 0.6208889885982073 * x2 sin tanh x3 tanh x3 -0.24447526255186514 + * + + sin * * + +
+            Best score = 6.45375670204976e-07, SNE = 1549484.12342028
+            Squared-norm error for each equation: 0.00035039607324624 0.0083174813613615 1549464.89052637 19.2242260249908
+            Best expression = (((((((tanh((x0 * 1.0003149833694598)) + (-1.000329744490292 * tanh(x0))) + -0.7365163725242818) * ~((0.9783241771926432 * sin(~(x0))))) * ((-0.16531504574153175 * ((~(x3) * 1.0590166597679258) + ((x3 + 2.1938589900172816) + (1.0626898114876313 * x3)))) + ((0.00010135683188158724 * (~(x3) + ~(x3))) + (-0.044993247676072455 + ((x2 * -0.002543395927608778) + 4.0894414444855975))))) * sin((((((x3 + 1.0082379720083774) + 4.552884059499939) * (0.3610650380716696 * (x2 * x3))) + ((x0 * 0.7578757827143889) * ~(sin(x1)))) + (((tanh(x2) + (x3 * 0.9700791123411397)) + (~(x1) + sin(x2))) + (x2 * 0.9307454730716436))))) + (sech(((sech((2.694505749085142 + tanh(x3))) + (0.18044413421814 * sech(sin(x0)))) * (((2.7101548657902685 + (x3 * -0.41315074374144156)) * ((x2 + -4.640276877553022) + (-0.43692903350128015 * x2))) + ((-0.3872816842215748 * sin(x3)) + (tanh(x3) + (3.9125907954234385 + x3)))))) + ((((~((x2 + 26.963750053649274)) * ((x2 + -0.769075068189618) * (x3 * -0.367755431605369))) + ~(((0.7379651270592853 + x3) * sech(x3)))) * ((0.3887451603410452 + (sech(x3) * 0.004179008880709441)) + ((0.0001822061265194104 * sech(x0)) + 0.06350006401891191))) + (((((0.00027400840869226776 + x0) * (x2 + 14.487391681956442)) * -0.0012357769709555584) * sin((~(x0) * 1.86189452428076))) + (~((2.4645599128331264 * (x2 + -0.7711385879683424))) * (((x3 * 1.8183237212150867) + 0.044413674533505705) + ((x2 * x3) * 0.06747977458761023))))))) + (((((((sech(x2) + x2) + (sech(x2) + (0.04224670708508004 + x0))) + (~(sin(x0)) + (30.871457802911852 * (-0.0184406461411258 + x0)))) * (((-25.73751969572981 * (x0 * 3.3585736247322817)) * ((2.0122449846950823 * x3) * (x3 + x0))) * -8.020806241404443e-12)) + ((tanh(x3) + ~(tanh((x3 * 0.9999998651259552)))) + 2.8716763780314505e-07)) * (((((x2 * 0.7301993459484523) + (sin(x3) + x3)) * ~(tanh(sin(x0)))) * ((tanh((-3.2571822931296937 + x0)) + ((x0 + x2) + -13.61277083083572)) + (~(tanh(x2)) + (x0 + (2.6085311350773632 * x3))))) + ((((sech(x2) + -2.103633438560731) * ~(x0)) * ((0.6646697691693073 + x3) + (-7.515050726099375 + x2))) + (((x3 + -3.302871279214541) * 9.529418704103447) + (sech((x2 * 1.3995613155782411)) * ((x0 * x0) + (-8.612678104849405 * x3))))))) + (((tanh(((sech(x3) + 1.968991025589322) + sech(sin(x2)))) + ((-1.552779817710967e-07 * (tanh(x0) * (3.275433784356668 * x2))) + -0.9808227282688394)) + (((~(x0) + (1.0000017557219636 * x0)) + -0.006456487752838274) * ((tanh(sin(x2)) + ((0.17925643078818107 + 0.8632970461105295) + tanh(x2))) + (sech((x3 * x3)) * ((-2.0838961008031744 * x3) * (0.5009450818875716 + x3)))))) * (((((20.779130408018762 * sech(x3)) + (sech(x2) + (x2 + -3.365779784612581))) + sin(((x3 + -0.1645116719474978) + (x3 + x2)))) * (((tanh(x2) + -2.3883655013030127) * tanh(sin(x3))) + ((-0.2669665357188489 + tanh(x2)) + sech(tanh(x0))))) * sin((((-0.046148888426697586 + x3) * 0.6209049492325034) + (tanh(sin(x2)) + (tanh(x3) * (x3 + -0.24463497268810194)))))))))
+            Best expression (original format) = x0 1.0003149833694598 * tanh -1.000329744490292 x0 tanh * + -0.7365163725242818 + 0.9783241771926432 x0 ~ sin * ~ * -0.16531504574153175 x3 ~ 1.0590166597679258 * x3 2.1938589900172816 + 1.0626898114876313 x3 * + + * 0.00010135683188158724 x3 ~ x3 ~ + * -0.044993247676072455 x2 -0.002543395927608778 * 4.0894414444855975 + + + + * x3 1.0082379720083774 + 4.552884059499939 + 0.3610650380716696 x2 x3 * * * x0 0.7578757827143889 * x1 sin ~ * + x2 tanh x3 0.9700791123411397 * + x1 ~ x2 sin + + x2 0.9307454730716436 * + + sin * 2.694505749085142 x3 tanh + sech 0.18044413421814 x0 sin sech * + 2.7101548657902685 x3 -0.41315074374144156 * + x2 -4.640276877553022 + -0.43692903350128015 x2 * + * -0.3872816842215748 x3 sin * x3 tanh 3.9125907954234385 x3 + + + + * sech x2 26.963750053649274 + ~ x2 -0.769075068189618 + x3 -0.367755431605369 * * * 0.7379651270592853 x3 + x3 sech * ~ + 0.3887451603410452 x3 sech 0.004179008880709441 * + 0.0001822061265194104 x0 sech * 0.06350006401891191 + + * 0.00027400840869226776 x0 + x2 14.487391681956442 + * -0.0012357769709555584 * x0 ~ 1.86189452428076 * sin * 2.4645599128331264 x2 -0.7711385879683424 + * ~ x3 1.8183237212150867 * 0.044413674533505705 + x2 x3 * 0.06747977458761023 * + * + + + + x2 sech x2 + x2 sech 0.04224670708508004 x0 + + + x0 sin ~ 30.871457802911852 -0.0184406461411258 x0 + * + + -25.73751969572981 x0 3.3585736247322817 * * 2.0122449846950823 x3 * x3 x0 + * * -8.020806241404443e-12 * * x3 tanh x3 0.9999998651259552 * tanh ~ + 2.8716763780314505e-07 + + x2 0.7301993459484523 * x3 sin x3 + + x0 sin tanh ~ * -3.2571822931296937 x0 + tanh x0 x2 + -13.61277083083572 + + x2 tanh ~ x0 2.6085311350773632 x3 * + + + * x2 sech -2.103633438560731 + x0 ~ * 0.6646697691693073 x3 + -7.515050726099375 x2 + + * x3 -3.302871279214541 + 9.529418704103447 * x2 1.3995613155782411 * sech x0 x0 * -8.612678104849405 x3 * + * + + + * x3 sech 1.968991025589322 + x2 sin sech + tanh -1.552779817710967e-07 x0 tanh 3.275433784356668 x2 * * * -0.9808227282688394 + + x0 ~ 1.0000017557219636 x0 * + -0.006456487752838274 + x2 sin tanh 0.17925643078818107 0.8632970461105295 + x2 tanh + + x3 x3 * sech -2.0838961008031744 x3 * 0.5009450818875716 x3 + * * + * + 20.779130408018762 x3 sech * x2 sech x2 -3.365779784612581 + + + x3 -0.1645116719474978 + x3 x2 + + sin + x2 tanh -2.3883655013030127 + x3 sin tanh * -0.2669665357188489 x2 tanh + x0 tanh sech + + * -0.046148888426697586 x3 + 0.6209049492325034 * x2 sin tanh x3 tanh x3 -0.24463497268810194 + * + + sin * * + +
+     mu_equals_nu_1_only == false, createSobolMesh(256, 4, {0.01, 0.0, 0.01, 0.01}, {10.0, 6.28319, 10, 10})), bad_ops = {"exp", "ln", "log", "^", "/", "arcsin", "asin", "acos", "arccos", "sqrt"}, l1=1e-4, ((variation <= tolerance) || (median(vec.array().abs()) <= tolerance)), period bc * 1e10:
+        Depth = 9:
+            Best score = 0.000242887051936811, SNE = 4116.14001230563
+            Squared-norm error for each equation: 2.25115302889256e-06 6.06466244707685e-05 4115.61688175487 0.523067652981985
+            Best expression = (((((-0.7432297352445384 * ~((0.9777253287788712 * sin(~(x0))))) * ((-0.165134089954097 * ((~(x3) + 1.155420072965652) + ((x3 + 2.250531027666009) + (1.005858062499048 * x3)))) + (((sech(x0) + -4.42963924078022) * (0.11199860496600639 * sech(x0))) + (sech((6.177677054714566 + x0)) + 4.081963316018363)))) * sin((((((x3 + 0.9983477530240458) + 4.577313116624818) * (0.3610685186674458 * (x2 * x3))) + ((x0 * 0.791643417600936) * ~(sin(x1)))) + (((0.9733588240647113 + (0.03321765579913261 + x3)) + (~(x1) + tanh(x3))) + ((tanh(x3) * sin(x2)) + 8.52360184378767))))) + (sech(((sech((0.7617810123511869 + (x2 * x3))) + ((tanh(x0) * (x0 * -6.029890087201521e-05)) + ((x0 * 2.5588709380158384e-05) + 0.5212331686936778))) * (((0.8064686706146087 + (x3 * 0.09460250281205203)) * (sech(x0) + (0.36659870617881357 * x2))) + (-4.798986905698713 + (tanh(x2) + (-1.889300873398083 + x3)))))) + ((((~((x2 + 19.315170457562946)) * ((x2 + -1.8681538845138959) * (x3 * -0.3635035436053961))) + tanh((sech(x2) * sech(x3)))) * (0.3920612755709918 + ((7.070754668837826 * (0.35406573532520214 * x3)) * 3.892639661216583e-06))) + (((((0.0001755659933555188 + x0) * 21.824714271225208) * -0.0012385744617711618) * sin((~(x0) * 1.8785203674535371))) + (~((1.7030864989075556 * (x2 + -1.873885813029057))) * ((0.08150044283246093 + (x3 * 1.611388854822099)) + ((x2 * x3) * 0.08314018408815249))))))) + (((((-0.07974464800684045 * (tanh(sin(x3)) + ~((x2 + x3)))) + (sin((0.6660643560809016 * (x2 * x2))) * (((0.3225008094813809 * x2) + -1.586989640456374) * ((0.2920334124846359 * x2) * (x3 * 0.02779472904715412))))) + (sin(tanh((sech(x3) * -2.252086902553085))) * (-1.821373362768599 + (x3 + sech(sin(x2)))))) + ((0.00017061755999462434 * ((sin(tanh(x0)) * (38.53894882052461 + sin(x2))) * (~(x0) * (sin(x0) + tanh(x3))))) + (((((x2 * 0.4251591179665574) * sech(x2)) + ((-2.228182459191924e-06 * x0) + -0.6443841881356562)) + ((tanh(x3) + (x3 + -1.2631061190952153)) * sech((1.6978210437188852 * x3)))) + sech((((x3 + x3) + (8.60579217987562 + x2)) * (0.1477648670338181 * (x3 + -3.894968489801848))))))) + ((((0.16051713350885777 * (((x2 * -0.0005801661367930887) + 1.001566907480959) + tanh((-5.280120981810605 * x2)))) + (sin((tanh(x2) * (x2 + 0.1232875577613706))) * ((~(x0) + (x0 * 0.9999999430425709)) + 0.0020362664545150204))) * (((sin(~(x2)) * ((x2 + x2) + (x3 * -12.536930248592558))) + (((x3 * 3.6833615329584255) * (-0.9986833097408282 + x2)) * sin((x3 * x2)))) + (((sin(x2) * (x3 + -7.296777374025281)) * ((x2 * x3) + (x2 + 233.03039328596807))) * ((-0.27237652370253723 + sin(x3)) * (tanh(x3) + -1.4344231335140882))))) + ((((-0.016889925575592518 * sin((x3 * 1.4628342545035302))) * sin((-1.8289474661649712 * (x2 + 0.4309608114929968)))) + ((sech((x0 * 0.9549187087651085)) * (sech(x3) * -0.23977794856119708)) + ((-0.007169987621434157 * sin(x3)) + 0.09114606211883054))) * (~((sech((8.60761722029108 + x3)) + ((x2 + -1.0925918626572078) + (-0.8590588824672004 + x3)))) + ~(sech((-2.323528756915941 + x2))))))))
+            Best expression (original format) = -0.7432297352445384 0.9777253287788712 x0 ~ sin * ~ * -0.165134089954097 x3 ~ 1.155420072965652 + x3 2.250531027666009 + 1.005858062499048 x3 * + + * x0 sech -4.42963924078022 + 0.11199860496600639 x0 sech * * 6.177677054714566 x0 + sech 4.081963316018363 + + + * x3 0.9983477530240458 + 4.577313116624818 + 0.3610685186674458 x2 x3 * * * x0 0.791643417600936 * x1 sin ~ * + 0.9733588240647113 0.03321765579913261 x3 + + x1 ~ x3 tanh + + x3 tanh x2 sin * 8.52360184378767 + + + sin * 0.7617810123511869 x2 x3 * + sech x0 tanh x0 -6.029890087201521e-05 * * x0 2.5588709380158384e-05 * 0.5212331686936778 + + + 0.8064686706146087 x3 0.09460250281205203 * + x0 sech 0.36659870617881357 x2 * + * -4.798986905698713 x2 tanh -1.889300873398083 x3 + + + + * sech x2 19.315170457562946 + ~ x2 -1.8681538845138959 + x3 -0.3635035436053961 * * * x2 sech x3 sech * tanh + 0.3920612755709918 7.070754668837826 0.35406573532520214 x3 * * 3.892639661216583e-06 * + * 0.0001755659933555188 x0 + 21.824714271225208 * -0.0012385744617711618 * x0 ~ 1.8785203674535371 * sin * 1.7030864989075556 x2 -1.873885813029057 + * ~ 0.08150044283246093 x3 1.611388854822099 * + x2 x3 * 0.08314018408815249 * + * + + + + -0.07974464800684045 x3 sin tanh x2 x3 + ~ + * 0.6660643560809016 x2 x2 * * sin 0.3225008094813809 x2 * -1.586989640456374 + 0.2920334124846359 x2 * x3 0.02779472904715412 * * * * + x3 sech -2.252086902553085 * tanh sin -1.821373362768599 x3 x2 sin sech + + * + 0.00017061755999462434 x0 tanh sin 38.53894882052461 x2 sin + * x0 ~ x0 sin x3 tanh + * * * x2 0.4251591179665574 * x2 sech * -2.228182459191924e-06 x0 * -0.6443841881356562 + + x3 tanh x3 -1.2631061190952153 + + 1.6978210437188852 x3 * sech * + x3 x3 + 8.60579217987562 x2 + + 0.1477648670338181 x3 -3.894968489801848 + * * sech + + + 0.16051713350885777 x2 -0.0005801661367930887 * 1.001566907480959 + -5.280120981810605 x2 * tanh + * x2 tanh x2 0.1232875577613706 + * sin x0 ~ x0 0.9999999430425709 * + 0.0020362664545150204 + * + x2 ~ sin x2 x2 + x3 -12.536930248592558 * + * x3 3.6833615329584255 * -0.9986833097408282 x2 + * x3 x2 * sin * + x2 sin x3 -7.296777374025281 + * x2 x3 * x2 233.03039328596807 + + * -0.27237652370253723 x3 sin + x3 tanh -1.4344231335140882 + * * + * -0.016889925575592518 x3 1.4628342545035302 * sin * -1.8289474661649712 x2 0.4309608114929968 + * sin * x0 0.9549187087651085 * sech x3 sech -0.23977794856119708 * * -0.007169987621434157 x3 sin * 0.09114606211883054 + + + 8.60761722029108 x3 + sech x2 -1.0925918626572078 + -0.8590588824672004 x3 + + + ~ -2.323528756915941 x2 + sech ~ + * + + +
+     mu_equals_nu_1_only == false, createSobolMesh(512, 4, {0.01, 0.0, 0.01, 0.01}, {10.0, 6.28319, 10, 10})), bad_ops = {"exp", "ln", "log", "^", "/", "arcsin", "asin", "acos", "arccos", "sqrt"}, l1=1e-4, ((variation <= tolerance) || (median(vec.array().abs()) <= tolerance)), period bc * 1e10:
+        Depth = 9:
+            Best score = 6.53932317812854e-05, SNE = 15291.1024509785
+            Squared-norm error for each equation: 5.05948785590295e-06 0.000154603287265106 15289.9892748238 1.11301649196751
+            Best expression = (((((-0.7427603766171006 * ~((0.9772678923174637 * sin(~(x0))))) * ((-0.1651077232419793 * ((~(x3) + 1.044538389043801) + ((x3 + 2.0495675817808614) + (1.0014268995149829 * x3)))) + (((sech(x0) + -5.881559859688013) * (0.12284374366343878 * sech(x0))) + (~((x2 + x1)) + ((x2 + x1) + 4.096226643962096))))) * sin((((((x3 + 1.0012051790140029) + 4.577369258026463) * (0.361068519008264 * (x2 * x3))) + ((x0 * 0.8194670939714268) * ~(sin(x1)))) + (((1.1586894153949874 + (0.10380295338254088 + x3)) + (~(x1) + sin(x2))) + ((tanh(x3) * sin(x2)) + 8.531182196704666))))) + (sech(((sech((0.10903356636858665 + (x2 * x3))) + ((0.2808328620676452 * (x0 * -0.0005635713590498194)) + ((x0 * 0.00026065566834950095) + 0.4289997221075278))) * (((0.35758555444640555 + (x3 * 0.24681805330579162)) * (sech(x0) + (0.41223553639239335 * x2))) + (-4.497674317268268 + (0.5442212958104486 + (-0.15788520352362978 + x3)))))) + ((((~((x2 + 19.283479627808735)) * ((x2 + -1.867632769166897) * (x3 * -0.3635931909447128))) + tanh(((-17.288407795027574 + x2) * sech(x3)))) * (0.3921788643176348 + (((x3 + 11.120478025493464) * (-1.1130891988696723 * x3)) * 5.1655097021221885e-06))) + (((((0.0001239097037062699 + x0) * 24.710046206387283) * -0.0013725608928644008) * sin((~(x0) * 1.842589551617022))) + (~((1.702817378034993 * (x2 + -1.873982760180548))) * ((0.06010504124467959 + (x3 * 1.6110597681016445)) + ((x2 * x3) * 0.08338704479969644))))))) + (((((-0.08909831058909183 * (sin(sin(x2)) + ~((x2 + x3)))) + (sin((0.9551711693747555 * (x2 * x2))) * ((0.25840747466796565 * (x2 + -1.68395637414319)) * ((0.10551792368436802 * x3) * 0.20560208053915266)))) + ((-0.3427395993493318 + (x3 * -0.06675454741525137)) * (tanh(((x2 * x3) * sin(x3))) * ((-0.05608717878422274 + (-0.04462790843778007 * x2)) * sech(tanh(x2)))))) + (((sin(sech((x3 * 2.333617040553317))) * 0.05422529053635726) * ((((x2 * -0.1118269197173768) + (1.58060524776609 + x3)) * ((-10.48942611928226 * x3) + 0.4209182885338751)) * ((-2.0363752132800412 * (x3 + x3)) + (3.36787717589003 + (1.2887743083630534 * x2))))) + (((((x2 * -1.5332422511776127e-06) * (-11.50925373704674 * x0)) + ((-3.0341688695194833e-06 * x0) + -0.8135556017119152)) + ((sin(x3) + (x3 + -0.1800558778991878)) * sech((1.6180655327822124 * x3)))) + sech((((x3 * x3) * 29.452035969066173) * ((x3 + 0.8231990958309244) * (x3 + -4.380625474758736))))))) + ((((0.24829070211148724 * (((x2 * -0.0009810241944366537) + 1.0053217962932177) + tanh((-21.869103941658814 * x2)))) + (sin((tanh(x2) * (x2 + -0.16142580164695094))) * ((~(x0) + (x0 * 0.9999996332081642)) + 0.0020940001055645132))) * (((((x2 * 29.903855368623947) + sech(x0)) * sin((-16.3954788195519 * x3))) + (((-2.326556050438253 + x2) * 23.189859498429456) * sin((x3 * x2)))) + (((sin(x2) * (x3 + -8.385919622876184)) * (tanh(x3) * (x2 + 146.59519362862073))) * (((0.6790599825997723 * x2) + sin(x3)) * (tanh(x3) + -0.9075754089763802))))) + ((((-0.03843285279773538 * sin((x3 * 1.34868985943418))) * sin((-1.9143079839832964 * (x2 + 0.29001364793082357)))) + (0.0005784620417223445 + ((0.026452671887227084 * sin(x3)) + 0.06124452839709026))) * (~((sech((x3 + -2.5090369878127454)) + ((x2 + -4.3690619983683545) + (-5.256975897778629 + x3)))) + ~((tanh(~(x2)) * (x3 * -0.5082947061113099))))))))
+            Best expression (original format) = -0.7427603766171006 0.9772678923174637 x0 ~ sin * ~ * -0.1651077232419793 x3 ~ 1.044538389043801 + x3 2.0495675817808614 + 1.0014268995149829 x3 * + + * x0 sech -5.881559859688013 + 0.12284374366343878 x0 sech * * x2 x1 + ~ x2 x1 + 4.096226643962096 + + + + * x3 1.0012051790140029 + 4.577369258026463 + 0.361068519008264 x2 x3 * * * x0 0.8194670939714268 * x1 sin ~ * + 1.1586894153949874 0.10380295338254088 x3 + + x1 ~ x2 sin + + x3 tanh x2 sin * 8.531182196704666 + + + sin * 0.10903356636858665 x2 x3 * + sech 0.2808328620676452 x0 -0.0005635713590498194 * * x0 0.00026065566834950095 * 0.4289997221075278 + + + 0.35758555444640555 x3 0.24681805330579162 * + x0 sech 0.41223553639239335 x2 * + * -4.497674317268268 0.5442212958104486 -0.15788520352362978 x3 + + + + * sech x2 19.283479627808735 + ~ x2 -1.867632769166897 + x3 -0.3635931909447128 * * * -17.288407795027574 x2 + x3 sech * tanh + 0.3921788643176348 x3 11.120478025493464 + -1.1130891988696723 x3 * * 5.1655097021221885e-06 * + * 0.0001239097037062699 x0 + 24.710046206387283 * -0.0013725608928644008 * x0 ~ 1.842589551617022 * sin * 1.702817378034993 x2 -1.873982760180548 + * ~ 0.06010504124467959 x3 1.6110597681016445 * + x2 x3 * 0.08338704479969644 * + * + + + + -0.08909831058909183 x2 sin sin x2 x3 + ~ + * 0.9551711693747555 x2 x2 * * sin 0.25840747466796565 x2 -1.68395637414319 + * 0.10551792368436802 x3 * 0.20560208053915266 * * * + -0.3427395993493318 x3 -0.06675454741525137 * + x2 x3 * x3 sin * tanh -0.05608717878422274 -0.04462790843778007 x2 * + x2 tanh sech * * * + x3 2.333617040553317 * sech sin 0.05422529053635726 * x2 -0.1118269197173768 * 1.58060524776609 x3 + + -10.48942611928226 x3 * 0.4209182885338751 + * -2.0363752132800412 x3 x3 + * 3.36787717589003 1.2887743083630534 x2 * + + * * x2 -1.5332422511776127e-06 * -11.50925373704674 x0 * * -3.0341688695194833e-06 x0 * -0.8135556017119152 + + x3 sin x3 -0.1800558778991878 + + 1.6180655327822124 x3 * sech * + x3 x3 * 29.452035969066173 * x3 0.8231990958309244 + x3 -4.380625474758736 + * * sech + + + 0.24829070211148724 x2 -0.0009810241944366537 * 1.0053217962932177 + -21.869103941658814 x2 * tanh + * x2 tanh x2 -0.16142580164695094 + * sin x0 ~ x0 0.9999996332081642 * + 0.0020940001055645132 + * + x2 29.903855368623947 * x0 sech + -16.3954788195519 x3 * sin * -2.326556050438253 x2 + 23.189859498429456 * x3 x2 * sin * + x2 sin x3 -8.385919622876184 + * x3 tanh x2 146.59519362862073 + * * 0.6790599825997723 x2 * x3 sin + x3 tanh -0.9075754089763802 + * * + * -0.03843285279773538 x3 1.34868985943418 * sin * -1.9143079839832964 x2 0.29001364793082357 + * sin * 0.0005784620417223445 0.026452671887227084 x3 sin * 0.06124452839709026 + + + x3 -2.5090369878127454 + sech x2 -4.3690619983683545 + -5.256975897778629 x3 + + + ~ x2 ~ tanh x3 -0.5082947061113099 * * ~ + * + + +
+     mu_equals_nu_1_only == false, createSobolMesh(1024, 4, {0.01, 0.0, 0.01, 0.01}, {10.0, 6.28319, 10, 10})), bad_ops = {"exp", "ln", "log", "^", "/", "arcsin", "asin", "acos", "arccos", "sqrt"}, l1=1e-4, ((variation <= tolerance) || (median(vec.array().abs()) <= tolerance)), period bc * 1e10:
+        Depth = 9:
+            Best score = 2.58930349302984e-05, SNE = 38619.4244767717
+            Squared-norm error for each equation: 1.04970962208486e-05 0.000242598971012588 38617.4488538107 1.97536986486926
+            Best expression = (((((-0.743624523894555 * ~((0.9785258159791556 * sin(~(x0))))) * ((-0.1651077232419793 * ((~(x3) + 1.172828202143262) + ((x3 + 2.1577189677310082) + (1.0004440277083668 * x3)))) + (sech((6.30150283483461 + x0)) + 4.0969770359084885))) * sin((((((x3 + 0.9938525421614999) + 4.574839111535037) * (0.361068519008264 * (x2 * x3))) + ((x0 * 0.782746161676655) * ~(sin(x1)))) + (((0.9433214590440084 + (x3 * 1.0088425106165704)) + (~(x1) + sin(x2))) + ((tanh(x3) * sin(x2)) + 8.523427962613253))))) + (sech(((sech(((x2 + 2.314134697362632) + (x2 + x3))) + ((tanh(x3) * (x0 * -9.839394707017339e-05)) + ((x0 * 2.4699495207846946e-05) + 0.45934210834899486))) * (((0.5359034755991758 + (x3 * 0.13190478251165083)) * (-0.006284713114175336 + (0.38849577629200593 * x2))) + (-3.7465090167073702 + (tanh(x2) + (-0.19964143095067577 + x3)))))) + ((((~((x2 + 19.315114121737267)) * ((x2 + -1.868720034802565) * (x3 * -0.3635918567685629))) + tanh(((-25.120314221295487 + x2) * sech(x3)))) * (0.3921773839995005 + (x3 + (x3 * -1.000065995553228)))) + (((((0.0001642074193658044 + x0) * 27.4248077408779) * -0.0013513534293751813) * sin((~(x0) * 1.8540718704997323))) + (~((1.7030327661242082 * (x2 + -1.8730876107260035))) * ((0.0641437231132507 + (x3 * 1.6102460209077623)) + ((x2 * x3) * 0.08354554184216131))))))) + (((((-0.08110318251579535 * (sin((x3 + 0.2855010553957896)) + ~((x2 + x3)))) + (sin((0.6722989617679224 * (x2 * x2))) * (((x3 * 0.144728231392177) + -1.2110383481240246) * ((0.10764726067637131 * x2) * (x3 * 0.08403335354242236))))) + (tanh(tanh(((2.6675252650197234 + x3) + (-3.470248235060962 * x3)))) * (tanh(((x2 * x3) * sin(x3))) * ((-0.13367371651196003 + (-0.005887606030496412 * x3)) * sech(sin(x3)))))) + (((sin(sech((x3 * 1.2683634655294016))) * (0.054068774356201145 + (x3 * 0.053120370456277134))) * ((((x2 * -0.2006146290245615) + (1.9576163165360911 + x3)) * ((-1.0880575620501312 * x3) + tanh(x2))) * ((-0.8654168284681747 * (x3 + x3)) + (4.407925747476873 + (0.06459818677207685 * x2))))) + ((-0.637662160374811 + (((x3 + -0.10791183033710489) + (x3 + -0.8666907068757826)) * sech((2.2634738830315086 * x3)))) + sech((((x3 * x3) * (22.81166112028269 + x3)) * (1.1002310853596942 * (x3 + -3.0910973985212467))))))) + ((((0.08065692405645077 * (((x2 * -0.0007971603892828515) + 0.9963651192981751) + tanh((-30.026012249133455 * x2)))) + (sin((tanh(x2) * (1.0910472057507854 * x2))) * ((~(x0) + (x0 * 0.9999999472407418)) + 0.001974702033047662))) * (((((x2 * 2.36617213270592) + 31.75733825617667) * sin((-16.392466697279403 * x3))) + (((x3 + 6.548690767678663) * (-4.064289554057201 + x2)) * sin((x3 * x3)))) + (((sin(x2) * (x3 + -7.388949222505767)) * (tanh(x3) * (x2 + 149.61269141866714))) * (((-0.17620036508669953 * x2) + sin(x3)) * (tanh(x3) + -1.1872058035394686))))) + ((((-0.020871958156962512 * sin((x3 * 1.3622623595366576))) * sin((-1.8184593392286539 * (x2 + 0.559144952908449)))) + (sin((sin(x2) * 0.0037128969003551275)) + ((0.015073609778541074 * sin(x3)) + 0.08720762217342491))) * (~((0.10914490778317536 + ((x2 + -3.314118401342335) + (-3.7643800487975727 + x3)))) + ~(sech((1.5030070642216031 * sin(x3)))))))))
+            Best expression (original format) = -0.743624523894555 0.9785258159791556 x0 ~ sin * ~ * -0.1651077232419793 x3 ~ 1.172828202143262 + x3 2.1577189677310082 + 1.0004440277083668 x3 * + + * 6.30150283483461 x0 + sech 4.0969770359084885 + + * x3 0.9938525421614999 + 4.574839111535037 + 0.361068519008264 x2 x3 * * * x0 0.782746161676655 * x1 sin ~ * + 0.9433214590440084 x3 1.0088425106165704 * + x1 ~ x2 sin + + x3 tanh x2 sin * 8.523427962613253 + + + sin * x2 2.314134697362632 + x2 x3 + + sech x3 tanh x0 -9.839394707017339e-05 * * x0 2.4699495207846946e-05 * 0.45934210834899486 + + + 0.5359034755991758 x3 0.13190478251165083 * + -0.006284713114175336 0.38849577629200593 x2 * + * -3.7465090167073702 x2 tanh -0.19964143095067577 x3 + + + + * sech x2 19.315114121737267 + ~ x2 -1.868720034802565 + x3 -0.3635918567685629 * * * -25.120314221295487 x2 + x3 sech * tanh + 0.3921773839995005 x3 x3 -1.000065995553228 * + + * 0.0001642074193658044 x0 + 27.4248077408779 * -0.0013513534293751813 * x0 ~ 1.8540718704997323 * sin * 1.7030327661242082 x2 -1.8730876107260035 + * ~ 0.0641437231132507 x3 1.6102460209077623 * + x2 x3 * 0.08354554184216131 * + * + + + + -0.08110318251579535 x3 0.2855010553957896 + sin x2 x3 + ~ + * 0.6722989617679224 x2 x2 * * sin x3 0.144728231392177 * -1.2110383481240246 + 0.10764726067637131 x2 * x3 0.08403335354242236 * * * * + 2.6675252650197234 x3 + -3.470248235060962 x3 * + tanh tanh x2 x3 * x3 sin * tanh -0.13367371651196003 -0.005887606030496412 x3 * + x3 sin sech * * * + x3 1.2683634655294016 * sech sin 0.054068774356201145 x3 0.053120370456277134 * + * x2 -0.2006146290245615 * 1.9576163165360911 x3 + + -1.0880575620501312 x3 * x2 tanh + * -0.8654168284681747 x3 x3 + * 4.407925747476873 0.06459818677207685 x2 * + + * * -0.637662160374811 x3 -0.10791183033710489 + x3 -0.8666907068757826 + + 2.2634738830315086 x3 * sech * + x3 x3 * 22.81166112028269 x3 + * 1.1002310853596942 x3 -3.0910973985212467 + * * sech + + + 0.08065692405645077 x2 -0.0007971603892828515 * 0.9963651192981751 + -30.026012249133455 x2 * tanh + * x2 tanh 1.0910472057507854 x2 * * sin x0 ~ x0 0.9999999472407418 * + 0.001974702033047662 + * + x2 2.36617213270592 * 31.75733825617667 + -16.392466697279403 x3 * sin * x3 6.548690767678663 + -4.064289554057201 x2 + * x3 x3 * sin * + x2 sin x3 -7.388949222505767 + * x3 tanh x2 149.61269141866714 + * * -0.17620036508669953 x2 * x3 sin + x3 tanh -1.1872058035394686 + * * + * -0.020871958156962512 x3 1.3622623595366576 * sin * -1.8184593392286539 x2 0.559144952908449 + * sin * x2 sin 0.0037128969003551275 * sin 0.015073609778541074 x3 sin * 0.08720762217342491 + + + 0.10914490778317536 x2 -3.314118401342335 + -3.7643800487975727 x3 + + + ~ 1.5030070642216031 x3 sin * sech ~ + * + + +
+     
      */
     if (fit)
     {
@@ -16879,7 +16994,7 @@ namespace ExampleProblems
         }
     }
     void SwiftHohenbergTest(std::pair<std::string, int>& random_seed, const char* algorithm, double time)
-    {
+{
         double threshold = 1.0;
         bool mu_equals_nu_1_only = false;
         std::vector<std::string> bad_ops;
@@ -16891,16 +17006,16 @@ namespace ExampleProblems
         
 #if TIME_EVAL
         /*
-        auto sobolDataExample = createSobolMesh(1000, 4, {0.01, 1.2, 0.01, 0.01}, {10.0, 6.28319, 10, 10});
-        std::cout << "Example sobol mesh first 10 rows = " << sobolDataExample.topRows(10) << '\n';
-        
-
-        Eigen::VectorXd maxs = sobolDataExample.colwise().maxCoeff();
-        Eigen::VectorXd mins = sobolDataExample.colwise().minCoeff();
-
-        std::cout << "Max: " << maxs.transpose() << std::endl;
-        std::cout << "Min: " << mins.transpose() << std::endl;
-        */
+         auto sobolDataExample = createSobolMesh(1000, 4, {0.01, 1.2, 0.01, 0.01}, {10.0, 6.28319, 10, 10});
+         std::cout << "Example sobol mesh first 10 rows = " << sobolDataExample.topRows(10) << '\n';
+         
+         
+         Eigen::VectorXd maxs = sobolDataExample.colwise().maxCoeff();
+         Eigen::VectorXd mins = sobolDataExample.colwise().minCoeff();
+         
+         std::cout << "Max: " << maxs.transpose() << std::endl;
+         std::cout << "Min: " << mins.transpose() << std::endl;
+         */
         auto n = 10000;
         Eigen::VectorXd a = Eigen::VectorXd::LinSpaced(n, 0.01, 10.0);
         Eigen::VectorXd b = Eigen::VectorXd::LinSpaced(n, 0.1, 2.0);
@@ -16917,19 +17032,19 @@ namespace ExampleProblems
         }
         
         // --- WARM UP MKL ---
-        #if defined(_WIN32) && defined(USE_MKL)
-            // Force MKL to load and initialize VML structures
-            double dummy_in = 1.0;
-            double dummy_out = 0.0;
-            vdSin(1, &dummy_in, &dummy_out);
-        #endif
-
-        #if defined(_WIN32) && defined(USE_MKL)
-            // EP = Enhanced Performance (Fastest, ~4 ulp accuracy)
-            // LA = Low Accuracy (~4 ulp accuracy, but still very precise)
-            vmlSetMode(VML_LA);
-        #endif
-
+#if defined(_WIN32) && defined(USE_MKL)
+        // Force MKL to load and initialize VML structures
+        double dummy_in = 1.0;
+        double dummy_out = 0.0;
+        vdSin(1, &dummy_in, &dummy_out);
+#endif
+        
+#if defined(_WIN32) && defined(USE_MKL)
+        // EP = Enhanced Performance (Fastest, ~4 ulp accuracy)
+        // LA = Low Accuracy (~4 ulp accuracy, but still very precise)
+        vmlSetMode(VML_LA);
+#endif
+        
         // ==========================================
         // SINE EVALUATION
         // ==========================================
@@ -16937,21 +17052,21 @@ namespace ExampleProblems
             ScopedTimer t("Eigen sin");
             out = a.array().sin();
         }
-    
-    #if defined(__APPLE__) && defined(USE_ACCELERATE)
+        
+#if defined(__APPLE__) && defined(USE_ACCELERATE)
         {
             ScopedTimer t("vForce sin");
             int nn = static_cast<int>(n);
             vvsin(out.data(), a.data(), &nn);
         }
-    #elif defined(_WIN32) && defined(USE_MKL)
+#elif defined(_WIN32) && defined(USE_MKL)
         {
             ScopedTimer t("Intel MKL sin");
             // vdSin is the double-precision vector sine function in MKL
             vdSin(n, a.data(), out.data());
         }
-    #endif
-    
+#endif
+        
         // ==========================================
         // COSINE EVALUATION
         // ==========================================
@@ -16959,20 +17074,20 @@ namespace ExampleProblems
             ScopedTimer t("Eigen cos");
             out = a.array().cos();
         }
-    
-    #if defined(__APPLE__) && defined(USE_ACCELERATE)
+        
+#if defined(__APPLE__) && defined(USE_ACCELERATE)
         {
             ScopedTimer t("vForce cos");
             int nn = static_cast<int>(n);
             vvcos(out.data(), a.data(), &nn);
         }
-    #elif defined(_WIN32) && defined(USE_MKL)
+#elif defined(_WIN32) && defined(USE_MKL)
         {
             ScopedTimer t("Intel MKL cos");
             vdCos(n, a.data(), out.data());
         }
-    #endif
-    
+#endif
+        
         // ==========================================
         // TANH EVALUATION
         // ==========================================
@@ -16980,19 +17095,19 @@ namespace ExampleProblems
             ScopedTimer t("Eigen tanh");
             out = a.array().tanh();
         }
-    
-    #if defined(__APPLE__) && defined(USE_ACCELERATE)
+        
+#if defined(__APPLE__) && defined(USE_ACCELERATE)
         {
             ScopedTimer t("vForce tanh");
             int nn = static_cast<int>(n);
             vvtanh(out.data(), a.data(), &nn);
         }
-    #elif defined(_WIN32) && defined(USE_MKL)
+#elif defined(_WIN32) && defined(USE_MKL)
         {
             ScopedTimer t("Intel MKL tanh");
             vdTanh(n, a.data(), out.data());
         }
-    #endif
+#endif
         /*
          Example of the above on my Macbook Pro M1
          ```
@@ -17099,14 +17214,24 @@ namespace ExampleProblems
         if (linspace_spaced)
         {
             data1 = ((mu_equals_nu_1_only) ?
-                      createMeshgridVectors(330, 2, {0.01, 0.0}, {10.0, 6.28319}) :
-                      createMeshgridVectors(NumPoints, 4, {0.01, 0.0, 0.01, 0.01}, {10.0, 6.28319, 10, 10}));
+                     createMeshgridVectors(330, 2, {0.01, 0.0}, {10.0, 6.28319}) :
+                     createMeshgridVectors(NumPoints, 4, {0.01, 0.0, 0.01, 0.01}, {10.0, 6.28319, 10, 10}));
         }
         else if (theNumPoints[0] == 's')
         {
             assert(theNumPoints.size() > 1 && (!mu_equals_nu_1_only));
             NumPoints = std::stoi(theNumPoints.substr(1));
             data1 = createSobolMesh(NumPoints, 4, {0.01, 0.0, 0.01, 0.01}, {10.0, 6.28319, 10, 10});
+        }
+        else if (theNumPoints[0] == 's')
+        {
+            auto _idx = theNumPoints.find('_');
+            NumPoints = std::stoi(theNumPoints.substr(1, _idx-1));
+            data1 = createSobolMesh(NumPoints, 4, {0.01, 0.0, 0.01, 0.01}, {10.0, 6.28319, 10, 10});
+            auto DataToHstack = load_csv(NumPoints.substr(_idx+1));
+            data1 = hstack(data1, DataToHstack);
+            assert(data1.rows() - DataToHstack.rows() == NumPoints);
+            assert(data1.cols() == 4);
         }
         else
         {

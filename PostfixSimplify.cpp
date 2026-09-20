@@ -2462,7 +2462,7 @@ int main()
     
     test_expr = {"x", "x", "^", "x", "x", "^", "-", "asin", "tanh", "sin", "x", "x", "-", "*"};
     printf("before: ");print_container(test_expr);
-    simplifyRPN(test_expr);
+    simplifyRPN(test_expr, true);
     printf("after: ");print_container(test_expr);
     puts("");
     
