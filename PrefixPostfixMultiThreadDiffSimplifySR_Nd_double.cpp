@@ -53,7 +53,7 @@
 #endif
 #define RANDOM_SEED -1
 
-#define logProgress true //for RandomJitter and RandomJitterVec and LevenbergMarquardt
+//#define logProgress true //for RandomJitter and RandomJitterVec and LevenbergMarquardt
 
 //TODO: Need to make this robust againt -Wnarrow
 
@@ -6806,7 +6806,7 @@ struct Board
     //Otherwise it returns `false`.
     bool passesConstantThreshold()
     {
-    if (this->isConstTol <= 0){return true;}
+        if (this->isConstTol <= 0){return true;}
         for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++) //loops over each generated symbolic expression
         {
             if (isConstant(expression_evaluator(this->params, this->pieces[jdx]), this->isConstTol))
@@ -6817,6 +6817,56 @@ struct Board
         return true;
     }
 
+    bool passesDerivativeThreshold(const Eigen::VectorXd& candidate_params)
+    {
+        if (this->isConstTol <= 0)
+        {
+            return true;
+        }
+
+        std::vector<int> grasp;
+
+        for (std::size_t jdx = 0; jdx < this->pieces.size(); ++jdx)
+        {
+            for (const std::string& variable : Board::__input_vars)
+            {
+                if (this->expression_type == "prefix")
+                {
+                    this->derivePrefix(
+                        0,
+                        this->pieces[jdx].size() - 1,
+                        variable,
+                        this->pieces[jdx],
+                        grasp
+                    );
+                }
+                else
+                {
+                    this->derivePostfix(
+                        0,
+                        this->pieces[jdx].size() - 1,
+                        variable,
+                        this->pieces[jdx],
+                        grasp
+                    );
+                }
+
+                if (isZero(
+                        expression_evaluator(
+                            candidate_params,
+                            this->derivat
+                        ),
+                        this->isConstTol
+                    ))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+    
     double fitFunctionToData()
     {
         double score = 0.0;
@@ -6962,6 +7012,7 @@ struct Board
             
             improved.first = true;
             improved.second = DBL_MAX;
+            const Eigen::VectorXd params_before_fit = this->params;
             
             if (this->fit_method == "LBFGS")
             {
@@ -7003,59 +7054,79 @@ struct Board
             Eigen::VectorXd temp_vec; //need to have a back-up vector in case `improved == false` so we can get the score of the expression we just built.
 
             //If improved and good enough to bother caching, update the expression_dict with this->params
-            if (improved.first && (improved.second <= this->const_cache_thresh * Board::global_min_sne.load(std::memory_order_relaxed)) && this->passesConstantThreshold())
+            if (Board::max_expression_dict_sz && improved.first && (improved.second <= this->const_cache_thresh * Board::global_min_sne.load(std::memory_order_relaxed)) && this->passesDerivativeThreshold(this->params))
             {
         //puts("here 6348?");
                 //If the `Board::max_expression_dict_sz` hasn't been exceeded, add it to `Board::expression_dict`
-                if (Board::expression_dict.contains(this->expression_string)) //If the expression has been visited before (it's already in `Board::expression_dict`)
+                const bool updated =
+                    Board::expression_dict.visit(
+                        this->expression_string,
+                        [&](auto& entry)
+                        {
+                            entry.second = this->params;
+                        }
+                    ) != 0;
+
+                if (!updated &&
+                    Board::expression_dict.size() < Board::max_expression_dict_sz)
                 {
-            //puts("here 6352?");
-                    Board::expression_dict.visit(this->expression_string, [&](auto& x) //simply update the corresponding parameter vector with
-                    {
-                        x.second = this->params;
-                    });
-                }
-                else if (Board::expression_dict.size() < Board::max_expression_dict_sz) //Else if there's capacity to add the new expression-params pair to `Board::expression_dict`
-                {
-            //puts("here 6360?");
-                    Board::expression_dict.insert_or_assign(this->expression_string, this->params);
+                    Board::expression_dict.insert_or_assign(
+                        this->expression_string,
+                        this->params
+                    );
                 }
             }
-            if (Board::expression_dict.contains(this->expression_string))
+            const auto expected = this->__num_consts();
+
+            if (improved.first)
             {
-        //puts("here 6366?");
-                Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
-                {
-                    temp_vec = x.second;
-                });
-            }
-            else if (improved.first)
-            {
+                // Always score the parameters that the fitter actually improved.
                 temp_vec = this->params;
             }
-            else //Once `Board::expression_dict.size() >= Board::max_expression_dict_sz`, this can happen
+            else
             {
-        //puts("here 6374?");
-                temp_vec.setOnes(this->params.size());
+                bool valid_cache_hit = false;
+
+                if (Board::max_expression_dict_sz)
+                {
+                    Board::expression_dict.cvisit(
+                        this->expression_string,
+                        [&](const auto& entry)
+                        {
+                            if (entry.second.size() == expected)
+                            {
+                                temp_vec = entry.second;
+                                valid_cache_hit = true;
+                            }
+                        }
+                    );
+                }
+
+                if (!valid_cache_hit)
+                {
+                    temp_vec = params_before_fit;
+                }
             }
-            auto expected = this->__num_consts();
+
             if (temp_vec.size() != expected)
             {
-        //puts("here 6375?");
-                #ifndef NDEBUG
-                    std::cerr
-                        << "[SR DEBUG] Param size mismatch — "
-                        << "expected " << expected
-                        << ", got " << temp_vec.size()
-                        << " | expr: " << this->expression_string
-                        << '\n';
-                #endif // !NDEBUG
-                temp_vec.setOnes(expected);
-                if (this->params.size() != expected)
-                {
-                    this->params.setOnes(expected);
-                    Board::expression_dict.insert_or_assign(this->expression_string, this->params);
-                }
+            #ifndef NDEBUG
+                std::cerr
+                    << "[SR DEBUG] Param size mismatch — expected "
+                    << expected << ", got " << temp_vec.size()
+                    << " | expr: " << this->expression_string << '\n';
+            #endif
+
+                this->SNE_curr = DBL_MAX;
+                this->params = params_before_fit;
+                return 0.0;
+            }
+
+            if (!this->passesDerivativeThreshold(temp_vec))
+            {
+                this->SNE_curr = DBL_MAX;
+                this->params = params_before_fit;
+                return 0.0;
             }
             #if TIME_EVAL
                 std::vector<Eigen::VectorXd> expression_eval;
@@ -7215,17 +7286,20 @@ struct Board
                     bool expr_has_consts = false;
                     for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++)
                     {
-                        for (const std::string& token: this->pieces[jdx])
+                        for (decltype(this->pieces.size()) jdx = 0; jdx < this->pieces.size(); jdx++)
                         {
-                            this->expression_string += token+" ";
-                            if (token.compare(0, 5, "const") == 0)
+                            for (const std::string& token: this->pieces[jdx])
                             {
-                                expr_has_consts = true;
+                                this->expression_string += token+" ";
+                                if (token.compare(0, 5, "const") == 0)
+                                {
+                                    expr_has_consts = true;
+                                }
                             }
+                            this->expression_string += ((jdx < this->pieces.size() - 1) ? ", " : "");
                         }
-                        this->expression_string += ((jdx < this->pieces.size() - 1) ? ", " : "");
                     }
-                    if (expr_has_consts && !Board::expression_dict.contains(this->expression_string)) //If the generated expression has NOT been generated before...
+                    if (Board::max_expression_dict_sz && expr_has_consts && !Board::expression_dict.contains(this->expression_string)) //If the generated expression has NOT been generated before...
                     {
                         //insert it into the shared dictionary of `{expressions: best_fit_params}` key-value pairs...
                         try //MARK: Might be able to remove this try-catch block itf.
@@ -7242,7 +7316,7 @@ struct Board
                             exit(1);
                         }
                     }
-                    if (Board::expression_dict.contains(this->expression_string))
+                    if (Board::max_expression_dict_sz && Board::expression_dict.contains(this->expression_string))
                     {
                         Board::expression_dict.cvisit(this->expression_string, [&](const auto& x)
                         {
@@ -13578,7 +13652,7 @@ Postfix: μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 -
 
 std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
 {
-//    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("(((((((0.0008197594576159669 * (1.527908197797553 + (x0 + 7.01534179525104))) + -0.7436239662544559) * ~((0.9785717715940566 * sin(~(x0))))) * ((((0.000170814863241261 * sin(x0)) + -0.16508217163056277) * ((~(x3) + 1.0143940556844535) + ((x3 + 2.065759879321538) + (1.0009723106285893 * x3)))) + (((sech(x0) + -5.583762574982918) * (0.10929446804397899 * sech(x0))) + 4.0963435866194615))) * sin((((((x3 + 1.001198763687885) + 4.578188760299913) * (0.3610584242834023 * (x2 * x3))) + (((x0 * 0.994510935337444) * 0.8076853796103969) * ~(sin(x1)))) + (((0.9769973021052936 + x3) + (~(x1) + sin(x2))) + ((tanh(x3) * sin(x2)) + 8.526772953391722))))) + (sech((((sech((x0 * x0)) * 0.05235987538270694) + ((sin(x0) * (x0 * 0.007193495269246234)) + ((x0 * 1.0362269468321866e-05) + 0.5083014864099771))) * (((0.5354191881065865 + (x3 * 0.058587881134522624)) * (sech(x0) + (0.33967873960961453 * x2))) + (-3.814705447865818 + (0.9928001440650374 * (x3 + 0.7308465992488884)))))) + ((((~((x2 + 9.617461248824057)) * ((x2 + -2.6411438963640683) * (x3 * -2.317930701769267))) + tanh(((x2 + -30.696970301329127) * sech(x3)))) * ((0.5019086340513327 + (sech(x3) * -0.004413194748395904)) + (((x2 + -10.799974591414102) * (-0.012937258609590703 * x3)) * 0.0006427666390092057))) + (((((x0 + -7.66141393513329e-05) * -0.042372109953553554) * sin(tanh(x3))) * sin((~(x0) * 1.8386820876168717))) + (~((5.902394483729156 * (x2 + -2.6404970325039896))) * ((0.002501450159236003 + (x3 * 1.8994490019726147)) + ((x2 * x3) * 0.19685241084751195))))))) + (0.08267227683526811 * sin((tanh((x3 * x3)) * (tanh(tanh((x0 * 0.6070822191453267))) * x0)))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu")));
+//    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("(((((((0.0008220767982950923 * (1.5283625930800322 + (x0 + 7.015941713837004))) + -0.7435919504787356) * ~((0.9784988127568646 * sin(~(x0))))) * ((((0.00017106271237758412 * sin(x0)) + -0.16509319389932872) * ((~(x3) + 1.0144679752914523) + ((x3 + 2.0661376070229514) + (1.0011295830987859 * x3)))) + (((sech(x0) + -5.584705270713118) * (0.10973507947306628 * sech(x0))) + 4.096215853318036))) * sin((((((x3 + 1.0012320271641708) + 4.578218245204511) * (0.36104415410127927 * (x2 * x3))) + (((x0 * 0.9944959784920719) * 0.8076853796103969) * ~(sin(x1)))) + (((0.9769985248818909 + x3) + (~(x1) + sin(x2))) + ((tanh(x3) * sin(x2)) + 8.526772953391722))))) + (sech((((sech((x0 * x0)) * 0.05071336787162195) + ((sin(x0) * (x0 * 0.007212000309416754)) + ((x0 * 1.0354562692767748e-05) + 0.5081628957394784))) * (((0.534912761481889 + (x3 * 0.05845858428062908)) * (sech(x0) + (0.33939134637230417 * x2))) + (-3.8149333886627734 + (0.9925811810985544 * (x3 + 0.7305913337634327)))))) + ((((~((x2 + 9.617456370644488)) * ((x2 + -2.6411461794377638) * (x3 * -2.3179316044894946))) + tanh(((x2 + -31.21533467937042) * sech(x3)))) * ((0.5047833680778298 + (sech(x3) * -0.004447870377452235)) + (((x2 + -10.861949923122022) * (-0.01298000800794554 * x3)) * 0.0006448950915459619))) + (((((x0 + -8.062214270072679e-05) * -0.04251559735858924) * sin(tanh(x3))) * sin((~(x0) * 1.8388846719998384))) + (~((5.965984638057116 * (x2 + -2.640505337950071))) * ((0.0021234804302231575 + (x3 * 1.8900282776841666)) + ((x2 * x3) * 0.19587110855382958))))))) + (0.08281784172883946 * sin((tanh((x3 * x3)) * (tanh(tanh((x0 * 0.5732297092875238))) * x0)))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu")));
 //    from sympy import *; x0, x1, x2, x3 = symbols('x0 x1 x2 x3'); print(eval("(((((0.00020761302887044612 * (sin(x2) + (1.0272442241645563 * x2))) + ((1.3304563988558432e-06 * (x3 + x2)) + -1.0052629302733438)) * sin((~((1.4269067710318464e-07 + x2)) + ((-8.427410561791095e-08 + x0) + (2.2679423250655768e-07 + x2))))) * (((0.008782524861544684 * (0.27587744389610325 + (0.009993495877091307 + x2))) + (-0.1651571745075183 * ((-1.911228719809616e-07 + x3) + 0.010002284668230988))) + (((0.010151823903466778 * sin(x2)) * (-0.06438380401024771 * sin(x2))) + (((x2 * 0.03852998867113262) * -8.436444206719193e-05) + 3.659791130722469)))) * sin((((5.301797186958442 * (-2.4089452401052685e-07 + (2.2542565388059674e-07 + x3))) + sin((10.688904984949698 * (1.1264219683053926e-08 + x2)))) + (~(((x0 + -2.9955080762796076e-07) + (5.8232400879963024e-08 + x1))) + ((3.570015447645774e-12 + (1.081329657641461e-11 + x0)) + 72.43120897235498)))))\n".replace("^","**").replace("~", "-")));
     
 //    puts("called SwiftHohenberg");
@@ -15377,7 +15451,8 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
      */
     std::vector<std::vector<std::string>> global_current(depth.size());
     std::vector<std::vector<size_t>> global_current_const_indices(depth.size());
-    unsigned long long global_current_idx = 0;
+    Eigen::VectorXd global_current_params;
+    std::atomic<unsigned long long> global_current_idx{0};
     int fixedSubSize = -1;
     if (pert_option.substr(0, 9) == "sub_array" && pert_option.size() > 9)
     {
@@ -15416,7 +15491,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
     /*
      Inside of thread:
      */
-    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &custom_features, &seed_expressions, &exit_early, &custom_rand_seed, &T_min, &T_max, &temp_func, &completeTree, &pert_option, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &evalType, &print_and_check_fit_dict_every, &printDiffEq, &bad_ops, &constCacheThresh, &simplifyMode, &fullPrec, &custom_unaries, &sync_current, &pert_all, &global_current, &global_current_const_indices, &global_current_idx, &outFile, &out, &fixedSubSize, &const_indices_to_perturb](int thread_idx)
+    auto func = [&diffeq, &num_diff_eqns, &depth, &expression_type, &num_consts_diff, &method, &num_fit_iter, &fit_grad_method, &data, &cache, &start_time, &time, &max_score, &sync_point, &best_expression, &orig_expression, &best_expr_result, &orig_expr_result, &const_tokens, &isConstTol, &use_const_pieces, &simplifyOriginal, &numDataCols, &mustHaveAllFeatures, &custom_features, &seed_expressions, &exit_early, &custom_rand_seed, &T_min, &T_max, &temp_func, &completeTree, &pert_option, &best_sne_vec, &bestExpressionFileName, &maxSize, &additive_corrections, &evalType, &print_and_check_fit_dict_every, &printDiffEq, &bad_ops, &constCacheThresh, &simplifyMode, &fullPrec, &custom_unaries, &sync_current, &pert_all, &global_current, &global_current_const_indices, &global_current_idx, &global_current_params, &outFile, &out, &fixedSubSize, &const_indices_to_perturb](int thread_idx)
     {
         std::random_device rand_dev;
         // Use a combination of the device, the index, and time for maximum entropy
@@ -15448,6 +15523,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
         double score = 0.0;
 
         std::vector<std::vector<std::string>> current(depth.size());
+        Eigen::VectorXd current_params;
         std::vector<std::pair<int, int>> sub_exprs;
         std::vector<std::vector<size_t>> current_const_indices(depth.size());
         std::vector<std::string> temp_legal_moves;
@@ -15496,10 +15572,12 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                 }
                 //MARK: Maybe substitute const tokens with values when assigning to global_current
                 current = x.pieces; //update current expression
+                current_params = x.params;
                 if (sync_current)
                 {
                     std::scoped_lock sync_curr_lock(Board::thread_locker);
                     global_current = current;
+                    global_current_params = current_params;
                     /*
                     int const_counter = x.num_consts_diff;
                     global_current.resize(current.size());
@@ -15563,57 +15641,65 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                         global_current_const_indices = current_const_indices;
                     }
                 }
-                if ((score > max_score) || exit_early)
+                if (score > max_score.load(std::memory_order_relaxed) || exit_early)
                 {
-                    //puts("exit_early?");
-                    max_score = score;
-                    std::scoped_lock str_lock(Board::thread_locker);
-                    Board::global_min_sne = x.SNE_curr;
-                    best_sne_vec = x.SNE_curr_vec;
-                    best_expression = x._to_infix();
-                    orig_expression = x.expression();
-                    
-                    if (bestExpressionFileName.size())
+                    std::scoped_lock best_lock(Board::thread_locker);
+
+                    if (score > max_score.load(std::memory_order_relaxed) || exit_early)
                     {
-                        outFile.open(bestExpressionFileName, std::ios::app);
+                        max_score.store(score, std::memory_order_relaxed);
+                        Board::global_min_sne.store(
+                            x.SNE_curr,
+                            std::memory_order_relaxed
+                        );
+
+                        best_sne_vec = x.SNE_curr_vec;
+                        best_expression = x._to_infix();
+                        orig_expression = x.expression();
+
+                        // Write output while still holding this lock.
+                        if (bestExpressionFileName.size())
+                        {
+                            outFile.open(bestExpressionFileName, std::ios::app);
+                            if (outFile.is_open())
+                            {
+                                out = &outFile;
+                            }
+                            else
+                            {
+                                out = &std::cout;
+                            }
+                        }
+                        if (fullPrec)
+                        {
+                            (*out) << std::setprecision(std::numeric_limits<double>::digits10);
+                        }
+                        (*out) << "\nThread id = " << thread_idx;
+                        (*out) << "\nTime since start = " << timeElapsedSince(start_time);
+                        (*out) << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+                        (*out) << "Time spent fitting = " << Board::fit_time << " seconds\n";
+                        (*out) << "Best score = " << score << ", SNE = " << Board::global_min_sne << '\n';
+                        (*out) << "Squared-norm error for each equation: " /*<< std::setprecision(17)*/ << best_sne_vec << '\n';
+                        (*out) << "Best expression = " << best_expression << '\n';
+                        (*out) << "Best expression (original format) = " << orig_expression << '\n';
+                        //(*out) << "temp_pieces = " << x.expression(x.temp_pieces) << '\n';
+                        //(*out) << "infix(temp_pieces) = " << x._to_infix(x.temp_pieces) << '\n';
+
+                        if (printDiffEq)
+                        {
+                            best_expr_result = x._to_infix(x.diffeq_result);
+                            orig_expr_result = x.expression(x.diffeq_result);
+                            (*out) << "Best diff result = " << best_expr_result << '\n';
+                            (*out) << "Best expression (original format) = " << orig_expr_result << '\n';
+                            (*out) << "Best differential equation parameters = " << x.print_diff_params() << '\n';
+                            (*out) << "Best expression parameters = " << x.print_expression_params() << '\n';
+                            (*out) << "Total system result = " << best_expr_result << '\n';
+                            (*out) << "Total system result (original format) = " << orig_expr_result << '\n';
+                        }
                         if (outFile.is_open())
                         {
-                            out = &outFile;
+                            outFile.close();
                         }
-                        else
-                        {
-                            out = &std::cout;
-                        }
-                    }
-                    if (fullPrec)
-                    {
-                        (*out) << std::setprecision(std::numeric_limits<double>::digits10);
-                    }
-                    (*out) << "\nThread id = " << thread_idx;
-                    (*out) << "\nTime since start = " << timeElapsedSince(start_time);
-                    (*out) << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
-                    (*out) << "Time spent fitting = " << Board::fit_time << " seconds\n";
-                    (*out) << "Best score = " << score << ", SNE = " << Board::global_min_sne << '\n';
-                    (*out) << "Squared-norm error for each equation: " /*<< std::setprecision(17)*/ << best_sne_vec << '\n';
-                    (*out) << "Best expression = " << best_expression << '\n';
-                    (*out) << "Best expression (original format) = " << orig_expression << '\n';
-                    //(*out) << "temp_pieces = " << x.expression(x.temp_pieces) << '\n';
-                    //(*out) << "infix(temp_pieces) = " << x._to_infix(x.temp_pieces) << '\n';
-
-                    if (printDiffEq)
-                    {
-                        best_expr_result = x._to_infix(x.diffeq_result);
-                        orig_expr_result = x.expression(x.diffeq_result);
-                        (*out) << "Best diff result = " << best_expr_result << '\n';
-                        (*out) << "Best expression (original format) = " << orig_expr_result << '\n';
-                        (*out) << "Best differential equation parameters = " << x.print_diff_params() << '\n';
-                        (*out) << "Best expression parameters = " << x.print_expression_params() << '\n';
-                        (*out) << "Total system result = " << best_expr_result << '\n';
-                        (*out) << "Total system result (original format) = " << orig_expr_result << '\n';
-                    }
-                    if (outFile.is_open())
-                    {
-                        outFile.close();
                     }
                 }
             }
@@ -15623,6 +15709,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                 {
                     std::scoped_lock sync_curr_lock(Board::thread_locker);
                     current = global_current;
+                    current_params = global_current_params;
                     current_idx = global_current_idx;
                     if (pert_option.substr(0, 14) == "constants_only")
                     {
@@ -15630,6 +15717,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                     }
                 }
                 x.pieces = current; //reset perturbed state to current state
+                x.params = current_params;
             }
             T = std::max(T_min, r*T);
 //            printf("T = %e\n", T);
@@ -15980,7 +16068,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                 if (use_const_pieces)
                 {
                     std::cout << "Thread " << thread_idx << " Unique expressions = " << Board::expression_dict.size() << '\n';
-                    if (Board::expression_dict.size() >= Board::max_expression_dict_sz)
+                    if (Board::max_expression_dict_sz && Board::expression_dict.size() >= Board::max_expression_dict_sz)
                     {
                         std::cout << "Clearing expression_dict now\n";
                         Board::expression_dict.clear();
@@ -16157,7 +16245,7 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
                 
                 if (use_const_pieces)
                 {
-                    if (Board::expression_dict.size() >= Board::max_expression_dict_sz)
+                    if (Board::max_expression_dict_sz && Board::expression_dict.size() >= Board::max_expression_dict_sz)
                     {
                         std::cout << "Clearing expression_dict now\n";
                         Board::expression_dict.clear();
@@ -16203,52 +16291,65 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
             }
 //            printf("score = %f\n", score);
 
-            if (score > max_score)
+            if (score > max_score.load(std::memory_order_relaxed))
             {
-                max_score = score;
-                std::scoped_lock str_lock(Board::thread_locker);
-                Board::global_min_sne = x.SNE_curr;
-                best_sne_vec = x.SNE_curr_vec;
-                best_expression = x._to_infix();
-                orig_expression = x.expression();
-                
-                if (bestExpressionFileName.size())
+                std::scoped_lock best_lock(Board::thread_locker);
+
+                if (score > max_score.load(std::memory_order_relaxed))
                 {
-                    outFile.open(bestExpressionFileName, std::ios::app);
+                    max_score.store(score, std::memory_order_relaxed);
+                    Board::global_min_sne.store(
+                        x.SNE_curr,
+                        std::memory_order_relaxed
+                    );
+
+                    best_sne_vec = x.SNE_curr_vec;
+                    best_expression = x._to_infix();
+                    orig_expression = x.expression();
+
+                    // Write output while still holding this lock.
+                    if (bestExpressionFileName.size())
+                    {
+                        outFile.open(bestExpressionFileName, std::ios::app);
+                        if (outFile.is_open())
+                        {
+                            out = &outFile;
+                        }
+                        else
+                        {
+                            out = &std::cout;
+                        }
+                    }
+                    if (fullPrec)
+                    {
+                        (*out) << std::setprecision(std::numeric_limits<double>::digits10);
+                    }
+                    (*out) << "\nThread id = " << thread_idx;
+                    (*out) << "\nTime since start = " << timeElapsedSince(start_time);
+                    (*out) << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
+                    (*out) << "Time spent fitting = " << Board::fit_time << " seconds\n";
+                    (*out) << "Best score = " << score << ", SNE = " << Board::global_min_sne << '\n';
+                    (*out) << "Squared-norm error for each equation: " /*<< std::setprecision(17)*/ << best_sne_vec << '\n';
+                    (*out) << "Best expression = " << best_expression << '\n';
+                    (*out) << "Best expression (original format) = " << orig_expression << '\n';
+                    //(*out) << "temp_pieces = " << x.expression(x.temp_pieces) << '\n';
+                    //(*out) << "infix(temp_pieces) = " << x._to_infix(x.temp_pieces) << '\n';
+
+                    if (printDiffEq)
+                    {
+                        best_expr_result = x._to_infix(x.diffeq_result);
+                        orig_expr_result = x.expression(x.diffeq_result);
+                        (*out) << "Best diff result = " << best_expr_result << '\n';
+                        (*out) << "Best expression (original format) = " << orig_expr_result << '\n';
+                        (*out) << "Best differential equation parameters = " << x.print_diff_params() << '\n';
+                        (*out) << "Best expression parameters = " << x.print_expression_params() << '\n';
+                        (*out) << "Total system result = " << best_expr_result << '\n';
+                        (*out) << "Total system result (original format) = " << orig_expr_result << '\n';
+                    }
                     if (outFile.is_open())
                     {
-                        out = &outFile;
+                        outFile.close();
                     }
-                    else
-                    {
-                        out = &std::cout;
-                    }
-                }
-                if (fullPrec)
-                {
-                    (*out) << std::setprecision(std::numeric_limits<double>::digits10);
-                }
-                (*out) << "\nThread id = " << thread_idx;
-                (*out) << "\nUnique expressions = " << Board::expression_dict.size() << '\n';
-                (*out) << "Time spent fitting = " << Board::fit_time << " seconds\n";
-                (*out) << "Best score = " << score << ", SNE = " << Board::global_min_sne << '\n';
-                (*out) << "Squared-norm error for each equation: " << best_sne_vec << '\n';
-                (*out) << "Best expression = " << best_expression << '\n';
-                (*out) << "Best expression (original format) = " << orig_expression << '\n';
-                if (printDiffEq)
-                {
-                    best_expr_result = x._to_infix(x.diffeq_result);
-                    orig_expr_result = x.expression(x.diffeq_result);
-                    (*out) << "Best diff result = " << best_expr_result << '\n';
-                    (*out) << "Best expression (original format) = " << orig_expr_result << '\n';
-                    (*out) << "Best differential equation parameters = " << x.print_diff_params() << '\n';
-                    (*out) << "Best expression parameters = " << x.print_expression_params() << '\n';
-                    (*out) << "Total system result = " << best_expr_result << '\n';
-                    (*out) << "Total system result (original format) = " << orig_expr_result << '\n';
-                }
-                if (outFile.is_open())
-                {
-                    outFile.close();
                 }
             }
 //            else
@@ -17340,7 +17441,7 @@ namespace ExampleProblems
                          maxsizes /*optional max-sizes of each of the expressions in the generated solution*/,
                          {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                          eval_type /*evaluation type: can be "dag", "scalar", or "vector"*/,
-                         1000000 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
+                         INT_MAX /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
                          false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                          bad_ops /*operators to restrict in the search*/,
                          ConstCacheThresh /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
@@ -17374,7 +17475,7 @@ namespace ExampleProblems
                 maxsizes /*optional max-sizes of each of the expressions in the generated solution*/,
                 {/*split("x0 -0.01 + x1 sech + 11.156528193614346 ^ 2.714063572022206e-13 * 0.010000 x0 + 6.29319 ^ 1e-08 * 0.0100003333566687 + 0.7493736126143709 + + 0.9998848754538172 x0 tanh arcsin 0.7615941559557649 x0 4 ^ / / ^ 6.283190 x1 + ~ sin 0.9171523356672744 * * 0.7827863849639187 x0 cos asin cos * * - x0 x0 + 0.003734854911714874 6.283190 x0 / ^ 7.570169558264211 + ^ 0.28580222883407974 0.010000 x0 + 10.01 + ^ 0.010000 x0 ^ 1.03 + x1 sin - * * -6.1759665127829875 -10 x1 x1 + + + x1 0.005 / 1.9195169107150692e+06 - / -0.06767485271943648 + + 0.2658022288340797 x0 + 0.9801980198019802 ^ x0 1.517923178056138 + / 0.010000 x0 + sin 0.03661899347368653 x0 + + x1 sin 10.01 0.010000 x0 + / + * ^ -0.01842414214696351 + + -")*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
                 eval_type /*evaluation type: can be "dag", "scalar", or "vector"*/,
-                1000000 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
+                INT_MAX /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
                 false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
                 bad_ops /*operators to restrict in the search*/,
                 ConstCacheThresh /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
