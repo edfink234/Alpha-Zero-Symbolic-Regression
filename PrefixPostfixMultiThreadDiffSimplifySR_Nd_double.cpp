@@ -53,7 +53,7 @@
 #endif
 #define RANDOM_SEED -1
 
-#define logProgress true //for RandomJitter and RandomJitterVec and LevenbergMarquardt
+//#define logProgress true //for RandomJitter and RandomJitterVec and LevenbergMarquardt
 
 //TODO: Need to make this robust againt -Wnarrow
 
@@ -15544,6 +15544,7 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
         std::string piece_to_replace_with; piece_to_replace_with.reserve(10); //Used in the case of a depth-0 perturbation or when pert_sub_array is true
         std::vector<std::uniform_int_distribution<int>> rand_depth_dists(depth.size());
         std::vector<int> rand_depths(depth.size());
+        int num_perturbs = (pert_option == "n_sub_tree") ? 2 : 1;
 
         size_t temp_sz;
 //        std::string expression, orig_expression, best_expression;
@@ -15901,70 +15902,79 @@ void SimulatedAnnealing(std::vector<std::vector<std::string>> (*diffeq)(Board&, 
                 //Step 1a: check for the special case of a depth-0 (i.e. 1 operand) perturbation
                 else if (n[jdx] == 0)
                 {
-                    //TODO: option for n-sub_tree swaps, n=1 by default, if "sub_tree_n" then generate n at random
+                    //TODO: option for n-sub_tree swaps, n=1 by default, if "n_sub_tree" then generate n at random
                     temp_sz = x.pieces[jdx].size();
                     std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
-                    piece_to_perturb_idx = distribution(generator);
-                    piece_to_perturb = x.pieces[jdx][piece_to_perturb_idx];
-                    if (x.is_unary(piece_to_perturb))
+                    
+                    for (int num_perturb_idx = 0; num_perturb_idx < num_perturbs; num_perturb_idx++)
                     {
-                        piece_to_replace_with = Board::una_bin_leaf_legal_moves_dict[true][false][false][Board::unary_dist(generator)];
+                        piece_to_perturb_idx = distribution(generator);
+                        piece_to_perturb = x.pieces[jdx][piece_to_perturb_idx];
+                        if (x.is_unary(piece_to_perturb))
+                        {
+                            piece_to_replace_with = Board::una_bin_leaf_legal_moves_dict[true][false][false][Board::unary_dist(generator)];
+                        }
+                        else if (x.is_binary(piece_to_perturb))
+                        {
+                            piece_to_replace_with = Board::una_bin_leaf_legal_moves_dict[false][true][false][Board::binary_dist(generator)];
+                        }
+                        else
+                        {
+                            piece_to_replace_with = Board::una_bin_leaf_legal_moves_dict[false][false][true][Board::leaf_dist(generator)];
+                        }
+                        assert(piece_to_replace_with.size());
+                        std::swap(x.pieces[jdx][piece_to_perturb_idx], piece_to_replace_with);
                     }
-                    else if (x.is_binary(piece_to_perturb))
-                    {
-                        piece_to_replace_with = Board::una_bin_leaf_legal_moves_dict[false][true][false][Board::binary_dist(generator)];
-                    }
-                    else
-                    {
-                        piece_to_replace_with = Board::una_bin_leaf_legal_moves_dict[false][false][true][Board::leaf_dist(generator)];
-                    }
-                    assert(piece_to_replace_with.size());
-                    std::swap(x.pieces[jdx][piece_to_perturb_idx], piece_to_replace_with);
                 }
                 else
                 {
-                    //TODO: option for n-sub_tree swaps, n=1 by default, if "sub_tree_n" then generate n at random
+                    //TODO: option for n-sub_tree swaps, n=1 by default, if "n_sub_tree" then generate n at random
                     //Step 1b: generate a random expression
-                    while (secondary.complete_status(jdx) == -1)
+                    for (int num_perturb_idx = 0; num_perturb_idx < num_perturbs; num_perturb_idx++)
                     {
-                        temp_legal_moves = secondary.get_legal_moves(jdx); //the legal moves
-                        temp_sz = temp_legal_moves.size(); //the number of legal moves
+                        secondary.pieces[jdx].clear();
+                        sub_exprs.clear();
+                        while (secondary.complete_status(jdx) == -1)
+                        {
+                            temp_legal_moves = secondary.get_legal_moves(jdx); //the legal moves
+                            temp_sz = temp_legal_moves.size(); //the number of legal moves
 
-                        assert(temp_sz);
-                        std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
-                        secondary.pieces[jdx].emplace_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
-                        assert(secondary.pieces[jdx].back().size());
-                    }
-                    assert(secondary.pieces[jdx].size());
-                    if (jdx < secondary.num_objectives - 1)
-                    {
-                        assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces[jdx], jdx) : secondary.getRPNdepth(secondary.pieces[jdx], jdx)).first == secondary.n[jdx]);
-                        assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces[jdx], jdx) : secondary.getRPNdepth(secondary.pieces[jdx], jdx)).second);
-                    }
-                    //Step 2a: swap in case when perturbation depth == expression depth
-                    if (n[jdx] == x.n[jdx])
-                    {
-                        std::swap(secondary.pieces[jdx], x.pieces[jdx]);
-                    }
-                    else
-                    {
-                        //Step 2b: Else, start by identifying the starting and stopping index pairs of all depth `secondary.n[jdx] sub-expressions
-                        //in `x.pieces[jdx]` and store them in an std::vector<std::pair<int, int>> called `sub_exprs`.
-                        secondary.get_indices(sub_exprs, x.pieces[jdx], jdx);
-                        assert ((sub_exprs.size()));
-                        assert((secondary.n[jdx] <= x.n[jdx]));
-                        //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `pert_ind`
-                        std::uniform_int_distribution<int> distribution(0, sub_exprs.size() - 1);
-                        int pert_ind = distribution(generator);
+                            assert(temp_sz);
+                            std::uniform_int_distribution<int> distribution(0, temp_sz - 1); // A random integer generator which generates an index corresponding to an allowed move
+                            secondary.pieces[jdx].emplace_back(temp_legal_moves[distribution(generator)]); //make the randomly chosen valid move
+                            assert(secondary.pieces[jdx].back().size());
+                        }
+                        assert(secondary.pieces[jdx].size());
+                        if (jdx < secondary.num_objectives - 1)
+                        {
+                            assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces[jdx], jdx) : secondary.getRPNdepth(secondary.pieces[jdx], jdx)).first == secondary.n[jdx]);
+                            assert(((secondary.expression_type == "prefix") ? secondary.getPNdepth(secondary.pieces[jdx], jdx) : secondary.getRPNdepth(secondary.pieces[jdx], jdx)).second);
+                        }
+                        //Step 2a: swap in case when perturbation depth == expression depth
+                        if (n[jdx] == x.n[jdx])
+                        {
+                            std::swap(secondary.pieces[jdx], x.pieces[jdx]);
+                        }
+                        else
+                        {
+                            //Step 2b: Else, start by identifying the starting and stopping index pairs of all depth `secondary.n[jdx] sub-expressions
+                            //in `x.pieces[jdx]` and store them in an std::vector<std::pair<int, int>> called `sub_exprs`.
+                            secondary.get_indices(sub_exprs, x.pieces[jdx], jdx);
+                            assert ((sub_exprs.size()));
+                            assert((secondary.n[jdx] <= x.n[jdx]));
+                            //Step 3: Generate a uniform int from 0 to sub_exprs.size() - 1 called `pert_ind`
+                            std::uniform_int_distribution<int> distribution(0, sub_exprs.size() - 1);
+                            int pert_ind = distribution(generator);
 
-                        //Step 4: Substitute sub_exprs_1[pert_ind] in x.pieces[jdx] with secondary_one.pieces[jdx]
-                        auto start = x.pieces[jdx].begin() + sub_exprs[pert_ind].first;
-                        auto end = x.pieces[jdx].begin() + std::min(sub_exprs[pert_ind].second, static_cast<int>(x.pieces[jdx].size()));
-                        x.pieces[jdx].erase(start, end+1);
-                        x.pieces[jdx].insert(start, secondary.pieces[jdx].begin(), secondary.pieces[jdx].end()); //could be a move operation: secondary.pieces doesn't need to be in a defined state after this->params, or erase+insert -> replace?
-                        assert(x.pieces[jdx].size() && x.pieces.size());
-                        auto depth_and_completion = ((x.expression_type == "prefix") ? x.getPNdepth(x.pieces[jdx], jdx) : x.getRPNdepth(x.pieces[jdx], jdx));
-                        assert(depth_and_completion.first == x.n[jdx]);
+                            //Step 4: Substitute sub_exprs_1[pert_ind] in x.pieces[jdx] with secondary_one.pieces[jdx]
+                            auto start = x.pieces[jdx].begin() + sub_exprs[pert_ind].first;
+                            auto end = x.pieces[jdx].begin() + std::min(sub_exprs[pert_ind].second, static_cast<int>(x.pieces[jdx].size()));
+                            x.pieces[jdx].erase(start, end+1);
+                            x.pieces[jdx].insert(start, secondary.pieces[jdx].begin(), secondary.pieces[jdx].end()); //could be a move operation: secondary.pieces doesn't need to be in a defined state after this->params, or erase+insert -> replace?
+                            assert(x.pieces[jdx].size() && x.pieces.size());
+                            auto depth_and_completion = ((x.expression_type == "prefix") ? x.getPNdepth(x.pieces[jdx], jdx) : x.getRPNdepth(x.pieces[jdx], jdx));
+                            assert(depth_and_completion.first == x.n[jdx]);
+                        }
                     }
                 }
                 //Step 5: Reset const token labels in pieces
