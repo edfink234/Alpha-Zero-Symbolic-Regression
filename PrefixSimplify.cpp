@@ -296,12 +296,22 @@ void setPrefixGR(const std::vector<std::string>& prefix, std::vector<int>& grasp
 //((1+5) * 1) -> 1 5 1 * +, + 1 * 5 1 -> traverse into a tree data-structure -> apply simplification algorithm
 //-> traverse tree again to get prefix/postfix simplified expression -> convert to infix
 //prefix/postifx -> simplified prefix/postfix
-void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, int up, std::vector<int>& grasp, std::vector<std::string>& new_expression, bool setGRvar = false)
+void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, int up, std::vector<int>& grasp, std::vector<std::string>& new_expression, bool setGRvar = false, bool traceNewExpression = false)
 {
     if (!setGRvar)
     {
         grasp.clear();
         setPrefixGR(expression, grasp);
+        if (traceNewExpression)
+        {
+            std::cout << "grasp = " << grasp << '\n';
+        }
+    }
+    
+    if (traceNewExpression)
+    {
+        std::cout << "new_expression = {" << new_expression << "}, low = " << low << ", up = " << up
+        << ", expression[up] = " << expression[up] << ", expression[low] = " << expression[low] << '\n';
     }
 //    print_container(expression, low, up);
 //    print_container(new_expression, 0, new_expression.size() - 1);
@@ -311,7 +321,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         new_expression.push_back(expression[low]);
         int temp = low+1+grasp[low+1];
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true);
+        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true, traceNewExpression);
         int first_arg_idx_high = new_expression.size();
         graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true);
         int second_arg_idx_high = new_expression.size();
@@ -368,7 +378,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         new_expression.push_back(expression[low]); //*
         int temp = low+1+grasp[low+1];
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); //* x
+        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true, traceNewExpression); //* x
         int first_arg_idx_high = new_expression.size();
         graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); //* x y
         //int second_arg_idx_high = new_expression.size();
@@ -437,7 +447,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         new_expression.push_back(expression[low]); // /
         int temp = low+1+grasp[low+1];
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // / x
+        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true, traceNewExpression); // / x
         int first_arg_idx_high = new_expression.size();
         graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); // / x y
         int second_arg_idx_high = new_expression.size();
@@ -518,7 +528,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         new_expression.push_back(expression[low]); // ^
         int temp = low+1+grasp[low+1];
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // ^ x
+        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true, traceNewExpression); // ^ x
         int first_arg_idx_high = new_expression.size();
         graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); // ^ x y
         //int second_arg_idx_high = new_expression.size();
@@ -570,7 +580,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         new_expression.push_back(expression[low]); // cos
         int temp = low+1+grasp[low+1];
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // cos x
+        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true, traceNewExpression); // cos x
         if (new_expression[first_arg_idx_low] == "nan") // cos nan -> nan
         {
             //puts("hi 464");
@@ -602,7 +612,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         new_expression.push_back(expression[low]); // sin
         int temp = low+1+grasp[low+1];
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // sin x
+        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true, traceNewExpression); // sin x
         if (new_expression[first_arg_idx_low] == "nan") // sin nan -> nan
         {
             //puts("hi 484");
@@ -634,7 +644,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         new_expression.push_back(expression[low]); // tanh
         int temp = low+1+grasp[low+1];
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // tanh x
+        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true, traceNewExpression); // tanh x
         if (new_expression[first_arg_idx_low] == "nan") // tanh nan -> nan
         {
             //puts("hi 504");
@@ -672,7 +682,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         new_expression.push_back(expression[low]); // sech
         int temp = low+1+grasp[low+1];
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // sech x
+        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true, traceNewExpression); // sech x
 
         if (new_expression[first_arg_idx_low] == "nan") // sech nan -> nan
         {
@@ -711,7 +721,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         new_expression.push_back(expression[low]); // ~
         int temp = low+1+grasp[low+1];
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // ~ x
+        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true, traceNewExpression); // ~ x
 
         if (new_expression[first_arg_idx_low] == "nan") // ~ nan -> nan
         {
@@ -762,7 +772,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         new_expression.push_back(expression[low]); // exp
         int temp = low+1+grasp[low+1];
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // exp x
+        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true, traceNewExpression); // exp x
         
         if (new_expression[first_arg_idx_low] == "nan") // exp nan -> nan
         {
@@ -801,7 +811,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         new_expression.push_back(expression[low]); // ln
         int temp = low+1+grasp[low+1];
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // ln x
+        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true, traceNewExpression); // ln x
         
         if (new_expression[first_arg_idx_low] == "nan") // ln nan -> nan
         {
@@ -840,7 +850,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         new_expression.push_back(expression[low]); // asin
         int temp = low+1+grasp[low+1];
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // asin x
+        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true, traceNewExpression); // asin x
         
         if (new_expression[first_arg_idx_low] == "nan") // asin nan -> nan
         {
@@ -879,7 +889,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         new_expression.push_back(expression[low]); // acos
         int temp = low+1+grasp[low+1];
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // acos x
+        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true, traceNewExpression); // acos x
         
         if (new_expression[first_arg_idx_low] == "nan") // acos nan -> nan
         {
@@ -918,7 +928,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         new_expression.push_back(expression[low]); // sqrt
         int temp = low+1+grasp[low+1];
         int first_arg_idx_low = new_expression.size();
-        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // sqrt x
+        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true, traceNewExpression); // sqrt x
         
         if (new_expression[first_arg_idx_low] == "nan") // sqrt nan -> nan
         {
@@ -974,7 +984,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
     {
         new_expression.push_back(expression[low]); // abs
         int temp = low+1+grasp[low+1];
-        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true); // abs x
+        graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true, traceNewExpression); // abs x
     }
     else
     {
@@ -986,11 +996,11 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
     }
 }
 
-void graspSimplifyPrefix(std::vector<std::string>& expression, int low, int up, std::vector<int>& grasp)
+void graspSimplifyPrefix(std::vector<std::string>& expression, int low, int up, std::vector<int>& grasp, bool traceNewExpression = false)
 {
     std::vector<std::string> new_expression;
     new_expression.reserve(expression.size());
-    graspSimplifyPrefixHelper(expression, low, up, grasp, new_expression, false);
+    graspSimplifyPrefixHelper(expression, low, up, grasp, new_expression, false, traceNewExpression);
     expression = new_expression;
 }
 

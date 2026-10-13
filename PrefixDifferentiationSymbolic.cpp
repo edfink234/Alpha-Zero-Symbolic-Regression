@@ -171,7 +171,7 @@ void derivePrefixHelper(int low, int up, const std::string& dx, const std::vecto
         grasp.clear();
         derivat.clear();
         // std::cout << derivat.size();
-        derivat.reserve(100);
+        derivat.reserve(1000);
 //        Index = 0;
         setGR(prefix, grasp);
     }

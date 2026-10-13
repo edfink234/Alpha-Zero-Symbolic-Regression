@@ -7,6 +7,10 @@
 #include <sstream>
 #include <fstream>
 #define ASSERT false
+#include <chrono>
+#define TIME_EVAL
+
+using clk = std::chrono::high_resolution_clock;
 
 std::stringstream sout;
 std::vector<std::string> derivat;
@@ -19,6 +23,21 @@ int Index = 0; //global integer variable initially equal to zero, which represen
 
 const std::vector<std::string> unary_operators = {"cos", "~", "sin", "log", "ln", "asin", "arcsin", "acos", "arccos", "exp", "sech", "tanh", "sqrt"};
 const std::vector<std::string> binary_operators = {"+", "-", "*", "/", "^"};
+
+struct ScopedTimer
+{
+    const char* label;
+    std::chrono::high_resolution_clock::time_point t0;
+    explicit ScopedTimer(const char* lbl)
+        : label(lbl), t0(std::chrono::high_resolution_clock::now()) {}
+    ~ScopedTimer()
+    {
+        auto t1 = std::chrono::high_resolution_clock::now();
+        double s = std::chrono::duration<double>(t1 - t0).count();
+        std::cerr << std::fixed << std::setprecision(6)
+                  << "[TIMER] " << label << " = " << s << " s\n";
+    }
+};
 
 bool is_unary(const std::string& token)
 {
@@ -170,7 +189,7 @@ void derivePostfixHelper(int low, int up, const std::string& dx, const std::vect
         grasp.clear();
         derivat.clear();
         // std::cout << derivat.size();
-        derivat.reserve(100);
+        derivat.reserve(1000);
 //        Index = 0;
         setGR(postfix, grasp);
     }
@@ -806,12 +825,18 @@ void derivePostfixHelper(int low, int up, const std::string& dx, const std::vect
 
 void derivePostfix(int low, int up, const std::string& dx, const std::vector<std::string>& postfix, std::vector<int>& grasp, bool trace_derivat = false)
 {
+#ifdef TIME_EVAL
+    ScopedTimer diffPost("diffPost");
+#endif
     derivePostfixHelper(low, up, dx, postfix, grasp, false, trace_derivat);
 }
 
 
 int main()
 {
+    #ifdef TIME_EVAL
+        auto t0 = clk::now();
+    #endif
     std::vector<std::string> postfix, temp; //array of postfix expression elements read from left to right
     std::vector<int> grasp;
     
@@ -1482,6 +1507,11 @@ int main()
     std::cout << "LGBs = " << getLGBs(postfix) << '\n';
 
     sout << derivat; std::cout << "derivat = {" << derivat << "}\n\n"; if (ASSERT) {assert(string_in_file(sout.str(), "PostfixDifferentiationSymbolic.cpp")); } sout.str("");
+    
+    #ifdef TIME_EVAL
+        auto t1 = clk::now();
+        std::cout << "Time taken = " << std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count() / 1e9 << " s\n";
+    #endif // TIME_EVAL
     
     return 0;
 }
