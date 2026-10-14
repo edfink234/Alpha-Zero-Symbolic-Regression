@@ -48,6 +48,20 @@ bool is_binary(const std::string& token)
     return (binary_operators.find(token) != binary_operators.end());
 }
 
+template<typename T>
+std::ostream& operator<<(std::ostream& out, const std::vector<T>& vec)
+{
+    for (size_t i = 0; i < vec.size(); i++)
+    {
+        out << vec[i];
+        if (i < (vec.size() - 1))
+        {
+            out <<  " ";
+        }
+    }
+    return out;
+}
+
 bool is_const(const std::string& token)
 {
     return ((!is_unary(token)) && (!is_binary(token)));
@@ -323,7 +337,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         int first_arg_idx_low = new_expression.size();
         graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true, traceNewExpression);
         int first_arg_idx_high = new_expression.size();
-        graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true);
+        graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true, traceNewExpression);
         int second_arg_idx_high = new_expression.size();
         int step;
 
@@ -380,7 +394,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         int first_arg_idx_low = new_expression.size();
         graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true, traceNewExpression); //* x
         int first_arg_idx_high = new_expression.size();
-        graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); //* x y
+        graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true, traceNewExpression); //* x y
         //int second_arg_idx_high = new_expression.size();
         //int step;
         if ((new_expression[first_arg_idx_high] == "nan") || (new_expression[first_arg_idx_low] == "nan")) //* nan x -> nan, * x nan -> nan, * nan nan -> nan
@@ -449,7 +463,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         int first_arg_idx_low = new_expression.size();
         graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true, traceNewExpression); // / x
         int first_arg_idx_high = new_expression.size();
-        graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); // / x y
+        graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true, traceNewExpression); // / x y
         int second_arg_idx_high = new_expression.size();
         int step;
         
@@ -530,7 +544,7 @@ void graspSimplifyPrefixHelper(std::vector<std::string>& expression, int low, in
         int first_arg_idx_low = new_expression.size();
         graspSimplifyPrefixHelper(expression, low+1, temp, grasp, new_expression, true, traceNewExpression); // ^ x
         int first_arg_idx_high = new_expression.size();
-        graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true); // ^ x y
+        graspSimplifyPrefixHelper(expression, temp+1, temp+1+grasp[temp+1], grasp, new_expression, true, traceNewExpression); // ^ x y
         //int second_arg_idx_high = new_expression.size();
         //int step;
         if ((new_expression[first_arg_idx_low] == "nan") || (new_expression[first_arg_idx_high] == "nan")) // ^ nan x -> nan, ^ x nan -> nan, ^ nan nan -> nan
@@ -1804,16 +1818,31 @@ void simplifyPN_Helper(std::vector<std::string>& expression)
 }
 
 
-void simplifyPN(std::vector<std::string>& expression)
+void simplifyPN(std::vector<std::string>& expression, bool traceNewExpression = false)
 {
     size_t size_before, size_after;
     do
     {
         size_before = expression.size();
         simplifyPN_Helper(expression);
+        if (traceNewExpression)
+        {
+            printf("expression after simplifyPN_Helper = ");
+            print_container(expression);
+        }
         grasp.reserve(expression.size());
-        graspSimplifyPrefix(expression, 0, expression.size() - 1, grasp);
+        graspSimplifyPrefix(expression, 0, expression.size() - 1, grasp, traceNewExpression);
+        if (traceNewExpression)
+        {
+            printf("expression after graspSimplifyPostfix = ");
+            print_container(expression);
+        }
         simplifyPN_Helper(expression);
+        if (traceNewExpression)
+        {
+            printf("expression after simplifyRPN_Helper = ");
+            print_container(expression);
+        }
         size_after = expression.size();
     } while (size_before != size_after);
 }
@@ -1834,7 +1863,7 @@ int main()
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-    exit(1);
+//    exit(1);
     
     
     test_expr = {"-", "-", "-", "2.33", "1.222", "0", "x1"};
@@ -1881,7 +1910,7 @@ int main()
     
     test_expr = {"+","-","-","x","x","x","y"};
     printf("before: ");print_container(test_expr);
-    simplifyPN(test_expr);
+    simplifyPN(test_expr, true);
     printf("after: ");print_container(test_expr);
     puts("");
     
