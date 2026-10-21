@@ -1863,8 +1863,6 @@ int main()
     simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
-//    exit(1);
-    
     
     test_expr = {"-", "-", "-", "2.33", "1.222", "0", "x1"};
     printf("before: ");print_container(test_expr);
@@ -1910,7 +1908,7 @@ int main()
     
     test_expr = {"+","-","-","x","x","x","y"};
     printf("before: ");print_container(test_expr);
-    simplifyPN(test_expr, true);
+    simplifyPN(test_expr);
     printf("after: ");print_container(test_expr);
     puts("");
     
@@ -2336,7 +2334,7 @@ int main()
     
     test_expr = {"ln", "*", "1", "exp", "x"};
     printf("before: ");print_container(test_expr);
-    simplifyPN(test_expr);
+    simplifyPN(test_expr, true);
     printf("after: ");print_container(test_expr);
     puts("");
     
