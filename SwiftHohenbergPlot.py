@@ -224,7 +224,7 @@ HIGH_RESIDUAL_FILE = "highest_residual_points_case_1.csv"
 high_residual_candidates = []
 PlotType = "2D"
 N = 1000
-r_max = 10
+r_max = 100
 r_edges = np.linspace(0.01, r_max, N)
 theta_edges = np.linspace(0, 2*np.pi, N, endpoint=False)
 
@@ -251,7 +251,7 @@ if mu_equals_nu:
 else:
     f = [\
          0.0480340324897402*r*sin(1.84080793412163*r)*sin(tanh(mu)) + (0.208036361383951 - 0.0655337432507525*tanh(mu - 0.887908976814556))*sin((r - 5.07551711479456e-5)*sin(tanh(0.542772471705644*r + 3.3615800975248e-5))*sech(tanh(tanh(tanh(mu))))) + (49.5484592544836 - 18.6908937587448*mu)*(0.195872680642965*mu*nu + 1.88578587659083*nu + 0.001408497686864) + 0.977842800665703*(0.00286990448387994*nu - 0.727733476654549)*(-0.166195579263443*nu - 0.215161826706427*sech(r) + 3.56281508996299)*sin(r)*sin(0.361043526014667*mu*nu*(nu + 5.57633302952875) - 0.794533617008966*r*sin(theta) - theta + sin(mu)*tanh(nu) + sin(mu) + tanh(nu) + sech(mu) + 8.47173548516884) + (-7.25540455008624*nu*(-mu - 9.61733762658069)*(mu - 2.65094348313446) - tanh(11.1022140247273*sech(nu)))*(-1.56607067660726e-6*nu*(mu - 12.99306758379) - 0.00180882131212939*sech(nu) + 0.504783188229183) + sech(nu + 2.58992970880596*sech(nu) - 2.28768232271063),
-         0.00512976844931656*mu - (sech(sech(mu)) - 0.862089639378602)*sin(0.027608644967503*nu + 0.027608644967503*sin(nu) + 0.305141630022027) + 0.00512976844931656*(-0.498763100435215*mu + cos(r) + 2.80222189616476)*cos(0.312131904401656*r) + (0.00247265995475277*nu + 0.00247265995475277*sech(mu - 4.61803031234646) - 0.0108614845431066)*cos(mu**2*(nu + 0.969054916583401)*cos(cos(cos(cos(nu)))))*sech(0.893910292436963*mu*sech(tanh(cos(r))) - mu + nu - sin(2*nu) + tanh(nu - 2.6912322033194) + sech(mu)) + 0.581397815822401*(0.000821840221246166*mu**2 + 0.00164368044249233*mu + 0.000821840221246166*nu - 0.374693270757365)*sin(r)*sin(0.440995295076163*mu*nu*(nu + 5.47706968347047) + nu - 0.737145816593274*r*sin(theta) - theta + 2*sin(mu) + tanh(sech(mu)) + 1.91171393958421) - 0.00670175561794557*sin(2.58262299112439*mu*nu)*tanh(nu) + 0.00512976844931656*sin(mu + sech(nu)) + 0.00512976844931656*cos(mu*sech(cos(nu)))
+         (0.060830704167045*(0.000394348026031857 - 7.6138484636831e-5*r)*sech(mu + r) - 0.00989792092363932)*(-0.0713226928840295*mu - sech(0.4391484852244*r) + 0.875028936986935)*sin(mu**2*(nu + 1.35865467643643) + 1.63373458588656*nu**3*(nu + cos(mu)) - 1.68816271010877*r*cos(theta) + sin(nu + 0.990861853439347) + cos(sin(nu + 0.171185290255855))) + 0.066527724311477*(cos(r) - 2.6869893054371)*cos(cos(r))*sech(r) + cos(sech(tanh(sech(mu - 0.29397927227472)))) + 0.149393582872857*sech(cos(r)) + sech(tanh(sech(sin(0.999967750628228*r)))) - 1.47373641032562
      ][1]
 '''
 best result for mu_equals_nu == False, threshold = 1
@@ -353,6 +353,37 @@ best result for mu_equals_nu == False, threshold = 0.1
         mse = 0.4612037608024117; Added mu=10, nu=7.5
         mse = 0.4240492638535515; Added mu=10, nu=10
         Average mse = 0.1953434171514146
+    0.01 <= r <= 100, N = 5^2 = 25:
+        f = \left(0.06653 \cdot \cos{\left(r \right)} - 0.17876\right) \cdot \cos{\left(\cos{\left(r \right)} \right)} \cdot \operatorname{sech}{\left(r \right)} + \left(2.0 \cdot 10^{-5} \cdot \operatorname{sech}{\left(\mu + r \right)} - 0.0099\right) \cdot \left(- 0.07132 \cdot \mu - \operatorname{sech}{\left(0.43915 \cdot r \right)} + 0.87503\right) \cdot \sin{\left(\mu^{2} \cdot \left(\nu + 1.35865\right) + 1.63373 \cdot \nu^{3} \cdot \left(\nu + \cos{\left(\mu \right)}\right) - 1.68816 \cdot r \cdot \cos{\left(\theta \right)} + \sin{\left(\nu + 0.99086 \right)} + \cos{\left(\sin{\left(\nu + 0.17119 \right)} \right)} \right)} + \cos{\left(\operatorname{sech}{\left(\tanh{\left(\operatorname{sech}{\left(\mu - 0.29398 \right)} \right)} \right)} \right)} + 0.14939 \cdot \operatorname{sech}{\left(\cos{\left(r \right)} \right)} + \operatorname{sech}{\left(\tanh{\left(\operatorname{sech}{\left(\sin{\left(0.99997 \cdot r \right)} \right)} \right)} \right)} - 1.47374
+        f = ((2.39884681104021e-5 - 4.63155763467017e-6*r)*sech(mu + r) - 0.00989792092363932)*(-0.0713226928840295*mu - sech(0.4391484852244*r) + 0.875028936986935)*sin(mu**2*(nu + 1.35865467643643) + 1.63373458588656*nu**3*(nu + cos(mu)) - 1.68816271010877*r*cos(theta) + sin(nu + 0.990861853439347) + cos(sin(nu + 0.171185290255855))) + (0.066527724311477*cos(r) - 0.178759283740006)*cos(cos(r))*sech(r) + cos(sech(tanh(sech(mu - 0.29397927227472)))) + 0.149393582872857*sech(cos(r)) + sech(tanh(sech(sin(0.999967750628228*r)))) - 1.47373641032562
+        SH DAG nodes = 802
+        f DAG nodes = 71
+        mse = 0.26952882000115735; Added mu=0.01, nu=0.01
+        mse = 0.20894700343446554; Added mu=0.01, nu=2.51
+        mse = 0.16693586317271564; Added mu=0.01, nu=5
+        mse = 0.14041660118004487; Added mu=0.01, nu=7.5
+        mse = 0.12915711533428043; Added mu=0.01, nu=10
+        mse = 0.13949113680029762; Added mu=2.51, nu=0.01
+        mse = 0.1347042695160043; Added mu=2.51, nu=2.51
+        mse = 0.13072653930221736; Added mu=2.51, nu=5
+        mse = 0.1278608462789756; Added mu=2.51, nu=7.5
+        mse = 0.12577990631331826; Added mu=2.51, nu=10
+        mse = 0.06908011932815909; Added mu=5, nu=0.01
+        mse = 0.06850976144805529; Added mu=5, nu=2.51
+        mse = 0.06826061205466746; Added mu=5, nu=5
+        mse = 0.06812212493707398; Added mu=5, nu=7.5
+        mse = 0.06806734517743422; Added mu=5, nu=10
+        mse = 0.034547789159234184; Added mu=7.5, nu=0.01
+        mse = 0.03413987979617553; Added mu=7.5, nu=2.51
+        mse = 0.033858835962442296; Added mu=7.5, nu=5
+        mse = 0.033702471904609996; Added mu=7.5, nu=7.5
+        mse = 0.03370400482546473; Added mu=7.5, nu=10
+        mse = 0.03282304938462126; Added mu=10, nu=0.01
+        mse = 0.032316406025016314; Added mu=10, nu=2.51
+        mse = 0.03202905664673397; Added mu=10, nu=5
+        mse = 0.03164388112922988; Added mu=10, nu=7.5
+        mse = 0.03147982539505163; Added mu=10, nu=10
+        Average mse = 0.0898333305802979
 '''
 formula_label = latex(f_float_rounded:=round_floats(f, 5), mul_symbol='dot')
 def sh_residual(g):
