@@ -2394,7 +2394,7 @@ int main()
     
     test_expr = {"sqrt", "sqrt", "-", "*", "x", "cos", "x", "*", "x", "cos", "x"};
     printf("before: ");print_container(test_expr);
-    simplifyPN(test_expr);
+    simplifyPN(test_expr, true);
     printf("after: ");print_container(test_expr);
     puts("");
     
