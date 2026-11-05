@@ -2617,7 +2617,7 @@ int main()
     
     test_expr = {"/", "sin", "arcsin", "/", "~", "*", "y", "y", "x", "sin", "arcsin", "/", "~", "*", "y", "y", "x"};
     printf("before: ");print_container(test_expr);
-    simplifyPN(test_expr);
+    simplifyPN(test_expr, true);
     printf("after: ");print_container(test_expr);
     puts("");
     
