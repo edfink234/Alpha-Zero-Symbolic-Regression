@@ -224,7 +224,7 @@ HIGH_RESIDUAL_FILE = "highest_residual_points_case_1.csv"
 high_residual_candidates = []
 PlotType = "2D"
 N = 1000
-r_max = 10
+r_max = 100
 r_edges = np.linspace(0.01, r_max, N)
 theta_edges = np.linspace(0, 2*np.pi, N, endpoint=False)
 
@@ -251,7 +251,7 @@ if mu_equals_nu:
 else:
     f = [\
          0.0480340324897402*r*sin(1.84080793412163*r)*sin(tanh(mu)) + (0.208036361383951 - 0.0655337432507525*tanh(mu - 0.887908976814556))*sin((r - 5.07551711479456e-5)*sin(tanh(0.542772471705644*r + 3.3615800975248e-5))*sech(tanh(tanh(tanh(mu))))) + (49.5484592544836 - 18.6908937587448*mu)*(0.195872680642965*mu*nu + 1.88578587659083*nu + 0.001408497686864) + 0.977842800665703*(0.00286990448387994*nu - 0.727733476654549)*(-0.166195579263443*nu - 0.215161826706427*sech(r) + 3.56281508996299)*sin(r)*sin(0.361043526014667*mu*nu*(nu + 5.57633302952875) - 0.794533617008966*r*sin(theta) - theta + sin(mu)*tanh(nu) + sin(mu) + tanh(nu) + sech(mu) + 8.47173548516884) + (-7.25540455008624*nu*(-mu - 9.61733762658069)*(mu - 2.65094348313446) - tanh(11.1022140247273*sech(nu)))*(-1.56607067660726e-6*nu*(mu - 12.99306758379) - 0.00180882131212939*sech(nu) + 0.504783188229183) + sech(nu + 2.58992970880596*sech(nu) - 2.28768232271063),
-         0.00507837985719686*mu + 0.00507837985719686*(nu*sin(tanh(mu)) - 3.17081167760423)*(cos(0.662011124233473*mu) + 0.951391461482044)*cos(sin(nu)) - 0.00507837985719686*(cos(mu + nu) + 1.24330826938643)*sin(2.58720506284209*mu*nu) - (sech(sech(mu)) - 0.1409051599072)*tanh(0.0126595920282206*nu + 0.0126595920282206*sin(nu) + 0.521083851055973) + 0.00507837985719686*(-0.503053961312985*mu + cos(r) + 2.80963123713794)*cos(0.313894905259213*r) + (0.00246757454906154*nu + 0.00246757454906154*sech(mu - 4.60854773053914) - 0.0109552027237429)*cos(mu**2*(nu + 0.969531655857223)*cos(cos(cos(cos(nu)))))*sech(0.891982515190788*mu*sech(tanh(cos(r))) - mu + nu - sin(2*nu) + tanh(nu - 2.64785388845967)) + 0.581416792053398*(0.000821840221246166*mu**2 + 0.00164368044249233*mu + 0.000821840221246166*nu - 0.374710279485621)*sin(r)*sin(0.440995297287276*mu*nu*(nu + 5.47707127413877) + nu - 0.737149469198599*r*sin(theta) - theta + 2*sin(mu) + tanh(sech(mu)) + 1.9119448916289) + 0.00507837985719686*cos(mu + 0.481347435616402) + 0.0124983198430348*tanh(tanh(tanh(sin(mu)))) + 0.389547802403278
+         (0.0608264056165289*(0.000262816991799565 - 9.02789645332435e-5*r)*sech(mu + r) - 0.00989583199900291)*(-0.0713234809943564*mu - sech(0.488506883396918*r + 5.63227170183347e-5) + 0.873783211096355)*sin(mu**2*(nu + 1.36318890854092) + 1.63376522812122*nu**3*(nu + cos(mu)) - 1.68953623733699*r*cos(theta) + sin(nu + 0.582125718014901) + cos(sin(nu + 0.356739112863089))) + 0.072380626503795*(cos(r) - 2.92026371545544)*cos(cos(r))*sech(r) - (0.0946636279278345*tanh(mu) - 0.0936627403293389)*sin(0.482665908528954*mu + 0.482665908528954*nu) + 0.0646344866970475*sin(sin(sech(0.48681018199999*r))) + 0.000976932457445368*cos(mu + 1.17547699382912) + cos(sech(tanh(tanh(nu**2))*sech(0.602244280690949*mu))) - tanh(1.09635611039867*tanh(mu)) + tanh(tanh(mu + 0.0279964274820244)) + 0.149174301896643*sech(cos(r)) + sech(tanh(sech(sin(0.999968872279208*r)))) - 1.43782094899702
      ][1]
 '''
 best result for mu_equals_nu == False, threshold = 1
@@ -355,36 +355,36 @@ best result for mu_equals_nu == False, threshold = 0.1
         Average mse = 0.1953434171514146
         
     0.01 <= r <= 100, N = 5^2 = 25:
-        f = \left(\left(2.0 \cdot 10^{-5} - 1.0 \cdot 10^{-5} \cdot r\right) \cdot \operatorname{sech}{\left(\mu + r \right)} - 0.0099\right) \cdot \left(- 0.07132 \cdot \mu - \operatorname{sech}{\left(0.48851 \cdot r + 6.0 \cdot 10^{-5} \right)} + 0.87378\right) \cdot \sin{\left(\mu^{2} \cdot \left(\nu + 1.36319\right) + 1.63377 \cdot \nu^{3} \cdot \left(\nu + \cos{\left(\mu \right)}\right) - 1.68954 \cdot r \cdot \cos{\left(\theta \right)} + \sin{\left(\nu + 0.58213 \right)} + \cos{\left(\sin{\left(\nu + 0.35674 \right)} \right)} \right)} + \left(0.07238 \cdot \cos{\left(r \right)} - 0.21137\right) \cdot \cos{\left(\cos{\left(r \right)} \right)} \cdot \operatorname{sech}{\left(r \right)} - 0.01403 \cdot \sin{\left(0.93229 \cdot \mu + 0.01013 \right)} + 0.06463 \cdot \sin{\left(\sin{\left(\operatorname{sech}{\left(0.48681 \cdot r \right)} \right)} \right)} - 0.01272 \cdot \cos{\left(\mu + 1.04229 \right)} + \cos{\left(\operatorname{sech}{\left(\tanh{\left(\tanh{\left(\nu^{2} \right)} \right)} \cdot \operatorname{sech}{\left(0.62983 \cdot \mu \right)} \right)} \right)} - \tanh{\left(0.03625 \cdot \sin{\left(\tanh{\left(2 \cdot \mu \right)} \right)} \right)} + 0.14917 \cdot \operatorname{sech}{\left(\cos{\left(r \right)} \right)} + \operatorname{sech}{\left(\tanh{\left(\operatorname{sech}{\left(\sin{\left(0.99997 \cdot r \right)} \right)} \right)} \right)} - 1.44414
-        f = ((1.59842142561438e-5 - 5.50538602860291e-6*r)*sech(mu + r) - 0.00989583199900291)*(-0.0713234809943507*mu - sech(0.488506882049452*r + 5.631314791739e-5) + 0.873783211072265)*sin(mu**2*(nu + 1.36318890854091) + 1.63376522812122*nu**3*(nu + cos(mu)) - 1.68953623733699*r*cos(theta) + sin(nu + 0.582125718014901) + cos(sin(nu + 0.356739112863089))) + (0.072380626503795*cos(r) - 0.211370517280965)*cos(cos(r))*sech(r) - 0.0140269118682224*sin(0.932285199822228*mu + 0.0101315743309991) + 0.0646344866972429*sin(sin(sech(0.486810181957269*r))) - 0.0127203757701277*cos(mu + 1.04229313313989) + cos(sech(tanh(tanh(nu**2))*sech(0.629831848657758*mu))) - tanh(0.0362494530917155*sin(tanh(2*mu))) + 0.149174301896643*sech(cos(r)) + sech(tanh(sech(sin(0.999968872279247*r)))) - 1.44414213189929
-        SH DAG nodes = 908
-        f DAG nodes = 102
-        mse = 0.23315483247053445; Added mu=0.01, nu=0.01
-        mse = 0.20429152265749384; Added mu=0.01, nu=2.51
-        mse = 0.1556105254200709; Added mu=0.01, nu=5
-        mse = 0.1350189588865399; Added mu=0.01, nu=7.5
-        mse = 0.14270469970490735; Added mu=0.01, nu=10
-        mse = 0.1357505443659519; Added mu=2.51, nu=0.01
-        mse = 0.132992840039308; Added mu=2.51, nu=2.51
-        mse = 0.12786209182666083; Added mu=2.51, nu=5
-        mse = 0.12346079584300805; Added mu=2.51, nu=7.5
-        mse = 0.11920204114140812; Added mu=2.51, nu=10
-        mse = 0.06856094721461911; Added mu=5, nu=0.01
-        mse = 0.06793749607156047; Added mu=5, nu=2.51
-        mse = 0.06757863220524636; Added mu=5, nu=5
-        mse = 0.06713734261659667; Added mu=5, nu=7.5
-        mse = 0.06702058552684484; Added mu=5, nu=10
-        mse = 0.033449608007433095; Added mu=7.5, nu=0.01
-        mse = 0.032983578800250095; Added mu=7.5, nu=2.51
-        mse = 0.032636634738347485; Added mu=7.5, nu=5
-        mse = 0.03244905359531648; Added mu=7.5, nu=7.5
-        mse = 0.03236089039420828; Added mu=7.5, nu=10
-        mse = 0.03014982213085866; Added mu=10, nu=0.01
-        mse = 0.029550960465974555; Added mu=10, nu=2.51
-        mse = 0.028989730323198053; Added mu=10, nu=5
-        mse = 0.028535797977701956; Added mu=10, nu=7.5
-        mse = 0.028256954283023293; Added mu=10, nu=10
-        Average mse = 0.08630587546828253
+        f = \left(\left(2.0 \cdot 10^{-5} - 1.0 \cdot 10^{-5} \cdot r\right) \cdot \operatorname{sech}{\left(\mu + r \right)} - 0.0099\right) \cdot \left(- 0.07132 \cdot \mu - \operatorname{sech}{\left(0.48851 \cdot r + 6.0 \cdot 10^{-5} \right)} + 0.87378\right) \cdot \sin{\left(\mu^{2} \cdot \left(\nu + 1.36319\right) + 1.63377 \cdot \nu^{3} \cdot \left(\nu + \cos{\left(\mu \right)}\right) - 1.68954 \cdot r \cdot \cos{\left(\theta \right)} + \sin{\left(\nu + 0.58213 \right)} + \cos{\left(\sin{\left(\nu + 0.35674 \right)} \right)} \right)} + \left(0.07238 \cdot \cos{\left(r \right)} - 0.21137\right) \cdot \cos{\left(\cos{\left(r \right)} \right)} \cdot \operatorname{sech}{\left(r \right)} - \left(0.09466 \cdot \tanh{\left(\mu \right)} - 0.09366\right) \cdot \sin{\left(0.48267 \cdot \mu + 0.48267 \cdot \nu \right)} + 0.06463 \cdot \sin{\left(\sin{\left(\operatorname{sech}{\left(0.48681 \cdot r \right)} \right)} \right)} + 0.00098 \cdot \cos{\left(\mu + 1.17548 \right)} + \cos{\left(\operatorname{sech}{\left(\tanh{\left(\tanh{\left(\nu^{2} \right)} \right)} \cdot \operatorname{sech}{\left(0.60224 \cdot \mu \right)} \right)} \right)} - \tanh{\left(1.09636 \cdot \tanh{\left(\mu \right)} \right)} + \tanh{\left(\tanh{\left(\mu + 0.028 \right)} \right)} + 0.14917 \cdot \operatorname{sech}{\left(\cos{\left(r \right)} \right)} + \operatorname{sech}{\left(\tanh{\left(\operatorname{sech}{\left(\sin{\left(0.99997 \cdot r \right)} \right)} \right)} \right)} - 1.43782
+        f = ((1.59862129461163e-5 - 5.49134491533929e-6*r)*sech(mu + r) - 0.00989583199900291)*(-0.0713234809943564*mu - sech(0.488506883396918*r + 5.63227170183347e-5) + 0.873783211096355)*sin(mu**2*(nu + 1.36318890854092) + 1.63376522812122*nu**3*(nu + cos(mu)) - 1.68953623733699*r*cos(theta) + sin(nu + 0.582125718014901) + cos(sin(nu + 0.356739112863089))) + (0.072380626503795*cos(r) - 0.211370517280965)*cos(cos(r))*sech(r) - (0.0946636279278345*tanh(mu) - 0.0936627403293389)*sin(0.482665908528954*mu + 0.482665908528954*nu) + 0.0646344866970475*sin(sin(sech(0.48681018199999*r))) + 0.000976932457445368*cos(mu + 1.17547699382912) + cos(sech(tanh(tanh(nu**2))*sech(0.602244280690949*mu))) - tanh(1.09635611039867*tanh(mu)) + tanh(tanh(mu + 0.0279964274820244)) + 0.149174301896643*sech(cos(r)) + sech(tanh(sech(sin(0.999968872279208*r)))) - 1.43782094899702
+        SH DAG nodes = 910
+        f DAG nodes = 107
+        mse = 0.23728047504547767; Added mu=0.01, nu=0.01
+        mse = 0.18393261033131922; Added mu=0.01, nu=2.51
+        mse = 0.14796992824702418; Added mu=0.01, nu=5
+        mse = 0.13497459119176233; Added mu=0.01, nu=7.5
+        mse = 0.12841788674110288; Added mu=0.01, nu=10
+        mse = 0.13573139292108244; Added mu=2.51, nu=0.01
+        mse = 0.13311133261062938; Added mu=2.51, nu=2.51
+        mse = 0.127852471628688; Added mu=2.51, nu=5
+        mse = 0.12338027294862532; Added mu=2.51, nu=7.5
+        mse = 0.1190454520630507; Added mu=2.51, nu=10
+        mse = 0.06850727368492324; Added mu=5, nu=0.01
+        mse = 0.06791154732389151; Added mu=5, nu=2.51
+        mse = 0.0675804311600162; Added mu=5, nu=5
+        mse = 0.06716295564739604; Added mu=5, nu=7.5
+        mse = 0.06719939025782641; Added mu=5, nu=10
+        mse = 0.033438128753656565; Added mu=7.5, nu=0.01
+        mse = 0.032974245939649614; Added mu=7.5, nu=2.51
+        mse = 0.03263663896491279; Added mu=7.5, nu=5
+        mse = 0.03244995748922415; Added mu=7.5, nu=7.5
+        mse = 0.032318067483861644; Added mu=7.5, nu=10
+        mse = 0.029886675533667754; Added mu=10, nu=0.01
+        mse = 0.02948017762956782; Added mu=10, nu=2.51
+        mse = 0.028997127694868376; Added mu=10, nu=5
+        mse = 0.028602178931124614; Added mu=10, nu=7.5
+        mse = 0.02880614238227841; Added mu=10, nu=10
+        Average mse = 0.0847858941042251
 '''
 formula_label = latex(f_float_rounded:=round_floats(f, 5), mul_symbol='dot')
 def sh_residual(g):
