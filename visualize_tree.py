@@ -661,7 +661,7 @@ def test_visualize():
                 plot_pn_expression_tree(complete_pn_expr, save = save, include_expression_in_title = False)
 
             else:
-                complete_rpn_expr = '∂^3f/∂r^3 1 r / ∂^2f/∂r^2 * + 1 r r * / ∂f/∂r * - 1 r r * / ∂^3f/∂θ^2∂r * + 2 r r * r * / ∂^2f/∂θ^2 * -'
+                complete_rpn_expr = 'b a xi_postfix xi_postfix * * + b_(thetatheta) a - 3 / xi_postfix xi_postfix * xi_postfix * * + xi_postfix xi_postfix * xi_postfix xi_postfix * * g * +'
                 print(f"rpn_to_infix = {rpn_to_infix(complete_rpn_expr)}")
                 
                 

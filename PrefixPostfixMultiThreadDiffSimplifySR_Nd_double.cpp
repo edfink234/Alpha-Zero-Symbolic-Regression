@@ -13669,21 +13669,133 @@ namespace SH
     std::string r_max;
     double f_const_tol;
 
+    /*
+     Depth = 3, 3, 3, maxsizes = 30, 30, 30, threshold = 1, r_max = 10
+        Best score = 1.0748133195914e-09, SNE = 930394125.842562
+        Squared-norm error for each equation: 2.22382937546282e-06 2.85826432440821e-06 930394125.839849 0.00270746013926638
+        Best expression = (cos((x1 + x3)) * (cos(x2) * (x3 * x0))), (sin((x2 + x1)) * ((x3 + -7.476650469380646) * sin(x0))), (cos((-0.6535463951674885 + x1)) * (cos(x2) * (x0 * x3)))
+        Best expression (original format) = x1 x3 + cos x2 cos x3 x0 * * *, x2 x1 + sin x3 -7.476650469380646 + x0 sin * *, -0.6535463951674885 x1 + cos x2 cos x0 x3 * * *
+     */
     std::vector<std::vector<std::string>> SwiftHohenbergRBCs(Board& x, bool fit)
     {
 //        First step, assemble
 //        \[
 //            f=b+a\xi^2+\frac{b_{\theta\theta}-a}{3}\
-//            xi^3+\xi^4g
+//            xi^3+\xi^4g, \xi = \dfrac{r}{R} - 1
 //        \]
 //        into `f_assembled`, where a is x.pieces[0], b is x.pieces[1], g is x.pieces[2]
-        std::vector<std::string> f_assembled;
-        std::vector<std::vector<std::string>> results;
+        //xi_postfix: x0 r_max / 1 -
+        //postfix: b a xi_postfix xi_postfix * * + b_{\theta\theta} a - 3 / xi_postfix xi_postfix * xi_postfix * * + xi_postfix xi_postfix * xi_postfix xi_postfix * * g * +
+        //a -> x.pieces[0], b -> x.pieces[1], g -> x.pieces[2]
+        
+        if (fit)
+        {
+            x.recompute_diff_eq_each_fit_iter = true;
+        }
+        assert((x.num_diff_eqns == 4) && "SwiftHohenbergRBCs is a system of 4 equations!");
+        double periodic_temp_res;
+        std::vector<std::vector<std::string>> results(x.num_diff_eqns);
+        //    results.reserve(x.num_diff_eqns);
+        thread_local std::vector<std::string> result, dfdr1, d2fdr2, d3fdr3, d4fdr4,
+        dfdtheta1, d2fdtheta2, d3fdtheta3, d4fdtheta4, df3dtheta2dr1,
+        prefac_temp;
+        result.clear(); dfdr1.clear(); d2fdr2.clear(); d3fdr3.clear(); d4fdr4.clear();
+        dfdtheta1.clear(); d2fdtheta2.clear(); d3fdtheta3.clear(); d4fdtheta4.clear(); df3dtheta2dr1.clear();
+        prefac_temp.clear();
+        
+        result.reserve(500);
+        thread_local std::vector<int> grasp;
+        thread_local bool prefactors_computed = false;
+        if (!prefactors_computed)
+        {
+            prefac_temp.reserve(20);
+            assert(((Board::__num_features == 2) || (Board::__num_features == 4)) && "SwiftHohenberg must have either 2 features (r, theta) or 4 features (r, theta, mu, nu)");
+        }
+        grasp.clear();
+        grasp.reserve(500);
+
+        std::vector<std::string> f_assembled, b_theta;
+        std::vector<std::string> xi_postfix = {"x0", r_max, "/", "1", "-"};
+        for (const std::string& i: x.pieces[1]) // b
+        {
+            f_assembled.push_back(i);
+        }
+        for (const std::string& i: x.pieces[0]) // a
+        {
+            f_assembled.push_back(i);
+        }
+        for (const std::string& i: xi_postfix) // xi_postfix
+        {
+            f_assembled.push_back(i);
+        }
+        for (const std::string& i: xi_postfix) // xi_postfix
+        {
+            f_assembled.push_back(i);
+        }
+        f_assembled.push_back("*"); // *
+        f_assembled.push_back("*"); // *
+        f_assembled.push_back("+"); // +
+        x.derivePostfix(0, x.pieces[1].size()-1, "x1", x.pieces[1], grasp);
+        b_theta = x.derivat;
+        x.derivePostfix(0, b_theta.size()-1, "x1", b_theta, grasp);
+        for (const std::string& i: x.derivat) // b_{\theta\theta}
+        {
+            f_assembled.push_back(i);
+        }
+        for (const std::string& i: x.pieces[0]) // a
+        {
+            f_assembled.push_back(i);
+        }
+        f_assembled.push_back("-"); // -
+        f_assembled.push_back("3"); // 3
+        f_assembled.push_back("/"); // /
+        //postfix: b a xi_postfix xi_postfix * * + b_{\theta\theta} a - 3 / xi_postfix xi_postfix * xi_postfix * * + xi_postfix xi_postfix * xi_postfix xi_postfix * * g * +
+        for (const std::string& i: xi_postfix) // xi_postfix
+        {
+            f_assembled.push_back(i);
+        }
+        for (const std::string& i: xi_postfix) // xi_postfix
+        {
+            f_assembled.push_back(i);
+        }
+        f_assembled.push_back("*"); // *
+        for (const std::string& i: xi_postfix) // xi_postfix
+        {
+            f_assembled.push_back(i);
+        }
+        f_assembled.push_back("*"); // *
+        f_assembled.push_back("*"); // *
+        f_assembled.push_back("+"); // +
+        for (const std::string& i: xi_postfix) // xi_postfix
+        {
+            f_assembled.push_back(i);
+        }
+        for (const std::string& i: xi_postfix) // xi_postfix
+        {
+            f_assembled.push_back(i);
+        }
+        f_assembled.push_back("*"); // *
+        for (const std::string& i: xi_postfix) // xi_postfix
+        {
+            f_assembled.push_back(i);
+        }
+        for (const std::string& i: xi_postfix) // xi_postfix
+        {
+            f_assembled.push_back(i);
+        }
+        f_assembled.push_back("*"); // *
+        f_assembled.push_back("*"); // *
+        for (const std::string& i: x.pieces[2]) // g
+        {
+            f_assembled.push_back(i);
+        }
+        f_assembled.push_back("*"); // *
+        f_assembled.push_back("+"); // +
+        
         std::string mu = ((Board::__num_features == 2) ? "1" : "x2");
         std::string nu = ((Board::__num_features == 2) ? "1" : "x3");
         std::string infty = to_string_general(DBL_MAX);
-//        Second, check that f_assembled satisfies nontriviality
-        std::vector<int> grasp;
+        //Second, check that f_assembled satisfies nontriviality
         for (const std::string& i: Board::__input_vars) //loop over each variable in f_assembled
         {
             if (f_const_tol > 0)
@@ -13698,23 +13810,547 @@ namespace SH
                 }
                 if (isZero(x.expression_evaluator(x.params, x.derivat), f_const_tol)) //Ignore the trivial solution (N-d functions)!
                 {
-                    results = std::vector<std::vector<std::string>>{std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}};
-                    if (x.num_diff_eqns == 4)
-                    {
-                        results.push_back(std::vector<std::string>{infty});
-                    }
+                    results = std::vector<std::vector<std::string>>{std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}};
                     return results;
                 }
             }
         }
-//        Third, check that f_assembled satisfies periodic bcs
-//        Fourth, build sh + regularization
+        //Third, check that f_assembled satisfies periodic bcs
+        
+        //Fourth, build sh + regularization
+        
+        //Now, compute the main SH equations for the function "f" being sought
+        if (x.expression_type == "prefix")
+        {
+            //- - - - - - + * μ f - * * ν f f * f * f f f * 2 ∂^2f/∂r^2 ∂^4f/∂r^4 / + - + * 2 ∂^3f/∂r^3 / ∂^2f/∂r^2 r / (∂f/∂r) * r r + - / (∂^3f/∂θ^2∂r) * r r / * 2 ∂^2f/∂r^2 * * r r r * 2 ∂f/∂r r / + - + + * 2 ∂^4f/∂θ^2∂r^2 / ∂^3f/∂θ^2∂r r / (∂^4f/∂θ^4) * r r * 2 ∂^2f/∂r^2 * 2 ∂^2f/∂θ^2 * r r * / 2 * * r r r + - ∂f/∂r * 2 ∂^3f/∂θ^2∂r * / 3 r ∂^2f/∂θ^2
+            throw std::invalid_argument("Prefix not implemented yet for this SwiftHohenberg function!");
+        }
+        else if (x.expression_type == "postfix")
+        {
+            //=========================
+            //f(r, θ=2*π) f(r, θ = 0) -
+            //=========================
+            for (const std::string& i: f_assembled) //f(r, θ=2*π)
+            {
+                if (i == "x1")
+                {
+                    result.push_back("6.283185307179586");
+                }
+                else
+                {
+                    result.push_back(i);
+                }
+            }
+            for (const std::string& i: f_assembled) //f(r, θ = 0)
+            {
+                if (i == "x1")
+                {
+                    result.push_back("0");
+                }
+                else
+                {
+                    result.push_back(i);
+                }
+            }
+            result.push_back("-");
+            result.push_back("1e10");
+            result.push_back("*");
+            periodic_temp_res = SNE(x.expression_evaluator(x.params, result));
+            if (periodic_temp_res > 1e-1)
+            {
+                results = std::vector<std::vector<std::string>>{std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}};
+                return results;
+            }
+            results[0] = result;
+            result.clear();
+            //=========================
+            //∂f/∂θ(r, θ=2*π) ∂f/∂θ(r, θ = 0) -
+            //=========================
+            x.derivePostfix(0, f_assembled.size()-1, "x1", f_assembled, grasp);
+            dfdtheta1 = x.derivat;
+            for (const std::string& i: dfdtheta1) //∂f/∂θ(r, θ=2*π)
+            {
+                if (i == "x1")
+                {
+                    result.push_back("6.283185307179586");
+                }
+                else
+                {
+                    result.push_back(i);
+                }
+            }
+            for (const std::string& i: dfdtheta1) //∂f/∂θ(r, θ = 0)
+            {
+                if (i == "x1")
+                {
+                    result.push_back("0");
+                }
+                else
+                {
+                    result.push_back(i);
+                }
+            }
+            result.push_back("-");
+            result.push_back("1e10");
+            result.push_back("*");
+            periodic_temp_res = SNE(x.expression_evaluator(x.params, result));
+            if (periodic_temp_res > 1e-1)
+            {
+                results = std::vector<std::vector<std::string>>{std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}, std::vector<std::string>{infty}};
+                return results;
+            }
+            results[1] = result;
+            result.clear();
+            //=========================
+            // sh(f)
+            //=========================
+            //μ f * ν f * f * f f f * * - + f - 2 ∂^2f/∂r^2 * - ∂^4f/∂r^4 - 2 ∂^3f/∂r^3 * ∂^2f/∂r^2 r / + (∂f/∂r) r r * / - (∂^3f/∂θ^2∂r) r r * / 2 ∂^2f/∂r^2 * r r * r * / - 2 ∂f/∂r * + + r / - 2 ∂^4f/∂θ^2∂r^2 * ∂^3f/∂θ^2∂r r / + (∂^4f/∂θ^4) r r * / + 2 ∂^2f/∂r^2 * - 2 ∂^2f/∂θ^2 * + r r * / - 2 r r * r * / ∂f/∂r 2 ∂^3f/∂θ^2∂r * - 3 r / ∂^2f/∂θ^2 * + * -
+            result.push_back(mu); // μ
+            if (fit) //need to push_back each token since eval(f) will change as the consts in f are optimized
+            {
+                for (const std::string& i: f_assembled) // f
+                {
+                    result.push_back(i);
+                }
+            }
+            else
+            {
+                x.subs_dict["f"] = x.expression_evaluator(x.params, f_assembled);
+                result.push_back("f"); // f
+            }
+            result.push_back("*"); // *
+            result.push_back(nu); // ν
+            if (fit)
+            {
+                for (const std::string& i: f_assembled) // f
+                {
+                    result.push_back(i);
+                }
+            }
+            else
+            {
+                result.push_back("f"); // f
+            }
+            result.push_back("*"); // *
+            if (fit)
+            {
+                for (const std::string& i: f_assembled) // f
+                {
+                    result.push_back(i);
+                }
+            }
+            else
+            {
+                result.push_back("f"); // f
+            }
+            result.push_back("*"); // *
+            if (fit) //need to push_back each token since eval(f) will change as the consts in f are optimized
+            {
+                for (const std::string& i: f_assembled) // f
+                {
+                    result.push_back(i);
+                }
+                for (const std::string& i: f_assembled) // f
+                {
+                    result.push_back(i);
+                }
+                for (const std::string& i: f_assembled) // f
+                {
+                    result.push_back(i);
+                }
+            }
+            else
+            {
+                result.push_back("f"); // f
+                result.push_back("f"); // f
+                result.push_back("f"); // f
+            }
+            result.push_back("*"); // *
+            result.push_back("*"); // *
+            result.push_back("-"); // -
+            result.push_back("+"); // +
+            if (fit) //need to push_back each token since eval(f) will change as the consts in f are optimized
+            {
+                for (const std::string& i: f_assembled) // f
+                {
+                    result.push_back(i);
+                }
+            }
+            else
+            {
+                result.push_back("f"); // f
+            }
+            result.push_back("-"); // -
+            result.push_back("2"); // 2
+            x.derivePostfix(0, f_assembled.size()-1, "x0", f_assembled, grasp);
+            dfdr1 = x.derivat;
+            if (!fit)
+            {
+                x.subs_dict["dfdr1"] = x.expression_evaluator(x.params, dfdr1);
+            }
+            x.derivePostfix(0, dfdr1.size()-1, "x0", dfdr1, grasp);
+            d2fdr2 = x.derivat;
+            if (fit)
+            {
+                for (const std::string& i: d2fdr2) // ∂^2f/∂r^2
+                {
+                    result.push_back(i);
+                }
+            }
+            else
+            {
+                x.subs_dict["d2fdr2"] = x.expression_evaluator(x.params, d2fdr2);
+                result.push_back("d2fdr2"); // ∂^2f/∂r^2
+            }
+            result.push_back("*"); // *
+            result.push_back("-"); // -
+            x.derivePostfix(0, d2fdr2.size()-1, "x0", d2fdr2, grasp);
+            d3fdr3 = x.derivat;
+            x.derivePostfix(0, d3fdr3.size()-1, "x0", d3fdr3, grasp);
+            d4fdr4 = x.derivat;
+            for (const std::string& i: d4fdr4) // ∂^4f/∂r^4
+            {
+                result.push_back(i);
+            }
+            result.push_back("-"); // -
+            result.push_back("2"); // 2
+            for (const std::string& i: d3fdr3) // ∂^3f/∂r^3
+            {
+                result.push_back(i);
+            }
+            result.push_back("*"); // *
+            if (fit)
+            {
+                for (const std::string& i: d2fdr2) // ∂^2f/∂r^2
+                {
+                    result.push_back(i);
+                }
+            }
+            else
+            {
+                result.push_back("d2fdr2"); // ∂^2f/∂r^2
+            }
+            result.push_back("x0"); // r
+            result.push_back("/"); // /
+            result.push_back("+"); // +
+            if (fit)
+            {
+                for (const std::string& i: dfdr1) // ∂f/∂r
+                {
+                    result.push_back(i);
+                }
+            }
+            else
+            {
+                result.push_back("dfdr1"); // ∂f/∂r
+            }
+            //        result.push_back("x0"); // r
+            //        result.push_back("x0"); // r
+            //        result.push_back("*"); // *
+            if (!x.subs_dict.count("r_squared"))
+            {
+                prefac_temp = {"x0", "x0", "*"};
+                x.subs_dict["r_squared"] = x.expression_evaluator(x.params, prefac_temp);
+            }
+            result.push_back("r_squared"); // r r *
+            result.push_back("/"); // /
+            result.push_back("-"); // -
+            //        x.derivePostfix(0, x.pieces[0].size()-1, "x1", x.pieces[0], grasp);
+            //        dfdtheta1 = x.derivat;
+            x.derivePostfix(0, dfdtheta1.size()-1, "x1", dfdtheta1, grasp);
+            d2fdtheta2 = x.derivat;
+            x.derivePostfix(0, d2fdtheta2.size()-1, "x0", d2fdtheta2, grasp);
+            df3dtheta2dr1 = x.derivat;
+            if (fit)
+            {
+                for (const std::string& i: df3dtheta2dr1) // ∂^3f/∂θ^2∂r
+                {
+                    result.push_back(i);
+                }
+            }
+            else
+            {
+                x.subs_dict["df3dtheta2dr1"] = x.expression_evaluator(x.params, df3dtheta2dr1);
+                result.push_back("df3dtheta2dr1"); // ∂^3f/∂θ^2∂r
+            }
+            //        result.push_back("x0"); // r
+            //        result.push_back("x0"); // r
+            //        result.push_back("*"); // *
+            result.push_back("r_squared"); // r r *
+            result.push_back("/"); // /
+            result.push_back("2"); // 2
+            for (const std::string& i: d2fdtheta2) // ∂^2f/∂θ^2
+            {
+                result.push_back(i);
+            }
+            
+            result.push_back("*"); // *
+            //        result.push_back("x0"); // r
+            //        result.push_back("x0"); // r
+            //        result.push_back("*"); // *
+            //        result.push_back("x0"); // r
+            //        result.push_back("*"); // *
+            if (!x.subs_dict.count("r_cubed"))
+            {
+                prefac_temp = {"x0", "x0", "*", "x0", "*"};
+                x.subs_dict["r_cubed"] = x.expression_evaluator(x.params, prefac_temp);
+            }
+            result.push_back("r_cubed"); // r r * r *
+            result.push_back("/"); // /
+            result.push_back("-"); // -
+            result.push_back("2"); // 2
+            if (fit)
+            {
+                for (const std::string& i: dfdr1) // ∂f/∂r
+                {
+                    result.push_back(i);
+                }
+            }
+            else
+            {
+                result.push_back("dfdr1"); // ∂f/∂r
+            }
+            result.push_back("*"); // *
+            result.push_back("+"); // +
+            result.push_back("+"); // +
+            result.push_back("x0"); // r
+            result.push_back("/"); // /
+            result.push_back("-"); // -
+            result.push_back("2"); // 2
+            x.derivePostfix(0, df3dtheta2dr1.size()-1, "x0", df3dtheta2dr1, grasp);
+            for (const std::string& i: x.derivat) //∂^4f/∂θ^2∂r^2
+            {
+                result.push_back(i);
+            }
+            result.push_back("*"); // *
+            if (fit)
+            {
+                for (const std::string& i: df3dtheta2dr1) // ∂^3f/∂θ^2∂r
+                {
+                    result.push_back(i);
+                }
+            }
+            else
+            {
+                result.push_back("df3dtheta2dr1"); // ∂^3f/∂θ^2∂r
+            }
+            result.push_back("x0"); // r
+            result.push_back("/"); // /
+            result.push_back("+"); // +
+            x.derivePostfix(0, d2fdtheta2.size()-1, "x1", d2fdtheta2, grasp);
+            d3fdtheta3 = x.derivat;
+            x.derivePostfix(0, d3fdtheta3.size()-1, "x1", d3fdtheta3, grasp);
+            d4fdtheta4 = x.derivat;
+            for (const std::string& i: d4fdtheta4) // ∂^4f/∂θ^4
+            {
+                result.push_back(i);
+            }
+            //        result.push_back("x0"); // r
+            //        result.push_back("x0"); // r
+            //        result.push_back("*"); // *
+            result.push_back("r_squared"); // r r *
+            result.push_back("/"); // /
+            result.push_back("+"); // +
+            result.push_back("2"); // 2
+            if (fit)
+            {
+                for (const std::string& i: d2fdr2) // ∂^2f/∂r^2
+                {
+                    result.push_back(i);
+                }
+            }
+            else
+            {
+                result.push_back("d2fdr2"); // ∂^2f/∂r^2
+            }
+            result.push_back("*"); // *
+            result.push_back("-"); // -
+            result.push_back("2"); // 2
+            if (fit)
+            {
+                for (const std::string& i: d2fdtheta2) // ∂^2f/∂θ^2
+                {
+                    result.push_back(i);
+                }
+            }
+            else
+            {
+                x.subs_dict["d2fdtheta2"] = x.expression_evaluator(x.params, d2fdtheta2);
+                result.push_back("d2fdtheta2"); // ∂^2f/∂θ^2
+            }
+            result.push_back("*"); // *
+            result.push_back("+"); // +
+            //        result.push_back("x0"); // r
+            //        result.push_back("x0"); // r
+            //        result.push_back("*"); // *
+            result.push_back("r_squared"); // r r *
+            result.push_back("/"); // /
+            result.push_back("-"); // -
+            result.push_back("2"); // 2
+            //        result.push_back("x0"); // r
+            //        result.push_back("x0"); // r
+            //        result.push_back("*"); // *
+            //        result.push_back("x0"); // r
+            //        result.push_back("*"); // *
+            result.push_back("r_cubed"); // r r * r *
+            result.push_back("/"); // /
+            if (fit)
+            {
+                for (const std::string& i: dfdr1) // ∂f/∂r
+                {
+                    result.push_back(i);
+                }
+            }
+            else
+            {
+                result.push_back("dfdr1"); // ∂f/∂r
+            }
+            result.push_back("2"); // 2
+            if (fit)
+            {
+                for (const std::string& i: df3dtheta2dr1) // ∂^3f/∂θ^2∂r
+                {
+                    result.push_back(i);
+                }
+            }
+            else
+            {
+                result.push_back("df3dtheta2dr1"); // ∂^3f/∂θ^2∂r
+            }
+            result.push_back("*"); // *
+            result.push_back("-"); // -
+            //        result.push_back("3"); // 3
+            //        result.push_back("x0"); // r
+            //        result.push_back("/"); // /
+            if (!x.subs_dict.count("3_over_r"))
+            {
+                prefac_temp = {"3", "x0", "/"};
+                x.subs_dict["3_over_r"] = x.expression_evaluator(x.params, prefac_temp);
+            }
+            result.push_back("3_over_r"); // 3 r /
+            if (fit)
+            {
+                for (const std::string& i: d2fdtheta2) // ∂^2f/∂θ^2
+                {
+                    result.push_back(i);
+                }
+            }
+            else
+            {
+                result.push_back("d2fdtheta2"); // ∂^2f/∂θ^2
+            }
+            result.push_back("*"); // *
+            result.push_back("+"); // +
+            result.push_back("*"); // *
+            result.push_back("-"); // -
+            results[2] = result;
+            result.clear();
+        }
+        {
+            double val = 0.;
+            result.clear();
+            constexpr const char* l1 = "1e-4";
+            //        std::cout << "val = " << val << '\n';
+            for (int j = 0; j < x.pieces.size(); j++)
+            {
+                for (const std::string& i: x.pieces[j]) // a, b, g
+                {
+                    if (isdouble(i))
+                    {
+                        val += abs(Stod(i));
+                        //            std::cout << "i = " << i << ", val = " << val << '\n';
+                    }
+                    else if (i.compare(0, 5, "const") == 0)
+                    {
+                        if (result.empty())
+                        {
+                            if (x.expression_type == "postfix")
+                            {
+                                result.push_back(i);
+                                result.push_back("abs");
+                            }
+                            else
+                            {
+                                result.push_back("abs");
+                                result.push_back(i);
+                            }
+                        }
+                        else
+                        {
+                            if (x.expression_type == "postfix")
+                            {
+                                result.push_back(i);
+                                result.push_back("abs");
+                                result.push_back("+");
+                            }
+                            else
+                            {
+                                result.insert(result.begin(), "+");
+                                result.push_back("abs");
+                                result.push_back(i);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            //    std::cout << "x.pieces[0] = " << x.pieces[0] << ", val = " << val << '\n';
+            //if (val > 0.0)
+            {
+                if (result.empty())
+                {
+                    if (x.expression_type == "postfix")
+                    {
+                        result.push_back(to_string_general(val));
+                        result.push_back("abs");
+                    }
+                    else
+                    {
+                        result.push_back("abs");
+                        result.push_back(to_string_general(val));
+                    }
+                }
+                else
+                {
+                    if (x.expression_type == "postfix")
+                    {
+                        result.push_back(to_string_general(val));
+                        result.push_back("abs");
+                        result.push_back("+");
+                    }
+                    else
+                    {
+                        result.insert(result.begin(), "+");
+                        result.push_back("abs");
+                        result.push_back(to_string_general(val));
+                    }
+                    
+                }
+                result.push_back(l1);
+                if (x.expression_type == "postfix")
+                {
+                    result.push_back("*");
+                }
+                else
+                {
+                    result.insert(result.begin(), "*");
+                }
+            }
+            if (result.empty())
+            {
+                result.push_back("0");
+            }
+            results[3] = result;
+            assert(x.num_diff_eqns == results.size());
+        }
+        
+        prefactors_computed = true;
         return results;
     }
 
     std::vector<std::vector<std::string>> SwiftHohenberg(Board& x, bool fit)
     {
-        //    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("(((((((0.0608264056165289 * (((0.0002628169917995651 + (x0 * -9.027896453324348e-05)) * sech((x2 + x0))) + -0.16268973809482873)) * (~(sech((-0.4885068833969177 * (x0 + 0.00011529564665841535)))) + ((-0.0713234809943564 * (1.55879925326467 + x2)) + 0.9849622000105944))) * sin((((sin((0.5821257180149014 + x3)) + ((x3 + 1.3631889085409188) * (x2 * x2))) + ((1.6895362373369902 * ~(x0)) * cos(x1))) + (((x3 + cos(x2)) * ((x3 * 1.6337652281212212) * (x3 * x3))) + cos(sin((0.35673911286308896 + x3))))))) + (cos(sech((tanh(tanh((x3 * x3))) * sech((x2 * -0.602244280690949))))) + (sech(tanh(sech(sin((0.9999688722792082 * x0))))) + (((0.07238062650379498 * cos(cos(x0))) * (sech(x0) * (-2.9202637154554423 + cos(x0)))) + ((0.14917430189664252 * sech(cos(x0))) + (0.0009769324574453676 * cos((1.1754769938291227 + x2)))))))) + (sin(~(sin(sech((x0 * 0.4868101819999901))))) * -0.06463448669704745)) + ((-0.09366274032933893 + (~(tanh(x2)) * -0.0946636279278345)) * sin((-0.4826659085289542 * (x2 + x3))))) + ((-1.4378209489970202 + tanh(tanh((0.027996427482024425 + x2)))) + ~(tanh((~(tanh(x2)) * -1.0963561103986676)))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu")));
+        //    from sympy import *; r, theta, mu, nu = symbols('r theta mu nu'); print(eval("((((((((0.0608264056165289 * (((0.00028601720498676943 + (x0 * -7.878870018432033e-05)) * sech((x2 + x0))) + -0.16268973809482873)) * (~(sech((-0.48850668740111935 * (x0 + 0.00012173077411573041)))) + ((-0.0713234809943564 * (1.558799251569481 + x2)) + 0.9849622000206136))) * sin((((sin((0.5821257180149014 + x3)) + ((x3 + 1.3631889085409223) * (x2 * x2))) + ((1.6895362373369902 * ~(x0)) * cos(x1))) + (((x3 + cos(x2)) * ((x3 * 1.6337652281212212) * (x3 * x3))) + cos(sin((0.35673911280146736 + x3))))))) + (cos(sech((tanh(tanh((x3 * x3))) * sech((x2 * 0.601771969630684))))) + (sech(tanh(sech(sin((0.9999688695631253 * x0))))) + (((0.07238062650379498 * cos(cos(x0))) * (sech(x0) * (-2.9211473877329563 + cos(x0)))) + ((0.14917430189664005 * sech(cos(x0))) + (0.0008107866846722967 * sin(~(x2)))))))) + (sin(~(sin(sech((x0 * 0.48735191972161))))) * -0.0646241001665638)) + ((-0.09694748749350655 + (cos(tanh(x2)) * 0.17646281969406938)) * sin((-0.41146030873005024 * ((-6.277153144358797 + x2) + x3))))) + ((-1.4522077051173574 + tanh(tanh((0.04076378544593849 + x2)))) + ~(tanh((~(tanh(x2)) * -1.0578898331187074))))) + (~(0.001552059935971571) * sin((sech(x3) * x2))))\n".replace("^","**").replace("~", "-").replace("x0", "r").replace("x1", "theta").replace("x2", "mu").replace("x3", "nu")));
         //    from sympy import *; x0, x1, x2, x3 = symbols('x0 x1 x2 x3'); print(eval("(((((0.00020761302887044612 * (sin(x2) + (1.0272442241645563 * x2))) + ((1.3304563988558432e-06 * (x3 + x2)) + -1.0052629302733438)) * sin((~((1.4269067710318464e-07 + x2)) + ((-8.427410561791095e-08 + x0) + (2.2679423250655768e-07 + x2))))) * (((0.008782524861544684 * (0.27587744389610325 + (0.009993495877091307 + x2))) + (-0.1651571745075183 * ((-1.911228719809616e-07 + x3) + 0.010002284668230988))) + (((0.010151823903466778 * sin(x2)) * (-0.06438380401024771 * sin(x2))) + (((x2 * 0.03852998867113262) * -8.436444206719193e-05) + 3.659791130722469)))) * sin((((5.301797186958442 * (-2.4089452401052685e-07 + (2.2542565388059674e-07 + x3))) + sin((10.688904984949698 * (1.1264219683053926e-08 + x2)))) + (~(((x0 + -2.9955080762796076e-07) + (5.8232400879963024e-08 + x1))) + ((3.570015447645774e-12 + (1.081329657641461e-11 + x0)) + 72.43120897235498)))))\n".replace("^","**").replace("~", "-")));
         
         //    puts("called SwiftHohenberg");
@@ -14086,8 +14722,11 @@ namespace SH
                 Squared-norm error for each equation: 6.82458822471858e-07 1.85042409276127e-05 657.380705417492 0.0733243066235347
                 Best expression = ((((((((0.0008218402212461659 * ((x3 + 5.8550172396180535) + ((x2 + x2) + (x2 * x2)))) + -0.37952216492490254) * ~((0.5814167920533985 * sin(~(x0))))) * sin((((((x3 + 0.9026128892157984) + 4.5744583849229725) * (0.4409952972872765 * (x2 * x3))) + (((x0 * 0.8573221034817563) * 0.8598279062267117) * ~(sin(x1)))) + (((1.129041983672905 + x3) + (~(x1) + sin(x2))) + (tanh(sech(x2)) + (sin(x2) + 0.78290290795599)))))) + ((-0.14090309003802629 + sech(sech(x2))) * tanh((-0.5210872769706952 + ((sin(x3) + x3) * -0.012656549063791272))))) + ((((0.9508899694570467 + cos((x2 * 0.6620125337120125))) * ((-3.171203316541885 + (sin(tanh(x2)) * x3)) * cos(sin(x3)))) + (((1.2432960867554013 + cos((x2 + x3))) * sin((x2 * (-2.5872053030600597 * x3)))) + ((cos((x0 * 0.3138949052592127)) * (cos(x0) + (-0.5030536960882919 * (-5.585143430958983 + x2)))) + (x2 + cos((x2 + 0.481196325198804)))))) * 0.005078379857196863)) + (cos(((0.9695314710279651 + x3) * (x2 * (x2 * cos(cos(cos(cos(x3)))))))) * (sech(((tanh((x3 + -2.6478338368513206)) + (~(sin((x3 + x3))) + x3)) + (~(x2) + ((0.8919825151907883 * x2) * sech(tanh(cos(x0))))))) * ((0.0024675745490615373 * (sech((-4.608514973386803 + x2)) + (0.23462853124143798 + x3))) + -0.011534151937918551)))) + (0.389546965716104 + (0.012495384760281699 * tanh(tanh(tanh(sin(x2)))))))
                 Best expression (original format) = 0.0008218402212461659 x3 5.8550172396180535 + x2 x2 + x2 x2 * + + * -0.37952216492490254 + 0.5814167920533985 x0 ~ sin * ~ * x3 0.9026128892157984 + 4.5744583849229725 + 0.4409952972872765 x2 x3 * * * x0 0.8573221034817563 * 0.8598279062267117 * x1 sin ~ * + 1.129041983672905 x3 + x1 ~ x2 sin + + x2 sech tanh x2 sin 0.78290290795599 + + + + sin * -0.14090309003802629 x2 sech sech + -0.5210872769706952 x3 sin x3 + -0.012656549063791272 * + tanh * + 0.9508899694570467 x2 0.6620125337120125 * cos + -3.171203316541885 x2 tanh sin x3 * + x3 sin cos * * 1.2432960867554013 x2 x3 + cos + x2 -2.5872053030600597 x3 * * sin * x0 0.3138949052592127 * cos x0 cos -0.5030536960882919 -5.585143430958983 x2 + * + * x2 x2 0.481196325198804 + cos + + + + 0.005078379857196863 * + 0.9695314710279651 x3 + x2 x2 x3 cos cos cos cos * * * cos x3 -2.6478338368513206 + tanh x3 x3 + sin ~ x3 + + x2 ~ 0.8919825151907883 x2 * x0 cos tanh sech * + + sech 0.0024675745490615373 -4.608514973386803 x2 + sech 0.23462853124143798 x3 + + * -0.011534151937918551 + * * + 0.389546965716104 0.012495384760281699 x2 sin tanh tanh tanh * + +
-             Depth = 12, maxsize = 210, threshold = 0.1:
-
+             Depth = 11, maxsize = 210, threshold = 0.1:
+                Best score = 0.00152848991599543, SNE = 653.240495495023
+                Squared-norm error for each equation: 6.56074583717324e-07 1.48522728369158e-05 653.161323903908 0.0791560827681463
+                Best expression = ((((((((0.0008218402212461659 * ((x3 + 5.860905811012159) + ((x2 + x2) + (x2 * x2)))) + -0.37952216492490254) * ~((0.5814154465480622 * sin(~(x0))))) * sin((((((x3 + 0.9026128892157984) + 4.5744583849229725) * (0.4409952972872765 * (x2 * x3))) + (((x0 * 0.8573221034817563) * 0.8598279062267117) * ~(sin(x1)))) + (((1.129041974061767 + x3) + (~(x1) + sin(x2))) + (tanh(sech(x2)) + (sin(x2) + 0.78290290795599)))))) + (sech(sech(x2)) * sin((-0.4461138401501978 + ((sin(x3) + x3) * -0.006796085239350646))))) + ((((~(sin(sin((x2 * -0.09502595632010874)))) + sin((x2 * 0.8246792611401115))) * ((cos(cos((x2 * 1.9625711398804988))) * x3) * cos(sin(x3)))) + ((((~(sin(x3)) + 1.4037055415307047) + cos((x2 + x3))) * sin((x2 * (-2.5894052125340146 * x3)))) + ((cos((x0 * 0.3139015550567505)) * (cos(x0) + (-0.5024084706151123 * (-5.581057714937483 + x2)))) + (x2 + (4.1072987488439745 * tanh(cos(x2))))))) * 0.005078439193234391)) + (cos(((0.96944256625707 + x3) * (x2 * (x2 * cos(cos(cos(cos(x3)))))))) * (sech(((tanh((x3 + -2.639426665920929)) + (~(sin((x3 + x3))) + x3)) + (~(x2) + ((0.8913556744381624 * x2) * sech(tanh(cos(x0))))))) * ((0.0024675745490615373 * (sech((-4.6000429790446145 + x2)) + (0.2412163395451962 + x3))) + -0.011534151937918551)))) + (0.39709500315680607 + (4.7641116879539315e-06 * sech(cos((sin(cos(x0)) * x2))))))
+                Best expression (original format) = 0.0008218402212461659 x3 5.860905811012159 + x2 x2 + x2 x2 * + + * -0.37952216492490254 + 0.5814154465480622 x0 ~ sin * ~ * x3 0.9026128892157984 + 4.5744583849229725 + 0.4409952972872765 x2 x3 * * * x0 0.8573221034817563 * 0.8598279062267117 * x1 sin ~ * + 1.129041974061767 x3 + x1 ~ x2 sin + + x2 sech tanh x2 sin 0.78290290795599 + + + + sin * x2 sech sech -0.4461138401501978 x3 sin x3 + -0.006796085239350646 * + sin * + x2 -0.09502595632010874 * sin sin ~ x2 0.8246792611401115 * sin + x2 1.9625711398804988 * cos cos x3 * x3 sin cos * * x3 sin ~ 1.4037055415307047 + x2 x3 + cos + x2 -2.5894052125340146 x3 * * sin * x0 0.3139015550567505 * cos x0 cos -0.5024084706151123 -5.581057714937483 x2 + * + * x2 4.1072987488439745 x2 cos tanh * + + + + 0.005078439193234391 * + 0.96944256625707 x3 + x2 x2 x3 cos cos cos cos * * * cos x3 -2.639426665920929 + tanh x3 x3 + sin ~ x3 + + x2 ~ 0.8913556744381624 x2 * x0 cos tanh sech * + + sech 0.0024675745490615373 -4.6000429790446145 x2 + sech 0.2412163395451962 x3 + + * -0.011534151937918551 + * * + 0.39709500315680607 4.7641116879539315e-06 x0 cos sin x2 * cos sech * + +
              Depth = 10, maxsize = 230, threshold = 0.1:
                  Best score = 0.00148226429966316, SNE = 673.64351683249
                  Squared-norm error for each equation: 6.291209410852e-07 1.39026672493769e-05 673.433997596731 0.209504703970615
@@ -14110,11 +14749,11 @@ namespace SH
                  Best expression = ((((((tanh(x2) + tanh(~(x2))) + -0.3870988031301472) * ((sech((0.4866097732911813 * x0)) * ((0.003676317716009509 * x3) + -0.3278519444208306)) + ((sin(x2) * 0.0005869472480489501) + 0.2888139483425303))) * (((((0.6951521167310108 + x0) * (x0 * x0)) * (tanh(x0) + (x0 * x0))) * sech(((3.938608739478881 + x0) + sech(x2)))) + (tanh(tanh(sech(x0))) + -0.6034033082117622))) * sin((((((x3 + 0.8598554664465246) + (x3 + x2)) * (1.3555715802600423 * (x3 * x3))) + (((0.00024650158624024454 + x0) * 1.1272588900738931) * ~(sin(x1)))) + (((x2 + x3) * (0.7998865234397032 + tanh(x2))) + (sin(sech(x3)) * (tanh(x2) + 1.400419046809648)))))) + (sech((((((x0 * -0.9382563298668539) + (1.4372966722183187 + x0)) * 1.572338803326994) + ((-4.121928760586701 + (x3 + 0.0009840830432545958)) * (sech(x3) * (x3 * -0.00032157259935403255)))) * ((((x0 + 28.30275132571211) * sech(x0)) * 0.09427648645747212) + ((tanh(x0) * (x0 + 0.2802154218797822)) + -2.393955949543857)))) + ((((~((x2 + 36.532697099426024)) * ((x2 + -4.358926955977376) * (x3 * -0.7769442901080919))) + (((0.06842841438807824 + x3) * 2.801610909116538) + -0.3321456852904445)) * ((0.7196277109677884 + (sech(x3) * -0.0072837435301819345)) + ((~(x3) + (x3 * 1.000052592184678)) + 0.9531759101431325))) + ((tanh(~((x0 + 0.46578061807519283))) * sin(((x0 + -5.009661735823135) * 1.4670178724608343))) + (~((3.8724253360185568 * (x2 + -4.270822878977215))) * (((0.9599832552965397 * x3) * 12.746958316982422) + ((x2 * x3) * 0.3356811369339987)))))))
                  Best expression (original format) = x2 tanh x2 ~ tanh + -0.3870988031301472 + 0.4866097732911813 x0 * sech 0.003676317716009509 x3 * -0.3278519444208306 + * x2 sin 0.0005869472480489501 * 0.2888139483425303 + + * 0.6951521167310108 x0 + x0 x0 * * x0 tanh x0 x0 * + * 3.938608739478881 x0 + x2 sech + sech * x0 sech tanh tanh -0.6034033082117622 + + * x3 0.8598554664465246 + x3 x2 + + 1.3555715802600423 x3 x3 * * * 0.00024650158624024454 x0 + 1.1272588900738931 * x1 sin ~ * + x2 x3 + 0.7998865234397032 x2 tanh + * x3 sech sin x2 tanh 1.400419046809648 + * + + sin * x0 -0.9382563298668539 * 1.4372966722183187 x0 + + 1.572338803326994 * -4.121928760586701 x3 0.0009840830432545958 + + x3 sech x3 -0.00032157259935403255 * * * + x0 28.30275132571211 + x0 sech * 0.09427648645747212 * x0 tanh x0 0.2802154218797822 + * -2.393955949543857 + + * sech x2 36.532697099426024 + ~ x2 -4.358926955977376 + x3 -0.7769442901080919 * * * 0.06842841438807824 x3 + 2.801610909116538 * -0.3321456852904445 + + 0.7196277109677884 x3 sech -0.0072837435301819345 * + x3 ~ x3 1.000052592184678 * + 0.9531759101431325 + + * x0 0.46578061807519283 + ~ tanh x0 -5.009661735823135 + 1.4670178724608343 * sin * 3.8724253360185568 x2 -4.270822878977215 + * ~ 0.9599832552965397 x3 * 12.746958316982422 * x2 x3 * 0.3356811369339987 * + * + + + +
          mu_equals_nu_1_only == false, createSobolMesh(131072, 4, {0.01, 0.0, 0.01, 0.01}, {10.0, 6.28319, 10, 10})), bad_ops = {"exp", "ln", "log", "^", "/", "arcsin", "asin", "acos", "arccos", "sqrt"}, l1=1e-4, ((variation <= tolerance) || (median(vec.array().abs()) <= tolerance)), period bc * 1e10:
-             Depth = 8, maxsize = 200, r_max = 100:
-                Best score = 6.07525133801898e-07, SNE = 1646021.43489416
-                Squared-norm error for each equation: 8.38089940985088e-06 0.0831538954730331 1646007.20132579 14.1504060953157
-                Best expression = (((((((sin(x3) * (x2 * -0.0005107076977311639)) * (~(x2) + (x3 + x3))) + 0.496382635254078) * ((-2.766413270447286 * ((0.01527366707417022 * x3) + -0.09119995288345333)) + ((-0.05355966874185413 * sech(x0)) + 0.27561546065974557))) * (((~(tanh(x3)) * (tanh(x3) * -0.01020567368864029)) + sech((~(x3) + (x3 + 5.785497604110709)))) + (sech((x0 * cos(x1))) + -0.418522901279226))) * sin((((((x3 + 0.8558764549738185) + (x3 + x2)) * (1.4593890269270653 * (x3 * x3))) + (((1.0427465150538282 * x0) * 1.21558795750727) * ~(sin(x1)))) + (((1.0001897556023491 * (0.9998778429801921 * x2)) + ((0.9995927762163784 * x2) * 0.7612595376646938)) + cos(((x3 * 1.5417134455557746) + cos(x3))))))) + (sech(((((cos(x0) + 0.4447368583575711) * -0.21925859477339607) + ~((1.1631736436979496 * ~(x0)))) + ((-0.6066548910826591 + cos((x0 * 1.353081049933694))) + tanh(cos(cos(x0)))))) + ((((~((x2 + 36.84804976413921)) * ((x2 + -2.735939743823218) * (x3 * -0.8980843595325697))) + (((0.9542569738436076 * x3) * -0.1457967677608773) + (-0.13188557419693486 * sech(x0)))) * ((0.7469907957109012 + (sech(x3) * -0.005882119850818595)) + ((~(x3) + (x3 * 1.00004875355717)) + 1.4367391319372895))) + ((tanh(~((x0 + 0.6085333835093428))) * sin(((x0 + -5.193921929466295) * 1.4697325658506744))) + (~((4.160503365954077 * (x2 + -2.7398181650384577))) * (((0.8729014386150891 * x3) * 19.906495426652963) + ((x2 * x3) * 0.4714351550949006)))))))
-                Best expression (original format) = x3 sin x2 -0.0005107076977311639 * * x2 ~ x3 x3 + + * 0.496382635254078 + -2.766413270447286 0.01527366707417022 x3 * -0.09119995288345333 + * -0.05355966874185413 x0 sech * 0.27561546065974557 + + * x3 tanh ~ x3 tanh -0.01020567368864029 * * x3 ~ x3 5.785497604110709 + + sech + x0 x1 cos * sech -0.418522901279226 + + * x3 0.8558764549738185 + x3 x2 + + 1.4593890269270653 x3 x3 * * * 1.0427465150538282 x0 * 1.21558795750727 * x1 sin ~ * + 1.0001897556023491 0.9998778429801921 x2 * * 0.9995927762163784 x2 * 0.7612595376646938 * + x3 1.5417134455557746 * x3 cos + cos + + sin * x0 cos 0.4447368583575711 + -0.21925859477339607 * 1.1631736436979496 x0 ~ * ~ + -0.6066548910826591 x0 1.353081049933694 * cos + x0 cos cos tanh + + sech x2 36.84804976413921 + ~ x2 -2.735939743823218 + x3 -0.8980843595325697 * * * 0.9542569738436076 x3 * -0.1457967677608773 * -0.13188557419693486 x0 sech * + + 0.7469907957109012 x3 sech -0.005882119850818595 * + x3 ~ x3 1.00004875355717 * + 1.4367391319372895 + + * x0 0.6085333835093428 + ~ tanh x0 -5.193921929466295 + 1.4697325658506744 * sin * 4.160503365954077 x2 -2.7398181650384577 + * ~ 0.8729014386150891 x3 * 19.906495426652963 * x2 x3 * 0.4714351550949006 * + * + + + +
+            Depth = 8, maxsize = 200, r_max = 100
+                Best score = 6.09924472482519e-07, SNE = 1639546.26382726
+                Squared-norm error for each equation: 8.37655754435204e-06 0.0839552027103678 1639525.18640425 20.9934594369283
+                Best expression = (((((((sin(x3) * (x2 * -0.0005107076977311639)) * (~(x2) + (x3 + x3))) + 0.496382635254078) * ((-2.766413270447286 * ((0.01527366707417022 * x3) + -0.09119995288345333)) + ((-0.04515674689114766 * sech(x0)) + 0.27561546065974557))) * (((~(tanh(x3)) * (tanh(x3) * -0.01020567368864029)) + sech((~(x3) + (x3 + 5.785497604110709)))) + (sech((x0 * cos(x1))) + -0.418522901279226))) * sin((((((x3 + 0.8558764549738185) + (x3 + x2)) * (1.4593890269270653 * (x3 * x3))) + (((1.0427465150538282 * x0) * 1.21558795750727) * ~(sin(x1)))) + (((1.0001897556003252 * (0.9998778390170576 * x2)) + ((0.9995926026689641 * x2) * 0.7612533832941162)) + cos(((x3 * 1.5417134451347145) + cos(x3))))))) + (sech((((cos((x0 * 1.6801361969972268)) * -0.22463238389424456) + ~((1.0174160404587889 * ~(x0)))) + ((-0.8612775889904528 + cos((x0 * 1.4587600692203064))) + sech(sech(sin(x0)))))) + ((((~((x2 + 36.76088516417011)) * ((x2 + -2.6355848177123433) * (x3 * -0.9171700267293895))) + (((0.7994644311896908 * x3) * -0.33824040177843706) + (-0.13400118787251328 * sech(x0)))) * ((1.5586440222130111 + (sech(x3) * -0.005686412437594718)) + ((~(x3) + (x3 * 1.0000472100758664)) + 2.5980502995394033))) + ((tanh(~((x0 + 0.7740897003106931))) * sin(((x0 + -5.249968327609758) * 1.470555880205006))) + (~((4.1493315343754436 * (x2 + -2.6430541574040123))) * (((0.8729014386150891 * x3) * 38.70749770908467) + ((x2 * x3) * 0.9188530907798897)))))))
+                Best expression (original format) = x3 sin x2 -0.0005107076977311639 * * x2 ~ x3 x3 + + * 0.496382635254078 + -2.766413270447286 0.01527366707417022 x3 * -0.09119995288345333 + * -0.04515674689114766 x0 sech * 0.27561546065974557 + + * x3 tanh ~ x3 tanh -0.01020567368864029 * * x3 ~ x3 5.785497604110709 + + sech + x0 x1 cos * sech -0.418522901279226 + + * x3 0.8558764549738185 + x3 x2 + + 1.4593890269270653 x3 x3 * * * 1.0427465150538282 x0 * 1.21558795750727 * x1 sin ~ * + 1.0001897556003252 0.9998778390170576 x2 * * 0.9995926026689641 x2 * 0.7612533832941162 * + x3 1.5417134451347145 * x3 cos + cos + + sin * x0 1.6801361969972268 * cos -0.22463238389424456 * 1.0174160404587889 x0 ~ * ~ + -0.8612775889904528 x0 1.4587600692203064 * cos + x0 sin sech sech + + sech x2 36.76088516417011 + ~ x2 -2.6355848177123433 + x3 -0.9171700267293895 * * * 0.7994644311896908 x3 * -0.33824040177843706 * -0.13400118787251328 x0 sech * + + 1.5586440222130111 x3 sech -0.005686412437594718 * + x3 ~ x3 1.0000472100758664 * + 2.5980502995394033 + + * x0 0.7740897003106931 + ~ tanh x0 -5.249968327609758 + 1.470555880205006 * sin * 4.1493315343754436 x2 -2.6430541574040123 + * ~ 0.8729014386150891 x3 * 38.70749770908467 * x2 x3 * 0.9188530907798897 * + * + + + +
              Depth = 8, maxsize = 210, r_max = 100:
                  Best score = 6.0433524208187e-07, SNE = 1654709.71413129
                  Squared-norm error for each equation: 3.3823452654807e-06 0.0267542512637966 1654687.65342505 22.0339486142595
@@ -14152,6 +14791,12 @@ namespace SH
                 Best expression = (((((((0.0608264056165289 * (((0.00026292200291535027 + (x0 * -9.012059109178958e-05)) * sech((x2 + x0))) + -0.16268973809482873)) * (~(sech((-0.4885068866294881 * (x0 + 0.00011533697039585693)))) + ((-0.0713234809943564 * (1.5587992527359742 + x2)) + 0.9849622000206135))) * sin((((sin((0.5821257180149014 + x3)) + ((x3 + 1.3631889085409188) * (x2 * x2))) + ((1.6895362373369902 * ~(x0)) * cos(x1))) + (((x3 + cos(x2)) * ((x3 * 1.6337652281212212) * (x3 * x3))) + cos(sin((0.35673911280146736 + x3))))))) + (cos(sech((tanh(tanh((x3 * x3))) * sech((x2 * -0.602187881188195))))) + (sech(tanh(sech(sin((0.9999688722792082 * x0))))) + (((0.07238062650379498 * cos(cos(x0))) * (sech(x0) * (-2.9202637154554423 + cos(x0)))) + ((0.14917430189664252 * sech(cos(x0))) + (0.0009766608265152769 * cos((1.1753970749992506 + x2)))))))) + (sin(~(sin(sech((x0 * 0.48681018203510407))))) * -0.06463448669704745)) + ((-0.09361646464817233 + (~(tanh(x2)) * -0.09461684431990044)) * sin((-0.482688968032756 * (x2 + x3))))) + ((-1.4377363260530054 + tanh(tanh((0.027925677102199738 + x2)))) + ~(tanh((~(tanh(x2)) * -1.0965908981504715)))))
                 Best expression (original format) = 0.0608264056165289 0.00026292200291535027 x0 -9.012059109178958e-05 * + x2 x0 + sech * -0.16268973809482873 + * -0.4885068866294881 x0 0.00011533697039585693 + * sech ~ -0.0713234809943564 1.5587992527359742 x2 + * 0.9849622000206135 + + * 0.5821257180149014 x3 + sin x3 1.3631889085409188 + x2 x2 * * + 1.6895362373369902 x0 ~ * x1 cos * + x3 x2 cos + x3 1.6337652281212212 * x3 x3 * * * 0.35673911280146736 x3 + sin cos + + sin * x3 x3 * tanh tanh x2 -0.602187881188195 * sech * sech cos 0.9999688722792082 x0 * sin sech tanh sech 0.07238062650379498 x0 cos cos * x0 sech -2.9202637154554423 x0 cos + * * 0.14917430189664252 x0 cos sech * 0.0009766608265152769 1.1753970749992506 x2 + cos * + + + + + x0 0.48681018203510407 * sech sin ~ sin -0.06463448669704745 * + -0.09361646464817233 x2 tanh ~ -0.09461684431990044 * + -0.482688968032756 x2 x3 + * sin * + -1.4377363260530054 0.027925677102199738 x2 + tanh tanh + x2 tanh ~ -1.0965908981504715 * tanh ~ + +
             Depth = 12, maxsize = 170, r_max = 100, threshold = 0.1:
+                Best score = 9.47754030204682e-05, SNE = 10550.2608559843
+                Squared-norm error for each equation: 1.20568021639792e-06 1.13717340120341e-07 10549.520621174 0.740233490836549
+                Best expression = ((((((((0.0608264056165289 * (((0.000286018421943662 + (x0 * -7.878870018432033e-05)) * sech((x2 + x0))) + -0.16268973809482873)) * (~(sech((-0.48850668740111935 * (x0 + 0.00012173077411573041)))) + ((-0.0713234809943564 * (1.558799251569481 + x2)) + 0.9849622000206136))) * sin((((sin((0.5821257180149014 + x3)) + ((x3 + 1.3631889085409223) * (x2 * x2))) + ((1.6895362373369902 * ~(x0)) * cos(x1))) + (((x3 + cos(x2)) * ((x3 * 1.6337652281212212) * (x3 * x3))) + cos(sin((0.35673911280146736 + x3))))))) + (cos(sech((tanh(tanh((x3 * x3))) * sech((x2 * 0.6017701164160677))))) + (sech(tanh(sech(sin((0.9999688695631253 * x0))))) + (((0.07238062650379498 * cos(cos(x0))) * (sech(x0) * (-2.9211473877329563 + cos(x0)))) + ((0.14917430189664005 * sech(cos(x0))) + (0.0008109387276964686 * sin(~(x2)))))))) + (sin(~(sin(sech((x0 * 0.48735191972161))))) * -0.0646241001665638)) + ((-0.09698417674173229 + (cos(tanh(x2)) * 0.176529921884069)) * sin((-0.4113711220710896 * ((-6.277096391094794 + x2) + x3))))) + ((-1.452245989973626 + tanh(tanh((0.04079103758965683 + x2)))) + ~(tanh((~(tanh(x2)) * -1.0577909885864418))))) + (~(0.0015520425735136532) * sin((sech(x3) * x2))))
+                Best expression (original format) = 0.0608264056165289 0.000286018421943662 x0 -7.878870018432033e-05 * + x2 x0 + sech * -0.16268973809482873 + * -0.48850668740111935 x0 0.00012173077411573041 + * sech ~ -0.0713234809943564 1.558799251569481 x2 + * 0.9849622000206136 + + * 0.5821257180149014 x3 + sin x3 1.3631889085409223 + x2 x2 * * + 1.6895362373369902 x0 ~ * x1 cos * + x3 x2 cos + x3 1.6337652281212212 * x3 x3 * * * 0.35673911280146736 x3 + sin cos + + sin * x3 x3 * tanh tanh x2 0.6017701164160677 * sech * sech cos 0.9999688695631253 x0 * sin sech tanh sech 0.07238062650379498 x0 cos cos * x0 sech -2.9211473877329563 x0 cos + * * 0.14917430189664005 x0 cos sech * 0.0008109387276964686 x2 ~ sin * + + + + + x0 0.48735191972161 * sech sin ~ sin -0.0646241001665638 * + -0.09698417674173229 x2 tanh cos 0.176529921884069 * + -0.4113711220710896 -6.277096391094794 x2 + x3 + * sin * + -1.452245989973626 0.04079103758965683 x2 + tanh tanh + x2 tanh ~ -1.0577909885864418 * tanh ~ + + 0.0015520425735136532 ~ x3 sech x2 * sin * +
+            Depth = 13, maxsize = 180, r_max = 100, threshold = 0.1:
+         
          */
         if (fit)
         {
@@ -14195,7 +14840,7 @@ namespace SH
         {
             // open -a Google\ Chrome SwiftHohenbergBoosting.png
             std::call_once(init_flag, [&]()
-                           {
+            {
                 std::scoped_lock str_lock(Board::thread_locker);
                 if (!added_additive)
                 {
@@ -15206,6 +15851,11 @@ namespace SH
 //x0 -> x, x1 -> y, x2 -> t
 std::vector<std::vector<std::string>> TwoDAdvectionDiffusion_1(Board& x, bool fit)
 {
+    //Specifiy the initial condition
+    //Build the ansatz that satisfies the initial and boundary conditions exactly.
+    std::vector<std::string> ansatz;
+    //blablabla
+    
     std::vector<std::vector<std::string>> results;
     std::vector<std::string> result;
     result.reserve(100);
@@ -16722,6 +17372,94 @@ void RandomSearch(std::vector<std::vector<std::string>> (*diffeq)(Board&, bool),
 
 namespace ExampleProblems
 {
+    void TwoDAdvectionDiffusionTest(std::pair<std::string, int>& random_seed, const char* algorithm, double time)
+    {
+        double threshold = 1.;
+        auto data = createSobolMesh(1000, 3, {0.0, 0.0, -1}, {20.0, 2, 1});
+        if (random_seed.first.empty())
+        {
+            random_seed.first = "TwoDAdvectionDiffusionTest.txt";
+        }
+
+        if (strcmp(algorithm, "RandomSearch") == 0)
+        {
+            RandomSearch(TwoDAdvectionDiffusion_1 /*differential equation to solve*/,
+                         3 /*number of equations in differential equation system*/,
+                         data /*data used to solve differential equation*/,
+                         std::vector<int>{24} /*fixed depths of generated solution*/,
+                         "prefix" /*expression representation*/,
+                         0 /*num_consts_diff: number of constants in differential equation*/,
+                         "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
+                         5 /*number of fit iterations*/,
+                         "naive_numerical" /*method for computing the gradient*/,
+                         true /*cache*/,
+                         time /*time to run the algorithm in seconds*/,
+                         0 /*num threads*/,
+                         std::vector<std::string>{"default"}  /*`const_tokens`: numerical constants to include, std::vector<std::string>{"default"} includes const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
+                         threshold /*threshold for which solutions cannot be constant*/,
+                         false /*`use_const_pieces`: whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                         0 /*number of data columns that constitute labels and not independent variables/features*/,
+                         true /*whether or not to include ALL of the features in all of the generated expressions*/,
+                         {} /*custom features that the SR-found equations are required to contain*/,
+                         random_seed.first, // "vortexTest.txt" /*filename to save current best expression found (instead of outputting them to standard out*/
+                         {} /*optional max-sizes of each of the expressions in the generated solution*/,
+                         {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
+                         "vector" /*evaluation type: can be "dag", "scalar", or "vector"*/,
+                         50 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
+                         false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
+                         std::vector<std::string>{} /*operators to restrict in the search*/,
+                         1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
+                         "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
+                         0 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
+                         false /*fullPrec: whether to write output to full precision, i.e., std::numeric_limits<double>::digits10 */,
+                         std::vector<std::string>{} /*custom_unaries: logic must be implemented in the std::vector<std::vector<std::string>> differential equation the user passes in*/);
+        }
+        else
+        {
+            SimulatedAnnealing(TwoDAdvectionDiffusion_1 /*differential equation to solve*/,
+                3 /*number of equations in differential equation system*/,
+                data /*data used to solve differential equation*/,
+                std::vector<int>{20} /*fixed depths of generated solution*/,
+                "prefix" /*expression representation*/,
+                0/*2*/ /*num_consts_diff: number of constants in differential equation*/,
+                "LevenbergMarquardt" /*fit method if expression contains const tokens*/,
+                5 /*number of fit iterations*/,
+                "naive_numerical" /*method for computing the gradient*/,
+                true /*cache*/,
+                time /*time to run the algorithm in seconds*/,
+                0 /*num threads*/,
+                std::vector<std::string>{"default"}  /*`const_tokens`: numerical constants to include, std::vector<std::string>{"default"} includes const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
+                threshold /*threshold for which solutions cannot be constant*/,
+                true /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
+                0 /*number of data columns that constitute labels and not independent variables/features*/,
+                true /*whether or not to include ALL of the features in all of the generated expressions*/,
+                {} /*custom features that the SR-found equations are required to contain*/,
+                random_seed.first /*filename to save current best expression found (instead of outputting them to standard out)*/,
+                {} /*optional max-sizes of each of the expressions in the generated solution*/,
+                {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
+                "vector" /*evaluation type: can be "dag", "scalar", or "vector"*/,
+                1000000 /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
+                false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
+                std::vector<std::string>{} /*operators to restrict in the search*/,
+                1.2 /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
+                "total" /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
+                0 /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
+                false /*fullPrec: whether to write output to full precision, i.e., std::numeric_limits<double>::digits10 */,
+                std::vector<std::string>{} /*custom_unaries: logic must be implemented in the std::vector<std::vector<std::string>> differential equation the user passes in*/,
+                {} /*seed expressions*/,
+                false /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
+                random_seed.second /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
+                0.0 /*T_min*/,
+                0.0 /*T_max*/,
+                [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
+                "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
+                false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
+                "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", "constants_only_vec", "constants_only_N", or (default) "sub_tree"*/,
+                false /*whether or not to sync the current expression of each thread with the global current best*/,
+                false /*In the case x.pieces.size() > 1, whether to perturb all expressions before checking the score or not*/);
+        }
+    }
     void RTSDataTest(std::pair<std::string, int>& random_seed, const char* algorithm, double time)
     {
         srand(random_seed.second);
@@ -17464,6 +18202,257 @@ namespace ExampleProblems
         false /*In the case x.pieces.size() > 1, whether to perturb all expressions before checking the score or not*/);
         }
     }
+    //TODO: Need to have the first two expressions only depend on x1, x2, x3; the ansatz discovered can be amelioriated then with the substitution x0 -> r_max
+    void SwiftHohenbergRBCsTest(std::pair<std::string, int>& random_seed, const char* algorithm, double time)
+    {
+        SH::f_const_tol = 1.0;
+        bool mu_equals_nu_1_only = false;
+        std::vector<std::string> bad_ops = {"exp", "ln", "log", "^", "/", "arcsin", "asin", "acos", "arccos", "sqrt"};
+        constexpr int num_diff_eqns = 4;
+       
+        constexpr bool read_from_file = true;
+        constexpr const char* filename = "SwiftHohenbergRBCsTestFile.txt";
+        std::string pert_mode = "sub_tree";
+        std::string simplify_mode = "total";
+        std::string eval_type = "dag";
+        int completeTree = 1, max_dag = 0, fit = 0, fitIters = 5, fullPrec = 0;
+        std::vector<int> depth = {5, 5, 5};
+        double ConstCacheThresh = 1.2;
+        unsigned int num_threads = 0;
+        std::string numThreads, theDepth, theCompleteTree, theMaxDag, theFit, theNumFitIters, theFitType = "RandomJitter", theBadOps, Algorithm = algorithm, theFullPrec;
+        std::string theSeedExpr = "9.725816343768619 x3 - x2 cos * x1 9.939958102300732 - 6.28319 x3 * - + sin x2 6.28319 + tanh x0 sin ~ * 3.696752038102206 0.14244753430343096 x3 * - * *";
+        std::vector<std::vector<std::string>> theSeedExprs(3);
+        std::string theConstCacheThresh;
+        int NumPoints = 18;
+        std::string theNumPoints;
+        bool linspace_spaced = true;
+        std::string theConstTokens = "default";
+        std::vector<int> maxsizes(3);
+        double r_max = 10;
+        std::string nontrivialityPrefactor, constTolFactor, factor, xtol, ftol, maxsize, Rmax, Threshold;
+        
+        if (read_from_file)
+        {
+            std::ifstream inObj(filename);
+            
+            std::getline(inObj, Algorithm);
+            std::getline(inObj, theSeedExpr);
+            std::getline(inObj, pert_mode);
+            std::getline(inObj, simplify_mode);
+            std::getline(inObj, theCompleteTree);
+            std::getline(inObj, theMaxDag);
+            std::getline(inObj, theDepth);
+            std::getline(inObj, eval_type);
+            std::getline(inObj, numThreads);
+            std::getline(inObj, theFit);
+            std::getline(inObj, theNumFitIters);
+            std::getline(inObj, theFitType);
+            std::getline(inObj, theConstCacheThresh);
+            std::getline(inObj, theBadOps);
+            std::getline(inObj, theFullPrec);
+            std::getline(inObj, theNumPoints);
+            std::getline(inObj, theConstTokens);
+            std::getline(inObj, nontrivialityPrefactor);
+            std::getline(inObj, constTolFactor);
+            std::getline(inObj, factor);
+            std::getline(inObj, xtol);
+            std::getline(inObj, ftol);
+            std::getline(inObj, maxsize);
+            std::getline(inObj, Rmax);
+            std::getline(inObj, Threshold);
+            
+            fullPrec = std::stoi(theFullPrec);
+            num_threads = std::stoi(numThreads);
+            depth[0] = depth[1] = depth[2] = std::stoi(theDepth);
+            completeTree = std::stoi(theCompleteTree);
+            max_dag = std::stoi(theMaxDag);
+            fit = std::stoi(theFit);
+            fitIters = std::stoi(theNumFitIters);
+            ConstCacheThresh = std::stod(theConstCacheThresh);
+            bad_ops = split(theBadOps);
+            Board::nontrivialityPrefactor = (nontrivialityPrefactor.size()) ? Stod(nontrivialityPrefactor) : Board::nontrivialityPrefactor;
+            Board::constTolFactor = (constTolFactor.size()) ? Stod(constTolFactor) : Board::constTolFactor;
+            Board::factor = (factor.size()) ? Stod(factor) : Board::factor;
+            Board::xtol = (xtol.size()) ? Stod(xtol) : Board::xtol;
+            Board::ftol = (factor.size()) ? Stod(ftol) : Board::ftol;
+            maxsizes[0] = std::stoi(maxsize);
+            maxsizes[1] = std::stoi(maxsize);
+            maxsizes[2] = std::stoi(maxsize);
+            r_max = std::stod(Rmax);
+            SH::f_const_tol = std::stod(Threshold);
+            std::vector<std::string> theTempSeedExpr = split(theSeedExpr, ',');
+            if (theTempSeedExpr.size() == 3)
+            {
+                theSeedExprs[0] = split(theTempSeedExpr[0]);
+                theSeedExprs[1] = split(theTempSeedExpr[1]);
+                theSeedExprs[2] = split(theTempSeedExpr[2]);
+            }
+            try
+            {
+                NumPoints = std::stoi(theNumPoints);
+            }
+            catch (std::invalid_argument& e)
+            {
+                linspace_spaced = false;
+                std::cout << e.what() << '\n';
+            }
+            std::cout << "Algorithm = " << Algorithm << "\n";
+            std::cout << "theSeedExpr = " << theSeedExpr << "\n";
+            std::cout << "pert_mode = " << pert_mode << '\n';
+            std::cout << "simplify_mode = " << simplify_mode << '\n';
+            std::cout << "completeTree = " << completeTree << '\n';
+            std::cout << "max_dag = " << max_dag << '\n';
+            std::cout << "depth = " << depth << '\n';
+            std::cout << "eval_type = " << eval_type << '\n';
+            std::cout << "num_threads = " << num_threads << '\n';
+            std::cout << "fit = " << fit << '\n';
+            std::cout << "fitIters = " << fitIters << '\n';
+            std::cout << "theFitType = " << theFitType << '\n';
+            std::cout << "ConstCacheThresh = " << ConstCacheThresh << '\n';
+            std::cout << "bad_ops = " << bad_ops << '\n';
+            std::cout << "NumPoints = " << NumPoints << '\n';
+            std::cout << "theConstTokens = " << theConstTokens << '\n';
+            std::cout << "Board::nontrivialityPrefactor = " << Board::nontrivialityPrefactor << '\n';
+            std::cout << "Board::constTolFactor = " << Board::constTolFactor << '\n';
+            std::cout << "maxsizes = " << maxsizes << '\n';
+            std::cout << "r_max = " << r_max << '\n';
+            std::cout << "SH::f_const_tol = " << SH::f_const_tol << '\n';
+        }
+        SH::r_max = to_string_general(r_max);
+        //collocation points
+        Eigen::MatrixXd data1;
+        
+        if (linspace_spaced)
+        {
+            data1 = ((mu_equals_nu_1_only) ?
+                     createMeshgridVectors(330, 2, {0.01, 0.0}, {r_max, 6.28319}) :
+                     createMeshgridVectors(NumPoints, 4, {0.01, 0.0, 0.01, 0.01}, {r_max, 6.28319, 10, 10}));
+        }
+        else if (theNumPoints[0] == 's')
+        {
+            assert(theNumPoints.size() > 1 && (!mu_equals_nu_1_only));
+            NumPoints = std::stoi(theNumPoints.substr(1));
+            data1 = createSobolMesh(NumPoints, 4, {0.01, 0.0, 0.01, 0.01}, {r_max, 6.28319, 10, 10});
+        }
+        else if (theNumPoints[0] == 'S')
+        {
+            auto _idx = theNumPoints.find('_');
+            NumPoints = std::stoi(theNumPoints.substr(1, _idx-1));
+            data1 = createSobolMesh(NumPoints, 4, {0.01, 0.0, 0.01, 0.01}, {r_max, 6.28319, 10, 10});
+            std::string fileVstackName = theNumPoints.substr(_idx+1);
+            std::cout << "fileVstackName = " << fileVstackName << '\n';
+            auto DataToVstack = load_csv(fileVstackName);
+            data1 = vstack(data1, DataToVstack);
+            assert(data1.rows() - DataToVstack.rows() == NumPoints);
+            assert(data1.cols() == 4);
+        }
+        else
+        {
+            // /Users/edwardfinkelstein/Downloads/sh_data_sobol_1000.txt
+            try
+            {
+                int startIdx = 0;
+                while ((theNumPoints[startIdx] < 48) || (theNumPoints[startIdx] > 57))
+                {
+                    startIdx++;
+                }
+                int numRows = std::stoi(theNumPoints.substr(startIdx, theNumPoints.find(".txt")-14));
+                std::cout << "num sobol rows = " << numRows << '\n';
+                data1 = load_csv(theNumPoints, numRows, 4, true);
+                std::cout << "data = " << data1 << '\n';
+            }
+            catch (std::invalid_argument& e)
+            {
+                std::cout << e.what() << '\n';
+                exit(1);
+            }
+        }
+        std::cout << "data.rows() = " << data1.rows() << '\n';
+        std::cout << "data.cols() = " << data1.cols() << '\n';
+
+        if (random_seed.first.empty())
+        {
+            random_seed.first = "SwiftHohenbergRBCsBest.txt";
+        }
+
+        if (Algorithm == "RandomSearch")
+        {
+            RandomSearch(SH::SwiftHohenbergRBCs /*differential equation to solve*/,
+                         num_diff_eqns /*number of equations in differential equation system*/,
+                         data1 /*data used to solve differential equation*/,
+                         depth /*fixed depths of generated solution*/,
+                         "postfix" /*expression representation*/,
+                         0 /*num_consts_diff: number of constants in differential equation*/,
+                         theFitType /*fit method if expression contains const tokens*/,
+                         fitIters /*number of fit iterations*/,
+                         "naive_numerical" /*method for computing the gradient*/,
+                         true /*cache*/,
+                         time /*time to run the algorithm in seconds*/,
+                         num_threads /*num threads*/,
+                         split(theConstTokens) /*`const_tokens`: numerical constants to include, std::vector<std::string>{"default"} includes const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
+                         0. /*threshold for which solutions cannot be constant*/,
+                         fit /*`use_const_pieces`: whether or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                         0 /*number of data columns that constitute labels and not independent variables/features*/,
+                         true /*whether or not to include ALL of the features in all of the generated expressions*/,
+                         {} /*custom features that the SR-found equations are required to contain*/,
+                         random_seed.first /*filename to save current best expression found (instead of outputting them to standard out*/,
+                         maxsizes /*optional max-sizes of each of the expressions in the generated solution*/,
+                         {} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
+                         eval_type /*evaluation type: can be "dag", "scalar", or "vector"*/,
+                         INT_MAX /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
+                         false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
+                         bad_ops /*operators to restrict in the search*/,
+                         ConstCacheThresh /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
+                         simplify_mode /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
+                         max_dag /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
+                         fullPrec /*fullPrec: whether to write output to full precision, i.e., std::numeric_limits<double>::digits10 */,
+                         std::vector<std::string>{} /*custom_unaries: logic must be implemented in the std::vector<std::vector<std::string>> differential equation the user passes in*/);
+        }
+        else
+        {
+            SimulatedAnnealing(SH::SwiftHohenbergRBCs /*differential equation to solve*/,
+                num_diff_eqns /*number of equations in differential equation system*/,
+                data1 /*data used to solve differential equation*/,
+                depth /*fixed depths of generated solution*/,
+                "postfix" /*expression representation*/,
+                0 /*num_consts_diff: number of constants in differential equation*/,
+                theFitType /*fit method if expression contains const tokens*/,
+                fitIters /*number of fit iterations*/,
+                "naive_numerical" /*method for computing the gradient*/,
+                true /*cache*/,
+                time /*time to run the algorithm in seconds*/,
+                num_threads /*num threads*/,
+                split(theConstTokens) /*`const_tokens`: numerical constants to include, std::vector<std::string>{"default"} includes const tokens {0, 1, 2, 4, min(feature_i), max(feature_i)}*/,
+                0. /*threshold for which solutions cannot be constant*/,
+                fit /*whether to include or not to include constant tokens in the generated expressions, independent of the num_consts_diff tokens in the differential equation you are trying to solve*/,
+                false, /*Whether to simplify the expression on every iteration (perturbation) of the seed expression vector*/
+                0 /*number of data columns that constitute labels and not independent variables/features*/,
+                true /*whether or not to include ALL of the features in all of the generated expressions*/,
+                {} /*custom features that the SR-found equations are required to contain*/,
+                random_seed.first, //"" /*filename to save current best expression found (instead of outputting them to standard out*/
+                maxsizes /*optional max-sizes of each of the expressions in the generated solution*/,
+                {/*split("x0 -0.01 + x1 sech + 11.156528193614346 ^ 2.714063572022206e-13 * 0.010000 x0 + 6.29319 ^ 1e-08 * 0.0100003333566687 + 0.7493736126143709 + + 0.9998848754538172 x0 tanh arcsin 0.7615941559557649 x0 4 ^ / / ^ 6.283190 x1 + ~ sin 0.9171523356672744 * * 0.7827863849639187 x0 cos asin cos * * - x0 x0 + 0.003734854911714874 6.283190 x0 / ^ 7.570169558264211 + ^ 0.28580222883407974 0.010000 x0 + 10.01 + ^ 0.010000 x0 ^ 1.03 + x1 sin - * * -6.1759665127829875 -10 x1 x1 + + + x1 0.005 / 1.9195169107150692e+06 - / -0.06767485271943648 + + 0.2658022288340797 x0 + 0.9801980198019802 ^ x0 1.517923178056138 + / 0.010000 x0 + sin 0.03661899347368653 x0 + + x1 sin 10.01 0.010000 x0 + / + * ^ -0.01842414214696351 + + -")*/} /*function-vector to be added to each funtion-vector found by symbolic-regressor in each iteration; logic is user-implemented*/,
+                eval_type /*evaluation type: can be "dag", "scalar", or "vector"*/,
+                INT_MAX /*`print_and_check_fit_dict_every`: number of expressions generated before thread prints to standard out and, if `use_const_pieces == true && Board::expression_dict.size() == Board::max_expression_dict_sz`, clears `Board::expression_dict`*/,
+                false /*whether to explicitly print out the result of plugging in the best found expression into the system being solved*/,
+                bad_ops /*operators to restrict in the search*/,
+                ConstCacheThresh /*`constCacheThresh`: if `use_const_pieces==true`, only cache fitted constants for expressions with error <= constCacheThresh * global-min-error */,
+                simplify_mode /*simplifyMode: "total": most algebraic simplification more comprehensively, "fast": less simplifications, "none": no simplifications */,
+                max_dag /*max_subexpr_cache_nodes: the max number of evaluated sub-expressions to cache; only used if the evaulation type is "dag"*/,
+                fullPrec /*fullPrec: whether to write output to full precision, i.e., std::numeric_limits<double>::digits10 */,
+                std::vector<std::string>{} /*custom_unaries: logic must be implemented in the std::vector<std::vector<std::string>> differential equation the user passes in*/,
+                theSeedExprs /*seed expressions*/,
+                (num_threads == 1) /*whether to exit right after computing the score for the seed epxression (default `false`)*/,
+                random_seed.second /*value for random seed, < 0 means it will be set to RANDOM_SEED if RANDOM_SEED > 0 else with std::mt19937*/,
+                0.0 /*T_min*/,
+                0.0 /*T_max*/,
+                [](double ratio, double t_val) -> double {return 0.9;} /*Temperature update `T = std::max(T_min, r*T)`, where `r` is the return-value of this function, `ratio` is defined as `T_min / T_max`, and `t_val` is the current time, where 1 time-step = 1 applied simulated-annealing perturbation */,
+                "" /*file to save SNE values in each equation in the differential equation system; if empty, data not saved but outputted to screen*/,
+                completeTree /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
+                pert_mode /*perturbation option: either "sub_array", "n_random", "constants_only", "constants_only_vec", "constants_only_N", or (default) "sub_tree"*/,
+                true /*whether or not to sync the current expression of each thread with the global current best*/);
+        }
+    }
     void SwiftHohenbergTest(std::pair<std::string, int>& random_seed, const char* algorithm, double time)
     {
         double threshold = 1.0;
@@ -17912,7 +18901,7 @@ namespace ExampleProblems
                 false /*where or not to complete the trees of each sr-expression after a new best expression-vec is found*/,
                 "sub_tree" /*perturbation option: either "sub_array", "n_random", "constants_only", "constants_only_vec", "constants_only_N", or (default) "sub_tree"*/,
                 false /*whether or not to sync the current expression of each thread with the global current best*/,
-        false /*In the case x.pieces.size() > 1, whether to perturb all expressions before checking the score or not*/);
+                false /*In the case x.pieces.size() > 1, whether to perturb all expressions before checking the score or not*/);
         }
     }
 
@@ -18617,6 +19606,7 @@ enum class ProblemOption
 {
     BrightSolitonControlPDE,
     SwiftHohenberg,
+    SwiftHohenbergRBCs,
     VortexRadialProfile,
     SolitonWaveFengEq14and15Laser,
     WildfireSpreadTS,
@@ -18624,7 +19614,8 @@ enum class ProblemOption
     WierdTrackFitter,
     RK4Explicitc2c3Discovery,
     RandomBubbleEnvironment,
-    RTSData
+    RTSData,
+    AdvectionDiffusion
 };
 
 
@@ -18701,6 +19692,9 @@ int main(int argc, char *argv[])
             break;
         case ProblemOption::SwiftHohenberg:
             ExampleProblems::SwiftHohenbergTest(file_and_random_seed, algorithm, time);
+            break;
+        case ProblemOption::SwiftHohenbergRBCs:
+            ExampleProblems::SwiftHohenbergRBCsTest(file_and_random_seed, algorithm, time);
             break;
         case ProblemOption::WildfireSpreadTS:
             ExampleProblems::WildfireSpreadTSTest(file_and_random_seed, algorithm, time);
